@@ -134,8 +134,7 @@ admin ── POST /users ──▶ auth-service ── clerkClient.users.createU
 - **Auth:** Clerk everywhere. Backends guard with `shouldBeUser`/`shouldBeAdmin`;
   authorization is enforced server-side, with the admin middleware as UX defense.
 - **Configuration:** environment variables per workspace; `.env.example` is the contract.
-- **Observability:** each service exposes `GET /health` with status, uptime, and
-  timestamp. Logging is `console`-based.
+- **Observability:** structured logging, health checks, metrics, and telemetry across all workspaces powered by `@repo/monitoring`.
 - **CORS:** each service allow-lists the specific frontend origins it serves
   (`client` :3002, `admin` :3003).
 - **Error shape:** `{ message }` JSON with correct status codes; a global error handler

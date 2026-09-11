@@ -40,6 +40,7 @@ Larekmart is implemented as a **pnpm 9 + Turborepo 2 monorepo** with strict boun
 | **`apps/analytic-service`**      | Hybrid  | Express 5 + Node Worker           | `8004` | `@clerk/express`, `@repo/kafka`, `@repo/types`, `pg`                | PostgreSQL / Mem |
 | **`packages/kafka`**             | Library | TypeScript (Node ESM)             | —      | `kafkajs`                                                           | —                |
 | **`packages/types`**             | Library | TypeScript                        | —      | `zod`, `@repo/product-db`, `@repo/order-db`                         | —                |
+| **`packages/monitoring`**        | Library | TypeScript (Node ESM)             | —      | — (Zero framework dependencies)                                     | —                |
 | **`packages/product-db`**        | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
 | **`packages/order-db`**          | Library | TypeScript (Mongoose)             | —      | `mongoose`                                                          | MongoDB          |
 | **`packages/eslint-config`**     | Config  | ESLint Flat Config (v9)           | —      | `@eslint/js`, `typescript-eslint`, `@next/eslint-plugin-next`       | —                |

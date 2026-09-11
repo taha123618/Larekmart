@@ -34,7 +34,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`
    - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`
-   - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `product-db`, `order-db`, `typescript-config`
+   - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `product-db`, `order-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.
 
@@ -85,6 +85,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `analytic-service`        | `apps/analytic-service`      | Express 5               | 8004 | Consumes Kafka events, aggregates metrics & REST API    |
 | `@repo/kafka`             | `packages/kafka`             | Library                 | —    | kafkajs wrapper + local Kafka compose                   |
 | `@repo/types`             | `packages/types`             | Library                 | —    | Shared types + Zod schemas (contract package)           |
+| `@repo/monitoring`        | `packages/monitoring`        | Library                 | —    | Logging, health checks, metrics & telemetry             |
 | `@repo/product-db`        | `packages/product-db`        | Library                 | —    | Prisma client + schema (PostgreSQL)                     |
 | `@repo/order-db`          | `packages/order-db`          | Library                 | —    | Mongoose connection + Order model (MongoDB)             |
 | `@repo/eslint-config`     | `packages/eslint-config`     | Config                  | —    | Shared ESLint flat configs                              |

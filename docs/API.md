@@ -56,7 +56,26 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ### `GET /health`
 
-- **Response**: `{ status: "ok", uptime: number, timestamp: string }`
+- **Auth**: Public
+- **Response**: Comprehensive multi-dependency health report:
+```json
+{
+  "service": "product-service",
+  "status": "healthy",
+  "uptimeSeconds": 42,
+  "timestamp": "2026-09-12T04:08:00.000Z",
+  "checks": {
+    "memory": { "status": "healthy", "latencyMs": 0, "message": "Heap: 24.50 MB / 512.00 MB" },
+    "postgres": { "status": "healthy", "latencyMs": 4, "message": "PostgreSQL ping successful (4ms)" }
+  },
+  "summary": { "total": 2, "healthy": 2, "degraded": 0, "unhealthy": 0 }
+}
+```
+
+### `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: OpenMetrics / Prometheus text exposition (`Content-Type: text/plain; version=0.0.4`) containing request counts, latencies (p50/p90/p99), and error counters.
 
 ---
 
@@ -80,7 +99,13 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ### `GET /health`
 
-- **Response**: `{ status: "ok", uptime: number, timestamp: string }`
+- **Auth**: Public
+- **Response**: Multi-dependency health report (Memory + MongoDB connection state)
+
+### `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Prometheus text exposition format
 
 ---
 
@@ -104,7 +129,13 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ### `GET /health`
 
-- **Response**: `{ status: "ok", uptime: number, timestamp: string }`
+- **Auth**: Public
+- **Response**: Multi-dependency health report (Memory)
+
+### `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Prometheus text exposition format
 
 ---
 
@@ -133,7 +164,13 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ### `GET /health`
 
-- **Response**: `{ status: "ok", uptime: number, timestamp: string }`
+- **Auth**: Public
+- **Response**: Multi-dependency health report (Memory)
+
+### `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Prometheus text exposition format
 
 ---
 
@@ -158,4 +195,11 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ### `GET /health`
 
-- **Response**: `{ status: "ok", uptime: number, timestamp: string }`
+- **Auth**: Public
+- **Response**: Multi-dependency health report (Memory + PostgreSQL pool query)
+
+### `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Prometheus text exposition format
+

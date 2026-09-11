@@ -1,10 +1,19 @@
 import { Prisma, prisma } from "@repo/product-db";
 import { Request, Response } from "express";
+import { createLogger, measureAsync } from "@repo/monitoring";
+
+const logger = createLogger("product-service:category-controller");
 
 export const createCategory = async (req: Request, res: Response) => {
   const data: Prisma.CategoryCreateInput = req.body;
 
-  const category = await prisma.category.create({ data });
+  const { result: category } = await measureAsync(
+    "db.category.create",
+    async () => {
+      return await prisma.category.create({ data });
+    },
+  );
+  logger.info(`Category created: ${category.name}`);
   res.status(201).json(category);
 };
 
@@ -12,26 +21,43 @@ export const updateCategory = async (req: Request, res: Response) => {
   const { id } = req.params;
   const data: Prisma.CategoryUpdateInput = req.body;
 
-  const category = await prisma.category.update({
-    where: { id: Number(id) },
-    data,
-  });
+  const { result: category } = await measureAsync(
+    "db.category.update",
+    async () => {
+      return await prisma.category.update({
+        where: { id: Number(id) },
+        data,
+      });
+    },
+  );
 
+  logger.info(`Category updated: ID ${id}`);
   return res.status(200).json(category);
 };
 
 export const deleteCategory = async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const category = await prisma.category.delete({
-    where: { id: Number(id) },
-  });
+  const { result: category } = await measureAsync(
+    "db.category.delete",
+    async () => {
+      return await prisma.category.delete({
+        where: { id: Number(id) },
+      });
+    },
+  );
 
+  logger.info(`Category deleted: ID ${id}`);
   return res.status(200).json(category);
 };
 
 export const getCategories = async (req: Request, res: Response) => {
-  const categories = await prisma.category.findMany();
+  const { result: categories } = await measureAsync(
+    "db.category.findMany",
+    async () => {
+      return await prisma.category.findMany();
+    },
+  );
 
   return res.status(200).json(categories);
 };

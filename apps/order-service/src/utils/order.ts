@@ -1,21 +1,36 @@
 import { Order } from "@repo/order-db";
 import { OrderType } from "@repo/types";
 import { producer } from "./kafka";
+import { createLogger, captureError, measureAsync } from "@repo/monitoring";
+
+const logger = createLogger("order-service:order-creator");
 
 export const createOrder = async (order: OrderType) => {
   const newOrder = new Order(order);
 
   try {
-    const order = await newOrder.save();
-    producer.send("order.created", {
+    const { result: savedOrder } = await measureAsync(
+      "db.order.save",
+      async () => {
+        return await newOrder.save();
+      },
+    );
+
+    logger.info(`Order created in DB with ID: ${savedOrder._id}`);
+
+    await producer.send("order.created", {
       value: {
-        email: order.email,
-        amount: order.amount,
-        status: order.status,
+        email: savedOrder.email,
+        amount: savedOrder.amount,
+        status: savedOrder.status,
       },
     });
   } catch (error) {
-    console.log(error);
+    captureError(error, {
+      serviceName: "order-service",
+      logger,
+      context: "createOrder",
+    });
     throw error;
   }
 };

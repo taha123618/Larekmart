@@ -8,6 +8,9 @@ import type {
   AnalyticsDailyChartType,
   AnalyticsEventType,
 } from "@repo/types";
+import { createLogger, captureError } from "@repo/monitoring";
+
+const logger = createLogger("analytic-service:metrics");
 
 // In-memory aggregates for rapid observation and resilience fallback
 const inMemoryMetrics = {
@@ -44,8 +47,8 @@ export const recordPayment = async (payload: PaymentSuccessfulType) => {
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  console.log(
-    `[Analytics] Payment Successful: User ${userId} paid $${amountInDollars.toFixed(2)} (${payload.products?.length || 0} items)`,
+  logger.info(
+    `[Payment] User ${userId} paid $${amountInDollars.toFixed(2)} (${payload.products?.length || 0} items)`,
   );
 
   if (getDbStatus()) {
@@ -74,10 +77,11 @@ export const recordPayment = async (payload: PaymentSuccessfulType) => {
         [amountInDollars],
       );
     } catch (err) {
-      console.error(
-        "[Analytics DB Error] Failed to persist payment event:",
-        err,
-      );
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordPayment.dbInsert",
+      });
     }
   }
 };
@@ -99,8 +103,8 @@ export const recordOrder = async (payload: OrderCreatedType) => {
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  console.log(
-    `[Analytics] Order Created: Email ${payload.email} for $${amountInDollars.toFixed(2)} (Status: ${payload.status})`,
+  logger.info(
+    `[Order] Email ${payload.email} for $${amountInDollars.toFixed(2)} (Status: ${payload.status})`,
   );
 
   if (getDbStatus()) {
@@ -124,7 +128,11 @@ export const recordOrder = async (payload: OrderCreatedType) => {
              updated_at = CURRENT_TIMESTAMP`,
       );
     } catch (err) {
-      console.error("[Analytics DB Error] Failed to persist order event:", err);
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordOrder.dbInsert",
+      });
     }
   }
 };
@@ -144,9 +152,7 @@ export const recordUserSignup = async (payload: UserCreatedType) => {
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  console.log(
-    `[Analytics] User Created: ${payload.username} (${payload.email})`,
-  );
+  logger.info(`[User Signup] ${payload.username} (${payload.email})`);
 
   if (getDbStatus()) {
     try {
@@ -168,7 +174,11 @@ export const recordUserSignup = async (payload: UserCreatedType) => {
              updated_at = CURRENT_TIMESTAMP`,
       );
     } catch (err) {
-      console.error("[Analytics DB Error] Failed to persist user event:", err);
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordUserSignup.dbInsert",
+      });
     }
   }
 };
@@ -188,8 +198,8 @@ export const recordProductCreated = async (payload: StripeProductType) => {
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  console.log(
-    `[Analytics] Product Created: ${payload.name} (ID: ${payload.id}, Price: $${payload.price})`,
+  logger.info(
+    `[Product Created] ${payload.name} (ID: ${payload.id}, Price: $${payload.price})`,
   );
 
   if (getDbStatus()) {
@@ -213,10 +223,11 @@ export const recordProductCreated = async (payload: StripeProductType) => {
              updated_at = CURRENT_TIMESTAMP`,
       );
     } catch (err) {
-      console.error(
-        "[Analytics DB Error] Failed to persist product event:",
-        err,
-      );
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordProductCreated.dbInsert",
+      });
     }
   }
 };
@@ -236,7 +247,7 @@ export const recordProductDeleted = async (productId: number | string) => {
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  console.log(`[Analytics] Product Deleted: ID ${productId}`);
+  logger.info(`[Product Deleted] ID ${productId}`);
 
   if (getDbStatus()) {
     try {
@@ -250,10 +261,11 @@ export const recordProductDeleted = async (productId: number | string) => {
         ],
       );
     } catch (err) {
-      console.error(
-        "[Analytics DB Error] Failed to persist product delete event:",
-        err,
-      );
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordProductDeleted.dbInsert",
+      });
     }
   }
 };
@@ -288,10 +300,11 @@ export const getDailyAnalytics = async (
         total_products_created: Number(row.total_products_created),
       }));
     } catch (error) {
-      console.error(
-        "[Analytics DB Error] Failed to fetch daily analytics:",
-        error,
-      );
+      captureError(error, {
+        serviceName: "analytic-service",
+        logger,
+        context: "getDailyAnalytics",
+      });
     }
   }
 
@@ -333,10 +346,11 @@ export const getRecentEvents = async (
         created_at: row.created_at,
       }));
     } catch (error) {
-      console.error(
-        "[Analytics DB Error] Failed to fetch recent events:",
-        error,
-      );
+      captureError(error, {
+        serviceName: "analytic-service",
+        logger,
+        context: "getRecentEvents",
+      });
     }
   }
 

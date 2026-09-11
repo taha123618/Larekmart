@@ -1,10 +1,36 @@
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
-import { clerkMiddleware, getAuth } from "@clerk/express";
+import { clerkMiddleware } from "@clerk/express";
 import { shouldBeUser } from "./middleware/authMiddleware.js";
-import productRouter from "./routes/product.route";
-import categoryRouter from "./routes/category.route";
+import productRouter from "./routes/product.route.js";
+import categoryRouter from "./routes/category.route.js";
 import { consumer, producer } from "./utils/kafka.js";
+import { prisma } from "@repo/product-db";
+import {
+  createLogger,
+  createHealthRegistry,
+  createMetricsRegistry,
+  createHttpMonitor,
+  createMemoryCheck,
+  createDbCheck,
+  captureError,
+} from "@repo/monitoring";
+
+const logger = createLogger("product-service");
+const metrics = createMetricsRegistry("product-service");
+const httpMonitor = createHttpMonitor(logger, metrics);
+const health = createHealthRegistry("product-service", "1.0.0");
+
+// Register health checks
+health.register("memory", createMemoryCheck(512 * 1024 * 1024), {
+  critical: false,
+});
+health.register(
+  "postgres",
+  createDbCheck("PostgreSQL", () => prisma.$queryRaw`SELECT 1`),
+  { critical: true },
+);
+
 const app = express();
 app.use(
   cors({
@@ -15,12 +41,32 @@ app.use(
 app.use(express.json());
 app.use(clerkMiddleware());
 
-app.get("/health", (req: Request, res: Response) => {
-  return res.status(200).json({
-    status: "ok",
-    uptime: process.uptime(),
-    timestamp: Date.now(),
+// HTTP Request Monitoring Middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path === "/health" || req.path === "/metrics") {
+    return next();
+  }
+  const hook = httpMonitor.onRequestStart({
+    method: req.method,
+    url: req.path,
   });
+  res.on("finish", () => {
+    hook.onRequestEnd(res.statusCode);
+  });
+  next();
+});
+
+// Health check endpoint
+app.get("/health", async (req: Request, res: Response) => {
+  const report = await health.runChecks();
+  const statusCode = report.status === "unhealthy" ? 503 : 200;
+  return res.status(statusCode).json(report);
+});
+
+// Prometheus Metrics endpoint
+app.get("/metrics", (req: Request, res: Response) => {
+  res.setHeader("Content-Type", "text/plain; version=0.0.4");
+  return res.send(metrics.toPrometheus());
 });
 
 app.get("/test", shouldBeUser, (req, res) => {
@@ -30,21 +76,25 @@ app.get("/test", shouldBeUser, (req, res) => {
 app.use("/products", productRouter);
 app.use("/categories", categoryRouter);
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.log(err);
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+  const formatted = captureError(err, {
+    serviceName: "product-service",
+    logger,
+    route: req.url,
+  });
   return res
-    .status(err.status || 500)
-    .json({ message: err.message || "Inter Server Error!" });
+    .status(formatted.statusCode || 500)
+    .json({ message: formatted.message || "Internal Server Error!" });
 });
 
 const start = async () => {
   try {
-    Promise.all([await producer.connect(), await consumer.connect()]);
+    await Promise.all([producer.connect(), consumer.connect()]);
     app.listen(8000, () => {
-      console.log("Product service is running on 8000");
+      logger.info("Product service is running on port 8000");
     });
   } catch (error) {
-    console.log(error);
+    logger.fatal("Failed to initialize product-service", error);
     process.exit(1);
   }
 };

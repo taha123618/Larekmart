@@ -2,7 +2,9 @@ import { Hono } from "hono";
 import Stripe from "stripe";
 import stripe from "../utils/stripe";
 import { producer } from "../utils/kafka";
+import { createLogger, captureError } from "@repo/monitoring";
 
+const logger = createLogger("payment-service:webhooks");
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 const webhookRoute = new Hono();
 
@@ -23,9 +25,15 @@ webhookRoute.post("/stripe", async (c) => {
   try {
     event = stripe.webhooks.constructEvent(body, sig!, webhookSecret);
   } catch (error) {
-    console.log("Webhook verification failed!");
+    captureError(error, {
+      serviceName: "payment-service",
+      logger,
+      context: "stripe.webhook.signatureVerification",
+    });
     return c.json({ error: "Webhook verification failed!" }, 400);
   }
+
+  logger.info(`Received Stripe webhook event: ${event.type}`);
 
   switch (event.type) {
     case "checkout.session.completed":
@@ -34,7 +42,7 @@ webhookRoute.post("/stripe", async (c) => {
       const lineItems = await stripe.checkout.sessions.listLineItems(
         session.id,
       );
-      // TODO: CREATE ORDER
+
       producer.send("payment.successful", {
         value: {
           userId: session.client_reference_id,
@@ -48,7 +56,9 @@ webhookRoute.post("/stripe", async (c) => {
           })),
         },
       });
-
+      logger.info(
+        `Dispatched payment.successful event for session: ${session.id}`,
+      );
       break;
 
     default:

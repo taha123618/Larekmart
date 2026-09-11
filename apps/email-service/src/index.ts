@@ -1,12 +1,16 @@
-import sendMail from "./utils/mailer";
+import sendMail from "./utils/mailer.js";
 import { createConsumer, createKafkaClient } from "@repo/kafka";
+import { createLogger } from "@repo/monitoring";
 
+const logger = createLogger("email-service");
 const kafka = createKafkaClient("email-service");
 const consumer = createConsumer(kafka, "email-service");
 
 const start = async () => {
   try {
     await consumer.connect();
+    logger.info("Email service connected to Kafka");
+
     await consumer.subscribe([
       {
         topicName: "user.created",
@@ -14,10 +18,11 @@ const start = async () => {
           const { email, username } = message.value;
 
           if (email) {
+            logger.info(`Sending welcome email to ${email}`);
             await sendMail({
               email,
-              subject: "Welcome to E-commerce App",
-              text: `Welcome ${username}. You account has been created!`,
+              subject: "Welcome to Larekmart",
+              text: `Welcome ${username}. Your account has been created!`,
             });
           }
         },
@@ -28,17 +33,18 @@ const start = async () => {
           const { email, amount, status } = message.value;
 
           if (email) {
+            logger.info(`Sending order confirmation receipt to ${email}`);
             await sendMail({
               email,
-              subject: "Order has been created",
-              text: `Hello! Your order: Amount: ${amount / 100}, Status: ${status}`,
+              subject: "Order Confirmation - Larekmart",
+              text: `Hello! Your order: Amount: $${(amount / 100).toFixed(2)}, Status: ${status}`,
             });
           }
         },
       },
     ]);
   } catch (error) {
-    console.log(error);
+    logger.fatal("Email service consumer error", error);
   }
 };
 

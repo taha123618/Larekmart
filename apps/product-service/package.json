@@ -16,7 +16,8 @@
     "cors": "^2.8.5",
     "express": "^5.0.3",
     "@repo/product-db": "workspace:*",
-    "@repo/kafka": "workspace:*"
+    "@repo/kafka": "workspace:*",
+    "@repo/monitoring": "workspace:*"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

@@ -3,25 +3,40 @@ import { shouldBeAdmin, shouldBeUser } from "../middleware/authMiddleware";
 import { Order } from "@repo/order-db";
 import { startOfMonth, subMonths } from "date-fns";
 import { OrderChartType } from "@repo/types";
+import { createLogger, measureAsync } from "@repo/monitoring";
+
+const logger = createLogger("order-service:routes");
 
 export const orderRoute = async (fastify: FastifyInstance) => {
   fastify.get(
     "/user-orders",
     { preHandler: shouldBeUser },
     async (request, reply) => {
-      const orders = await Order.find({ userId: request.userId });
+      const { result: orders } = await measureAsync(
+        "db.order.findUserOrders",
+        async () => {
+          return await Order.find({ userId: request.userId });
+        },
+      );
       return reply.send(orders);
     },
   );
+
   fastify.get(
     "/orders",
     { preHandler: shouldBeAdmin },
     async (request, reply) => {
       const { limit } = request.query as { limit: number };
-      const orders = await Order.find().limit(limit).sort({ createdAt: -1 });
+      const { result: orders } = await measureAsync(
+        "db.order.findAdminOrders",
+        async () => {
+          return await Order.find().limit(limit).sort({ createdAt: -1 });
+        },
+      );
       return reply.send(orders);
     },
   );
+
   fastify.get(
     "/order-chart",
     { preHandler: shouldBeAdmin },
@@ -29,47 +44,44 @@ export const orderRoute = async (fastify: FastifyInstance) => {
       const now = new Date();
       const sixMonthsAgo = startOfMonth(subMonths(now, 5));
 
-      // { month: "April", total: 173, successful: 100 }
-
-      const raw = await Order.aggregate([
-        {
-          $match: {
-            createdAt: { $gte: sixMonthsAgo, $lte: now },
-          },
-        },
-        {
-          $group: {
-            _id: {
-              year: { $year: "$createdAt" },
-              month: { $month: "$createdAt" },
-            },
-            total: { $sum: 1 },
-            successful: {
-              $sum: {
-                $cond: [{ $eq: ["$status", "success"] }, 1, 0],
-                // {
-                //   "year":2025,
-                //   "month":9,
-                //   "total":100,
-                //   "successful":72
-                // }
+      const { result: raw } = await measureAsync(
+        "db.order.aggregateChart",
+        async () => {
+          return await Order.aggregate([
+            {
+              $match: {
+                createdAt: { $gte: sixMonthsAgo, $lte: now },
               },
             },
-          },
+            {
+              $group: {
+                _id: {
+                  year: { $year: "$createdAt" },
+                  month: { $month: "$createdAt" },
+                },
+                total: { $sum: 1 },
+                successful: {
+                  $sum: {
+                    $cond: [{ $eq: ["$status", "success"] }, 1, 0],
+                  },
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                year: "$_id.year",
+                month: "$_id.month",
+                total: 1,
+                successful: 1,
+              },
+            },
+            {
+              $sort: { year: 1, month: 1 },
+            },
+          ]);
         },
-        {
-          $project: {
-            _id: 0,
-            year: "$_id.year",
-            month: "$_id.month",
-            total: 1,
-            successful: 1,
-          },
-        },
-        {
-          $sort: { year: 1, month: 1 },
-        },
-      ]);
+      );
 
       const monthNames = [
         "January",
@@ -94,7 +106,7 @@ export const orderRoute = async (fastify: FastifyInstance) => {
         const month = d.getMonth() + 1;
 
         const match = raw.find(
-          (item) => item.year === year && item.month === month,
+          (item: any) => item.year === year && item.month === month,
         );
 
         results.push({
@@ -104,6 +116,7 @@ export const orderRoute = async (fastify: FastifyInstance) => {
         });
       }
 
+      logger.debug("Order chart generated successfully");
       return reply.send(results);
     },
   );

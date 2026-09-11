@@ -72,6 +72,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 ├── packages/
 │   ├── kafka/             # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── types/             # @repo/types    — shared types, Zod schemas, event contracts
+│   ├── monitoring/        # @repo/monitoring — structured logging, health checks, metrics & telemetry
 │   ├── product-db/        # @repo/product-db — Prisma client & schema (PostgreSQL)
 │   ├── order-db/          # @repo/order-db  — Mongoose connection & Order model (MongoDB)
 │   ├── eslint-config/     # @repo/eslint-config — shared ESLint flat configs
@@ -105,10 +106,11 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | **`@repo/kafka`**             | Kafka client wrapper (`createKafkaClient`, `createProducer`, `createConsumer`) and local 3-broker compose. | All backend services                         |
 | **`@repo/types`**             | Central contract package: API domain types, Kafka payload interfaces, and shared Zod form schemas.         | All applications & packages                  |
+| **`@repo/monitoring`**        | Framework-agnostic structured logging, health checks, metrics, and performance telemetry.                  | All applications & packages                  |
 | **`@repo/product-db`**        | PostgreSQL catalog persistence via Prisma schema and generated `prisma` client singleton.                  | `product-service`, `@repo/types` (type-only) |
 | **`@repo/order-db`**          | MongoDB persistence via Mongoose `Order` model and connection helper.                                      | `order-service`, `@repo/types` (type-only)   |
 | **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                   | `admin`, `client`                            |
-| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).       | All 14 workspaces                            |
+| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).       | All 15 workspaces                            |
 
 ---
 

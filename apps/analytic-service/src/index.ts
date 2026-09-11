@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { clerkMiddleware } from "@clerk/express";
 import { createConsumer, createKafkaClient } from "@repo/kafka";
-import { initAnalyticsDB } from "./db.js";
+import { initAnalyticsDB, pool } from "./db.js";
 import analyticsRouter from "./routes/analytics.route.js";
 import {
   recordPayment,
@@ -18,6 +18,31 @@ import type {
   UserCreatedType,
   StripeProductType,
 } from "@repo/types";
+import {
+  createLogger,
+  createHealthRegistry,
+  createMetricsRegistry,
+  createHttpMonitor,
+  createMemoryCheck,
+  createDbCheck,
+  captureError,
+} from "@repo/monitoring";
+
+const logger = createLogger("analytic-service");
+const metrics = createMetricsRegistry("analytic-service");
+const httpMonitor = createHttpMonitor(logger, metrics);
+const health = createHealthRegistry("analytic-service", "1.0.0");
+
+health.register("memory", createMemoryCheck(512 * 1024 * 1024), {
+  critical: false,
+});
+health.register(
+  "postgres",
+  createDbCheck("PostgreSQL", async () => {
+    await pool.query("SELECT 1");
+  }),
+  { critical: true },
+);
 
 const app = express();
 const PORT = process.env.PORT || 8004;
@@ -32,25 +57,47 @@ app.use(
 app.use(express.json());
 app.use(clerkMiddleware());
 
-// Health check
-app.get("/health", (req: Request, res: Response) => {
-  return res.status(200).json({
-    status: "ok",
-    service: "analytic-service",
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
+// HTTP Request Monitoring Middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path === "/health" || req.path === "/metrics") {
+    return next();
+  }
+  const hook = httpMonitor.onRequestStart({
+    method: req.method,
+    url: req.path,
   });
+  res.on("finish", () => {
+    hook.onRequestEnd(res.statusCode);
+  });
+  next();
+});
+
+// Health check
+app.get("/health", async (req: Request, res: Response) => {
+  const report = await health.runChecks();
+  const statusCode = report.status === "unhealthy" ? 503 : 200;
+  return res.status(statusCode).json(report);
+});
+
+// Prometheus Metrics endpoint
+app.get("/metrics", (req: Request, res: Response) => {
+  res.setHeader("Content-Type", "text/plain; version=0.0.4");
+  return res.send(metrics.toPrometheus());
 });
 
 // Mount analytics routes
 app.use("/analytics", analyticsRouter);
 
 // Global error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error("[Analytic Service HTTP Error]:", err);
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+  const formatted = captureError(err, {
+    serviceName: "analytic-service",
+    logger,
+    route: req.url,
+  });
   return res
-    .status(err.status || 500)
-    .json({ message: err.message || "Internal Server Error" });
+    .status(formatted.statusCode || 500)
+    .json({ message: formatted.message || "Internal Server Error" });
 });
 
 // Kafka client & consumer setup
@@ -145,23 +192,23 @@ const start = async () => {
 
     // 4. Start HTTP Server
     app.listen(PORT, () => {
-      console.log(`Analytic Service HTTP API is running on port ${PORT}`);
+      logger.info(`Analytic Service HTTP API is running on port ${PORT}`);
     });
 
-    console.log(
+    logger.info(
       "Analytic Service is running and actively listening to Kafka event streams.",
     );
 
     // Periodic heartbeat log of accumulated metrics
     setInterval(() => {
       const snapshot = getMetricsSnapshot();
-      console.log(
+      logger.info(
         `[Analytics Heartbeat] Revenue: $${snapshot.totalRevenue.toFixed(2)} | Orders: ${snapshot.totalOrders} | Signups: ${snapshot.totalSignups} | Products: +${snapshot.totalProductsCreated}/-${snapshot.totalProductsDeleted}`,
       );
     }, 60000);
   } catch (error) {
-    console.error(
-      "Analytic Service encountered a critical startup error:",
+    logger.fatal(
+      "Analytic Service encountered a critical startup error",
       error,
     );
   }

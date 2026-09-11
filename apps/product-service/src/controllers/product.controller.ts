@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import { prisma, Prisma } from "@repo/product-db";
 import { producer } from "../utils/kafka";
 import { StripeProductType } from "@repo/types";
+import { createLogger, measureAsync } from "@repo/monitoring";
+
+const logger = createLogger("product-service:controller");
 
 export const createProduct = async (req: Request, res: Response) => {
   const data: Prisma.ProductCreateInput = req.body;
@@ -23,7 +26,14 @@ export const createProduct = async (req: Request, res: Response) => {
       .json({ message: "Missing images for colors!", missingColors });
   }
 
-  const product = await prisma.product.create({ data });
+  const { result: product } = await measureAsync(
+    "db.product.create",
+    async () => {
+      return await prisma.product.create({ data });
+    },
+  );
+
+  logger.info(`Product created successfully with ID: ${product.id}`);
 
   const stripeProduct: StripeProductType = {
     id: product.id.toString(),
@@ -39,21 +49,33 @@ export const updateProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
   const data: Prisma.ProductUpdateInput = req.body;
 
-  const updatedProduct = await prisma.product.update({
-    where: { id: Number(id) },
-    data,
-  });
+  const { result: updatedProduct } = await measureAsync(
+    "db.product.update",
+    async () => {
+      return await prisma.product.update({
+        where: { id: Number(id) },
+        data,
+      });
+    },
+  );
 
+  logger.info(`Product updated successfully with ID: ${id}`);
   return res.status(200).json(updatedProduct);
 };
 
 export const deleteProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const deletedProduct = await prisma.product.delete({
-    where: { id: Number(id) },
-  });
+  const { result: deletedProduct } = await measureAsync(
+    "db.product.delete",
+    async () => {
+      return await prisma.product.delete({
+        where: { id: Number(id) },
+      });
+    },
+  );
 
+  logger.info(`Product deleted with ID: ${id}`);
   producer.send("product.deleted", { value: Number(id) });
 
   return res.status(200).json(deletedProduct);
@@ -66,32 +88,33 @@ export const getProducts = async (req: Request, res: Response) => {
     switch (sort) {
       case "asc":
         return { price: Prisma.SortOrder.asc };
-        break;
       case "desc":
         return { price: Prisma.SortOrder.desc };
-        break;
       case "oldest":
         return { createdAt: Prisma.SortOrder.asc };
-        break;
       default:
         return { createdAt: Prisma.SortOrder.desc };
-        break;
     }
   })();
 
-  const products = await prisma.product.findMany({
-    where: {
-      category: {
-        slug: category as string,
-      },
-      name: {
-        contains: search as string,
-        mode: "insensitive",
-      },
+  const { result: products } = await measureAsync(
+    "db.product.findMany",
+    async () => {
+      return await prisma.product.findMany({
+        where: {
+          category: {
+            slug: category as string,
+          },
+          name: {
+            contains: search as string,
+            mode: "insensitive",
+          },
+        },
+        orderBy,
+        take: limit ? Number(limit) : undefined,
+      });
     },
-    orderBy,
-    take: limit ? Number(limit) : undefined,
-  });
+  );
 
   res.status(200).json(products);
 };
@@ -99,9 +122,14 @@ export const getProducts = async (req: Request, res: Response) => {
 export const getProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const product = await prisma.product.findUnique({
-    where: { id: Number(id) },
-  });
+  const { result: product } = await measureAsync(
+    "db.product.findUnique",
+    async () => {
+      return await prisma.product.findUnique({
+        where: { id: Number(id) },
+      });
+    },
+  );
 
   return res.status(200).json(product);
 };

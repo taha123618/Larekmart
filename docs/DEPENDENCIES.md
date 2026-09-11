@@ -34,19 +34,20 @@ apps/analytic-service ┬─▶ @repo/kafka
                       └─▶ pg
 
 apps/admin, apps/client ─▶ @repo/eslint-config, @repo/typescript-config
-all workspaces          ─▶ @repo/typescript-config
+all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 ```
 
 ## Package roles
 
-| Package                   | Kind         | Depends on                                  | Public surface                                              |
-| ------------------------- | ------------ | ------------------------------------------- | ----------------------------------------------------------- |
-| `@repo/kafka`             | leaf utility | `kafkajs`                                   | `createKafkaClient`, `createProducer`, `createConsumer`     |
-| `@repo/types`             | contract     | `@repo/product-db`, `@repo/order-db`, `zod` | API/domain types, Zod schemas, constants                    |
-| `@repo/product-db`        | persistence  | `@prisma/client`                            | `prisma` client + generated Prisma types                    |
-| `@repo/order-db`          | persistence  | `mongoose`                                  | `Order`, `OrderStatus`, `OrderSchemaType`, `connectOrderDB` |
-| `@repo/eslint-config`     | config       | eslint plugins                              | `base`, `next-js`, `react-internal`                         |
-| `@repo/typescript-config` | config       | —                                           | `base.json`, `nextjs.json`, `react-library.json`            |
+| Package                   | Kind         | Depends on                                  | Public surface                                                                  |
+| ------------------------- | ------------ | ------------------------------------------- | ------------------------------------------------------------------------------- |
+| **`@repo/monitoring`**    | leaf utility | —                                           | `createLogger`, `createHealthRegistry`, `createMetricsRegistry`, `measureAsync` |
+| `@repo/kafka`             | leaf utility | `kafkajs`                                   | `createKafkaClient`, `createProducer`, `createConsumer`                         |
+| `@repo/types`             | contract     | `@repo/product-db`, `@repo/order-db`, `zod` | API/domain types, Zod schemas, constants                                        |
+| `@repo/product-db`        | persistence  | `@prisma/client`                            | `prisma` client + generated Prisma types                                        |
+| `@repo/order-db`          | persistence  | `mongoose`                                  | `Order`, `OrderStatus`, `OrderSchemaType`, `connectOrderDB`                     |
+| `@repo/eslint-config`     | config       | eslint plugins                              | `base`, `next-js`, `react-internal`                                             |
+| `@repo/typescript-config` | config       | —                                           | `base.json`, `nextjs.json`, `react-library.json`                                |
 
 ## Boundary rules
 
