@@ -1,0 +1,25 @@
+---
+description: Backend service rules for product, order, payment, auth, and email services
+globs: apps/*-service/**
+---
+
+# Backend Services
+
+Per-service detail: `apps/<service>/AGENTS.md`. Shared rules:
+
+- **Frameworks are fixed:** product-service & auth-service = Express 5; order-service =
+  Fastify 5; payment-service = Hono; email-service = headless Kafka worker. Do not
+  introduce a different framework.
+- **ESM:** `"type": "module"`. Local imports follow existing convention (explicit `.js` extensions).
+- **Auth middleware first.** Use `shouldBeUser` / `shouldBeAdmin`; return `401` when
+  unauthenticated and `403` when not an admin. Never leave a mutating route unguarded.
+- **Data access via packages:** `@repo/product-db` (Prisma) or `@repo/order-db`
+  (Mongoose). Never create ad-hoc database clients or access another service's database.
+- **Events via `@repo/kafka` only**, using the `{ value: payload }` envelope. Handlers
+  must catch and log errors so the consumer keeps running.
+- **Env from `process.env`**, documented in the workspace `.env.example`. No hardcoded
+  secrets or connection strings (local Kafka broker list is in `@repo/kafka`).
+- Add/update the topic contract in `docs/EVENT-DRIVEN-ARCHITECTURE.md` and in
+  `@repo/types` when payloads change.
+
+Run `pnpm --filter <service> check-types` before finishing.

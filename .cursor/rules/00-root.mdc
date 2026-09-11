@@ -1,0 +1,30 @@
+---
+description: Larekmart monorepo-wide rules and instruction hierarchy
+alwaysApply: true
+---
+
+# Larekmart — Root Rules
+
+The canonical instructions are in [`AGENTS.md`](../../AGENTS.md). This rule is a
+mirror for Cursor; when they disagree, `AGENTS.md` wins.
+
+## Instruction Hierarchy
+1. **Root Rules**: `AGENTS.md`
+2. **Global Skills**: `.agents/skills/<skill>/SKILL.md`
+3. **Workspace Rules**: `apps/*/AGENTS.md`, `packages/*/AGENTS.md`
+4. **Workspace Skills**: `<workspace>/.agents/skills/<skill>/SKILL.md`
+
+## Golden Rules
+- **Monorepo:** pnpm 9 + Turborepo. Use `pnpm` and `pnpm --filter <workspace>` — never npm or yarn.
+- **Boundaries:** apps depend on packages; packages never depend on apps. Never import one app's code into another.
+- **Contracts:** shared types and Zod schemas live in `@repo/types`.
+- **Service integration is Kafka-only.** No direct HTTP calls between backend services.
+  Producers send `{ value: payload }`; consumers read `message.value`.
+- **Auth is Clerk.** Backends gate routes with `shouldBeUser` / `shouldBeAdmin`; admin
+  requires `sessionClaims.metadata.role === "admin"`.
+- **Never** commit secrets or `.env` files, edit `packages/product-db/generated/**`, or
+  weaken TypeScript strictness.
+- **Scope your instructions:** read the `AGENTS.md` in the workspace you are editing
+  (`apps/*/AGENTS.md`, `packages/*/AGENTS.md`) before making changes.
+- **Verify:** `pnpm check-types` always; add `pnpm build` (Next apps, payment-service)
+  and `pnpm lint` (admin, client) when relevant. No test runner is configured.

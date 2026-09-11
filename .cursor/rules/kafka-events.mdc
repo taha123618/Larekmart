@@ -1,0 +1,22 @@
+---
+description: Kafka producer/consumer usage and event contract conventions
+globs: packages/kafka/**,apps/*/src/utils/kafka.ts,apps/*/src/utils/subscriptions.ts
+---
+
+# Kafka & Event Contracts
+
+See `packages/kafka/AGENTS.md` and `docs/EVENT-DRIVEN-ARCHITECTURE.md`.
+
+- Use `@repo/kafka` helpers (`createKafkaClient`, `createProducer`, `createConsumer`);
+  do not instantiate `kafkajs` directly in apps.
+- One client per service, named after the service. One consumer group per service
+  (`*-group`, or service name for `email-service`).
+- **Envelope convention:** publish `{ value: <payload> }`; handlers receive the parsed
+  message and read `message.value`.
+- Subscriptions are declared as `[{ topicName, topicHandler }]` — a topic appears once,
+  and its handler must be idempotent-friendly and error-safe.
+- `fromBeginning: true` is the current behavior; be aware replays re-deliver old
+  messages to new consumer groups.
+- **Topic naming:** `<entity>.<past-tense-event>` (`product.created`, `payment.successful`, `user.created`, `order.created`).
+- Changing a payload is a breaking contract change: update the producer, every
+  consumer, `@repo/types`, and the docs together.

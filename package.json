@@ -1,0 +1,29 @@
+{
+  "name": "ecom",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,js,json}\"",
+    "check-types": "turbo run check-types",
+    "install:all": "pnpm install",
+    "env:setup": "node scripts/setup-env.js",
+    "skills:sync": "node scripts/sync-skills.js",
+    "setup": "pnpm install && node scripts/setup-env.js && node scripts/sync-skills.js"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.6",
+    "typescript": "5.9.2"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

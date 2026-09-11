@@ -1,0 +1,22 @@
+---
+description: Frontend rules for Next.js storefront and admin dashboard
+globs: apps/client/**,apps/admin/**
+---
+
+# Frontend (client, admin)
+
+Detailed rules: `apps/client/AGENTS.md`, `apps/admin/AGENTS.md` and their skills.
+
+- **App Router + React 19:** Server Components by default; add `"use client"` only when
+  you need state, effects, event handlers, or browser APIs.
+- **Auth:** server components use `auth()` from `@clerk/nextjs/server` and attach
+  `Authorization: Bearer <token>`; client components use `useAuth().getToken()`.
+- **Service URLs:** always via `process.env.NEXT_PUBLIC_*_SERVICE_URL` — never hardcode hostnames.
+- **Admin Dashboard:** uses shadcn/ui (`src/components/ui`), TanStack Table for data grids,
+  and TanStack Query for mutations. Forms use `react-hook-form` + Zod schemas from `@repo/types`.
+- **Client Storefront:** uses `zustand` with `persist` for cart state, Zod + react-hook-form for forms,
+  and Stripe custom checkout UI via `@stripe/react-stripe-js`.
+- **Images:** always use `next/image`; remote hosts must be registered in `next.config.ts`.
+- **Styling:** Tailwind v4 utility classes and CSS variables in `src/app/globals.css`.
+
+Check `pnpm --filter <app> check-types` and `pnpm --filter <app> build` for the app you changed; run `pnpm lint` too.

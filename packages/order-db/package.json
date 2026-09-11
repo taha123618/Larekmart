@@ -1,0 +1,19 @@
+{
+  "name": "@repo/order-db",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^24.3.1",
+    "typescript": "^5.9.2"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "mongoose": "^8.18.1"
+  }
+}

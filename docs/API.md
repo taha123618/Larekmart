@@ -1,0 +1,161 @@
+# API Registry & Service Endpoints
+
+Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend services.
+
+## Service Ports & Protocols
+
+| Service            | Port   | Framework      | Auth Guard                         | Owner                        |
+| ------------------ | ------ | -------------- | ---------------------------------- | ---------------------------- |
+| `product-service`  | `8000` | Express 5      | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog   |
+| `order-service`    | `8001` | Fastify 5      | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics |
+| `payment-service`  | `8002` | Hono 4         | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks   |
+| `auth-service`     | `8003` | Express 5      | `shouldBeAdmin`                    | Admin User Management Proxy  |
+| `analytic-service` | `8004` | Express 5      | `shouldBeAdmin`                    | Analytics & KPI Aggregations |
+| `email-service`    | —      | Node.js Worker | None (Kafka only)                  | Transactional Email Dispatch |
+
+---
+
+## 1. Product Service (`:8000`)
+
+### `GET /products`
+
+- **Auth**: Public
+- **Query Params**: `category` (slug), `search` (name query), `sort` (`asc` | `desc`), `page`, `limit`
+- **Response**: `{ products: ProductType[], total: number }`
+
+### `GET /products/:id`
+
+- **Auth**: Public
+- **Response**: `ProductType`
+
+### `POST /products`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `ProductFormSchema`
+- **Side Effect**: Emits `product.created` Kafka event
+
+### `PUT /products/:id`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: Partial `ProductFormSchema`
+- **Response**: Updated `ProductType`
+
+### `DELETE /products/:id`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Side Effect**: Emits `product.deleted` Kafka event
+
+### `GET /categories`
+
+- **Auth**: Public
+- **Response**: `CategoryType[]`
+
+### `POST /categories`, `PUT /categories/:id`, `DELETE /categories/:id`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+
+### `GET /health`
+
+- **Response**: `{ status: "ok", uptime: number, timestamp: string }`
+
+---
+
+## 2. Order Service (`:8001`)
+
+### `GET /user-orders`
+
+- **Auth**: Authenticated User (`shouldBeUser`)
+- **Response**: `OrderType[]` for logged-in user
+
+### `GET /orders`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `limit` (number)
+- **Response**: `OrderType[]`
+
+### `GET /order-chart`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `OrderChartType[]` (6-month sales and revenue trends)
+
+### `GET /health`
+
+- **Response**: `{ status: "ok", uptime: number, timestamp: string }`
+
+---
+
+## 3. Payment Service (`:8002`)
+
+### `POST /sessions/create-checkout-session`
+
+- **Auth**: Authenticated User (`shouldBeUser`)
+- **Body**: `{ cart: CartItemType[] }`
+- **Response**: `{ clientSecret: string }`
+
+### `GET /sessions/:id`
+
+- **Auth**: Authenticated User (`shouldBeUser`)
+- **Response**: `{ status: string, customer_email: string }`
+
+### `POST /webhooks/stripe`
+
+- **Auth**: Stripe Webhook Signature (`stripe-signature` header)
+- **Side Effect**: Emits `payment.successful` Kafka event on `checkout.session.completed`
+
+### `GET /health`
+
+- **Response**: `{ status: "ok", uptime: number, timestamp: string }`
+
+---
+
+## 4. Auth Service (`:8003`)
+
+### `GET /users`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: Clerk user list array
+
+### `GET /users/:id`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: Clerk user object
+
+### `POST /users`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `UserFormSchema`
+- **Side Effect**: Emits `user.created` Kafka event
+
+### `DELETE /users/:id`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ message: "User deleted" }`
+
+### `GET /health`
+
+- **Response**: `{ status: "ok", uptime: number, timestamp: string }`
+
+---
+
+## 5. Analytic Service (`:8004`)
+
+### `GET /analytics/summary`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `AnalyticsSummaryType` (gross revenue, order counts, signups, products created/deleted)
+
+### `GET /analytics/daily-chart`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `days` (number, default: 30)
+- **Response**: `AnalyticsDailyChartType[]`
+
+### `GET /analytics/events`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `limit` (number, default: 20)
+- **Response**: `AnalyticsEventType[]`
+
+### `GET /health`
+
+- **Response**: `{ status: "ok", uptime: number, timestamp: string }`
