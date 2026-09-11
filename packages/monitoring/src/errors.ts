@@ -1,16 +1,13 @@
+import type { FormattedError, CaptureErrorOptions } from "@repo/types";
 import type { Logger } from "./logger.js";
 import type { MetricsRegistry } from "./metrics.js";
 
-export interface FormattedError {
-  name: string;
-  message: string;
-  code?: string | number;
-  statusCode?: number;
-  isOperational: boolean;
-  stack?: string;
-  details?: unknown;
-  timestamp: string;
+export interface CaptureErrorContext extends CaptureErrorOptions {
+  logger?: Logger;
+  metrics?: MetricsRegistry;
 }
+
+export type { FormattedError, CaptureErrorOptions };
 
 export class AppError extends Error {
   public readonly statusCode: number;
@@ -100,16 +97,7 @@ export function isOperationalError(err: unknown): boolean {
  */
 export function captureError(
   err: unknown,
-  context: {
-    serviceName?: string;
-    logger?: Logger;
-    metrics?: MetricsRegistry;
-    requestId?: string;
-    userId?: string;
-    route?: string;
-    context?: string;
-    metadata?: Record<string, unknown>;
-  } = {},
+  context: CaptureErrorContext = {},
 ): FormattedError {
   const formatted = formatError(err);
 

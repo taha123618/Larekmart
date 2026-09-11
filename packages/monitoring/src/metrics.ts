@@ -3,7 +3,7 @@ import type {
   MetricLabels,
   MetricRecord,
   MetricsSnapshot,
-} from "./types.js";
+} from "@repo/types";
 
 function labelsToKey(labels: MetricLabels): string {
   const keys = Object.keys(labels).sort();

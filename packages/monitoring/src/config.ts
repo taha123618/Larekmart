@@ -1,4 +1,4 @@
-import type { Environment, LogLevel, MonitoringConfig } from "./types.js";
+import type { Environment, LogLevel, MonitoringConfig } from "@repo/types";
 
 const VALID_LOG_LEVELS: readonly LogLevel[] = [
   "debug",

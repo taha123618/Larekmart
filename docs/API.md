@@ -58,6 +58,7 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 - **Auth**: Public
 - **Response**: Comprehensive multi-dependency health report:
+
 ```json
 {
   "service": "product-service",
@@ -65,8 +66,16 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
   "uptimeSeconds": 42,
   "timestamp": "2026-09-12T04:08:00.000Z",
   "checks": {
-    "memory": { "status": "healthy", "latencyMs": 0, "message": "Heap: 24.50 MB / 512.00 MB" },
-    "postgres": { "status": "healthy", "latencyMs": 4, "message": "PostgreSQL ping successful (4ms)" }
+    "memory": {
+      "status": "healthy",
+      "latencyMs": 0,
+      "message": "Heap: 24.50 MB / 512.00 MB"
+    },
+    "postgres": {
+      "status": "healthy",
+      "latencyMs": 4,
+      "message": "PostgreSQL ping successful (4ms)"
+    }
   },
   "summary": { "total": 2, "healthy": 2, "degraded": 0, "unhealthy": 0 }
 }
@@ -202,4 +211,3 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 - **Auth**: Public / Scraper
 - **Response**: Prometheus text exposition format
-

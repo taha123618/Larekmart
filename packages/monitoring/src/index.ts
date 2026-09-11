@@ -27,7 +27,7 @@ export {
   isOperationalError,
   captureError,
 } from "./errors.js";
-export type { FormattedError } from "./errors.js";
+export type { CaptureErrorContext } from "./errors.js";
 
 // Framework-agnostic Monitoring Hooks (HTTP, Kafka, DB)
 export {
@@ -58,4 +58,6 @@ export type {
   MonitoringConfig,
   HttpRequestContext,
   KafkaEventContext,
-} from "./types.js";
+  FormattedError,
+  CaptureErrorOptions,
+} from "@repo/types";

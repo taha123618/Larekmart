@@ -4,7 +4,7 @@ import type {
   HealthStatus,
   RegisteredHealthCheck,
   ServiceHealthReport,
-} from "./types.js";
+} from "@repo/types";
 
 const startTime = Date.now();
 

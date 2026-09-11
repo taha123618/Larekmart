@@ -4,7 +4,7 @@ import type {
   LogLevel,
   LogMetadata,
   LoggerOptions,
-} from "./types.js";
+} from "@repo/types";
 import { getMonitoringConfig } from "./config.js";
 
 const LEVEL_WEIGHTS: Record<LogLevel, number> = {

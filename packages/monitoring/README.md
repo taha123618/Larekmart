@@ -141,7 +141,6 @@ const snapshot = metrics.getSnapshot();
 
 // Format as standard Prometheus text for GET /metrics endpoint
 const prometheusText = metrics.toPrometheus();
-
 ```
 
 ### 4.4 Performance Timing

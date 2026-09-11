@@ -2,7 +2,7 @@ import type {
   MetricLabels,
   PerformanceRecord,
   PerformanceTimer,
-} from "./types.js";
+} from "@repo/types";
 import type { Logger } from "./logger.js";
 import type { MetricsRegistry } from "./metrics.js";
 

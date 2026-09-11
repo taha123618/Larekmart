@@ -1,4 +1,4 @@
-import type { HttpRequestContext, KafkaEventContext } from "./types.js";
+import type { HttpRequestContext, KafkaEventContext } from "@repo/types";
 import type { Logger } from "./logger.js";
 import type { MetricsRegistry } from "./metrics.js";
 

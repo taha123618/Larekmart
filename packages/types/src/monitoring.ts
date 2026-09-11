@@ -154,3 +154,23 @@ export interface KafkaEventContext {
   messageKey?: string;
   error?: Error;
 }
+
+export interface FormattedError {
+  name: string;
+  message: string;
+  code?: string | number;
+  statusCode?: number;
+  isOperational: boolean;
+  stack?: string;
+  details?: unknown;
+  timestamp: string;
+}
+
+export interface CaptureErrorOptions {
+  serviceName?: string;
+  requestId?: string;
+  userId?: string;
+  route?: string;
+  context?: string;
+  metadata?: Record<string, unknown>;
+}
