@@ -1,6 +1,6 @@
 # Larekmart
 
-**Larekmart** is a production-grade microservices e-commerce platform for clothing. It pairs a customer storefront and an admin management dashboard with five backend services communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for the product catalog and MongoDB for order management).
+**Larekmart** is a production-grade microservices e-commerce platform for clothing. It pairs a customer storefront and an admin management dashboard with **six backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for catalog and analytics, and MongoDB for order management).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, Node services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 
@@ -19,23 +19,37 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
   │   client     │            │    admin     │             │ auth-service │
   │  Next.js 15  │            │  Next.js 15  │             │   Express    │
   │   :3002      │            │   :3003      │             │   :8003      │
-  └───┬──────┬───┘            └───┬──────┬───┘             └──────┬───────┘
-      │      │                    │      │                        │
-      │      │      ┌─────────────┘      │                   user.created
-      │      │      │                    │                        │
-      │      │      │                    │                        ▼
-  ┌───▼──────▼──────▼────┐      ┌────────▼─────────┐       ┌──────────────┐
-  │   product-service    │      │  order-service   │       │email-service │
-  │  Express :8000       │      │  Fastify :8001   │       │  (worker)    │
-  │  Prisma → Postgres   │      │  Mongoose → Mongo│       └──────▲───────┘
-  └──────────┬───────────┘      └───────▲──────────┘              │
-             │ product.created/deleted  │ payment.successful      │
-             ▼                          │                         │ order.created
-      ┌───────────────┐           ┌─────┴──────────┐              │
-      │  Kafka cluster│◄──────────┤ payment-service├──────────────┘
-      │  (3 brokers)  │           │  Hono :8002    │
-      └───────────────┘           │  Stripe        │
-                                  └────────────────┘
+  └───┬──────┬───┘            └───┬───┬───┬──┘             └──────┬───────┘
+      │      │                    │   │   │                       │
+      │      │      ┌─────────────┘   │   │                  user.created
+      │      │      │                 │   │                       │
+      │      │      │                 │   │                       ▼
+  ┌───▼──────▼──────▼────┐            │   │                ┌──────────────┐
+  │   product-service    │            │   │                │email-service │
+  │  Express :8000       │            │   │                │  (worker)    │
+  │  Prisma → Postgres   │            │   │                └──────▲───────┘
+  └──────────┬───────────┘            │   │                       │
+             │ product.created/deleted│   │                       │ order.created
+             ▼                        │   │                       │
+      ┌───────────────┐               │   │                ┌──────┴──────────┐
+      │  Kafka cluster│◄──────────────┼───┼────────────────┤ payment-service │
+      │  (3 brokers)  │               │   │                │   Hono :8002    │
+      └───────┬───────┘               │   │                │   Stripe        │
+              │                       │   │                └─────────────────┘
+              │ all events            │   │
+              ▼                       │   │
+  ┌───────────────────────┐           │   │
+  │   analytic-service    │           │   │
+  │   Express :8004       │◄──────────┘   │ GET /analytics (KPIs & daily charts)
+  │   pg → PostgreSQL     │               │
+  └───────────────────────┘               │
+              ▲                           │
+              │ payment.successful        ▼
+              │                    ┌──────────────┐
+              └────────────────────┤ order-service│
+                                   │ Fastify :8001│
+                                   │ Mongoose     │
+                                   └──────────────┘
 ```
 
 > Cross-service communication is strictly asynchronous through Kafka events. Backend services never call each other over HTTP. See [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) for full topic contracts.
@@ -54,7 +68,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── payment-service/   # Hono + Stripe custom checkout & webhooks (:8002)
 │   ├── product-service/   # Express 5 + Prisma catalog (:8000)
 │   ├── email-service/     # Headless Kafka worker -> transactional email
-│   └── analytic-service/  # Headless Kafka worker -> metrics aggregation & PostgreSQL audit logs
+│   └── analytic-service/  # Express 5 + PostgreSQL analytics API & Kafka worker (:8004)
 ├── packages/
 │   ├── kafka/             # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── types/             # @repo/types    — shared types, Zod schemas, event contracts
@@ -72,16 +86,16 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 
 ## Applications
 
-| Application            | Technology Stack                                                                      | Port   | Purpose & Responsibilities                                                                                                      |
-| ---------------------- | ------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| **`client`**           | Next.js 15, React 19, Tailwind v4, Zustand, Stripe, Clerk                             | `3002` | Customer storefront: catalog search/filter, persistent cart, Stripe custom checkout, customer order history.                    |
-| **`admin`**            | Next.js 15, React 19, Tailwind v4, shadcn/ui, TanStack Table & Query, Recharts, Clerk | `3003` | Admin dashboard: product/category catalog management, user administration proxy, order trends analytics.                        |
-| **`product-service`**  | Express 5, Prisma, PostgreSQL, Kafka                                                  | `8000` | Product and category catalog CRUD; publishes `product.created` and `product.deleted`.                                           |
-| **`order-service`**    | Fastify 5, Mongoose, MongoDB, Kafka                                                   | `8001` | Consumes `payment.successful`, persists orders, serves user orders and 6-month sales analytics; publishes `order.created`.      |
-| **`payment-service`**  | Hono, Stripe SDK, Kafka                                                               | `8002` | Creates Stripe checkout sessions, verifies Stripe webhooks, mirrors catalog products to Stripe; publishes `payment.successful`. |
-| **`auth-service`**     | Express 5, Clerk Backend SDK, Kafka                                                   | `8003` | Admin user management proxying Clerk backend; publishes `user.created`.                                                         |
-| **`email-service`**    | Node.js (ESM), Nodemailer (Gmail OAuth2), Kafka                                       | —      | Headless worker consuming `user.created` (welcome) and `order.created` (order receipts).                                        |
-| **`analytic-service`** | Express 5, Node.js (ESM), PostgreSQL, Kafka                                           | `8004` | Hybrid worker & REST API aggregating cross-service events into real-time metrics & PostgreSQL audit logs.                       |
+| Application            | Technology Stack                                                                      | Port   | Purpose & Responsibilities                                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`client`**           | Next.js 15, React 19, Tailwind v4, Zustand, Stripe, Clerk                             | `3002` | Customer storefront: catalog search/filter, persistent cart, Stripe custom checkout, customer order history.                                    |
+| **`admin`**            | Next.js 15, React 19, Tailwind v4, shadcn/ui, TanStack Table & Query, Recharts, Clerk | `3003` | Admin dashboard: catalog management, user administration proxy, order trends, and real-time KPI cards & charts from `analytic-service`.         |
+| **`product-service`**  | Express 5, Prisma, PostgreSQL, Kafka                                                  | `8000` | Product and category catalog CRUD; publishes `product.created` and `product.deleted`.                                                           |
+| **`order-service`**    | Fastify 5, Mongoose, MongoDB, Kafka                                                   | `8001` | Consumes `payment.successful`, persists orders, serves user orders and 6-month sales analytics; publishes `order.created`.                      |
+| **`payment-service`**  | Hono, Stripe SDK, Kafka                                                               | `8002` | Creates Stripe checkout sessions, verifies Stripe webhooks, mirrors catalog products to Stripe; publishes `payment.successful`.                 |
+| **`auth-service`**     | Express 5, Clerk Backend SDK, Kafka                                                   | `8003` | Admin user management proxying Clerk backend; publishes `user.created`.                                                                         |
+| **`email-service`**    | Node.js (ESM), Nodemailer (Gmail OAuth2), Kafka                                       | —      | Headless worker consuming `user.created` (welcome) and `order.created` (order receipts).                                                        |
+| **`analytic-service`** | Express 5, Node.js (ESM), PostgreSQL (`pg`), Kafka                                    | `8004` | Consumes all event streams, updates live KPI counters, persists audit logs & daily rollups to PostgreSQL, and serves REST analytics to `admin`. |
 
 ---
 
