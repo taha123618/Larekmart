@@ -15,8 +15,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@prisma/client": "^6.16.0",
-    "@repo/monitoring": "workspace:*"
+    "@prisma/client": "^6.16.0"
   },
   "exports": {
     ".": "./src/index.ts"

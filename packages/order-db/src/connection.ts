@@ -1,7 +1,5 @@
 import mongoose from "mongoose";
-import { createLogger, captureError } from "@repo/monitoring";
 
-const logger = createLogger("order-db");
 let isConnected = false;
 
 export const connectOrderDB = async () => {
@@ -14,13 +12,9 @@ export const connectOrderDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URL);
     isConnected = true;
-    logger.info("Connected to MongoDB database successfully");
+    console.log("Connected to MongoDB database successfully");
   } catch (error) {
-    captureError(error, {
-      serviceName: "order-db",
-      logger,
-      context: "connectOrderDB",
-    });
+    console.error("MongoDB connection failed:", error);
     throw error;
   }
 };
