@@ -17,15 +17,17 @@ Monorepo-wide coding standards for Larekmart.
 
 ## Backend Service Standards
 
-1. **Framework Discipline**:
-   - `apps/product-service` & `apps/auth-service`: Express 5
-   - `apps/order-service`: Fastify 5
-   - `apps/payment-service`: Hono
+1. **Framework & Runtime Discipline**:
+   - `apps/product-service` & `apps/auth-service`: Express 5 (Node.js ESM)
+   - `apps/order-service`: Fastify 5 (Node.js ESM)
+   - `apps/payment-service`: Hono (Node.js ESM)
+   - `apps/analytic-service`: Express 5 (Node.js ESM)
    - `apps/email-service`: Headless Node.js worker
+   - `apps/notification-service`: Go 1.22+ (Chi, pgxpool, go-redis, Gorilla WebSocket, segmentio/kafka-go)
 2. **Error Responses**: HTTP endpoints return `{ message: string }` JSON with appropriate HTTP status codes (`400`, `401`, `403`, `404`, `500`).
 3. **Auth Guards**: Apply `shouldBeUser` or `shouldBeAdmin` to protected routes. Derive `userId` from the verified session claims, never from client request bodies.
-4. **Kafka Resiliency**: Wrap consumer handlers in `try/catch` blocks to prevent unhandled message exceptions from terminating the consumer loop.
-5. **Health Checks**: HTTP services expose `GET /health` returning `{ status: "ok", uptime: number, timestamp: string }`.
+4. **Kafka Resiliency**: Wrap consumer handlers in structured error handling (try/catch or Go recover) to prevent unhandled message exceptions from terminating the consumer loop. Always use the `{ value: payload }` envelope.
+5. **Health Checks**: HTTP services expose `GET /health` returning structured health JSON with dependency statuses (Postgres, Redis, MongoDB). HTTP services also expose `GET /ready` for deployment readiness probes.
 
 ## Frontend Standards
 

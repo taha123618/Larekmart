@@ -33,7 +33,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`
-   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`
+   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`
    - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `product-db`, `order-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.
@@ -83,6 +83,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `auth-service`            | `apps/auth-service`          | Express 5               | 8003 | Admin user management proxying Clerk                    |
 | `email-service`           | `apps/email-service`         | Node worker             | —    | Consumes Kafka events, sends email (no HTTP)            |
 | `analytic-service`        | `apps/analytic-service`      | Express 5               | 8004 | Consumes Kafka events, aggregates metrics & REST API    |
+| `notification-service`    | `apps/notification-service`  | Go 1.22 (Chi)           | 8005 | Multi-channel notifications, worker pool & WebSockets   |
 | `@repo/kafka`             | `packages/kafka`             | Library                 | —    | kafkajs wrapper + local Kafka compose                   |
 | `@repo/types`             | `packages/types`             | Library                 | —    | Shared types + Zod schemas (contract package)           |
 | `@repo/monitoring`        | `packages/monitoring`        | Library                 | —    | Logging, health checks, metrics & telemetry             |

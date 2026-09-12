@@ -12,8 +12,10 @@ The product catalog requires relational modeling, foreign key constraints (categ
 
 Adopt a database-per-service polyglot architecture:
 
-- `product-service` owns PostgreSQL persistence via Prisma (`@repo/product-db`).
-- `order-service` owns MongoDB persistence via Mongoose (`@repo/order-db`).
+- `product-service` owns PostgreSQL persistence via Prisma (`@repo/product-db`) for catalog & categories.
+- `order-service` owns MongoDB persistence via Mongoose (`@repo/order-db`) for flexible order documents.
+- `analytic-service` owns PostgreSQL persistence via `pg` for audit logs and aggregated KPI rollups.
+- `notification-service` owns PostgreSQL persistence via `pgxpool` for notifications, delivery audits, preferences, and templates, plus Redis for fast distributed deduplication.
 - Shared domain types are exposed via `@repo/types` to ensure type consistency without sharing runtime database connections.
 
 ## Consequences

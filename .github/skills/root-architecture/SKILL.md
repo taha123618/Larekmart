@@ -12,12 +12,14 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 
 - **Two frontends** own all user interaction and call backend services over HTTP with a
   Clerk Bearer token: `client` (storefront, :3002) and `admin` (dashboard, :3003).
-- **Four services** own business logic and each owns its data:
+- **Five HTTP backend services & two workers** own business logic and each owns its data:
   - `product-service` (:8000) — catalog, PostgreSQL via Prisma.
   - `order-service` (:8001) — orders, MongoDB via Mongoose.
   - `payment-service` (:8002) — Stripe; stateless.
   - `auth-service` (:8003) — Clerk user management; stateless.
-  - `email-service` — no HTTP; a Kafka worker that sends email.
+  - `analytic-service` (:8004) — KPI counters, PostgreSQL audit logs & metrics REST API.
+  - `notification-service` (:8005) — Go (Chi), multi-channel notifications (Email, SMS, Push, In-App), PostgreSQL, Redis, WebSockets.
+  - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).
 
@@ -31,9 +33,12 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Orders, order analytics                        | `apps/order-service`                                   |
 | Stripe sessions, webhooks, Stripe sync         | `apps/payment-service`                                 |
 | User admin CRUD, `user.created`                | `apps/auth-service`                                    |
+| Notification orchestration, SMS, Push, In-App  | `apps/notification-service`                            |
 | Emails for user/order events                   | `apps/email-service`                                   |
+| Analytics ingestion, KPIs, daily aggregates    | `apps/analytic-service`                                |
 | Kafka client/producer/consumer helpers         | `packages/kafka`                                       |
 | Shared types, Zod schemas, Kafka payload types | `packages/types`                                       |
+| Telemetry, structured logging, health checks   | `packages/monitoring`                                  |
 | Product/category DB schema                     | `packages/product-db`                                  |
 | Order persistence schema                       | `packages/order-db`                                    |
 | TS/ESLint baselines                            | `packages/typescript-config`, `packages/eslint-config` |

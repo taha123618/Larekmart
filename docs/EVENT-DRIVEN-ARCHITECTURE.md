@@ -55,13 +55,15 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 
 ## Topic registry
 
-| Topic                | Producer        | Consumer(s)                       | Payload (`message.value`)                                                  |
-| -------------------- | --------------- | --------------------------------- | -------------------------------------------------------------------------- |
-| `product.created`    | product-service | payment-service, analytic-service | `StripeProductType` → `{ id: string, name: string, price: number }`        |
-| `product.deleted`    | product-service | payment-service, analytic-service | `number` (the product id)                                                  |
-| `user.created`       | auth-service    | email-service, analytic-service   | `{ username: string, email: string }`                                      |
-| `order.created`      | order-service   | email-service, analytic-service   | `{ email: string, amount: number, status: "success" \| "failed" }`         |
-| `payment.successful` | payment-service | order-service, analytic-service   | `{ userId, email, amount, status, products: { name, quantity, price }[] }` |
+| Topic                   | Producer             | Consumer(s)                                           | Payload (`message.value`)                                                  |
+| ----------------------- | -------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- |
+| `product.created`       | product-service      | payment-service, analytic-service                     | `StripeProductType` → `{ id: string, name: string, price: number }`        |
+| `product.deleted`       | product-service      | payment-service, analytic-service                     | `number` (the product id)                                                  |
+| `user.created`          | auth-service         | email-service, analytic-service, notification-service | `{ username: string, email: string }`                                      |
+| `order.created`         | order-service        | email-service, analytic-service, notification-service | `{ email: string, amount: number, status: "success" \| "failed" }`         |
+| `payment.successful`    | payment-service      | order-service, analytic-service, notification-service | `{ userId, email, amount, status, products: { name, quantity, price }[] }` |
+| `notification.dispatch` | any backend service  | notification-service                                  | `{ userId, type, title, body, email, phone, metadata }`                    |
+| `email.dispatch`        | notification-service | email-service                                         | `{ email, subject, text, html, context }`                                  |
 
 ### `product.created`
 

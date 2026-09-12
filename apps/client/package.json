@@ -12,9 +12,11 @@
   "dependencies": {
     "@clerk/nextjs": "^6.31.10",
     "@hookform/resolvers": "^5.2.1",
+    "@repo/monitoring": "workspace:*",
     "@stripe/react-stripe-js": "^3.6.0",
     "@stripe/stripe-js": "^7.0.0",
-    "@repo/monitoring": "workspace:*",
+    "@tanstack/react-query": "^5.89.0",
+    "axios": "^1.20.0",
     "lucide-react": "^0.535.0",
     "next": "15.4.5",
     "react": "19.1.0",

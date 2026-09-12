@@ -1,0 +1,12 @@
+{
+  "name": "notification-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "go run ./cmd/notification/main.go",
+    "test": "go test -v ./...",
+    "build": "go build -o bin/notification ./cmd/notification/main.go",
+    "check-types": "go vet ./..."
+  }
+}

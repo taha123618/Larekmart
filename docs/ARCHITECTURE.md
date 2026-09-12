@@ -83,15 +83,24 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Consumes `payment.successful`, `order.created`, `user.created`, `product.created`, and `product.deleted`.
 - Tracks real-time KPI metrics and persists event audit logs and daily summaries to PostgreSQL.
 
+**`notification-service` (Go 1.22 / Chi, :8005)** — unified notification orchestration.
+
+- Routes: `/health`, `/ready`, `/metrics`, `/ws`, `/notifications`, `/notifications/unread`, `/notifications/:id/read`, `/notifications/read-all`, `/notifications/devices`, `/notifications/preferences`, `/notifications/templates`.
+- Channels: Email (delegated via Kafka/email-service), SMS (provider abstraction), Push (device registry), In-App (PostgreSQL + WebSocket hub).
+- Consumes: `user.created`, `order.created`, `payment.successful`, `notification.dispatch`.
+- Persistence & State: PostgreSQL (`notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events`) + Redis fast deduplication.
+
 ## Data ownership
 
-| Store      | Owner                            | Accessed via                | Notable models                                |
-| ---------- | -------------------------------- | --------------------------- | --------------------------------------------- |
-| PostgreSQL | product-service                  | `@repo/product-db` (Prisma) | `Product`, `Category`                         |
-| PostgreSQL | analytic-service                 | `pg.Pool`                   | `analytics_events`, `analytics_daily_summary` |
-| MongoDB    | order-service                    | `@repo/order-db` (Mongoose) | `Order`                                       |
-| Clerk      | auth-service (and all frontends) | Clerk SDKs                  | users, session claims                         |
-| Stripe     | payment-service                  | `stripe` SDK                | products, prices, sessions                    |
+| Store      | Owner                            | Accessed via                | Notable models                                                                                                                          |
+| ---------- | -------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL | product-service                  | `@repo/product-db` (Prisma) | `Product`, `Category`                                                                                                                   |
+| PostgreSQL | analytic-service                 | `pg.Pool`                   | `analytics_events`, `analytics_daily_summary`                                                                                           |
+| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)         | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
+| Redis      | notification-service             | `go-redis` (Go)             | `event:<id>` (idempotency fast-cache)                                                                                                   |
+| MongoDB    | order-service                    | `@repo/order-db` (Mongoose) | `Order`                                                                                                                                 |
+| Clerk      | auth-service (and all frontends) | Clerk SDKs                  | users, session claims                                                                                                                   |
+| Stripe     | payment-service                  | `stripe` SDK                | products, prices, sessions                                                                                                              |
 
 `@repo/types` re-exports the persistence-derived types (`Product`, `Category`, `Order`)
 so consumers can type against the catalog/order shapes without importing the DB clients
