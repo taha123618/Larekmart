@@ -144,25 +144,27 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 ### 2. Installation & Setup
 
 ```bash
-# Automated monorepo setup (installs all workspace dependencies, initializes .env files, syncs AI skills)
+# 1. Automated monorepo setup (installs all workspace dependencies, initializes .env files, syncs AI skills)
 pnpm run setup
 
 # Or step-by-step:
 pnpm run install:all                      # install all workspace packages
-pnpm run env:setup                        # safely initialize all .env files
+pnpm run env:setup                        # safely initialize all .env files from .env.example
 pnpm run skills:sync                      # sync canonical .agents/skills to AI agent folders
 
-# Start local Kafka cluster (3 brokers + Kafka UI at http://localhost:8080)
+# 2. Start local Kafka cluster (3 brokers + Kafka UI at http://localhost:8080)
 docker compose -f packages/kafka/docker-compose.yml up -d
 
-# (Optional) Start notification-service with its dedicated PostgreSQL & Redis via Docker
-docker compose -f apps/notification-service/docker-compose.yml up -d
+# 3. Initialize local PostgreSQL databases
+createdb ecommerce
+createdb notification_db
 
-# Generate Prisma Client & apply database migrations
+# 4. Generate Prisma Client & apply database migrations
 pnpm --filter @repo/product-db db:generate
 pnpm --filter @repo/product-db db:migrate
 
-# Start all workspaces concurrently in development mode (Next.js apps, Node services, and Go notification-service)
+
+# 5. Start all workspaces concurrently in development mode (Next.js apps, Node services, and Go notification-service)
 pnpm dev
 ```
 
