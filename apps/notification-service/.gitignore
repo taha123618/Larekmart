@@ -1,0 +1,27 @@
+# Binaries and build outputs
+/bin/
+/dist/
+notification-service
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test artifacts and coverage
+*.out
+coverage.txt
+coverage.html
+profile.out
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
+
+# OS and IDE files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~

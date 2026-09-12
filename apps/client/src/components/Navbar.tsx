@@ -1,15 +1,11 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SearchBar from "./SearchBar";
-import { Bell, Home, ShoppingCart } from "lucide-react";
+import { Home } from "lucide-react";
+import NotificationBell from "./NotificationBell";
 import ShoppingCartIcon from "./ShoppingCartIcon";
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import ProfileButton from "./ProfileButton";
 
 const Navbar = () => {
@@ -30,11 +26,13 @@ const Navbar = () => {
       </Link>
       {/* RIGHT */}
       <div className="flex items-center gap-6">
-        <SearchBar />
+        <Suspense fallback={<div className="w-40" />}>
+          <SearchBar />
+        </Suspense>
         <Link href="/">
           <Home className="w-4 h-4 text-gray-600" />
         </Link>
-        <Bell className="w-4 h-4 text-gray-600" />
+        <NotificationBell />
         <ShoppingCartIcon />
         <SignedOut>
           <SignInButton />

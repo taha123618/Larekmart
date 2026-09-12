@@ -211,3 +211,71 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 - **Auth**: Public / Scraper
 - **Response**: Prometheus text exposition format
+
+---
+
+## 6. Notification Service (`:8005`)
+
+### `GET /health`
+
+- **Auth**: Public
+- **Response**: Multi-dependency health report (`postgres`, `redis`, `uptimeSeconds`, `summary`)
+
+### `GET /ready`
+
+- **Auth**: Public
+- **Response**: `{ "status": "ready" }`
+
+### `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Prometheus text exposition format
+
+### `GET /ws`
+
+- **Auth**: User (`?user_id=` or `Authorization: Bearer <token>`)
+- **Protocol**: WebSocket upgrade for real-time in-app notification streaming
+
+### `GET /notifications`
+
+- **Auth**: User
+- **Query Params**: `limit` (number, default: 20), `offset` (number, default: 0)
+- **Response**: `{ "notifications": Notification[], "count": number }`
+
+### `GET /notifications/unread`
+
+- **Auth**: User
+- **Query Params**: `limit` (number, default: 50)
+- **Response**: `{ "notifications": Notification[], "unread_count": number }`
+
+### `PATCH /notifications/:id/read`
+
+- **Auth**: User
+- **Response**: `{ "success": true, "updated": boolean }`
+
+### `PATCH /notifications/read-all`
+
+- **Auth**: User
+- **Response**: `{ "success": true, "rows_affected": number }`
+
+### `POST /notifications/devices`
+
+- **Auth**: User
+- **Body**: `{ "device_token": string, "platform": "ios" | "android" | "web" }`
+- **Response**: `{ "success": true, "message": string }`
+
+### `GET /notifications/preferences`
+
+- **Auth**: User
+- **Response**: `{ "user_id": string, "preferences": Record<string, NotificationPreference> }`
+
+### `PUT /notifications/preferences`
+
+- **Auth**: User
+- **Body**: `{ "notification_type": string, "email_enabled": boolean, "sms_enabled": boolean, "push_enabled": boolean, "inapp_enabled": boolean }`
+- **Response**: `{ "success": true, "preference": NotificationPreference }`
+
+### `GET /notifications/templates`
+
+- **Auth**: User / Admin
+- **Response**: `{ "templates": NotificationTemplate[], "count": number }`

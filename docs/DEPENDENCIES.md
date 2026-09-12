@@ -33,6 +33,10 @@ apps/analytic-service ┬─▶ @repo/kafka
                       ├─▶ @repo/types
                       └─▶ pg
 
+apps/notification-service (Go) ┬─▶ Kafka (segmentio/kafka-go)
+                               ├─▶ PostgreSQL (pgxpool)
+                               └─▶ Redis (go-redis)
+
 apps/admin, apps/client ─▶ @repo/eslint-config, @repo/typescript-config
 all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 ```

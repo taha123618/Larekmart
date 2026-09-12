@@ -42,6 +42,23 @@ const start = async () => {
           }
         },
       },
+      {
+        topicName: "email.dispatch",
+        topicHandler: async (message) => {
+          const { recipient, subject, body } = message.value;
+
+          if (recipient) {
+            logger.info(
+              `Sending dispatched email notification to ${recipient}`,
+            );
+            await sendMail({
+              email: recipient,
+              subject: subject || "Notification - Larekmart",
+              text: body || "",
+            });
+          }
+        },
+      },
     ]);
   } catch (error) {
     logger.fatal("Email service consumer error", error);
