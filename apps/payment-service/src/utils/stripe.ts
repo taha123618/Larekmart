@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+const stripeKey = process.env.STRIPE_SECRET_KEY || "sk_test_dummy_key_placeholder";
+const stripe = new Stripe(stripeKey, {
   apiVersion: "2025-08-27.basil" as any,
 });
 

@@ -1,11 +1,10 @@
 import Fastify from "fastify";
 import Clerk from "@clerk/fastify";
 import { shouldBeUser } from "./middleware/authMiddleware.js";
-import { connectOrderDB } from "@repo/order-db";
+import { connectOrderDB, mongoose } from "@repo/order-db";
 import { orderRoute } from "./routes/order.js";
 import { consumer, producer } from "./utils/kafka.js";
 import { runKafkaSubscriptions } from "./utils/subscriptions.js";
-import mongoose from "mongoose";
 import {
   createLogger,
   createHealthRegistry,
