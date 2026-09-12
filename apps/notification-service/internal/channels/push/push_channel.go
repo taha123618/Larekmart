@@ -51,6 +51,13 @@ func (c *PushChannel) Name() models.ChannelType {
 }
 
 func (c *PushChannel) Send(ctx context.Context, delivery *models.NotificationDelivery, n *models.Notification) error {
+	if c.deviceRepo == nil {
+		c.logger.Debug(ctx, "No device repository configured, push delivery skipped", map[string]interface{}{
+			"user_id": n.UserID,
+		})
+		return nil
+	}
+
 	devices, err := c.deviceRepo.FindActiveByUserID(ctx, n.UserID)
 	if err != nil {
 		c.logger.Error(ctx, "Failed to fetch active devices for push delivery", err, map[string]interface{}{

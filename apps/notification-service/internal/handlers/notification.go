@@ -141,12 +141,14 @@ func (h *NotificationHandler) RegisterDevice(w http.ResponseWriter, r *http.Requ
 		req.Platform = "web"
 	}
 
-	err := h.deviceRepo.RegisterDevice(r.Context(), userID, req.DeviceToken, req.Platform)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
-		return
+	if h.deviceRepo != nil {
+		err := h.deviceRepo.RegisterDevice(r.Context(), userID, req.DeviceToken, req.Platform)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -28,9 +28,14 @@ func NewTemplateService(repo *repositories.TemplateRepository, engine *templates
 
 // Render compiles and renders a notification's title and body for a specific channel.
 func (s *TemplateService) Render(ctx context.Context, templateName string, channel models.ChannelType, data interface{}) (*RenderedNotification, error) {
-	tmpl, err := s.repo.FindByNameAndChannel(ctx, templateName, channel)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching template %s: %w", templateName, err)
+	var tmpl *models.NotificationTemplate
+	var err error
+
+	if s.repo != nil {
+		tmpl, err = s.repo.FindByNameAndChannel(ctx, templateName, channel)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching template %s: %w", templateName, err)
+		}
 	}
 
 	if tmpl == nil {
@@ -64,5 +69,8 @@ func (s *TemplateService) Render(ctx context.Context, templateName string, chann
 
 // ListTemplates returns all active templates.
 func (s *TemplateService) ListTemplates(ctx context.Context) ([]*models.NotificationTemplate, error) {
+	if s.repo == nil {
+		return []*models.NotificationTemplate{}, nil
+	}
 	return s.repo.ListAll(ctx)
 }

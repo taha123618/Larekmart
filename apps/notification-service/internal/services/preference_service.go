@@ -20,6 +20,9 @@ func (s *PreferenceService) GetUserPreferences(ctx context.Context, userID strin
 	if userID == "" {
 		return nil, fmt.Errorf("user ID cannot be empty")
 	}
+	if s.repo == nil {
+		return models.UserPreferencesMap{}, nil
+	}
 	return s.repo.FindByUserID(ctx, userID)
 }
 
@@ -27,14 +30,24 @@ func (s *PreferenceService) UpdatePreference(ctx context.Context, pref *models.N
 	if pref.UserID == "" || pref.NotificationType == "" {
 		return fmt.Errorf("user ID and notification type are required")
 	}
+	if s.repo == nil {
+		return nil
+	}
 	return s.repo.Upsert(ctx, pref)
 }
 
 // ShouldSendChannel checks whether the user has enabled a specific channel for a notification type.
 func (s *PreferenceService) ShouldSendChannel(ctx context.Context, userID, notifType string, channel models.ChannelType) (bool, error) {
-	pref, err := s.repo.GetUserPreferenceForType(ctx, userID, notifType)
-	if err != nil {
-		return false, err
+	var pref *models.NotificationPreference
+	var err error
+
+	if s.repo != nil {
+		pref, err = s.repo.GetUserPreferenceForType(ctx, userID, notifType)
+		if err != nil {
+			return false, err
+		}
+	} else {
+		pref = models.DefaultPreference(userID, notifType)
 	}
 
 	switch channel {

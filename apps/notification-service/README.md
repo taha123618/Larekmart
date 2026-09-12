@@ -1,6 +1,6 @@
 # Notification Service (`apps/notification-service`)
 
-A high-throughput, production-grade **Go** microservice providing a unified notification platform for Email, SMS, Push, and In-App delivery across the **Larekmart** e-commerce microservices platform.
+A high-throughput, production-grade **Go (1.22+)** microservice providing a unified multi-channel notification platform for Email, SMS (Twilio), Push, and In-App (WebSockets) delivery across the **Larekmart** e-commerce microservices platform.
 
 ---
 
@@ -38,10 +38,10 @@ Node.js Services (auth, order, payment, product)
 
 ## 2. Key Features
 
-- **Multi-Channel Orchestration**: Unified lifecycle management for Email, SMS, Push, and In-App notifications.
+- **Multi-Channel Orchestration**: Unified lifecycle management for Email, SMS (Twilio API), Push, and In-App notifications.
 - **Provider-Agnostic Channel Abstraction**: Clean `Channel` interface with pluggable providers (Twilio, FCM, APNS, Mock).
-- **Email Service Synergy**: Coordinates email notifications and delegates heavy email transport to `email-service` via Kafka.
-- **Real-Time WebSocket Streaming**: Instant in-app notification delivery to connected browser storefronts and admin dashboards.
+- **Email Service Synergy**: Coordinates email notifications and delegates heavy email transport to `email-service` via Kafka (`email.dispatch`).
+- **Real-Time WebSocket Streaming**: Instant in-app notification delivery to connected storefronts (`apps/client`) and dashboards (`apps/admin`).
 - **User Preference Enforcement**: Granular per-user and per-notification-type channel enablement controls.
 - **Deduplication & Idempotency**: Fast-path Redis deduplication (`SETNX` with TTL) + durable PostgreSQL event tracking preventing duplicate notifications on Kafka replays.
 - **Resilient Worker Pool**: Native goroutine worker pools per channel with configurable concurrency, exponential backoff retries, and dead-letter classification.
@@ -83,24 +83,57 @@ The service manages its own PostgreSQL database via SQL migrations in `migration
 
 ---
 
-## 5. Local Development & Testing
+## 5. Starting the Service
 
-### Running Tests
+### Option A: Via Turborepo (Recommended Monorepo Workflow)
+
+The service is integrated into the root Turborepo workspace.
+
+```bash
+# Start all microservices concurrently (including notification-service)
+pnpm dev
+
+# Or start only the notification-service via Turbo filter
+pnpm --filter notification-service dev
+```
+
+### Option B: With Docker Compose
+
+`apps/notification-service` includes its own `docker-compose.yml` that provisions the Go binary, dedicated PostgreSQL instance (`port 5434`), Redis instance (`port 6380`), and connects to the shared Kafka network:
 
 ```bash
 cd apps/notification-service
 go test -v ./...
 ```
 
-### Running Locally
+### Option C: Running Locally with Go
 
 ```bash
+# 1. Navigate to service folder
 cd apps/notification-service
+
+# 2. Configure environment variables (copy .env.example if not created)
+cp .env.example .env
+
+# 3. Run directly with Go
 go run ./cmd/notification/main.go
 ```
 
-### Building Docker Image
+---
+
+## 6. Testing & Quality Checks
+
+Run unit and integration tests across all Go packages:
 
 ```bash
-docker build -t larekmart-notification-service apps/notification-service
+# Run with Race Detector and coverage metrics
+go test -v -race -cover ./...
+
+# Or via pnpm / Turborepo filter
+pnpm --filter notification-service test
+
+# Static code analysis
+go vet ./...
+# Or via Turbo typecheck pipeline
+pnpm --filter notification-service check-types
 ```

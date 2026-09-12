@@ -149,26 +149,30 @@ func (s *NotificationService) ProcessAndDispatch(ctx context.Context, input Crea
 
 	notification.Deliveries = deliveries
 
-	// Persist to PostgreSQL
-	err := s.notificationRepo.Create(ctx, notification)
-	if err != nil {
-		s.logger.Error(ctx, "Failed to persist notification", err, map[string]interface{}{
-			"user_id": input.UserID,
-			"type":    input.Type,
-		})
-		return nil, fmt.Errorf("failed to save notification: %w", err)
+	// Persist to PostgreSQL if repo is available
+	if s.notificationRepo != nil {
+		err := s.notificationRepo.Create(ctx, notification)
+		if err != nil {
+			s.logger.Error(ctx, "Failed to persist notification", err, map[string]interface{}{
+				"user_id": input.UserID,
+				"type":    input.Type,
+			})
+			return nil, fmt.Errorf("failed to save notification: %w", err)
+		}
 	}
 
 	if s.metrics != nil {
 		s.metrics.NotificationsCreated.WithLabelValues(input.Type, string(input.Priority)).Inc()
 	}
 
-	// Queue deliveries to worker pool
-	err = s.deliverySvc.QueueDelivery(ctx, notification)
-	if err != nil {
-		s.logger.Error(ctx, "Failed to queue delivery to worker pool", err, map[string]interface{}{
-			"notification_id": notification.ID,
-		})
+	// Queue deliveries to worker pool if deliverySvc is available
+	if s.deliverySvc != nil {
+		err := s.deliverySvc.QueueDelivery(ctx, notification)
+		if err != nil {
+			s.logger.Error(ctx, "Failed to queue delivery to worker pool", err, map[string]interface{}{
+				"notification_id": notification.ID,
+			})
+		}
 	}
 
 	s.logger.Info(ctx, fmt.Sprintf("Notification %s created with %d delivery channels", notification.ID, len(deliveries)), map[string]interface{}{
@@ -181,17 +185,29 @@ func (s *NotificationService) ProcessAndDispatch(ctx context.Context, input Crea
 }
 
 func (s *NotificationService) GetUserNotifications(ctx context.Context, userID string, limit, offset int) ([]*models.Notification, error) {
+	if s.notificationRepo == nil {
+		return []*models.Notification{}, nil
+	}
 	return s.notificationRepo.FindByUserID(ctx, userID, limit, offset)
 }
 
 func (s *NotificationService) GetUnreadNotifications(ctx context.Context, userID string, limit int) ([]*models.Notification, int, error) {
+	if s.notificationRepo == nil {
+		return []*models.Notification{}, 0, nil
+	}
 	return s.notificationRepo.FindUnreadByUserID(ctx, userID, limit)
 }
 
 func (s *NotificationService) MarkAsRead(ctx context.Context, id, userID string) (bool, error) {
+	if s.notificationRepo == nil {
+		return true, nil
+	}
 	return s.notificationRepo.MarkAsRead(ctx, id, userID)
 }
 
 func (s *NotificationService) MarkAllAsRead(ctx context.Context, userID string) (int64, error) {
+	if s.notificationRepo == nil {
+		return 0, nil
+	}
 	return s.notificationRepo.MarkAllAsRead(ctx, userID)
 }

@@ -155,26 +155,30 @@ pnpm run skills:sync                      # sync canonical .agents/skills to AI 
 # Start local Kafka cluster (3 brokers + Kafka UI at http://localhost:8080)
 docker compose -f packages/kafka/docker-compose.yml up -d
 
+# (Optional) Start notification-service with its dedicated PostgreSQL & Redis via Docker
+docker compose -f apps/notification-service/docker-compose.yml up -d
+
 # Generate Prisma Client & apply database migrations
 pnpm --filter @repo/product-db db:generate
 pnpm --filter @repo/product-db db:migrate
 
-# Start all workspaces concurrently in development mode
+# Start all workspaces concurrently in development mode (Next.js apps, Node services, and Go notification-service)
 pnpm dev
 ```
 
 ### 3. Core Commands
 
-| Task                | Command                                      | Description                                                 |
-| ------------------- | -------------------------------------------- | ----------------------------------------------------------- |
-| **Development**     | `pnpm dev`                                   | Run all applications and services in watch mode             |
-| **Scoped Dev**      | `pnpm --filter <workspace> dev`              | Run a specific application or service                       |
-| **Type Check**      | `pnpm check-types`                           | Run `tsc --noEmit` across all 14 workspaces                 |
-| **Lint**            | `pnpm lint`                                  | Run ESLint flat checks on `admin` and `client`              |
-| **Format**          | `pnpm format`                                | Run Prettier across all TypeScript, TSX, and Markdown files |
-| **Build**           | `pnpm build`                                 | Compile Next.js production bundles and `payment-service`    |
-| **Prisma Generate** | `pnpm --filter @repo/product-db db:generate` | Regenerate Prisma client                                    |
-| **Prisma Migrate**  | `pnpm --filter @repo/product-db db:migrate`  | Create and apply development migrations                     |
+| Task                    | Command                                                                | Description                                                         |
+| ----------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **Development**         | `pnpm dev`                                                             | Run all applications and services concurrently via Turborepo        |
+| **Scoped Dev**          | `pnpm --filter <workspace> dev`                                        | Run a specific application or service (e.g. `notification-service`) |
+| **Notification Docker** | `docker compose -f apps/notification-service/docker-compose.yml up -d` | Run notification-service + PostgreSQL + Redis via Docker Compose    |
+| **Type Check**          | `pnpm check-types`                                                     | Run type checking (`tsc` / `go vet`) across all 16 workspaces       |
+| **Lint**                | `pnpm lint`                                                            | Run ESLint flat checks on `admin` and `client`                      |
+| **Format**              | `pnpm format`                                                          | Run Prettier across all TypeScript, TSX, and Markdown files         |
+| **Build**               | `pnpm build`                                                           | Compile Next.js production bundles and `payment-service`            |
+| **Prisma Generate**     | `pnpm --filter @repo/product-db db:generate`                           | Regenerate Prisma client                                            |
+| **Prisma Migrate**      | `pnpm --filter @repo/product-db db:migrate`                            | Create and apply development migrations                             |
 
 ---
 

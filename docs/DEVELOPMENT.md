@@ -68,30 +68,36 @@ Default local connection strings used by the examples:
 
 ## Ports
 
-| Service             | Port               |
-| ------------------- | ------------------ |
-| client (storefront) | 3002               |
-| admin (dashboard)   | 3003               |
-| product-service     | 8000               |
-| order-service       | 8001               |
-| payment-service     | 8002               |
-| auth-service        | 8003               |
-| Kafka UI            | 8080               |
-| Kafka brokers       | 9094 / 9095 / 9096 |
-| ZooKeeper           | 2181               |
-| PostgreSQL          | 5432               |
-| MongoDB             | 27017              |
+| Service                   | Port               |
+| ------------------------- | ------------------ |
+| client (storefront)       | 3002               |
+| admin (dashboard)         | 3003               |
+| product-service           | 8000               |
+| order-service             | 8001               |
+| payment-service           | 8002               |
+| auth-service              | 8003               |
+| analytic-service          | 8004               |
+| notification-service (Go) | 8005               |
+| Kafka UI                  | 8080               |
+| Kafka brokers             | 9094 / 9095 / 9096 |
+| ZooKeeper                 | 2181               |
+| PostgreSQL                | 5432               |
+| MongoDB                   | 27017              |
 
 ## Daily workflow
 
 ```bash
-pnpm dev                              # all workspaces
-pnpm --filter admin dev               # one app
-pnpm --filter product-service dev     # one service (tsx --watch)
+pnpm dev                                      # all workspaces (Next.js, Node, and Go)
+pnpm --filter admin dev                       # one app
+pnpm --filter product-service dev             # one Node service (tsx --watch)
+pnpm --filter notification-service dev        # Go notification service (go run)
 
-pnpm check-types                      # before every commit
-pnpm lint                             # admin + client
-pnpm format                           # prettier, writes source
+# Or run notification-service via Docker Compose
+docker compose -f apps/notification-service/docker-compose.yml up -d
+
+pnpm check-types                              # before every commit
+pnpm lint                                     # admin + client
+pnpm format                                   # prettier, writes source
 ```
 
 ### Database changes (product-db)
