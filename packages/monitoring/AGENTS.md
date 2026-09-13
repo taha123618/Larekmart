@@ -15,6 +15,8 @@ Exports are defined through the `exports` map in `packages/monitoring/package.js
 - `createLogger`, `Logger`
 - `createHealthRegistry`, `HealthRegistry`, `createMemoryCheck`, `createDbCheck`, `createHttpPingCheck`
 - `createMetricsRegistry`, `MetricsRegistry`
+- `createCounter`, `createHistogram` (bound metric handles for service-level counters/histograms)
+- `createCacheMetrics`, `CacheMetrics`, `CacheReadOutcome` (the shared cache hit/miss/error counters and their classification rule)
 - `measureAsync`, `measureSync`, `startTimer`
 - `AppError`, `formatError`, `captureError`, `isOperationalError`
 - `createHttpMonitor`, `createKafkaMonitor`, `createDatabaseMonitor`
@@ -25,6 +27,12 @@ Exports are defined through the `exports` map in `packages/monitoring/package.js
 - Framework-agnostic logging, metrics, error handling, and health inspection logic.
 - Helpers to measure async/sync function execution and format machine-readable logs.
 - Metric types, labels, and statistical distribution calculators.
+- Metric _handles_ (`createCounter`, `createHistogram`) so services declare counters once at
+  module scope instead of re-wrapping `increment()`/`observe()` with the same metric name.
+- The shared cache counters (`createCacheMetrics`): every service emits identical
+  `cache_hits_total` / `cache_misses_total` / `cache_errors_total` names and labels, and one rule
+  decides which outcome a read is. Keeping it here means no service can quietly collapse a Redis
+  outage into a miss.
 
 ## What does not belong here
 

@@ -23,6 +23,7 @@
     "@repo/kafka": "workspace:*",
     "@repo/order-db": "workspace:*",
     "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
     "date-fns": "^4.1.0",
     "fastify": "^5.5.0"
   }

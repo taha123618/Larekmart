@@ -43,6 +43,14 @@ When writing automated tests in Larekmart, adhere to the following architecture:
 
 - Test HTTP route handlers and Kafka message processing using in-memory or containerized dependencies.
 - Keep integration tests isolated and opt-in so they do not break standard offline `pnpm check-types`.
+- **Checks that exist today:** `@repo/redis` ships `pnpm --filter @repo/redis verify:redis`
+  (`packages/redis/src/scripts/verify-redis.ts`), which asserts key namespacing, cache TTLs, the
+  three read outcomes (`hit` / `miss` / `error`, so a Redis outage is never counted as a cold cache),
+  the namespace-version bump, the rate limiter, and degraded behaviour against a real Redis. It needs
+  `docker compose -f packages/redis/docker-compose.yml up -d`, writes only under a run-scoped key
+  prefix, cleans up after itself, and exits non-zero on failure.
+- Follow that shape for new integration checks: a script under `src/` (so `pnpm check-types`
+  covers it), opt-in, isolated from a shared dependency, self-cleaning, and non-zero on failure.
 
 ### 4. End-to-End (E2E) Testing Layer
 

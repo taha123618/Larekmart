@@ -4,6 +4,10 @@ import { Order } from "@repo/order-db";
 import { startOfMonth, subMonths } from "date-fns";
 import { OrderChartType } from "@repo/types";
 import { createLogger, measureAsync } from "@repo/monitoring";
+import {
+  getCachedOrderChart,
+  setCachedOrderChart,
+} from "../cache/order-chart-cache";
 
 const logger = createLogger("order-service:routes");
 
@@ -41,6 +45,11 @@ export const orderRoute = async (fastify: FastifyInstance) => {
     "/order-chart",
     { preHandler: shouldBeAdmin },
     async (request, reply) => {
+      // Serve the chart from Redis when it is warm; the aggregation below is the
+      // expensive path this cache exists to skip.
+      const cached = await getCachedOrderChart();
+      if (cached) return reply.send(cached);
+
       const now = new Date();
       const sixMonthsAgo = startOfMonth(subMonths(now, 5));
 
@@ -115,6 +124,8 @@ export const orderRoute = async (fastify: FastifyInstance) => {
           successful: match ? match.successful : 0,
         });
       }
+
+      await setCachedOrderChart(results);
 
       logger.debug("Order chart generated successfully");
       return reply.send(results);

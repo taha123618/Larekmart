@@ -3,6 +3,13 @@ import { prisma, Prisma } from "@repo/product-db";
 import { producer } from "../utils/kafka";
 import { toProductEventPayload } from "../search/product-payload.js";
 import { createLogger, measureAsync } from "@repo/monitoring";
+import {
+  getCachedProduct,
+  getCachedProducts,
+  setCachedProduct,
+  setCachedProducts,
+  invalidateCatalogCache,
+} from "../cache/catalog-cache.js";
 
 const logger = createLogger("product-service:controller");
 
@@ -41,6 +48,7 @@ export const createProduct = async (req: Request, res: Response) => {
   // id/name/price it needs to mirror the catalog into Stripe. The same mapper
   // drives the search backfill (`backfill:search`).
   producer.send("product.created", { value: toProductEventPayload(product) });
+  await invalidateCatalogCache();
   res.status(201).json(product);
 };
 
@@ -60,6 +68,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 
   logger.info(`Product updated successfully with ID: ${id}`);
   producer.send("product.updated", { value: updatedProduct });
+  await invalidateCatalogCache();
   return res.status(200).json(updatedProduct);
 };
 
@@ -77,12 +86,23 @@ export const deleteProduct = async (req: Request, res: Response) => {
 
   logger.info(`Product deleted with ID: ${id}`);
   producer.send("product.deleted", { value: Number(id) });
+  await invalidateCatalogCache();
 
   return res.status(200).json(deletedProduct);
 };
 
 export const getProducts = async (req: Request, res: Response) => {
   const { sort, category, search, limit } = req.query;
+
+  const query = {
+    sort: typeof sort === "string" ? sort : undefined,
+    category: typeof category === "string" ? category : undefined,
+    search: typeof search === "string" ? search : undefined,
+    limit: typeof limit === "string" ? limit : undefined,
+  };
+
+  const cached = await getCachedProducts(query);
+  if (cached) return res.status(200).json(cached);
 
   const orderBy = (() => {
     switch (sort) {
@@ -116,20 +136,31 @@ export const getProducts = async (req: Request, res: Response) => {
     },
   );
 
+  await setCachedProducts(query, products);
   res.status(200).json(products);
 };
 
 export const getProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const productId = Number(id);
+
+  const cached = await getCachedProduct(productId);
+  if (cached) return res.status(200).json(cached);
 
   const { result: product } = await measureAsync(
     "db.product.findUnique",
     async () => {
       return await prisma.product.findUnique({
-        where: { id: Number(id) },
+        where: { id: productId },
       });
     },
   );
+
+  // A null here means "no such product", not "not cached yet", so caching it
+  // would only delay a subsequent real result.
+  if (product) {
+    await setCachedProduct(productId, product);
+  }
 
   return res.status(200).json(product);
 };

@@ -14,10 +14,12 @@ apps/admin ──┘                └─▶ @repo/order-db   ─▶ mongoose  
 apps/product-service ─┬─▶ @repo/product-db
                       ├─▶ @repo/kafka ─▶ kafkajs
                       ├─▶ @repo/opensearch ─▶ @opensearch-project/opensearch ─▶ OpenSearch
+                      ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                       └─▶ @repo/types
 
 apps/order-service ───┬─▶ @repo/order-db
                       ├─▶ @repo/kafka
+                      ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                       └─▶ @repo/types
 
 apps/payment-service ─┬─▶ @repo/kafka
@@ -31,6 +33,7 @@ apps/email-service ───┬─▶ @repo/kafka
                       └─▶ @repo/types
 
 apps/analytic-service ┬─▶ @repo/kafka
+                      ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                       ├─▶ @repo/types
                       └─▶ pg
 
@@ -40,8 +43,8 @@ apps/notification-service (Go) ┬─▶ Kafka (segmentio/kafka-go)
 
 apps/search-service ──────┬─▶ @repo/opensearch ─▶ @opensearch-project/opensearch ─▶ OpenSearch
                           ├─▶ @repo/kafka
-                          ├─▶ @repo/types
-                          └─▶ ioredis ─▶ Redis
+                          ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                          └─▶ @repo/types
 
 apps/admin, apps/client ─▶ @repo/eslint-config, @repo/typescript-config
 all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
@@ -49,16 +52,17 @@ all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 
 ## Package roles
 
-| Package                   | Kind         | Depends on                                  | Public surface                                                                  |
-| ------------------------- | ------------ | ------------------------------------------- | ------------------------------------------------------------------------------- |
-| **`@repo/monitoring`**    | leaf utility | —                                                     | `createLogger`, `createHealthRegistry`, `createMetricsRegistry`, `measureAsync`               |
-| `@repo/kafka`             | leaf utility | `kafkajs`                                             | `createKafkaClient`, `createProducer`, `createConsumer`                                       |
+| Package                   | Kind         | Depends on                                                          | Public surface                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------- | ------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`@repo/monitoring`**    | leaf utility | —                                                                   | `createLogger`, `createHealthRegistry`, `createMetricsRegistry`, `createCounter`, `createHistogram`, `createCacheMetrics`, `measureAsync`                                                                                                                                                                                                                                                               |
+| `@repo/kafka`             | leaf utility | `kafkajs`                                                           | `createKafkaClient`, `createProducer`, `createConsumer`                                                                                                                                                                                                                                                                                                                                                 |
+| `@repo/redis`             | leaf utility | `ioredis`                                                           | `createRedisService`, `createRedisClient`, `createKeyBuilder`, `Redis` (client type), `cacheRead`, `cacheSet`, `cacheDel`, `cacheIncr`, `cacheExpire`, `bumpNamespaceVersion`, `getNamespaceVersion`, `checkRateLimit`, `checkRedisConnection`, `closeRedisClient`, `closeAllRedisClients`                                                                                                              |
 | `@repo/opensearch`        | leaf utility | `@opensearch-project/opensearch`, `@repo/types`, `@repo/monitoring` | `createOpenSearchClient`, `pingOpenSearch`, `Client`, `ensureProductIndexExists`, `pointAliasToIndex`, `createNewVersionedIndex`, `PRODUCT_INDEX_SETTINGS`, `buildProductSearchQuery`, `buildSearchFilters`, `buildAutocompleteQuery`, `searchProductDocuments`, `bulkIndexProducts`, `indexProductDocument`, `updateProductDocument`, `getProductDocument`, `deleteProductDocument`, `reindexProducts` |
-| `@repo/types`             | contract     | `@repo/product-db`, `@repo/order-db`, `zod`           | API/domain types, Zod schemas, constants                                                      |
-| `@repo/product-db`        | persistence  | `@prisma/client`                                      | `prisma` client + generated Prisma types                                                      |
-| `@repo/order-db`          | persistence  | `mongoose`                                            | `Order`, `OrderStatus`, `OrderSchemaType`, `connectOrderDB`                                   |
-| `@repo/eslint-config`     | config       | eslint plugins                                        | `base`, `next-js`, `react-internal`                                                           |
-| `@repo/typescript-config` | config       | —                                                     | `base.json`, `nextjs.json`, `react-library.json`                                              |
+| `@repo/types`             | contract     | `@repo/product-db`, `@repo/order-db`, `zod`                         | API/domain types, Zod schemas, constants                                                                                                                                                                                                                                                                                                                                                                |
+| `@repo/product-db`        | persistence  | `@prisma/client`                                                    | `prisma` client + generated Prisma types                                                                                                                                                                                                                                                                                                                                                                |
+| `@repo/order-db`          | persistence  | `mongoose`                                                          | `Order`, `OrderStatus`, `OrderSchemaType`, `connectOrderDB`                                                                                                                                                                                                                                                                                                                                             |
+| `@repo/eslint-config`     | config       | eslint plugins                                                      | `base`, `next-js`, `react-internal`                                                                                                                                                                                                                                                                                                                                                                     |
+| `@repo/typescript-config` | config       | —                                                                   | `base.json`, `nextjs.json`, `react-library.json`                                                                                                                                                                                                                                                                                                                                                        |
 
 ## Boundary rules
 
@@ -77,6 +81,10 @@ all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 
 ## Watch-outs
 
+- The Redis key namespace is applied by the `@repo/redis` handle
+  (`createRedisService` → `keys`), never by the client. Handing an already-prefixed key to
+  a cache helper double-prefixes it (`search:v1:search:v1:...`) and quietly creates a
+  second keyspace.
 - `@repo/types` sits on top of both database packages. Adding runtime logic there that
   pulls in Prisma/Mongoose would drag database clients into frontend bundles. Prefer
   `import type` for the persistence-derived types.

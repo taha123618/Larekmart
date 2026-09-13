@@ -1,12 +1,12 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { checkRateLimit } from "@repo/redis";
-import { getRedisClient } from "../utils/redis.js";
+import { redis } from "../utils/redis.js";
 import { config } from "../config/config.js";
 import { logger } from "../observability/metrics.js";
 
 /**
- * Creates a Fastify preHandler hook that enforces a sliding-window rate limit
- * per IP address × route using Redis.
+ * Creates a Fastify preHandler hook that enforces a fixed-window rate limit
+ * per IP address × route using Redis (`@repo/redis`'s `checkRateLimit`).
  *
  * If Redis is unreachable the hook **fails open** — the request is allowed
  * through with a debug log, so a Redis outage never causes downtime.
@@ -30,10 +30,10 @@ export function createRateLimiter(options?: {
   ): Promise<void> {
     const ip = request.ip || "127.0.0.1";
     const routeKey = request.routeOptions.url ?? request.url;
-    const key = `${config.redis.keyPrefix}ratelimit:${routeKey}:${ip}`;
+    const key = redis.keys.namespace("ratelimit", routeKey, ip);
 
     try {
-      const result = await checkRateLimit(getRedisClient(), {
+      const result = await checkRateLimit(redis.client, {
         key,
         maxRequests,
         windowSeconds,

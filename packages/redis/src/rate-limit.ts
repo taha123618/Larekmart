@@ -2,21 +2,25 @@ import type { Redis } from "ioredis";
 import type { RateLimitOptions, RateLimitResult } from "./types.js";
 
 /**
- * Implements an atomic sliding-window rate limiter backed by Redis.
+ * Implements an atomic fixed-window rate limiter backed by Redis.
  *
- * Algorithm (INCR + EXPIRE):
+ * Algorithm (INCR + EXPIRE NX):
  * 1. Increment the key (creating it if absent).
- * 2. On the first request (count === 1) set TTL to `windowSeconds`.
- * 3. Return the current count, remaining capacity, and whether the request
- *    is within the limit.
+ * 2. Guarantee the bucket has a TTL with `EXPIRE key <window> NX`, which only
+ *    sets an expiry when the key does not already have one. Doing this on every
+ *    request means a crash between `INCR` and `EXPIRE` can no longer leave a
+ *    bucket locked permanently, and the window never slides.
+ * 3. Read the remaining TTL so callers can send an accurate `Retry-After`.
  *
- * The TTL is set only once per window (on first INCR) so the window is
- * fixed, not rolling. This is intentional — it keeps the implementation
- * O(1) per request and matches how most API rate limiters are deployed.
+ * This is O(1) per request and matches how most API rate limiters are deployed.
+ * It is a fixed window (the TTL is not extended by later requests), not a
+ * rolling one.
  *
  * @param client   - An ioredis client instance.
  * @param options  - Key, limit, and window configuration.
- * @returns        - Rate-limit decision with headers values ready to use.
+ * @returns        - Rate-limit decision with header values ready to use.
+ * @throws         - If Redis is unreachable (`INCR` rejects). Callers whose
+ *                   endpoints must stay available should fail open by catching.
  */
 export async function checkRateLimit(
   client: Redis,
@@ -26,21 +30,25 @@ export async function checkRateLimit(
 
   const current = await client.incr(key);
 
-  if (current === 1) {
-    // New window — set expiry.  We don't await; a missed TTL is not fatal and
-    // the worst case is an orphaned key that expires on its own next window.
-    client.expire(key, windowSeconds).catch(() => {
-      /* non-critical */
-    });
+  try {
+    await client.expire(key, windowSeconds, "NX");
+  } catch {
+    // Redis < 7 does not support the NX flag; fall back to setting the TTL on
+    // the first request of the window only.
+    if (current === 1) {
+      await client.expire(key, windowSeconds).catch(() => {
+        /* non-critical — a missed TTL expires on the next window */
+      });
+    }
   }
 
-  // Best-effort TTL for the "resetIn" value.  Falls back to windowSeconds on error.
+  // Best-effort TTL for the "resetIn" value.  Falls back to windowSeconds.
   let resetIn = windowSeconds;
   try {
     const ttl = await client.ttl(key);
     if (ttl > 0) resetIn = ttl;
   } catch {
-    /* fall through to default */
+    /* keep the window-length fallback */
   }
 
   return {

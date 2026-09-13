@@ -12,12 +12,12 @@ It decouples search and complex query loads from the transactional `product-serv
 - **Faceted Navigation & Filtering**: Filter by category, price range, color, size, availability, rating, brand, tags, and seller, alongside real-time facet bucket counts and price statistics.
 - **Dynamic Sorting**: Relevance (`_score`), price (`price_asc`, `price_desc`), newest (`createdAt`), customer rating, popularity, and discount percentage.
 - **Autocomplete & Search Suggestions**: Sub-50ms prefix and edge-ngram suggestion search (`/api/v1/search/suggestions?q=...`).
-- **Two-Tier Redis Caching**: Normalized query hash caching with logical namespace invalidation (`search:v1:<version>:<hash>`).
+- **Two-Tier Redis Caching**: Normalized query hash caching with logical namespace invalidation (`search:v1:<version>:<hash>`), built on `@repo/redis`.
 - **Real-Time Event Synchronization**: Consumes `product.created`, `product.updated`, and `product.deleted` from Kafka with idempotent processing.
 - **Zero-Downtime Reindexing**: Alias-based index switching mechanism (`products-v*` -> `products`) via `/api/v1/index/reindex`.
 - **Observability**: OpenTelemetry tracing hooks, Prometheus `/metrics` endpoint, and `@repo/monitoring` structured JSON logging.
 - **Resilient Health & Readiness**: Separate `/health` (liveness) and `/ready` (dependency checks for OpenSearch and Redis) endpoints.
-- **Rate Limiting**: Sliding-window Redis rate limiter on public search and administrative reindexing routes.
+- **Rate Limiting**: Fixed-window Redis rate limiter (`@repo/redis`) on public search and administrative reindexing routes.
 
 ---
 
@@ -47,6 +47,7 @@ It decouples search and complex query loads from the transactional `product-serv
 ## API Endpoints
 
 ### 1. Product Search
+
 `GET /api/v1/search`
 
 **Query Parameters:**
@@ -66,6 +67,7 @@ It decouples search and complex query loads from the transactional `product-serv
 | `rating` | number | — | Minimum rating (0-5) |
 
 **Sample Request:**
+
 ```bash
 curl "http://localhost:8006/api/v1/search?q=shirt&color=black,blue&size=m,l&min_price=10&sort=price_asc"
 ```
@@ -76,6 +78,7 @@ still AND together. Facet counts are multi-select aware — choosing a color lea
 color buckets visible while narrowing the rest.
 
 **Sample Response:**
+
 ```json
 {
   "data": [
@@ -113,7 +116,10 @@ color buckets visible while narrowing the rest.
   "facets": {
     "categories": [{ "key": "t-shirts", "doc_count": 1 }],
     "colors": [{ "key": "black", "doc_count": 1 }],
-    "sizes": [{ "key": "m", "doc_count": 1 }, { "key": "l", "doc_count": 1 }],
+    "sizes": [
+      { "key": "m", "doc_count": 1 },
+      { "key": "l", "doc_count": 1 }
+    ],
     "brands": [{ "key": "Larekmart", "doc_count": 1 }],
     "price_stats": { "min": 2999, "max": 2999, "avg": 2999 }
   }
@@ -123,6 +129,7 @@ color buckets visible while narrowing the rest.
 ---
 
 ### 2. Autocomplete Suggestions
+
 `GET /api/v1/search/suggestions`
 
 **Query Parameters:**
@@ -132,6 +139,7 @@ color buckets visible while narrowing the rest.
 | `limit` | number | `5` | Maximum suggestions (max: 20) |
 
 **Sample Request:**
+
 ```bash
 curl "http://localhost:8006/api/v1/search/suggestions?q=tee"
 ```
@@ -140,6 +148,7 @@ Suggestions are **rich**: each hit carries the indexed product fields so clients
 render a thumbnail and deep-link to the product detail page.
 
 **Sample Response:**
+
 ```json
 {
   "data": [
@@ -162,11 +171,13 @@ render a thumbnail and deep-link to the product detail page.
 ---
 
 ### 3. Reindexing (Admin)
+
 `POST /api/v1/index/reindex`
 
 Requires Clerk session with `role: "admin"`.
 
 **Request Body:**
+
 ```json
 {
   "batchSize": 500,
@@ -191,6 +202,7 @@ is available from the admin dashboard's **Rebuild search index** action
 ---
 
 ### 4. Health, Readiness & Metrics
+
 - `GET /health` — Liveness check (200 OK)
 - `GET /ready` — Readiness check (200 if OpenSearch and Redis are accessible)
 - `GET /metrics` — Prometheus metrics format
@@ -214,15 +226,16 @@ pnpm --filter search-service build
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `8006` | HTTP listening port |
-| `OPENSEARCH_NODE` | `http://localhost:9200` | OpenSearch endpoint |
-| `OPENSEARCH_INDEX` | `products-v1` | Initial physical index name |
-| `OPENSEARCH_ALIAS` | `products` | Active search alias name |
-| `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
-| `SEARCH_CACHE_TTL_SECONDS` | `300` | Search results cache TTL |
-| `SUGGESTION_CACHE_TTL_SECONDS` | `600` | Suggestions cache TTL |
-| `KAFKA_BROKERS` | `localhost:9094,localhost:9095,localhost:9096` | Kafka broker endpoints |
-| `KAFKA_GROUP_ID` | `search-service-group` | Kafka consumer group ID |
-| `CLERK_SECRET_KEY` | — | Clerk secret key for auth |
+| Variable                       | Default                                        | Description                                |
+| ------------------------------ | ---------------------------------------------- | ------------------------------------------ |
+| `PORT`                         | `8006`                                         | HTTP listening port                        |
+| `OPENSEARCH_NODE`              | `http://localhost:9200`                        | OpenSearch endpoint                        |
+| `OPENSEARCH_INDEX`             | `products-v1`                                  | Initial physical index name                |
+| `OPENSEARCH_ALIAS`             | `products`                                     | Active search alias name                   |
+| `REDIS_URL`                    | `redis://localhost:6379`                       | Redis connection URL                       |
+| `REDIS_KEY_PREFIX`             | `search:v1:`                                   | Key namespace for every search-service key |
+| `SEARCH_CACHE_TTL_SECONDS`     | `300`                                          | Search results cache TTL                   |
+| `SUGGESTION_CACHE_TTL_SECONDS` | `600`                                          | Suggestions cache TTL                      |
+| `KAFKA_BROKERS`                | `localhost:9094,localhost:9095,localhost:9096` | Kafka broker endpoints                     |
+| `KAFKA_GROUP_ID`               | `search-service-group`                         | Kafka consumer group ID                    |
+| `CLERK_SECRET_KEY`             | —                                              | Clerk secret key for auth                  |

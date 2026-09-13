@@ -7,6 +7,7 @@ Microservice responsible for order persistence, order history retrieval, and 6-m
 - **Framework**: Fastify 5
 - **Database**: MongoDB via Mongoose (`@repo/order-db`)
 - **Messaging**: Apache Kafka (`@repo/kafka`)
+- **Cache**: Redis (`@repo/redis`) — read-through cache for `GET /order-chart`
 - **Auth**: Clerk (`@clerk/fastify`)
 - **Port**: `8001`
 
@@ -31,6 +32,11 @@ Copy `.env.example` to `.env`:
 ```env
 MONGO_URL=mongodb://localhost:27017/ecommerce
 CLERK_SECRET_KEY=sk_test_...
+
+# Optional — the service serves the chart from MongoDB without it
+REDIS_URL=redis://localhost:6379
+REDIS_KEY_PREFIX=order:v1:
+ORDER_CHART_CACHE_TTL_SECONDS=60
 ```
 
 ## Development Commands

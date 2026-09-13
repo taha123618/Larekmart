@@ -8,8 +8,11 @@ import { suggestionRoutes } from "./routes/suggestions.js";
 import { indexingRoutes } from "./routes/indexing.js";
 import { healthRoutes } from "./routes/health.js";
 import { ensureProductIndexExists } from "@repo/opensearch";
-import { getOpenSearchClient, closeOpenSearchClient } from "./opensearch/client.js";
-import { getRedisClient, closeRedisClient } from "./utils/redis.js";
+import {
+  getOpenSearchClient,
+  closeOpenSearchClient,
+} from "./opensearch/client.js";
+import { redis } from "./utils/redis.js";
 import { consumer, producer } from "./utils/kafka.js";
 import { registerProductEventSubscriptions } from "./consumers/product-events.consumer.js";
 
@@ -39,16 +42,24 @@ async function bootstrap() {
     { prefix: "/api/v1" },
   );
 
-  // 4. Connect Redis client
-  getRedisClient();
+  // 4. Redis is configured in src/utils/redis.ts and connects when that module
+  //    loads (imported above for graceful shutdown).
 
   // 5. Ensure OpenSearch index & alias are created
   try {
-    await ensureProductIndexExists(getOpenSearchClient(), config.opensearch.indexName, config.opensearch.aliasName, logger);
+    await ensureProductIndexExists(
+      getOpenSearchClient(),
+      config.opensearch.indexName,
+      config.opensearch.aliasName,
+      logger,
+    );
   } catch (error) {
-    logger.warn("OpenSearch index check failed on startup (will retry on incoming events/queries)", {
-      error,
-    });
+    logger.warn(
+      "OpenSearch index check failed on startup (will retry on incoming events/queries)",
+      {
+        error,
+      },
+    );
   }
 
   // 6. Connect Kafka & register event subscriptions
@@ -66,7 +77,9 @@ async function bootstrap() {
       port: config.app.port,
       host: config.app.host,
     });
-    logger.info(`Search service listening on http://${config.app.host}:${config.app.port}`);
+    logger.info(
+      `Search service listening on http://${config.app.host}:${config.app.port}`,
+    );
   } catch (error) {
     logger.fatal("Failed to start search-service HTTP server", { error });
     process.exit(1);
@@ -86,7 +99,7 @@ async function bootstrap() {
       } catch (error) {
         logger.error("Error disconnecting Kafka consumer", { error });
       }
-      await closeRedisClient();
+      await redis.close();
       await closeOpenSearchClient();
 
       logger.info("All search-service connections closed gracefully");

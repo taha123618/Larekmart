@@ -1,19 +1,19 @@
 import { createHash } from "node:crypto";
 import {
-  cacheGet,
+  cacheRead,
   cacheSet,
   bumpNamespaceVersion,
   getNamespaceVersion,
 } from "@repo/redis";
-import { getRedisClient } from "../utils/redis.js";
+import { redis } from "../utils/redis.js";
 import { config } from "../config/config.js";
-import { logger, searchMetrics } from "../observability/metrics.js";
+import { logger, cacheMetrics } from "../observability/metrics.js";
 import type { SearchQueryParams, SearchResponse } from "@repo/types";
 
 /** In-memory fallback for the namespace version when Redis is unavailable. */
 const namespaceVersionFallback = { value: 1 };
 
-const NAMESPACE_VERSION_KEY = `${config.redis.keyPrefix}namespace_version`;
+const NAMESPACE_VERSION_KEY = redis.keys.simple("namespace_version");
 
 /**
  * Produces a deterministic, content-addressed cache key for a search query.
@@ -33,7 +33,8 @@ export function generateNormalizedSearchKey(
   if (params.page) normalized.page = params.page;
   if (params.limit) normalized.limit = params.limit;
   if (params.sort) normalized.sort = params.sort;
-  if (params.category) normalized.category = params.category.trim().toLowerCase();
+  if (params.category)
+    normalized.category = params.category.trim().toLowerCase();
   if (params.categorySlug)
     normalized.categorySlug = params.categorySlug.trim().toLowerCase();
   if (params.brand) normalized.brand = params.brand.trim().toLowerCase();
@@ -59,13 +60,13 @@ export function generateNormalizedSearchKey(
     .digest("hex")
     .substring(0, 16);
 
-  return `${config.redis.keyPrefix}v${version}:q:${hash}`;
+  return redis.keys.namespace(`v${version}`, "q", hash);
 }
 
 /** Reads the current cache namespace version from Redis (or memory). */
 export async function getCacheVersion(): Promise<number> {
   return getNamespaceVersion(
-    getRedisClient(),
+    redis.client,
     NAMESPACE_VERSION_KEY,
     namespaceVersionFallback,
   );
@@ -77,7 +78,7 @@ export async function getCacheVersion(): Promise<number> {
  */
 export async function invalidateSearchCacheNamespace(): Promise<number> {
   const newVersion = await bumpNamespaceVersion(
-    getRedisClient(),
+    redis.client,
     NAMESPACE_VERSION_KEY,
     namespaceVersionFallback,
   );
@@ -85,21 +86,20 @@ export async function invalidateSearchCacheNamespace(): Promise<number> {
   return newVersion;
 }
 
-/** Returns cached search results for `params`, or `null` on miss. */
+/** Returns cached search results for `params`, or `null` on miss/error. */
 export async function getCachedSearchResults(
   params: SearchQueryParams,
 ): Promise<SearchResponse | null> {
   const version = await getCacheVersion();
   const key = generateNormalizedSearchKey(params, version);
 
-  const cached = await cacheGet<SearchResponse>(getRedisClient(), key);
+  const cached = cacheMetrics.record(
+    await cacheRead<SearchResponse>(redis.client, key),
+    "search",
+  );
 
-  if (!cached) {
-    searchMetrics.cacheMissesTotal.inc({ cache_type: "search" });
-    return null;
-  }
+  if (cached === null) return null;
 
-  searchMetrics.cacheHitsTotal.inc({ cache_type: "search" });
   cached.meta.fromCache = true;
   return cached;
 }
@@ -112,5 +112,5 @@ export async function setCachedSearchResults(
 ): Promise<void> {
   const version = await getCacheVersion();
   const key = generateNormalizedSearchKey(params, version);
-  await cacheSet(getRedisClient(), key, response, ttlSeconds);
+  await cacheSet(redis.client, key, response, ttlSeconds);
 }

@@ -71,6 +71,28 @@ exposes a read-only OpenSearch-backed search endpoint (`GET /products/search`) t
 - Config comes from `OPENSEARCH_NODE`, `OPENSEARCH_USERNAME`, `OPENSEARCH_PASSWORD`,
   `OPENSEARCH_ALIAS`, `OPENSEARCH_REQUEST_TIMEOUT` (see `.env.example`).
 
+## Caching
+
+- All Redis access goes through `@repo/redis`; `src/utils/redis.ts` declares the handle with
+  `createRedisService`, and `src/cache/catalog-cache.ts` holds the catalog cache. Do not import
+  `ioredis` here.
+- Use `redis.client` with the `cacheRead`/`cacheSet` helpers and `redis.keys` to compose keys.
+  Cache counters (`cache_hits_total` / `cache_misses_total` / `cache_errors_total`, `cache_type`
+  labels) come from `createCacheMetrics` in `src/observability/metrics.ts`, which also owns the
+  service logger and metrics registry, and surface at `/metrics`. Read through `cacheRead` so the
+  outcome can be classified — an unreachable Redis is an **error, not a miss**.
+- Cached (read-through): `GET /products`, `GET /products/:id`, `GET /categories`.
+- **Invalidate on every write.** `createProduct`/`updateProduct`/`deleteProduct` and the
+  category mutations call `invalidateCatalogCache()`, which bumps the `product:v1:` namespace
+  version so all previously cached keys become unreachable at once. A new mutation path must
+  call it too, or the storefront serves a stale catalog until the TTL expires.
+- Never cache a miss: `getProduct` returns `null` for an unknown id, and caching that would hide
+  a real value behind the TTL once the product exists.
+- Redis is optional: misses fall through to Prisma, and `/health` reports Redis as `degraded`
+  rather than failing the service.
+- Config: `REDIS_URL`, `REDIS_KEY_PREFIX`, `PRODUCT_CACHE_TTL_SECONDS`,
+  `CATEGORY_CACHE_TTL_SECONDS` (see `.env.example`).
+
 ## Search index backfill
 
 - `pnpm --filter product-service backfill:search` republishes every catalog product as a

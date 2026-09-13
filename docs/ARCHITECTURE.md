@@ -37,7 +37,8 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 
 **`admin` (dashboard, :3003)** — Next.js App Router, shadcn/ui, Tailwind v4.
 
-- Sections: dashboard (charts, cards, todo), products, categories, users, orders.
+- Sections: dashboard (charts, cards, todo), products, categories, users, orders, and cache
+  performance (Redis hit/miss rates per service, scraped live from each service's `/metrics`).
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
   react-hook-form + Zod schemas from `@repo/types`.
@@ -55,12 +56,18 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Publishes `product.created` and `product.deleted` for Stripe sync.
 - Reads the shared OpenSearch product index through `@repo/opensearch` for `GET /products/search`;
   index writes stay owned by search-service.
+- Caching: Redis (`product:v1:*` namespace) through `@repo/redis` — read-through cache for
+  `GET /products`, `GET /products/:id`, and `GET /categories`, invalidated by a namespace-version
+  bump on every product/category mutation.
 
 **`order-service` (Fastify 5, :8001)** — orders and analytics.
 
 - Routes: `/user-orders` (user-scoped), `/orders` (admin, optional `limit`),
   `/order-chart` (admin, 6-month aggregation), `/health`, `/test`.
 - Persistence: Mongoose → MongoDB (`Order`, statuses `success | failed`).
+- Caching: Redis (`order:v1:*` namespace) through `@repo/redis` — read-through cache for
+  `GET /order-chart`, TTL-bounded rather than invalidated on write, because orders arrive faster
+  than a per-order invalidation could be repopulated.
 - Consumes `payment.successful` → `createOrder` → publishes `order.created`.
 
 **`payment-service` (Hono, :8002)** — money.
@@ -85,6 +92,9 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Routes: `/analytics/summary`, `/analytics/daily-chart`, `/analytics/events`, `/health`.
 - Consumes `payment.successful`, `order.created`, `user.created`, `product.created`, and `product.deleted`.
 - Tracks real-time KPI metrics and persists event audit logs and daily summaries to PostgreSQL.
+- Caching: Redis (`analytics:v1:*` namespace) through `@repo/redis` — TTL-bounded read-through cache for
+  `/analytics/daily-chart` and `/analytics/events`. Entries expire rather than being invalidated per event,
+  because events arrive faster than a write-through invalidation would repopulate them.
 
 **`notification-service` (Go 1.22 / Chi, :8005)** — unified notification orchestration.
 
@@ -103,17 +113,19 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 
 ## Data ownership
 
-| Store      | Owner                            | Accessed via                    | Notable models                                                                                                                          |
-| ---------- | -------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL | product-service                  | `@repo/product-db` (Prisma)     | `Product`, `Category`                                                                                                                   |
-| PostgreSQL | analytic-service                 | `pg.Pool`                       | `analytics_events`, `analytics_daily_summary`                                                                                           |
-| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)             | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
-| Redis      | notification-service             | `go-redis` (Go)                 | `event:<id>` (idempotency fast-cache)                                                                                                   |
-| Redis      | search-service                   | `ioredis`                       | `search:v1:*` (search result cache, suggestion cache)                                                                                   |
-| OpenSearch | search-service                   | `@repo/opensearch`              | `products-v1` index (alias `products`) — denormalized search document                                                                  |
-| MongoDB    | order-service                    | `@repo/order-db` (Mongoose)     | `Order`                                                                                                                                 |
-| Clerk      | auth-service (and all frontends) | Clerk SDKs                      | users, session claims                                                                                                                   |
-| Stripe     | payment-service                  | `stripe` SDK                    | products, prices, sessions                                                                                                              |
+| Store      | Owner                            | Accessed via                | Notable models                                                                                                                          |
+| ---------- | -------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --- | ----- | ---------------- | ----------------------- | ----------------------------------------------- |
+| PostgreSQL | product-service                  | `@repo/product-db` (Prisma) | `Product`, `Category`                                                                                                                   |
+| PostgreSQL | analytic-service                 | `pg.Pool`                   | `analytics_events`, `analytics_daily_summary`                                                                                           |
+| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)         | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
+| Redis      | notification-service             | `go-redis` (Go)             | `event:<id>` (idempotency fast-cache)                                                                                                   |
+| Redis      | search-service                   | `@repo/redis` (ioredis)     | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                               |
+| Redis      | product-service                  | `@repo/redis` (ioredis)     | `product:v1:*` (catalog read-through cache)                                                                                             |     | Redis | analytic-service | `@repo/redis` (ioredis) | `analytics:v1:*` (dashboard read-through cache) |
+| Redis      | order-service                    | `@repo/redis` (ioredis)     | `order:v1:*` (6-month order-chart read-through cache)                                                                                   |
+| OpenSearch | search-service                   | `@repo/opensearch`          | `products-v1` index (alias `products`) — denormalized search document                                                                   |
+| MongoDB    | order-service                    | `@repo/order-db` (Mongoose) | `Order`                                                                                                                                 |
+| Clerk      | auth-service (and all frontends) | Clerk SDKs                  | users, session claims                                                                                                                   |
+| Stripe     | payment-service                  | `stripe` SDK                | products, prices, sessions                                                                                                              |
 
 `@repo/types` re-exports the persistence-derived types (`Product`, `Category`, `Order`)
 so consumers can type against the catalog/order shapes without importing the DB clients
@@ -190,6 +202,23 @@ admin ── POST /users ──▶ auth-service ── clerkClient.users.createU
   `@repo/opensearch` — import from there, never add the SDK or DSL to individual services
   directly. search-service owns index **writes** (via Kafka); other services may only **read**
   the index through the same package.
+- **Cache infrastructure:** all Redis access goes through `@repo/redis`. Each service declares a single
+  handle with `createRedisService({ url, keyPrefix, serviceName, logger })`, which binds the connection,
+  the key namespace, `ping()` for health checks, and `close()` for shutdown — services never wire the
+  client themselves. Keys are namespaced per service by the handle's `keys` builder (`search:v1:`,
+  `product:v1:`, `analytics:v1:`), so one shared Redis instance stays partitioned. Reads go through
+  `cacheRead`, which reports `hit`, `miss`, or `error`, and `@repo/monitoring`'s `createCacheMetrics`
+  counts those three outcomes separately as `cache_hits_total` / `cache_misses_total` /
+  `cache_errors_total` (labelled by `cache_type`) at `/metrics` — an unreachable Redis is an `error`,
+  not a miss, so an outage cannot masquerade as a 0% hit rate. The admin dashboard's **Cache
+  Performance** page (`/cache`) scrapes them from every service and reports a **hit rate and an error
+  rate** per service (plus a per-cache breakdown). The error rate is the share of read attempts that
+  failed because Redis was unreachable — it is shown next to the hit rate rather than folded into it,
+  so a service with a poor hit rate and a healthy cache is distinguishable from one that cannot reach
+  Redis at all. Cards are ranked by error rate (highest first) so a failing cache is the first thing
+  displayed. Redis is treated as **optional everywhere**: every read
+  falls through to the source of truth on a miss, and a Redis outage reports `degraded`, never
+  `unhealthy`, in `/health`.
 - **CORS:** each service allow-lists the specific frontend origins it serves
   (`client` :3002, `admin` :3003).
 - **Error shape:** `{ message }` JSON with correct status codes; a global error handler

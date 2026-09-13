@@ -39,6 +39,25 @@ A hybrid Kafka consumer worker and Express HTTP API service that listens to all 
 - Handles PostgreSQL offline / connection failures gracefully with in-memory accumulation so Kafka consumption and HTTP reads continue operating.
 - Never commit database credentials; use `DATABASE_URL` from `.env`.
 
+## Caching
+
+- All Redis access goes through `@repo/redis`; `src/utils/redis.ts` declares the handle with
+  `createRedisService`, and `src/cache/analytics-cache.ts` holds the dashboard cache. Do not
+  import `ioredis` here.
+- Use `redis.client` with the `cacheRead`/`cacheSet` helpers and `redis.keys` to compose keys.
+  Cache counters (`cache_hits_total` / `cache_misses_total` / `cache_errors_total`, `cache_type`
+  labels) come from `createCacheMetrics` in `src/observability/metrics.ts`, which also owns the
+  service logger and metrics registry, and surface at `/metrics`. Read through `cacheRead` so the
+  outcome can be classified — an unreachable Redis is an **error, not a miss**.
+- Cached (read-through): `getDailyAnalytics` and `getRecentEvents`. Call those exported
+  functions — the private `readDailyAnalytics` / `readRecentEvents` helpers bypass the cache.
+- Entries are **TTL-bounded, not invalidated on write**: events arrive continuously, so a
+  namespace bump per event would invalidate faster than the dashboard reads. Keep the windows
+  short and configurable via `ANALYTICS_CHART_CACHE_TTL_SECONDS` /
+  `ANALYTICS_EVENTS_CACHE_TTL_SECONDS`.
+- Redis is optional: misses fall through to PostgreSQL and the in-memory counters, and
+  `/health` reports Redis as `degraded` rather than failing the service.
+
 ## Error handling
 
 - Kafka handlers must catch and log errors safely to prevent consumer crash loops.

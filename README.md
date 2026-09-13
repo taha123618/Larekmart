@@ -72,6 +72,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   └── notification-service/ # Go (Chi) + PostgreSQL + Redis + WebSockets notification orchestration (:8005)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
+│   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
 │   ├── types/                # @repo/types    — shared types, Zod schemas, event contracts
 │   ├── monitoring/           # @repo/monitoring — structured logging, health checks, metrics & telemetry
 │   ├── product-db/           # @repo/product-db — Prisma client & schema (PostgreSQL)
@@ -137,7 +138,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 
 - **Node.js**: ≥ 18
 - **pnpm**: 9.0.0 (`corepack enable && corepack prepare pnpm@9.0.0 --activate`)
-- **Docker**: For running the local Kafka cluster
+- **Docker**: For running the local Kafka cluster and Redis
+- **Redis**: Local or containerized on port `6379` (cache for search-service, product-service, and analytic-service)
 - **PostgreSQL**: Local or containerized on port `5432`
 - **MongoDB**: Local or containerized on port `27017`
 
@@ -155,16 +157,19 @@ pnpm run skills:sync                      # sync canonical .agents/skills to AI 
 # 2. Start local Kafka cluster (3 brokers + Kafka UI at http://localhost:8080)
 docker compose -f packages/kafka/docker-compose.yml up -d
 
-# 3. Initialize local PostgreSQL databases
+# 3. Start local Redis (caches + rate limiting for search/product/analytic services)
+docker compose -f packages/redis/docker-compose.yml up -d
+
+# 4. Initialize local PostgreSQL databases
 createdb ecommerce
 createdb notification_db
 
-# 4. Generate Prisma Client & apply database migrations
+# 5. Generate Prisma Client & apply database migrations
 pnpm --filter @repo/product-db db:generate
 pnpm --filter @repo/product-db db:migrate
 
 
-# 5. Start all workspaces concurrently in development mode (Next.js apps, Node services, and Go notification-service)
+# 6. Start all workspaces concurrently in development mode (Next.js apps, Node services, and Go notification-service)
 pnpm dev
 ```
 
@@ -175,6 +180,7 @@ pnpm dev
 | **Development**         | `pnpm dev`                                                             | Run all applications and services concurrently via Turborepo        |
 | **Scoped Dev**          | `pnpm --filter <workspace> dev`                                        | Run a specific application or service (e.g. `notification-service`) |
 | **Notification Docker** | `docker compose -f apps/notification-service/docker-compose.yml up -d` | Run notification-service + PostgreSQL + Redis via Docker Compose    |
+| **Redis Docker**        | `docker compose -f packages/redis/docker-compose.yml up -d`            | Run local Redis for the service caches and rate limiting            |
 | **Type Check**          | `pnpm check-types`                                                     | Run type checking (`tsc` / `go vet`) across all 16 workspaces       |
 | **Lint**                | `pnpm lint`                                                            | Run ESLint flat checks on `admin` and `client`                      |
 | **Format**              | `pnpm format`                                                          | Run Prettier across all TypeScript, TSX, and Markdown files         |

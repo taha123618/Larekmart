@@ -14,7 +14,19 @@ export {
 } from "./health.js";
 
 // Metrics
-export { MetricsRegistry, createMetricsRegistry } from "./metrics.js";
+export {
+  MetricsRegistry,
+  createMetricsRegistry,
+  createCounter,
+  createCacheMetrics,
+  createHistogram,
+} from "./metrics.js";
+export type {
+  CacheMetrics,
+  CacheReadOutcome,
+  MetricCounter,
+  MetricHistogram,
+} from "./metrics.js";
 
 // Performance Instrumentation
 export { startTimer, measureAsync, measureSync } from "./performance.js";

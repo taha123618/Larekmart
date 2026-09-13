@@ -13,7 +13,10 @@ uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-form + 
 - `src/app/` — App Router routes. Look for `(dashboard)` for the protected admin shell and
   `(auth)` for clerk sign-in / unauthorized fallback.
 - `src/components/` — UI: `AddProduct`, `AddCategory`, `CardList`, `AddUser`, data tables,
-  chart components, `BackfillSearchButton`, etc.
+  chart components, `BackfillSearchButton`, `CacheStatsTable`, etc.
+- `src/lib/cache-stats.ts` — scrapes each service's `/metrics` and shapes the cache
+  hit/miss/error counters for the Cache Performance page (`/cache`), including the
+  per-service `hitRateOf` / `errorRateOf` computations.
 - `src/components/ui/` — shadcn/ui primitives. Add new primitives here when you need one.
 - `src/lib/utils.ts` — contains `cn()`.
 - `src/middleware.ts` — admin routing guard using `createRouteMatcher` and
@@ -58,6 +61,24 @@ This app talks HTTP to:
   not that the index is already rebuilt.
 - `order-service` — orders, order chart.
 - `auth-service` — user admin (list, get, create, delete).
+- every caching service — its `/metrics` endpoint, for the **Cache Performance** page
+  (`/cache`). That page reads `cache_hits_total` / `cache_misses_total` / `cache_errors_total`
+  from search-service, product-service, analytic-service, and order-service, and reports a
+  service as `unavailable` instead of failing when it cannot be reached. The counters are read
+  live (`dynamic = "force-dynamic"`), so never prerender that page at build time.
+  `cache_errors_total` (reads that failed because Redis was unreachable) is shown separately from
+  misses on purpose — the page must let an outage be told apart from a cold cache.
+  Each service card reports a hit rate and an **error rate** side by side so services can be
+  compared at a glance. Error rate is `errors / (hits + misses + errors)` while hit rate excludes
+  errors, so a service reading "100% hit rate, 4% errors" is healthy _and_ occasionally unable to
+  reach Redis. Both are computed in `cache-stats.ts`; keep that arithmetic there rather than in
+  the component.
+  Cards are **ordered by error rate, highest first** (`rankByErrorRate`) so a failing cache is the
+  first thing on the page. A `null` rate — no traffic yet, or `/metrics` unreadable — sorts below
+  every real rate rather than being treated as `0%`; otherwise a service that simply is not running
+  locally would crowd out the real signal. Ties keep the configured order from
+  `getCacheServiceTargets()`. That ranking rule lives in `cache-stats.ts` too — the component only
+  renders the result, and the per-cache breakdown table stays in configured order.
 - It does not touch Postgres/Mongo/Kafka directly.
 
 Follow the existing fetch pattern with Clerk token + service URL env vars. If you add a new

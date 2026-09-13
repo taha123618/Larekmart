@@ -1,6 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
-import { getOpenSearchClient, checkOpenSearchConnection } from "../opensearch/client.js";
-import { checkRedisConnection } from "../utils/redis.js";
+import {
+  getOpenSearchClient,
+  checkOpenSearchConnection,
+} from "../opensearch/client.js";
+import { redis } from "../utils/redis.js";
 import { metrics } from "../observability/metrics.js";
 
 function getClientForHealthCheck() {
@@ -22,7 +25,7 @@ export const healthRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get("/ready", async (request, reply) => {
     const [opensearchHealthy, redisHealthy] = await Promise.all([
       checkOpenSearchConnection(getClientForHealthCheck()),
-      checkRedisConnection(),
+      redis.ping(),
     ]);
 
     const isReady = opensearchHealthy; // OpenSearch is strictly required; Redis can failover

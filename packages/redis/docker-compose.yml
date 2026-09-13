@@ -1,0 +1,25 @@
+# Local Redis for every service that uses @repo/redis.
+#
+#   docker compose -f packages/redis/docker-compose.yml up -d
+#
+# One instance is enough: each service namespaces its keys with REDIS_KEY_PREFIX
+# (search:v1:, product:v1:, analytics:v1:), so they share the server without
+# colliding. Redis is a cache only — nothing here needs to survive a restart.
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: larekmart-redis
+    command: >
+      redis-server
+      --save ""
+      --appendonly no
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped

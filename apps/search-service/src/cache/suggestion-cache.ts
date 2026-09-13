@@ -1,7 +1,7 @@
-import { cacheGet, cacheSet } from "@repo/redis";
-import { getRedisClient } from "../utils/redis.js";
+import { cacheRead, cacheSet } from "@repo/redis";
+import { redis } from "../utils/redis.js";
 import { config } from "../config/config.js";
-import { searchMetrics } from "../observability/metrics.js";
+import { cacheMetrics } from "../observability/metrics.js";
 import type { SuggestionQuery, SuggestionResponse } from "@repo/types";
 
 /**
@@ -11,22 +11,22 @@ import type { SuggestionQuery, SuggestionResponse } from "@repo/types";
  */
 export function generateSuggestionKey(params: SuggestionQuery): string {
   const queryNormalized = params.q.trim().toLowerCase();
-  return `${config.redis.keyPrefix}sugg:${queryNormalized}:${params.limit}`;
+  return redis.keys.namespace("sugg", queryNormalized, params.limit);
 }
 
-/** Returns cached suggestions for `params`, or `null` on miss. */
+/** Returns cached suggestions for `params`, or `null` on miss/error. */
 export async function getCachedSuggestions(
   params: SuggestionQuery,
 ): Promise<SuggestionResponse | null> {
   const key = generateSuggestionKey(params);
-  const cached = await cacheGet<SuggestionResponse>(getRedisClient(), key);
 
-  if (!cached) {
-    searchMetrics.cacheMissesTotal.inc({ cache_type: "suggestion" });
-    return null;
-  }
+  const cached = cacheMetrics.record(
+    await cacheRead<SuggestionResponse>(redis.client, key),
+    "suggestion",
+  );
 
-  searchMetrics.cacheHitsTotal.inc({ cache_type: "suggestion" });
+  if (cached === null) return null;
+
   cached.fromCache = true;
   return cached;
 }
@@ -38,5 +38,5 @@ export async function setCachedSuggestions(
   ttlSeconds: number = config.redis.suggestionCacheTtl,
 ): Promise<void> {
   const key = generateSuggestionKey(params);
-  await cacheSet(getRedisClient(), key, response, ttlSeconds);
+  await cacheSet(redis.client, key, response, ttlSeconds);
 }

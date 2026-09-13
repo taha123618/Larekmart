@@ -6,16 +6,14 @@ import { orderRoute } from "./routes/order.js";
 import { consumer, producer } from "./utils/kafka.js";
 import { runKafkaSubscriptions } from "./utils/subscriptions.js";
 import {
-  createLogger,
   createHealthRegistry,
-  createMetricsRegistry,
   createHttpMonitor,
   createMemoryCheck,
   createDbCheck,
 } from "@repo/monitoring";
+import { logger, metrics } from "./observability/metrics.js";
+import { redis } from "./utils/redis.js";
 
-const logger = createLogger("order-service");
-const metrics = createMetricsRegistry("order-service");
 const httpMonitor = createHttpMonitor(logger, metrics);
 const health = createHealthRegistry("order-service", "1.0.0");
 
@@ -31,6 +29,17 @@ health.register(
     }
   }),
   { critical: true },
+);
+// Redis only backs the order-chart cache, so losing it degrades performance but
+// must never flip the service to unhealthy.
+health.register(
+  "redis",
+  createDbCheck("Redis", async () => {
+    if (!(await redis.ping())) {
+      throw new Error("PING did not return PONG");
+    }
+  }),
+  { critical: false },
 );
 
 const fastify = Fastify();

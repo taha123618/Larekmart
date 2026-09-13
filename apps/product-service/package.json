@@ -20,6 +20,7 @@
     "@repo/kafka": "workspace:*",
     "@repo/monitoring": "workspace:*",
     "@repo/opensearch": "workspace:*",
+    "@repo/redis": "workspace:*",
     "@repo/types": "workspace:*"
   },
   "devDependencies": {

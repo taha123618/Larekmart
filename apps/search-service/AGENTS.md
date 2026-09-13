@@ -11,7 +11,8 @@ A dedicated search and indexing microservice for Larekmart built with Node.js, F
 - `src/server.ts` — Fastify bootstrap, OpenSearch index initialization, Kafka subscriptions, Redis connection, and graceful shutdown on port `8006`.
 - `src/config/` — Strongly-typed Zod environment validation (`env.ts`) and central runtime configuration (`config.ts`).
 - `src/opensearch/client.ts` — OpenSearch client singleton (wraps `@repo/opensearch`), ping check, and shutdown.
-- `src/cache/` — Redis client (`redis.ts`), normalized query hash caching (`search-cache.ts`), and autocomplete cache (`suggestion-cache.ts`).
+- `src/utils/redis.ts` — Redis client singleton and key builder (wraps `@repo/redis`).
+- `src/cache/` — normalized query hash caching (`search-cache.ts`) and autocomplete cache (`suggestion-cache.ts`).
 - `src/services/` — Business orchestration for search (`search.service.ts`), suggestions (`suggestion.service.ts`), document indexing (`indexing.service.ts`), and alias-based reindexing (`reindex.service.ts`).
 - `src/consumers/` — Product event handlers (`product-events.consumer.ts`) using `@repo/kafka` directly.
 - `src/routes/` — Fastify route modules (`search.ts`, `suggestions.ts`, `indexing.ts`, `health.ts`).
@@ -25,6 +26,21 @@ A dedicated search and indexing microservice for Larekmart built with Node.js, F
   logger, and config. Do not import `@opensearch-project/opensearch` here.
 - search-service owns index **writes** (Kafka consumers) and the alias lifecycle. Other
   services (e.g. product-service) may read the index through the same package.
+
+## Redis ownership
+
+- All Redis access goes through `@repo/redis`; this service only binds the client and its key
+  namespace. Do not import `ioredis` here.
+- `src/utils/redis.ts` declares the service handle with `createRedisService` and owns the
+  `search:v1:` namespace. Compose keys with `redis.keys` — never hand-write the prefix, or the
+  same logical key ends up under two names.
+- Consumers use `redis.client` with the package helpers, `redis.ping()` for `/ready`, and
+  `redis.close()` on shutdown. `src/observability/metrics.ts` owns the logger, the metrics
+  registry, and the shared cache counters (`cache_hits_total` / `cache_misses_total` /
+  `cache_errors_total`), created with `createCacheMetrics`. Reads go through `cacheRead` so the
+  outcome can be classified; an unreachable Redis is counted as an **error, not a miss**.
+- Caching is best-effort: a Redis outage must degrade to cache misses, never to a failed request.
+  `/ready` reports Redis as `degraded`, and the rate limiter fails open.
 
 ## Framework and style
 

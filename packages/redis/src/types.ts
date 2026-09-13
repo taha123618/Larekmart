@@ -1,14 +1,20 @@
 /**
  * Configuration accepted by `createRedisClient`.
+ *
+ * Note there is intentionally no `keyPrefix` option here: keys are composed by
+ * the service with `createKeyBuilder`, which keeps this factory a plain
+ * connection factory and makes every key a service writes greppable in one
+ * place. See `packages/redis/AGENTS.md`.
  */
 export interface RedisClientConfig {
-  /** Full Redis connection URL, e.g. "redis://localhost:6379" */
-  url: string;
   /**
-   * Optional key namespace that prefixes every key written through the helpers
-   * in this package (e.g. "search:v1:").
+   * Full Redis connection URL, e.g. "redis://localhost:6379".
+   *
+   * Use the path segment to pick a logical database when a service needs one:
+   * `redis://localhost:6379/2`. Services should not share a database unless
+   * they also share a key prefix.
    */
-  keyPrefix?: string;
+  url: string;
   /**
    * Maximum number of reconnect attempts before the client gives up.
    * Defaults to 5. Pass `Infinity` to retry forever.

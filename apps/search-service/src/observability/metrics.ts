@@ -1,61 +1,59 @@
-import { createMetricsRegistry, createLogger } from "@repo/monitoring";
+import {
+  createCacheMetrics,
+  createCounter,
+  createHistogram,
+  createLogger,
+  createMetricsRegistry,
+} from "@repo/monitoring";
 import { config } from "../config/config.js";
 
 export const logger = createLogger(config.monitoring.serviceName);
 export const metrics = createMetricsRegistry(config.monitoring.serviceName);
 
 /**
- * Thin counter/histogram wrappers that match the MetricsRegistry.increment() /
- * MetricsRegistry.observe() API while exposing a Prometheus-style `.inc()` /
- * `.observe()` interface used throughout the service.
+ * Cache counters shared with every other service: `cache_hits_total`,
+ * `cache_misses_total`, and `cache_errors_total` labelled by `cache_type`
+ * (`search`, `suggestion`). Errors are reads that failed because Redis was
+ * unreachable — not misses.
  */
-function makeCounter(metricName: string, help?: string) {
-  return {
-    inc(labels: Record<string, string | number> = {}, value = 1) {
-      metrics.increment(metricName, value, labels, help);
-    },
-  };
-}
-
-function makeHistogram(metricName: string, help?: string) {
-  return {
-    observe(labels: Record<string, string | number> = {}, value: number) {
-      metrics.observe(metricName, value, labels, help);
-    },
-  };
-}
+export const cacheMetrics = createCacheMetrics(metrics);
 
 export const searchMetrics = {
   // Counters
-  searchRequestsTotal: makeCounter(
+  searchRequestsTotal: createCounter(
+    metrics,
     "search_requests_total",
     "Total number of product search requests",
   ),
-  searchErrorsTotal: makeCounter(
+  searchErrorsTotal: createCounter(
+    metrics,
     "search_errors_total",
     "Total number of failed search operations",
   ),
-  opensearchRequestsTotal: makeCounter(
+  opensearchRequestsTotal: createCounter(
+    metrics,
     "opensearch_requests_total",
     "Total OpenSearch operations executed",
   ),
-  cacheHitsTotal: makeCounter("cache_hits_total", "Total search cache hits"),
-  cacheMissesTotal: makeCounter("cache_misses_total", "Total search cache misses"),
-  kafkaEventsProcessedTotal: makeCounter(
+  kafkaEventsProcessedTotal: createCounter(
+    metrics,
     "kafka_events_processed_total",
     "Total Kafka product events processed by search-service",
   ),
-  indexingDocumentsTotal: makeCounter(
+  indexingDocumentsTotal: createCounter(
+    metrics,
     "indexing_documents_total",
     "Total product documents indexed or updated in OpenSearch",
   ),
 
   // Histograms
-  searchDurationSeconds: makeHistogram(
+  searchDurationSeconds: createHistogram(
+    metrics,
     "search_request_duration_seconds",
     "Duration of product search requests in seconds",
   ),
-  opensearchDurationSeconds: makeHistogram(
+  opensearchDurationSeconds: createHistogram(
+    metrics,
     "opensearch_request_duration_seconds",
     "Duration of OpenSearch queries in seconds",
   ),

@@ -7,9 +7,16 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "verify:redis": "pnpm dlx tsx src/scripts/verify-redis.ts"
   },
-  "keywords": ["redis", "cache", "rate-limit", "ioredis", "ecommerce"],
+  "keywords": [
+    "redis",
+    "cache",
+    "rate-limit",
+    "ioredis",
+    "ecommerce"
+  ],
   "license": "ISC",
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
