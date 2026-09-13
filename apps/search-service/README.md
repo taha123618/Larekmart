@@ -229,7 +229,10 @@ pnpm --filter search-service build
 | Variable                       | Default                                        | Description                                |
 | ------------------------------ | ---------------------------------------------- | ------------------------------------------ |
 | `PORT`                         | `8006`                                         | HTTP listening port                        |
+| `HOST`                         | `0.0.0.0`                                      | HTTP bind address                          |
 | `OPENSEARCH_NODE`              | `http://localhost:9200`                        | OpenSearch endpoint                        |
+| `OPENSEARCH_USERNAME`          | —                                              | OpenSearch username                        |
+| `OPENSEARCH_PASSWORD`          | —                                              | OpenSearch password                        |
 | `OPENSEARCH_INDEX`             | `products-v1`                                  | Initial physical index name                |
 | `OPENSEARCH_ALIAS`             | `products`                                     | Active search alias name                   |
 | `REDIS_URL`                    | `redis://localhost:6379`                       | Redis connection URL                       |
@@ -239,3 +242,7 @@ pnpm --filter search-service build
 | `KAFKA_BROKERS`                | `localhost:9094,localhost:9095,localhost:9096` | Kafka broker endpoints                     |
 | `KAFKA_GROUP_ID`               | `search-service-group`                         | Kafka consumer group ID                    |
 | `CLERK_SECRET_KEY`             | —                                              | Clerk secret key for auth                  |
+| `CLERK_PUBLISHABLE_KEY`        | —                                              | Clerk publishable key for service config   |
+| `LOG_LEVEL`                    | `info`                                         | Structured log level                       |
+| `OTEL_SERVICE_NAME`            | `search-service`                               | OpenTelemetry service name                 |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`  | `http://localhost:4318`                        | OpenTelemetry collector endpoint           |

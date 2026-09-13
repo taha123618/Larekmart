@@ -54,4 +54,4 @@ A headless Kafka consumer worker with no HTTP surface. It consumes `user.created
 
 - `pnpm --filter email-service check-types`
 - Manual run against local Kafka.
-- No test runner exists yet.
+- No general JavaScript test runner exists yet; verify this worker with its type-check and manual Kafka flows.

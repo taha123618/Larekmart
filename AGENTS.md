@@ -155,8 +155,9 @@ docker compose -f packages/redis/docker-compose.yml up -d   # Redis (caches, rat
   Follow the extension style of the file you are editing.
 - **Type-check before you finish.** Run `pnpm check-types` (or the workspace filter)
   and `pnpm build` for changes that affect a Next.js app or payment-service.
-- **Testing strategy.** There is no test runner in this repo yet. Verification relies on
-  `check-types`, `build`, `lint`, and manual testing. When adding tests, follow `docs/TESTING.md`.
+- **Testing strategy.** There is no general JavaScript test runner yet. Verification relies
+  on `check-types`, `build`, `lint`, the Go test suite in `notification-service`, the opt-in
+  Redis integration check, and manual testing. When adding tests, follow `docs/TESTING.md`.
 - **Logging** is `console.log`/`console.error` today. Keep it structured and sparse.
 - **Error handling** at boundaries: services return `{ message }` JSON with correct
   status codes; async Kafka handlers catch and log so a bad message cannot kill the

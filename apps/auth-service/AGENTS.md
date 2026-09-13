@@ -61,4 +61,4 @@ backend SDK. It emits `user.created` after a Clerk user is created.
 
 - `pnpm --filter auth-service check-types`
 - Manual flows against running Kafka.
-- No test runner exists yet.
+- No general JavaScript test runner exists yet; verify this service with its type-check and manual Kafka flows.

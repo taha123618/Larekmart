@@ -38,6 +38,12 @@ Copy `.env.example` to `.env`:
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ecommerce
 CLERK_SECRET_KEY=sk_test_...
 
+OPENSEARCH_NODE=http://localhost:9200
+OPENSEARCH_USERNAME=admin
+OPENSEARCH_PASSWORD=admin
+OPENSEARCH_ALIAS=products
+OPENSEARCH_REQUEST_TIMEOUT=5000
+
 # Optional — the service serves every request from PostgreSQL without it
 REDIS_URL=redis://localhost:6379
 REDIS_KEY_PREFIX=product:v1:

@@ -42,4 +42,4 @@ and is gitignored. Change the schema instead.
 - `pnpm --filter @repo/product-db check-types`
 - After schema changes, `pnpm check-types` from root to catch downstream breaks.
 - Apply a migration before relying on new schema shapes in dev.
-- No test runner exists yet.
+- No general JavaScript test runner exists yet; verify schema changes with Prisma generation, migrations, and type-checking.

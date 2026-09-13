@@ -9,13 +9,14 @@ workflow, and deployment notes.
 | ------------------------ | ---------- | ----------------------------------------------------------- |
 | Node.js                  | ≥ 18       | root `engines`                                              |
 | pnpm                     | 9.0.0      | `corepack enable && corepack prepare pnpm@9.0.0 --activate` |
-| Docker                   | any recent | local Kafka cluster                                         |
+| Docker                   | any recent | local Kafka, Redis, and optional OpenSearch                 |
 | PostgreSQL               | ≥ 14       | product catalog                                             |
 | MongoDB                  | ≥ 6        | orders                                                      |
 | Clerk account            | —          | auth keys for three apps/services                           |
 | Stripe test account      | —          | payment-service + client                                    |
 | Google OAuth credentials | —          | email-service Gmail sending                                 |
 | Cloudinary account       | —          | admin image uploads                                         |
+| OpenSearch               | 2.x+       | product search index (`search-service` owns writes)         |
 
 ## First-time setup
 
@@ -42,30 +43,43 @@ pnpm dev
 
 ## Environment matrix
 
-| Workspace       | Variable                                                           | Required    | Purpose                              |
-| --------------- | ------------------------------------------------------------------ | ----------- | ------------------------------------ |
-| admin           | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`                                | yes         | Clerk frontend                       |
-| admin           | `CLERK_SECRET_KEY`                                                 | yes         | Clerk server                         |
-| admin           | `NEXT_PUBLIC_AUTH_SERVICE_URL`                                     | yes         | e.g. `http://localhost:8003`         |
-| admin           | `NEXT_PUBLIC_ORDER_SERVICE_URL`                                    | yes         | e.g. `http://localhost:8001`         |
-| admin           | `NEXT_PUBLIC_PRODUCT_SERVICE_URL`                                  | yes         | e.g. `http://localhost:8000`         |
-| admin           | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`                                | yes         | image uploads                        |
-| client          | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`           | yes         | Clerk                                |
-| client          | `NEXT_PUBLIC_ORDER_SERVICE_URL`                                    | yes         | orders                               |
-| client          | `NEXT_PUBLIC_PRODUCT_SERVICE_URL`                                  | yes         | catalog                              |
-| client          | `NEXT_PUBLIC_PAYMENT_SERVICE_URL`                                  | yes         | checkout                             |
-| client          | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`                               | recommended | currently a literal test key in code |
-| product-service | `NODE_ENV`, `DATABASE_URL`, `CLERK_SECRET_KEY`                     | yes         | Prisma + auth                        |
-| order-service   | `MONGO_URL`, `CLERK_SECRET_KEY`                                    | yes         | Mongoose + auth                      |
-| payment-service | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`                       | yes         | Stripe + webhook verification        |
-| auth-service    | `CLERK_SECRET_KEY`                                                 | yes         | Clerk backend                        |
-| email-service   | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` | yes         | Gmail OAuth2                         |
+| Workspace            | Variable                                                                                                                         | Required    | Purpose                                 |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------- | --------------------------------------- |
+| admin                | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`                                                                                              | yes         | Clerk frontend                          |
+| admin                | `CLERK_SECRET_KEY`                                                                                                               | yes         | Clerk server                            |
+| admin                | `NEXT_PUBLIC_AUTH_SERVICE_URL`                                                                                                   | yes         | e.g. `http://localhost:8003`            |
+| admin                | `NEXT_PUBLIC_ORDER_SERVICE_URL`                                                                                                  | yes         | e.g. `http://localhost:8001`            |
+| admin                | `NEXT_PUBLIC_PRODUCT_SERVICE_URL`                                                                                                | yes         | e.g. `http://localhost:8000`            |
+| admin                | `NEXT_PUBLIC_ANALYTIC_SERVICE_URL`, `NEXT_PUBLIC_SEARCH_SERVICE_URL`                                                             | yes         | analytics and search index actions      |
+| admin                | `NEXT_PUBLIC_NOTIFICATION_SERVICE_URL`, `NEXT_PUBLIC_NOTIFICATION_WS_URL`                                                        | optional    | notification API and WebSocket          |
+| admin                | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`                                                                                              | yes         | image uploads                           |
+| client               | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`                                                                         | yes         | Clerk                                   |
+| client               | `NEXT_PUBLIC_ORDER_SERVICE_URL`                                                                                                  | yes         | orders                                  |
+| client               | `NEXT_PUBLIC_PRODUCT_SERVICE_URL`                                                                                                | yes         | catalog                                 |
+| client               | `NEXT_PUBLIC_PAYMENT_SERVICE_URL`                                                                                                | yes         | checkout                                |
+| client               | `NEXT_PUBLIC_SEARCH_SERVICE_URL`, `NEXT_PUBLIC_NOTIFICATION_SERVICE_URL`, `NEXT_PUBLIC_NOTIFICATION_WS_URL`                      | optional    | autocomplete and live notifications     |
+| client               | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`                                                                                             | recommended | currently a literal test key in code    |
+| product-service      | `NODE_ENV`, `DATABASE_URL`, `CLERK_SECRET_KEY`                                                                                   | yes         | Prisma + auth                           |
+| product-service      | `OPENSEARCH_NODE`, `OPENSEARCH_USERNAME`, `OPENSEARCH_PASSWORD`, `OPENSEARCH_ALIAS`, `OPENSEARCH_REQUEST_TIMEOUT`                | yes         | shared search reads                     |
+| product-service      | `REDIS_URL`, `REDIS_KEY_PREFIX`, `PRODUCT_CACHE_TTL_SECONDS`, `CATEGORY_CACHE_TTL_SECONDS`                                       | optional    | catalog cache                           |
+| order-service        | `MONGO_URL`, `CLERK_SECRET_KEY`                                                                                                  | yes         | Mongoose + auth                         |
+| order-service        | `REDIS_URL`, `REDIS_KEY_PREFIX`, `ORDER_CHART_CACHE_TTL_SECONDS`                                                                 | optional    | order chart cache                       |
+| payment-service      | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`                                                                                     | yes         | Stripe + webhook verification           |
+| auth-service         | `CLERK_SECRET_KEY`                                                                                                               | yes         | Clerk backend                           |
+| analytic-service     | `PORT`, `DATABASE_URL`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`                                                              | yes         | analytics HTTP API and worker           |
+| analytic-service     | `REDIS_URL`, `REDIS_KEY_PREFIX`, `ANALYTICS_CHART_CACHE_TTL_SECONDS`, `ANALYTICS_EVENTS_CACHE_TTL_SECONDS`                       | optional    | dashboard cache                         |
+| email-service        | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`                                                               | yes         | Gmail OAuth2                            |
+| notification-service | `HTTP_PORT`, `DATABASE_URL`, `REDIS_URL`, `KAFKA_BROKERS`, `KAFKA_GROUP_ID`, `KAFKA_CONSUMER_TOPICS`                             | yes         | Go HTTP API, persistence, and consumers |
+| notification-service | provider, WebSocket, worker, OpenTelemetry, and logging variables in `.env.example`                                              | varies      | channel delivery and observability      |
+| search-service       | `PORT`, `HOST`, `OPENSEARCH_NODE`, `OPENSEARCH_INDEX`, `OPENSEARCH_ALIAS`, `REDIS_URL`, `REDIS_KEY_PREFIX`                       | yes         | search API and index                    |
+| search-service       | `SEARCH_CACHE_TTL_SECONDS`, `SUGGESTION_CACHE_TTL_SECONDS`, `KAFKA_BROKERS`, `KAFKA_GROUP_ID`, Clerk and OpenTelemetry variables | varies      | cache, events, auth, and tracing        |
 
 Default local connection strings used by the examples:
 
 - PostgreSQL: `postgresql://postgres:postgres@localhost:5432/ecommerce`
 - MongoDB: `mongodb://localhost:27017/ecommerce`
 - Kafka: `localhost:9094,localhost:9095,localhost:9096` (hardcoded in `@repo/kafka`)
+- OpenSearch: `http://localhost:9200` (used by product-service reads and search-service writes)
 
 ## Ports
 
@@ -79,6 +93,7 @@ Default local connection strings used by the examples:
 | auth-service              | 8003               |
 | analytic-service          | 8004               |
 | notification-service (Go) | 8005               |
+| search-service            | 8006               |
 | Kafka UI                  | 8080               |
 | Kafka brokers             | 9094 / 9095 / 9096 |
 | ZooKeeper                 | 2181               |
@@ -92,9 +107,10 @@ pnpm dev                                      # all workspaces (Next.js, Node, a
 pnpm --filter admin dev                       # one app
 pnpm --filter product-service dev             # one Node service (tsx --watch)
 pnpm --filter notification-service dev        # Go notification service (go run)
+pnpm --filter search-service dev              # Fastify search API and Kafka index consumer
 
-# Or run notification-service via Docker Compose
-docker compose -f apps/notification-service/docker-compose.yml up -d
+pnpm --filter notification-service test       # Go unit tests
+pnpm --filter @repo/redis verify:redis        # Redis integration check; requires Redis
 
 pnpm check-types                              # before every commit
 pnpm lint                                     # admin + client
@@ -138,7 +154,8 @@ pnpm --filter email-service dev
 
 ## Deployment notes
 
-There is **no CI/CD pipeline and no Dockerfiles** in the repository. Each workspace is
+There is **no CI/CD pipeline** in the repository. The notification service includes a
+Dockerfile; the other workspaces do not currently include production Dockerfiles. Each workspace is
 deployed independently:
 
 - **Next.js apps** (`admin`, `client`): build with `pnpm build` and host on a Next.js

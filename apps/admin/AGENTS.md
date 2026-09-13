@@ -99,5 +99,6 @@ new one.
 - `pnpm --filter admin build`
 - `pnpm lint` (runs on client and admin together from the root)
 
-If you change admin CRUD flows, test against running services. There is no test runner in
-this repo yet.
+If you change admin CRUD flows, test against running services. There is no general
+JavaScript test runner in this repo yet; verification uses type-checking, builds, linting,
+and manual flows.

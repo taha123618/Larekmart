@@ -104,4 +104,4 @@ Common patterns:
 - `pnpm lint` (runs on client and admin together from the root)
 
 If you change cart, checkout, or order pages, test the flow manually against running
-services. There is no test runner in this repo yet.
+services. There is no general JavaScript test runner in this repo yet; verification uses type-checking, builds, linting, and manual flows.

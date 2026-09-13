@@ -4,14 +4,16 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ## Service Ports & Protocols
 
-| Service            | Port   | Framework      | Auth Guard                         | Owner                        |
-| ------------------ | ------ | -------------- | ---------------------------------- | ---------------------------- |
-| `product-service`  | `8000` | Express 5      | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog   |
-| `order-service`    | `8001` | Fastify 5      | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics |
-| `payment-service`  | `8002` | Hono 4         | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks   |
-| `auth-service`     | `8003` | Express 5      | `shouldBeAdmin`                    | Admin User Management Proxy  |
-| `analytic-service` | `8004` | Express 5      | `shouldBeAdmin`                    | Analytics & KPI Aggregations |
-| `email-service`    | —      | Node.js Worker | None (Kafka only)                  | Transactional Email Dispatch |
+| Service                | Port   | Framework      | Auth Guard                         | Owner                                   |
+| ---------------------- | ------ | -------------- | ---------------------------------- | --------------------------------------- |
+| `product-service`      | `8000` | Express 5      | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog              |
+| `order-service`        | `8001` | Fastify 5      | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics            |
+| `payment-service`      | `8002` | Hono 4         | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks              |
+| `auth-service`         | `8003` | Express 5      | `shouldBeAdmin`                    | Admin User Management Proxy             |
+| `analytic-service`     | `8004` | Express 5      | `shouldBeAdmin`                    | Analytics & KPI Aggregations            |
+| `notification-service` | `8005` | Go / Chi       | User token / public probes         | Notifications, WebSockets & delivery    |
+| `search-service`       | `8006` | Fastify 5      | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete |
+| `email-service`        | —      | Node.js Worker | None (Kafka only)                  | Transactional Email Dispatch            |
 
 ---
 
@@ -228,7 +230,33 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ---
 
-## 6. Notification Service (`:8005`)
+## 6. Search Service (`:8006`)
+
+### `GET /api/v1/search`
+
+- **Auth**: Public
+- **Query Params**: `q`, `page`, `limit`, `sort`, `categorySlug`, `brand`, `min_price`, `max_price`, `color`, `size`, `inStock`, `rating`
+- **Response**: Search results with `data`, pagination `meta`, and multi-select-aware `facets`
+- **Cache**: Redis read-through cache under the `search:v1:` namespace
+
+### `GET /api/v1/search/suggestions`
+
+- **Auth**: Public
+- **Query Params**: `q` (required), `limit` (maximum 20)
+- **Response**: Rich product suggestions suitable for autocomplete and product deep links
+
+### `POST /api/v1/index/reindex`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `{ batchSize?: number, recreateAlias?: boolean }`
+- **Side Effect**: Reindexes OpenSearch documents and optionally swaps the `products` alias
+
+### `GET /health`, `GET /ready`, `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Liveness, OpenSearch/Redis readiness, and Prometheus metrics respectively
+
+## 7. Notification Service (`:8005`)
 
 ### `GET /health`
 

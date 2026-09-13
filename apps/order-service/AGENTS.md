@@ -88,4 +88,4 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 
 - `pnpm --filter order-service check-types`
 - Manual flows against running MongoDB + Kafka.
-- No test runner exists yet.
+- No general JavaScript test runner exists yet; verify this service with its type-check and manual MongoDB/Kafka flows.

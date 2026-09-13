@@ -29,4 +29,4 @@ by `order-service` and takes type dependencies from `@repo/types`.
 
 - `pnpm --filter @repo/order-db check-types`
 - After changes, `pnpm check-types` from root to catch downstream breaks.
-- No test runner exists yet.
+- No general JavaScript test runner exists yet; verify the package with type-checking and a local MongoDB connection when needed.

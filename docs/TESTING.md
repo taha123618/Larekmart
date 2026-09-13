@@ -4,7 +4,7 @@ This document outlines the testing strategy, current verification mechanisms, an
 
 ## Current Testing Reality
 
-The repository currently does not have an automated test runner configured (no Jest, Vitest, or Playwright suite). Verification relies on:
+The repository does not have a general JavaScript test runner configured (no Jest, Vitest, or Playwright suite). It does have Go unit tests in `notification-service` and an opt-in real-Redis integration verifier. Verification relies on:
 
 1. **Strict TypeScript Compilation**:
    ```bash
@@ -19,7 +19,7 @@ The repository currently does not have an automated test runner configured (no J
    pnpm lint
    ```
 4. **Manual & Integration Verification**:
-   Testing end-to-end user flows against local services, Kafka UI (`http://localhost:8080`), PostgreSQL, and MongoDB.
+   Testing end-to-end user flows against local services, Kafka UI (`http://localhost:8080`), PostgreSQL, MongoDB, Redis, and OpenSearch.
 
 ## Testing Strategy & Standards
 
@@ -43,7 +43,7 @@ When writing automated tests in Larekmart, adhere to the following architecture:
 
 - Test HTTP route handlers and Kafka message processing using in-memory or containerized dependencies.
 - Keep integration tests isolated and opt-in so they do not break standard offline `pnpm check-types`.
-- **Checks that exist today:** `@repo/redis` ships `pnpm --filter @repo/redis verify:redis`
+- **Checks that exist today:** `notification-service` ships `pnpm --filter notification-service test`, and `@repo/redis` ships `pnpm --filter @repo/redis verify:redis`
   (`packages/redis/src/scripts/verify-redis.ts`), which asserts key namespacing, cache TTLs, the
   three read outcomes (`hit` / `miss` / `error`, so a Redis outage is never counted as a cold cache),
   the namespace-version bump, the rate limiter, and degraded behaviour against a real Redis. It needs

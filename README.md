@@ -1,6 +1,6 @@
 # Larekmart
 
-**Larekmart** is a production-grade microservices e-commerce platform for clothing. It pairs a customer storefront and an admin management dashboard with **seven backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for catalog, analytics, and notifications; and MongoDB for order management).
+**Larekmart** is a production-grade microservices e-commerce platform for clothing. It pairs a customer storefront and an admin management dashboard with **eight backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for catalog, analytics, and notifications; and MongoDB for order management).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node and Go services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 
@@ -69,10 +69,12 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── product-service/      # Express 5 + Prisma catalog (:8000)
 │   ├── email-service/        # Headless Kafka worker -> transactional email
 │   ├── analytic-service/     # Express 5 + PostgreSQL analytics API & Kafka worker (:8004)
-│   └── notification-service/ # Go (Chi) + PostgreSQL + Redis + WebSockets notification orchestration (:8005)
+│   ├── notification-service/ # Go (Chi) + PostgreSQL + Redis + WebSockets notification orchestration (:8005)
+│   └── search-service/       # Fastify + OpenSearch + Redis + Kafka search and indexing (:8006)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
+│   ├── opensearch/           # @repo/opensearch — OpenSearch client, mappings, query and indexing helpers
 │   ├── types/                # @repo/types    — shared types, Zod schemas, event contracts
 │   ├── monitoring/           # @repo/monitoring — structured logging, health checks, metrics & telemetry
 │   ├── product-db/           # @repo/product-db — Prisma client & schema (PostgreSQL)
@@ -100,20 +102,23 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`email-service`**        | Node.js (ESM), Nodemailer (Gmail OAuth2), Kafka                                       | —      | Headless worker consuming `user.created` (welcome) and `order.created` (order receipts).                                                        |
 | **`analytic-service`**     | Express 5, Node.js (ESM), PostgreSQL (`pg`), Kafka                                    | `8004` | Consumes all event streams, updates live KPI counters, persists audit logs & daily rollups to PostgreSQL, and serves REST analytics to `admin`. |
 | **`notification-service`** | Go 1.22 (Chi), PostgreSQL, Redis, WebSockets, Kafka, OpenTelemetry                    | `8005` | Multi-channel notification orchestration (Email, SMS, Push, In-App), worker pools, Redis deduplication, and real-time WebSocket hub.            |
+| **`search-service`**       | Fastify 5, OpenSearch, Redis, Kafka, Clerk                                            | `8006` | Product search, autocomplete, faceting, rate limiting, Kafka-driven indexing, and zero-downtime reindexing.                                     |
 
 ---
 
 ## Shared Packages
 
-| Package                       | Purpose & Exports                                                                                          | Primary Consumers                            |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| **`@repo/kafka`**             | Kafka client wrapper (`createKafkaClient`, `createProducer`, `createConsumer`) and local 3-broker compose. | All backend services                         |
-| **`@repo/types`**             | Central contract package: API domain types, Kafka payload interfaces, and shared Zod form schemas.         | All applications & packages                  |
-| **`@repo/monitoring`**        | Framework-agnostic structured logging, health checks, metrics, and performance telemetry.                  | All applications & packages                  |
-| **`@repo/product-db`**        | PostgreSQL catalog persistence via Prisma schema and generated `prisma` client singleton.                  | `product-service`, `@repo/types` (type-only) |
-| **`@repo/order-db`**          | MongoDB persistence via Mongoose `Order` model and connection helper.                                      | `order-service`, `@repo/types` (type-only)   |
-| **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                   | `admin`, `client`                            |
-| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).       | All 15 workspaces                            |
+| Package                       | Purpose & Exports                                                                                            | Primary Consumers                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| **`@repo/kafka`**             | Kafka client wrapper (`createKafkaClient`, `createProducer`, `createConsumer`) and local 3-broker compose.   | All backend services                          |
+| **`@repo/types`**             | Central contract package: API domain types, Kafka payload interfaces, and shared Zod form schemas.           | All applications & packages                   |
+| **`@repo/monitoring`**        | Framework-agnostic structured logging, health checks, metrics, and performance telemetry.                    | All applications & packages                   |
+| **`@repo/redis`**             | Redis client factory, namespaced key builder, typed cache helpers, namespace invalidation, and rate limiter. | Product, order, search, and analytic services |
+| **`@repo/opensearch`**        | OpenSearch client factory, product mappings, query builders, indexing, search, and reindex helpers.          | Product and search services                   |
+| **`@repo/product-db`**        | PostgreSQL catalog persistence via Prisma schema and generated `prisma` client singleton.                    | `product-service`, `@repo/types` (type-only)  |
+| **`@repo/order-db`**          | MongoDB persistence via Mongoose `Order` model and connection helper.                                        | `order-service`, `@repo/types` (type-only)    |
+| **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                     | `admin`, `client`                             |
+| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 19 workspaces                             |
 
 ---
 
@@ -139,7 +144,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 - **Node.js**: ≥ 18
 - **pnpm**: 9.0.0 (`corepack enable && corepack prepare pnpm@9.0.0 --activate`)
 - **Docker**: For running the local Kafka cluster and Redis
-- **Redis**: Local or containerized on port `6379` (cache for search-service, product-service, and analytic-service)
+- **Redis**: Local or containerized on port `6379` (cache for product, order, search, and analytic services)
+- **OpenSearch**: Local or containerized on port `9200` (search index owned by search-service)
 - **PostgreSQL**: Local or containerized on port `5432`
 - **MongoDB**: Local or containerized on port `27017`
 
@@ -157,7 +163,7 @@ pnpm run skills:sync                      # sync canonical .agents/skills to AI 
 # 2. Start local Kafka cluster (3 brokers + Kafka UI at http://localhost:8080)
 docker compose -f packages/kafka/docker-compose.yml up -d
 
-# 3. Start local Redis (caches + rate limiting for search/product/analytic services)
+# 3. Start local Redis (caches + rate limiting for product/order/search/analytic services)
 docker compose -f packages/redis/docker-compose.yml up -d
 
 # 4. Initialize local PostgreSQL databases
@@ -175,18 +181,17 @@ pnpm dev
 
 ### 3. Core Commands
 
-| Task                    | Command                                                                | Description                                                         |
-| ----------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| **Development**         | `pnpm dev`                                                             | Run all applications and services concurrently via Turborepo        |
-| **Scoped Dev**          | `pnpm --filter <workspace> dev`                                        | Run a specific application or service (e.g. `notification-service`) |
-| **Notification Docker** | `docker compose -f apps/notification-service/docker-compose.yml up -d` | Run notification-service + PostgreSQL + Redis via Docker Compose    |
-| **Redis Docker**        | `docker compose -f packages/redis/docker-compose.yml up -d`            | Run local Redis for the service caches and rate limiting            |
-| **Type Check**          | `pnpm check-types`                                                     | Run type checking (`tsc` / `go vet`) across all 16 workspaces       |
-| **Lint**                | `pnpm lint`                                                            | Run ESLint flat checks on `admin` and `client`                      |
-| **Format**              | `pnpm format`                                                          | Run Prettier across all TypeScript, TSX, and Markdown files         |
-| **Build**               | `pnpm build`                                                           | Compile Next.js production bundles and `payment-service`            |
-| **Prisma Generate**     | `pnpm --filter @repo/product-db db:generate`                           | Regenerate Prisma client                                            |
-| **Prisma Migrate**      | `pnpm --filter @repo/product-db db:migrate`                            | Create and apply development migrations                             |
+| Task                | Command                                                     | Description                                                                         |
+| ------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                        |
+| **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                 |
+| **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                            |
+| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet`) across all 19 workspaces                       |
+| **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                      |
+| **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                         |
+| **Build**           | `pnpm build`                                                | Run configured builds for the Next.js apps, Node services, packages, and Go service |
+| **Prisma Generate** | `pnpm --filter @repo/product-db db:generate`                | Regenerate Prisma client                                                            |
+| **Prisma Migrate**  | `pnpm --filter @repo/product-db db:migrate`                 | Create and apply development migrations                                             |
 
 ---
 
@@ -211,10 +216,10 @@ Workspace Skills (<workspace>/.agents/skills/*)
   - `debugging`: Playbooks for Kafka topic inspection, Clerk authentication, database connectivity, and SSR hydration.
   - `monorepo-development`: Workflows for pnpm workspaces, dependency management, and Turborepo pipelines.
   - `security`: Auth guards, RBAC, Stripe webhook signature validation, and secret handling.
-  - `testing`: Monorepo verification guidelines and recipe for introducing Vitest.
+    - `testing`: Monorepo verification guidelines, Go test coverage, and opt-in Redis integration checks.
   - `code-review`: Checklist for boundary validation, event contracts, and quality verification.
   - `documentation`: Scoped documentation rules and ADR maintenance.
-- **Workspace Skills**: Targeted playbooks for specific domains (e.g. `apps/client/.agents/skills/storefront-flow`, `apps/admin/.agents/skills/admin-dashboard`, `apps/payment-service/.agents/skills/stripe-lifecycle`, `packages/kafka/.agents/skills/kafka-event-system`, `packages/product-db/.agents/skills/prisma-schema-migrations`).
+- **Workspace-specific rules**: Each app and package has a scoped `AGENTS.md`. There are currently no workspace-local `.agents/skills` directories; root skills are mirrored with `pnpm run skills:sync`.
 
 ---
 

@@ -143,4 +143,4 @@ exposes a read-only OpenSearch-backed search endpoint (`GET /products/search`) t
 - After Prisma changes: `pnpm --filter @repo/product-db db:generate` then `pnpm check-types`
   from root.
 - Manual flows against running Postgres + Kafka.
-- No test runner exists yet.
+- No general JavaScript test runner exists yet; verify this service with type-check and manual PostgreSQL/Kafka/OpenSearch flows.

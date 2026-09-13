@@ -81,4 +81,4 @@ Stripe product sync driven by Kafka. It emits `payment.successful` after verifyi
 - `pnpm --filter payment-service check-types`
 - `pnpm --filter payment-service build`
 - Manual flows against running Stripe test keys + Kafka.
-- No test runner exists yet.
+- No general JavaScript test runner exists yet; verify this service with type-check, build, and manual Stripe/Kafka flows.

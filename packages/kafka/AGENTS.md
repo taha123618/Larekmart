@@ -56,4 +56,4 @@ Current helper surface is intentionally small. Expose helpers, not raw clients.
 - `pnpm --filter @repo/kafka check-types`
 - Start local Kafka and run a producer/consumer against it; inspect topics in Kafka UI
   at `:8080`.
-- No test runner exists yet.
+- No general JavaScript test runner exists yet; verify the wrapper with type-checking and a local Kafka producer/consumer flow.
