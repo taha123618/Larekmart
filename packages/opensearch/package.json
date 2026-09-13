@@ -1,0 +1,30 @@
+{
+  "name": "@repo/opensearch",
+  "version": "0.0.1",
+  "description": "Shared OpenSearch client, index mappings, query builders, and bulk-indexing utilities for Larekmart microservices",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "check-types": "tsc --noEmit"
+  },
+  "keywords": ["opensearch", "search", "ecommerce"],
+  "license": "ISC",
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^24.3.1",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@opensearch-project/opensearch": "^3.6.0",
+    "@repo/monitoring": "workspace:*",
+    "@repo/types": "workspace:*"
+  },
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  }
+}

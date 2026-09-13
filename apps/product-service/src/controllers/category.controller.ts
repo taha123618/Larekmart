@@ -1,6 +1,11 @@
 import { Prisma, prisma } from "@repo/product-db";
 import { Request, Response } from "express";
 import { createLogger, measureAsync } from "@repo/monitoring";
+import {
+  getCachedCategories,
+  setCachedCategories,
+  invalidateCatalogCache,
+} from "../cache/catalog-cache.js";
 
 const logger = createLogger("product-service:category-controller");
 
@@ -14,6 +19,7 @@ export const createCategory = async (req: Request, res: Response) => {
     },
   );
   logger.info(`Category created: ${category.name}`);
+  await invalidateCatalogCache();
   res.status(201).json(category);
 };
 
@@ -32,6 +38,7 @@ export const updateCategory = async (req: Request, res: Response) => {
   );
 
   logger.info(`Category updated: ID ${id}`);
+  await invalidateCatalogCache();
   return res.status(200).json(category);
 };
 
@@ -48,10 +55,14 @@ export const deleteCategory = async (req: Request, res: Response) => {
   );
 
   logger.info(`Category deleted: ID ${id}`);
+  await invalidateCatalogCache();
   return res.status(200).json(category);
 };
 
 export const getCategories = async (req: Request, res: Response) => {
+  const cached = await getCachedCategories();
+  if (cached) return res.status(200).json(cached);
+
   const { result: categories } = await measureAsync(
     "db.category.findMany",
     async () => {
@@ -59,5 +70,6 @@ export const getCategories = async (req: Request, res: Response) => {
     },
   );
 
+  await setCachedCategories(categories);
   return res.status(200).json(categories);
 };

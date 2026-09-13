@@ -9,6 +9,12 @@ import type {
   AnalyticsEventType,
 } from "@repo/types";
 import { createLogger, captureError } from "@repo/monitoring";
+import {
+  getCachedDailyChart,
+  setCachedDailyChart,
+  getCachedEvents,
+  setCachedEvents,
+} from "../cache/analytics-cache.js";
 
 const logger = createLogger("analytic-service:metrics");
 
@@ -275,8 +281,13 @@ export const getMetricsSnapshot = (): AnalyticsSummaryType => ({
   isDbConnected: getDbStatus(),
 });
 
-export const getDailyAnalytics = async (
-  days = 30,
+/**
+ * Reads daily aggregations from PostgreSQL, falling back to today's in-memory
+ * snapshot when the database is unavailable. Not exported — callers go through
+ * `getDailyAnalytics`, which adds the Redis read-through cache.
+ */
+const readDailyAnalytics = async (
+  days: number,
 ): Promise<AnalyticsDailyChartType[]> => {
   if (getDbStatus()) {
     try {
@@ -321,8 +332,28 @@ export const getDailyAnalytics = async (
   ];
 };
 
-export const getRecentEvents = async (
-  limit = 20,
+/**
+ * Returns daily aggregation rows for the last `days` days, served from Redis
+ * when available. Cached entries are TTL-bounded, not invalidated on write —
+ * see `src/cache/analytics-cache.ts` for why.
+ */
+export const getDailyAnalytics = async (
+  days = 30,
+): Promise<AnalyticsDailyChartType[]> => {
+  const cached = await getCachedDailyChart(days);
+  if (cached) return cached;
+
+  const data = await readDailyAnalytics(days);
+  await setCachedDailyChart(days, data);
+  return data;
+};
+
+/**
+ * Reads the recent audit event stream from PostgreSQL, falling back to the
+ * in-memory buffer. Not exported — callers go through `getRecentEvents`.
+ */
+const readRecentEvents = async (
+  limit: number,
 ): Promise<AnalyticsEventType[]> => {
   if (getDbStatus()) {
     try {
@@ -355,4 +386,19 @@ export const getRecentEvents = async (
   }
 
   return inMemoryEvents.slice(0, limit);
+};
+
+/**
+ * Returns the most recent audit events (newest first), served from Redis when
+ * available. Cached entries are TTL-bounded — see `src/cache/analytics-cache.ts`.
+ */
+export const getRecentEvents = async (
+  limit = 20,
+): Promise<AnalyticsEventType[]> => {
+  const cached = await getCachedEvents(limit);
+  if (cached) return cached;
+
+  const events = await readRecentEvents(limit);
+  await setCachedEvents(limit, events);
+  return events;
 };

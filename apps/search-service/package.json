@@ -1,0 +1,39 @@
+{
+  "name": "search-service",
+  "version": "1.0.0",
+  "description": "Production-grade search, filtering, autocomplete and indexing microservice",
+  "main": "src/server.ts",
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "dev": "tsx --env-file=.env --watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "keywords": [
+    "opensearch",
+    "search",
+    "fastify",
+    "ecommerce",
+    "microservices"
+  ],
+  "author": "taha ahmed",
+  "license": "ISC",
+  "devDependencies": {
+    "@repo/types": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^20.19.13",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@clerk/fastify": "^2.4.30",
+    "@fastify/cors": "^10.0.2",
+    "@repo/kafka": "workspace:*",
+    "@repo/monitoring": "workspace:*",
+    "@repo/opensearch": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "fastify": "^5.5.0",
+    "zod": "^3.24.2"
+  }
+}

@@ -19,17 +19,15 @@ import type {
   StripeProductType,
 } from "@repo/types";
 import {
-  createLogger,
   createHealthRegistry,
-  createMetricsRegistry,
   createHttpMonitor,
   createMemoryCheck,
   createDbCheck,
   captureError,
 } from "@repo/monitoring";
+import { logger, metrics } from "./observability/metrics.js";
+import { redis } from "./utils/redis.js";
 
-const logger = createLogger("analytic-service");
-const metrics = createMetricsRegistry("analytic-service");
 const httpMonitor = createHttpMonitor(logger, metrics);
 const health = createHealthRegistry("analytic-service", "1.0.0");
 
@@ -42,6 +40,17 @@ health.register(
     await pool.query("SELECT 1");
   }),
   { critical: true },
+);
+// Redis is a cache only: losing it degrades /analytics reads to PostgreSQL,
+// so it must never flip the service to unhealthy.
+health.register(
+  "redis",
+  createDbCheck("Redis", async () => {
+    if (!(await redis.ping())) {
+      throw new Error("PING did not return PONG");
+    }
+  }),
+  { critical: false },
 );
 
 const app = express();

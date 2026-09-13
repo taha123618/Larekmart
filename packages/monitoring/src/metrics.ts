@@ -355,3 +355,132 @@ export class MetricsRegistry {
 export function createMetricsRegistry(serviceName: string): MetricsRegistry {
   return new MetricsRegistry(serviceName);
 }
+
+/**
+ * A counter metric bound to a registry, with a Prometheus-style `.inc()`
+ * surface. Create one per metric at module scope so services don't re-wrap
+ * `increment()` by hand.
+ */
+export interface MetricCounter {
+  inc(labels?: MetricLabels, value?: number): void;
+}
+
+/**
+ * Creates a counter bound to `registry`.
+ *
+ * @param registry - Registry the counter reports into (drives `/metrics`).
+ * @param name     - Metric name, e.g. `"cache_hits_total"`.
+ * @param help     - Prometheus HELP text.
+ */
+export function createCounter(
+  registry: MetricsRegistry,
+  name: string,
+  help?: string,
+): MetricCounter {
+  return {
+    inc(labels: MetricLabels = {}, value = 1) {
+      registry.increment(name, value, labels, help);
+    },
+  };
+}
+
+/**
+ * A histogram metric bound to a registry.
+ */
+export interface MetricHistogram {
+  observe(labels: MetricLabels | undefined, value: number): void;
+}
+
+/**
+ * Outcome of one cache read. Matches `@repo/redis`'s `CacheReadStatus`, so a
+ * read result can be handed to `CacheMetrics.record` as-is.
+ */
+export type CacheReadOutcome = "hit" | "miss" | "error";
+
+/**
+ * The cache counters every service reports, plus the rule for classifying a
+ * read. Kept here so all services emit identical metric names, labels, and
+ * semantics.
+ */
+export interface CacheMetrics {
+  /** Reads served from the cache. */
+  hits: MetricCounter;
+  /** Reads where nothing usable was cached. */
+  misses: MetricCounter;
+  /** Reads that failed because the cache was unreachable — **not** misses. */
+  errors: MetricCounter;
+  /**
+   * Counts one read and returns its value only when it was a hit.
+   *
+   * An unreachable cache is counted as an error instead of a miss: collapsing
+   * the two makes an outage look like a 0% hit rate, which is precisely what
+   * this counter exists to rule out.
+   */
+  record<T>(
+    result: { status: CacheReadOutcome; value: T | null },
+    cacheType: string,
+  ): T | null;
+}
+
+/**
+ * Creates the standard cache hit/miss/error counters for a service.
+ *
+ * @param registry - Registry the counters report into (drives `/metrics`).
+ */
+export function createCacheMetrics(registry: MetricsRegistry): CacheMetrics {
+  const hits = createCounter(registry, "cache_hits_total", "Total cache hits");
+  const misses = createCounter(
+    registry,
+    "cache_misses_total",
+    "Total cache misses",
+  );
+  const errors = createCounter(
+    registry,
+    "cache_errors_total",
+    "Cache reads that failed because the cache was unreachable",
+  );
+
+  return {
+    hits,
+    misses,
+    errors,
+    record<T>(
+      result: { status: CacheReadOutcome; value: T | null },
+      cacheType: string,
+    ): T | null {
+      const labels: MetricLabels = { cache_type: cacheType };
+
+      if (result.status === "hit" && result.value !== null) {
+        hits.inc(labels);
+        return result.value;
+      }
+
+      if (result.status === "error") {
+        errors.inc(labels);
+      } else {
+        misses.inc(labels);
+      }
+
+      return null;
+    },
+  };
+}
+
+/**
+ * Creates a histogram bound to `registry`.
+ *
+ * @param registry - Registry the histogram reports into (drives `/metrics`).
+ * @param name     - Metric name, e.g. `"search_request_duration_seconds"`.
+ * @param help     - Prometheus HELP text.
+ */
+export function createHistogram(
+  registry: MetricsRegistry,
+  name: string,
+  help?: string,
+): MetricHistogram {
+  return {
+    observe(labels: MetricLabels | undefined = {}, value: number) {
+      registry.observe(name, value, labels, help);
+    },
+  };
+}

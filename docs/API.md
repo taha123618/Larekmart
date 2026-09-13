@@ -23,6 +23,12 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 - **Query Params**: `category` (slug), `search` (name query), `sort` (`asc` | `desc`), `page`, `limit`
 - **Response**: `{ products: ProductType[], total: number }`
 
+### `GET /products/search`
+
+- **Auth**: Public
+- **Query Params**: search/filter params validated by `SearchQueryParamsSchema` (`q`, `page`, `limit`, `sort`, `category`, `categorySlug`, `brand`, `min_price`, `max_price`, `color`, `size`, `inStock`, `rating`, `seller`, `tags`)
+- **Response**: `SearchResponse` — `{ data: SearchProductDocument[], meta, facets }` read from the shared OpenSearch index via `@repo/opensearch`
+
 ### `GET /products/:id`
 
 - **Auth**: Public
@@ -39,6 +45,14 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 - **Auth**: Admin (`shouldBeAdmin`)
 - **Body**: Partial `ProductFormSchema`
 - **Response**: Updated `ProductType`
+
+### `POST /products/backfill-search`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `SearchBackfillRequestSchema` (`batchSize` ≤ 1000, `limit`, `afterId`, `timeBudgetMs` ≤ 120000, `dryRun`)
+- **Response**: `SearchBackfillResponse` — `{ processed, published, failed, nextAfterId?, hasMore, durationMs }`
+- **Side Effect**: Republishes catalog products as `product.updated` Kafka events so search-service rebuilds index documents that predate the full `product.created` payload (missing `images`, `sizes`, `colors` → missing thumbnails and color/size facets).
+- **Note**: Windowed. One call processes up to its time budget, then returns `hasMore` + `nextAfterId`; repeat with `afterId=nextAfterId` until `hasMore` is false. Nothing is indexed by product-service itself — the events travel the normal Kafka write path into search-service.
 
 ### `DELETE /products/:id`
 

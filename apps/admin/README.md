@@ -17,6 +17,7 @@ The administrator dashboard for Larekmart, providing catalog management, user ad
 - **Category Management**: Create and manage hierarchical clothing categories.
 - **User Management**: Admin interface proxying Clerk user management via `auth-service`.
 - **Order Analytics**: 6-month order trends and order status summaries.
+- **Cache Performance**: Redis hit/miss/error rates per service and per cache, scraped live from each service's `/metrics` counters. The per-service error rate (reads that failed because Redis was unreachable) is shown next to the hit rate so services can be compared at a glance, and the cards are rank-ordered by it — worst first, with services that expose no counters last. 0% is the only healthy error rate.
 - **Image Uploads**: Direct browser uploads to Cloudinary.
 
 ## Environment Variables
@@ -29,6 +30,8 @@ CLERK_SECRET_KEY=sk_test_...
 NEXT_PUBLIC_AUTH_SERVICE_URL=http://localhost:8003
 NEXT_PUBLIC_ORDER_SERVICE_URL=http://localhost:8001
 NEXT_PUBLIC_PRODUCT_SERVICE_URL=http://localhost:8000
+NEXT_PUBLIC_ANALYTIC_SERVICE_URL=http://localhost:8004
+NEXT_PUBLIC_SEARCH_SERVICE_URL=http://localhost:8006
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
 ```
 

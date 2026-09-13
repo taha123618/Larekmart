@@ -29,7 +29,8 @@ pnpm run env:setup                        # safely copy all .env.example -> .env
 pnpm run skills:sync                      # sync .agents/skills to .cursor, .claude, .gemini
 
 # infrastructure
-docker compose -f packages/kafka/docker-compose.yml up -d
+docker compose -f packages/kafka/docker-compose.yml up -d   # Kafka cluster
+docker compose -f packages/redis/docker-compose.yml up -d   # Redis (service caches + rate limiting)
 
 # database
 pnpm --filter @repo/product-db db:generate

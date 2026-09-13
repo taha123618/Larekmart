@@ -1,8 +1,9 @@
-import { ProductsType, ProductType } from "@repo/types";
+import { ProductType, type SearchResponse, type SearchFacets } from "@repo/types";
 import Categories from "./Categories";
 import ProductCard from "./ProductCard";
 import Link from "next/link";
 import Filter from "./Filter";
+import ActiveFilters from "./ActiveFilters";
 
 // TEMPORARY
 // const products: ProductsType = [
@@ -140,44 +141,152 @@ import Filter from "./Filter";
 //   },
 // ];
 
-const fetchData = async ({
+type ProductListParams = {
+  category?: string;
+  sort?: string;
+  search?: string;
+  color?: string;
+  size?: string;
+  min_price?: string;
+  max_price?: string;
+  params: "homepage" | "products";
+};
+
+/** Products plus the facet buckets OpenSearch returns for the current query. */
+type ProductSearchData = {
+  products: ProductType[];
+  facets?: SearchFacets;
+};
+
+/**
+ * The UI sort vocabulary (Filter dropdown) mapped to the values accepted by the
+ * OpenSearch-backed `GET /products/search` endpoint.
+ */
+const SEARCH_SORT: Record<string, string> = {
+  newest: "newest",
+  oldest: "oldest",
+  asc: "price_asc",
+  desc: "price_desc",
+};
+
+/** Reads the catalog straight from product-service's PostgreSQL listing. */
+const fetchCatalog = async ({
   category,
   sort,
   search,
   params,
-}: {
-  category?: string;
-  sort?: string;
-  search?: string;
-  params: "homepage" | "products";
-}) => {
+}: ProductListParams): Promise<ProductSearchData> => {
+  const query = new URLSearchParams();
+  if (category && category !== "all") query.set("category", category);
+  if (search) query.set("search", search);
+  query.set("sort", sort || "newest");
+  if (params === "homepage") query.set("limit", "8");
+
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products?${category ? `category=${category}` : ""}${search ? `&search=${search}` : ""}&sort=${sort || "newest"}${params === "homepage" ? "&limit=8" : ""}`,
+    `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products?${query.toString()}`,
   );
-  const data: ProductType[] = await res.json();
-  return data;
+  const data = await res.json();
+  return {
+    products: Array.isArray(data) ? (data as ProductType[]) : [],
+    // The catalog listing has no facet aggregations.
+    facets: undefined,
+  };
+};
+
+/**
+ * Reads the denormalized product index through product-service's
+ * OpenSearch-backed search endpoint. Returns `null` when the index is
+ * unavailable so the caller can degrade to the catalog listing.
+ */
+const fetchSearch = async ({
+  category,
+  sort,
+  search,
+  color,
+  size,
+  min_price,
+  max_price,
+}: ProductListParams): Promise<ProductSearchData | null> => {
+  const query = new URLSearchParams();
+  if (search) query.set("q", search);
+  if (category && category !== "all") query.set("categorySlug", category);
+  if (color) query.set("color", color);
+  if (size) query.set("size", size);
+  if (min_price) query.set("min_price", min_price);
+  if (max_price) query.set("max_price", max_price);
+  query.set("sort", SEARCH_SORT[sort ?? "newest"] ?? "relevance");
+
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products/search?${query.toString()}`,
+  );
+  if (!res.ok) return null;
+
+  const body = (await res.json()) as SearchResponse;
+  if (!Array.isArray(body.data)) return null;
+
+  // The search document carries every field ProductCard renders; ProductType is
+  // the shared card/cart contract, so normalize to it at the boundary.
+  return {
+    products: body.data as unknown as ProductType[],
+    facets: body.facets,
+  };
+};
+
+const fetchData = async (
+  options: ProductListParams,
+): Promise<ProductSearchData> => {
+  if (options.params === "products") {
+    const results = await fetchSearch(options);
+    if (results) return results;
+    // OpenSearch unavailable — degrade to the catalog database listing.
+  }
+  return fetchCatalog(options);
 };
 const ProductList = async ({
   category,
   sort,
   search,
+  color,
+  size,
+  min_price,
+  max_price,
   params,
 }: {
-  category: string;
+  category?: string;
   sort?: string;
   search?: string;
+  color?: string;
+  size?: string;
+  min_price?: string;
+  max_price?: string;
   params: "homepage" | "products";
 }) => {
-  const products = await fetchData({ category, sort, search, params });
+  const { products, facets } = await fetchData({
+    category,
+    sort,
+    search,
+    color,
+    size,
+    min_price,
+    max_price,
+    params,
+  });
   return (
     <div className="w-full">
       <Categories />
-      {params === "products" && <Filter />}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-12">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      {params === "products" && <Filter facets={facets} />}
+      {params === "products" && <ActiveFilters />}
+      {products.length === 0 ? (
+        <p className="py-12 text-center text-sm text-gray-500">
+          No products match your filters.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-12">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
       <Link
         href={category ? `/products/?category=${category}` : "/products"}
         className="flex justify-end mt-4 underline text-sm text-gray-500"

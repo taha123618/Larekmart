@@ -12,7 +12,9 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 - `src/index.ts` — Fastify bootstrap, plugins, routes, auth, health, and test route.
 - `src/routes/` — order routes.
 - `src/middleware/` — auth middleware (`shouldBeUser`, `shouldBeAdmin`) via `@clerk/fastify`.
-- `src/utils/` — order creation logic and Kafka subscriptions.
+- `src/cache/order-chart-cache.ts` — Redis read-through cache for the order chart.
+- `src/observability/metrics.ts` — service logger, metrics registry, and cache counters.
+- `src/utils/` — order creation logic, the Redis handle (`redis.ts`), and Kafka subscriptions.
 
 ## Framework and style
 
@@ -36,6 +38,24 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 - Do not create ad-hoc Mongo clients or bypass the shared model.
 - Order statuses: `success | failed` in the existing model.
 
+## Caching
+
+- All Redis access goes through `@repo/redis`; `src/utils/redis.ts` declares the handle with
+  `createRedisService`, and `src/cache/order-chart-cache.ts` holds the cache. Do not import
+  `ioredis` here.
+- Use `redis.client` with the `cacheRead`/`cacheSet` helpers and `redis.keys` to compose keys.
+  Cache counters (`cache_hits_total` / `cache_misses_total` / `cache_errors_total`,
+  `cache_type: "order-chart"`) come from `createCacheMetrics` in `src/observability/metrics.ts`,
+  which also owns the service logger and metrics registry, and surface at `/metrics`. Read through
+  `cacheRead` so the outcome can be classified — an unreachable Redis is an **error, not a miss**.
+- Cached: `GET /order-chart` only. It is **TTL-bounded, not invalidated on write** — orders arrive
+  continuously, so bumping a namespace version per order would invalidate the entry faster than the
+  dashboard reads it. For data that changes rarely, prefer product-service's namespace-version
+  invalidation instead.
+- Redis is optional: a miss falls through to the MongoDB aggregation, and `/health` reports Redis
+  as `degraded` rather than failing the service.
+- Config: `REDIS_URL`, `REDIS_KEY_PREFIX`, `ORDER_CHART_CACHE_TTL_SECONDS` (see `.env.example`).
+
 ## Events
 
 - Consume Kafka through `@repo/kafka`.
@@ -54,8 +74,8 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 
 ## Health and observability
 
-- Expose `GET /health` returning `{ status, uptime, timestamp }`.
-- Logging is `console.log`/`console.error`. Keep it structured and sparse.
+- Expose `GET /health` (health registry, aggregated report) and `GET /metrics` (Prometheus).
+- Logging uses `@repo/monitoring`'s `createLogger`, owned by `src/observability/metrics.ts`.
 
 ## What not to do
 

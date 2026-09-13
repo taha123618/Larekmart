@@ -7,17 +7,16 @@ import categoryRouter from "./routes/category.route.js";
 import { consumer, producer } from "./utils/kafka.js";
 import { prisma } from "@repo/product-db";
 import {
-  createLogger,
   createHealthRegistry,
-  createMetricsRegistry,
   createHttpMonitor,
   createMemoryCheck,
   createDbCheck,
   captureError,
 } from "@repo/monitoring";
+import { checkOpenSearchConnection } from "./search/client.js";
+import { logger, metrics } from "./observability/metrics.js";
+import { redis } from "./utils/redis.js";
 
-const logger = createLogger("product-service");
-const metrics = createMetricsRegistry("product-service");
 const httpMonitor = createHttpMonitor(logger, metrics);
 const health = createHealthRegistry("product-service", "1.0.0");
 
@@ -29,6 +28,31 @@ health.register(
   "postgres",
   createDbCheck("PostgreSQL", () => prisma.$queryRaw`SELECT 1`),
   { critical: true },
+);
+health.register(
+  "opensearch",
+  async () => {
+    const started = Date.now();
+    const healthy = await checkOpenSearchConnection();
+    return {
+      status: (healthy ? "healthy" : "unhealthy") as "healthy" | "unhealthy",
+      latencyMs: Date.now() - started,
+      timestamp: new Date().toISOString(),
+      message: healthy ? "OpenSearch reachable" : "OpenSearch unreachable",
+    };
+  },
+  { critical: false },
+);
+// Redis only backs the catalog cache, so losing it degrades performance but
+// must never flip the service to unhealthy.
+health.register(
+  "redis",
+  createDbCheck("Redis", async () => {
+    if (!(await redis.ping())) {
+      throw new Error("PING did not return PONG");
+    }
+  }),
+  { critical: false },
 );
 
 const app = express();

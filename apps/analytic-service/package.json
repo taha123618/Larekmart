@@ -16,6 +16,7 @@
     "@repo/kafka": "workspace:*",
     "@repo/types": "workspace:*",
     "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
     "cors": "^2.8.5",
     "express": "^5.0.3",
     "pg": "^8.11.3"

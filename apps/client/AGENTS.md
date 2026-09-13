@@ -49,8 +49,37 @@ over HTTP with a Clerk token; it does not touch Postgres, Mongo, or Kafka direct
 
 ## Backend calls from this app
 
-This app talks HTTP to `product-service`, `order-service`, and `payment-service`. It never
-calls `auth-service` directly — Clerk handles user auth.
+This app talks HTTP to `product-service`, `order-service`, `payment-service`, and
+`search-service` (autocomplete only). It never calls `auth-service` directly — Clerk
+handles user auth.
+
+Product listing and search:
+
+- `SearchBar` (client component) fetches debounced autocomplete from search-service's
+  `GET /api/v1/search/suggestions` through `NEXT_PUBLIC_SEARCH_SERVICE_URL`. It calls the
+  service **directly** (there is no gateway), supports keyboard navigation, and silently
+  degrades to a plain input when the service is unavailable or the env var is unset.
+- Suggestions are rich (`SuggestionItem`: id, name, brand, price, images), so selecting one
+  deep-links to `/products/<id>`; plain `Enter` runs a text search instead.
+- Recent searches are kept in `localStorage` under `larekmart:recent-searches` and shown
+  when the input is focused and empty. Search-service responses are cached in Redis, so the
+  debounce plus that cache keep typing well under the per-IP rate limit.
+- `ProductList` (server component) reads the products page from product-service's
+  OpenSearch-backed `GET /products/search`: the `SearchBar` `search` param maps to `q`, the
+  `Categories` slug to `categorySlug`, and the `Filter` dropdown sort to the search API's
+  sort vocabulary (`asc`/`desc` → `price_asc`/`price_desc`).
+- `Filter` also renders **color, size, and price** controls built from the facets returned
+  with each result set (`?color=`, `?size=`, `?min_price=`, `?max_price=`). Color and size
+  are **multi-select**: the chosen values are stored comma-separated (`?color=black,red`,
+  sorted so the URL stays canonical) and OR'd within their own facet, while each facet
+  still narrows the others — picking a colour does not hide the remaining colour options.
+- `ActiveFilters` (client component) sits between the filter panel and the product grid and
+  renders each active color, size, and price selection as a pill with its own ×, so one
+  value can be dropped without reopening the panel. It reads the URL only — bulk clearing
+  stays with the filter panel.
+- It **degrades to the PostgreSQL listing `GET /products`** when the search endpoint is
+  unavailable, so the storefront keeps working if OpenSearch is down.
+- The homepage teaser (`params="homepage"`) always uses `GET /products?limit=8`.
 
 Common patterns:
 

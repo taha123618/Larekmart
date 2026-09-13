@@ -11,6 +11,28 @@ export type StripeProductType = {
   price: number;
 };
 
+/**
+ * `product.created` Kafka payload.
+ *
+ * A superset of `StripeProductType` (payment-service reads `id`/`name`/`price`
+ * to mirror the catalog into Stripe) that also carries the catalog fields
+ * search-service indexes — so a freshly created product is searchable with
+ * images, sizes, and colors without waiting for a follow-up `product.updated`.
+ */
+export type ProductCreatedPayload = {
+  id: string;
+  name: string;
+  price: number;
+  shortDescription: string;
+  description: string;
+  categorySlug: string;
+  sizes: string[];
+  colors: string[];
+  images: Record<string, string>;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export const colors = [
   "blue",
   "green",

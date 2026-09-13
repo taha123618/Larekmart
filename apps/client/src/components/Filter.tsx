@@ -1,32 +1,227 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import type { SearchFacets } from "@repo/types";
 
-const Filter = () => {
+const PRICE_KEYS = ["min_price", "max_price"] as const;
+const MULTI_KEYS = ["color", "size"] as const;
+
+/**
+ * Parses a comma-separated multi-select URL param into its values.
+ *
+ * Color and size are multi-select (OR within the facet), so the `color`/`size`
+ * params carry the selected values comma-separated; the search API accepts the
+ * same comma-separated form.
+ */
+const parseList = (value: string | null): string[] =>
+  value
+    ? value
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    : [];
+
+/**
+ * Sort + facet filters for the products page.
+ *
+ * Color/size/price options come from the OpenSearch aggregations returned with
+ * the current result set (`facets`); selections are pushed into the URL and
+ * forwarded to `GET /products/search` by `ProductList`. Colour and size are
+ * multi-select — each selected value is OR'd within its facet.
+ */
+const Filter = ({ facets }: { facets?: SearchFacets }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleFilter = (value: string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("sort", value);
+  const activeColors = parseList(searchParams.get("color"));
+  const activeSizes = parseList(searchParams.get("size"));
+  const activeMinPrice = searchParams.get("min_price") ?? "";
+  const activeMaxPrice = searchParams.get("max_price") ?? "";
+
+  const [minPriceInput, setMinPriceInput] = useState(activeMinPrice);
+  const [maxPriceInput, setMaxPriceInput] = useState(activeMaxPrice);
+
+  // Keep the price inputs in sync when the URL changes (e.g. "Clear filters").
+  useEffect(() => {
+    setMinPriceInput(activeMinPrice);
+    setMaxPriceInput(activeMaxPrice);
+  }, [activeMinPrice, activeMaxPrice]);
+
+  const pushParams = (params: URLSearchParams) => {
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
+  const setParam = (key: string, value: string | null) => {
+    const params = new URLSearchParams(searchParams);
+    if (value) params.set(key, value);
+    else params.delete(key);
+    pushParams(params);
+  };
+
+  const toggleFacet = (key: "color" | "size", value: string) => {
+    const current = parseList(searchParams.get(key));
+    const next = current.includes(value)
+      ? current.filter((entry) => entry !== value)
+      : [...current, value];
+
+    // Sorted so the same selection always produces the same canonical URL.
+    setParam(key, next.length > 0 ? [...next].sort().join(",") : null);
+  };
+
+  const applyPrice = (key: "min_price" | "max_price", raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      setParam(key, null);
+      return;
+    }
+
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setMinPriceInput(activeMinPrice);
+      setMaxPriceInput(activeMaxPrice);
+      return;
+    }
+    setParam(key, String(Math.round(parsed)));
+  };
+
+  const clearFilters = () => {
+    const params = new URLSearchParams(searchParams);
+    for (const key of [...MULTI_KEYS, ...PRICE_KEYS]) params.delete(key);
+    pushParams(params);
+  };
+
+  const colors = facets?.colors ?? [];
+  const sizes = facets?.sizes ?? [];
+  const priceStats = facets?.price_stats;
+  const hasActiveFilters = Boolean(
+    activeColors.length > 0 ||
+      activeSizes.length > 0 ||
+      activeMinPrice ||
+      activeMaxPrice,
+  );
+
   return (
-    <div className="flex items-center justify-end gap-2 text-sm text-gray-500 my-6">
-      <span>Sort by:</span>
-      <select
-        name="sort"
-        id="sort"
-        className="ring-1 ring-gray-200 shadow-md p-1 rounded-sm"
-        onChange={(e) => handleFilter(e.target.value)}
-      >
-        <option value="newest">Newest</option>
-        <option value="oldest">Oldest</option>
-        <option value="asc">Price: Low to High</option>
-        <option value="desc">Price: High to Low</option>
-      </select>
+    <div className="my-6 flex flex-col gap-3 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+      {/* SORT */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span>Sort by:</span>
+          <select
+            name="sort"
+            id="sort"
+            value={searchParams.get("sort") ?? "newest"}
+            className="ring-1 ring-gray-200 shadow-md p-1 rounded-sm"
+            onChange={(event) => setParam("sort", event.target.value)}
+          >
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="asc">Price: Low to High</option>
+            <option value="desc">Price: High to Low</option>
+          </select>
+        </div>
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-xs text-gray-500 underline"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {/* COLOR FACETS */}
+      {colors.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-gray-500">Color:</span>
+          {colors.map(({ key, doc_count }) => {
+            const value = String(key);
+            const isActive = activeColors.includes(value);
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={isActive}
+                title={`${value} (${doc_count})`}
+                onClick={() => toggleFacet("color", value)}
+                className={`flex items-center gap-1.5 rounded-full border px-2 py-1 capitalize transition-colors ${
+                  isActive
+                    ? "border-gray-400 bg-white text-gray-900"
+                    : "border-gray-200 hover:bg-white"
+                }`}
+              >
+                <span
+                  className="h-3 w-3 rounded-full border border-gray-300"
+                  style={{ backgroundColor: value }}
+                />
+                {value}
+                <span className="text-xs text-gray-400">{doc_count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* SIZE FACETS */}
+      {sizes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-gray-500">Size:</span>
+          {sizes.map(({ key, doc_count }) => {
+            const value = String(key);
+            const isActive = activeSizes.includes(value);
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => toggleFacet("size", value)}
+                className={`rounded-md border px-2 py-1 uppercase transition-colors ${
+                  isActive
+                    ? "border-gray-400 bg-white text-gray-900"
+                    : "border-gray-200 hover:bg-white"
+                }`}
+              >
+                {value}
+                <span className="ml-1 text-xs text-gray-400">{doc_count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* PRICE FACET */}
+      {priceStats && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-gray-500">Price:</span>
+          <input
+            inputMode="numeric"
+            aria-label="Minimum price"
+            value={minPriceInput}
+            placeholder={`Min ${priceStats.min}`}
+            onChange={(event) => setMinPriceInput(event.target.value)}
+            onBlur={() => applyPrice("min_price", minPriceInput)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") applyPrice("min_price", minPriceInput);
+            }}
+            className="w-20 rounded-md border border-gray-200 px-2 py-1"
+          />
+          <span className="text-gray-400">–</span>
+          <input
+            inputMode="numeric"
+            aria-label="Maximum price"
+            value={maxPriceInput}
+            placeholder={`Max ${priceStats.max}`}
+            onChange={(event) => setMaxPriceInput(event.target.value)}
+            onBlur={() => applyPrice("max_price", maxPriceInput)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") applyPrice("max_price", maxPriceInput);
+            }}
+            className="w-20 rounded-md border border-gray-200 px-2 py-1"
+          />
+        </div>
+      )}
     </div>
   );
 };

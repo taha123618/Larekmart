@@ -7,6 +7,7 @@ Microservice managing the clothing product and category catalog.
 - **Framework**: Express 5
 - **Database**: PostgreSQL via Prisma (`@repo/product-db`)
 - **Messaging**: Apache Kafka (`@repo/kafka`)
+- **Cache**: Redis (`@repo/redis`) — read-through cache for the catalog read endpoints
 - **Auth**: Clerk (`@clerk/express`)
 - **Port**: `8000`
 
@@ -36,6 +37,12 @@ Copy `.env.example` to `.env`:
 ```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ecommerce
 CLERK_SECRET_KEY=sk_test_...
+
+# Optional — the service serves every request from PostgreSQL without it
+REDIS_URL=redis://localhost:6379
+REDIS_KEY_PREFIX=product:v1:
+PRODUCT_CACHE_TTL_SECONDS=300
+CATEGORY_CACHE_TTL_SECONDS=300
 ```
 
 ## Development Commands

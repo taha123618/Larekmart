@@ -10,6 +10,7 @@ Hybrid analytics worker and HTTP API service that consumes project-wide Kafka ev
 - **Messaging**: Apache Kafka (`@repo/kafka`)
 - **Shared Types**: `@repo/types`
 - **Persistence**: PostgreSQL (`pg` connection pool with auto-initialization and resilient in-memory aggregation fallback)
+- **Cache**: Redis (`@repo/redis`) — TTL-bounded read-through cache for the dashboard endpoints
 
 ## Event Integrations
 
@@ -48,6 +49,12 @@ PORT=8004
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ecommerce"
 CLERK_SECRET_KEY=sk_test_...
 CLERK_PUBLISHABLE_KEY=pk_test_...
+
+# Optional — the service serves analytics from PostgreSQL without it
+REDIS_URL=redis://localhost:6379
+REDIS_KEY_PREFIX=analytics:v1:
+ANALYTICS_CHART_CACHE_TTL_SECONDS=60
+ANALYTICS_EVENTS_CACHE_TTL_SECONDS=15
 ```
 
 ## Development Commands

@@ -17,6 +17,7 @@ git checkout -b feat/your-feature-name
 
 # 2. Start local dependencies
 docker compose -f packages/kafka/docker-compose.yml up -d
+docker compose -f packages/redis/docker-compose.yml up -d
 
 # 3. Start development servers
 pnpm dev
