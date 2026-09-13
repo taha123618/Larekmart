@@ -21,5 +21,5 @@ Guidance for maintaining `@repo/typescript-config`.
 ## 3. Verification
 
 ```bash
-pnpm check-types # validates all 13 workspaces
+pnpm check-types # validates all 21 workspaces
 ```

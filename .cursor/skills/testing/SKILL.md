@@ -14,7 +14,7 @@ description: Use when asked to test, verify, or add tests to Larekmart — inclu
 ## Verification Commands
 
 ```bash
-# Monorepo-wide typecheck (all 19 workspaces)
+# Monorepo-wide typecheck (all 21 workspaces)
 pnpm check-types
 
 # Production builds (configured workspaces, including Next.js, search, payment, and Go notification service)

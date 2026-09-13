@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InventoryItemStatus {
+  ACTIVE
+  LOW_STOCK
+  OUT_OF_STOCK
+  INACTIVE
+}
+
+enum InventoryMovementType {
+  PURCHASE
+  RESTOCK
+  RESERVE
+  RELEASE
+  SALE
+  RETURN
+  ADJUSTMENT
+  DAMAGE
+}
+
+enum InventoryReservationStatus {
+  RESERVED
+  CONFIRMED
+  RELEASED
+  EXPIRED
+}
+
+model InventoryItem {
+  id                String                       @id @default(cuid())
+  productId         Int
+  variantId         String
+  warehouseId       String
+  quantity          Int                          @default(0)
+  reservedQuantity  Int                          @default(0)
+  soldQuantity      Int                          @default(0)
+  availableQuantity Int                          @default(0)
+  reorderPoint      Int                          @default(0)
+  status            InventoryItemStatus          @default(ACTIVE)
+  version           Int                          @default(0)
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  reservations      InventoryReservation[]
+  movements         InventoryMovement[]
+
+  @@unique([productId, variantId, warehouseId])
+  @@index([productId])
+  @@index([warehouseId])
+  @@index([status])
+  @@map("inventory_items")
+}
+
+model InventoryReservation {
+  id              String                        @id @default(cuid())
+  userId          String
+  inventoryItemId String
+  quantity        Int
+  referenceType   String
+  referenceId     String
+  status          InventoryReservationStatus   @default(RESERVED)
+  expiresAt       DateTime
+  createdAt       DateTime                      @default(now())
+  updatedAt       DateTime                      @updatedAt
+  inventoryItem   InventoryItem                 @relation(fields: [inventoryItemId], references: [id])
+
+  @@index([inventoryItemId, status])
+  @@index([userId, status])
+  @@index([expiresAt, status])
+  @@unique([referenceType, referenceId, inventoryItemId])
+  @@map("inventory_reservations")
+}
+
+model InventoryMovement {
+  id              String                @id @default(cuid())
+  inventoryItemId String
+  type            InventoryMovementType
+  quantity        Int
+  referenceType   String?
+  referenceId     String?
+  reason          String?
+  createdAt       DateTime              @default(now())
+  inventoryItem   InventoryItem         @relation(fields: [inventoryItemId], references: [id])
+
+  @@index([inventoryItemId, createdAt])
+  @@index([type, createdAt])
+  @@index([referenceType, referenceId])
+  @@map("inventory_movements")
+}

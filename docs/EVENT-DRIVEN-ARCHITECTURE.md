@@ -55,16 +55,24 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 
 ## Topic registry
 
-| Topic                   | Producer             | Consumer(s)                                           | Payload (`message.value`)                                                  |
-| ----------------------- | -------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- |
-| `product.created`       | product-service      | payment-service, analytic-service, search-service     | `ProductCreatedPayload` (superset of `StripeProductType`)                  |
-| `product.updated`       | product-service      | search-service                                        | `ProductType`, or `ProductCreatedPayload` on a backfill replay              |
-| `product.deleted`       | product-service      | payment-service, analytic-service, search-service     | `number` (the product id)                                                  |
-| `user.created`          | auth-service         | email-service, analytic-service, notification-service | `{ username: string, email: string }`                                      |
-| `order.created`         | order-service        | email-service, analytic-service, notification-service | `{ email: string, amount: number, status: "success" \| "failed" }`         |
-| `payment.successful`    | payment-service      | order-service, analytic-service, notification-service | `{ userId, email, amount, status, products: { name, quantity, price }[] }` |
-| `notification.dispatch` | any backend service  | notification-service                                  | `{ userId, type, title, body, email, phone, metadata }`                    |
-| `email.dispatch`        | notification-service | email-service                                         | `{ email, subject, text, html, context }`                                  |
+| Topic                             | Producer             | Consumer(s)                                           | Payload (`message.value`)                                                  |
+| --------------------------------- | -------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- |
+| `product.created`                 | product-service      | payment-service, analytic-service, search-service     | `ProductCreatedPayload` (superset of `StripeProductType`)                  |
+| `product.updated`                 | product-service      | search-service                                        | `ProductType`, or `ProductCreatedPayload` on a backfill replay             |
+| `product.deleted`                 | product-service      | payment-service, analytic-service, search-service     | `number` (the product id)                                                  |
+| `user.created`                    | auth-service         | email-service, analytic-service, notification-service | `{ username: string, email: string }`                                      |
+| `order.created`                   | order-service        | email-service, analytic-service, notification-service | `{ email: string, amount: number, status: "success" \| "failed" }`         |
+| `payment.successful`              | payment-service      | order-service, analytic-service, notification-service | `{ userId, email, amount, status, products: { name, quantity, price }[] }` |
+| `notification.dispatch`           | any backend service  | notification-service                                  | `{ userId, type, title, body, email, phone, metadata }`                    |
+| `email.dispatch`                  | notification-service | email-service                                         | `{ email, subject, text, html, context }`                                  |
+| `inventory.created`               | inventory-service    | none yet                                              | `InventoryChangedPayload`                                                  |
+| `inventory.reserved`              | inventory-service    | none yet                                              | `InventoryChangedPayload` + reservation fields                             |
+| `inventory.reservation.confirmed` | inventory-service    | none yet                                              | `InventoryChangedPayload` + reservation fields                             |
+| `inventory.released`              | inventory-service    | none yet                                              | `InventoryChangedPayload` + reservation fields                             |
+| `inventory.reservation.expired`   | inventory-service    | none yet                                              | `InventoryChangedPayload` + reservation fields                             |
+| `inventory.restocked`             | inventory-service    | none yet                                              | `InventoryChangedPayload`                                                  |
+| `inventory.adjusted`              | inventory-service    | none yet                                              | `InventoryChangedPayload`                                                  |
+| `inventory.low_stock`             | inventory-service    | none yet                                              | `InventoryChangedPayload`                                                  |
 
 ### `product.created`
 
@@ -88,8 +96,8 @@ payment-service still finds the `id`/`name`/`price` it mirrors into Stripe.
     "colors": ["black", "white"],
     "images": { "black": "/products/1bl.png", "white": "/products/1w.png" },
     "createdAt": "2026-09-13T10:00:00.000Z",
-    "updatedAt": "2026-09-13T10:00:00.000Z"
-  }
+    "updatedAt": "2026-09-13T10:00:00.000Z",
+  },
 }
 ```
 

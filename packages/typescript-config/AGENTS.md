@@ -16,4 +16,4 @@ This package provides shared TypeScript configuration bases (`tsconfig.json`) ac
 
 - **Do Not Weaken Strictness**: Never disable `strict` or `noUncheckedIndexedAccess`.
 - **Global Impact**: Any modification to `base.json` or `nextjs.json` directly affects every workspace.
-- **Verification**: Run `pnpm check-types` from the repository root after any edit to verify that all 19 workspaces compile cleanly.
+- **Verification**: Run `pnpm check-types` from the repository root after any edit to verify that all 21 workspaces compile cleanly.

@@ -111,21 +111,29 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Consumes: `product.created`, `product.updated`, `product.deleted` → keeps the search index in sync with product-service.
 - Depends on: `@repo/opensearch` (client, mappings, query builders, search execution, bulk + single-document indexing, reindexing).
 
+**`inventory-service` (Hono 4, :8007)** — stock and reservation authority.
+
+- Routes: `/api/v1/inventory` for availability, reservations, confirmation, release, expiry, restock, adjustments, low-stock queries, and movement history; plus `/health`, `/ready`, and `/metrics`.
+- Persistence: PostgreSQL through `@repo/inventory-db`; available, reserved, and sold quantities remain authoritative there.
+- Caching: Redis (`inventory:v1:*`) only for best-effort availability reads.
+- Events: publishes `inventory.*` events after committed transactions; Kafka is never used to decide stock availability.
+
 ## Data ownership
 
-| Store      | Owner                            | Accessed via                | Notable models                                                                                                                          |
-| ---------- | -------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --- | ----- | ---------------- | ----------------------- | ----------------------------------------------- |
-| PostgreSQL | product-service                  | `@repo/product-db` (Prisma) | `Product`, `Category`                                                                                                                   |
-| PostgreSQL | analytic-service                 | `pg.Pool`                   | `analytics_events`, `analytics_daily_summary`                                                                                           |
-| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)         | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
-| Redis      | notification-service             | `go-redis` (Go)             | `event:<id>` (idempotency fast-cache)                                                                                                   |
-| Redis      | search-service                   | `@repo/redis` (ioredis)     | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                               |
-| Redis      | product-service                  | `@repo/redis` (ioredis)     | `product:v1:*` (catalog read-through cache)                                                                                             |     | Redis | analytic-service | `@repo/redis` (ioredis) | `analytics:v1:*` (dashboard read-through cache) |
-| Redis      | order-service                    | `@repo/redis` (ioredis)     | `order:v1:*` (6-month order-chart read-through cache)                                                                                   |
-| OpenSearch | search-service                   | `@repo/opensearch`          | `products-v1` index (alias `products`) — denormalized search document                                                                   |
-| MongoDB    | order-service                    | `@repo/order-db` (Mongoose) | `Order`                                                                                                                                 |
-| Clerk      | auth-service (and all frontends) | Clerk SDKs                  | users, session claims                                                                                                                   |
-| Stripe     | payment-service                  | `stripe` SDK                | products, prices, sessions                                                                                                              |
+| Store      | Owner                            | Accessed via                  | Notable models                                                                                                                          |
+| ---------- | -------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --- | ----- | ---------------- | ----------------------- | ----------------------------------------------- |
+| PostgreSQL | product-service                  | `@repo/product-db` (Prisma)   | `Product`, `Category`                                                                                                                   |
+| PostgreSQL | inventory-service                | `@repo/inventory-db` (Prisma) | `inventory_items`, `inventory_reservations`, `inventory_movements`                                                                      |
+| PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                           |
+| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
+| Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                   |
+| Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                               |
+| Redis      | product-service                  | `@repo/redis` (ioredis)       | `product:v1:*` (catalog read-through cache)                                                                                             |     | Redis | analytic-service | `@repo/redis` (ioredis) | `analytics:v1:*` (dashboard read-through cache) |
+| Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                   |
+| OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                   |
+| MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                 |
+| Clerk      | auth-service (and all frontends) | Clerk SDKs                    | users, session claims                                                                                                                   |
+| Stripe     | payment-service                  | `stripe` SDK                  | products, prices, sessions                                                                                                              |
 
 `@repo/types` re-exports the persistence-derived types (`Product`, `Category`, `Order`)
 so consumers can type against the catalog/order shapes without importing the DB clients

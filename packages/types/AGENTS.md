@@ -20,6 +20,8 @@ through that map, not through the stale `main` field.
 
 - Cross-boundary types and Zod schemas.
 - Kafka payload shapes consumed or produced by more than one workspace.
+- Inventory API schemas and inventory event payloads shared with inventory-service and
+  future order/analytics consumers.
 - Shared constants used by multiple apps/services.
 
 ## What does not belong here

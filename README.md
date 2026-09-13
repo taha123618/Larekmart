@@ -1,6 +1,6 @@
 # Larekmart
 
-**Larekmart** is a production-grade microservices e-commerce platform for clothing. It pairs a customer storefront and an admin management dashboard with **eight backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for catalog, analytics, and notifications; and MongoDB for order management).
+**Larekmart** is a production-grade microservices e-commerce platform for clothing. It pairs a customer storefront and an admin management dashboard with **nine backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for catalog, analytics, notifications, and inventory; and MongoDB for order management).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node and Go services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 
@@ -70,7 +70,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── email-service/        # Headless Kafka worker -> transactional email
 │   ├── analytic-service/     # Express 5 + PostgreSQL analytics API & Kafka worker (:8004)
 │   ├── notification-service/ # Go (Chi) + PostgreSQL + Redis + WebSockets notification orchestration (:8005)
-│   └── search-service/       # Fastify + OpenSearch + Redis + Kafka search and indexing (:8006)
+│   ├── search-service/       # Fastify + OpenSearch + Redis + Kafka search and indexing (:8006)
+│   └── inventory-service/    # Hono + PostgreSQL + Redis + Kafka inventory API (:8007)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -78,6 +79,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── types/                # @repo/types    — shared types, Zod schemas, event contracts
 │   ├── monitoring/           # @repo/monitoring — structured logging, health checks, metrics & telemetry
 │   ├── product-db/           # @repo/product-db — Prisma client & schema (PostgreSQL)
+│   ├── inventory-db/         # @repo/inventory-db — Prisma inventory schema, reservations & ledger (PostgreSQL)
 │   ├── order-db/             # @repo/order-db  — Mongoose connection & Order model (MongoDB)
 │   ├── eslint-config/        # @repo/eslint-config — shared ESLint flat configs
 │   └── typescript-config/    # @repo/typescript-config — shared tsconfig bases
@@ -103,6 +105,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`analytic-service`**     | Express 5, Node.js (ESM), PostgreSQL (`pg`), Kafka                                    | `8004` | Consumes all event streams, updates live KPI counters, persists audit logs & daily rollups to PostgreSQL, and serves REST analytics to `admin`. |
 | **`notification-service`** | Go 1.22 (Chi), PostgreSQL, Redis, WebSockets, Kafka, OpenTelemetry                    | `8005` | Multi-channel notification orchestration (Email, SMS, Push, In-App), worker pools, Redis deduplication, and real-time WebSocket hub.            |
 | **`search-service`**       | Fastify 5, OpenSearch, Redis, Kafka, Clerk                                            | `8006` | Product search, autocomplete, faceting, rate limiting, Kafka-driven indexing, and zero-downtime reindexing.                                     |
+| **`inventory-service`**    | Hono 4, Prisma, PostgreSQL, Redis, Kafka, Clerk                                       | `8007` | Stock availability, atomic reservations, warehouse inventory, restocks, adjustments, and inventory events.                                      |
 
 ---
 
@@ -116,9 +119,10 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`@repo/redis`**             | Redis client factory, namespaced key builder, typed cache helpers, namespace invalidation, and rate limiter. | Product, order, search, and analytic services |
 | **`@repo/opensearch`**        | OpenSearch client factory, product mappings, query builders, indexing, search, and reindex helpers.          | Product and search services                   |
 | **`@repo/product-db`**        | PostgreSQL catalog persistence via Prisma schema and generated `prisma` client singleton.                    | `product-service`, `@repo/types` (type-only)  |
+| **`@repo/inventory-db`**      | PostgreSQL inventory persistence via Prisma, atomic reservations, and an inventory movement ledger.          | `inventory-service`                           |
 | **`@repo/order-db`**          | MongoDB persistence via Mongoose `Order` model and connection helper.                                        | `order-service`, `@repo/types` (type-only)    |
 | **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                     | `admin`, `client`                             |
-| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 19 workspaces                             |
+| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 21 workspaces                             |
 
 ---
 
@@ -186,7 +190,7 @@ pnpm dev
 | **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                        |
 | **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                 |
 | **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                            |
-| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet`) across all 19 workspaces                       |
+| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet`) across all 21 workspaces                       |
 | **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                      |
 | **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                         |
 | **Build**           | `pnpm build`                                                | Run configured builds for the Next.js apps, Node services, packages, and Go service |

@@ -1,0 +1,28 @@
+{
+  "name": "inventory-service",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env --watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/clerk-auth": "^3.0.3",
+    "@hono/node-server": "^1.19.0",
+    "@repo/inventory-db": "workspace:*",
+    "@repo/kafka": "workspace:*",
+    "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "@repo/types": "workspace:*",
+    "hono": "^4.9.6",
+    "zod": "^4.1.9"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^24.3.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

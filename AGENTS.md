@@ -85,12 +85,14 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `analytic-service`        | `apps/analytic-service`      | Express 5               | 8004 | Consumes Kafka events, aggregates metrics & REST API                              |
 | `notification-service`    | `apps/notification-service`  | Go 1.22 (Chi)           | 8005 | Multi-channel notifications, worker pool & WebSockets                             |
 | `search-service`          | `apps/search-service`        | Fastify 5               | 8006 | OpenSearch product search, filtering, autocomplete & indexing                     |
+| `inventory-service`       | `apps/inventory-service`     | Hono 4                  | 8007 | PostgreSQL stock, reservations, warehouse inventory, and inventory events         |
 | `@repo/kafka`             | `packages/kafka`             | Library                 | —    | kafkajs wrapper + local Kafka compose                                             |
 | `@repo/types`             | `packages/types`             | Library                 | —    | Shared types + Zod schemas (contract package)                                     |
 | `@repo/monitoring`        | `packages/monitoring`        | Library                 | —    | Logging, health checks, metrics & telemetry                                       |
 | `@repo/opensearch`        | `packages/opensearch`        | Library                 | —    | OpenSearch client factory, product index mappings, query builders, bulk indexing  |
 | `@repo/redis`             | `packages/redis`             | Library                 | —    | ioredis client factory, typed cache helpers, namespace invalidation, rate limiter |
 | `@repo/product-db`        | `packages/product-db`        | Library                 | —    | Prisma client + schema (PostgreSQL)                                               |
+| `@repo/inventory-db`      | `packages/inventory-db`      | Library                 | —    | Prisma inventory schema, reservations, and stock ledger (PostgreSQL)              |
 | `@repo/order-db`          | `packages/order-db`          | Library                 | —    | Mongoose connection + Order model (MongoDB)                                       |
 | `@repo/eslint-config`     | `packages/eslint-config`     | Config                  | —    | Shared ESLint flat configs                                                        |
 | `@repo/typescript-config` | `packages/typescript-config` | Config                  | —    | Shared tsconfig bases                                                             |
@@ -139,6 +141,8 @@ pnpm format                               # prettier write (**/*.{ts,tsx,md,js,j
 pnpm --filter @repo/product-db db:generate   # prisma generate (required before typecheck)
 pnpm --filter @repo/product-db db:migrate    # prisma migrate dev
 pnpm --filter @repo/product-db db:deploy     # prisma migrate deploy
+pnpm --filter @repo/inventory-db db:generate # generate inventory Prisma client
+pnpm --filter @repo/inventory-db db:migrate  # inventory migration in development
 
 # Local infrastructure
 docker compose -f packages/kafka/docker-compose.yml up -d   # Kafka cluster

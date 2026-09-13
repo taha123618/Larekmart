@@ -24,7 +24,7 @@ Guidance for maintaining `@repo/types` — the central contract repository of La
 1. Edit or add types in `src/`.
 2. Ensure new types/schemas are exported from `src/index.ts`.
 3. Verify that consumers resolve via the `exports` map in `packages/types/package.json`.
-4. Run `pnpm check-types` from repository root to ensure all 13 workspaces remain synchronized.
+4. Run `pnpm check-types` from repository root to ensure all 21 workspaces remain synchronized.
 
 ## 4. Verification
 

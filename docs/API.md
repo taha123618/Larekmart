@@ -4,16 +4,17 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ## Service Ports & Protocols
 
-| Service                | Port   | Framework      | Auth Guard                         | Owner                                   |
-| ---------------------- | ------ | -------------- | ---------------------------------- | --------------------------------------- |
-| `product-service`      | `8000` | Express 5      | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog              |
-| `order-service`        | `8001` | Fastify 5      | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics            |
-| `payment-service`      | `8002` | Hono 4         | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks              |
-| `auth-service`         | `8003` | Express 5      | `shouldBeAdmin`                    | Admin User Management Proxy             |
-| `analytic-service`     | `8004` | Express 5      | `shouldBeAdmin`                    | Analytics & KPI Aggregations            |
-| `notification-service` | `8005` | Go / Chi       | User token / public probes         | Notifications, WebSockets & delivery    |
-| `search-service`       | `8006` | Fastify 5      | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete |
-| `email-service`        | —      | Node.js Worker | None (Kafka only)                  | Transactional Email Dispatch            |
+| Service                | Port   | Framework      | Auth Guard                         | Owner                                     |
+| ---------------------- | ------ | -------------- | ---------------------------------- | ----------------------------------------- |
+| `product-service`      | `8000` | Express 5      | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog                |
+| `order-service`        | `8001` | Fastify 5      | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics              |
+| `payment-service`      | `8002` | Hono 4         | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks                |
+| `auth-service`         | `8003` | Express 5      | `shouldBeAdmin`                    | Admin User Management Proxy               |
+| `analytic-service`     | `8004` | Express 5      | `shouldBeAdmin`                    | Analytics & KPI Aggregations              |
+| `notification-service` | `8005` | Go / Chi       | User token / public probes         | Notifications, WebSockets & delivery      |
+| `search-service`       | `8006` | Fastify 5      | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete   |
+| `inventory-service`    | `8007` | Hono 4         | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory |
+| `email-service`        | —      | Node.js Worker | None (Kafka only)                  | Transactional Email Dispatch              |
 
 ---
 
@@ -256,7 +257,42 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 - **Auth**: Public / Scraper
 - **Response**: Liveness, OpenSearch/Redis readiness, and Prometheus metrics respectively
 
-## 7. Notification Service (`:8005`)
+## 7. Inventory Service (`:8007`)
+
+### `GET /api/v1/inventory/:productId` and `GET /api/v1/inventory/:productId/availability`
+
+- **Auth**: Authenticated user
+- **Query Params**: `variantId`, `warehouseId`
+- **Response**: Warehouse availability with available, reserved, sold, and aggregate available quantities
+
+### `POST /api/v1/inventory/reservations`
+
+- **Auth**: Authenticated user
+- **Body**: `{ productId, variantId, warehouseId, quantity, referenceType, referenceId, expiresAt }`
+- **Side Effect**: Atomically moves available stock to reserved stock and emits `inventory.reserved`
+
+### `POST /api/v1/inventory/reservations/:id/confirm`
+
+- **Auth**: Reservation owner
+- **Side Effect**: Moves reserved stock to sold stock and emits `inventory.reservation.confirmed`
+
+### `POST /api/v1/inventory/reservations/:id/release` and `/expire`
+
+- **Auth**: Reservation owner
+- **Side Effect**: Returns reserved stock to available stock and emits the corresponding inventory event
+
+### Admin inventory routes
+
+- `POST /api/v1/inventory/items` — create a warehouse inventory item
+- `POST /api/v1/inventory/restock` — add available stock
+- `POST /api/v1/inventory/adjustments` — apply an adjustment or damage movement
+- `GET /api/v1/inventory/admin/low-stock` — list low/out-of-stock items
+- `GET /api/v1/inventory/admin/movements/:productId` — inspect the movement ledger
+
+All mutation routes use PostgreSQL transactions through `@repo/inventory-db`; Redis is
+only a best-effort availability cache.
+
+## 8. Notification Service (`:8005`)
 
 ### `GET /health`
 
