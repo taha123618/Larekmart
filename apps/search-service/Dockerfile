@@ -13,6 +13,7 @@ FROM dependencies AS builder
 RUN pnpm --filter @repo/types build 2>/dev/null || true
 RUN pnpm --filter @repo/monitoring build 2>/dev/null || true
 RUN pnpm --filter @repo/kafka build 2>/dev/null || true
+RUN pnpm --filter @repo/opensearch build 2>/dev/null || true
 RUN pnpm --filter search-service build
 
 FROM node:20-alpine AS runner

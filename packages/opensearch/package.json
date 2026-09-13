@@ -6,6 +6,7 @@
   "types": "./src/index.ts",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "check-types": "tsc --noEmit"
   },
   "keywords": ["opensearch", "search", "ecommerce"],

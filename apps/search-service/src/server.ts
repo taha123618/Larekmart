@@ -9,7 +9,7 @@ import { indexingRoutes } from "./routes/indexing.js";
 import { healthRoutes } from "./routes/health.js";
 import { ensureProductIndexExists } from "@repo/opensearch";
 import { getOpenSearchClient, closeOpenSearchClient } from "./opensearch/client.js";
-import { getRedisClient, closeRedisClient } from "./cache/redis.js";
+import { getRedisClient, closeRedisClient } from "./utils/redis.js";
 import { consumer, producer } from "./utils/kafka.js";
 import { registerProductEventSubscriptions } from "./consumers/product-events.consumer.js";
 

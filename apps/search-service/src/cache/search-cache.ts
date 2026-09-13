@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { getRedisClient } from "./redis.js";
+import { getRedisClient } from "../utils/redis.js";
 import { config } from "../config/config.js";
 import { logger, searchMetrics } from "../observability/metrics.js";
 import type { SearchQueryParams, SearchResponse } from "@repo/types";

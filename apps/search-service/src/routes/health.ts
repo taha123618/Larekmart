@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getOpenSearchClient, checkOpenSearchConnection } from "../opensearch/client.js";
-import { checkRedisConnection } from "../cache/redis.js";
+import { checkRedisConnection } from "../utils/redis.js";
 import { metrics } from "../observability/metrics.js";
 
 function getClientForHealthCheck() {

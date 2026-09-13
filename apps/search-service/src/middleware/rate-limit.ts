@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { getRedisClient } from "../cache/redis.js";
+import { getRedisClient } from "../utils/redis.js";
 import { config } from "../config/config.js";
 import { logger } from "../observability/metrics.js";
 
