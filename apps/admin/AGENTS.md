@@ -13,7 +13,7 @@ uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-form + 
 - `src/app/` — App Router routes. Look for `(dashboard)` for the protected admin shell and
   `(auth)` for clerk sign-in / unauthorized fallback.
 - `src/components/` — UI: `AddProduct`, `AddCategory`, `CardList`, `AddUser`, data tables,
-  chart components, etc.
+  chart components, `BackfillSearchButton`, etc.
 - `src/components/ui/` — shadcn/ui primitives. Add new primitives here when you need one.
 - `src/lib/utils.ts` — contains `cn()`.
 - `src/middleware.ts` — admin routing guard using `createRouteMatcher` and
@@ -49,7 +49,13 @@ uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-form + 
 
 This app talks HTTP to:
 
-- `product-service` — products, categories.
+- `product-service` — products, categories, and the admin search-index backfill
+  (`POST /products/backfill-search`, surfaced as **Rebuild search index** on the products
+  page). That endpoint is **windowed**: `BackfillSearchButton` keeps calling it with
+  `afterId` until the response reports `hasMore: false`, showing a running count. It
+  republishes catalog products as `product.updated` events, and the actual indexing happens
+  asynchronously in search-service — so a success toast means the events were **queued**,
+  not that the index is already rebuilt.
 - `order-service` — orders, order chart.
 - `auth-service` — user admin (list, get, create, delete).
 - It does not touch Postgres/Mongo/Kafka directly.

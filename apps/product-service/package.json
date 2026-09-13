@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm dlx tsx --env-file=.env --watch src/index.ts",
+    "backfill:search": "pnpm dlx tsx --env-file=.env src/scripts/backfill-search-index.ts",
     "check-types": "tsc --noEmit"
   },
   "keywords": [],
@@ -17,11 +18,12 @@
     "express": "^5.0.3",
     "@repo/product-db": "workspace:*",
     "@repo/kafka": "workspace:*",
-    "@repo/monitoring": "workspace:*"
+    "@repo/monitoring": "workspace:*",
+    "@repo/opensearch": "workspace:*",
+    "@repo/types": "workspace:*"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
-    "@repo/types": "workspace:*",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3"
   }

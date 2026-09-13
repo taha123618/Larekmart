@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { prisma, Prisma } from "@repo/product-db";
 import { producer } from "../utils/kafka";
-import { StripeProductType } from "@repo/types";
+import { toProductEventPayload } from "../search/product-payload.js";
 import { createLogger, measureAsync } from "@repo/monitoring";
 
 const logger = createLogger("product-service:controller");
@@ -35,13 +35,12 @@ export const createProduct = async (req: Request, res: Response) => {
 
   logger.info(`Product created successfully with ID: ${product.id}`);
 
-  const stripeProduct: StripeProductType = {
-    id: product.id.toString(),
-    name: product.name,
-    price: product.price,
-  };
-
-  producer.send("product.created", { value: stripeProduct });
+  // Publish the full product (a superset of StripeProductType) so
+  // search-service can index images, sizes, and colors immediately instead of
+  // waiting for a follow-up update event. payment-service still finds the
+  // id/name/price it needs to mirror the catalog into Stripe. The same mapper
+  // drives the search backfill (`backfill:search`).
+  producer.send("product.created", { value: toProductEventPayload(product) });
   res.status(201).json(product);
 };
 
@@ -60,6 +59,7 @@ export const updateProduct = async (req: Request, res: Response) => {
   );
 
   logger.info(`Product updated successfully with ID: ${id}`);
+  producer.send("product.updated", { value: updatedProduct });
   return res.status(200).json(updatedProduct);
 };
 

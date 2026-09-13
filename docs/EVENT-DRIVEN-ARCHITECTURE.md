@@ -57,8 +57,9 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 
 | Topic                   | Producer             | Consumer(s)                                           | Payload (`message.value`)                                                  |
 | ----------------------- | -------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- |
-| `product.created`       | product-service      | payment-service, analytic-service                     | `StripeProductType` → `{ id: string, name: string, price: number }`        |
-| `product.deleted`       | product-service      | payment-service, analytic-service                     | `number` (the product id)                                                  |
+| `product.created`       | product-service      | payment-service, analytic-service, search-service     | `ProductCreatedPayload` (superset of `StripeProductType`)                  |
+| `product.updated`       | product-service      | search-service                                        | `ProductType`, or `ProductCreatedPayload` on a backfill replay              |
+| `product.deleted`       | product-service      | payment-service, analytic-service, search-service     | `number` (the product id)                                                  |
 | `user.created`          | auth-service         | email-service, analytic-service, notification-service | `{ username: string, email: string }`                                      |
 | `order.created`         | order-service        | email-service, analytic-service, notification-service | `{ email: string, amount: number, status: "success" \| "failed" }`         |
 | `payment.successful`    | payment-service      | order-service, analytic-service, notification-service | `{ userId, email, amount, status, products: { name, quantity, price }[] }` |
@@ -67,14 +68,55 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 
 ### `product.created`
 
-Emitted after a product row is written. Used to mirror the catalog into Stripe.
+Emitted after a product row is written. Used to mirror the catalog into Stripe and index into OpenSearch.
+
+The payload is the full product (`ProductCreatedPayload`), a superset of `StripeProductType`.
+The rich fields let search-service index images, sizes, and colors immediately — a freshly
+created product is searchable with facets without waiting for an update event — while
+payment-service still finds the `id`/`name`/`price` it mirrors into Stripe.
 
 ```jsonc
-{ "value": { "id": "42", "name": "Adidas CoreFit T-Shirt", "price": 59 } }
+{
+  "value": {
+    "id": "42",
+    "name": "Adidas CoreFit T-Shirt",
+    "price": 59,
+    "shortDescription": "Soft cotton tee",
+    "description": "Soft cotton tee with a relaxed fit.",
+    "categorySlug": "t-shirts",
+    "sizes": ["s", "m", "l"],
+    "colors": ["black", "white"],
+    "images": { "black": "/products/1bl.png", "white": "/products/1w.png" },
+    "createdAt": "2026-09-13T10:00:00.000Z",
+    "updatedAt": "2026-09-13T10:00:00.000Z"
+  }
+}
 ```
 
 - Producer: `apps/product-service/src/controllers/product.controller.ts`
-- Consumer: `apps/payment-service/src/utils/subscriptions.ts` → `createStripeProduct`
+- Consumer: `apps/payment-service/src/utils/subscriptions.ts`, `apps/search-service/src/consumers/product-events.consumer.ts`
+
+### `product.updated`
+
+Emitted after a product row is updated. Used to update the denormalized document in OpenSearch.
+
+```jsonc
+{ "value": { "id": 42, "name": "Adidas CoreFit T-Shirt Pro", "price": 65 } }
+```
+
+The consumer fills anything missing with defaults, so a partial update leaves `images`,
+`sizes`, and `colors` as they were. Send the whole product when a change affects what the
+storefront renders or facets on.
+
+`product-service` also **replays the catalog on this topic** to heal documents that were
+indexed before `product.created` carried the full product
+(`pnpm --filter product-service backfill:search`); those replays send
+`ProductCreatedPayload`. search-service is the only consumer today, so a full replay has no
+side effects on other services — but if you subscribe a new service here, remember it can
+receive the entire catalog at once.
+
+- Producer: `apps/product-service/src/controllers/product.controller.ts`, `apps/product-service/src/search/backfill.ts`
+- Consumer: `apps/search-service/src/consumers/product-events.consumer.ts`
 
 ### `product.deleted`
 
@@ -83,6 +125,9 @@ Emitted after a product is deleted; carries the numeric id.
 ```jsonc
 { "value": 42 }
 ```
+
+- Producer: `apps/product-service/src/controllers/product.controller.ts`
+- Consumer: `apps/payment-service/src/utils/subscriptions.ts`, `apps/search-service/src/consumers/product-events.consumer.ts`
 
 - Consumer: `deleteStripeProduct` in payment-service.
 

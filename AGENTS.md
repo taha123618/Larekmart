@@ -84,9 +84,11 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `email-service`           | `apps/email-service`         | Node worker             | —    | Consumes Kafka events, sends email (no HTTP)            |
 | `analytic-service`        | `apps/analytic-service`      | Express 5               | 8004 | Consumes Kafka events, aggregates metrics & REST API    |
 | `notification-service`    | `apps/notification-service`  | Go 1.22 (Chi)           | 8005 | Multi-channel notifications, worker pool & WebSockets   |
+| `search-service`          | `apps/search-service`        | Fastify 5               | 8006 | OpenSearch product search, filtering, autocomplete & indexing |
 | `@repo/kafka`             | `packages/kafka`             | Library                 | —    | kafkajs wrapper + local Kafka compose                   |
 | `@repo/types`             | `packages/types`             | Library                 | —    | Shared types + Zod schemas (contract package)           |
 | `@repo/monitoring`        | `packages/monitoring`        | Library                 | —    | Logging, health checks, metrics & telemetry             |
+| `@repo/opensearch`        | `packages/opensearch`        | Library                 | —    | OpenSearch client factory, product index mappings, query builders, bulk indexing |
 | `@repo/product-db`        | `packages/product-db`        | Library                 | —    | Prisma client + schema (PostgreSQL)                     |
 | `@repo/order-db`          | `packages/order-db`          | Library                 | —    | Mongoose connection + Order model (MongoDB)             |
 | `@repo/eslint-config`     | `packages/eslint-config`     | Config                  | —    | Shared ESLint flat configs                              |

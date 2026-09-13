@@ -5,3 +5,4 @@ export * from "./order";
 export * from "./analytics";
 export * from "./monitoring";
 export * from "./notification";
+export * from "./search";

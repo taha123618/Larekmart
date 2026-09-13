@@ -48,10 +48,13 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 
 **`product-service` (Express 5, :8000)** — the catalog.
 
-- Routes: `/products` (GET list, GET one, POST create, PUT/DELETE admin), `/categories`
-  (GET public, mutations admin), `/health`, `/test`.
+- Routes: `/products` (GET list, GET one, GET `/search` OpenSearch-backed, POST create,
+  PUT/DELETE admin, POST `/backfill-search` admin), `/categories` (GET public, mutations
+  admin), `/health`, `/test`.
 - Persistence: Prisma → PostgreSQL (`Product`, `Category`).
 - Publishes `product.created` and `product.deleted` for Stripe sync.
+- Reads the shared OpenSearch product index through `@repo/opensearch` for `GET /products/search`;
+  index writes stay owned by search-service.
 
 **`order-service` (Fastify 5, :8001)** — orders and analytics.
 
@@ -90,17 +93,27 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Consumes: `user.created`, `order.created`, `payment.successful`, `notification.dispatch`.
 - Persistence & State: PostgreSQL (`notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events`) + Redis fast deduplication.
 
+**`search-service` (Fastify 5, :8006)** — product search and indexing.
+
+- Routes: `GET /api/v1/search` (full-text + faceted), `GET /api/v1/suggestions` (autocomplete), `POST /api/v1/indexing/product` (upsert), `DELETE /api/v1/indexing/product/:id`, `POST /api/v1/indexing/bulk`, `POST /api/v1/indexing/reindex`, `/health`, `/ready`, `/metrics`.
+- Persistence: OpenSearch (`products-v1` index, `products` alias) — owns the denormalized search document.
+- Caching: Redis (`search:v1:*` namespace) for search result and suggestion responses.
+- Consumes: `product.created`, `product.updated`, `product.deleted` → keeps the search index in sync with product-service.
+- Depends on: `@repo/opensearch` (client, mappings, query builders, search execution, bulk + single-document indexing, reindexing).
+
 ## Data ownership
 
-| Store      | Owner                            | Accessed via                | Notable models                                                                                                                          |
-| ---------- | -------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL | product-service                  | `@repo/product-db` (Prisma) | `Product`, `Category`                                                                                                                   |
-| PostgreSQL | analytic-service                 | `pg.Pool`                   | `analytics_events`, `analytics_daily_summary`                                                                                           |
-| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)         | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
-| Redis      | notification-service             | `go-redis` (Go)             | `event:<id>` (idempotency fast-cache)                                                                                                   |
-| MongoDB    | order-service                    | `@repo/order-db` (Mongoose) | `Order`                                                                                                                                 |
-| Clerk      | auth-service (and all frontends) | Clerk SDKs                  | users, session claims                                                                                                                   |
-| Stripe     | payment-service                  | `stripe` SDK                | products, prices, sessions                                                                                                              |
+| Store      | Owner                            | Accessed via                    | Notable models                                                                                                                          |
+| ---------- | -------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL | product-service                  | `@repo/product-db` (Prisma)     | `Product`, `Category`                                                                                                                   |
+| PostgreSQL | analytic-service                 | `pg.Pool`                       | `analytics_events`, `analytics_daily_summary`                                                                                           |
+| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)             | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
+| Redis      | notification-service             | `go-redis` (Go)                 | `event:<id>` (idempotency fast-cache)                                                                                                   |
+| Redis      | search-service                   | `ioredis`                       | `search:v1:*` (search result cache, suggestion cache)                                                                                   |
+| OpenSearch | search-service                   | `@repo/opensearch`              | `products-v1` index (alias `products`) — denormalized search document                                                                  |
+| MongoDB    | order-service                    | `@repo/order-db` (Mongoose)     | `Order`                                                                                                                                 |
+| Clerk      | auth-service (and all frontends) | Clerk SDKs                      | users, session claims                                                                                                                   |
+| Stripe     | payment-service                  | `stripe` SDK                    | products, prices, sessions                                                                                                              |
 
 `@repo/types` re-exports the persistence-derived types (`Product`, `Category`, `Order`)
 so consumers can type against the catalog/order shapes without importing the DB clients
@@ -123,12 +136,40 @@ client            payment-service            Stripe              order-service  
   │                                          │                   │── order.created ──▶│ send email
 ```
 
-### Product → Stripe
+### Product → Stripe + Search index
 
 ```
 admin ── POST /products ──▶ product-service ── write Prisma
                                  │
-                                 └── product.created ──▶ payment-service ── stripe.products.create
+                                 ├── product.created ──▶ payment-service ── stripe.products.create
+                                 └── product.created ──▶ search-service  ── OpenSearch index upsert
+```
+
+### Search index backfill
+
+```
+admin (Rebuild search index) ── POST /products/backfill-search ──▶ product-service
+   │                                                                    │
+   └── repeated with afterId while hasMore ──────────────────────────────┤
+                                                                        └── product.updated ×N ──▶ search-service ──▶ OpenSearch upsert
+```
+
+Heals documents indexed before `product.created` carried the full product, which are
+missing `images`, `sizes`, and `colors` — and therefore their thumbnails and color/size
+facets. product-service only **replays** events; search-service still owns the index write,
+so the ownership rule above holds. The same sweep is available as the
+`pnpm --filter product-service backfill:search` CLI for larger catalogs.
+
+### Storefront search → product index
+
+```
+client (SearchBar / Categories / Filter) ── /products?search=&category=&sort=
+        │
+        ├─ SearchBar (client) ── GET /api/v1/search/suggestions ──▶ search-service ──▶ OpenSearch
+        │
+        ▼
+ProductList (server component) ── GET /products/search ──▶ product-service ── @repo/opensearch ──▶ OpenSearch
+                              └─ fallback: GET /products ──▶ Prisma ──▶ PostgreSQL
 ```
 
 ### User creation → welcome email
@@ -144,6 +185,11 @@ admin ── POST /users ──▶ auth-service ── clerkClient.users.createU
   authorization is enforced server-side, with the admin middleware as UX defense.
 - **Configuration:** environment variables per workspace; `.env.example` is the contract.
 - **Observability:** structured logging, health checks, metrics, and telemetry across all workspaces powered by `@repo/monitoring`.
+- **Search infrastructure:** all OpenSearch SDK usage, index mappings, query DSL builders,
+  search execution, single/bulk document operations, and reindex/alias helpers live in
+  `@repo/opensearch` — import from there, never add the SDK or DSL to individual services
+  directly. search-service owns index **writes** (via Kafka); other services may only **read**
+  the index through the same package.
 - **CORS:** each service allow-lists the specific frontend origins it serves
   (`client` :3002, `admin` :3003).
 - **Error shape:** `{ message }` JSON with correct status codes; a global error handler

@@ -15,6 +15,7 @@ import {
   createDbCheck,
   captureError,
 } from "@repo/monitoring";
+import { checkOpenSearchConnection } from "./search/client.js";
 
 const logger = createLogger("product-service");
 const metrics = createMetricsRegistry("product-service");
@@ -29,6 +30,20 @@ health.register(
   "postgres",
   createDbCheck("PostgreSQL", () => prisma.$queryRaw`SELECT 1`),
   { critical: true },
+);
+health.register(
+  "opensearch",
+  async () => {
+    const started = Date.now();
+    const healthy = await checkOpenSearchConnection();
+    return {
+      status: (healthy ? "healthy" : "unhealthy") as "healthy" | "unhealthy",
+      latencyMs: Date.now() - started,
+      timestamp: new Date().toISOString(),
+      message: healthy ? "OpenSearch reachable" : "OpenSearch unreachable",
+    };
+  },
+  { critical: false },
 );
 
 const app = express();
