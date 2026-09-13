@@ -1,44 +1,42 @@
+import { cacheGet, cacheSet } from "@repo/redis";
 import { getRedisClient } from "../utils/redis.js";
 import { config } from "../config/config.js";
-import { logger, searchMetrics } from "../observability/metrics.js";
+import { searchMetrics } from "../observability/metrics.js";
 import type { SuggestionQuery, SuggestionResponse } from "@repo/types";
 
+/**
+ * Generates a deterministic cache key for suggestion queries.
+ * The query is normalised (trimmed + lower-cased) so minor case differences
+ * don't produce separate cache entries.
+ */
 export function generateSuggestionKey(params: SuggestionQuery): string {
   const queryNormalized = params.q.trim().toLowerCase();
   return `${config.redis.keyPrefix}sugg:${queryNormalized}:${params.limit}`;
 }
 
-export async function getCachedSuggestions(params: SuggestionQuery): Promise<SuggestionResponse | null> {
-  try {
-    const redis = getRedisClient();
-    const key = generateSuggestionKey(params);
-    const data = await redis.get(key);
+/** Returns cached suggestions for `params`, or `null` on miss. */
+export async function getCachedSuggestions(
+  params: SuggestionQuery,
+): Promise<SuggestionResponse | null> {
+  const key = generateSuggestionKey(params);
+  const cached = await cacheGet<SuggestionResponse>(getRedisClient(), key);
 
-    if (!data) {
-      searchMetrics.cacheMissesTotal.inc({ cache_type: "suggestion" });
-      return null;
-    }
-
-    searchMetrics.cacheHitsTotal.inc({ cache_type: "suggestion" });
-    const parsed: SuggestionResponse = JSON.parse(data);
-    parsed.fromCache = true;
-    return parsed;
-  } catch (error) {
+  if (!cached) {
     searchMetrics.cacheMissesTotal.inc({ cache_type: "suggestion" });
     return null;
   }
+
+  searchMetrics.cacheHitsTotal.inc({ cache_type: "suggestion" });
+  cached.fromCache = true;
+  return cached;
 }
 
+/** Writes suggestion results to Redis with the configured TTL. */
 export async function setCachedSuggestions(
   params: SuggestionQuery,
   response: SuggestionResponse,
   ttlSeconds: number = config.redis.suggestionCacheTtl,
 ): Promise<void> {
-  try {
-    const redis = getRedisClient();
-    const key = generateSuggestionKey(params);
-    await redis.setex(key, ttlSeconds, JSON.stringify(response));
-  } catch (error) {
-    logger.warn("Failed to set suggestions cache in Redis", { error });
-  }
+  const key = generateSuggestionKey(params);
+  await cacheSet(getRedisClient(), key, response, ttlSeconds);
 }

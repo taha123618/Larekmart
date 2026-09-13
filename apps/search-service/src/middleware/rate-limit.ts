@@ -1,35 +1,49 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
+import { checkRateLimit } from "@repo/redis";
 import { getRedisClient } from "../utils/redis.js";
 import { config } from "../config/config.js";
 import { logger } from "../observability/metrics.js";
 
+/**
+ * Creates a Fastify preHandler hook that enforces a sliding-window rate limit
+ * per IP address × route using Redis.
+ *
+ * If Redis is unreachable the hook **fails open** — the request is allowed
+ * through with a debug log, so a Redis outage never causes downtime.
+ *
+ * Rate-limit headers set on every response:
+ *  - `X-RateLimit-Limit`
+ *  - `X-RateLimit-Remaining`
+ *  - `Retry-After` (on 429 only)
+ */
 export function createRateLimiter(options?: {
   windowSeconds?: number;
   maxRequests?: number;
 }) {
-  const window = options?.windowSeconds || config.redis.rateLimitWindowSeconds;
-  const max = options?.maxRequests || config.redis.rateLimitMaxRequests;
+  const windowSeconds =
+    options?.windowSeconds ?? config.redis.rateLimitWindowSeconds;
+  const maxRequests = options?.maxRequests ?? config.redis.rateLimitMaxRequests;
 
   return async function rateLimitHook(
     request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     const ip = request.ip || "127.0.0.1";
-    const key = `${config.redis.keyPrefix}ratelimit:${request.routeOptions.url || request.url}:${ip}`;
+    const routeKey = request.routeOptions.url ?? request.url;
+    const key = `${config.redis.keyPrefix}ratelimit:${routeKey}:${ip}`;
 
     try {
-      const redis = getRedisClient();
-      const current = await redis.incr(key);
+      const result = await checkRateLimit(getRedisClient(), {
+        key,
+        maxRequests,
+        windowSeconds,
+      });
 
-      if (current === 1) {
-        await redis.expire(key, window);
-      }
+      reply.header("X-RateLimit-Limit", result.limit);
+      reply.header("X-RateLimit-Remaining", result.remaining);
 
-      reply.header("X-RateLimit-Limit", max);
-      reply.header("X-RateLimit-Remaining", Math.max(0, max - current));
-
-      if (current > max) {
-        reply.header("Retry-After", window);
+      if (!result.allowed) {
+        reply.header("Retry-After", result.resetIn);
         return reply.status(429).send({
           error: {
             code: "RATE_LIMIT_EXCEEDED",
@@ -38,8 +52,8 @@ export function createRateLimiter(options?: {
         });
       }
     } catch (error) {
-      // If Redis is unreachable, fail open so legitimate traffic is not blocked
-      logger.debug("Rate limiter Redis bypass", { error });
+      // Fail open: if Redis is down, allow the request through.
+      logger.debug("Rate limiter Redis bypass — Redis unreachable", { error });
     }
   };
 }
