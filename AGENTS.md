@@ -73,29 +73,30 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 
 ## 4. Repository map
 
-| Workspace                 | Path                         | Runtime                 | Port | Purpose                                                                           |
-| ------------------------- | ---------------------------- | ----------------------- | ---- | --------------------------------------------------------------------------------- |
-| `client`                  | `apps/client`                | Next.js 15 (App Router) | 3002 | Storefront: browse, cart, Stripe checkout, orders                                 |
-| `admin`                   | `apps/admin`                 | Next.js 15 (App Router) | 3003 | Admin dashboard: products, categories, users, orders                              |
-| `product-service`         | `apps/product-service`       | Express 5               | 8000 | Product + category CRUD (Prisma/Postgres)                                         |
-| `order-service`           | `apps/order-service`         | Fastify 5               | 8001 | Orders (Mongoose/MongoDB) + analytics                                             |
-| `payment-service`         | `apps/payment-service`       | Hono                    | 8002 | Stripe checkout sessions, webhooks, Stripe product sync                           |
-| `auth-service`            | `apps/auth-service`          | Express 5               | 8003 | Admin user management proxying Clerk                                              |
-| `email-service`           | `apps/email-service`         | Node worker             | —    | Consumes Kafka events, sends email (no HTTP)                                      |
-| `analytic-service`        | `apps/analytic-service`      | Express 5               | 8004 | Consumes Kafka events, aggregates metrics & REST API                              |
-| `notification-service`    | `apps/notification-service`  | Go 1.22 (Chi)           | 8005 | Multi-channel notifications, worker pool & WebSockets                             |
-| `search-service`          | `apps/search-service`        | Fastify 5               | 8006 | OpenSearch product search, filtering, autocomplete & indexing                     |
-| `inventory-service`       | `apps/inventory-service`     | Hono 4                  | 8007 | PostgreSQL stock, reservations, warehouse inventory, and inventory events         |
-| `@repo/kafka`             | `packages/kafka`             | Library                 | —    | kafkajs wrapper + local Kafka compose                                             |
-| `@repo/types`             | `packages/types`             | Library                 | —    | Shared types + Zod schemas (contract package)                                     |
-| `@repo/monitoring`        | `packages/monitoring`        | Library                 | —    | Logging, health checks, metrics & telemetry                                       |
-| `@repo/opensearch`        | `packages/opensearch`        | Library                 | —    | OpenSearch client factory, product index mappings, query builders, bulk indexing  |
-| `@repo/redis`             | `packages/redis`             | Library                 | —    | ioredis client factory, typed cache helpers, namespace invalidation, rate limiter |
-| `@repo/product-db`        | `packages/product-db`        | Library                 | —    | Prisma client + schema (PostgreSQL)                                               |
-| `@repo/inventory-db`      | `packages/inventory-db`      | Library                 | —    | Prisma inventory schema, reservations, and stock ledger (PostgreSQL)              |
-| `@repo/order-db`          | `packages/order-db`          | Library                 | —    | Mongoose connection + Order model (MongoDB)                                       |
-| `@repo/eslint-config`     | `packages/eslint-config`     | Config                  | —    | Shared ESLint flat configs                                                        |
-| `@repo/typescript-config` | `packages/typescript-config` | Config                  | —    | Shared tsconfig bases                                                             |
+| Workspace                 | Path                          | Runtime                 | Port | Purpose                                                                           |
+| ------------------------- | ----------------------------- | ----------------------- | ---- | --------------------------------------------------------------------------------- |
+| `client`                  | `apps/client`                 | Next.js 15 (App Router) | 3002 | Storefront: browse, cart, Stripe checkout, orders                                 |
+| `admin`                   | `apps/admin`                  | Next.js 15 (App Router) | 3003 | Admin dashboard: products, categories, users, orders                              |
+| `product-service`         | `apps/product-service`        | Express 5               | 8000 | Product + category CRUD (Prisma/Postgres)                                         |
+| `order-service`           | `apps/order-service`          | Fastify 5               | 8001 | Orders (Mongoose/MongoDB) + analytics                                             |
+| `payment-service`         | `apps/payment-service`        | Hono                    | 8002 | Stripe checkout sessions, webhooks, Stripe product sync                           |
+| `auth-service`            | `apps/auth-service`           | Express 5               | 8003 | Admin user management proxying Clerk                                              |
+| `email-service`           | `apps/email-service`          | Node worker             | —    | Consumes Kafka events, sends email (no HTTP)                                      |
+| `analytic-service`        | `apps/analytic-service`       | Express 5               | 8004 | Consumes Kafka events, aggregates metrics & REST API                              |
+| `notification-service`    | `apps/notification-service`   | Go 1.22 (Chi)           | 8005 | Multi-channel notifications, worker pool & WebSockets                             |
+| `search-service`          | `apps/search-service`         | Fastify 5               | 8006 | OpenSearch product search, filtering, autocomplete & indexing                     |
+| `inventory-service`       | `apps/inventory-service`      | Hono 4                  | 8007 | PostgreSQL stock, reservations, warehouse inventory, and inventory events         |
+| `recommendation-service`  | `apps/recommendation-service` | Python 3.12+ (FastAPI)  | 8008 | Collaborative, content, pgvector hybrid recommendation engine & Celery worker     |
+| `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                             |
+| `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                     |
+| `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                       |
+| `@repo/opensearch`        | `packages/opensearch`         | Library                 | —    | OpenSearch client factory, product index mappings, query builders, bulk indexing  |
+| `@repo/redis`             | `packages/redis`              | Library                 | —    | ioredis client factory, typed cache helpers, namespace invalidation, rate limiter |
+| `@repo/product-db`        | `packages/product-db`         | Library                 | —    | Prisma client + schema (PostgreSQL)                                               |
+| `@repo/inventory-db`      | `packages/inventory-db`       | Library                 | —    | Prisma inventory schema, reservations, and stock ledger (PostgreSQL)              |
+| `@repo/order-db`          | `packages/order-db`           | Library                 | —    | Mongoose connection + Order model (MongoDB)                                       |
+| `@repo/eslint-config`     | `packages/eslint-config`      | Config                  | —    | Shared ESLint flat configs                                                        |
+| `@repo/typescript-config` | `packages/typescript-config`  | Config                  | —    | Shared tsconfig bases                                                             |
 
 ## 5. Golden rules
 
