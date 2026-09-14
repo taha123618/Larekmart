@@ -45,6 +45,9 @@ webhookRoute.post("/stripe", async (c) => {
 
       producer.send("payment.successful", {
         value: {
+          sessionId: session.id,
+          referenceId: session.id,
+          reservationId: session.metadata?.reservationId ?? null,
           userId: session.client_reference_id,
           email: session.customer_details?.email,
           amount: session.amount_total,

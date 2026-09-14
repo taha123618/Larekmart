@@ -13,6 +13,8 @@ export function initTracing(): void {
       endpoint: config.monitoring.otlpEndpoint,
     });
   } else {
-    logger.debug("OpenTelemetry OTLP endpoint not configured; using local structured spans");
+    logger.debug(
+      "OpenTelemetry OTLP endpoint not configured; using local structured spans",
+    );
   }
 }

@@ -8,24 +8,24 @@ Provides a config-driven client factory, the product index mapping, query DSL bu
 
 ## What's inside
 
-| Export | Description |
-|---|---|
-| `createOpenSearchClient(config)` | Factory — returns a configured `Client`. No singleton. |
-| `pingOpenSearch(client)` | Health probe — returns `boolean`. |
-| `ensureProductIndexExists(client, index, alias, logger?)` | Creates index + alias if missing. |
-| `pointAliasToIndex(client, index, alias, logger?)` | Atomically swaps an alias to a new index. |
-| `createNewVersionedIndex(client, name, logger?)` | Creates a versioned index (for zero-downtime reindex). |
-| `PRODUCT_INDEX_SETTINGS` | Edge-ngram analyzers + full field mapping for the product catalog. |
-| `buildProductSearchQuery(params, boosting?)` | Full-text + filter + sort + multi-select-aware aggregation DSL body. |
-| `buildSearchFilters(params)` | Bool filter array (active, category, brand, price, color, etc.). |
-| `buildAutocompleteQuery(params)` | Three-tier prefix/phrase/edge-ngram suggestion query. |
-| `bulkIndexProducts(client, docs, index, batchSize?, logger?)` | Batch bulk-index with per-item error tracking. |
-| `indexProductDocument(client, doc, index, logger?)` | Index/replace a single document (refreshed). |
-| `updateProductDocument(client, id, partial, index, logger?)` | Partial update via `doc_as_upsert`, stamps `updatedAt`. |
-| `getProductDocument(client, id, index, logger?)` | Fetch one document; returns `null` on 404. |
-| `deleteProductDocument(client, id, index, logger?)` | Idempotent single-document delete. |
-| `searchProductDocuments(client, index, params, boosting?, logger?)` | Executes the search DSL and shapes hits, total, and facets. |
-| `reindexProducts(client, options, logger?)` | Create target index → native `_reindex` → optional alias swap. |
+| Export                                                              | Description                                                          |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `createOpenSearchClient(config)`                                    | Factory — returns a configured `Client`. No singleton.               |
+| `pingOpenSearch(client)`                                            | Health probe — returns `boolean`.                                    |
+| `ensureProductIndexExists(client, index, alias, logger?)`           | Creates index + alias if missing.                                    |
+| `pointAliasToIndex(client, index, alias, logger?)`                  | Atomically swaps an alias to a new index.                            |
+| `createNewVersionedIndex(client, name, logger?)`                    | Creates a versioned index (for zero-downtime reindex).               |
+| `PRODUCT_INDEX_SETTINGS`                                            | Edge-ngram analyzers + full field mapping for the product catalog.   |
+| `buildProductSearchQuery(params, boosting?)`                        | Full-text + filter + sort + multi-select-aware aggregation DSL body. |
+| `buildSearchFilters(params)`                                        | Bool filter array (active, category, brand, price, color, etc.).     |
+| `buildAutocompleteQuery(params)`                                    | Three-tier prefix/phrase/edge-ngram suggestion query.                |
+| `bulkIndexProducts(client, docs, index, batchSize?, logger?)`       | Batch bulk-index with per-item error tracking.                       |
+| `indexProductDocument(client, doc, index, logger?)`                 | Index/replace a single document (refreshed).                         |
+| `updateProductDocument(client, id, partial, index, logger?)`        | Partial update via `doc_as_upsert`, stamps `updatedAt`.              |
+| `getProductDocument(client, id, index, logger?)`                    | Fetch one document; returns `null` on 404.                           |
+| `deleteProductDocument(client, id, index, logger?)`                 | Idempotent single-document delete.                                   |
+| `searchProductDocuments(client, index, params, boosting?, logger?)` | Executes the search DSL and shapes hits, total, and facets.          |
+| `reindexProducts(client, options, logger?)`                         | Create target index → native `_reindex` → optional alias swap.       |
 
 All types are also exported:
 `Client`, `OpenSearchClientConfig`, `SearchBoostingConfig`, `ReindexOptions`, `ReindexResult`,
@@ -64,10 +64,12 @@ import type { SearchQueryParams } from "@repo/types";
 // 1. Create a client (caller manages the singleton)
 const client = createOpenSearchClient({
   node: process.env.OPENSEARCH_NODE ?? "http://localhost:9200",
-  auth:
-    process.env.OPENSEARCH_USERNAME
-      ? { username: process.env.OPENSEARCH_USERNAME!, password: process.env.OPENSEARCH_PASSWORD! }
-      : undefined,
+  auth: process.env.OPENSEARCH_USERNAME
+    ? {
+        username: process.env.OPENSEARCH_USERNAME!,
+        password: process.env.OPENSEARCH_PASSWORD!,
+      }
+    : undefined,
   rejectUnauthorized: process.env.NODE_ENV === "production",
 });
 
@@ -82,23 +84,40 @@ const queryDsl = buildProductSearchQuery(params satisfies SearchQueryParams);
 const response = await client.search({ index: "products", body: queryDsl });
 
 // 5. Bulk-index a batch of documents
-const result = await bulkIndexProducts(client, products, "products", 500, logger);
+const result = await bulkIndexProducts(
+  client,
+  products,
+  "products",
+  500,
+  logger,
+);
 console.log(result); // { indexed: N, failed: 0, errors: [], took: Ms }
 
 // 6. Read the index (search execution is shared, so every caller gets the same shape)
-const { products: hits, total, facets } = await searchProductDocuments(
-  client,
-  "products",
-  params,
-);
+const {
+  products: hits,
+  total,
+  facets,
+} = await searchProductDocuments(client, "products", params);
 
 // 7. Single-document ops (Kafka consumers) and zero-downtime reindexing
 await indexProductDocument(client, product, "products", logger);
-await updateProductDocument(client, product.id, { price: 19.99 }, "products", logger);
+await updateProductDocument(
+  client,
+  product.id,
+  { price: 19.99 },
+  "products",
+  logger,
+);
 await deleteProductDocument(client, product.id, "products", logger);
 await reindexProducts(
   client,
-  { sourceIndex: "products", targetIndex: "products-v2", aliasName: "products", recreateAlias: true },
+  {
+    sourceIndex: "products",
+    targetIndex: "products-v2",
+    aliasName: "products",
+    recreateAlias: true,
+  },
   logger,
 );
 ```

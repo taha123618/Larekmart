@@ -1,6 +1,9 @@
 import { searchProductDocuments } from "@repo/opensearch";
 import { getOpenSearchClient } from "../opensearch/client.js";
-import { getCachedSearchResults, setCachedSearchResults } from "../cache/search-cache.js";
+import {
+  getCachedSearchResults,
+  setCachedSearchResults,
+} from "../cache/search-cache.js";
 import { logger, searchMetrics } from "../observability/metrics.js";
 import { config } from "../config/config.js";
 import type { SearchQueryParams, SearchResponse } from "@repo/types";
@@ -18,7 +21,10 @@ export class SearchService {
 
     // 2. Query OpenSearch
     try {
-      searchMetrics.opensearchRequestsTotal.inc({ operation: "search", status: "start" });
+      searchMetrics.opensearchRequestsTotal.inc({
+        operation: "search",
+        status: "start",
+      });
       const opensearchStart = Date.now();
 
       const indexName = config.opensearch.aliasName;
@@ -32,8 +38,14 @@ export class SearchService {
       );
 
       const opensearchDuration = (Date.now() - opensearchStart) / 1000;
-      searchMetrics.opensearchDurationSeconds.observe({ operation: "search" }, opensearchDuration);
-      searchMetrics.opensearchRequestsTotal.inc({ operation: "search", status: "success" });
+      searchMetrics.opensearchDurationSeconds.observe(
+        { operation: "search" },
+        opensearchDuration,
+      );
+      searchMetrics.opensearchRequestsTotal.inc({
+        operation: "search",
+        status: "success",
+      });
 
       const took = Date.now() - startTime;
       const searchResponse: SearchResponse = {
@@ -57,11 +69,16 @@ export class SearchService {
         status: "success",
         has_query: String(hasQuery),
       });
-      searchMetrics.searchDurationSeconds.observe({ has_query: String(hasQuery) }, took / 1000);
+      searchMetrics.searchDurationSeconds.observe(
+        { has_query: String(hasQuery) },
+        took / 1000,
+      );
 
       return searchResponse;
     } catch (error: any) {
-      searchMetrics.searchErrorsTotal.inc({ error_type: error.name || "OpenSearchError" });
+      searchMetrics.searchErrorsTotal.inc({
+        error_type: error.name || "OpenSearchError",
+      });
       searchMetrics.searchRequestsTotal.inc({
         status: "error",
         has_query: String(hasQuery),

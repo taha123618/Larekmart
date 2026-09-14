@@ -5,7 +5,9 @@ import { globalErrorHandler } from "../middleware/error-handler.js";
 import { logger, metrics } from "../observability/metrics.js";
 import { createHttpMonitor } from "@repo/monitoring";
 
-export async function configureFastifyPlugins(fastify: FastifyInstance): Promise<void> {
+export async function configureFastifyPlugins(
+  fastify: FastifyInstance,
+): Promise<void> {
   // 1. CORS
   await fastify.register(cors, {
     origin: true,
@@ -18,10 +20,17 @@ export async function configureFastifyPlugins(fastify: FastifyInstance): Promise
 
   // 3. HTTP Monitoring Hooks
   const httpMonitor = createHttpMonitor(logger, metrics);
-  const requestHooks = new Map<string, { onRequestEnd: (status: number) => void }>();
+  const requestHooks = new Map<
+    string,
+    { onRequestEnd: (status: number) => void }
+  >();
 
   fastify.addHook("onRequest", async (request) => {
-    if (request.url === "/health" || request.url === "/ready" || request.url === "/metrics") {
+    if (
+      request.url === "/health" ||
+      request.url === "/ready" ||
+      request.url === "/metrics"
+    ) {
       return;
     }
     const hook = httpMonitor.onRequestStart({

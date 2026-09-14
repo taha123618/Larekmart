@@ -11,6 +11,9 @@ import {
   User,
   ShoppingBasket,
   Database,
+  Boxes,
+  AlertTriangle,
+  History,
 } from "lucide-react";
 import {
   Sidebar,
@@ -215,6 +218,37 @@ const AppSidebar = () => {
                     </SheetTrigger>
                     <AddOrder />
                   </Sheet>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Inventory & Stock</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/inventory">
+                    <Boxes />
+                    Stock & Warehouses
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/inventory/low-stock">
+                    <AlertTriangle />
+                    Low Stock Alerts
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/inventory/movements">
+                    <History />
+                    Movement Ledger
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

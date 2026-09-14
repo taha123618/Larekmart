@@ -29,7 +29,9 @@ export async function ensureProductIndexExists(
       });
 
       await pointAliasToIndex(client, indexName, aliasName, logger);
-      logger?.info(`Index ${indexName} created and alias ${aliasName} pointed to it`);
+      logger?.info(
+        `Index ${indexName} created and alias ${aliasName} pointed to it`,
+      );
     } else {
       logger?.info(`OpenSearch index ${indexName} already exists`);
 
@@ -43,7 +45,9 @@ export async function ensureProductIndexExists(
       }
     }
   } catch (error) {
-    logger?.error(`Failed to ensure product index ${indexName} exists`, { error });
+    logger?.error(`Failed to ensure product index ${indexName} exists`, {
+      error,
+    });
     throw error;
   }
 }
@@ -78,7 +82,9 @@ export async function pointAliasToIndex(
     await client.indices.updateAliases({ body: { actions } });
     logger?.info(`Alias [${aliasName}] now points to [${indexName}]`);
   } catch (error) {
-    logger?.error(`Failed to point alias ${aliasName} to ${indexName}`, { error });
+    logger?.error(`Failed to point alias ${aliasName} to ${indexName}`, {
+      error,
+    });
     throw error;
   }
 }

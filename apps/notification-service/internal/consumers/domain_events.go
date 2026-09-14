@@ -134,12 +134,32 @@ func (h *DomainEventHandler) dispatchDomainNotification(ctx context.Context, top
 		return h.handleOrderCreated(ctx, payload)
 	case "payment.successful":
 		return h.handlePaymentSuccessful(ctx, payload)
+	case "inventory.low_stock":
+		return h.handleInventoryLowStock(ctx, payload)
 	case "notification.dispatch":
 		return h.handleDirectDispatch(ctx, payload)
 	default:
 		h.logger.Debug(ctx, fmt.Sprintf("Ignoring unhandled topic '%s'", topic))
 		return nil
 	}
+}
+
+func (h *DomainEventHandler) handleInventoryLowStock(ctx context.Context, payload map[string]interface{}) error {
+	productID := payload["productId"]
+	availableQty := payload["availableQuantity"]
+
+	title := "Low Stock Alert"
+	body := fmt.Sprintf("Product %v is low on stock! Available quantity: %v", productID, availableQty)
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   "admin",
+		Type:     "inventory_alert",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityHigh,
+	})
+	return err
 }
 
 func (h *DomainEventHandler) handleUserCreated(ctx context.Context, payload map[string]interface{}) error {
@@ -292,6 +312,8 @@ func extractSourceService(topic string) string {
 		return "payment-service"
 	case "product.created", "product.deleted":
 		return "product-service"
+	case "inventory.low_stock", "inventory.created", "inventory.restocked":
+		return "inventory-service"
 	default:
 		return "unknown"
 	}

@@ -32,8 +32,10 @@ export const searchProducts = async (req: Request, res: Response) => {
   const params: SearchQueryParams = parsed.data;
   const started = Date.now();
 
-  const { result } = await measureAsync("opensearch.products.search", async () =>
-    searchProductDocuments(getOpenSearchClient(), OPENSEARCH_ALIAS, params),
+  const { result } = await measureAsync(
+    "opensearch.products.search",
+    async () =>
+      searchProductDocuments(getOpenSearchClient(), OPENSEARCH_ALIAS, params),
   );
 
   const response: SearchResponse = {

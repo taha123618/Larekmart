@@ -55,7 +55,9 @@ export const PartialUpdateProductSchema = z.object({
   discountPercentage: z.number().optional(),
   tags: z.array(z.string()).optional(),
 });
-export type PartialUpdateProductBody = z.infer<typeof PartialUpdateProductSchema>;
+export type PartialUpdateProductBody = z.infer<
+  typeof PartialUpdateProductSchema
+>;
 
 /**
  * Body schema for `POST /api/v1/index/bulk` — batch upsert of multiple product

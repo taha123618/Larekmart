@@ -88,7 +88,11 @@ export async function getCachedProducts(
   return cacheMetrics.record(
     await cacheRead<Product[]>(
       redis.client,
-      redis.keys.namespace(`v${version}`, "products", normalizeListQuery(query)),
+      redis.keys.namespace(
+        `v${version}`,
+        "products",
+        normalizeListQuery(query),
+      ),
     ),
     "products",
   );

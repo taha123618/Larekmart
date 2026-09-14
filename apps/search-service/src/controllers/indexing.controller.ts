@@ -42,15 +42,24 @@ export async function upsertProductHandler(
 
   try {
     await indexingService.indexOrUpdateProduct(doc);
-    searchMetrics.indexingDocumentsTotal.inc({ operation: "http_upsert", status: "success" });
+    searchMetrics.indexingDocumentsTotal.inc({
+      operation: "http_upsert",
+      status: "success",
+    });
     return reply.status(200).send({
       success: true,
       message: `Product [${doc.id}] indexed successfully`,
       id: doc.id,
     });
   } catch (error: any) {
-    searchMetrics.indexingDocumentsTotal.inc({ operation: "http_upsert", status: "error" });
-    logger.error("Failed to upsert product via HTTP", { id: doc.id, error: error.message });
+    searchMetrics.indexingDocumentsTotal.inc({
+      operation: "http_upsert",
+      status: "error",
+    });
+    logger.error("Failed to upsert product via HTTP", {
+      id: doc.id,
+      error: error.message,
+    });
     return reply.status(500).send({
       success: false,
       message: `Failed to index product [${doc.id}]: ${error.message}`,
@@ -75,15 +84,24 @@ export async function partialUpdateProductHandler(
 
   try {
     await indexingService.updateProductPartial(id, partial);
-    searchMetrics.indexingDocumentsTotal.inc({ operation: "http_partial_update", status: "success" });
+    searchMetrics.indexingDocumentsTotal.inc({
+      operation: "http_partial_update",
+      status: "success",
+    });
     return reply.status(200).send({
       success: true,
       message: `Product [${id}] partially updated`,
       id,
     });
   } catch (error: any) {
-    searchMetrics.indexingDocumentsTotal.inc({ operation: "http_partial_update", status: "error" });
-    logger.error("Failed to partial-update product via HTTP", { id, error: error.message });
+    searchMetrics.indexingDocumentsTotal.inc({
+      operation: "http_partial_update",
+      status: "error",
+    });
+    logger.error("Failed to partial-update product via HTTP", {
+      id,
+      error: error.message,
+    });
     return reply.status(500).send({
       success: false,
       message: `Failed to update product [${id}]: ${error.message}`,
@@ -107,15 +125,24 @@ export async function deleteProductDocumentHandler(
 
   try {
     await indexingService.deleteProduct(id);
-    searchMetrics.indexingDocumentsTotal.inc({ operation: "http_delete", status: "success" });
+    searchMetrics.indexingDocumentsTotal.inc({
+      operation: "http_delete",
+      status: "success",
+    });
     return reply.status(200).send({
       success: true,
       message: `Product [${id}] removed from index`,
       id,
     });
   } catch (error: any) {
-    searchMetrics.indexingDocumentsTotal.inc({ operation: "http_delete", status: "error" });
-    logger.error("Failed to delete product document via HTTP", { id, error: error.message });
+    searchMetrics.indexingDocumentsTotal.inc({
+      operation: "http_delete",
+      status: "error",
+    });
+    logger.error("Failed to delete product document via HTTP", {
+      id,
+      error: error.message,
+    });
     return reply.status(500).send({
       success: false,
       message: `Failed to delete product [${id}]: ${error.message}`,
@@ -141,7 +168,10 @@ export async function bulkIndexProductsHandler(
   const indexName = config.opensearch.aliasName;
 
   try {
-    searchMetrics.opensearchRequestsTotal.inc({ operation: "bulk_index", status: "start" });
+    searchMetrics.opensearchRequestsTotal.inc({
+      operation: "bulk_index",
+      status: "start",
+    });
     const result = await bulkIndexProducts(
       getOpenSearchClient(),
       docs,
@@ -160,20 +190,29 @@ export async function bulkIndexProductsHandler(
         result.failed,
       );
     }
-    searchMetrics.opensearchRequestsTotal.inc({ operation: "bulk_index", status: "success" });
+    searchMetrics.opensearchRequestsTotal.inc({
+      operation: "bulk_index",
+      status: "success",
+    });
 
-    const statusCode = result.failed === 0 ? 200 : result.indexed === 0 ? 500 : 207;
+    const statusCode =
+      result.failed === 0 ? 200 : result.indexed === 0 ? 500 : 207;
     return reply.status(statusCode).send({
       success: result.failed === 0,
       ...result,
     });
   } catch (error: any) {
-    searchMetrics.opensearchRequestsTotal.inc({ operation: "bulk_index", status: "error" });
-    logger.error("Bulk indexing via HTTP failed", { error: error.message, count: docs.length });
+    searchMetrics.opensearchRequestsTotal.inc({
+      operation: "bulk_index",
+      status: "error",
+    });
+    logger.error("Bulk indexing via HTTP failed", {
+      error: error.message,
+      count: docs.length,
+    });
     return reply.status(500).send({
       success: false,
       message: `Bulk index operation failed: ${error.message}`,
     });
   }
 }
-

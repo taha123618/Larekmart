@@ -99,8 +99,12 @@ const BackfillSearchButton = () => {
         onClick={() => mutation.mutate()}
         disabled={mutation.isPending}
       >
-        <RefreshCw className={mutation.isPending ? "animate-spin" : undefined} />
-        {mutation.isPending ? "Rebuilding search index..." : "Rebuild search index"}
+        <RefreshCw
+          className={mutation.isPending ? "animate-spin" : undefined}
+        />
+        {mutation.isPending
+          ? "Rebuilding search index..."
+          : "Rebuild search index"}
       </Button>
       {published !== null && (
         <span className="text-xs text-muted-foreground">

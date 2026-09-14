@@ -60,7 +60,10 @@ export async function bulkIndexProducts(
       });
       failed += batch.length;
       for (const doc of batch) {
-        errors.push({ id: doc.id, error: error.message ?? "Bulk operation failure" });
+        errors.push({
+          id: doc.id,
+          error: error.message ?? "Bulk operation failure",
+        });
       }
     }
   }

@@ -22,7 +22,9 @@ const envSchema = z.object({
   SUGGESTION_CACHE_TTL_SECONDS: z.coerce.number().default(600),
 
   // Kafka
-  KAFKA_BROKERS: z.string().default("localhost:9094,localhost:9095,localhost:9096"),
+  KAFKA_BROKERS: z
+    .string()
+    .default("localhost:9094,localhost:9095,localhost:9096"),
   KAFKA_GROUP_ID: z.string().default("search-service-group"),
   KAFKA_CLIENT_ID: z.string().default("search-service"),
 

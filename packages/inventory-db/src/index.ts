@@ -1,21 +1,10 @@
-export { prisma } from "./client";
+export { prisma, disconnectPrisma } from "./client";
 export * from "../generated/prisma";
-export {
-  adjustInventory,
-  confirmInventoryReservation,
-  createInventoryItem,
-  expireInventoryReservation,
-  getInventoryItem,
-  listInventoryMovements,
-  listInventoryItems,
-  listLowStockInventory,
-  releaseInventoryReservation,
-  reserveInventory,
-  restockInventory,
-  type InventoryItemKey,
-  type InventoryLookup,
-  type InventoryMovementWithItem,
-  type InventoryMutationReference,
-  type InventoryReservationWithItem,
-  type ReserveInventoryInput,
-} from "./inventory";
+export * from "./errors";
+export * from "./inventory";
+
+// Re-export structured repositories
+export * from "./repositories/inventory.repository";
+export * from "./repositories/reservation.repository";
+export * from "./repositories/movement.repository";
+export * from "./repositories/warehouse.repository";

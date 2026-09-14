@@ -34,7 +34,8 @@ export function globalErrorHandler(
     void reply.status(503).send({
       error: {
         code: "SEARCH_SERVICE_UNAVAILABLE",
-        message: "Search cluster is temporarily unavailable. Please try again shortly.",
+        message:
+          "Search cluster is temporarily unavailable. Please try again shortly.",
       },
     });
     return;

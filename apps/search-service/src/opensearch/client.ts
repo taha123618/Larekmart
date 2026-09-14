@@ -1,7 +1,11 @@
 /**
  * OpenSearch client singleton.
  */
-import { createOpenSearchClient, pingOpenSearch, type Client } from "@repo/opensearch";
+import {
+  createOpenSearchClient,
+  pingOpenSearch,
+  type Client,
+} from "@repo/opensearch";
 import { config } from "../config/config.js";
 import { logger } from "../observability/metrics.js";
 
@@ -21,7 +25,9 @@ export function getOpenSearchClient(): Client {
   return _client;
 }
 
-export async function checkOpenSearchConnection(client: Client): Promise<boolean> {
+export async function checkOpenSearchConnection(
+  client: Client,
+): Promise<boolean> {
   return pingOpenSearch(client);
 }
 

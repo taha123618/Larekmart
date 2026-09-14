@@ -141,19 +141,21 @@ directly into their runtime.
 
 ## Key request flows
 
-### Checkout → order → email
+### Checkout → order → inventory → email
 
 ```
-client            payment-service            Stripe              order-service        email-service
-  │  POST /sessions/create-checkout-session ─▶│                   │                    │
-  │                                          │ create session ──▶│                    │
-  │  ◀── client_secret ───────────────────────│                   │                    │
-  │  confirm() ──────────────────────────────────────────────────▶│                    │
-  │                                          │  ◀ checkout.session.completed         │
-  │                                          │ verify signature  │                    │
-  │                                          │── payment.successful ────────────────▶│
-  │                                          │                   │ createOrder        │
-  │                                          │                   │── order.created ──▶│ send email
+client            payment-service            Stripe              order-service        inventory-service       email-service
+  │  POST /sessions/create-checkout-session ─▶│                   │                    │                       │
+  │                                          │ create session ──▶│                    │                       │
+  │  ◀── client_secret ───────────────────────│                   │                    │                       │
+  │  confirm() ──────────────────────────────────────────────────▶│                    │                       │
+  │                                          │  ◀ checkout.session.completed          │                       │
+  │                                          │ verify signature  │                    │                       │
+  │                                          │── payment.successful ─────────────────▶│                       │
+  │                                          │                   │                    │ confirmReservation    │
+  │                                          │                   │                    │── inventory.sold ────▶│
+  │                                          │                   │ createOrder        │                       │
+  │                                          │                   │── order.created ───┼──────────────────────▶│ send email
 ```
 
 ### Product → Stripe + Search index

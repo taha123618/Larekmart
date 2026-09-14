@@ -12,7 +12,9 @@ export class ReindexService {
     const newIndexName = req.targetIndex || `products-v${Date.now()}`;
     const sourceIndex = req.sourceIndex || targetAlias;
 
-    logger.info(`Starting reindexing from [${sourceIndex}] to [${newIndexName}]`);
+    logger.info(
+      `Starting reindexing from [${sourceIndex}] to [${newIndexName}]`,
+    );
 
     try {
       // Create target index with schema mappings, copy documents, swap alias.
@@ -25,7 +27,9 @@ export class ReindexService {
       });
 
       if (result.aliasSwapped) {
-        logger.info(`Alias [${targetAlias}] successfully pointed to [${newIndexName}]`);
+        logger.info(
+          `Alias [${targetAlias}] successfully pointed to [${newIndexName}]`,
+        );
       }
 
       // Invalidate search cache

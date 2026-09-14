@@ -276,6 +276,58 @@ export const recordProductDeleted = async (productId: number | string) => {
   }
 };
 
+export const recordInventoryEvent = async (
+  eventType: string,
+  payload: {
+    productId?: number;
+    quantity?: number;
+    availableQuantity?: number;
+    reservedQuantity?: number;
+    soldQuantity?: number;
+    warehouseId?: string;
+    variantId?: string;
+    reason?: string;
+  },
+) => {
+  inMemoryMetrics.lastEventTime = new Date().toISOString();
+
+  const memoryEvent: AnalyticsEventType = {
+    id: inMemoryEvents.length + 1,
+    event_type: eventType,
+    user_id: payload.productId ? payload.productId.toString() : null,
+    amount: payload.quantity ?? null,
+    metadata: payload as Record<string, unknown>,
+    created_at: new Date().toISOString(),
+  };
+  inMemoryEvents.unshift(memoryEvent);
+  if (inMemoryEvents.length > 100) inMemoryEvents.pop();
+
+  logger.info(
+    `[Inventory Event] ${eventType} for Product ID ${payload.productId ?? "N/A"} (Qty: ${payload.quantity ?? "N/A"})`,
+  );
+
+  if (getDbStatus()) {
+    try {
+      await pool.query(
+        `INSERT INTO analytics_events (event_type, user_id, amount, metadata)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          eventType,
+          payload.productId ? payload.productId.toString() : null,
+          payload.quantity ?? null,
+          JSON.stringify(payload),
+        ],
+      );
+    } catch (err) {
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordInventoryEvent.dbInsert",
+      });
+    }
+  }
+};
+
 export const getMetricsSnapshot = (): AnalyticsSummaryType => ({
   ...inMemoryMetrics,
   isDbConnected: getDbStatus(),
