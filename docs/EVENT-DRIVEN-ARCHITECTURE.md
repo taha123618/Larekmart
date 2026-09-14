@@ -55,24 +55,25 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 
 ## Topic registry
 
-| Topic                             | Producer             | Consumer(s)                                           | Payload (`message.value`)                                                  |
-| --------------------------------- | -------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- |
-| `product.created`                 | product-service      | payment-service, analytic-service, search-service     | `ProductCreatedPayload` (superset of `StripeProductType`)                  |
-| `product.updated`                 | product-service      | search-service                                        | `ProductType`, or `ProductCreatedPayload` on a backfill replay             |
-| `product.deleted`                 | product-service      | payment-service, analytic-service, search-service     | `number` (the product id)                                                  |
-| `user.created`                    | auth-service         | email-service, analytic-service, notification-service | `{ username: string, email: string }`                                      |
-| `order.created`                   | order-service        | email-service, analytic-service, notification-service | `{ email: string, amount: number, status: "success" \| "failed" }`         |
-| `payment.successful`              | payment-service      | order-service, analytic-service, notification-service | `{ userId, email, amount, status, products: { name, quantity, price }[] }` |
-| `notification.dispatch`           | any backend service  | notification-service                                  | `{ userId, type, title, body, email, phone, metadata }`                    |
-| `email.dispatch`                  | notification-service | email-service                                         | `{ email, subject, text, html, context }`                                  |
-| `inventory.created`               | inventory-service    | none yet                                              | `InventoryChangedPayload`                                                  |
-| `inventory.reserved`              | inventory-service    | none yet                                              | `InventoryChangedPayload` + reservation fields                             |
-| `inventory.reservation.confirmed` | inventory-service    | none yet                                              | `InventoryChangedPayload` + reservation fields                             |
-| `inventory.released`              | inventory-service    | none yet                                              | `InventoryChangedPayload` + reservation fields                             |
-| `inventory.reservation.expired`   | inventory-service    | none yet                                              | `InventoryChangedPayload` + reservation fields                             |
-| `inventory.restocked`             | inventory-service    | none yet                                              | `InventoryChangedPayload`                                                  |
-| `inventory.adjusted`              | inventory-service    | none yet                                              | `InventoryChangedPayload`                                                  |
-| `inventory.low_stock`             | inventory-service    | none yet                                              | `InventoryChangedPayload`                                                  |
+| Topic                             | Producer             | Consumer(s)                                                              | Payload (`message.value`)                                                                                         |
+| --------------------------------- | -------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `product.created`                 | product-service      | payment-service, analytic-service, search-service                        | `ProductCreatedPayload` (superset of `StripeProductType`)                                                         |
+| `product.updated`                 | product-service      | search-service                                                           | `ProductType`, or `ProductCreatedPayload` on a backfill replay                                                    |
+| `product.deleted`                 | product-service      | payment-service, analytic-service, search-service                        | `number` (the product id)                                                                                         |
+| `user.created`                    | auth-service         | email-service, analytic-service, notification-service                    | `{ username: string, email: string }`                                                                             |
+| `order.created`                   | order-service        | email-service, analytic-service, notification-service                    | `{ email: string, amount: number, status: "success" \| "failed" }`                                                |
+| `payment.successful`              | payment-service      | order-service, analytic-service, notification-service, inventory-service | `{ sessionId, referenceId, reservationId, userId, email, amount, status, products: { name, quantity, price }[] }` |
+| `notification.dispatch`           | any backend service  | notification-service                                                     | `{ userId, type, title, body, email, phone, metadata }`                                                           |
+| `email.dispatch`                  | notification-service | email-service                                                            | `{ email, subject, text, html, context }`                                                                         |
+| `inventory.created`               | inventory-service    | none yet                                                                 | `InventoryChangedPayload`                                                                                         |
+| `inventory.reserved`              | inventory-service    | none yet                                                                 | `InventoryChangedPayload` + reservation fields                                                                    |
+| `inventory.reservation.confirmed` | inventory-service    | none yet                                                                 | `InventoryChangedPayload` + reservation fields                                                                    |
+| `inventory.stock.sold`            | inventory-service    | analytic-service                                                         | `InventoryChangedPayload` + reservation fields                                                                    |
+| `inventory.released`              | inventory-service    | none yet                                                                 | `InventoryChangedPayload` + reservation fields                                                                    |
+| `inventory.reservation.expired`   | inventory-service    | none yet                                                                 | `InventoryChangedPayload` + reservation fields                                                                    |
+| `inventory.restocked`             | inventory-service    | analytic-service                                                         | `InventoryChangedPayload`                                                                                         |
+| `inventory.adjusted`              | inventory-service    | none yet                                                                 | `InventoryChangedPayload`                                                                                         |
+| `inventory.low_stock`             | inventory-service    | notification-service, analytic-service                                   | `InventoryChangedPayload`                                                                                         |
 
 ### `product.created`
 
@@ -175,6 +176,9 @@ Emitted from the verified Stripe webhook on `checkout.session.completed`.
 ```jsonc
 {
   "value": {
+    "sessionId": "cs_test_...",
+    "referenceId": "cs_test_...",
+    "reservationId": "res_...",
     "userId": "user_...",
     "email": "johndoe@example.com",
     "amount": 5990,
@@ -185,7 +189,9 @@ Emitted from the verified Stripe webhook on `checkout.session.completed`.
 ```
 
 - Producer: `apps/payment-service/src/routes/webhooks.route.ts`
-- Consumer: `apps/order-service/src/utils/subscriptions.ts` → `createOrder`
+- Consumers:
+  - `apps/order-service/src/utils/subscriptions.ts` → `createOrder`
+  - `apps/inventory-service/src/workers/inventory-event.consumer.ts` → `confirmReservationsByReference` (converts reserved stock to sold stock)
 
 ## Adding or changing an event
 

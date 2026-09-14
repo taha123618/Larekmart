@@ -95,9 +95,12 @@ export async function backfillSearchIndex(
         } catch (error: any) {
           // Keep going: one poisoned product must not abandon the backfill.
           result.failed += 1;
-          logger.error(`Failed to publish product [${product.id}] for reindex`, {
-            error: error.message,
-          });
+          logger.error(
+            `Failed to publish product [${product.id}] for reindex`,
+            {
+              error: error.message,
+            },
+          );
         }
       }
 

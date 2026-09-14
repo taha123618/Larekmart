@@ -1,6 +1,9 @@
 import type { Client } from "@opensearch-project/opensearch";
 import type { Logger } from "@repo/monitoring";
-import { createNewVersionedIndex, pointAliasToIndex } from "./indexes/products.index.js";
+import {
+  createNewVersionedIndex,
+  pointAliasToIndex,
+} from "./indexes/products.index.js";
 import type { ReindexOptions, ReindexResult } from "./types.js";
 
 /**

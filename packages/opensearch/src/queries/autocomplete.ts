@@ -12,7 +12,9 @@ import type { SuggestionQuery } from "@repo/types";
  * Returns the fields needed to render a rich suggestion (id, name, brand,
  * category, price, images) so callers can deep-link to the product.
  */
-export function buildAutocompleteQuery(params: SuggestionQuery): Record<string, any> {
+export function buildAutocompleteQuery(
+  params: SuggestionQuery,
+): Record<string, any> {
   const q = params.q.trim().toLowerCase();
 
   return {

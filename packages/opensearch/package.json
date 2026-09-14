@@ -9,7 +9,11 @@
     "build": "tsc",
     "check-types": "tsc --noEmit"
   },
-  "keywords": ["opensearch", "search", "ecommerce"],
+  "keywords": [
+    "opensearch",
+    "search",
+    "ecommerce"
+  ],
   "license": "ISC",
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

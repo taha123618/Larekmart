@@ -8,6 +8,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum WarehouseStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum InventoryItemStatus {
   ACTIVE
   LOW_STOCK
@@ -24,6 +29,8 @@ enum InventoryMovementType {
   RETURN
   ADJUSTMENT
   DAMAGE
+  TRANSFER_IN
+  TRANSFER_OUT
 }
 
 enum InventoryReservationStatus {
@@ -31,6 +38,20 @@ enum InventoryReservationStatus {
   CONFIRMED
   RELEASED
   EXPIRED
+}
+
+model Warehouse {
+  id        String          @id @default(cuid())
+  name      String
+  code      String          @unique
+  status    WarehouseStatus @default(ACTIVE)
+  address   String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  items     InventoryItem[]
+
+  @@index([status])
+  @@map("warehouses")
 }
 
 model InventoryItem {
@@ -47,6 +68,7 @@ model InventoryItem {
   version           Int                          @default(0)
   createdAt         DateTime                     @default(now())
   updatedAt         DateTime                     @updatedAt
+  warehouse         Warehouse?                   @relation(fields: [warehouseId], references: [id])
   reservations      InventoryReservation[]
   movements         InventoryMovement[]
 
@@ -85,6 +107,7 @@ model InventoryMovement {
   referenceType   String?
   referenceId     String?
   reason          String?
+  metadata        Json?
   createdAt       DateTime              @default(now())
   inventoryItem   InventoryItem         @relation(fields: [inventoryItemId], references: [id])
 

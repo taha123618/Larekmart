@@ -11,6 +11,9 @@ export type OrderChartType = {
 };
 
 export type PaymentSuccessfulType = {
+  sessionId?: string | null;
+  referenceId?: string | null;
+  reservationId?: string | null;
   userId?: string | null;
   email?: string | null;
   amount: number;

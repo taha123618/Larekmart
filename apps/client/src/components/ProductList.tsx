@@ -1,4 +1,8 @@
-import { ProductType, type SearchResponse, type SearchFacets } from "@repo/types";
+import {
+  ProductType,
+  type SearchResponse,
+  type SearchFacets,
+} from "@repo/types";
 import Categories from "./Categories";
 import ProductCard from "./ProductCard";
 import Link from "next/link";

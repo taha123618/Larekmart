@@ -1,7 +1,14 @@
 import type { Client } from "@opensearch-project/opensearch";
 import type { Logger } from "@repo/monitoring";
-import type { SearchProductDocument, SearchQueryParams, SearchFacets } from "@repo/types";
-import type { OpenSearchSearchResponse, SearchBoostingConfig } from "./types.js";
+import type {
+  SearchProductDocument,
+  SearchQueryParams,
+  SearchFacets,
+} from "@repo/types";
+import type {
+  OpenSearchSearchResponse,
+  SearchBoostingConfig,
+} from "./types.js";
 import { buildProductSearchQuery } from "./queries/product-search.js";
 
 /** Normalized result of a product search — hits, total, and shaped facets. */
@@ -37,7 +44,8 @@ export async function searchProductDocuments(
       body: queryDsl,
     });
 
-    const raw = response.body as unknown as OpenSearchSearchResponse<SearchProductDocument>;
+    const raw =
+      response.body as unknown as OpenSearchSearchResponse<SearchProductDocument>;
     const hits = raw.hits?.hits ?? [];
     const aggs = raw.aggregations ?? {};
 
@@ -65,7 +73,10 @@ export async function searchProductDocuments(
       raw,
     };
   } catch (error) {
-    logger?.error(`Product search failed on [${targetIndex}]`, { error, params });
+    logger?.error(`Product search failed on [${targetIndex}]`, {
+      error,
+      params,
+    });
     throw error;
   }
 }

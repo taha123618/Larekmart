@@ -38,10 +38,13 @@ export function createRedisClient(
     enableReadyCheck: true,
     retryStrategy(times: number) {
       if (times > maxRetries) {
-        log.warn(`${prefix}Redis retry limit (${maxRetries}) reached; backing off permanently`, {
-          url: config.url,
-          attempts: times,
-        });
+        log.warn(
+          `${prefix}Redis retry limit (${maxRetries}) reached; backing off permanently`,
+          {
+            url: config.url,
+            attempts: times,
+          },
+        );
         return null; // stop retrying
       }
       const delay = Math.min(times * 100, maxDelay);
@@ -109,7 +112,9 @@ export async function closeRedisClient(
  * Closes all open Redis connections managed by this package.
  * Useful for graceful shutdown when multiple clients are active.
  */
-export async function closeAllRedisClients(logger?: RedisLogger): Promise<void> {
+export async function closeAllRedisClients(
+  logger?: RedisLogger,
+): Promise<void> {
   const log = logger ?? console;
   const urls = [...clients.keys()];
 

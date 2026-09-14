@@ -39,7 +39,9 @@ export function buildBaseFilters(params: SearchQueryParams): any[] {
 }
 
 /** Category facet selection — prefers the slug (exact keyword), falls back to name. */
-export function buildCategoryFilter(params: SearchQueryParams): any | undefined {
+export function buildCategoryFilter(
+  params: SearchQueryParams,
+): any | undefined {
   if (params.categorySlug) {
     return { term: { categorySlug: params.categorySlug } };
   }

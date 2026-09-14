@@ -46,7 +46,10 @@ export function buildProductSearchQuery(
       FACET_FILTER_BUILDERS[key](params),
     ]),
   ) as Record<FacetKey, any | undefined>;
-  const filters = [...baseFilters, ...Object.values(facetFilters).filter(Boolean)];
+  const filters = [
+    ...baseFilters,
+    ...Object.values(facetFilters).filter(Boolean),
+  ];
 
   // ── Query ──────────────────────────────────────────────────────────────────
   // The text clauses are reused by the facet aggregations so facet counts stay
@@ -110,7 +113,11 @@ export function buildProductSearchQuery(
       break;
     case "relevance":
     default:
-      sort.push(params.q ? { _score: { order: "desc" } } : { createdAt: { order: "desc" } });
+      sort.push(
+        params.q
+          ? { _score: { order: "desc" } }
+          : { createdAt: { order: "desc" } },
+      );
       break;
   }
 

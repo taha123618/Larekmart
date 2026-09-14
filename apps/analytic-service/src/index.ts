@@ -10,6 +10,7 @@ import {
   recordUserSignup,
   recordProductCreated,
   recordProductDeleted,
+  recordInventoryEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
 import type {
@@ -194,6 +195,33 @@ const start = async () => {
           const payload = message.value !== undefined ? message.value : message;
           if (payload !== undefined) {
             await recordProductDeleted(payload);
+          }
+        },
+      },
+      {
+        topicName: "inventory.stock.sold",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordInventoryEvent("inventory.stock.sold", payload);
+          }
+        },
+      },
+      {
+        topicName: "inventory.low_stock",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordInventoryEvent("inventory.low_stock", payload);
+          }
+        },
+      },
+      {
+        topicName: "inventory.restocked",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordInventoryEvent("inventory.restocked", payload);
           }
         },
       },

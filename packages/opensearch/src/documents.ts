@@ -88,7 +88,8 @@ export async function getProductDocument(
       { ignore: [404] },
     );
 
-    const source = (response.body as { _source?: SearchProductDocument })._source;
+    const source = (response.body as { _source?: SearchProductDocument })
+      ._source;
     if (response.statusCode === 404 || !source) {
       return null;
     }

@@ -4,7 +4,9 @@ import { logger, searchMetrics } from "../observability/metrics.js";
 import { ProductEventPayloadSchema } from "../schemas/indexing.schema.js";
 import type { SearchProductDocument } from "@repo/types";
 
-export function transformProductEventToDocument(raw: any): SearchProductDocument {
+export function transformProductEventToDocument(
+  raw: any,
+): SearchProductDocument {
   const id = String(raw.id);
   const name = String(raw.name || "");
   const price = Number(raw.price || 0);
@@ -17,9 +19,10 @@ export function transformProductEventToDocument(raw: any): SearchProductDocument
     shortDescription: raw.shortDescription || name,
     description: raw.description || name,
     brand: raw.brand || "Larekmart",
-    category: raw.category?.name || raw.category || raw.categorySlug || "Clothing",
-    categorySlug: raw.categorySlug || (raw.category?.slug || "clothing"),
-    category_id: raw.category_id || (raw.category?.id || 1),
+    category:
+      raw.category?.name || raw.category || raw.categorySlug || "Clothing",
+    categorySlug: raw.categorySlug || raw.category?.slug || "clothing",
+    category_id: raw.category_id || raw.category?.id || 1,
     subcategories: Array.isArray(raw.subcategories) ? raw.subcategories : [],
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     attributes: typeof raw.attributes === "object" ? raw.attributes : {},
@@ -29,7 +32,8 @@ export function transformProductEventToDocument(raw: any): SearchProductDocument
     currency: raw.currency || "USD",
     sizes: Array.isArray(raw.sizes) ? raw.sizes : ["m", "l"],
     colors: Array.isArray(raw.colors) ? raw.colors : ["black"],
-    images: typeof raw.images === "object" && raw.images !== null ? raw.images : {},
+    images:
+      typeof raw.images === "object" && raw.images !== null ? raw.images : {},
     inStock: raw.inStock !== undefined ? Boolean(raw.inStock) : true,
     stockQuantity: raw.stockQuantity ?? 100,
     rating: raw.rating ?? 4.5,
@@ -38,12 +42,18 @@ export function transformProductEventToDocument(raw: any): SearchProductDocument
     sellerName: raw.sellerName || "Larekmart Official",
     isActive: raw.isActive !== undefined ? Boolean(raw.isActive) : true,
     isFeatured: raw.isFeatured !== undefined ? Boolean(raw.isFeatured) : false,
-    createdAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : new Date().toISOString(),
-    updatedAt: raw.updatedAt ? new Date(raw.updatedAt).toISOString() : new Date().toISOString(),
+    createdAt: raw.createdAt
+      ? new Date(raw.createdAt).toISOString()
+      : new Date().toISOString(),
+    updatedAt: raw.updatedAt
+      ? new Date(raw.updatedAt).toISOString()
+      : new Date().toISOString(),
   };
 }
 
-export async function registerProductEventSubscriptions(consumer: any): Promise<void> {
+export async function registerProductEventSubscriptions(
+  consumer: any,
+): Promise<void> {
   const topics = [
     {
       topicName: config.kafka.topics.productCreated,
@@ -130,6 +140,9 @@ export async function registerProductEventSubscriptions(consumer: any): Promise<
     await consumer.subscribe(topics);
     logger.info("Subscribed to product event topics successfully");
   } catch (error) {
-    logger.warn("Kafka subscription registration failed (Kafka might be offline)", { error });
+    logger.warn(
+      "Kafka subscription registration failed (Kafka might be offline)",
+      { error },
+    );
   }
 }

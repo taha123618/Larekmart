@@ -11,8 +11,14 @@ import { createRateLimiter } from "../middleware/rate-limit.js";
 
 export const indexingRoutes: FastifyPluginAsync = async (fastify) => {
   // Tight limiter for write operations; bulk and reindex are even stricter
-  const adminRateLimiter = createRateLimiter({ windowSeconds: 60, maxRequests: 120 });
-  const heavyRateLimiter = createRateLimiter({ windowSeconds: 60, maxRequests: 10 });
+  const adminRateLimiter = createRateLimiter({
+    windowSeconds: 60,
+    maxRequests: 120,
+  });
+  const heavyRateLimiter = createRateLimiter({
+    windowSeconds: 60,
+    maxRequests: 10,
+  });
 
   // ── Reindex (zero-downtime full reindex via OpenSearch native API) ───────────
   fastify.post(

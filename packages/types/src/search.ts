@@ -45,15 +45,13 @@ export interface SearchProductDocument {
  */
 const MultiValueParamSchema = z
   .union([z.string(), z.array(z.string())])
-  .transform((val) =>
-    [
-      ...new Set(
-        (typeof val === "string" ? val.split(",") : val)
-          .map((value) => value.trim().toLowerCase())
-          .filter(Boolean),
-      ),
-    ],
-  );
+  .transform((val) => [
+    ...new Set(
+      (typeof val === "string" ? val.split(",") : val)
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  ]);
 
 /**
  * Search Query Parameters Schema

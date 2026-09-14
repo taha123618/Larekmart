@@ -18,10 +18,7 @@
 import { cacheRead, cacheSet } from "@repo/redis";
 import { redis } from "../utils/redis.js";
 import { cacheMetrics } from "../observability/metrics.js";
-import type {
-  AnalyticsDailyChartType,
-  AnalyticsEventType,
-} from "@repo/types";
+import type { AnalyticsDailyChartType, AnalyticsEventType } from "@repo/types";
 
 /** Parses a positive integer env value, falling back when unset or invalid. */
 function positiveInt(value: string | undefined, fallback: number): number {

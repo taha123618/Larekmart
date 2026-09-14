@@ -16,18 +16,19 @@ Scope rules for AI coding agents working in this package.
 
 ## 2. What belongs here
 
-| ✅ Belongs | ❌ Does NOT belong |
-|---|---|
-| OpenSearch SDK client creation | Service-specific config (env vars) |
-| Index mapping constants | Redis / cache logic |
-| Query DSL builders + search execution | Kafka consumers |
-| Bulk + single-document indexing helpers | HTTP routes or controllers |
-| Reindex/alias lifecycle helpers | Metrics counters (pass logger in) |
-| SDK wrapper types | Service-specific response caching |
+| ✅ Belongs                              | ❌ Does NOT belong                 |
+| --------------------------------------- | ---------------------------------- |
+| OpenSearch SDK client creation          | Service-specific config (env vars) |
+| Index mapping constants                 | Redis / cache logic                |
+| Query DSL builders + search execution   | Kafka consumers                    |
+| Bulk + single-document indexing helpers | HTTP routes or controllers         |
+| Reindex/alias lifecycle helpers         | Metrics counters (pass logger in)  |
+| SDK wrapper types                       | Service-specific response caching  |
 
 ## 3. Dependency rules
 
 This package depends on:
+
 - `@opensearch-project/opensearch` — SDK
 - `@repo/types` — shared domain types (SearchProductDocument, SearchQueryParams, etc.)
 - `@repo/monitoring` — logger type only (no config coupling)

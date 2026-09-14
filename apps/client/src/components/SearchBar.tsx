@@ -76,7 +76,8 @@ const SearchBar = () => {
           `${SEARCH_SERVICE_URL}/api/v1/search/suggestions?q=${encodeURIComponent(query)}&limit=${SUGGESTION_LIMIT}`,
           { signal: controller.signal },
         );
-        if (!res.ok) throw new Error(`Suggestions request failed (${res.status})`);
+        if (!res.ok)
+          throw new Error(`Suggestions request failed (${res.status})`);
 
         const body = (await res.json()) as SuggestionResponse;
         setSuggestions(Array.isArray(body.data) ? body.data : []);
@@ -117,7 +118,9 @@ const SearchBar = () => {
     setRecents((previous) => {
       const next = [
         trimmed,
-        ...previous.filter((item) => item.toLowerCase() !== trimmed.toLowerCase()),
+        ...previous.filter(
+          (item) => item.toLowerCase() !== trimmed.toLowerCase(),
+        ),
       ].slice(0, MAX_RECENT_SEARCHES);
       writeRecentSearches(next);
       return next;

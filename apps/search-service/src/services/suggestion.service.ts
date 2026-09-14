@@ -1,9 +1,16 @@
 import { getOpenSearchClient } from "../opensearch/client.js";
 import { buildAutocompleteQuery } from "@repo/opensearch";
-import { getCachedSuggestions, setCachedSuggestions } from "../cache/suggestion-cache.js";
+import {
+  getCachedSuggestions,
+  setCachedSuggestions,
+} from "../cache/suggestion-cache.js";
 import { config } from "../config/config.js";
 import { logger, searchMetrics } from "../observability/metrics.js";
-import type { SuggestionItem, SuggestionQuery, SuggestionResponse } from "@repo/types";
+import type {
+  SuggestionItem,
+  SuggestionQuery,
+  SuggestionResponse,
+} from "@repo/types";
 import type { OpenSearchSearchResponse } from "@repo/opensearch";
 
 export class SuggestionService {
@@ -21,14 +28,21 @@ export class SuggestionService {
     const queryDsl = buildAutocompleteQuery(params);
 
     try {
-      searchMetrics.opensearchRequestsTotal.inc({ operation: "suggestions", status: "start" });
+      searchMetrics.opensearchRequestsTotal.inc({
+        operation: "suggestions",
+        status: "start",
+      });
       const response = await client.search({
         index: config.opensearch.aliasName,
         body: queryDsl,
       });
-      searchMetrics.opensearchRequestsTotal.inc({ operation: "suggestions", status: "success" });
+      searchMetrics.opensearchRequestsTotal.inc({
+        operation: "suggestions",
+        status: "success",
+      });
 
-      const rawBody = response.body as unknown as OpenSearchSearchResponse<SuggestionItem>;
+      const rawBody =
+        response.body as unknown as OpenSearchSearchResponse<SuggestionItem>;
       const hits = rawBody.hits?.hits ?? [];
 
       // Deduplicate by product id so each suggestion maps to a single product.

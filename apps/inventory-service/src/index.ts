@@ -12,8 +12,10 @@ import {
 import { prisma } from "@repo/inventory-db";
 import inventoryRoute from "./routes/inventory.route.js";
 import { logger, metrics } from "./observability/metrics.js";
-import { producer } from "./utils/kafka.js";
+import { consumer, producer } from "./utils/kafka.js";
 import { redis } from "./utils/redis.js";
+import { startReservationExpiryWorker } from "./workers/reservation-expiry.worker.js";
+import { startInventoryEventConsumer } from "./workers/inventory-event.consumer.js";
 
 const port = Number.parseInt(process.env.PORT ?? "8007", 10);
 const health = createHealthRegistry("inventory-service", "1.0.0");
@@ -92,9 +94,15 @@ app.onError((error, c) => {
   );
 });
 
+let stopExpiryWorker: (() => void) | null = null;
+
 async function start(): Promise<void> {
   try {
     await producer.connect();
+    await consumer.connect();
+    await startInventoryEventConsumer();
+    stopExpiryWorker = startReservationExpiryWorker();
+
     serve({ fetch: app.fetch, port }, () => {
       logger.info(`Inventory service is running on port ${port}`);
     });
@@ -103,5 +111,36 @@ async function start(): Promise<void> {
     process.exit(1);
   }
 }
+
+async function shutdown(signal: string): Promise<void> {
+  logger.info(`Received ${signal}, shutting down gracefully...`);
+  if (stopExpiryWorker) {
+    stopExpiryWorker();
+  }
+  try {
+    await consumer.disconnect();
+  } catch (err) {
+    logger.error("Error disconnecting Kafka consumer", err);
+  }
+  try {
+    await producer.disconnect();
+  } catch (err) {
+    logger.error("Error disconnecting Kafka producer", err);
+  }
+  try {
+    await redis.close();
+  } catch (err) {
+    logger.error("Error closing Redis connection", err);
+  }
+  try {
+    await prisma.$disconnect();
+  } catch (err) {
+    logger.error("Error disconnecting Prisma", err);
+  }
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));
 
 void start();
