@@ -52,6 +52,7 @@ FastAPI /api/v1/recommendations/*
 ## API Endpoints
 
 ### Recommendations
+
 - `GET /api/v1/recommendations/home?userId={id}&limit=10`
 - `GET /api/v1/recommendations/personalized?userId={id}&limit=10`
 - `GET /api/v1/recommendations/trending?limit=10&windowHours=48&categorySlug={cat}`
@@ -63,14 +64,17 @@ FastAPI /api/v1/recommendations/*
 - `GET /api/v1/recommendations/recently-viewed?userId={id}&limit=10`
 
 ### Interactions
+
 - `POST /api/v1/interactions` (records VIEW, ADD_TO_CART, WISHLIST, SEARCH, ORDER_COMPLETED)
 - `GET /api/v1/interactions/user/{userId}`
 
 ### Analytics & Telemetry
+
 - `POST /api/v1/analytics/events` (tracks IMPRESSION, CLICK, ADD_TO_CART, PURCHASE)
 - `GET /api/v1/analytics/metrics` (CTR and conversion rates per strategy)
 
 ### Health & Metrics
+
 - `GET /health`
 - `GET /health/live`
 - `GET /health/ready`
