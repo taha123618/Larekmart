@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api.routes import analytics, health, interactions, recommendations
+from app.api.routes import analytics, health, interactions, products, recommendations, users
 from app.cache.redis import get_redis_cache
 from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
@@ -17,6 +17,7 @@ from app.core.telemetry import setup_telemetry
 from app.db.session import engine
 from app.messaging.consumers.event_consumer import register_all_consumers
 from app.messaging.kafka import kafka_manager
+from app.messaging.publishers.event_publisher import kafka_producer
 from app.observability.metrics import (
     RECOMMENDATION_REQUEST_DURATION_SECONDS,
     RECOMMENDATION_REQUESTS_TOTAL,
@@ -42,10 +43,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as exc:
         logger.warning("redis_connection_warning", error=str(exc))
 
-    # Register and start Kafka consumer loop
+    # Register and start Kafka consumer and producer
     register_all_consumers()
     try:
         await kafka_manager.start()
+        await kafka_producer.start()
     except Exception as exc:
         logger.warning("kafka_start_warning", error=str(exc))
 
@@ -54,6 +56,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Teardown
     logger.info("service_shutting_down")
     await kafka_manager.stop()
+    await kafka_producer.stop()
     await cache.close()
     await engine.dispose()
     logger.info("service_shutdown_complete")
@@ -120,6 +123,8 @@ def create_app() -> FastAPI:
     # Register Routers
     app.include_router(health.router)
     app.include_router(recommendations.router)
+    app.include_router(products.router)
+    app.include_router(users.router)
     app.include_router(interactions.router)
     app.include_router(analytics.router)
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ProductType, RecommendationItemType } from "@repo/types";
 import {
+  getCartRecommendations,
   getFrequentlyBoughtTogether,
   getPersonalizedRecommendations,
   getSimilarProducts,
@@ -10,13 +11,19 @@ import {
   sendAnalyticsEvent,
 } from "@/services/recommendation.service";
 import ProductCard from "./ProductCard";
-import { Sparkles, TrendingUp, Flame } from "lucide-react";
+import { Sparkles, TrendingUp, Flame, ShoppingBag } from "lucide-react";
 
 interface RecommendationSectionProps {
   title: string;
   subtitle?: string;
-  type: "trending" | "personalized" | "similar" | "frequently_bought_together";
+  type:
+    | "trending"
+    | "personalized"
+    | "similar"
+    | "frequently_bought_together"
+    | "cart";
   productId?: number | string;
+  productIds?: number[];
   categorySlug?: string;
   userId?: string;
   limit?: number;
@@ -27,6 +34,7 @@ export default function RecommendationSection({
   subtitle,
   type,
   productId,
+  productIds,
   categorySlug,
   userId = "user_demo",
   limit = 4,
@@ -44,7 +52,9 @@ export default function RecommendationSection({
       try {
         let recResponse = null;
 
-        if (type === "trending") {
+        if (type === "cart" && productIds && productIds.length > 0) {
+          recResponse = await getCartRecommendations(productIds, limit);
+        } else if (type === "trending") {
           recResponse = await getTrendingRecommendations(limit, categorySlug);
         } else if (type === "personalized" && userId) {
           recResponse = await getPersonalizedRecommendations(userId, limit);
@@ -112,7 +122,7 @@ export default function RecommendationSection({
     return () => {
       isMounted = false;
     };
-  }, [type, productId, categorySlug, userId, limit]);
+  }, [type, productId, productIds, categorySlug, userId, limit]);
 
   if (isLoading || products.length === 0) {
     return null;
@@ -123,6 +133,8 @@ export default function RecommendationSection({
       return <Flame className="w-5 h-5 text-orange-500" />;
     if (type === "personalized")
       return <Sparkles className="w-5 h-5 text-purple-500" />;
+    if (type === "cart")
+      return <ShoppingBag className="w-5 h-5 text-emerald-500" />;
     return <TrendingUp className="w-5 h-5 text-blue-500" />;
   };
 

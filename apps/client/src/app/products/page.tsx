@@ -1,4 +1,5 @@
 import ProductList from "@/components/ProductList";
+import RecommendationSection from "@/components/RecommendationSection";
 
 type ProductsSearchParams = {
   category?: string;
@@ -19,7 +20,7 @@ const ProductsPage = async ({
     await searchParams;
 
   return (
-    <div className="">
+    <div className="flex flex-col gap-12">
       <ProductList
         category={category}
         sort={sort}
@@ -30,6 +31,20 @@ const ProductsPage = async ({
         max_price={max_price}
         params="products"
       />
+
+      <div className="border-t border-gray-100 pt-8">
+        <RecommendationSection
+          title={
+            category
+              ? `Trending in ${category.charAt(0).toUpperCase() + category.slice(1)}`
+              : "Trending Styles You May Love"
+          }
+          subtitle="Real-time popular styles calculated with velocity decay"
+          type="trending"
+          categorySlug={category}
+          limit={4}
+        />
+      </div>
     </div>
   );
 };

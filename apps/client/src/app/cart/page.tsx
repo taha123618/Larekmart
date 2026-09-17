@@ -8,6 +8,7 @@ import { ArrowRight, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import RecommendationSection from "@/components/RecommendationSection";
 
 const steps = [
   {
@@ -169,6 +170,18 @@ const CartContent = () => {
           )}
         </div>
       </div>
+
+      {activeStep === 1 && cart.length > 0 && (
+        <div className="w-full max-w-6xl mt-6">
+          <RecommendationSection
+            title="Recommended Add-ons"
+            subtitle="Frequently bought together with items in your cart"
+            type="cart"
+            productIds={cart.map((item) => Number(item.id))}
+            limit={4}
+          />
+        </div>
+      )}
     </div>
   );
 };

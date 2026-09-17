@@ -96,6 +96,29 @@ export async function sendInteraction(
   }
 }
 
+export async function getCartRecommendations(
+  productIds: number[],
+  limit: number = 4,
+): Promise<RecommendationResponseType | null> {
+  if (!productIds || productIds.length === 0) {
+    return await getTrendingRecommendations(limit);
+  }
+
+  // Use primary cart item for frequently bought together recommendations
+  const primaryId = productIds[productIds.length - 1];
+  if (!primaryId) {
+    return await getTrendingRecommendations(limit);
+  }
+
+  const fbt = await getFrequentlyBoughtTogether(primaryId, limit);
+  if (fbt && fbt.items && fbt.items.length > 0) {
+    return fbt;
+  }
+
+  // Fallback to similar products of the primary item
+  return await getSimilarProducts(primaryId, limit);
+}
+
 export async function sendAnalyticsEvent(
   user_id: string,
   product_id: number,
