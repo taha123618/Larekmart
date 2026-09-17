@@ -48,6 +48,11 @@ apps/search-service ──────┬─▶ @repo/opensearch ─▶ @opensea
                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                           └─▶ @repo/types
 
+apps/recommendation-service (Python) ┬─▶ Kafka (aiokafka)
+                                     ├─▶ PostgreSQL + pgvector (asyncpg)
+                                     ├─▶ Redis (redis-py + Celery broker)
+                                     └─▶ @repo/types (contracts mirror)
+
 apps/admin, apps/client ─▶ @repo/eslint-config, @repo/typescript-config
 all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 ```

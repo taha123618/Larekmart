@@ -29,6 +29,9 @@ pnpm --filter @repo/redis verify:redis
 
 # Linting (admin and client)
 pnpm lint
+
+# Recommendation service Python test suite (34 tests)
+cd apps/recommendation-service && uv run pytest tests/
 ```
 
 ## Minimum Verification by Change Area
@@ -37,6 +40,7 @@ pnpm lint
 | ----------------------------------- | --------------------------------------------------------------------------------- |
 | Contracts & Schemas (`@repo/types`) | `pnpm check-types` from repository root                                           |
 | Service Routes & Handlers           | `pnpm --filter <service> check-types` + manual endpoint verification              |
+| Recommendation Engine & Models      | `cd apps/recommendation-service && uv run pytest tests/`                          |
 | Kafka Producers & Consumers         | `pnpm check-types` + observe topic delivery in Kafka UI (`http://localhost:8080`) |
 | Next.js Pages & Components          | `pnpm --filter <app> check-types` + `pnpm --filter <app> build`                   |
 | Database Schemas (Prisma)           | `pnpm --filter @repo/product-db db:generate` then `pnpm check-types`              |
@@ -45,7 +49,7 @@ pnpm lint
 
 When introducing tests, follow [`docs/TESTING.md`](../../docs/TESTING.md):
 
-1. Use **Vitest** for new JavaScript/TypeScript unit and integration testing. Keep using the native Go test tool for `notification-service` and the dedicated Redis verifier for Redis behavior.
+1. Use **Vitest** for new JavaScript/TypeScript unit and integration testing. Keep using the native Go test tool for `notification-service`, `pytest` for `recommendation-service`, and the dedicated Redis verifier for Redis behavior.
 2. Add a `"test": "vitest run"` script to the target workspace and configure the `test` task in `turbo.json`.
 3. Co-locate test files alongside code as `*.test.ts`.
 4. Mock external network services (Stripe, Clerk, Kafka brokers, databases) in unit tests.

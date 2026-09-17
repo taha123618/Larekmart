@@ -51,6 +51,7 @@ The recommendation service is responsible for:
 # 3. Service Ownership & Boundaries
 
 ### Recommendation Service Owns:
+
 - `user_interactions`: Granular interaction events, weights, and session telemetry
 - `product_embeddings`: 128-dimensional vector embeddings, name, category, and metadata in pgvector
 - `user_embeddings`: User aggregated preference vectors in pgvector
@@ -67,6 +68,7 @@ The recommendation service **does not own** primary product catalog mutations or
 # 4. Kafka Event Architecture
 
 Consumes the following topics:
+
 - `product.created`, `product.updated`, `product.deleted`
 - `order.created`, `order.completed`, `payment.successful`
 - `product.viewed`, `product.searched`, `product.added_to_cart`, `product.removed_from_cart`, `wishlist.product_added`
@@ -74,6 +76,7 @@ Consumes the following topics:
 - `recommendation.interaction`
 
 Configurable interaction weights:
+
 - `VIEW`: 1.0
 - `SEARCH`: 1.0
 - `WISHLIST`: 4.0

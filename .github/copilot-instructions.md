@@ -7,10 +7,12 @@ with this summary.
 ## Repository Architecture
 
 pnpm 9 + Turborepo monorepo for a microservices clothing e-commerce platform. Two
-Next.js apps (`client` :3002, `admin` :3003), five backend services (`product-service` :8000,
-`order-service` :8001, `payment-service` :8002, `auth-service` :8003,
-`email-service` worker), and shared packages (`@repo/kafka`, `@repo/types`,
-`@repo/product-db`, `@repo/order-db`, `@repo/eslint-config`, `@repo/typescript-config`).
+Next.js apps (`client` :3002, `admin` :3003), ten backend services (`product-service` :8000,
+`order-service` :8001, `payment-service` :8002, `auth-service` :8003, `analytic-service` :8004,
+`notification-service` :8005, `search-service` :8006, `inventory-service` :8007,
+`recommendation-service` :8008, `email-service` worker), and shared packages (`@repo/kafka`, `@repo/types`,
+`@repo/monitoring`, `@repo/redis`, `@repo/opensearch`, `@repo/product-db`, `@repo/inventory-db`,
+`@repo/order-db`, `@repo/eslint-config`, `@repo/typescript-config`).
 
 ## AI Agent Lifecycle
 

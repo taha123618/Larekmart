@@ -72,3 +72,17 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
 3. Verify Prometheus metrics at `GET /metrics` (`active_websocket_connections`, `notification_deliveries_total`).
 4. Check worker pool logs for dead-letter classification on exhausted retries.
 5. Verify Redis deduplication key `notification:event:<id>` is not prematurely filtering new events.
+
+## 6. Recommendation Service (Python FastAPI :8008)
+
+### Issue: Recommendations returning fallback or empty lists
+
+1. Check service liveness & readiness: `GET http://localhost:8008/health/live` and `GET http://localhost:8008/health/ready`.
+2. Verify Redis cache keys for recommendations: `recommendations:*` in Redis database 0.
+3. Check PostgreSQL with `pgvector` connectivity: verify `product_embeddings` and `user_interactions` tables exist and have valid embeddings.
+4. Verify Kafka consumer loop status: `aiokafka` consumer group logs for `order.created`, `payment.successful`, and `product.*` events.
+5. Check Celery background worker tasks:
+   ```bash
+   uv run celery -A app.workers.celery inspect active
+   ```
+6. Inspect Prometheus metrics at `http://localhost:8008/metrics` (`recommendation_requests_total`, `recommendation_latency_seconds`, `recommendation_cache_hits_total`).

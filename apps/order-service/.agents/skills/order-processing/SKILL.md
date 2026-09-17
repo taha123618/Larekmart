@@ -27,9 +27,16 @@ Guidance for developing in `apps/order-service` (Fastify 5, port 8001).
 
     await producer.send("order.created", {
       value: {
+        orderId: newOrder._id.toString(),
+        userId: newOrder.userId,
         email: newOrder.email,
         amount: newOrder.amount,
         status: newOrder.status,
+        products: newOrder.products.map((p) => ({
+          name: p.name,
+          quantity: p.quantity,
+          price: p.price,
+        })),
       },
     });
   };

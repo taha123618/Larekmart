@@ -23,7 +23,7 @@ Microservice responsible for order persistence, order history retrieval, and 6-m
 - **Consumes**:
   - `payment.successful`: Persists the completed order in MongoDB and emits `order.created`.
 - **Emits**:
-  - `order.created`: Consumed by `email-service` for customer receipt delivery.
+  - `order.created`: Enriched with order items and `userId`, consumed by `email-service` for receipts and `recommendation-service` for collaborative filtering.
 
 ## Environment Variables
 

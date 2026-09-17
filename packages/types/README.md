@@ -9,11 +9,13 @@ Centralized type definitions, Kafka payload contracts, and shared Zod validation
   - `CategoryFormSchema`
   - `UserFormSchema`
   - `shippingFormSchema`
+  - `HomeRecommendationsResponseSchema`, `StrategyMetricSchema`
 - **Domain & Persistence Types**:
   - `ProductType`, `ProductsType`
   - `CategoryType`
   - `OrderType`, `OrdersType`, `OrderChartType`
   - `CartItemType`, `CartItemsType`
+  - `RecommendationType`, `RecommendationResponseType`, `HomeRecommendationsResponseType`, `StrategyMetricType`
 - **Kafka Payload Contracts**:
   - `StripeProductType` (`product.created`)
   - `ProductCreatedType`, `ProductDeletedType`

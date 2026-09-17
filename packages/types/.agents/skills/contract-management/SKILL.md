@@ -10,8 +10,9 @@ Guidance for maintaining `@repo/types` — the central contract repository of La
 ## 1. What Belongs in `@repo/types`
 
 - Cross-boundary domain types: `ProductType`, `CategoryType`, `OrderType`, `CartItemType`.
+- Recommendation API & analytics types: `RecommendationType`, `RecommendationResponseType`, `HomeRecommendationsResponseType`, `StrategyMetricType`, `InteractionCreateType`, `AnalyticsEventCreateType`.
 - Kafka payload contracts: `StripeProductType`, `UserCreatedType`, `OrderCreatedType`, `PaymentSuccessfulType`.
-- Shared Zod validation schemas: `ProductFormSchema`, `CategoryFormSchema`, `UserFormSchema`, `shippingFormSchema`.
+- Shared Zod validation schemas: `ProductFormSchema`, `CategoryFormSchema`, `UserFormSchema`, `shippingFormSchema`, `HomeRecommendationsResponseSchema`, `StrategyMetricSchema`.
 - Monorepo-wide constants: `colors`, `sizes`, `OrderStatus`, `CustomJwtSessionClaims`.
 
 ## 2. Type-Only Dependency Discipline

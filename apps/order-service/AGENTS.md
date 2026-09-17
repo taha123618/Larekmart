@@ -60,7 +60,7 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 
 - Consume Kafka through `@repo/kafka`.
 - Current subscriptions from this service: `payment.successful` → order creation.
-- This service publishes `order.created` after persisting an order.
+- This service publishes `order.created` (containing `orderId`, `userId`, `email`, `amount`, `status`, and `products`) after persisting an order, consumed by `email-service` and `recommendation-service`.
 - Use the `{ value: payload }` envelope and read `message.value` in handlers.
 - Because subscriptions use `fromBeginning: true`, handlers must be tolerant of re-processing.
 - If you change a payload, update the producer, every consumer, `@repo/types`, and

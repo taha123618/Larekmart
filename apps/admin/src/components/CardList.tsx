@@ -27,7 +27,8 @@ const CardList = async ({ title }: { title: string }) => {
           process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
           "http://localhost:8008";
         const prodUrl =
-          process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || "http://localhost:8000";
+          process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
+          "http://localhost:8000";
         const recRes = await fetch(
           `${recUrl}/api/v1/recommendations/popular?limit=5`,
         );

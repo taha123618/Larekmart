@@ -12,7 +12,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 
 - **Two frontends** own all user interaction and call backend services over HTTP with a
   Clerk Bearer token: `client` (storefront, :3002) and `admin` (dashboard, :3003).
-- **Seven HTTP backend services & two workers** own business logic and each owns its data:
+- **Eight HTTP backend services & two workers** own business logic and each owns its data:
   - `product-service` (:8000) — catalog, PostgreSQL via Prisma.
   - `order-service` (:8001) — orders, MongoDB via Mongoose.
   - `payment-service` (:8002) — Stripe; stateless.
@@ -21,6 +21,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `notification-service` (:8005) — Go (Chi), multi-channel notifications (Email, SMS, Push, In-App), PostgreSQL, Redis, WebSockets.
   - `search-service` (:8006) — Fastify, full-text product search, autocomplete, facets; OpenSearch + Redis cache.
   - `inventory-service` (:8007) — Hono, PostgreSQL stock authority, atomic reservations, warehouse inventory, and Kafka events.
+  - `recommendation-service` (:8008) — Python 3.12+ (FastAPI), collaborative & content filtering, pgvector embeddings, trending algorithms, Celery worker.
   - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).
@@ -40,6 +41,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Analytics ingestion, KPIs, daily aggregates        | `apps/analytic-service`                                |
 | Product search, autocomplete, facets, indexing     | `apps/search-service`                                  |
 | Inventory availability, reservations, stock ledger | `apps/inventory-service`                               |
+| AI recommendations, embeddings, user interactions  | `apps/recommendation-service`                          |
 | Kafka client/producer/consumer helpers             | `packages/kafka`                                       |
 | Shared types, Zod schemas, Kafka payload types     | `packages/types`                                       |
 | Telemetry, structured logging, health checks       | `packages/monitoring`                                  |
@@ -54,19 +56,21 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 Each service owns its store; never reach into another service's database. Cross-service
 consistency is achieved by publishing events and letting the consumer react (eventual
 consistency). E.g. a product change in Postgres is mirrored to Stripe via
-`product.created`/`product.deleted`.
+`product.created`/`product.deleted` and indexed in OpenSearch and vector embeddings.
 
 ## Key flows
 
 1. **Checkout:** client `POST /sessions/create-checkout-session` → Stripe session →
    client confirms → Stripe `checkout.session.completed` webhook → payment-service
    publishes `payment.successful` → order-service persists an Order and publishes
-   `order.created` → email-service sends an order email.
+   `order.created` → email-service sends an order email AND recommendation-service
+   ingests purchase interactions for collaborative filtering.
 2. **User creation:** admin `POST /users` → auth-service creates the Clerk user →
    publishes `user.created` → email-service sends a welcome email.
 3. **Product creation:** admin `POST /products` → product-service writes Prisma →
-   publishes `product.created` → payment-service creates a Stripe product AND
-   search-service upserts the document into the OpenSearch `products` index.
+   publishes `product.created` → payment-service creates a Stripe product,
+   search-service upserts the OpenSearch document, AND recommendation-service computes vector embeddings.
+4. **Storefront Personalization:** client queries `GET /api/v1/recommendations/home` (or category/recently-viewed) with Clerk `userId` → returns multi-strategy shelves → customer views/clicks dispatch zero-throw telemetry events.
 
 ## Before changing anything
 

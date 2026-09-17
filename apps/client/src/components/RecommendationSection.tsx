@@ -65,7 +65,10 @@ export default function RecommendationSection({
         } else if (type === "trending") {
           recResponse = await getTrendingRecommendations(limit, categorySlug);
         } else if (type === "personalized") {
-          recResponse = await getPersonalizedRecommendations(effectiveUserId, limit);
+          recResponse = await getPersonalizedRecommendations(
+            effectiveUserId,
+            limit,
+          );
         } else if (type === "similar" && productId) {
           recResponse = await getSimilarProducts(productId, limit);
         } else if (type === "frequently_bought_together" && productId) {
@@ -73,7 +76,10 @@ export default function RecommendationSection({
         } else if (type === "category" && categorySlug) {
           recResponse = await getCategoryRecommendations(categorySlug, limit);
         } else if (type === "recently_viewed") {
-          recResponse = await getRecentlyViewedRecommendations(effectiveUserId, limit);
+          recResponse = await getRecentlyViewedRecommendations(
+            effectiveUserId,
+            limit,
+          );
         }
 
         if (

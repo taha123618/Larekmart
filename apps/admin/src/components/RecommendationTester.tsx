@@ -149,7 +149,8 @@ export default function RecommendationTester() {
             </Select>
           </div>
 
-          {(strategyType === "personalized" || strategyType === "recently_viewed") && (
+          {(strategyType === "personalized" ||
+            strategyType === "recently_viewed") && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">
                 User ID

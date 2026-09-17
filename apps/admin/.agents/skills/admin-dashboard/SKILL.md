@@ -26,12 +26,18 @@ Guidance for developing administrator features in `apps/admin` (Next.js 15, port
   - `CategoryFormSchema`
   - `UserFormSchema`
 
-## 4. Media Uploads
+## 4. Recommendation Observability & Testing
+
+- `/recommendations` page displays recommendation strategy performance metrics (`StrategyMetricType`), live engine status via `/health/live`, and candidate generation metrics.
+- `RecommendationTester.tsx` provides an interactive sandbox to simulate real-time AI scoring for personalized, trending, category, and recently-viewed algorithms against live product IDs and user IDs.
+- `CardList.tsx` overview dashboard includes a fallback to `/api/v1/recommendations/popular` when product-service is cold.
+
+## 5. Media Uploads
 
 - Direct client-to-Cloudinary image uploads using `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`.
 - Images are stored as URLs in the product form before submitting to `product-service`.
 
-## 5. Verification
+## 6. Verification
 
 ```bash
 pnpm --filter admin check-types

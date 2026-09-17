@@ -61,4 +61,4 @@ dependents in the correct order.
   script. Turbo only runs tasks that exist.
 - **Stale cache:** `pnpm build --force` (or `turbo run build --force`).
 - **Port already in use:** dev servers bind fixed ports — client 3002, admin 3003,
-  services 8000–8003.
+  services 8000–8008.

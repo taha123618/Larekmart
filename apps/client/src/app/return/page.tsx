@@ -20,8 +20,12 @@ const ReturnPage = async ({
   return (
     <div className="flex flex-col gap-8">
       <div className="p-6 rounded-xl border border-gray-100 shadow-sm bg-gray-50/50">
-        <h1 className="text-xl font-semibold text-gray-900">Payment {data.status}</h1>
-        <p className="text-sm text-gray-500 mt-1">Payment status: {data.paymentStatus}</p>
+        <h1 className="text-xl font-semibold text-gray-900">
+          Payment {data.status}
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Payment status: {data.paymentStatus}
+        </p>
         <Link
           href="/orders"
           className="inline-block mt-4 text-sm font-medium text-black underline underline-offset-4 hover:text-gray-700"

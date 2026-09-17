@@ -76,4 +76,3 @@ export const InteractionCreateSchema = z.object({
 });
 
 export type InteractionCreateType = z.infer<typeof InteractionCreateSchema>;
-

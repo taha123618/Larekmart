@@ -49,9 +49,14 @@ over HTTP with a Clerk token; it does not touch Postgres, Mongo, or Kafka direct
 
 ## Backend calls from this app
 
-This app talks HTTP to `product-service`, `order-service`, `payment-service`, and
-`search-service` (autocomplete only). It never calls `auth-service` directly — Clerk
-handles user auth.
+This app talks HTTP to `product-service`, `order-service`, `payment-service`,
+`search-service` (autocomplete only), and `recommendation-service` (`NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL` :8008). It never calls `auth-service` directly — Clerk handles user auth.
+
+Recommendation integration:
+
+- `recommendation.service.ts` provides client/server fetch helpers for `getHomeRecommendations`, `getCategoryRecommendations`, `getRecentlyViewedRecommendations`, `getPersonalizedRecommendations`, and telemetry helpers `sendInteraction` and `sendAnalyticsEvent`.
+- `RecommendationSection.tsx` dynamically resolves Clerk `useAuth().userId` and renders personalized, trending, category, and recently-viewed shelves.
+- `ProductInteraction.tsx` dispatches zero-throw interaction telemetry (`VIEW`, `ADD_TO_CART`) so user affinity models stay continuously updated.
 
 Product listing and search:
 

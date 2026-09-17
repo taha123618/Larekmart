@@ -4,17 +4,18 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ## Service Ports & Protocols
 
-| Service                | Port   | Framework      | Auth Guard                         | Owner                                     |
-| ---------------------- | ------ | -------------- | ---------------------------------- | ----------------------------------------- |
-| `product-service`      | `8000` | Express 5      | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog                |
-| `order-service`        | `8001` | Fastify 5      | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics              |
-| `payment-service`      | `8002` | Hono 4         | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks                |
-| `auth-service`         | `8003` | Express 5      | `shouldBeAdmin`                    | Admin User Management Proxy               |
-| `analytic-service`     | `8004` | Express 5      | `shouldBeAdmin`                    | Analytics & KPI Aggregations              |
-| `notification-service` | `8005` | Go / Chi       | User token / public probes         | Notifications, WebSockets & delivery      |
-| `search-service`       | `8006` | Fastify 5      | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete   |
-| `inventory-service`    | `8007` | Hono 4         | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory |
-| `email-service`        | —      | Node.js Worker | None (Kafka only)                  | Transactional Email Dispatch              |
+| Service                  | Port   | Framework              | Auth Guard                         | Owner                                         |
+| ------------------------ | ------ | ---------------------- | ---------------------------------- | --------------------------------------------- |
+| `product-service`        | `8000` | Express 5              | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog                    |
+| `order-service`          | `8001` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics                  |
+| `payment-service`        | `8002` | Hono 4                 | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks                    |
+| `auth-service`           | `8003` | Express 5              | `shouldBeAdmin`                    | Admin User Management Proxy                   |
+| `analytic-service`       | `8004` | Express 5              | `shouldBeAdmin`                    | Analytics & KPI Aggregations                  |
+| `notification-service`   | `8005` | Go / Chi               | User token / public probes         | Notifications, WebSockets & delivery          |
+| `search-service`         | `8006` | Fastify 5              | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete       |
+| `inventory-service`      | `8007` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory     |
+| `recommendation-service` | `8008` | Python 3.12+ / FastAPI | Public / User telemetry            | AI recommendations, embeddings & interactions |
+| `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                  |
 
 ---
 
@@ -357,3 +358,78 @@ only a best-effort availability cache.
 
 - **Auth**: User / Admin
 - **Response**: `{ "templates": NotificationTemplate[], "count": number }`
+
+---
+
+## 9. Recommendation Service (`:8008`)
+
+### `GET /api/v1/recommendations/home`
+
+- **Auth**: Public / Authenticated user
+- **Query Params**: `userId` (optional), `limit` (default: 10)
+- **Response**: `HomeRecommendationsResponseType` — `{ trending: RecommendationType[], popular: RecommendationType[], personalized?: RecommendationType[], recentlyViewed?: RecommendationType[], userId?: string }`
+- **Cache**: Redis read-through cache under `recommendations:home:*` namespace
+
+### `GET /api/v1/recommendations/personalized`
+
+- **Auth**: Authenticated user
+- **Query Params**: `userId` (required), `limit` (default: 10)
+- **Response**: `RecommendationResponseType`
+
+### `GET /api/v1/recommendations/trending`
+
+- **Auth**: Public
+- **Query Params**: `limit` (default: 10), `windowHours` (default: 48), `categorySlug` (optional)
+- **Response**: `RecommendationResponseType`
+
+### `GET /api/v1/recommendations/popular`
+
+- **Auth**: Public
+- **Query Params**: `limit` (default: 10), `categorySlug` (optional)
+- **Response**: `RecommendationResponseType`
+
+### `GET /api/v1/recommendations/category/:categoryId`
+
+- **Auth**: Public
+- **Query Params**: `limit` (default: 10)
+- **Response**: `RecommendationResponseType`
+
+### `GET /api/v1/recommendations/recently-viewed`
+
+- **Auth**: Authenticated user
+- **Query Params**: `userId` (required), `limit` (default: 10)
+- **Response**: `RecommendationResponseType`
+
+### `GET /api/v1/recommendations/similar/:productId` and `/product/:productId`
+
+- **Auth**: Public
+- **Query Params**: `limit` (default: 10)
+- **Response**: `RecommendationResponseType`
+
+### `GET /api/v1/recommendations/frequently-bought-together/:productId`
+
+- **Auth**: Public
+- **Query Params**: `limit` (default: 5)
+- **Response**: `RecommendationResponseType`
+
+### `POST /api/v1/interactions`
+
+- **Auth**: Public / User telemetry
+- **Body**: `{ userId?: string, sessionId?: string, productId: string, interactionType: "VIEW" | "ADD_TO_CART" | "WISHLIST" | "SEARCH" | "ORDER_COMPLETED", metadata?: object }`
+- **Side Effect**: Records interaction into PostgreSQL `user_interactions` and invalidates user cache.
+
+### `POST /api/v1/analytics/events`
+
+- **Auth**: Public / Telemetry
+- **Body**: `{ eventType: "IMPRESSION" | "CLICK" | "ADD_TO_CART" | "PURCHASE", userId?: string, productId: string, strategy: string, shelf?: string, position?: number }`
+- **Side Effect**: Logs event for strategy performance aggregation.
+
+### `GET /api/v1/analytics/metrics`
+
+- **Auth**: Admin / Scraper
+- **Response**: Array of `StrategyMetricType` (`strategy`, `impressions`, `clicks`, `conversions`, `ctr`, `conversionRate`)
+
+### `GET /health`, `GET /health/live`, `GET /health/ready`, `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Health status, liveness probe, readiness probe (PostgreSQL + Redis + Kafka), and Prometheus metric exposition format.

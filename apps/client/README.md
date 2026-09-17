@@ -15,10 +15,11 @@ The customer-facing storefront for Larekmart, providing catalog exploration, per
 ## Key Features
 
 - **Product Discovery**: Filter by category, price, size, and search term via URL search parameters.
-- **Product Detail**: Color variant switching, dynamic image preview, size selection, and stock interaction.
+- **AI Recommendation Shelves**: Personalized recommendations, trending styles, category-specific suggestions, and recently viewed carousels powered by `recommendation-service`.
+- **Product Detail**: Color variant switching, dynamic image preview, size selection, stock interaction, and user behavior telemetry (`VIEW`, `ADD_TO_CART`).
 - **Shopping Cart**: Client-side persisted cart with quantity modifications and price totals.
 - **Stripe Checkout**: Integrated shipping form and Stripe payment element embedded directly in the checkout experience.
-- **Order History**: Authenticated order history dashboard fetching from `order-service`.
+- **Order History**: Authenticated order history dashboard fetching from `order-service` with tailored post-order suggestions.
 
 ## Environment Variables
 
@@ -33,6 +34,7 @@ NEXT_PUBLIC_PAYMENT_SERVICE_URL=http://localhost:8002
 NEXT_PUBLIC_SEARCH_SERVICE_URL=http://localhost:8006
 NEXT_PUBLIC_NOTIFICATION_SERVICE_URL=http://localhost:8005
 NEXT_PUBLIC_NOTIFICATION_WS_URL=ws://localhost:8005/ws
+NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL=http://localhost:8008
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 ```
 
