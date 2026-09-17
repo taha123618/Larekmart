@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import type { StrategyMetricType } from "@repo/types";
 import {
   Card,
   CardContent,
@@ -28,18 +29,9 @@ import {
 
 export const dynamic = "force-dynamic";
 
-interface StrategyMetric {
-  strategy: string;
-  impressions: number;
-  clicks: number;
-  ctr: number;
-  conversions: number;
-  conversion_rate: number;
-}
-
 async function fetchStrategyMetrics(
   token: string | null,
-): Promise<StrategyMetric[]> {
+): Promise<StrategyMetricType[]> {
   const serviceUrl =
     process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
     "http://localhost:8008";
@@ -57,10 +49,28 @@ async function fetchStrategyMetrics(
   }
 }
 
+async function checkEngineHealth(): Promise<boolean> {
+  const serviceUrl =
+    process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
+    "http://localhost:8008";
+  try {
+    const res = await fetch(`${serviceUrl}/health/live`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(2000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export default async function RecommendationsPage() {
   const { getToken } = await auth();
   const token = await getToken();
-  const metrics = await fetchStrategyMetrics(token);
+  const [metrics, isEngineOnline] = await Promise.all([
+    fetchStrategyMetrics(token),
+    checkEngineHealth(),
+  ]);
 
   const totalImpressions = metrics.reduce((acc, m) => acc + m.impressions, 0);
   const totalClicks = metrics.reduce((acc, m) => acc + m.clicks, 0);
@@ -95,13 +105,22 @@ export default async function RecommendationsPage() {
         </div>
 
         <div className="flex items-center gap-2 text-xs">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 font-medium">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            Engine Active
-          </div>
+          {isEngineOnline ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 font-medium">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              Engine Active
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-600 font-medium">
+              <span className="relative flex h-2 w-2">
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              Engine Standby
+            </div>
+          )}
         </div>
       </div>
 

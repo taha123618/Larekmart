@@ -36,11 +36,15 @@ const ProductsPage = async ({
         <RecommendationSection
           title={
             category
-              ? `Trending in ${category.charAt(0).toUpperCase() + category.slice(1)}`
+              ? `Recommended in ${category.charAt(0).toUpperCase() + category.slice(1)}`
               : "Trending Styles You May Love"
           }
-          subtitle="Real-time popular styles calculated with velocity decay"
-          type="trending"
+          subtitle={
+            category
+              ? "AI-ranked top picks in this category"
+              : "Real-time popular styles calculated with velocity decay"
+          }
+          type={category ? "category" : "trending"}
           categorySlug={category}
           limit={4}
         />

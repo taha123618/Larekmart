@@ -35,14 +35,27 @@ export type RecommendationResponseType = z.infer<
 >;
 
 export const HomeRecommendationsResponseSchema = z.object({
-  personalized: RecommendationResponseSchema,
+  userId: z.string().nullable().optional(),
   trending: RecommendationResponseSchema,
   popular: RecommendationResponseSchema,
+  personalized: RecommendationResponseSchema.nullable().optional(),
+  recentlyViewed: RecommendationResponseSchema.nullable().optional(),
 });
 
 export type HomeRecommendationsResponseType = z.infer<
   typeof HomeRecommendationsResponseSchema
 >;
+
+export const StrategyMetricSchema = z.object({
+  strategy: z.string(),
+  impressions: z.number().int().nonnegative(),
+  clicks: z.number().int().nonnegative(),
+  ctr: z.number(),
+  conversions: z.number().int().nonnegative(),
+  conversion_rate: z.number(),
+});
+
+export type StrategyMetricType = z.infer<typeof StrategyMetricSchema>;
 
 export const InteractionCreateSchema = z.object({
   userId: z.string().min(1),
@@ -63,3 +76,4 @@ export const InteractionCreateSchema = z.object({
 });
 
 export type InteractionCreateType = z.infer<typeof InteractionCreateSchema>;
+

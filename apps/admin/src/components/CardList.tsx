@@ -20,6 +20,39 @@ const CardList = async ({ title }: { title: string }) => {
     } catch {
       products = [];
     }
+
+    if (!products || products.length === 0) {
+      try {
+        const recUrl =
+          process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
+          "http://localhost:8008";
+        const prodUrl =
+          process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || "http://localhost:8000";
+        const recRes = await fetch(
+          `${recUrl}/api/v1/recommendations/popular?limit=5`,
+        );
+        if (recRes.ok) {
+          const recData = await recRes.json();
+          if (recData.items && recData.items.length > 0) {
+            const fetched = await Promise.all(
+              recData.items.map(
+                async (i: { productId?: number; product_id?: number }) => {
+                  const id = i.productId ?? i.product_id;
+                  if (!id) return null;
+                  const r = await fetch(`${prodUrl}/products/${id}`);
+                  return r.ok ? await r.json() : null;
+                },
+              ),
+            );
+            products = fetched.filter(
+              (p): p is NonNullable<typeof p> => p !== null,
+            );
+          }
+        }
+      } catch {
+        // Fallback silently if offline
+      }
+    }
   } else {
     // Attempt to fetch from analytic-service first, fallback to order-service
     try {

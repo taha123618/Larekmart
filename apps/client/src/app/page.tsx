@@ -26,6 +26,12 @@ const Homepage = async ({
         type="personalized"
         limit={4}
       />
+      <RecommendationSection
+        title="Recently Viewed"
+        subtitle="Pick up where you left off"
+        type="recently_viewed"
+        limit={4}
+      />
     </div>
   );
 };

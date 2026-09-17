@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { ProductType, RecommendationItemType } from "@repo/types";
+import { useAuth } from "@clerk/nextjs";
 import {
   getCartRecommendations,
+  getCategoryRecommendations,
   getFrequentlyBoughtTogether,
   getPersonalizedRecommendations,
+  getRecentlyViewedRecommendations,
   getSimilarProducts,
   getTrendingRecommendations,
   sendAnalyticsEvent,
 } from "@/services/recommendation.service";
 import ProductCard from "./ProductCard";
-import { Sparkles, TrendingUp, Flame, ShoppingBag } from "lucide-react";
+import { Sparkles, TrendingUp, Flame, ShoppingBag, Clock } from "lucide-react";
 
 interface RecommendationSectionProps {
   title: string;
@@ -21,7 +24,9 @@ interface RecommendationSectionProps {
     | "personalized"
     | "similar"
     | "frequently_bought_together"
-    | "cart";
+    | "cart"
+    | "category"
+    | "recently_viewed";
   productId?: number | string;
   productIds?: number[];
   categorySlug?: string;
@@ -36,9 +41,12 @@ export default function RecommendationSection({
   productId,
   productIds,
   categorySlug,
-  userId = "user_demo",
+  userId,
   limit = 4,
 }: RecommendationSectionProps) {
+  const { userId: authUserId } = useAuth();
+  const effectiveUserId = userId || authUserId || "user_demo";
+
   const [products, setProducts] = useState<
     Array<{ product: ProductType; item: RecommendationItemType }>
   >([]);
@@ -56,12 +64,16 @@ export default function RecommendationSection({
           recResponse = await getCartRecommendations(productIds, limit);
         } else if (type === "trending") {
           recResponse = await getTrendingRecommendations(limit, categorySlug);
-        } else if (type === "personalized" && userId) {
-          recResponse = await getPersonalizedRecommendations(userId, limit);
+        } else if (type === "personalized") {
+          recResponse = await getPersonalizedRecommendations(effectiveUserId, limit);
         } else if (type === "similar" && productId) {
           recResponse = await getSimilarProducts(productId, limit);
         } else if (type === "frequently_bought_together" && productId) {
           recResponse = await getFrequentlyBoughtTogether(productId, limit);
+        } else if (type === "category" && categorySlug) {
+          recResponse = await getCategoryRecommendations(categorySlug, limit);
+        } else if (type === "recently_viewed") {
+          recResponse = await getRecentlyViewedRecommendations(effectiveUserId, limit);
         }
 
         if (
@@ -103,7 +115,7 @@ export default function RecommendationSection({
           // Report impressions for telemetry
           valid.forEach(({ item }) => {
             sendAnalyticsEvent(
-              userId,
+              effectiveUserId,
               item.productId,
               "IMPRESSION",
               item.strategy || type,
@@ -122,7 +134,7 @@ export default function RecommendationSection({
     return () => {
       isMounted = false;
     };
-  }, [type, productId, productIds, categorySlug, userId, limit]);
+  }, [type, productId, productIds, categorySlug, effectiveUserId, limit]);
 
   if (isLoading || products.length === 0) {
     return null;
@@ -135,6 +147,10 @@ export default function RecommendationSection({
       return <Sparkles className="w-5 h-5 text-purple-500" />;
     if (type === "cart")
       return <ShoppingBag className="w-5 h-5 text-emerald-500" />;
+    if (type === "category")
+      return <Sparkles className="w-5 h-5 text-indigo-500" />;
+    if (type === "recently_viewed")
+      return <Clock className="w-5 h-5 text-amber-500" />;
     return <TrendingUp className="w-5 h-5 text-blue-500" />;
   };
 
@@ -163,7 +179,7 @@ export default function RecommendationSection({
             <div
               onClick={() => {
                 sendAnalyticsEvent(
-                  userId,
+                  effectiveUserId,
                   item.productId,
                   "CLICK",
                   item.strategy || type,

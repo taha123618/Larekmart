@@ -26,36 +26,17 @@ import {
   AlertCircle,
   Database,
 } from "lucide-react";
-
-interface RecommendationItem {
-  product_id: number;
-  score: number;
-  reason: string;
-  category_slug?: string | null;
-  metadata?: Record<string, unknown>;
-}
-
-interface RecommendationResponse {
-  user_id?: string | null;
-  type: string;
-  items: RecommendationItem[];
-  metadata: {
-    strategy: string;
-    model_version: string;
-    fallback_used: boolean;
-    cached: boolean;
-    execution_time_ms: number;
-  };
-}
+import type { RecommendationResponseType } from "@repo/types";
 
 export default function RecommendationTester() {
   const [strategyType, setStrategyType] = useState<string>("trending");
   const [userId, setUserId] = useState<string>("user_sample_123");
   const [productId, setProductId] = useState<string>("101");
+  const [categorySlug, setCategorySlug] = useState<string>("clothing");
   const [limit, setLimit] = useState<string>("6");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<RecommendationResponse | null>(null);
+  const [result, setResult] = useState<RecommendationResponseType | null>(null);
 
   const serviceUrl =
     process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
@@ -86,6 +67,18 @@ export default function RecommendationTester() {
             "Please enter a Product ID for frequently bought together",
           );
         endpoint = `${serviceUrl}/api/v1/recommendations/frequently-bought-together/${encodeURIComponent(productId)}?limit=${limit}`;
+      } else if (strategyType === "category") {
+        if (!categorySlug)
+          throw new Error(
+            "Please enter a Category Slug for category recommendations",
+          );
+        endpoint = `${serviceUrl}/api/v1/recommendations/category/${encodeURIComponent(categorySlug)}?limit=${limit}`;
+      } else if (strategyType === "recently_viewed") {
+        if (!userId)
+          throw new Error(
+            "Please enter a User ID for recently viewed recommendations",
+          );
+        endpoint = `${serviceUrl}/api/v1/recommendations/recently-viewed?userId=${encodeURIComponent(userId)}&limit=${limit}`;
       } else if (strategyType === "trending") {
         endpoint = `${serviceUrl}/api/v1/recommendations/trending?limit=${limit}`;
       } else if (strategyType === "popular") {
@@ -102,7 +95,7 @@ export default function RecommendationTester() {
         );
       }
 
-      const data: RecommendationResponse = await res.json();
+      const data: RecommendationResponseType = await res.json();
       setResult(data);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -150,11 +143,13 @@ export default function RecommendationTester() {
                   Similar Products (pgvector)
                 </SelectItem>
                 <SelectItem value="fbt">Frequently Bought Together</SelectItem>
+                <SelectItem value="category">Category Filtered</SelectItem>
+                <SelectItem value="recently_viewed">Recently Viewed</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {strategyType === "personalized" && (
+          {(strategyType === "personalized" || strategyType === "recently_viewed") && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">
                 User ID
@@ -177,6 +172,19 @@ export default function RecommendationTester() {
                 placeholder="e.g. 101"
                 value={productId}
                 onChange={(e) => setProductId(e.target.value)}
+              />
+            </div>
+          )}
+
+          {strategyType === "category" && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">
+                Category Slug
+              </label>
+              <Input
+                placeholder="e.g. clothing"
+                value={categorySlug}
+                onChange={(e) => setCategorySlug(e.target.value)}
               />
             </div>
           )}
@@ -231,7 +239,10 @@ export default function RecommendationTester() {
                 <Badge variant="secondary" className="font-mono">
                   Strategy: {result.metadata.strategy}
                 </Badge>
-                {result.metadata.fallback_used && (
+                {Boolean(
+                  result.metadata.fallbackUsed ??
+                    (result.metadata as Record<string, unknown>).fallback_used,
+                ) && (
                   <Badge variant="destructive" className="font-mono">
                     Fallback Cascade Used
                   </Badge>
@@ -255,7 +266,13 @@ export default function RecommendationTester() {
               <div className="flex items-center gap-3 text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
-                  {result.metadata.execution_time_ms} ms
+                  {Number(
+                    result.metadata.executionTimeMs ??
+                      (result.metadata as Record<string, unknown>)
+                        .execution_time_ms ??
+                      0,
+                  )}{" "}
+                  ms
                 </span>
                 <span className="flex items-center gap-1">
                   <Database className="h-3.5 w-3.5" />
@@ -271,40 +288,49 @@ export default function RecommendationTester() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {result.items.map((item, idx) => (
-                  <div
-                    key={`${item.product_id}-${idx}`}
-                    className="p-3 border rounded-lg bg-card hover:bg-accent/5 transition-colors space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm">
-                        Product #{item.product_id}
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className="text-xs font-mono font-medium"
-                      >
-                        {(item.score * 100).toFixed(1)}% match
-                      </Badge>
-                    </div>
+                {result.items.map((item, idx) => {
+                  const rawItem = item as unknown as Record<string, unknown>;
+                  const resolvedProductId = Number(
+                    item.productId ?? rawItem.product_id ?? 0,
+                  );
+                  const resolvedCategory = String(
+                    item.categorySlug ?? rawItem.category_slug ?? "",
+                  );
+                  return (
+                    <div
+                      key={`${resolvedProductId}-${idx}`}
+                      className="p-3 border rounded-lg bg-card hover:bg-accent/5 transition-colors space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">
+                          Product #{resolvedProductId}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-mono font-medium"
+                        >
+                          {(item.score * 100).toFixed(1)}% match
+                        </Badge>
+                      </div>
 
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {item.reason}
-                    </p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {item.reason}
+                      </p>
 
-                    <div className="flex items-center justify-between pt-1 border-t border-border/50 text-xs">
-                      <span className="text-muted-foreground">
-                        {item.category_slug
-                          ? `Category: ${item.category_slug}`
-                          : "Global"}
-                      </span>
-                      <span className="text-primary flex items-center gap-0.5 text-[11px] font-medium">
-                        Rank #{idx + 1}
-                        <ArrowRight className="h-3 w-3" />
-                      </span>
+                      <div className="flex items-center justify-between pt-1 border-t border-border/50 text-xs">
+                        <span className="text-muted-foreground">
+                          {resolvedCategory
+                            ? `Category: ${resolvedCategory}`
+                            : "Global"}
+                        </span>
+                        <span className="text-primary flex items-center gap-0.5 text-[11px] font-medium">
+                          Rank #{idx + 1}
+                          <ArrowRight className="h-3 w-3" />
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

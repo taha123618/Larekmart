@@ -33,7 +33,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`
-   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`
+   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`
    - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.

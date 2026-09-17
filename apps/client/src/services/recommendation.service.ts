@@ -1,10 +1,75 @@
 import type {
   RecommendationResponseType,
+  HomeRecommendationsResponseType,
   InteractionCreateType,
 } from "@repo/types";
 
 const RECOMMENDATION_SERVICE_URL =
   process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL || "http://localhost:8008";
+
+export async function getHomeRecommendations(
+  userId?: string,
+  limit: number = 8,
+): Promise<HomeRecommendationsResponseType | null> {
+  try {
+    const url = new URL(
+      `${RECOMMENDATION_SERVICE_URL}/api/v1/recommendations/home`,
+    );
+    if (userId) {
+      url.searchParams.set("userId", userId);
+    }
+    url.searchParams.set("limit", limit.toString());
+
+    const res = await fetch(url.toString(), {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function getCategoryRecommendations(
+  categorySlugOrId: string,
+  limit: number = 8,
+): Promise<RecommendationResponseType | null> {
+  try {
+    const url = new URL(
+      `${RECOMMENDATION_SERVICE_URL}/api/v1/recommendations/category/${encodeURIComponent(categorySlugOrId)}`,
+    );
+    url.searchParams.set("limit", limit.toString());
+
+    const res = await fetch(url.toString(), {
+      next: { revalidate: 120 },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function getRecentlyViewedRecommendations(
+  userId: string,
+  limit: number = 6,
+): Promise<RecommendationResponseType | null> {
+  try {
+    const url = new URL(
+      `${RECOMMENDATION_SERVICE_URL}/api/v1/recommendations/recently-viewed`,
+    );
+    url.searchParams.set("userId", userId);
+    url.searchParams.set("limit", limit.toString());
+
+    const res = await fetch(url.toString(), {
+      next: { revalidate: 30 },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
 
 export async function getTrendingRecommendations(
   limit: number = 8,

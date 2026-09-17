@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { OrderType } from "@repo/types";
+import RecommendationSection from "@/components/RecommendationSection";
 
 const fetchOrders = async () => {
   const { getToken } = await auth();
@@ -66,6 +67,15 @@ const OrdersPage = async () => {
           </li>
         ))}
       </ul>
+
+      <div className="mt-16 border-t pt-8">
+        <RecommendationSection
+          title="Recommended For Your Next Order"
+          subtitle="More styles curated to match your order history and tastes"
+          type="personalized"
+          limit={4}
+        />
+      </div>
     </div>
   );
 };
