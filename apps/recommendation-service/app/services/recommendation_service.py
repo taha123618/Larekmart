@@ -247,6 +247,52 @@ class RecommendationService:
             )
         return response
 
+    async def get_category_recommendations(
+        self,
+        category_slug: str,
+        limit: int = 20,
+        user_id: str | None = None,
+    ) -> RecommendationResponse:
+        start = time.perf_counter()
+        limit = min(limit, self.settings.MAX_RECOMMENDATION_LIMIT)
+
+        cache_key = self.cache.category_popular_key(category_slug) if self.cache else None
+        if self.cache and cache_key and not user_id:
+            cached_data = await self.cache.get_json(cache_key, cache_type="category")
+            if cached_data:
+                res = RecommendationResponse.model_validate(cached_data)
+                res.metadata.cached = True
+                return res
+
+        context = RecommendationContext(
+            user_id=user_id,
+            limit=limit,
+            category_slug=category_slug,
+        )
+        candidates = await self.category_strat.recommend(context)
+        fallback_used = False
+        if not candidates:
+            fallback_used = True
+            candidates = await self.trending_strat.recommend(context)
+            if not candidates:
+                candidates = await self.popular_strat.recommend(context)
+
+        duration_ms = (time.perf_counter() - start) * 1000
+        response = self._build_response(
+            candidates=candidates,
+            rec_type="category",
+            user_id=user_id,
+            strategy_name="category_based",
+            execution_time_ms=duration_ms,
+            fallback_used=fallback_used,
+        )
+
+        if self.cache and cache_key and candidates and not user_id:
+            await self.cache.set_json(
+                cache_key, response.model_dump(by_alias=True), ttl=self.settings.POPULAR_CACHE_TTL
+            )
+        return response
+
     async def get_similar_products(
         self,
         product_id: int,
@@ -297,6 +343,19 @@ class RecommendationService:
                 cache_key, response.model_dump(by_alias=True), ttl=self.settings.RECOMMENDATION_CACHE_TTL
             )
         return response
+
+    async def get_product_recommendations(
+        self,
+        product_id: int,
+        limit: int = 10,
+        category_slug: str | None = None,
+    ) -> RecommendationResponse:
+        """Product page recommendations combining similarity, content matching, and fallbacks."""
+        return await self.get_similar_products(
+            product_id=product_id,
+            limit=limit,
+            category_slug=category_slug,
+        )
 
     async def get_frequently_bought_together(
         self,

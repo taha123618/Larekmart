@@ -77,7 +77,7 @@ async def get_product_page_recommendations(
     service: RecommendationService = Depends(get_recommendation_service),
 ) -> RecommendationResponse:
     """Convenience alias for product page recommendations (similar items + fallbacks)."""
-    return await service.get_similar_products(
+    return await service.get_product_recommendations(
         product_id=product_id, limit=limit, category_slug=category_slug
     )
 

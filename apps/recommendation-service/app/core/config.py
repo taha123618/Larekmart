@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # PostgreSQL Database URL with asyncpg
     DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/ecommerce?search_path=recommendations,public",
+        default="postgresql://postgres:admin123@localhost:5432/larekmart_recommendation_db",
         description="Async PostgreSQL connection URI",
     )
     DB_POOL_SIZE: int = 10

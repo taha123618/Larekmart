@@ -86,7 +86,9 @@ class KafkaConsumerManager:
                         await handler(topic, payload)
                         KAFKA_EVENTS_CONSUMED_TOTAL.labels(topic=topic, status="success").inc()
                     except Exception as handler_err:
-                        KAFKA_EVENTS_FAILED_TOTAL.labels(topic=topic).inc()
+                        KAFKA_EVENTS_FAILED_TOTAL.labels(
+                            topic=topic, error_type=type(handler_err).__name__
+                        ).inc()
                         logger.error(
                             "error_handling_kafka_event",
                             topic=topic,
@@ -113,3 +115,13 @@ class KafkaConsumerManager:
 
 # Global singleton instance
 kafka_manager = KafkaConsumerManager()
+
+from app.messaging.publishers.event_publisher import KafkaProducerManager, kafka_producer
+
+__all__ = [
+    "KafkaConsumerManager",
+    "kafka_manager",
+    "KafkaProducerManager",
+    "kafka_producer",
+]
+

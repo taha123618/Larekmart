@@ -165,3 +165,4 @@ class InteractionRepository:
         )
         result = await self.session.execute(stmt)
         return [(row[0], row[1], float(row[2])) for row in result.all()]
+

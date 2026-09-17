@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.strategies.base import CandidateItem, RecommendationContext
+from app.strategies.category_based import CategoryBasedStrategy
 from app.strategies.popular import PopularStrategy
 from app.strategies.recently_viewed import RecentlyViewedStrategy
 from app.strategies.trending import TrendingStrategy
@@ -64,3 +65,19 @@ async def test_recently_viewed_strategy() -> None:
     assert candidates[0].strategy == "recently_viewed"
     assert candidates[0].score == 1.0
     assert candidates[1].score == 0.9
+
+
+@pytest.mark.asyncio
+async def test_category_based_strategy() -> None:
+    mock_repo = AsyncMock()
+    mock_repo.get_popular_products = AsyncMock(return_value=[(401, 30.0), (402, 15.0)])
+    strategy = CategoryBasedStrategy(mock_repo)
+
+    ctx = RecommendationContext(category_slug="shoes", limit=5)
+    candidates = await strategy.recommend(ctx)
+
+    assert len(candidates) == 2
+    assert candidates[0].product_id == 401
+    assert candidates[0].strategy == "category_based"
+    assert candidates[0].category_slug == "shoes"
+
