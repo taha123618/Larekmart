@@ -10,6 +10,7 @@ from app.main import app
 @pytest.mark.asyncio
 async def test_record_interaction_endpoint() -> None:
     mock_db = AsyncMock()
+    mock_db.add = MagicMock()
     mock_cache = MagicMock()
     mock_cache.delete = AsyncMock(return_value=True)
 

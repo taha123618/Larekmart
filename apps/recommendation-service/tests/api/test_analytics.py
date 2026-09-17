@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 from httpx import ASGITransport, AsyncClient
 
 from app.api.dependencies import get_db
@@ -9,6 +9,7 @@ from app.main import app
 @pytest.mark.asyncio
 async def test_record_analytics_event_endpoint() -> None:
     mock_db = AsyncMock()
+    mock_db.add = MagicMock()
     app.dependency_overrides[get_db] = lambda: mock_db
 
     payload = {

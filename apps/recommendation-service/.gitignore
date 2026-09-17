@@ -57,3 +57,7 @@ celerybeat.pid
 .vscode/
 *.swp
 *.swo
+
+
+#lock file
+uv.lock

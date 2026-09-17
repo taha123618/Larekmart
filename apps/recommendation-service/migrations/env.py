@@ -8,13 +8,7 @@ from alembic import context
 from app.core.config import get_settings
 from app.db.base import Base
 # Import models to ensure they are registered with Base.metadata
-import app.db.models.user_interaction  # noqa: F401
-import app.db.models.product_embedding  # noqa: F401
-import app.db.models.user_embedding  # noqa: F401
-import app.db.models.recommendation_model  # noqa: F401
-import app.db.models.recommendation_job  # noqa: F401
-import app.db.models.processed_event  # noqa: F401
-import app.db.models.analytics_event  # noqa: F401
+import app.db.models  # noqa: F401
 
 config = context.config
 
