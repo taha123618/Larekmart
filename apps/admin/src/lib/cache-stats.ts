@@ -78,6 +78,18 @@ export function getCacheServiceTargets(): CacheServiceTarget[] {
       service: "order-service",
       url: process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ?? "http://localhost:8001",
     },
+    {
+      service: "inventory-service",
+      url:
+        process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ??
+        "http://localhost:8007",
+    },
+    {
+      service: "recommendation-service",
+      url:
+        process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ??
+        "http://localhost:8008",
+    },
   ];
 }
 
@@ -87,7 +99,7 @@ export function getCacheServiceTargets(): CacheServiceTarget[] {
  *   cache_errors_total 3
  */
 const CACHE_METRIC_LINE =
-  /^(cache_hits_total|cache_misses_total|cache_errors_total)(?:\{(.*)\})?\s+(\S+)$/;
+  /^(cache_hits_total|cache_misses_total|cache_errors_total|recommendation_cache_hits_total|recommendation_cache_misses_total)(?:\{(.*)\})?\s+(\S+)$/;
 
 /** Reads a label value out of a Prometheus label string. */
 function readLabel(labels: string, name: string): string | undefined {
@@ -181,7 +193,10 @@ export function parseCacheMetrics(text: string): {
       errors: 0,
     };
 
-    if (name === "cache_hits_total") {
+    if (
+      name === "cache_hits_total" ||
+      name === "recommendation_cache_hits_total"
+    ) {
       bucket.hits += value;
       hits += value;
     } else if (name === "cache_errors_total") {

@@ -20,9 +20,12 @@ export const createOrder = async (order: OrderType) => {
 
     await producer.send("order.created", {
       value: {
+        orderId: savedOrder._id.toString(),
+        userId: savedOrder.userId,
         email: savedOrder.email,
         amount: savedOrder.amount,
         status: savedOrder.status,
+        products: savedOrder.products,
       },
     });
   } catch (error) {

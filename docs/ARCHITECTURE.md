@@ -118,12 +118,22 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Caching: Redis (`inventory:v1:*`) only for best-effort availability reads.
 - Events: publishes `inventory.*` events after committed transactions; Kafka is never used to decide stock availability.
 
+**`recommendation-service` (Python 3.12+ / FastAPI, :8008)** — personalization and recommendation platform.
+
+- Routes: `GET /api/v1/recommendations/home`, `GET /api/v1/recommendations/personalized`, `GET /api/v1/recommendations/trending`, `GET /api/v1/recommendations/popular`, `GET /api/v1/recommendations/similar/:id`, `GET /api/v1/recommendations/frequently-bought-together/:id`, `POST /api/v1/interactions`, `POST /api/v1/analytics/events`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
+- Strategies: Hybrid candidate generation and ranking combining Collaborative Filtering, Content-Based, Vector Similarity (`pgvector` 128-dim cosine distance), Trending velocity with half-life decay, and Popularity fallbacks.
+- Persistence: PostgreSQL + `pgvector` (`user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `recommendation_jobs`, `processed_events`, `recommendation_analytics_events`).
+- Caching: Redis (`recommendations:*`) read-through cache with TTL and user/product invalidation.
+- Asynchronous Workers: Celery with Redis broker for offline candidate calculation, embedding indexing, model training metadata registration, and retention data pruning.
+- Consumes: `product.created`, `product.updated`, `payment.successful`, `order.created`, `product.viewed`, `recommendation.interaction`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                          |
 | ---------- | -------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --- | ----- | ---------------- | ----------------------- | ----------------------------------------------- |
 | PostgreSQL | product-service                  | `@repo/product-db` (Prisma)   | `Product`, `Category`                                                                                                                   |
 | PostgreSQL | inventory-service                | `@repo/inventory-db` (Prisma) | `inventory_items`, `inventory_reservations`, `inventory_movements`                                                                      |
+| PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`   |
 | PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                           |
 | PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
 | Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                   |

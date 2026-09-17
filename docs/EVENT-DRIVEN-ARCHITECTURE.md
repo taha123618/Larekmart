@@ -61,8 +61,8 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `product.updated`                 | product-service      | search-service                                                           | `ProductType`, or `ProductCreatedPayload` on a backfill replay                                                    |
 | `product.deleted`                 | product-service      | payment-service, analytic-service, search-service                        | `number` (the product id)                                                                                         |
 | `user.created`                    | auth-service         | email-service, analytic-service, notification-service                    | `{ username: string, email: string }`                                                                             |
-| `order.created`                   | order-service        | email-service, analytic-service, notification-service                    | `{ email: string, amount: number, status: "success" \| "failed" }`                                                |
-| `payment.successful`              | payment-service      | order-service, analytic-service, notification-service, inventory-service | `{ sessionId, referenceId, reservationId, userId, email, amount, status, products: { name, quantity, price }[] }` |
+| `order.created`                   | order-service        | email-service, analytic-service, notification-service, recommendation-service | `{ orderId: string, userId: string, email: string, amount: number, status: "success" \| "failed", products: { name: string, quantity: number, price: number }[] }` |
+| `payment.successful`              | payment-service      | order-service, analytic-service, notification-service, inventory-service, recommendation-service | `{ sessionId, referenceId, reservationId, userId, email, amount, status, products: { name, quantity, price }[] }` |
 | `notification.dispatch`           | any backend service  | notification-service                                                     | `{ userId, type, title, body, email, phone, metadata }`                                                           |
 | `email.dispatch`                  | notification-service | email-service                                                            | `{ email, subject, text, html, context }`                                                                         |
 | `inventory.created`               | inventory-service    | none yet                                                                 | `InventoryChangedPayload`                                                                                         |
@@ -103,7 +103,7 @@ payment-service still finds the `id`/`name`/`price` it mirrors into Stripe.
 ```
 
 - Producer: `apps/product-service/src/controllers/product.controller.ts`
-- Consumer: `apps/payment-service/src/utils/subscriptions.ts`, `apps/search-service/src/consumers/product-events.consumer.ts`
+- Consumer: `apps/payment-service/src/utils/subscriptions.ts`, `apps/search-service/src/consumers/product-events.consumer.ts`, `apps/recommendation-service/app/messaging/consumers/event_consumer.py`
 
 ### `product.updated`
 
@@ -125,7 +125,7 @@ side effects on other services — but if you subscribe a new service here, reme
 receive the entire catalog at once.
 
 - Producer: `apps/product-service/src/controllers/product.controller.ts`, `apps/product-service/src/search/backfill.ts`
-- Consumer: `apps/search-service/src/consumers/product-events.consumer.ts`
+- Consumer: `apps/search-service/src/consumers/product-events.consumer.ts`, `apps/recommendation-service/app/messaging/consumers/event_consumer.py`
 
 ### `product.deleted`
 
@@ -136,7 +136,7 @@ Emitted after a product is deleted; carries the numeric id.
 ```
 
 - Producer: `apps/product-service/src/controllers/product.controller.ts`
-- Consumer: `apps/payment-service/src/utils/subscriptions.ts`, `apps/search-service/src/consumers/product-events.consumer.ts`
+- Consumer: `apps/payment-service/src/utils/subscriptions.ts`, `apps/search-service/src/consumers/product-events.consumer.ts`, `apps/recommendation-service/app/messaging/consumers/event_consumer.py`
 
 - Consumer: `deleteStripeProduct` in payment-service.
 
@@ -159,15 +159,20 @@ Emitted after an order is persisted. Note `amount` is in the smallest currency u
 ```jsonc
 {
   "value": {
+    "orderId": "660c1d2e...",
+    "userId": "user_...",
     "email": "johndoe@example.com",
     "amount": 5990,
     "status": "success",
+    "products": [{ "name": "CoreFit T-Shirt", "quantity": 1, "price": 5900 }],
   },
 }
 ```
 
 - Producer: `apps/order-service/src/utils/order.ts`
-- Consumer: email-service → order confirmation email (`amount / 100`).
+- Consumers:
+  - `apps/email-service/src/index.ts` → order confirmation email (`amount / 100`).
+  - `apps/recommendation-service/app/messaging/consumers/event_consumer.py` → behavioral order interaction.
 
 ### `payment.successful`
 

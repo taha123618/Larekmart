@@ -13,6 +13,8 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { useAuth } from "@clerk/nextjs";
+import { sendInteraction } from "@/services/recommendation.service";
 
 interface InventoryAvailabilityResponse {
   data?: {
@@ -42,6 +44,8 @@ const ProductInteraction = ({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { userId: authUserId } = useAuth();
+  const effectiveUserId = authUserId || "user_client";
   const [quantity, setQuantity] = useState(1);
   const [inventory, setInventory] = useState<number | null>(null);
   const [isLoadingInventory, setIsLoadingInventory] = useState(false);
@@ -81,10 +85,19 @@ const ProductInteraction = ({
     };
 
     fetchStock();
+
+    // Record VIEW interaction for AI recommendations
+    sendInteraction({
+      userId: effectiveUserId,
+      productId: Number(product.id),
+      eventType: "VIEW",
+      metadata: { categorySlug: product.categorySlug },
+    });
+
     return () => {
       isMounted = false;
     };
-  }, [product.id, variantId]);
+  }, [product.id, variantId, product.categorySlug, effectiveUserId]);
 
   const isOutOfStock = inventory !== null && inventory <= 0;
   const isLowStock = inventory !== null && inventory > 0 && inventory <= 5;
@@ -121,6 +134,20 @@ const ProductInteraction = ({
       selectedColor,
       selectedSize,
     });
+
+    // Record ADD_TO_CART interaction for personalized recommendations
+    sendInteraction({
+      userId: effectiveUserId,
+      productId: Number(product.id),
+      eventType: "ADD_TO_CART",
+      metadata: {
+        size: selectedSize,
+        color: selectedColor,
+        quantity,
+        categorySlug: product.categorySlug,
+      },
+    });
+
     toast.success("Product added to cart");
   };
 

@@ -14,6 +14,7 @@ import {
   Boxes,
   AlertTriangle,
   History,
+  Sparkles,
 } from "lucide-react";
 import {
   Sidebar,
@@ -255,9 +256,17 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Observability</SidebarGroupLabel>
+          <SidebarGroupLabel>Observability & AI</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/recommendations">
+                    <Sparkles />
+                    Recommendations & AI
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link href="/cache">
