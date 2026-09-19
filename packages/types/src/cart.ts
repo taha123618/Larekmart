@@ -32,7 +32,147 @@ export type CartStoreStateType = {
 };
 
 export type CartStoreActionsType = {
-  addToCart: (product: CartItemType) => void;
-  removeFromCart: (product: CartItemType) => void;
-  clearCart: () => void;
+  addToCart: (product: CartItemType, authToken?: string) => void;
+  removeFromCart: (product: CartItemType, authToken?: string) => void;
+  clearCart: (authToken?: string) => void;
 };
+
+// ==========================================
+// Cart Microservice Schemas & Types
+// ==========================================
+
+export const AddToCartSchema = z.object({
+  productId: z.string().min(1, "Product ID is required"),
+  variantId: z.string().optional().nullable(),
+  quantity: z
+    .number()
+    .int()
+    .positive("Quantity must be greater than 0")
+    .default(1),
+  name: z.string().optional(),
+  image: z.string().optional(),
+  size: z.string().optional(),
+  color: z.string().optional(),
+  unitPrice: z.number().nonnegative().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+export type AddToCartInputType = z.infer<typeof AddToCartSchema>;
+
+export const UpdateCartItemSchema = z.object({
+  quantity: z.number().int().min(0, "Quantity cannot be negative"),
+  size: z.string().optional(),
+  color: z.string().optional(),
+});
+export type UpdateCartItemInputType = z.infer<typeof UpdateCartItemSchema>;
+
+export const MergeCartSchema = z.object({
+  guestToken: z.string().min(1, "Guest token is required to merge cart"),
+});
+export type MergeCartInputType = z.infer<typeof MergeCartSchema>;
+
+export const ApplyCouponSchema = z.object({
+  code: z.string().min(1, "Coupon code is required").toUpperCase().trim(),
+});
+export type ApplyCouponInputType = z.infer<typeof ApplyCouponSchema>;
+
+export const CartServiceItemSchema = z.object({
+  id: z.string(),
+  productId: z.string(),
+  variantId: z.string().nullable().optional(),
+  name: z.string(),
+  image: z.string().optional(),
+  size: z.string().optional(),
+  color: z.string().optional(),
+  quantity: z.number().int().positive(),
+  unitPrice: z.number().nonnegative(),
+  discountAmount: z.number().nonnegative().default(0),
+  subtotal: z.number().nonnegative(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  pricingVersion: z.number().int().default(1),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+export type CartServiceItemType = z.infer<typeof CartServiceItemSchema>;
+
+export const CartCouponItemSchema = z.object({
+  id: z.string().optional(),
+  code: z.string(),
+  discountType: z.enum(["percentage", "fixed"]),
+  discountValue: z.number().nonnegative(),
+  appliedAmount: z.number().nonnegative(),
+  minOrderAmount: z.number().nonnegative().optional(),
+});
+export type CartCouponItemType = z.infer<typeof CartCouponItemSchema>;
+
+export const CartAdjustmentItemSchema = z.object({
+  id: z.string().optional(),
+  itemId: z.string(),
+  productId: z.string(),
+  reason: z.string(),
+  oldQuantity: z.number(),
+  newQuantity: z.number(),
+  createdAt: z.string().optional(),
+});
+export type CartAdjustmentItemType = z.infer<typeof CartAdjustmentItemSchema>;
+
+export const CartTotalsSchema = z.object({
+  subtotal: z.number().nonnegative().default(0),
+  discountTotal: z.number().nonnegative().default(0),
+  taxTotal: z.number().nonnegative().default(0),
+  shippingTotal: z.number().nonnegative().default(0),
+  grandTotal: z.number().nonnegative().default(0),
+});
+export type CartTotalsType = z.infer<typeof CartTotalsSchema>;
+
+export const CartResponseSchema = z.object({
+  id: z.string(),
+  userId: z.string().nullable().optional(),
+  guestToken: z.string().nullable().optional(),
+  status: z.enum(["active", "merged", "converted", "expired", "abandoned"]),
+  currency: z.string().default("PKR"),
+  items: z.array(CartServiceItemSchema),
+  coupons: z.array(CartCouponItemSchema).default([]),
+  adjustments: z.array(CartAdjustmentItemSchema).default([]),
+  pricing: CartTotalsSchema,
+  version: z.number().int().default(1),
+  expiresAt: z.string(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+export type CartResponseType = z.infer<typeof CartResponseSchema>;
+
+export const CartSummarySchema = z.object({
+  id: z.string(),
+  totalItems: z.number().int().nonnegative(),
+  grandTotal: z.number().nonnegative(),
+  currency: z.string(),
+  expiresAt: z.string(),
+});
+export type CartSummaryType = z.infer<typeof CartSummarySchema>;
+
+export const CartEventTypeSchema = z.enum([
+  "cart.created",
+  "cart.item_added",
+  "cart.item_updated",
+  "cart.item_removed",
+  "cart.merged",
+  "cart.coupon_added",
+  "cart.coupon_removed",
+  "cart.expired",
+  "cart.cleared",
+]);
+export type CartEventName = z.infer<typeof CartEventTypeSchema>;
+
+export const CartEventPayloadSchema = z.object({
+  eventId: z.string(),
+  eventType: CartEventTypeSchema,
+  cartId: z.string(),
+  userId: z.string().nullable().optional(),
+  guestToken: z.string().nullable().optional(),
+  productId: z.string().optional(),
+  variantId: z.string().optional().nullable(),
+  quantity: z.number().optional(),
+  couponCode: z.string().optional(),
+  timestamp: z.string(),
+});
+export type CartEventPayloadType = z.infer<typeof CartEventPayloadSchema>;

@@ -10,6 +10,7 @@ import {
   Shirt,
   User,
   ShoppingBasket,
+  ShoppingCart,
   Database,
   Boxes,
   AlertTriangle,
@@ -203,6 +204,14 @@ const AppSidebar = () => {
                   <Link href="/orders">
                     <ShoppingBasket />
                     See All Transactions
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/carts">
+                    <ShoppingCart />
+                    Shopping Carts
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

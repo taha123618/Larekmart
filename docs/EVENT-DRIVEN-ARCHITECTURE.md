@@ -72,8 +72,16 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `inventory.released`              | inventory-service    | none yet                                                                                         | `InventoryChangedPayload` + reservation fields                                                                                                                     |
 | `inventory.reservation.expired`   | inventory-service    | none yet                                                                                         | `InventoryChangedPayload` + reservation fields                                                                                                                     |
 | `inventory.restocked`             | inventory-service    | analytic-service                                                                                 | `InventoryChangedPayload`                                                                                                                                          |
-| `inventory.adjusted`              | inventory-service    | none yet                                                                                         | `InventoryChangedPayload`                                                                                                                                          |
 | `inventory.low_stock`             | inventory-service    | notification-service, analytic-service                                                           | `InventoryChangedPayload`                                                                                                                                          |
+| `cart.created`                    | cart-service         | analytic-service, recommendation-service                                                         | `CartEventPayload` (`cartId`, `userId`, `guestToken`, `currency`)                                                                                                  |
+| `cart.item_added`                 | cart-service         | analytic-service, recommendation-service                                                         | `CartEventPayload` (`cartId`, `userId`, `productId`, `variantId`, `quantity`, `unitPrice`)                                                                         |
+| `cart.item_updated`               | cart-service         | analytic-service, recommendation-service                                                         | `CartEventPayload` (`cartId`, `userId`, `productId`, `variantId`, `quantity`)                                                                                      |
+| `cart.item_removed`               | cart-service         | analytic-service, recommendation-service                                                         | `CartEventPayload` (`cartId`, `userId`, `productId`, `variantId`, `quantity`)                                                                                      |
+| `cart.merged`                     | cart-service         | analytic-service, recommendation-service                                                         | `CartEventPayload` (`cartId`, `userId`, `guestToken`, `itemsCount`)                                                                                                |
+| `cart.coupon_added`               | cart-service         | analytic-service                                                                                 | `CartEventPayload` (`cartId`, `userId`, `couponCode`)                                                                                                              |
+| `cart.coupon_removed`             | cart-service         | analytic-service                                                                                 | `CartEventPayload` (`cartId`, `userId`, `couponCode`)                                                                                                              |
+| `cart.expired`                    | cart-service         | analytic-service, notification-service (abandoned cart recovery)                                 | `CartEventPayload` (`cartId`, `userId`, `guestToken`, `itemsCount`)                                                                                                |
+| `cart.cleared`                    | cart-service         | analytic-service                                                                                 | `CartEventPayload` (`cartId`, `userId`)                                                                                                                            |
 
 ### `product.created`
 
@@ -197,6 +205,34 @@ Emitted from the verified Stripe webhook on `checkout.session.completed`.
 - Consumers:
   - `apps/order-service/src/utils/subscriptions.ts` → `createOrder`
   - `apps/inventory-service/src/workers/inventory-event.consumer.ts` → `confirmReservationsByReference` (converts reserved stock to sold stock)
+
+### `cart.*` (`cart.item_added`, `cart.merged`, `cart.expired`, etc.)
+
+Emitted whenever cart lifecycle actions occur in `cart-service`. Enables decoupled analytics, user recommendation telemetry, and automated abandoned cart recovery workflows without polling.
+
+```jsonc
+{
+  "value": {
+    "eventId": "123e4567-e89b-12d3-a456-426614174000",
+    "eventType": "cart.item_added",
+    "cartId": "650f1234567890abcdef1234",
+    "userId": "user_2aX...",
+    "guestToken": null,
+    "productId": "prod_123",
+    "variantId": "var_456",
+    "quantity": 2,
+    "unitPrice": 29999,
+    "subtotal": 59998,
+    "timestamp": "2026-09-19T15:00:00.000Z",
+  },
+}
+```
+
+- Producer: `apps/cart-service/src/publishers/cart.publisher.ts`
+- Potential Consumers:
+  - `apps/analytic-service` → cart abandonment rates, popular cart items, add-to-cart conversion funnel.
+  - `apps/recommendation-service` → real-time collaborative filtering & cross-selling recommendations.
+  - `apps/notification-service` → abandoned cart emails/pushes after `cart.expired`.
 
 ## Adding or changing an event
 

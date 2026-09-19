@@ -53,6 +53,11 @@ apps/recommendation-service (Python) ┬─▶ Kafka (aiokafka)
                                      ├─▶ Redis (redis-py + Celery broker)
                                      └─▶ @repo/types (contracts mirror)
 
+apps/cart-service ─────────┬─▶ @repo/cart-db ─▶ mongoose ─▶ MongoDB
+                           ├─▶ @repo/kafka
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           └─▶ @repo/types
+
 apps/admin, apps/client ─▶ @repo/eslint-config, @repo/typescript-config
 all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 ```
@@ -69,6 +74,7 @@ all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 | `@repo/product-db`        | persistence  | `@prisma/client`                                                    | `prisma` client + generated Prisma types                                                                                                                                                                                                                                                                                                                                                                |
 | `@repo/inventory-db`      | persistence  | `@prisma/client`                                                    | `prisma` client, inventory/reservation/ledger models, and transactional stock operations                                                                                                                                                                                                                                                                                                                |
 | `@repo/order-db`          | persistence  | `mongoose`                                                          | `Order`, `OrderStatus`, `OrderSchemaType`, `connectOrderDB`                                                                                                                                                                                                                                                                                                                                             |
+| `@repo/cart-db`           | persistence  | `mongoose`                                                          | `Cart`, `ProcessedEvent`, `ICart`, `ICartItem`, `ICartCoupon`, `ICartAdjustment`, `ICartPricing`, `ICartPricingSnapshot`, `CartStatus`, `connectCartDB`                                                                                                                                                                                                                                                 |
 | `@repo/eslint-config`     | config       | eslint plugins                                                      | `base`, `next-js`, `react-internal`                                                                                                                                                                                                                                                                                                                                                                     |
 | `@repo/typescript-config` | config       | —                                                                   | `base.json`, `nextjs.json`, `react-library.json`                                                                                                                                                                                                                                                                                                                                                        |
 

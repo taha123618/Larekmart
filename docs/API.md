@@ -433,3 +433,76 @@ only a best-effort availability cache.
 
 - **Auth**: Public / Scraper
 - **Response**: Health status, liveness probe, readiness probe (PostgreSQL + Redis + Kafka), and Prometheus metric exposition format.
+
+---
+
+## 10. Cart Service (`:8009`)
+
+### `GET /api/v1/cart`
+
+- **Auth**: Authenticated user (Clerk JWT) or Guest (`x-guest-token` header / `guest_token` cookie)
+- **Response**: `CartResponseType` — Complete cart object with items, estimated pricing totals, coupons, adjustments, and TTL.
+- **Cache**: Redis active cart cache with write-through invalidation.
+
+### `POST /api/v1/cart/items`
+
+- **Auth**: Authenticated user or Guest
+- **Body**: `{ "productId": string, "variantId"?: string, "quantity": number, "metadata"?: object }` (quantity 1–10)
+- **Response**: `CartResponseType`
+- **Side Effect**: Validates product/variant and stock via `product-service` & `inventory-service`, recalculates estimated totals, updates optimistic `version`, and publishes `cart.item_added`.
+
+### `PATCH /api/v1/cart/items/:itemId`
+
+- **Auth**: Authenticated user or Guest
+- **Body**: `{ "quantity": number }` (quantity 1–10)
+- **Response**: `CartResponseType`
+- **Side Effect**: Updates item quantity atomically, recalculates estimated totals, and publishes `cart.item_updated`.
+
+### `DELETE /api/v1/cart/items/:itemId`
+
+- **Auth**: Authenticated user or Guest
+- **Response**: `CartResponseType`
+- **Side Effect**: Removes item from cart, recalculates estimated totals, and publishes `cart.item_removed`.
+
+### `POST /api/v1/cart/merge`
+
+- **Auth**: Authenticated user (Clerk JWT required)
+- **Body**: `{ "guestToken": string }`
+- **Response**: `CartResponseType`
+- **Side Effect**: Transactionally combines guest cart items into authenticated user cart. Merges quantities for identical `productId` + `variantId`, caps at `MAX_ITEM_QUANTITY` (10) recording adjustment entries in `adjustments`, marks guest cart as `merged`, invalidates Redis caches, and publishes `cart.merged`.
+
+### `DELETE /api/v1/cart`
+
+- **Auth**: Authenticated user or Guest
+- **Response**: `{ "success": true, "message": "Cart cleared successfully" }`
+- **Side Effect**: Clears all items, coupons, and adjustments from cart, resets totals to 0, and publishes `cart.cleared`.
+
+### `POST /api/v1/cart/coupons`
+
+- **Auth**: Authenticated user or Guest
+- **Body**: `{ "code": string }`
+- **Response**: `CartResponseType`
+- **Side Effect**: Evaluates coupon against minimum subtotal rules, records coupon into cart, recalculates estimated totals, and publishes `cart.coupon_added`.
+
+### `DELETE /api/v1/cart/coupons/:code`
+
+- **Auth**: Authenticated user or Guest
+- **Response**: `CartResponseType`
+- **Side Effect**: Removes applied coupon, recalculates estimated totals, and publishes `cart.coupon_removed`.
+
+### `POST /api/v1/cart/refresh-pricing`
+
+- **Auth**: Authenticated user or Guest
+- **Response**: `CartResponseType`
+- **Side Effect**: Re-validates current product prices and recalculates estimated totals, creating a new immutable pricing snapshot.
+
+### `GET /api/v1/cart/summary`
+
+- **Auth**: Authenticated user or Guest
+- **Response**: `CartSummaryResponseType` — `{ "id": string, "itemCount": number, "subtotal": number, "grandTotal": number, "currency": string }`
+- **Optimized**: Lightweight read for navbar badges and cart drawers without heavy population.
+
+### `GET /health`, `GET /health/live`, `GET /health/ready`, `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Health status, MongoDB connection probe, Redis probe, Kafka probe, and Prometheus metrics exposition.

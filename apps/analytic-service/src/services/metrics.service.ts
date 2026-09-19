@@ -25,11 +25,51 @@ const inMemoryMetrics = {
   totalSignups: 0,
   totalProductsCreated: 0,
   totalProductsDeleted: 0,
+  totalCartsCreated: 0,
+  totalCartsUpdated: 0,
+  totalCartsExpired: 0,
   lastEventTime: new Date().toISOString(),
 };
 
 // In-memory event stream buffer (last 100 events)
 const inMemoryEvents: AnalyticsEventType[] = [];
+
+export const recordCartEvent = async (
+  eventType:
+    | "cart.created"
+    | "cart.updated"
+    | "cart.merged"
+    | "cart.expired"
+    | "cart.cleared",
+  payload: any,
+) => {
+  if (eventType === "cart.created") inMemoryMetrics.totalCartsCreated += 1;
+  else if (eventType === "cart.updated") inMemoryMetrics.totalCartsUpdated += 1;
+  else if (eventType === "cart.expired") inMemoryMetrics.totalCartsExpired += 1;
+
+  inMemoryMetrics.lastEventTime = new Date().toISOString();
+
+  const userId = payload.userId || payload.guestToken || "anonymous";
+  const amount = payload.pricing?.grandTotal || 0;
+
+  const memoryEvent: AnalyticsEventType = {
+    id: inMemoryEvents.length + 1,
+    event_type: eventType,
+    user_id: userId,
+    amount: typeof amount === "number" ? amount : 0,
+    metadata: {
+      cartId: payload.cartId || payload.id,
+      guestToken: payload.guestToken,
+      itemsCount: payload.items?.length || 0,
+    },
+    created_at: new Date().toISOString(),
+  };
+
+  inMemoryEvents.unshift(memoryEvent);
+  if (inMemoryEvents.length > 100) inMemoryEvents.pop();
+
+  logger.info(`[Cart Event] ${eventType} for ${userId} (amount: $${amount})`);
+};
 
 export const recordPayment = async (payload: PaymentSuccessfulType) => {
   const amountInDollars = payload.amount ? payload.amount / 100 : 0;

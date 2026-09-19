@@ -11,6 +11,7 @@ import {
   recordProductCreated,
   recordProductDeleted,
   recordInventoryEvent,
+  recordCartEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
 import type {
@@ -222,6 +223,51 @@ const start = async () => {
           const payload = message.value || message;
           if (payload) {
             await recordInventoryEvent("inventory.restocked", payload);
+          }
+        },
+      },
+      {
+        topicName: "cart.created",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordCartEvent("cart.created", payload);
+          }
+        },
+      },
+      {
+        topicName: "cart.updated",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordCartEvent("cart.updated", payload);
+          }
+        },
+      },
+      {
+        topicName: "cart.merged",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordCartEvent("cart.merged", payload);
+          }
+        },
+      },
+      {
+        topicName: "cart.expired",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordCartEvent("cart.expired", payload);
+          }
+        },
+      },
+      {
+        topicName: "cart.cleared",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordCartEvent("cart.cleared", payload);
           }
         },
       },

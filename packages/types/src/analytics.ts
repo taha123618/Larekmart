@@ -4,6 +4,9 @@ export type AnalyticsSummaryType = {
   totalSignups: number;
   totalProductsCreated: number;
   totalProductsDeleted: number;
+  totalCartsCreated?: number;
+  totalCartsUpdated?: number;
+  totalCartsExpired?: number;
   lastEventTime: string;
   isDbConnected: boolean;
 };

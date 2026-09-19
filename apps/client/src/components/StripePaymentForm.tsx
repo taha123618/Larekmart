@@ -12,13 +12,18 @@ const stripe = loadStripe(
   "pk_test_51MdCLkDhkeDdZct5FkM9qMlMvAzsJpObS6eUy44jYLuVMhUFjYjzr4VLodA0GiUj0WBaOSzm38QJ8ju3SAYhdNkF00myyAyh6M",
 );
 
-const fetchClientSecret = async (cart: CartItemsType, token: string) => {
+const fetchClientSecret = async (
+  cart: CartItemsType,
+  token: string,
+  cartId?: string,
+) => {
   return fetch(
     `${process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL}/sessions/create-checkout-session`,
     {
       method: "POST",
       body: JSON.stringify({
         cart,
+        cartId,
       }),
       headers: {
         "Content-Type": "application/json",
@@ -35,13 +40,13 @@ const StripePaymentForm = ({
 }: {
   shippingForm: ShippingFormInputs;
 }) => {
-  const { cart } = useCartStore();
+  const { cart, serverCart } = useCartStore();
   const [token, setToken] = useState<string | null>(null);
   const { getToken } = useAuth();
 
   useEffect(() => {
     getToken().then((token) => setToken(token));
-  }, []);
+  }, [getToken]);
 
   if (!token) {
     return <div className="">Loading...</div>;
@@ -50,7 +55,10 @@ const StripePaymentForm = ({
   return (
     <CheckoutProvider
       stripe={stripe}
-      options={{ fetchClientSecret: () => fetchClientSecret(cart, token) }}
+      options={{
+        fetchClientSecret: () =>
+          fetchClientSecret(cart, token, serverCart?.id),
+      }}
     >
       <CheckoutForm shippingForm={shippingForm} />
     </CheckoutProvider>

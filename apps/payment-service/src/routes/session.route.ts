@@ -9,7 +9,8 @@ const logger = createLogger("payment-service:session");
 const sessionRoute = new Hono();
 
 sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
-  const { cart }: { cart: CartItemsType } = await c.req.json();
+  const { cart, cartId }: { cart: CartItemsType; cartId?: string } =
+    await c.req.json();
   const userId = c.get("userId");
 
   try {
@@ -37,6 +38,10 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
           client_reference_id: userId,
           mode: "payment",
           ui_mode: "custom",
+          metadata: {
+            cartId: cartId || "",
+            userId: userId || "",
+          },
           return_url:
             "http://localhost:3002/return?session_id={CHECKOUT_SESSION_ID}",
         });
