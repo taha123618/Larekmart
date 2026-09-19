@@ -27,6 +27,8 @@ async def process_interaction_event(topic: str, payload: dict[str, Any], event_i
         "product.searched": "SEARCH",
         "product.added_to_cart": "ADD_TO_CART",
         "product.removed_from_cart": "REMOVE_FROM_CART",
+        "cart.item_added": "ADD_TO_CART",
+        "cart.item_removed": "REMOVE_FROM_CART",
         "wishlist.product_added": "WISHLIST",
     }
     raw_type = str(payload.get("eventType") or topic_type_map.get(topic, "VIEW")).upper()

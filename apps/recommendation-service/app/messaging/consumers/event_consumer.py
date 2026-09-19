@@ -73,6 +73,8 @@ def register_all_consumers() -> None:
     kafka_manager.register_handler("product.searched", handle_user_interaction_event)
     kafka_manager.register_handler("product.added_to_cart", handle_user_interaction_event)
     kafka_manager.register_handler("product.removed_from_cart", handle_user_interaction_event)
+    kafka_manager.register_handler("cart.item_added", handle_user_interaction_event)
+    kafka_manager.register_handler("cart.item_removed", handle_user_interaction_event)
     kafka_manager.register_handler("wishlist.product_added", handle_user_interaction_event)
     kafka_manager.register_handler("recommendation.interaction", handle_user_interaction_event)
 

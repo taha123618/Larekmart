@@ -1,13 +1,75 @@
-import { CartStoreActionsType, CartStoreStateType } from "@repo/types";
+import {
+  CartItemType,
+  CartItemsType,
+  CartResponseType,
+  CartStoreActionsType,
+  CartStoreStateType,
+} from "@repo/types";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { cartClient, getOrCreateGuestToken } from "../services/cart.service";
 
-const useCartStore = create<CartStoreStateType & CartStoreActionsType>()(
+export interface ExtendedCartState extends CartStoreStateType {
+  serverCart: CartResponseType | null;
+  isSyncing: boolean;
+  error: string | null;
+}
+
+export interface ExtendedCartActions extends CartStoreActionsType {
+  fetchServerCart: (authToken?: string) => Promise<void>;
+  updateQuantity: (
+    item: CartItemType,
+    quantity: number,
+    authToken?: string,
+  ) => Promise<void>;
+  applyCoupon: (
+    code: string,
+    authToken?: string,
+  ) => Promise<{ success: boolean; message?: string }>;
+  removeCoupon: (
+    code: string,
+    authToken?: string,
+  ) => Promise<{ success: boolean; message?: string }>;
+  mergeGuestCart: (authToken: string) => Promise<void>;
+}
+
+const mapServerItemsToCart = (
+  serverItems: CartResponseType["items"],
+): CartItemsType => {
+  return serverItems.map(
+    (i) =>
+      ({
+        id: isNaN(Number(i.productId))
+          ? (i.productId as unknown as number)
+          : Number(i.productId),
+        name: i.name,
+        price: i.unitPrice,
+        quantity: i.quantity,
+        selectedSize: i.size || "",
+        selectedColor: i.color || "",
+        shortDescription: "",
+        description: "",
+        categorySlug: "general",
+        sizes: [i.size || ""],
+        colors: [i.color || ""],
+        images: i.image ? { [i.color || "default"]: i.image } : {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }) as unknown as CartItemType,
+  );
+};
+
+const useCartStore = create<ExtendedCartState & ExtendedCartActions>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       cart: [],
       hasHydrated: false,
-      addToCart: (product) =>
+      serverCart: null,
+      isSyncing: false,
+      error: null,
+
+      addToCart: (product, authToken) => {
+        // 1. Optimistic local state update
         set((state) => {
           const existingIndex = state.cart.findIndex(
             (p) =>
@@ -33,8 +95,43 @@ const useCartStore = create<CartStoreStateType & CartStoreActionsType>()(
               },
             ],
           };
-        }),
-      removeFromCart: (product) =>
+        });
+
+        // 2. Asynchronously sync with cart-service via Axios
+        const variantId = `${product.selectedSize || "default"}-${product.selectedColor || "default"}`;
+        const imageUrl =
+          typeof product.images === "object" && product.images !== null
+            ? (product.images as Record<string, string>)[product.selectedColor || ""] ||
+              Object.values(product.images as Record<string, string>)[0] ||
+              ""
+            : "";
+
+        cartClient
+          .addItem(
+            {
+              productId: String(product.id),
+              variantId,
+              name: product.name,
+              image: imageUrl,
+              size: product.selectedSize,
+              color: product.selectedColor,
+              quantity: product.quantity || 1,
+              unitPrice: product.price,
+            },
+            authToken,
+          )
+          .then((updatedServerCart) => {
+            if (updatedServerCart) {
+              set({ serverCart: updatedServerCart });
+            }
+          })
+          .catch((err) => {
+            console.warn("Failed to sync cart item to cart-service:", err);
+          });
+      },
+
+      removeFromCart: (product, authToken) => {
+        // 1. Optimistic removal
         set((state) => ({
           cart: state.cart.filter(
             (p) =>
@@ -44,8 +141,140 @@ const useCartStore = create<CartStoreStateType & CartStoreActionsType>()(
                 p.selectedColor === product.selectedColor
               ),
           ),
-        })),
-      clearCart: () => set({ cart: [] }),
+        }));
+
+        // 2. Sync removal with cart-service if we have server cart item id
+        const currentServerCart = get().serverCart;
+        const matchingItem = currentServerCart?.items.find(
+          (i) =>
+            i.productId === String(product.id) &&
+            i.size === product.selectedSize &&
+            i.color === product.selectedColor,
+        );
+
+        if (matchingItem?.id) {
+          cartClient
+            .removeItem(matchingItem.id, authToken)
+            .then((updated) => {
+              if (updated) set({ serverCart: updated });
+            })
+            .catch((err) => {
+              console.warn("Failed to remove item on server:", err);
+            });
+        }
+      },
+
+      updateQuantity: async (item, quantity, authToken) => {
+        if (quantity <= 0) {
+          get().removeFromCart(item, authToken);
+          return;
+        }
+
+        // Optimistic update
+        set((state) => ({
+          cart: state.cart.map((p) =>
+            p.id === item.id &&
+            p.selectedSize === item.selectedSize &&
+            p.selectedColor === item.selectedColor
+              ? { ...p, quantity }
+              : p,
+          ),
+        }));
+
+        const currentServerCart = get().serverCart;
+        const matchingItem = currentServerCart?.items.find(
+          (i) =>
+            i.productId === String(item.id) &&
+            i.size === item.selectedSize &&
+            i.color === item.selectedColor,
+        );
+
+        if (matchingItem?.id) {
+          try {
+            const updated = await cartClient.updateItem(
+              matchingItem.id,
+              quantity,
+              authToken,
+            );
+            if (updated) set({ serverCart: updated });
+          } catch (err) {
+            console.warn("Error updating quantity on cart-service:", err);
+          }
+        }
+      },
+
+      clearCart: (authToken) => {
+        set({ cart: [], serverCart: null });
+        cartClient.clearCart(authToken).catch(() => {});
+      },
+
+      fetchServerCart: async (authToken) => {
+        set({ isSyncing: true, error: null });
+        try {
+          const serverCart = await cartClient.getCart(authToken);
+          if (serverCart) {
+            // If local cart is empty but server has items, hydrate local items
+            const currentLocalCart = get().cart;
+            if (currentLocalCart.length === 0 && serverCart.items.length > 0) {
+              set({
+                cart: mapServerItemsToCart(serverCart.items),
+                serverCart,
+                isSyncing: false,
+              });
+            } else {
+              set({ serverCart, isSyncing: false });
+            }
+          } else {
+            set({ isSyncing: false });
+          }
+        } catch (err) {
+          set({
+            isSyncing: false,
+            error: err instanceof Error ? err.message : "Failed to load cart",
+          });
+        }
+      },
+
+      applyCoupon: async (code, authToken) => {
+        try {
+          const updated = await cartClient.applyCoupon(code, authToken);
+          set({ serverCart: updated });
+          return { success: true };
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to apply coupon";
+          return { success: false, message };
+        }
+      },
+
+      removeCoupon: async (code, authToken) => {
+        try {
+          const updated = await cartClient.removeCoupon(code, authToken);
+          set({ serverCart: updated });
+          return { success: true };
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to remove coupon";
+          return { success: false, message };
+        }
+      },
+
+      mergeGuestCart: async (authToken) => {
+        const guestToken = getOrCreateGuestToken();
+        if (!guestToken || !authToken) return;
+
+        try {
+          const merged = await cartClient.mergeCart(guestToken, authToken);
+          if (merged) {
+            set({
+              serverCart: merged,
+              cart: mapServerItemsToCart(merged.items),
+            });
+          }
+        } catch (err) {
+          console.warn("Failed to merge guest cart upon sign-in:", err);
+        }
+      },
     }),
     {
       name: "cart",
@@ -53,6 +282,10 @@ const useCartStore = create<CartStoreStateType & CartStoreActionsType>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.hasHydrated = true;
+          // Hydrate server cart in background
+          if (typeof window !== "undefined") {
+            state.fetchServerCart().catch(() => {});
+          }
         }
       },
     },

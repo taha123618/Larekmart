@@ -22,6 +22,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `search-service` (:8006) — Fastify, full-text product search, autocomplete, facets; OpenSearch + Redis cache.
   - `inventory-service` (:8007) — Hono, PostgreSQL stock authority, atomic reservations, warehouse inventory, and Kafka events.
   - `recommendation-service` (:8008) — Python 3.12+ (FastAPI), collaborative & content filtering, pgvector embeddings, trending algorithms, Celery worker.
+  - `cart-service` (:8009) — Express 5, authoritative MongoDB carts, guest-to-user merge, pricing estimates, TTL expiration reaper.
   - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).
@@ -42,6 +43,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Product search, autocomplete, facets, indexing     | `apps/search-service`                                  |
 | Inventory availability, reservations, stock ledger | `apps/inventory-service`                               |
 | AI recommendations, embeddings, user interactions  | `apps/recommendation-service`                          |
+| Cart persistence, items, coupons, merge engine     | `apps/cart-service`                                    |
 | Kafka client/producer/consumer helpers             | `packages/kafka`                                       |
 | Shared types, Zod schemas, Kafka payload types     | `packages/types`                                       |
 | Telemetry, structured logging, health checks       | `packages/monitoring`                                  |
@@ -49,6 +51,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Product/category DB schema                         | `packages/product-db`                                  |
 | Inventory DB schema and transactions               | `packages/inventory-db`                                |
 | Order persistence schema                           | `packages/order-db`                                    |
+| Cart persistence schema (Mongoose)                 | `packages/cart-db`                                     |
 | TS/ESLint baselines                                | `packages/typescript-config`, `packages/eslint-config` |
 
 ## Data ownership

@@ -47,6 +47,7 @@ webhookRoute.post("/stripe", async (c) => {
         value: {
           sessionId: session.id,
           referenceId: session.id,
+          cartId: session.metadata?.cartId || null,
           reservationId: session.metadata?.reservationId ?? null,
           userId: session.client_reference_id,
           email: session.customer_details?.email,

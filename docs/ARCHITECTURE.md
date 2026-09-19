@@ -127,10 +127,20 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Asynchronous Workers: Celery with Redis broker for offline candidate calculation, embedding indexing, model training metadata registration, and retention data pruning.
 - Consumes: `product.created`, `product.updated`, `payment.successful`, `order.created`, `product.viewed`, `recommendation.interaction`.
 
+**`cart-service` (Express 5, :8009)** — persistent and guest cart authority, pricing estimates, and merge engine.
+
+- Routes: `GET /api/v1/cart`, `POST /api/v1/cart/items`, `PATCH /api/v1/cart/items/:id`, `DELETE /api/v1/cart/items/:id`, `POST /api/v1/cart/merge`, `DELETE /api/v1/cart`, `POST /api/v1/cart/coupons`, `DELETE /api/v1/cart/coupons/:code`, `POST /api/v1/cart/refresh-pricing`, `GET /api/v1/cart/summary`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
+- Persistence: MongoDB via `@repo/cart-db` (Mongoose 8); carts, items, coupons, adjustments, snapshots, and processed events are authoritative here.
+- Caching: Redis (`cart:v1:*`) active cart cache and sorted-set expiration tracking (`cart:v1:expirations`).
+- Merge Engine: Transactional guest-to-user cart merge upon customer authentication with capacity capping and adjustment audit logs.
+- Pricing: Cart-level estimated totals and versioned snapshots (decoupled from final order pricing).
+- Background Workers: Sorted-set expiration reaper running every 60s for deterministic TTL cleanup.
+- Events: Publishes `cart.*` events (`cart.created`, `cart.item_added`, `cart.item_updated`, `cart.item_removed`, `cart.merged`, `cart.coupon_added`, `cart.coupon_removed`, `cart.expired`, `cart.cleared`). Consumes `product.updated`, `product.deleted`, and `inventory.adjusted`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                          |
-| ---------- | -------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --- | ----- | ---------------- | ----------------------- | ----------------------------------------------- |
+| ---------- | -------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | PostgreSQL | product-service                  | `@repo/product-db` (Prisma)   | `Product`, `Category`                                                                                                                   |
 | PostgreSQL | inventory-service                | `@repo/inventory-db` (Prisma) | `inventory_items`, `inventory_reservations`, `inventory_movements`                                                                      |
 | PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`   |
@@ -138,10 +148,13 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
 | Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                   |
 | Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                               |
-| Redis      | product-service                  | `@repo/redis` (ioredis)       | `product:v1:*` (catalog read-through cache)                                                                                             |     | Redis | analytic-service | `@repo/redis` (ioredis) | `analytics:v1:*` (dashboard read-through cache) |
+| Redis      | product-service                  | `@repo/redis` (ioredis)       | `product:v1:*` (catalog read-through cache)                                                                                             |
+| Redis      | analytic-service                 | `@repo/redis` (ioredis)       | `analytics:v1:*` (dashboard read-through cache)                                                                                         |
 | Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                   |
+| Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                            |
 | OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                   |
 | MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                 |
+| MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                |
 | Clerk      | auth-service (and all frontends) | Clerk SDKs                    | users, session claims                                                                                                                   |
 | Stripe     | payment-service                  | `stripe` SDK                  | products, prices, sessions                                                                                                              |
 

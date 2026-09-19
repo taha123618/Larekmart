@@ -72,7 +72,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── notification-service/ # Go (Chi) + PostgreSQL + Redis + WebSockets notification orchestration (:8005)
 │   ├── search-service/       # Fastify + OpenSearch + Redis + Kafka search and indexing (:8006)
 │   ├── inventory-service/    # Hono + PostgreSQL + Redis + Kafka inventory API (:8007)
-│   └── recommendation-service/ # Python 3.12+ (FastAPI) + pgvector + Redis + Celery recommendation engine (:8008)
+│   ├── recommendation-service/ # Python 3.12+ (FastAPI) + pgvector + Redis + Celery recommendation engine (:8008)
+│   └── cart-service/          # Express 5 + MongoDB + Redis + Kafka cart management & pricing estimates (:8009)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -82,6 +83,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── product-db/           # @repo/product-db — Prisma client & schema (PostgreSQL)
 │   ├── inventory-db/         # @repo/inventory-db — Prisma inventory schema, reservations & ledger (PostgreSQL)
 │   ├── order-db/             # @repo/order-db  — Mongoose connection & Order model (MongoDB)
+│   ├── cart-db/              # @repo/cart-db   — Mongoose connection & Cart models (MongoDB)
 │   ├── eslint-config/        # @repo/eslint-config — shared ESLint flat configs
 │   └── typescript-config/    # @repo/typescript-config — shared tsconfig bases
 ├── docs/                     # Architecture, dependencies, conventions, testing, ADRs
@@ -108,23 +110,25 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`search-service`**         | Fastify 5, OpenSearch, Redis, Kafka, Clerk                                            | `8006` | Product search, autocomplete, faceting, rate limiting, Kafka-driven indexing, and zero-downtime reindexing.                                     |
 | **`inventory-service`**      | Hono 4, Prisma, PostgreSQL, Redis, Kafka, Clerk                                       | `8007` | Stock availability, atomic reservations, warehouse inventory, restocks, adjustments, and inventory events.                                      |
 | **`recommendation-service`** | Python 3.12+ (FastAPI), SQLAlchemy async, PostgreSQL, pgvector, Redis, Celery, Kafka  | `8008` | Hybrid candidate generation (collaborative & content filtering, embeddings, trending velocity), interactive tester, and behavioral telemetry.   |
+| **`cart-service`**           | Express 5, Mongoose, MongoDB, Redis, Kafka, Clerk                                     | `8009` | Authoritative cart persistence, guest-to-user merge, coupon management, estimated totals, and TTL expiration worker.                            |
 
 ---
 
 ## Shared Packages
 
-| Package                       | Purpose & Exports                                                                                            | Primary Consumers                             |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
-| **`@repo/kafka`**             | Kafka client wrapper (`createKafkaClient`, `createProducer`, `createConsumer`) and local 3-broker compose.   | All backend services                          |
-| **`@repo/types`**             | Central contract package: API domain types, Kafka payload interfaces, and shared Zod form schemas.           | All applications & packages                   |
-| **`@repo/monitoring`**        | Framework-agnostic structured logging, health checks, metrics, and performance telemetry.                    | All applications & packages                   |
-| **`@repo/redis`**             | Redis client factory, namespaced key builder, typed cache helpers, namespace invalidation, and rate limiter. | Product, order, search, and analytic services |
-| **`@repo/opensearch`**        | OpenSearch client factory, product mappings, query builders, indexing, search, and reindex helpers.          | Product and search services                   |
-| **`@repo/product-db`**        | PostgreSQL catalog persistence via Prisma schema and generated `prisma` client singleton.                    | `product-service`, `@repo/types` (type-only)  |
-| **`@repo/inventory-db`**      | PostgreSQL inventory persistence via Prisma, atomic reservations, and an inventory movement ledger.          | `inventory-service`                           |
-| **`@repo/order-db`**          | MongoDB persistence via Mongoose `Order` model and connection helper.                                        | `order-service`, `@repo/types` (type-only)    |
-| **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                     | `admin`, `client`                             |
-| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 21 workspaces                             |
+| Package                       | Purpose & Exports                                                                                            | Primary Consumers                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| **`@repo/kafka`**             | Kafka client wrapper (`createKafkaClient`, `createProducer`, `createConsumer`) and local 3-broker compose.   | All backend services                                |
+| **`@repo/types`**             | Central contract package: API domain types, Kafka payload interfaces, and shared Zod form schemas.           | All applications & packages                         |
+| **`@repo/monitoring`**        | Framework-agnostic structured logging, health checks, metrics, and performance telemetry.                    | All applications & packages                         |
+| **`@repo/redis`**             | Redis client factory, namespaced key builder, typed cache helpers, namespace invalidation, and rate limiter. | Product, order, search, analytic, and cart services |
+| **`@repo/opensearch`**        | OpenSearch client factory, product mappings, query builders, indexing, search, and reindex helpers.          | Product and search services                         |
+| **`@repo/product-db`**        | PostgreSQL catalog persistence via Prisma schema and generated `prisma` client singleton.                    | `product-service`, `@repo/types` (type-only)        |
+| **`@repo/inventory-db`**      | PostgreSQL inventory persistence via Prisma, atomic reservations, and an inventory movement ledger.          | `inventory-service`                                 |
+| **`@repo/order-db`**          | MongoDB persistence via Mongoose `Order` model and connection helper.                                        | `order-service`, `@repo/types` (type-only)          |
+| **`@repo/cart-db`**           | MongoDB persistence via Mongoose `Cart` and `ProcessedEvent` models and connection helper.                   | `cart-service`, `@repo/types` (type-only)           |
+| **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                     | `admin`, `client`                                   |
+| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 21 workspaces                                   |
 
 ---
 

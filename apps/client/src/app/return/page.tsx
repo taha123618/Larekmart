@@ -1,5 +1,6 @@
 import Link from "next/link";
 import RecommendationSection from "@/components/RecommendationSection";
+import ClearCartOnSuccess from "@/components/ClearCartOnSuccess";
 
 const ReturnPage = async ({
   searchParams,
@@ -19,6 +20,7 @@ const ReturnPage = async ({
 
   return (
     <div className="flex flex-col gap-8">
+      <ClearCartOnSuccess status={data.status || data.paymentStatus} />
       <div className="p-6 rounded-xl border border-gray-100 shadow-sm bg-gray-50/50">
         <h1 className="text-xl font-semibold text-gray-900">
           Payment {data.status}
