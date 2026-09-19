@@ -8,6 +8,10 @@ import ProductCard from "./ProductCard";
 import Link from "next/link";
 import Filter from "./Filter";
 import ActiveFilters from "./ActiveFilters";
+import {
+  fetchCatalogProducts,
+  type CatalogProductCard,
+} from "@/services/catalog.service";
 
 // TEMPORARY
 // const products: ProductsType = [
@@ -173,29 +177,60 @@ const SEARCH_SORT: Record<string, string> = {
   desc: "price_desc",
 };
 
-/** Reads the catalog straight from product-service's PostgreSQL listing. */
+/**
+ * Maps a catalog-service product card to the ProductType shape the UI expects.
+ * catalog-service uses `variants[].size/color` arrays; ProductCard reads flat
+ * `sizes` and `colors` from ProductType — so we reconstruct them here.
+ */
+const normalizeCatalogProduct = (p: CatalogProductCard): ProductType => {
+  const images = p.images || {};
+  const colors = Object.keys(images).length > 0 ? Object.keys(images) : [];
+  // productId is the product-service int id stored as string in the read model
+  const numericId = parseInt(p.productId ?? p.id, 10);
+  return {
+    id: isNaN(numericId) ? 0 : numericId,
+    name: p.name,
+    shortDescription: p.shortDescription ?? "",
+    description: "",
+    price: p.price,
+    sizes: [],
+    colors,
+    images,
+    categorySlug: p.primaryCategory?.slug ?? "",
+    createdAt: p.publishedAt ? new Date(p.publishedAt) : new Date(),
+    updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+  };
+};
+
+/**
+ * Reads from the catalog-service read-model (Redis-cached, pre-computed).
+ * Used as the primary fallback when search-service is unavailable.
+ */
 const fetchCatalog = async ({
   category,
   sort,
-  search,
+  min_price,
+  max_price,
   params,
 }: ProductListParams): Promise<ProductSearchData> => {
-  const query = new URLSearchParams();
-  if (category && category !== "all") query.set("category", category);
-  if (search) query.set("search", search);
-  query.set("sort", sort || "newest");
-  if (params === "homepage") query.set("limit", "8");
-
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products?${query.toString()}`,
-  );
-  const data = await res.json();
+  const sortMap: Record<string, "newest" | "price_asc" | "price_desc" | "rating"> = {
+    newest: "newest",
+    asc: "price_asc",
+    desc: "price_desc",
+  };
+  const result = await fetchCatalogProducts({
+    category: category !== "all" ? category : undefined,
+    sort: sortMap[sort ?? "newest"] ?? "newest",
+    minPrice: min_price ? parseFloat(min_price) : undefined,
+    maxPrice: max_price ? parseFloat(max_price) : undefined,
+    limit: params === "homepage" ? 8 : 24,
+  });
   return {
-    products: Array.isArray(data) ? (data as ProductType[]) : [],
-    // The catalog listing has no facet aggregations.
+    products: result.data.map(normalizeCatalogProduct),
     facets: undefined,
   };
 };
+
 
 /**
  * Reads the denormalized product index through product-service's
