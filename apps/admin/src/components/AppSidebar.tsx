@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   History,
   Sparkles,
+  LayoutGrid,
 } from "lucide-react";
 import {
   Sidebar,
@@ -154,6 +155,14 @@ const AppSidebar = () => {
                     </SheetTrigger>
                     <AddCategory />
                   </Sheet>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/catalog">
+                    <LayoutGrid />
+                    Catalog Read-Model
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

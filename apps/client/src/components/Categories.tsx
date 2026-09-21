@@ -1,4 +1,10 @@
-"use client";
+/**
+ * Categories.tsx — Server Component
+ *
+ * Renders the category navigation bar. Fetches live categories from
+ * catalog-service (hierarchical read model) instead of using a hardcoded array.
+ * Falls back to a curated static set if catalog-service is unavailable.
+ */
 import {
   Footprints,
   Glasses,
@@ -7,81 +13,72 @@ import {
   ShoppingBasket,
   Hand,
   Venus,
+  Tag,
 } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { fetchCatalogCategories, type CatalogCategory } from "@/services/catalog.service";
+import CategoriesClient from "./CategoriesClient";
 
-const categories = [
-  {
-    name: "All",
-    icon: <ShoppingBasket className="w-4 h-4" />,
-    slug: "all",
-  },
-  {
-    name: "T-shirts",
-    icon: <Shirt className="w-4 h-4" />,
-    slug: "t-shirts",
-  },
-  {
-    name: "Shoes",
-    icon: <Footprints className="w-4 h-4" />,
-    slug: "shoes",
-  },
-  {
-    name: "Accessories",
-    icon: <Glasses className="w-4 h-4" />,
-    slug: "accessories",
-  },
-  {
-    name: "Bags",
-    icon: <Briefcase className="w-4 h-4" />,
-    slug: "bags",
-  },
-  {
-    name: "Dresses",
-    icon: <Venus className="w-4 h-4" />,
-    slug: "dresses",
-  },
-  {
-    name: "Jackets",
-    icon: <Shirt className="w-4 h-4" />,
-    slug: "jackets",
-  },
-  {
-    name: "Gloves",
-    icon: <Hand className="w-4 h-4" />,
-    slug: "gloves",
-  },
+// ─── Fallback hardcoded categories ──────────────────────────────────────────
+
+const FALLBACK_CATEGORIES = [
+  { name: "All", slug: "all" },
+  { name: "T-shirts", slug: "t-shirts" },
+  { name: "Shoes", slug: "shoes" },
+  { name: "Accessories", slug: "accessories" },
+  { name: "Bags", slug: "bags" },
+  { name: "Dresses", slug: "dresses" },
+  { name: "Jackets", slug: "jackets" },
+  { name: "Gloves", slug: "gloves" },
 ];
 
-const Categories = () => {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+// ─── Icon mapping ────────────────────────────────────────────────────────────
 
-  const selectedCategory = searchParams.get("category");
+const ICON_MAP: Record<string, React.ReactNode> = {
+  all: <ShoppingBasket className="w-4 h-4" />,
+  "t-shirts": <Shirt className="w-4 h-4" />,
+  shirts: <Shirt className="w-4 h-4" />,
+  tops: <Shirt className="w-4 h-4" />,
+  shoes: <Footprints className="w-4 h-4" />,
+  footwear: <Footprints className="w-4 h-4" />,
+  accessories: <Glasses className="w-4 h-4" />,
+  bags: <Briefcase className="w-4 h-4" />,
+  dresses: <Venus className="w-4 h-4" />,
+  jackets: <Shirt className="w-4 h-4" />,
+  outerwear: <Shirt className="w-4 h-4" />,
+  gloves: <Hand className="w-4 h-4" />,
+};
 
-  const handleChange = (value: string | null) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("category", value || "all");
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
-  };
+function getIcon(slug: string): React.ReactNode {
+  return ICON_MAP[slug.toLowerCase()] ?? <Tag className="w-4 h-4" />;
+}
 
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 bg-gray-100 p-2 rounded-lg mb-4 text-sm">
-      {categories.map((category) => (
-        <div
-          className={`flex items-center justify-center gap-2 cursor-pointer px-2 py-1 rounded-md ${
-            category.slug === selectedCategory ? "bg-white" : "text-gray-500"
-          }`}
-          key={category.name}
-          onClick={() => handleChange(category.slug)}
-        >
-          {category.icon}
-          {category.name}
-        </div>
-      ))}
-    </div>
-  );
+// ─── Data shaping ─────────────────────────────────────────────────────────────
+
+function buildCategoryList(
+  serverCategories: CatalogCategory[],
+): { name: string; slug: string; icon: React.ReactNode }[] {
+  const all = { name: "All", slug: "all", icon: <ShoppingBasket className="w-4 h-4" /> };
+
+  if (serverCategories.length === 0) {
+    return FALLBACK_CATEGORIES.map((c) => ({ ...c, icon: getIcon(c.slug) }));
+  }
+
+  // Show top-level categories only (no parentId) up to 8 items
+  const roots = serverCategories
+    .filter((c) => !c.parentId && c.isActive)
+    .sort((a, b) => a.position - b.position)
+    .slice(0, 7);
+
+  return [all, ...roots.map((c) => ({ name: c.name, slug: c.slug, icon: getIcon(c.slug) }))];
+}
+
+// ─── Server Component ────────────────────────────────────────────────────────
+
+const Categories = async () => {
+  const serverCategories = await fetchCatalogCategories();
+  const categories = buildCategoryList(serverCategories);
+
+  return <CategoriesClient categories={categories} />;
 };
 
 export default Categories;

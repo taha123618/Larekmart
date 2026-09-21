@@ -43,7 +43,10 @@ When writing automated tests in Larekmart, adhere to the following architecture:
 
 - Test HTTP route handlers and Kafka message processing using in-memory or containerized dependencies.
 - Keep integration tests isolated and opt-in so they do not break standard offline `pnpm check-types`.
-- **Checks that exist today:** `notification-service` ships `pnpm --filter notification-service test`, and `@repo/redis` ships `pnpm --filter @repo/redis verify:redis`
+- **Checks that exist today:** `notification-service` ships `pnpm --filter notification-service test` plus an
+  opt-in migration check (`NOTIFICATION_DB_TEST_URL="$DATABASE_URL" go test ./internal/db/ -run Integration -v`)
+  that applies the embedded migrations to a real database and asserts they are recorded in
+  `schema_migrations` exactly once, and `@repo/redis` ships `pnpm --filter @repo/redis verify:redis`
   (`packages/redis/src/scripts/verify-redis.ts`), which asserts key namespacing, cache TTLs, the
   three read outcomes (`hit` / `miss` / `error`, so a Redis outage is never counted as a cold cache),
   the namespace-version bump, the rate limiter, and degraded behaviour against a real Redis. It needs

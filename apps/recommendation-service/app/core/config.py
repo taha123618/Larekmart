@@ -96,7 +96,10 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        return self.DATABASE_URL
+        url = self.DATABASE_URL
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
 
     @property
     def redis_url(self) -> str:

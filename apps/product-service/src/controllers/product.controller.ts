@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { prisma, Prisma } from "@repo/product-db";
-import { producer } from "../utils/kafka";
+import { publishEvent } from "../utils/kafka";
 import { toProductEventPayload } from "../search/product-payload.js";
 import { createLogger, measureAsync } from "@repo/monitoring";
 import {
@@ -47,7 +47,7 @@ export const createProduct = async (req: Request, res: Response) => {
   // waiting for a follow-up update event. payment-service still finds the
   // id/name/price it needs to mirror the catalog into Stripe. The same mapper
   // drives the search backfill (`backfill:search`).
-  producer.send("product.created", { value: toProductEventPayload(product) });
+  publishEvent("product.created", toProductEventPayload(product));
   await invalidateCatalogCache();
   res.status(201).json(product);
 };
@@ -67,7 +67,7 @@ export const updateProduct = async (req: Request, res: Response) => {
   );
 
   logger.info(`Product updated successfully with ID: ${id}`);
-  producer.send("product.updated", { value: updatedProduct });
+  publishEvent("product.updated", updatedProduct);
   await invalidateCatalogCache();
   return res.status(200).json(updatedProduct);
 };
@@ -85,7 +85,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
   );
 
   logger.info(`Product deleted with ID: ${id}`);
-  producer.send("product.deleted", { value: Number(id) });
+  publishEvent("product.deleted", Number(id));
   await invalidateCatalogCache();
 
   return res.status(200).json(deletedProduct);

@@ -1,0 +1,30 @@
+{
+  "name": "catalog-service",
+  "version": "1.0.0",
+  "description": "Read-optimized product discovery, merchandising, and storefront catalog microservice",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env --watch src/index.ts",
+    "build": "tsc",
+    "start": "tsx --env-file-if-exists=.env src/index.ts",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^20.19.13",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.2",
+    "@repo/catalog-db": "workspace:*",
+    "@repo/kafka": "workspace:*",
+    "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "@repo/types": "workspace:*",
+    "fastify": "^5.5.0",
+    "uuid": "^9.0.1",
+    "zod": "^3.24.2"
+  }
+}

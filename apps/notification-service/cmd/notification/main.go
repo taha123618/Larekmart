@@ -18,6 +18,7 @@ import (
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/channels/sms"
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/config"
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/consumers"
+	"github.com/taha123618/Larekmart/apps/notification-service/internal/db"
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/handlers"
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/middleware"
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/models"
@@ -27,6 +28,7 @@ import (
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/templates"
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/websocket"
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/workers"
+	"github.com/taha123618/Larekmart/apps/notification-service/migrations"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 )
@@ -69,6 +71,26 @@ func main() {
 		logger.Warn(ctx, "Initial PostgreSQL ping failed (will retry on demand)", map[string]interface{}{"error": pingErr.Error()})
 	} else {
 		logger.Info(ctx, "PostgreSQL database connection pool established")
+	}
+
+	// 5b. Database Schema Migrations
+	// The migrations ship inside the binary; every pending script is applied and
+	// recorded in schema_migrations before the repositories touch the schema.
+	migrationList, loadErr := db.LoadMigrations(migrations.Files)
+	if loadErr != nil {
+		logger.Fatal(ctx, "Failed to load embedded database migrations", loadErr)
+	}
+
+	migrationResult, migrateErr := db.Run(ctx, dbPool, migrationList)
+	if migrateErr != nil {
+		// Tolerated so the service can still boot ahead of PostgreSQL, matching the
+		// pool behaviour above; the next startup retries.
+		logger.Warn(ctx, "Database migrations did not complete", map[string]interface{}{"error": migrateErr.Error()})
+	} else {
+		logger.Info(ctx, "Database schema is up to date", map[string]interface{}{
+			"applied":         migrationResult.Applied,
+			"already_applied": len(migrationResult.AlreadyApplied),
+		})
 	}
 
 	// 6. Redis Client

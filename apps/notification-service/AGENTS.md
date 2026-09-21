@@ -38,10 +38,25 @@ It operates on **port 8005** with a lightweight Chi HTTP server, Go-native worke
 - **Context Propagation**: Every database query, Kafka handler, and HTTP request propagates `context.Context` with OpenTelemetry trace spans.
 - **Native Worker Pools**: Channel delivery tasks run via goroutines and buffered channels with exponential backoff and dead-letter classification.
 
+## Database Migrations
+
+- Schema changes are SQL files in `migrations/` named `<version>_<name>.up.sql`, embedded in
+  the binary and applied on startup by `internal/db` (`db.Run`). Never apply schema changes
+  by hand — add a migration so the change is recorded in `schema_migrations`.
+- The runner records each applied script in `schema_migrations` with a SHA-256 checksum, so
+  already-applied migrations are skipped and edits to applied scripts are rejected.
+- Never edit a migration that has been applied; add the next versioned migration instead.
+- Each run is a single transaction guarded by `pg_advisory_xact_lock`, and a failed run is
+  logged as a warning rather than fatally terminated.
+
 ## Verification
 
 ```bash
 cd apps/notification-service
 go test -v ./...
 go build ./cmd/notification/main.go
+
+# Migration runner, including the live-database check
+go test ./internal/db/
+NOTIFICATION_DB_TEST_URL="$DATABASE_URL" go test ./internal/db/ -run Integration -v
 ```
