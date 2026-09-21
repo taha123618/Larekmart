@@ -5,18 +5,19 @@ workflow, and deployment notes.
 
 ## Prerequisites
 
-| Tool                     | Version    | Notes                                                       |
-| ------------------------ | ---------- | ----------------------------------------------------------- |
-| Node.js                  | ≥ 18       | root `engines`                                              |
-| pnpm                     | 9.0.0      | `corepack enable && corepack prepare pnpm@9.0.0 --activate` |
-| Docker                   | any recent | local Kafka, Redis, and optional OpenSearch                 |
-| PostgreSQL               | ≥ 14       | product catalog                                             |
-| MongoDB                  | ≥ 6        | orders                                                      |
-| Clerk account            | —          | auth keys for three apps/services                           |
-| Stripe test account      | —          | payment-service + client                                    |
-| Google OAuth credentials | —          | email-service Gmail sending                                 |
-| Cloudinary account       | —          | admin image uploads                                         |
-| OpenSearch               | 2.x+       | product search index (`search-service` owns writes)         |
+| Tool                     | Version    | Notes                                                                           |
+| ------------------------ | ---------- | ------------------------------------------------------------------------------- |
+| Node.js                  | ≥ 18       | root `engines`                                                                  |
+| pnpm                     | 9.0.0      | `corepack enable && corepack prepare pnpm@9.0.0 --activate`                     |
+| Docker                   | any recent | local Kafka, Redis, and optional OpenSearch                                     |
+| PostgreSQL               | ≥ 14       | product, inventory, catalog, analytics, notification, and recommendation stores |
+| pgvector                 | —          | `CREATE EXTENSION vector` for recommendation-service embeddings                 |
+| MongoDB                  | ≥ 6        | orders and carts                                                                |
+| Clerk account            | —          | auth keys for three apps/services                                               |
+| Stripe test account      | —          | payment-service + client                                                        |
+| Google OAuth credentials | —          | email-service Gmail sending                                                     |
+| Cloudinary account       | —          | admin image uploads                                                             |
+| OpenSearch               | 2.x+       | product search index (`search-service` owns writes)                             |
 
 ## First-time setup
 
@@ -33,9 +34,16 @@ pnpm run skills:sync                      # sync .agents/skills to .cursor, .cla
 docker compose -f packages/kafka/docker-compose.yml up -d   # Kafka cluster
 docker compose -f packages/redis/docker-compose.yml up -d   # Redis (service caches + rate limiting)
 
-# database
-pnpm --filter @repo/product-db db:generate
-pnpm --filter @repo/product-db db:migrate
+# databases (one store per service; see "Database migrations" below)
+createdb larekmart_product_db && createdb larekmart_inventory_db && createdb larekmart_catalog_db
+createdb larekmart_analytics_db && createdb larekmart_notification_db && createdb larekmart_recommendation_db
+
+set -a; . apps/product-service/.env;   set +a; pnpm --filter @repo/product-db db:deploy
+set -a; . apps/inventory-service/.env; set +a; pnpm --filter @repo/inventory-db db:deploy
+set -a; . apps/catalog-service/.env;   set +a; pnpm --filter @repo/catalog-db db:deploy
+(cd apps/recommendation-service && uv run alembic upgrade head)
+# notification-service and analytic-service migrate on startup; MongoDB collections and
+# indexes are created on first connect, so neither needs a separate step.
 
 # run everything
 pnpm dev
@@ -77,8 +85,13 @@ pnpm dev
 
 Default local connection strings used by the examples:
 
-- PostgreSQL: `postgresql://postgres:postgres@localhost:5432/ecommerce`
-- MongoDB: `mongodb://localhost:27017/ecommerce`
+- PostgreSQL: one database per owning service on `localhost:5432`, for example
+  `postgresql://postgres:postgres@localhost:5432/larekmart_product_db` — the others are
+  `larekmart_inventory_db`, `larekmart_catalog_db`, `larekmart_analytics_db`,
+  `larekmart_notification_db`, and `larekmart_recommendation_db`. Each service's
+  `DATABASE_URL` lives in its own `apps/<service>/.env`.
+- MongoDB: `mongodb://localhost:27017/larekmart_order_db` (order-service) and
+  `mongodb://localhost:27017/larekmart_cart_db` (cart-service)
 - Kafka: `localhost:9094,localhost:9095,localhost:9096` (hardcoded in `@repo/kafka`)
 - OpenSearch: `http://localhost:9200` (used by product-service reads and search-service writes)
 
@@ -120,17 +133,151 @@ pnpm lint                                     # admin + client
 pnpm format                                   # prettier, writes source
 ```
 
-### Database changes (product-db)
+### Database migrations
+
+Each service owns its own store and there is no shared database, so only migrate the
+workspaces you touched. The tool differs per store:
+
+| Store                         | Owner                  | Tooling                         | How to migrate                                                              |
+| ----------------------------- | ---------------------- | ------------------------------- | --------------------------------------------------------------------------- |
+| `larekmart_product_db`        | product-service        | Prisma (`@repo/product-db`)     | `pnpm --filter @repo/product-db db:deploy` (or `db:migrate` in development) |
+| `larekmart_inventory_db`      | inventory-service      | Prisma (`@repo/inventory-db`)   | `pnpm --filter @repo/inventory-db db:deploy`                                |
+| `larekmart_catalog_db`        | catalog-service        | Prisma (`@repo/catalog-db`)     | `pnpm --filter @repo/catalog-db db:deploy`                                  |
+| `larekmart_recommendation_db` | recommendation-service | Alembic + SQLAlchemy (pgvector) | `cd apps/recommendation-service && uv run alembic upgrade head`             |
+| `larekmart_notification_db`   | notification-service   | Embedded SQL in `migrations/`   | automatic on startup (`internal/db`); verify with the opt-in test below     |
+| `larekmart_analytics_db`      | analytic-service       | Inline DDL in `src/db.ts`       | automatic on startup                                                        |
+| `larekmart_order_db`          | order-service          | Mongoose (no migrations)        | collections/indexes sync on connect                                         |
+| `larekmart_cart_db`           | cart-service           | Mongoose (no migrations)        | collections/indexes sync on connect                                         |
+
+#### Prisma packages (`product-db`, `inventory-db`, `catalog-db`)
+
+The Prisma CLI only loads `.env` from the directory it runs in, and `packages/*-db` ship
+no `.env` of their own. A bare `pnpm --filter @repo/product-db db:deploy` therefore fails
+with `Environment variable not found: DATABASE_URL`. Source the owning service's env
+first — `set -a` exports every variable in the file so the child process inherits it, and
+`set +a` restores the default behaviour:
 
 ```bash
-# 1. edit packages/product-db/prisma/schema.prisma
+# product-db <- apps/product-service/.env
+set -a; . apps/product-service/.env; set +a
 pnpm --filter @repo/product-db db:generate    # regenerate client (required for types)
-pnpm --filter @repo/product-db db:migrate     # create + apply a migration
-# production
-pnpm --filter @repo/product-db db:deploy
+pnpm --filter @repo/product-db db:migrate     # development: create + apply a migration
+pnpm --filter @repo/product-db db:deploy      # apply committed migrations only
+
+# inventory-db <- apps/inventory-service/.env
+set -a; . apps/inventory-service/.env; set +a
+pnpm --filter @repo/inventory-db db:generate
+pnpm --filter @repo/inventory-db db:migrate
+
+# catalog-db <- apps/catalog-service/.env
+set -a; . apps/catalog-service/.env; set +a
+pnpm --filter @repo/catalog-db db:generate
+pnpm --filter @repo/catalog-db db:migrate
 ```
 
-`packages/product-db/generated/prisma` is gitignored; regenerate rather than commit it.
+Passing the variable inline works too:
+
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/larekmart_product_db" \
+  pnpm --filter @repo/product-db db:deploy
+```
+
+Use `db:migrate` only while developing: it diffs the schema, creates a migration file, and
+can offer to reset the database when it detects drift. Use `db:deploy`, which applies the
+committed migrations and never resets, for existing environments and production.
+
+`packages/*-db/generated/prisma` is gitignored; regenerate rather than commit it.
+
+If the generated client is missing, `pnpm check-types` fails for every dependent
+workspace — run `db:generate` for the package you changed before type-checking.
+
+#### recommendation-service (Alembic)
+
+`migrations/env.py` reads the URL from the service settings, so `DATABASE_URL` must be set
+in `apps/recommendation-service/.env` (the `sqlalchemy.url` value in `alembic.ini` is only
+a fallback).
+
+```bash
+cd apps/recommendation-service
+uv run alembic current            # show the applied revision
+uv run alembic upgrade head       # apply pending migrations
+uv run alembic revision --autogenerate -m "add x"   # create a migration from model changes
+```
+
+The initial revision runs `CREATE EXTENSION IF NOT EXISTS vector`, so PostgreSQL needs the
+`pgvector` extension available.
+
+#### notification-service (embedded SQL)
+
+Migrations are embedded in the binary and applied on every startup, so there is no command
+to run. Each applied script is recorded in `schema_migrations` with a SHA-256 checksum; never
+edit an applied migration — add the next `<version>_<name>.up.sql` instead. Inspect and
+verify with:
+
+```bash
+psql "$DATABASE_URL" -c "SELECT version, name, applied_at FROM schema_migrations ORDER BY version;"
+
+cd apps/notification-service
+NOTIFICATION_DB_TEST_URL="$DATABASE_URL" go test ./internal/db/ -run Integration -v
+```
+
+#### MongoDB stores (`order-db`, `cart-db`)
+
+Mongoose has no migration concept: collections and indexes are derived from the schemas and
+created on first connect. Index changes therefore need an explicit `syncIndexes()` against a
+running database, or a service restart:
+
+```bash
+# order-service (has tsx as a dev dependency)
+cd apps/order-service
+pnpm exec tsx --env-file=.env -e '(async () => {
+  const db = await import("@repo/order-db");
+  await db.connectOrderDB(); await db.Order.syncIndexes(); await db.Order.db.close();
+})();'
+
+# cart-service uses pnpm dlx instead (tsx is not a local dependency)
+cd apps/cart-service
+pnpm dlx tsx --env-file=.env -e '(async () => {
+  const db = await import("@repo/cart-db");
+  await db.connectCartDB();
+  await Promise.all([db.Cart.syncIndexes(), db.ProcessedEvent.syncIndexes()]);
+  await db.closeCartDB();
+})();'
+```
+
+The `mongosh` equivalent for checking what exists:
+
+```bash
+mongosh --quiet --eval 'db.getSiblingDB("larekmart_order_db").getCollection("orders").getIndexes()'
+```
+
+#### Creating the databases
+
+A fresh PostgreSQL server has none of these databases. Create them before running any
+migration (adjust the role/port to your setup), then apply each store's migrations as above:
+
+```bash
+for db in larekmart_product_db larekmart_inventory_db larekmart_catalog_db \
+          larekmart_analytics_db larekmart_notification_db larekmart_recommendation_db; do
+  createdb "$db"
+done
+```
+
+The two MongoDB databases do not need creating: MongoDB creates them on first write, and the
+services create their collections on connect.
+
+#### Checking migration state
+
+```bash
+# Prisma: one row per applied migration, with its checksum
+psql "$DATABASE_URL" -c "SELECT migration_name, finished_at FROM _prisma_migrations ORDER BY started_at;"
+
+# Alembic
+cd apps/recommendation-service && uv run alembic current
+
+# Notification
+psql "$DATABASE_URL" -c "SELECT version, name, applied_at FROM schema_migrations ORDER BY version;"
+```
 
 ### Kafka development
 
@@ -176,7 +323,9 @@ deployed independently:
 ### Production checklist
 
 - [ ] Every secret from the env matrix provisioned (no `.env` committed).
-- [ ] `DATABASE_URL` migrations applied via `db:deploy`.
+- [ ] Migrations applied for every deployed store (`db:deploy` for the Prisma packages,
+      `alembic upgrade head` for recommendation-service; notification-service and
+      analytic-service migrate on startup).
 - [ ] Kafka brokers reachable and configurable (see caveat above).
 - [ ] Stripe webhook endpoint registered and `STRIPE_WEBHOOK_SECRET` set.
 - [ ] Clerk allowed origins/domains updated for the deployed frontends.

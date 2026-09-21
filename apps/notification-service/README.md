@@ -51,7 +51,8 @@ Node.js Services (auth, order, payment, product)
 
 ## 3. Database Schema
 
-The service manages its own PostgreSQL database via SQL migrations in `migrations/`:
+The service manages its own PostgreSQL database via the SQL migrations embedded in
+`migrations/`:
 
 | Table                      | Description                                                                                              |
 | :------------------------- | :------------------------------------------------------------------------------------------------------- |
@@ -61,6 +62,38 @@ The service manages its own PostgreSQL database via SQL migrations in `migration
 | `notification_templates`   | Parameterized template definitions for subjects and body content.                                        |
 | `user_devices`             | Registered push tokens and platform metadata (iOS, Android, Web).                                        |
 | `notification_events`      | Idempotency log recording consumed Kafka events.                                                         |
+| `schema_migrations`        | Applied migration versions with checksums and timestamps (written by the runner).                        |
+
+### Migrations
+
+Migrations are applied automatically on startup by `internal/db`, so a deployment never
+needs a separate migration step:
+
+- `migrations/*.up.sql` are embedded in the binary with `go:embed` and applied in version
+  order; `migrations/*.down.sql` are kept for manual rollback only.
+- Every applied script is recorded in `schema_migrations` (version, name, SHA-256
+  checksum, `applied_at`), so already-applied migrations are skipped on the next boot.
+- The whole run happens in one transaction guarded by a PostgreSQL advisory lock, so
+  several replicas can start at once without racing.
+- Editing a migration that is already recorded fails the run with a checksum mismatch —
+  add a new migration instead of editing an applied one.
+- A failure is logged as a warning rather than killing the process, matching the existing
+  "PostgreSQL may not be ready yet" boot behaviour; the next startup retries.
+
+To add a schema change, create the next versioned pair (for example
+`000002_add_delivery_latency.up.sql` and `.down.sql`) and restart the service. To inspect
+what has been applied:
+
+```bash
+psql "$DATABASE_URL" -c "SELECT version, name, checksum, applied_at FROM schema_migrations ORDER BY version;"
+```
+
+Inspect the runner directly with `go test ./internal/db/`; the live-database check is
+opt-in:
+
+```bash
+NOTIFICATION_DB_TEST_URL="$DATABASE_URL" go test ./internal/db/ -run Integration -v
+```
 
 ---
 
