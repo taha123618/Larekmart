@@ -60,6 +60,9 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `product.created`                 | product-service      | payment-service, analytic-service, search-service, catalog-service                               | `ProductCreatedPayload` (superset of `StripeProductType`)                                                                                                          |
 | `product.updated`                 | product-service      | search-service, catalog-service                                                                  | `ProductType`, or `ProductCreatedPayload` on a backfill replay                                                                                                     |
 | `product.deleted`                 | product-service      | payment-service, analytic-service, search-service, catalog-service                               | `number` (the product id)                                                                                                                                          |
+| `category.created`                | product-service      | catalog-service                                                                                  | `CategoryEventPayload` (`{ id, name, slug }`)                                                                                                                      |
+| `category.updated`                | product-service      | catalog-service                                                                                  | `CategoryEventPayload` (`{ id, name, slug }`)                                                                                                                      |
+| `category.deleted`                | product-service      | catalog-service                                                                                  | `number` (the category id)                                                                                                                                         |
 | `user.created`                    | auth-service         | email-service, analytic-service, notification-service                                            | `{ username: string, email: string }`                                                                                                                              |
 | `order.created`                   | order-service        | email-service, analytic-service, notification-service, recommendation-service                    | `{ orderId: string, userId: string, email: string, amount: number, status: "success" \| "failed", products: { name: string, quantity: number, price: number }[] }` |
 | `payment.successful`              | payment-service      | order-service, analytic-service, notification-service, inventory-service, recommendation-service | `{ sessionId, referenceId, reservationId, userId, email, amount, status, products: { name, quantity, price }[] }`                                                  |
@@ -148,6 +151,33 @@ Emitted after a product is deleted; carries the numeric id.
 - Consumer: `apps/payment-service/src/utils/subscriptions.ts`, `apps/search-service/src/consumers/product-events.consumer.ts`, `apps/recommendation-service/app/messaging/consumers/event_consumer.py`
 
 - Consumer: `deleteStripeProduct` in payment-service.
+
+### `category.created` / `category.updated` / `category.deleted`
+
+Emitted after a category row is written in product-service so catalog-service can keep its
+`CatalogCategory` read model — and therefore the category tree, category pages, and the
+`?category=` filter — in step with the source of truth.
+
+```jsonc
+{ "value": { "id": 3, "name": "Shoes", "slug": "shoes" } }
+```
+
+```jsonc
+{ "value": 3 }
+```
+
+The catalog projector keys the read-model row by the **same id** as the product-service
+category, so a projected category's `id` is directly usable in `?category=<id>`. Only
+id/name/slug are carried because that is all the `Category` model stores; catalog-service
+defaults the remaining read-model fields (description, image, parentId, position, isActive)
+and matches products to the category by `slug` (via `products.categorySlug`).
+
+Because `product.created` carries `categorySlug`, categories must be projected **before**
+products to be linked; a product that arrives first keeps `primaryCategoryId = null` until
+the category is projected.
+
+- Producer: `apps/product-service/src/controllers/category.controller.ts`
+- Consumer: `apps/catalog-service/src/consumers/category.consumer.ts` → `CategoryProjector`
 
 ### `user.created`
 

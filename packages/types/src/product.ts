@@ -33,6 +33,31 @@ export type ProductCreatedPayload = {
   updatedAt: string;
 };
 
+/**
+ * `category.created` and `category.updated` Kafka payloads.
+ *
+ * `product-service` owns categories and publishes the authoritative row;
+ * `catalog-service` projects it into the denormalized `CatalogCategory` read
+ * model, keyed by the same id so `?category=<id>` filters and category pages
+ * line up with the source of truth.
+ *
+ * Only id/name/slug are sent today because that is all the `Category` model
+ * stores; the catalog projector defaults the remaining read-model fields
+ * (description, image, parentId, position, isActive).
+ */
+export type CategoryEventPayload = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
+/**
+ * `category.deleted` Kafka payload: the bare category id, matching
+ * `product.deleted`. Consumers only need the identifier to deactivate the
+ * projected row.
+ */
+export type CategoryDeletedPayload = number;
+
 export const colors = [
   "blue",
   "green",

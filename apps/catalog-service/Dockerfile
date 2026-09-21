@@ -27,9 +27,15 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 fastifyjs
 USER fastifyjs
 
-COPY --from=installer --chown=fastifyjs:nodejs /app/apps/catalog-service/dist ./dist
+# The internal @repo/* packages are consumed as TypeScript sources (their package
+# `exports` point at ./src/*.ts), so a compiled dist/ cannot run under plain node:
+# it would fail to resolve the workspace packages at runtime. The runtime image
+# therefore keeps the workspace layout and runs the sources through tsx.
 COPY --from=installer --chown=fastifyjs:nodejs /app/node_modules ./node_modules
-COPY --from=installer --chown=fastifyjs:nodejs /app/apps/catalog-service/package.json ./package.json
+COPY --from=installer --chown=fastifyjs:nodejs /app/packages ./packages
+COPY --from=installer --chown=fastifyjs:nodejs /app/apps/catalog-service ./apps/catalog-service
+
+WORKDIR /app/apps/catalog-service
 
 EXPOSE 8010
-CMD ["node", "dist/index.js"]
+CMD ["node", "--import", "tsx", "src/index.ts"]

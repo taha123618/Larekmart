@@ -32,14 +32,14 @@ client/admin  →  HTTP GET  →  catalog-service  →  Redis cache-aside  →  
 
 ### Read model separation
 
-| Concern              | Where it lives                            |
-|----------------------|-------------------------------------------|
-| Product source truth | `product-service` (Postgres)             |
-| Catalog read model   | `catalog-service` → `catalog-db`         |
-| Full-text search     | `search-service` (OpenSearch)            |
-| Inventory truth      | `inventory-service`                       |
-| Pricing authority    | `product-service` + promotions           |
-| Cart pricing         | `cart-service`                           |
+| Concern              | Where it lives                   |
+| -------------------- | -------------------------------- |
+| Product source truth | `product-service` (Postgres)     |
+| Catalog read model   | `catalog-service` → `catalog-db` |
+| Full-text search     | `search-service` (OpenSearch)    |
+| Inventory truth      | `inventory-service`              |
+| Pricing authority    | `product-service` + promotions   |
+| Cart pricing         | `cart-service`                   |
 
 **catalog-service is NOT a second product CRUD service.** It does not accept product writes.
 It only consumes Kafka events and serves read-optimized views.
@@ -84,49 +84,59 @@ apps/catalog-service/
 
 ## 4. API Endpoints (prefix: /api/v1/catalog)
 
-| Method | Path                        | Description                          |
-|--------|-----------------------------|--------------------------------------|
-| GET    | /products                   | Paginated product listing w/ filters |
-| GET    | /products/:id               | Single product card (id or slug)     |
-| GET    | /categories                 | All categories (flat or ?tree=true)  |
-| GET    | /categories/:id             | Category detail (id or slug)         |
-| GET    | /categories/:id/products    | Products in a category               |
-| GET    | /brands                     | All active brands                    |
-| GET    | /brands/:id                 | Brand detail (id or slug)            |
-| GET    | /brands/:id/products        | Products for a brand                 |
-| GET    | /collections                | All active collections               |
-| GET    | /collections/:id            | Collection with product cards        |
-| GET    | /featured                   | Featured products                    |
-| GET    | /new-arrivals               | New arrival products                 |
-| GET    | /best-sellers               | Best-selling products                |
-| GET    | /storefront                 | Storefront overview (hero + sections)|
-| GET    | /health                     | Liveness check                       |
-| GET    | /ready                      | Readiness check (DB + Redis)         |
-| GET    | /metrics                    | Prometheus metrics                   |
+| Method | Path                     | Description                           |
+| ------ | ------------------------ | ------------------------------------- |
+| GET    | /products                | Paginated product listing w/ filters  |
+| GET    | /products/:id            | Single product card (id or slug)      |
+| GET    | /categories              | All categories (flat or ?tree=true)   |
+| GET    | /categories/:id          | Category detail (id or slug)          |
+| GET    | /categories/:id/products | Products in a category                |
+| GET    | /brands                  | All active brands                     |
+| GET    | /brands/:id              | Brand detail (id or slug)             |
+| GET    | /brands/:id/products     | Products for a brand                  |
+| GET    | /collections             | All active collections                |
+| GET    | /collections/:id         | Collection with product cards         |
+| GET    | /featured                | Featured products                     |
+| GET    | /new-arrivals            | New arrival products                  |
+| GET    | /best-sellers            | Best-selling products                 |
+| GET    | /storefront              | Storefront overview (hero + sections) |
+| GET    | /health                  | Liveness check                        |
+| GET    | /ready                   | Readiness check (DB + Redis)          |
+| GET    | /metrics                 | Prometheus metrics                    |
 
 ## 5. Kafka Topics Consumed
 
-| Topic                | Projector                 | Action                                              |
-|----------------------|---------------------------|-----------------------------------------------------|
-| `product.created`    | ProductProjector          | Upsert `CatalogProduct` read model + variants       |
-| `product.updated`    | ProductProjector          | Update product read model, invalidate cache         |
-| `product.deleted`    | ProductProjector          | Soft-delete (set `isActive=false`), invalidate cache|
-| `category.created`   | CategoryProjector         | Upsert `CatalogCategory` hierarchy                  |
-| `category.updated`   | CategoryProjector         | Update category, invalidate category-tree cache     |
-| `category.deleted`   | CategoryProjector         | Soft-delete category                                |
-| `inventory.adjusted` | ProductProjector          | Update `availabilityStatus` on product read model   |
-| `inventory.restocked`| ProductProjector          | Update `availabilityStatus` on product read model   |
-| `inventory.low_stock`| ProductProjector          | Update `availabilityStatus` on product read model   |
+| Topic                 | Projector         | Action                                               |
+| --------------------- | ----------------- | ---------------------------------------------------- |
+| `product.created`     | ProductProjector  | Upsert `CatalogProduct` read model + variants        |
+| `product.updated`     | ProductProjector  | Update product read model, invalidate cache          |
+| `product.deleted`     | ProductProjector  | Soft-delete (set `isActive=false`), invalidate cache |
+| `category.created`    | CategoryProjector | Upsert `CatalogCategory` hierarchy                   |
+| `category.updated`    | CategoryProjector | Update category, invalidate category-tree cache      |
+| `category.deleted`    | CategoryProjector | Soft-delete category                                 |
+| `inventory.adjusted`  | ProductProjector  | Update `availabilityStatus` on product read model    |
+| `inventory.restocked` | ProductProjector  | Update `availabilityStatus` on product read model    |
+| `inventory.low_stock` | ProductProjector  | Update `availabilityStatus` on product read model    |
 
-### Topics NOT yet consumed (gaps)
+Every topic above is published today: `product.*` and `category.*` by `product-service`,
+`inventory.*` by `inventory-service`.
 
-| Topic               | Gap                                           |
-|---------------------|-----------------------------------------------|
-| `brand.created`     | Missing — brand read model not event-driven   |
-| `brand.updated`     | Missing — brand read model not event-driven   |
-| `collection.*`      | Missing — collection read model not event-driven|
-| `pricing.*`         | Missing — price updates only via product events|
-| `review.created`    | Missing — rating/review count not event-driven|
+`category.*` is the only path that creates a category in the read model — the product
+projector resolves `products.categorySlug` against an **existing** `CatalogCategory` and
+never creates one, so without the publisher the category tree, category pages, and the
+`?category=` filter stay empty no matter how many products are projected.
+
+### Topics with NO producer in the monorepo (cannot fire)
+
+| Topic                | Gap                                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `brand.created`      | No producer — `product-service` has no brand entity, and `product.created` carries no `brandId`, so `CatalogBrand` and `CatalogProduct.brandId` have no source |
+| `brand.updated`      | No producer — same as above                                                                                                                                    |
+| `collection.created` | No producer — nothing writes `CatalogCollection`, so `/collections` and the storefront hero sections stay empty                                                |
+| `collection.updated` | No producer — same as above                                                                                                                                    |
+| `collection.deleted` | No producer — same as above                                                                                                                                    |
+| `pricing.updated`    | No producer — price changes only arrive via `product.updated`                                                                                                  |
+| `review.created`     | No producer — `recommendation-service` registers a handler for it, but nothing publishes it; rating/review count only move via `product.updated`               |
 
 ## 6. Idempotency
 
@@ -165,7 +175,7 @@ This handles consumer restarts and redelivered messages safely.
 - ✅ Collection read model with `collection_products` positioning
 - ✅ Product-card read model with badges, pricing, availability, brand, category
 - ✅ Redis cache-aside for: product cards, category pages, category tree, brand, collections, featured, new-arrivals, best-sellers
-- ✅ Kafka consumers: `product.*`, `category.*`, `inventory.adjusted/restocked/low_stock`
+- ✅ Kafka consumers: `product.*`, `category.*`, `inventory.adjusted/restocked/low_stock` — all published today (`category.*` by `product-service/src/controllers/category.controller.ts`)
 - ✅ Idempotent projectors with `ProcessedEvent` dedup
 - ✅ Prometheus metrics: HTTP requests, request duration, cache hits/misses/errors, catalog events consumed
 - ✅ Health endpoints: `/health`, `/ready` (DB + Redis), `/metrics`
@@ -209,6 +219,14 @@ This handles consumer restarts and redelivered messages safely.
 8. **Collection product orphan cleanup.** `CollectionProjector` links products but never removes
    products that were removed from a collection in an update event (the event would need to send the
    full new positions list, and the projector would need to delete stale `catalogCollectionProducts`).
+
+9. **No backfill for a category projected after its products.** `projectProductUpsert` resolves
+   `primaryCategoryId` once, by looking the category up at projection time, and the read model does
+   not keep `categorySlug` afterwards — so a product projected before its category keeps
+   `primaryCategoryId = null` forever and never appears under `/categories/:slug/products`. In normal
+   operation `category.created` precedes `product.created` (product-service's `categorySlug` is a
+   foreign key), so this only bites on out-of-order replays or a projection reset. A fix needs either
+   `categorySlug` stored on `CatalogProduct` or a re-resolve pass when a category is projected.
 
 ## 9. Commands
 
