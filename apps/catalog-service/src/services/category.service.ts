@@ -1,5 +1,12 @@
-import type { CatalogCategoryItemType, CatalogPaginatedResponseType } from "@repo/types";
-import { CatalogCacheKeys, getCached, setCached } from "../cache/catalog-cache.js";
+import type {
+  CatalogCategoryItemType,
+  CatalogPaginatedResponseType,
+} from "@repo/types";
+import {
+  CatalogCacheKeys,
+  getCached,
+  setCached,
+} from "../cache/catalog-cache.js";
 import { categoryRepository } from "../repositories/category.repository.js";
 import { catalogRepository } from "../repositories/catalog.repository.js";
 
@@ -18,7 +25,9 @@ export class CategoryService {
     return categoryRepository.findAllCategories();
   }
 
-  async getCategoryByIdOrSlug(idOrSlug: string): Promise<CatalogCategoryItemType | null> {
+  async getCategoryByIdOrSlug(
+    idOrSlug: string,
+  ): Promise<CatalogCategoryItemType | null> {
     return categoryRepository.findCategoryByIdOrSlug(idOrSlug);
   }
 
@@ -34,7 +43,12 @@ export class CategoryService {
       if (cached) return cached;
     }
 
-    const result = await catalogRepository.findProductsByCategory(idOrSlug, page, limit, sort);
+    const result = await catalogRepository.findProductsByCategory(
+      idOrSlug,
+      page,
+      limit,
+      sort,
+    );
     if (sort === "newest" && (page === 1 || page === 2)) {
       await setCached(cacheKey, result);
     }

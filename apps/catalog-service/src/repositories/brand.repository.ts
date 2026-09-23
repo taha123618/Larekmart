@@ -11,7 +11,9 @@ export class BrandRepository {
     return brands.map(mapBrand);
   }
 
-  async findBrandByIdOrSlug(idOrSlug: string): Promise<CatalogBrandType | null> {
+  async findBrandByIdOrSlug(
+    idOrSlug: string,
+  ): Promise<CatalogBrandType | null> {
     const brand = await prisma.catalogBrand.findFirst({
       where: {
         OR: [{ id: idOrSlug }, { slug: idOrSlug }],

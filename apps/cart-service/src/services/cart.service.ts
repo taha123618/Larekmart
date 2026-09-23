@@ -27,9 +27,7 @@ export class CartService {
   /**
    * Retrieves active cart from cache/database or creates a new empty active cart
    */
-  async getOrCreateCart(
-    identity: CartIdentity,
-  ): Promise<{
+  async getOrCreateCart(identity: CartIdentity): Promise<{
     cart: CartDocType;
     formatted: CartResponseType;
     isNew: boolean;

@@ -59,6 +59,24 @@ const start = async () => {
           }
         },
       },
+      {
+        topicName: "shipment.shipped",
+        topicHandler: async (message) => {
+          const { trackingNumber, carrier, orderId } = message.value;
+          logger.info(
+            `[email-service] Shipment dispatched for order ${orderId} (Carrier: ${carrier}, Tracking: ${trackingNumber})`,
+          );
+        },
+      },
+      {
+        topicName: "shipment.delivered",
+        topicHandler: async (message) => {
+          const { trackingNumber, carrier, orderId } = message.value;
+          logger.info(
+            `[email-service] Shipment delivered for order ${orderId} (Carrier: ${carrier}, Tracking: ${trackingNumber})`,
+          );
+        },
+      },
     ]);
   } catch (error) {
     logger.fatal("Email service consumer error", error);

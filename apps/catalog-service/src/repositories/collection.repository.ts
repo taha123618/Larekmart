@@ -35,7 +35,9 @@ export class CollectionRepository {
     return collections.map((col) => mapCollection(col as any));
   }
 
-  async findCollectionBySlug(slug: string): Promise<CatalogCollectionType | null> {
+  async findCollectionBySlug(
+    slug: string,
+  ): Promise<CatalogCollectionType | null> {
     const collection = await prisma.catalogCollection.findFirst({
       where: {
         slug,

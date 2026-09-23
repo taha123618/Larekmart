@@ -101,7 +101,9 @@ const useCartStore = create<ExtendedCartState & ExtendedCartActions>()(
         const variantId = `${product.selectedSize || "default"}-${product.selectedColor || "default"}`;
         const imageUrl =
           typeof product.images === "object" && product.images !== null
-            ? (product.images as Record<string, string>)[product.selectedColor || ""] ||
+            ? (product.images as Record<string, string>)[
+                product.selectedColor || ""
+              ] ||
               Object.values(product.images as Record<string, string>)[0] ||
               ""
             : "";

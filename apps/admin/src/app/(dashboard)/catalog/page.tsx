@@ -23,16 +23,25 @@ import {
   type CatalogCollection,
   type CatalogProductCard,
 } from "@/lib/catalog.service";
-import { CheckCircle, AlertCircle, LayoutGrid, Tag, PackageOpen, Star, Flame } from "lucide-react";
+import {
+  CheckCircle,
+  AlertCircle,
+  LayoutGrid,
+  Tag,
+  PackageOpen,
+  Star,
+  Flame,
+} from "lucide-react";
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 
 async function getCatalogHealth(): Promise<{ ok: boolean; status?: string }> {
   try {
-    const base = process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL || "http://localhost:8010";
+    const base =
+      process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL || "http://localhost:8010";
     const res = await fetch(`${base}/ready`, { cache: "no-store" });
     if (res.ok) {
-      const data = await res.json() as { status?: string };
+      const data = (await res.json()) as { status?: string };
       return { ok: true, status: data.status };
     }
     return { ok: false };
@@ -58,7 +67,8 @@ const StatCard = ({
     blue: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
     green: "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400",
     amber: "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
-    purple: "bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400",
+    purple:
+      "bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400",
     rose: "bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400",
   };
   return (
@@ -74,16 +84,27 @@ const StatCard = ({
   );
 };
 
-const CategoryRow = ({ category, depth = 0 }: { category: CatalogCategory; depth?: number }) => (
+const CategoryRow = ({
+  category,
+  depth = 0,
+}: {
+  category: CatalogCategory;
+  depth?: number;
+}) => (
   <>
     <tr className={`border-b ${!category.isActive ? "opacity-40" : ""}`}>
       <td className="py-2 px-4">
-        <span style={{ paddingLeft: `${depth * 16}px` }} className="flex items-center gap-2">
+        <span
+          style={{ paddingLeft: `${depth * 16}px` }}
+          className="flex items-center gap-2"
+        >
           {depth > 0 && <span className="text-muted-foreground">└</span>}
           {category.name}
         </span>
       </td>
-      <td className="py-2 px-4 text-sm text-muted-foreground font-mono">{category.slug}</td>
+      <td className="py-2 px-4 text-sm text-muted-foreground font-mono">
+        {category.slug}
+      </td>
       <td className="py-2 px-4 text-center">{category.productCount}</td>
       <td className="py-2 px-4">
         <span
@@ -106,28 +127,44 @@ const CategoryRow = ({ category, depth = 0 }: { category: CatalogCategory; depth
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const CatalogPage = async () => {
-  const [health, categories, brands, collections, featured, newArrivals, bestSellers] =
-    await Promise.allSettled([
-      getCatalogHealth(),
-      fetchCatalogCategories(),
-      fetchCatalogBrands(),
-      fetchCatalogCollections(),
-      fetchFeaturedProducts(100),
-      fetchNewArrivals(100),
-      fetchBestSellers(100),
-    ]);
+  const [
+    health,
+    categories,
+    brands,
+    collections,
+    featured,
+    newArrivals,
+    bestSellers,
+  ] = await Promise.allSettled([
+    getCatalogHealth(),
+    fetchCatalogCategories(),
+    fetchCatalogBrands(),
+    fetchCatalogCollections(),
+    fetchFeaturedProducts(100),
+    fetchNewArrivals(100),
+    fetchBestSellers(100),
+  ]);
 
-  const healthData = health.status === "fulfilled" ? health.value : { ok: false };
-  const categoriesData: CatalogCategory[] = categories.status === "fulfilled" ? categories.value : [];
-  const brandsData: CatalogBrand[] = brands.status === "fulfilled" ? brands.value : [];
-  const collectionsData: CatalogCollection[] = collections.status === "fulfilled" ? collections.value : [];
-  const featuredData: CatalogProductCard[] = featured.status === "fulfilled" ? featured.value : [];
-  const newArrivalsData: CatalogProductCard[] = newArrivals.status === "fulfilled" ? newArrivals.value : [];
-  const bestSellersData: CatalogProductCard[] = bestSellers.status === "fulfilled" ? bestSellers.value : [];
+  const healthData =
+    health.status === "fulfilled" ? health.value : { ok: false };
+  const categoriesData: CatalogCategory[] =
+    categories.status === "fulfilled" ? categories.value : [];
+  const brandsData: CatalogBrand[] =
+    brands.status === "fulfilled" ? brands.value : [];
+  const collectionsData: CatalogCollection[] =
+    collections.status === "fulfilled" ? collections.value : [];
+  const featuredData: CatalogProductCard[] =
+    featured.status === "fulfilled" ? featured.value : [];
+  const newArrivalsData: CatalogProductCard[] =
+    newArrivals.status === "fulfilled" ? newArrivals.value : [];
+  const bestSellersData: CatalogProductCard[] =
+    bestSellers.status === "fulfilled" ? bestSellers.value : [];
 
   const activeCategoriesCount = categoriesData.filter((c) => c.isActive).length;
   const activeBrandsCount = brandsData.filter((b) => b.isActive).length;
-  const activeCollectionsCount = collectionsData.filter((c) => c.status === "active").length;
+  const activeCollectionsCount = collectionsData.filter(
+    (c) => c.status === "active",
+  ).length;
 
   return (
     <div className="flex flex-col gap-6 pb-12">
@@ -144,12 +181,16 @@ const CatalogPage = async () => {
           {healthData.ok ? (
             <>
               <CheckCircle className="w-4 h-4 text-green-500" />
-              <span className="text-green-600 dark:text-green-400">Service Ready</span>
+              <span className="text-green-600 dark:text-green-400">
+                Service Ready
+              </span>
             </>
           ) : (
             <>
               <AlertCircle className="w-4 h-4 text-red-500" />
-              <span className="text-red-600 dark:text-red-400">Service Unavailable</span>
+              <span className="text-red-600 dark:text-red-400">
+                Service Unavailable
+              </span>
             </>
           )}
         </div>
@@ -157,16 +198,40 @@ const CatalogPage = async () => {
 
       {/* STAT CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        <StatCard title="Active Categories" value={activeCategoriesCount} icon={Tag} color="blue" />
-        <StatCard title="Active Brands" value={activeBrandsCount} icon={PackageOpen} color="purple" />
-        <StatCard title="Active Collections" value={activeCollectionsCount} icon={LayoutGrid} color="green" />
-        <StatCard title="Featured Products" value={featuredData.length} icon={Star} color="amber" />
-        <StatCard title="New Arrivals" value={newArrivalsData.length} icon={Flame} color="rose" />
+        <StatCard
+          title="Active Categories"
+          value={activeCategoriesCount}
+          icon={Tag}
+          color="blue"
+        />
+        <StatCard
+          title="Active Brands"
+          value={activeBrandsCount}
+          icon={PackageOpen}
+          color="purple"
+        />
+        <StatCard
+          title="Active Collections"
+          value={activeCollectionsCount}
+          icon={LayoutGrid}
+          color="green"
+        />
+        <StatCard
+          title="Featured Products"
+          value={featuredData.length}
+          icon={Star}
+          color="amber"
+        />
+        <StatCard
+          title="New Arrivals"
+          value={newArrivalsData.length}
+          icon={Flame}
+          color="rose"
+        />
       </div>
 
       {/* MAIN CONTENT */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
         {/* CATEGORIES */}
         <div className="bg-primary-foreground rounded-xl p-5">
           <h2 className="font-semibold mb-3 flex items-center gap-2">
@@ -175,7 +240,8 @@ const CatalogPage = async () => {
           </h2>
           {categoriesData.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No categories synced yet. Create categories in product-service — they will be projected here via Kafka.
+              No categories synced yet. Create categories in product-service —
+              they will be projected here via Kafka.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -222,9 +288,14 @@ const CatalogPage = async () => {
                 </thead>
                 <tbody>
                   {brandsData.map((brand) => (
-                    <tr key={brand.id} className={`border-b ${!brand.isActive ? "opacity-40" : ""}`}>
+                    <tr
+                      key={brand.id}
+                      className={`border-b ${!brand.isActive ? "opacity-40" : ""}`}
+                    >
                       <td className="py-2 px-4 font-medium">{brand.name}</td>
-                      <td className="py-2 px-4 font-mono text-muted-foreground">{brand.slug}</td>
+                      <td className="py-2 px-4 font-mono text-muted-foreground">
+                        {brand.slug}
+                      </td>
                       <td className="py-2 px-4">
                         <span
                           className={`px-2 py-0.5 rounded-full text-xs ${
@@ -269,16 +340,20 @@ const CatalogPage = async () => {
                   {collectionsData.map((col) => (
                     <tr key={col.id} className="border-b">
                       <td className="py-2 px-4 font-medium">{col.name}</td>
-                      <td className="py-2 px-4 font-mono text-muted-foreground">{col.slug}</td>
-                      <td className="py-2 px-4 text-center">{col.productCount}</td>
+                      <td className="py-2 px-4 font-mono text-muted-foreground">
+                        {col.slug}
+                      </td>
+                      <td className="py-2 px-4 text-center">
+                        {col.productCount}
+                      </td>
                       <td className="py-2 px-4">
                         <span
                           className={`px-2 py-0.5 rounded-full text-xs ${
                             col.status === "active"
                               ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
                               : col.status === "draft"
-                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
-                              : "bg-gray-100 text-gray-500"
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                                : "bg-gray-100 text-gray-500"
                           }`}
                         >
                           {col.status}
@@ -317,9 +392,15 @@ const CatalogPage = async () => {
                 <tbody>
                   {bestSellersData.slice(0, 10).map((p, i) => (
                     <tr key={p.id} className="border-b">
-                      <td className="py-2 px-4 text-muted-foreground">{i + 1}</td>
-                      <td className="py-2 px-4 font-medium line-clamp-1 max-w-[180px]">{p.name}</td>
-                      <td className="py-2 px-4 text-right">${p.price.toFixed(2)}</td>
+                      <td className="py-2 px-4 text-muted-foreground">
+                        {i + 1}
+                      </td>
+                      <td className="py-2 px-4 font-medium line-clamp-1 max-w-[180px]">
+                        {p.name}
+                      </td>
+                      <td className="py-2 px-4 text-right">
+                        ${p.price.toFixed(2)}
+                      </td>
                       <td className="py-2 px-4 text-right">
                         ⭐ {p.rating.toFixed(1)} ({p.reviewCount})
                       </td>
@@ -329,8 +410,8 @@ const CatalogPage = async () => {
                             p.availabilityStatus === "in_stock"
                               ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
                               : p.availabilityStatus === "low_stock"
-                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
-                              : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                                : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
                           }`}
                         >
                           {p.availabilityStatus.replace("_", " ")}
@@ -347,15 +428,20 @@ const CatalogPage = async () => {
 
       {/* ARCHITECTURE NOTE */}
       <div className="bg-primary-foreground rounded-xl p-5 text-sm text-muted-foreground">
-        <p className="font-semibold text-foreground mb-1">How this read model works</p>
+        <p className="font-semibold text-foreground mb-1">
+          How this read model works
+        </p>
         <p>
-          <strong>catalog-service</strong> subscribes to <code className="bg-muted px-1 rounded">product.*</code>,{" "}
+          <strong>catalog-service</strong> subscribes to{" "}
+          <code className="bg-muted px-1 rounded">product.*</code>,{" "}
           <code className="bg-muted px-1 rounded">category.*</code>, and{" "}
-          <code className="bg-muted px-1 rounded">inventory.*</code> Kafka events published by their
-          respective upstream services. Each event is processed idempotently by a CQRS projector and
-          denormalized into a PostgreSQL read model. Responses are cached in Redis under{" "}
+          <code className="bg-muted px-1 rounded">inventory.*</code> Kafka
+          events published by their respective upstream services. Each event is
+          processed idempotently by a CQRS projector and denormalized into a
+          PostgreSQL read model. Responses are cached in Redis under{" "}
           <code className="bg-muted px-1 rounded">catalog:v1:</code> for 1 hour.{" "}
-          <strong>All data here is eventually consistent</strong> — mutations must go through product-service.
+          <strong>All data here is eventually consistent</strong> — mutations
+          must go through product-service.
         </p>
       </div>
     </div>

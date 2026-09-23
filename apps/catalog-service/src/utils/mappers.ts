@@ -33,7 +33,11 @@ export function toPrismaAvailability(
 ): "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" {
   if (!status) return "IN_STOCK";
   const upper = status.toUpperCase();
-  if (upper === "IN_STOCK" || upper === "LOW_STOCK" || upper === "OUT_OF_STOCK") {
+  if (
+    upper === "IN_STOCK" ||
+    upper === "LOW_STOCK" ||
+    upper === "OUT_OF_STOCK"
+  ) {
     return upper as "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
   }
   return "IN_STOCK";
@@ -52,7 +56,9 @@ export function mapBrand(brand: CatalogBrand): CatalogBrandType {
   };
 }
 
-export function mapProductVariant(variant: CatalogProductVariant): CatalogProductVariantType {
+export function mapProductVariant(
+  variant: CatalogProductVariant,
+): CatalogProductVariantType {
   return {
     id: variant.id,
     productId: variant.productId,
@@ -160,7 +166,8 @@ export function mapCollection(
     sortOrder: collection.sortOrder,
     startAt: collection.startAt ? collection.startAt.toISOString() : null,
     endAt: collection.endAt ? collection.endAt.toISOString() : null,
-    productCount: collection._count?.collectionProducts ?? (products ? products.length : 0),
+    productCount:
+      collection._count?.collectionProducts ?? (products ? products.length : 0),
     products,
   };
 }

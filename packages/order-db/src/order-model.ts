@@ -9,6 +9,23 @@ const OrderSchema = new Schema(
     email: { type: String, required: true },
     amount: { type: Number, required: true },
     status: { type: String, required: true, enum: OrderStatus },
+    paymentMethod: { type: String, default: "card" }, // "card" or "cod"
+    isCod: { type: Boolean, default: false },
+    carrier: { type: String, default: "custom" },
+    trackingNumber: { type: String, default: null },
+    shippingAddress: {
+      type: {
+        fullName: String,
+        phone: String,
+        addressLine1: String,
+        addressLine2: String,
+        city: String,
+        state: String,
+        postalCode: String,
+        country: String,
+      },
+      default: null,
+    },
     products: {
       type: [
         {

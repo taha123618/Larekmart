@@ -213,7 +213,10 @@ const fetchCatalog = async ({
   max_price,
   params,
 }: ProductListParams): Promise<ProductSearchData> => {
-  const sortMap: Record<string, "newest" | "price_asc" | "price_desc" | "rating"> = {
+  const sortMap: Record<
+    string,
+    "newest" | "price_asc" | "price_desc" | "rating"
+  > = {
     newest: "newest",
     asc: "price_asc",
     desc: "price_desc",
@@ -230,7 +233,6 @@ const fetchCatalog = async ({
     facets: undefined,
   };
 };
-
 
 /**
  * Reads the denormalized product index through product-service's

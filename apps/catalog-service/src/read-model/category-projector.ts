@@ -23,17 +23,25 @@ export class CategoryProjector {
     return !!existing;
   }
 
-  private async markEventProcessed(eventId?: string, eventType = "category.projector") {
+  private async markEventProcessed(
+    eventId?: string,
+    eventType = "category.projector",
+  ) {
     if (!eventId) return;
-    await prisma.processedEvent.create({
-      data: {
-        eventId,
-        eventType,
-      },
-    }).catch(() => { });
+    await prisma.processedEvent
+      .create({
+        data: {
+          eventId,
+          eventType,
+        },
+      })
+      .catch(() => {});
   }
 
-  async projectCategoryUpsert(data: CategoryEventData, eventType: string): Promise<void> {
+  async projectCategoryUpsert(
+    data: CategoryEventData,
+    eventType: string,
+  ): Promise<void> {
     const eventId = data.eventId;
     if (await this.isEventProcessed(eventId)) {
       logger.info(`Skipping already processed category event: ${eventId}`);
@@ -41,7 +49,13 @@ export class CategoryProjector {
     }
 
     const categoryId = String(data.id);
-    const slug = data.slug || data.name?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `category-${categoryId}`;
+    const slug =
+      data.slug ||
+      data.name
+        ?.toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "") ||
+      `category-${categoryId}`;
 
     const upserted = await prisma.catalogCategory.upsert({
       where: { id: categoryId },
@@ -71,7 +85,10 @@ export class CategoryProjector {
     logger.info(`Projected category upsert: ${categoryId} (${eventType})`);
   }
 
-  async projectCategoryDelete(data: { id: string | number; eventId?: string }): Promise<void> {
+  async projectCategoryDelete(data: {
+    id: string | number;
+    eventId?: string;
+  }): Promise<void> {
     const eventId = data.eventId;
     if (await this.isEventProcessed(eventId)) return;
 

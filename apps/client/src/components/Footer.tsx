@@ -15,9 +15,10 @@ const Footer = () => {
         <p className="text-sm text-gray-400">All rights reserved.</p>
       </div>
       <div className="flex flex-col gap-4 text-sm text-gray-400 items-center md:items-start">
-        <p className="text-sm text-amber-50">Links</p>
+        <p className="text-sm text-amber-50">Customer Service</p>
         <Link href="/">Homepage</Link>
-        <Link href="/">Contact</Link>
+        <Link href="/track">Track Your Order</Link>
+        <Link href="/orders">My Orders</Link>
         <Link href="/">Terms of Service</Link>
         <Link href="/">Privacy Policy</Link>
       </div>

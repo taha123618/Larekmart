@@ -124,7 +124,13 @@ export interface StorefrontOverview {
 export interface CatalogProductQuery {
   page?: number;
   limit?: number;
-  sort?: "newest" | "price_asc" | "price_desc" | "rating" | "featured" | "popular";
+  sort?:
+    | "newest"
+    | "price_asc"
+    | "price_desc"
+    | "rating"
+    | "featured"
+    | "popular";
   category?: string;
   brand?: string;
   minPrice?: number;
@@ -161,18 +167,32 @@ export async function fetchCatalogProducts(
   if (query.page) params.set("page", String(query.page));
   if (query.limit) params.set("limit", String(query.limit));
   if (query.sort) params.set("sort", query.sort);
-  if (query.category && query.category !== "all") params.set("category", query.category);
+  if (query.category && query.category !== "all")
+    params.set("category", query.category);
   if (query.brand) params.set("brand", query.brand);
-  if (query.minPrice !== undefined) params.set("minPrice", String(query.minPrice));
-  if (query.maxPrice !== undefined) params.set("maxPrice", String(query.maxPrice));
+  if (query.minPrice !== undefined)
+    params.set("minPrice", String(query.minPrice));
+  if (query.maxPrice !== undefined)
+    params.set("maxPrice", String(query.maxPrice));
   if (query.availability && query.availability !== "all")
     params.set("availability", query.availability);
-  if (query.isFeatured !== undefined) params.set("isFeatured", String(query.isFeatured));
+  if (query.isFeatured !== undefined)
+    params.set("isFeatured", String(query.isFeatured));
   if (query.isNew !== undefined) params.set("isNew", String(query.isNew));
 
   return safeFetch<CatalogPaginatedResponse>(
     `${BASE}/products?${params.toString()}`,
-    { data: [], pagination: { page: 1, limit: 24, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false } },
+    {
+      data: [],
+      pagination: {
+        page: 1,
+        limit: 24,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    },
   );
 }
 
@@ -212,22 +232,34 @@ export async function fetchCatalogCategories(): Promise<CatalogCategory[]> {
 /**
  * Featured products for carousels and homepage.
  */
-export async function fetchFeaturedProducts(limit = 8): Promise<CatalogProductCard[]> {
+export async function fetchFeaturedProducts(
+  limit = 8,
+): Promise<CatalogProductCard[]> {
   return safeFetch<CatalogProductCard[]>(`${BASE}/featured?limit=${limit}`, []);
 }
 
 /**
  * New arrivals carousel.
  */
-export async function fetchNewArrivals(limit = 8): Promise<CatalogProductCard[]> {
-  return safeFetch<CatalogProductCard[]>(`${BASE}/new-arrivals?limit=${limit}`, []);
+export async function fetchNewArrivals(
+  limit = 8,
+): Promise<CatalogProductCard[]> {
+  return safeFetch<CatalogProductCard[]>(
+    `${BASE}/new-arrivals?limit=${limit}`,
+    [],
+  );
 }
 
 /**
  * Best sellers carousel.
  */
-export async function fetchBestSellers(limit = 8): Promise<CatalogProductCard[]> {
-  return safeFetch<CatalogProductCard[]>(`${BASE}/best-sellers?limit=${limit}`, []);
+export async function fetchBestSellers(
+  limit = 8,
+): Promise<CatalogProductCard[]> {
+  return safeFetch<CatalogProductCard[]>(
+    `${BASE}/best-sellers?limit=${limit}`,
+    [],
+  );
 }
 
 /**
@@ -247,7 +279,9 @@ export async function fetchCatalogCollections(): Promise<CatalogCollection[]> {
 /**
  * Full collection detail with ordered product cards.
  */
-export async function fetchCatalogCollection(slugOrId: string): Promise<CatalogCollection | null> {
+export async function fetchCatalogCollection(
+  slugOrId: string,
+): Promise<CatalogCollection | null> {
   try {
     const res = await fetch(`${BASE}/collections/${slugOrId}`, {
       next: { revalidate: 60 },

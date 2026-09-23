@@ -1,5 +1,12 @@
-import type { CatalogBrandType, CatalogPaginatedResponseType } from "@repo/types";
-import { CatalogCacheKeys, getCached, setCached } from "../cache/catalog-cache.js";
+import type {
+  CatalogBrandType,
+  CatalogPaginatedResponseType,
+} from "@repo/types";
+import {
+  CatalogCacheKeys,
+  getCached,
+  setCached,
+} from "../cache/catalog-cache.js";
 import { brandRepository } from "../repositories/brand.repository.js";
 import { catalogRepository } from "../repositories/catalog.repository.js";
 

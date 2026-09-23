@@ -15,7 +15,8 @@ export const CART_SUMMARY_KEY = ["cart", "summary"] as const;
  */
 export const useCartQuery = () => {
   const { getToken, userId } = useAuth();
-  const guestToken = typeof window !== "undefined" ? getOrCreateGuestToken() : "";
+  const guestToken =
+    typeof window !== "undefined" ? getOrCreateGuestToken() : "";
 
   return useQuery<CartResponseType | null>({
     queryKey: [...CART_QUERY_KEY, userId || "anonymous", guestToken],
@@ -33,7 +34,8 @@ export const useCartQuery = () => {
  */
 export const useCartSummaryQuery = () => {
   const { getToken, userId } = useAuth();
-  const guestToken = typeof window !== "undefined" ? getOrCreateGuestToken() : "";
+  const guestToken =
+    typeof window !== "undefined" ? getOrCreateGuestToken() : "";
 
   return useQuery<CartSummaryType | null>({
     queryKey: [...CART_SUMMARY_KEY, userId || "anonymous", guestToken],

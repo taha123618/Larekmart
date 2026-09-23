@@ -26,7 +26,9 @@ export const CatalogCategoryItemSchema = z.object({
   position: z.number().int().default(0),
   isActive: z.boolean().default(true),
   productCount: z.number().int().default(0),
-  children: z.array(z.lazy((): z.ZodTypeAny => CatalogCategoryItemSchema)).default([]),
+  children: z
+    .array(z.lazy((): z.ZodTypeAny => CatalogCategoryItemSchema))
+    .default([]),
 });
 export type CatalogCategoryItemType = z.infer<typeof CatalogCategoryItemSchema>;
 
@@ -40,7 +42,9 @@ export const CatalogProductVariantSchema = z.object({
   price: z.number().nonnegative(),
   inStock: z.boolean().default(true),
 });
-export type CatalogProductVariantType = z.infer<typeof CatalogProductVariantSchema>;
+export type CatalogProductVariantType = z.infer<
+  typeof CatalogProductVariantSchema
+>;
 
 export const CatalogProductCardSchema = z.object({
   id: z.string(),
@@ -55,13 +59,18 @@ export const CatalogProductCardSchema = z.object({
   discountPercentage: z.number().nonnegative().default(0),
   rating: z.number().default(0),
   reviewCount: z.number().int().default(0),
-  availabilityStatus: z.enum(["in_stock", "low_stock", "out_of_stock"]).default("in_stock"),
+  availabilityStatus: z
+    .enum(["in_stock", "low_stock", "out_of_stock"])
+    .default("in_stock"),
   brand: CatalogBrandSchema.nullable().optional(),
-  primaryCategory: z.object({
-    id: z.string(),
-    name: z.string(),
-    slug: z.string(),
-  }).nullable().optional(),
+  primaryCategory: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      slug: z.string(),
+    })
+    .nullable()
+    .optional(),
   badges: z.array(z.string()).default([]),
   isFeatured: z.boolean().default(false),
   isNew: z.boolean().default(false),
@@ -78,7 +87,9 @@ export const CatalogCollectionProductSchema = z.object({
   position: z.number().int().default(0),
   product: CatalogProductCardSchema.optional(),
 });
-export type CatalogCollectionProductType = z.infer<typeof CatalogCollectionProductSchema>;
+export type CatalogCollectionProductType = z.infer<
+  typeof CatalogCollectionProductSchema
+>;
 
 export const CatalogCollectionSchema = z.object({
   id: z.string(),
@@ -98,12 +109,23 @@ export type CatalogCollectionType = z.infer<typeof CatalogCollectionSchema>;
 export const CatalogProductQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(24),
-  sort: z.enum(["newest", "price_asc", "price_desc", "rating", "featured", "popular"]).default("newest"),
+  sort: z
+    .enum([
+      "newest",
+      "price_asc",
+      "price_desc",
+      "rating",
+      "featured",
+      "popular",
+    ])
+    .default("newest"),
   category: z.string().optional(),
   brand: z.string().optional(),
   minPrice: z.coerce.number().nonnegative().optional(),
   maxPrice: z.coerce.number().nonnegative().optional(),
-  availability: z.enum(["in_stock", "low_stock", "out_of_stock", "all"]).default("all"),
+  availability: z
+    .enum(["in_stock", "low_stock", "out_of_stock", "all"])
+    .default("all"),
   isFeatured: z.coerce.boolean().optional(),
   isNew: z.coerce.boolean().optional(),
 });
@@ -120,4 +142,6 @@ export const CatalogPaginatedResponseSchema = z.object({
     hasPrevPage: z.boolean(),
   }),
 });
-export type CatalogPaginatedResponseType = z.infer<typeof CatalogPaginatedResponseSchema>;
+export type CatalogPaginatedResponseType = z.infer<
+  typeof CatalogPaginatedResponseSchema
+>;

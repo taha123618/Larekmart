@@ -17,11 +17,16 @@ export const shippingFormSchema = z.object({
     .min(1, "Email is required!"),
   phone: z
     .string()
-    .min(7, "Phone number must be between 7 and 10 digits!")
-    .max(10, "Phone number must be between 7 and 10 digits!")
-    .regex(/^\d+$/, "Phone number must contain only numbers!"),
+    .min(7, "Phone number must be at least 7 digits!")
+    .max(15, "Phone number cannot exceed 15 digits!"),
   address: z.string().min(1, "Address is required!"),
   city: z.string().min(1, "City is required!"),
+  carrier: z.string().optional(),
+  serviceType: z.string().optional(),
+  shippingAmount: z.number().optional(),
+  isCod: z.boolean().optional(),
+  codAmount: z.number().optional(),
+  codFee: z.number().optional(),
 });
 
 export type ShippingFormInputs = z.infer<typeof shippingFormSchema>;

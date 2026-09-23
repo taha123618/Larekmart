@@ -92,7 +92,9 @@ export async function invalidateProductCache(
   }
 }
 
-export async function invalidateCategoryCache(categoryId: string): Promise<void> {
+export async function invalidateCategoryCache(
+  categoryId: string,
+): Promise<void> {
   try {
     await cacheDel(redis.client, CatalogCacheKeys.categoryTree());
     await cacheDel(redis.client, CatalogCacheKeys.category(categoryId, 1));

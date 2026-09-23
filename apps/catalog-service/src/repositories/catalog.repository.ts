@@ -1,6 +1,9 @@
 import { prisma } from "@repo/catalog-db";
 import type { Prisma } from "@repo/catalog-db";
-import type { CatalogProductQueryType, CatalogPaginatedResponseType } from "@repo/types";
+import type {
+  CatalogProductQueryType,
+  CatalogPaginatedResponseType,
+} from "@repo/types";
 import { mapProductCard } from "../utils/mappers.js";
 
 const productInclude = {
@@ -10,7 +13,9 @@ const productInclude = {
 } as const;
 
 export class CatalogRepository {
-  async findProducts(query: CatalogProductQueryType): Promise<CatalogPaginatedResponseType> {
+  async findProducts(
+    query: CatalogProductQueryType,
+  ): Promise<CatalogPaginatedResponseType> {
     const {
       page = 1,
       limit = 24,
@@ -73,7 +78,9 @@ export class CatalogRepository {
       where.isNew = isNew;
     }
 
-    let orderBy: Prisma.CatalogProductOrderByWithRelationInput = { publishedAt: "desc" };
+    let orderBy: Prisma.CatalogProductOrderByWithRelationInput = {
+      publishedAt: "desc",
+    };
     switch (sort) {
       case "newest":
         orderBy = { publishedAt: "desc" };

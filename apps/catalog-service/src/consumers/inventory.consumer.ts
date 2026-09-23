@@ -15,6 +15,8 @@ export async function handleInventoryAdjusted(payload: any): Promise<void> {
       eventId: target.eventId,
     });
   } catch (error) {
-    logger.error("Error handling inventory update in catalog-service", { error: String(error) });
+    logger.error("Error handling inventory update in catalog-service", {
+      error: String(error),
+    });
   }
 }

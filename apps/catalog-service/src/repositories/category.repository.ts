@@ -50,7 +50,9 @@ export class CategoryRepository {
     return categories.map((cat) => mapCategoryItem(cat));
   }
 
-  async findCategoryByIdOrSlug(idOrSlug: string): Promise<CatalogCategoryItemType | null> {
+  async findCategoryByIdOrSlug(
+    idOrSlug: string,
+  ): Promise<CatalogCategoryItemType | null> {
     const category = await prisma.catalogCategory.findFirst({
       where: {
         OR: [{ id: idOrSlug }, { slug: idOrSlug }],
@@ -78,7 +80,9 @@ export class CategoryRepository {
 
     if (!category) return null;
 
-    const children = (category.children || []).map((child) => mapCategoryItem(child));
+    const children = (category.children || []).map((child) =>
+      mapCategoryItem(child),
+    );
     return mapCategoryItem(category, children);
   }
 }

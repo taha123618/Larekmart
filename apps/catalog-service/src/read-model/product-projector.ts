@@ -34,19 +34,27 @@ export class ProductProjector {
     return !!existing;
   }
 
-  private async markEventProcessed(eventId?: string, eventType = "product.projector") {
+  private async markEventProcessed(
+    eventId?: string,
+    eventType = "product.projector",
+  ) {
     if (!eventId) return;
-    await prisma.processedEvent.create({
-      data: {
-        eventId,
-        eventType,
-      },
-    }).catch(() => {
-      // Ignore unique constraint collision
-    });
+    await prisma.processedEvent
+      .create({
+        data: {
+          eventId,
+          eventType,
+        },
+      })
+      .catch(() => {
+        // Ignore unique constraint collision
+      });
   }
 
-  async projectProductUpsert(data: ProductEventData, eventType: string): Promise<void> {
+  async projectProductUpsert(
+    data: ProductEventData,
+    eventType: string,
+  ): Promise<void> {
     const eventId = data.eventId;
     if (await this.isEventProcessed(eventId)) {
       logger.info(`Skipping already processed event: ${eventId}`);
@@ -54,15 +62,23 @@ export class ProductProjector {
     }
 
     const productId = String(data.id);
-    const slug = data.slug || data.name?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `product-${productId}`;
+    const slug =
+      data.slug ||
+      data.name
+        ?.toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "") ||
+      `product-${productId}`;
     const price = typeof data.price === "number" ? data.price : 0;
-    const compareAtPrice = typeof data.compareAtPrice === "number" ? data.compareAtPrice : null;
+    const compareAtPrice =
+      typeof data.compareAtPrice === "number" ? data.compareAtPrice : null;
     const discountPercentage =
       compareAtPrice && compareAtPrice > price
         ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
         : 0;
 
-    let thumbnailUrl = "https://images.unsplash.com/photo-1523275335684-37898b6baf30";
+    let thumbnailUrl =
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30";
     if (data.images && typeof data.images === "object") {
       const firstImg = Object.values(data.images)[0];
       if (typeof firstImg === "string" && firstImg.length > 0) {
@@ -73,10 +89,14 @@ export class ProductProjector {
     // Resolve category if categorySlug or categoryId is given
     let primaryCategoryId: string | null = null;
     if (data.categoryId) {
-      const cat = await prisma.catalogCategory.findUnique({ where: { id: data.categoryId } });
+      const cat = await prisma.catalogCategory.findUnique({
+        where: { id: data.categoryId },
+      });
       if (cat) primaryCategoryId = cat.id;
     } else if (data.categorySlug) {
-      const cat = await prisma.catalogCategory.findUnique({ where: { slug: data.categorySlug } });
+      const cat = await prisma.catalogCategory.findUnique({
+        where: { slug: data.categorySlug },
+      });
       if (cat) primaryCategoryId = cat.id;
     }
 
@@ -112,7 +132,8 @@ export class ProductProjector {
         thumbnailUrl: data.images ? thumbnailUrl : undefined,
         images: (data.images as any) || undefined,
         price: data.price !== undefined ? price : undefined,
-        compareAtPrice: data.compareAtPrice !== undefined ? compareAtPrice : undefined,
+        compareAtPrice:
+          data.compareAtPrice !== undefined ? compareAtPrice : undefined,
         discountPercentage,
         rating: data.rating,
         reviewCount: data.reviewCount,
@@ -124,63 +145,83 @@ export class ProductProjector {
     });
 
     // Create variants if sizes/colors are provided
-    if ((data.sizes && data.sizes.length > 0) || (data.colors && data.colors.length > 0)) {
-      const sizes = data.sizes && data.sizes.length > 0 ? data.sizes : ["Standard"];
-      const colors = data.colors && data.colors.length > 0 ? data.colors : ["Default"];
+    if (
+      (data.sizes && data.sizes.length > 0) ||
+      (data.colors && data.colors.length > 0)
+    ) {
+      const sizes =
+        data.sizes && data.sizes.length > 0 ? data.sizes : ["Standard"];
+      const colors =
+        data.colors && data.colors.length > 0 ? data.colors : ["Default"];
 
       for (const size of sizes) {
         for (const color of colors) {
-          const variantId = `${productId}-${size}-${color}`.toLowerCase().replace(/[^a-z0-9]/g, "-");
-          await prisma.catalogProductVariant.upsert({
-            where: {
-              productId_variantId: {
+          const variantId = `${productId}-${size}-${color}`
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "-");
+          await prisma.catalogProductVariant
+            .upsert({
+              where: {
+                productId_variantId: {
+                  productId,
+                  variantId,
+                },
+              },
+              create: {
                 productId,
                 variantId,
+                size,
+                color,
+                price,
+                inStock: true,
               },
-            },
-            create: {
-              productId,
-              variantId,
-              size,
-              color,
-              price,
-              inStock: true,
-            },
-            update: {
-              price,
-              size,
-              color,
-            },
-          }).catch((err) => {
-            logger.warn(`Failed to upsert variant ${variantId}:`, { error: String(err) });
-          });
+              update: {
+                price,
+                size,
+                color,
+              },
+            })
+            .catch((err) => {
+              logger.warn(`Failed to upsert variant ${variantId}:`, {
+                error: String(err),
+              });
+            });
         }
       }
     }
 
     // Link secondary category if resolved
     if (primaryCategoryId) {
-      await prisma.catalogCategoryProduct.upsert({
-        where: {
-          categoryId_productId: {
+      await prisma.catalogCategoryProduct
+        .upsert({
+          where: {
+            categoryId_productId: {
+              categoryId: primaryCategoryId,
+              productId,
+            },
+          },
+          create: {
             categoryId: primaryCategoryId,
             productId,
           },
-        },
-        create: {
-          categoryId: primaryCategoryId,
-          productId,
-        },
-        update: {},
-      }).catch(() => { });
+          update: {},
+        })
+        .catch(() => {});
     }
 
     await this.markEventProcessed(eventId, eventType);
-    await invalidateProductCache(productId, upserted.primaryCategoryId, upserted.brandId);
+    await invalidateProductCache(
+      productId,
+      upserted.primaryCategoryId,
+      upserted.brandId,
+    );
     logger.info(`Projected product upsert: ${productId} (${eventType})`);
   }
 
-  async projectProductDelete(data: { id: string | number; eventId?: string }): Promise<void> {
+  async projectProductDelete(data: {
+    id: string | number;
+    eventId?: string;
+  }): Promise<void> {
     const eventId = data.eventId;
     if (await this.isEventProcessed(eventId)) {
       logger.info(`Skipping already processed event: ${eventId}`);
@@ -197,7 +238,11 @@ export class ProductProjector {
         where: { productId },
         data: { isActive: false },
       });
-      await invalidateProductCache(productId, existing.primaryCategoryId, existing.brandId);
+      await invalidateProductCache(
+        productId,
+        existing.primaryCategoryId,
+        existing.brandId,
+      );
       logger.info(`Projected product deactivated/deleted: ${productId}`);
     }
 
@@ -213,12 +258,16 @@ export class ProductProjector {
     const eventId = data.eventId;
     if (await this.isEventProcessed(eventId)) return;
 
-    let availabilityStatus: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" = "IN_STOCK";
+    let availabilityStatus: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" =
+      "IN_STOCK";
     if (data.status) {
       const upper = data.status.toUpperCase();
       if (upper.includes("OUT") || data.available === 0) {
         availabilityStatus = "OUT_OF_STOCK";
-      } else if (upper.includes("LOW") || (data.available !== undefined && data.available <= 5)) {
+      } else if (
+        upper.includes("LOW") ||
+        (data.available !== undefined && data.available <= 5)
+      ) {
         availabilityStatus = "LOW_STOCK";
       }
     } else if (data.available !== undefined) {
@@ -234,7 +283,9 @@ export class ProductProjector {
 
     if (updated.count > 0) {
       await invalidateProductCache(data.productId);
-      logger.info(`Projected inventory status update for product ${data.productId}: ${availabilityStatus}`);
+      logger.info(
+        `Projected inventory status update for product ${data.productId}: ${availabilityStatus}`,
+      );
     }
 
     await this.markEventProcessed(eventId, "inventory.adjusted");
