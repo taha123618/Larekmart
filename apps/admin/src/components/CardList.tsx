@@ -97,13 +97,13 @@ const CardList = async ({ title }: { title: string }) => {
                 className="flex-row items-center justify-between gap-4 p-4"
               >
                 <div className="w-12 h-12 rounded-sm relative overflow-hidden">
-                  <Image
+                  <img
                     src={
                       Object.values(item.images as Record<string, string>)[0] ||
                       ""
                     }
                     alt={item.name}
-                    fill
+                    // fill
                     className="object-cover"
                   />
                 </div>

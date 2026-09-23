@@ -51,10 +51,10 @@ export const columns: ColumnDef<User>[] = [
       const user = row.original;
       return (
         <div className="w-9 h-9 relative">
-          <Image
-            src={user.imageUrl}
+          <img
+            src={user.imageUrl ?? ""}
             alt={user.firstName || user.username || "-"}
-            fill
+            // fill
             className="rounded-full object-cover"
           />
         </div>

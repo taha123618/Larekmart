@@ -109,7 +109,7 @@ CREATE INDEX "inventory_items_status_idx" ON "inventory_items"("status");
 CREATE INDEX "inventory_reservations_inventoryItemId_status_idx" ON "inventory_reservations"("inventoryItemId", "status");
 CREATE INDEX "inventory_reservations_userId_status_idx" ON "inventory_reservations"("userId", "status");
 CREATE INDEX "inventory_reservations_expiresAt_status_idx" ON "inventory_reservations"("expiresAt", "status");
-CREATE UNIQUE INDEX "inventory_reservations_referenceType_referenceId_inventoryItemId_key" ON "inventory_reservations"("referenceType", "referenceId", "inventoryItemId");
+CREATE UNIQUE INDEX "inventory_reservations_referenceType_referenceId_inventoryI_key" ON "inventory_reservations"("referenceType", "referenceId", "inventoryItemId");
 
 -- CreateIndex
 CREATE INDEX "inventory_movements_inventoryItemId_createdAt_idx" ON "inventory_movements"("inventoryItemId", "createdAt");

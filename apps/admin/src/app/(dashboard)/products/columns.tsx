@@ -54,14 +54,14 @@ export const columns: ColumnDef<ProductType>[] = [
       const product = row.original;
       return (
         <div className="w-9 h-9 relative">
-          <Image
+          <img
             src={
               (product.images as Record<string, string>)?.[
-                product.colors[0] || ""
+              product.colors[0] || ""
               ] || ""
             }
             alt={product.name}
-            fill
+            // fill
             className="rounded-full object-cover"
           />
         </div>

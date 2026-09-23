@@ -44,14 +44,14 @@ const ProductCard = ({ product }: { product: ProductType }) => {
       {/* IMAGE */}
       <Link href={`/products/${product.id}`}>
         <div className="relative aspect-[2/3]">
-          <Image
+          <img
             src={
               (product.images as Record<string, string>)?.[
-                productTypes.color
+              productTypes.color
               ] || ""
             }
             alt={product.name}
-            fill
+            // fill
             className="object-cover hover:scale-105 transition-all duration-300"
           />
         </div>
@@ -86,11 +86,10 @@ const ProductCard = ({ product }: { product: ProductType }) => {
             <div className="flex items-center gap-2">
               {product.colors.map((color) => (
                 <div
-                  className={`cursor-pointer border-1 ${
-                    productTypes.color === color
-                      ? "border-gray-400"
-                      : "border-gray-200"
-                  } rounded-full p-[1.2px]`}
+                  className={`cursor-pointer border-1 ${productTypes.color === color
+                    ? "border-gray-400"
+                    : "border-gray-200"
+                    } rounded-full p-[1.2px]`}
                   key={color}
                   onClick={() =>
                     handleProductType({ type: "color", value: color })

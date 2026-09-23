@@ -178,22 +178,19 @@ const CartContent = () => {
       <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
         {steps.map((step) => (
           <div
-            className={`flex items-center gap-2 border-b-2 pb-4 ${
-              step.id === activeStep ? "border-gray-800" : "border-gray-200"
-            }`}
+            className={`flex items-center gap-2 border-b-2 pb-4 ${step.id === activeStep ? "border-gray-800" : "border-gray-200"
+              }`}
             key={step.id}
           >
             <div
-              className={`w-6 h-6 rounded-full text-white p-4 flex items-center justify-center text-sm font-semibold ${
-                step.id === activeStep ? "bg-gray-800" : "bg-gray-400"
-              }`}
+              className={`w-6 h-6 rounded-full text-white p-4 flex items-center justify-center text-sm font-semibold ${step.id === activeStep ? "bg-gray-800" : "bg-gray-400"
+                }`}
             >
               {step.id}
             </div>
             <p
-              className={`text-sm font-medium ${
-                step.id === activeStep ? "text-gray-800" : "text-gray-400"
-              }`}
+              className={`text-sm font-medium ${step.id === activeStep ? "text-gray-800" : "text-gray-400"
+                }`}
             >
               {step.title}
             </p>
@@ -248,20 +245,20 @@ const CartContent = () => {
                   {/* IMAGE AND DETAILS */}
                   <div className="flex gap-6 items-center">
                     <div className="relative w-24 h-24 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-100">
-                      <Image
+                      <img
                         src={
                           (item.images as Record<string, string>)?.[
-                            item.selectedColor
+                          item.selectedColor
                           ] ||
                           (typeof item.images === "object" && item.images
                             ? Object.values(
-                                item.images as Record<string, string>,
-                              )[0] || ""
+                              item.images as Record<string, string>,
+                            )[0] || ""
                             : "") ||
                           "/placeholder.png"
                         }
                         alt={item.name}
-                        fill
+                        // fill
                         className="object-contain"
                       />
                     </div>
@@ -376,11 +373,10 @@ const CartContent = () => {
 
               {couponFeedback && (
                 <div
-                  className={`text-xs mt-1 flex items-center gap-1.5 ${
-                    couponFeedback.type === "success"
-                      ? "text-emerald-700 font-medium"
-                      : "text-rose-600"
-                  }`}
+                  className={`text-xs mt-1 flex items-center gap-1.5 ${couponFeedback.type === "success"
+                    ? "text-emerald-700 font-medium"
+                    : "text-rose-600"
+                    }`}
                 >
                   {couponFeedback.type === "success" ? (
                     <CheckCircle2 className="w-3.5 h-3.5" />

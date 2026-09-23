@@ -1,6 +1,66 @@
 import mongoose from "mongoose";
 
+// Imported for their side effect: registering the models on the default connection, which
+// is the connection `syncIndexes()` walks. Keep this in step with the models in `src/models/`.
+import "./models/cart.model.js";
+import "./models/processed-event.model.js";
+
 let isConnected = false;
+
+/**
+ * Whether to reconcile MongoDB's indexes with the Mongoose schemas on connect.
+ *
+ * `syncIndexes()` makes the database match the models: it creates indexes the schemas
+ * declare and **drops every index no schema declares** (the `_id` index is always kept).
+ *
+ * Dropping is the whole point — Mongoose's default `autoIndex` only ever creates, so an
+ * index removed from a schema lingers in the database forever as dead write overhead.
+ * But dropping is also destructive by design: an index created directly in MongoDB, for
+ * a query the schemas don't describe, will be removed. Because of that the sync is
+ * opt-out outside production and opt-in inside it:
+ *
+ * - `MONGO_SYNC_INDEXES=true`  -> always sync, including production
+ * - `MONGO_SYNC_INDEXES=false` -> never sync, in any environment
+ * - unset                      -> sync everywhere except production
+ *
+ * Enable it in production only once you are confident no hand-managed indexes exist there.
+ */
+const shouldSyncIndexes = (): boolean => {
+  const flag = process.env.MONGO_SYNC_INDEXES;
+
+  if (flag === "true") return true;
+  if (flag === "false") return false;
+
+  return process.env.NODE_ENV !== "production";
+};
+
+/**
+ * Reconciles the indexes in MongoDB with the schemas registered on the default
+ * connection, logging anything that was dropped.
+ *
+ * Deliberately never throws: a failed sync leaves indexes missing (a performance
+ * problem) rather than corrupting data, so it is logged and startup continues.
+ */
+export const syncCartIndexes = async (): Promise<void> => {
+  try {
+    const dropped = await mongoose.connection.syncIndexes();
+    const droppedCount = Object.values(dropped).reduce(
+      (total, names) => total + names.length,
+      0,
+    );
+
+    if (droppedCount > 0) {
+      console.log(
+        `Dropped ${droppedCount} index(es) not declared by the schemas:`,
+        dropped,
+      );
+    } else {
+      console.log("MongoDB indexes match the Mongoose schemas");
+    }
+  } catch (error) {
+    console.error("Cart MongoDB index sync failed:", error);
+  }
+};
 
 export const connectCartDB = async (mongoUrl?: string) => {
   if (isConnected && mongoose.connection.readyState === 1) return;
@@ -14,6 +74,10 @@ export const connectCartDB = async (mongoUrl?: string) => {
     await mongoose.connect(url);
     isConnected = true;
     console.log("Connected to Cart MongoDB database successfully");
+
+    if (shouldSyncIndexes()) {
+      await syncCartIndexes();
+    }
   } catch (error) {
     console.error("Cart MongoDB connection failed:", error);
     throw error;

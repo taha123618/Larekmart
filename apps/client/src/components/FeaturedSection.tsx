@@ -43,10 +43,10 @@ const CatalogCard = ({ product }: { product: CatalogProductCard }) => {
     >
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden">
         {imageSrc ? (
-          <Image
+          <img
             src={imageSrc}
             alt={product.name}
-            fill
+            // fill
             className="object-cover group-hover:scale-105 transition-all duration-300"
           />
         ) : (

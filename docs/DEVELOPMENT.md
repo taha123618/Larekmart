@@ -223,25 +223,39 @@ NOTIFICATION_DB_TEST_URL="$DATABASE_URL" go test ./internal/db/ -run Integration
 
 #### MongoDB stores (`order-db`, `cart-db`)
 
-Mongoose has no migration concept: collections and indexes are derived from the schemas and
-created on first connect. Index changes therefore need an explicit `syncIndexes()` against a
-running database, or a service restart:
+Mongoose has no migration concept: collections and indexes are derived from the schemas.
+Both connection helpers reconcile the database with the models on connect — creating the
+declared indexes and **dropping any index no schema declares** (`_id` is always kept) — so
+a restart is enough to apply an index change:
+
+| `MONGO_SYNC_INDEXES` | Behaviour                                          |
+| -------------------- | -------------------------------------------------- |
+| unset                | syncs everywhere except when `NODE_ENV=production` |
+| `true`               | syncs in every environment, including production   |
+| `false`              | never syncs, in any environment                    |
+
+Dropping is destructive by design: an index added directly in MongoDB, for a query the
+schemas do not describe, is removed. Production is therefore opt-in — set
+`MONGO_SYNC_INDEXES=true` there only once no hand-managed indexes exist. A failed sync is
+logged and never thrown, so the symptom is a missing index (performance), not a service that
+refuses to start.
+
+To reconcile without restarting the service — the only way to sync under
+`NODE_ENV=production` without opting in — call the helper directly:
 
 ```bash
 # order-service (has tsx as a dev dependency)
 cd apps/order-service
 pnpm exec tsx --env-file=.env -e '(async () => {
   const db = await import("@repo/order-db");
-  await db.connectOrderDB(); await db.Order.syncIndexes(); await db.Order.db.close();
+  await db.connectOrderDB(); await db.syncOrderIndexes(); await db.Order.db.close();
 })();'
 
 # cart-service uses pnpm dlx instead (tsx is not a local dependency)
 cd apps/cart-service
 pnpm dlx tsx --env-file=.env -e '(async () => {
   const db = await import("@repo/cart-db");
-  await db.connectCartDB();
-  await Promise.all([db.Cart.syncIndexes(), db.ProcessedEvent.syncIndexes()]);
-  await db.closeCartDB();
+  await db.connectCartDB(); await db.syncCartIndexes(); await db.closeCartDB();
 })();'
 ```
 

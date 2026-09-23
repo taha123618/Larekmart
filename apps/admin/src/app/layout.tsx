@@ -23,11 +23,18 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // `suppressHydrationWarning` on <body> guards against browser extensions that inject
+  // attributes into it before React hydrates — Grammarly adds `data-gr-ext-installed`
+  // and `data-new-gr-c-s-check-loaded`. React's suppression is per element, so the flag
+  // on <html> does not cover <body>. Note this only silences attribute/text warnings on
+  // <body> itself, so a genuine mismatch there would also be hidden — comment it out
+  // temporarily if you ever need to debug one.
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          suppressHydrationWarning
         >
           {children}
         </body>

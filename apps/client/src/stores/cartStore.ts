@@ -281,6 +281,13 @@ const useCartStore = create<ExtendedCartState & ExtendedCartActions>()(
     {
       name: "cart",
       storage: createJSONStorage(() => localStorage),
+      // `localStorage` is synchronous, so without this zustand rehydrates during module
+      // evaluation - before React's first render. The server has no `localStorage` and
+      // renders the initial empty cart, so the client would render the persisted one and
+      // React would report a hydration mismatch. `CartStoreHydration` calls
+      // `.persist.rehydrate()` once after mount instead, so the first client render
+      // matches the server and the persisted cart is applied immediately afterwards.
+      skipHydration: true,
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.hasHydrated = true;

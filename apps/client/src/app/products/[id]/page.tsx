@@ -65,12 +65,12 @@ const ProductPage = async ({
       <div className="flex flex-col gap-4 lg:flex-row md:gap-12">
         {/* IMAGE */}
         <div className="w-full lg:w-5/12 relative aspect-[2/3]">
-          <Image
+          <img
             src={
               (product.images as Record<string, string>)?.[selectedColor] || ""
             }
             alt={product.name}
-            fill
+            // fill
             className="object-contain rounded-md"
           />
         </div>
