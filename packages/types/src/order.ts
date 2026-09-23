@@ -19,7 +19,25 @@ export type PaymentSuccessfulType = {
   email?: string | null;
   amount: number;
   status: "success" | "failed";
+  paymentMethod?: string | null;
+  carrier?: string | null;
+  serviceType?: string | null;
+  shippingRateAmount?: number | null;
+  isCod?: boolean | null;
+  codAmount?: number | null;
+  codFee?: number | null;
+  shippingAddress?: {
+    fullName: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string | null;
+    city: string;
+    state?: string | null;
+    postalCode: string;
+    country: string;
+  } | null;
   products: {
+    productId?: string | null;
     name?: string | null;
     quantity?: number | null;
     price?: number | null;
@@ -33,5 +51,22 @@ export type OrderCreatedType = {
   email: string;
   amount: number;
   status: "success" | "failed";
+  paymentMethod?: string | null;
+  carrier?: string | null;
+  serviceType?: string | null;
+  shippingRateAmount?: number | null;
+  isCod?: boolean | null;
+  codAmount?: number | null;
+  codFee?: number | null;
+  shippingAddress?: {
+    fullName: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string | null;
+    city: string;
+    state?: string | null;
+    postalCode: string;
+    country: string;
+  } | null;
   products?: unknown;
 };

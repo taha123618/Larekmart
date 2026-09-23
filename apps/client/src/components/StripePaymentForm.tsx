@@ -56,8 +56,7 @@ const StripePaymentForm = ({
     <CheckoutProvider
       stripe={stripe}
       options={{
-        fetchClientSecret: () =>
-          fetchClientSecret(cart, token, serverCart?.id),
+        fetchClientSecret: () => fetchClientSecret(cart, token, serverCart?.id),
       }}
     >
       <CheckoutForm shippingForm={shippingForm} />

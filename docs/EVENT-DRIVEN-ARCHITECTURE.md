@@ -86,6 +86,15 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `cart.coupon_removed`             | cart-service         | analytic-service                                                                                 | `CartEventPayload` (`cartId`, `userId`, `couponCode`)                                                                                                              |
 | `cart.expired`                    | cart-service         | analytic-service, notification-service (abandoned cart recovery)                                 | `CartEventPayload` (`cartId`, `userId`, `guestToken`, `itemsCount`)                                                                                                |
 | `cart.cleared`                    | cart-service         | analytic-service                                                                                 | `CartEventPayload` (`cartId`, `userId`)                                                                                                                            |
+| `shipment.created`                | shipping-service     | order-service, notification-service, analytic-service                                            | `ShipmentCreatedPayload` (`shipmentId`, `orderId`, `carrier`, `trackingNumber`, `status`)                                                                          |
+| `shipment.label_created`          | shipping-service     | order-service, notification-service                                                              | `ShipmentLabelCreatedPayload` (`shipmentId`, `orderId`, `carrier`, `trackingNumber`, `labelUrl`)                                                                   |
+| `shipment.shipped`                | shipping-service     | order-service, notification-service, analytic-service                                            | `ShipmentShippedPayload` (`shipmentId`, `orderId`, `carrier`, `trackingNumber`, `shippedAt`)                                                                       |
+| `shipment.in_transit`             | shipping-service     | notification-service                                                                             | `ShipmentInTransitPayload` (`shipmentId`, `orderId`, `carrier`, `trackingNumber`, `location`)                                                                      |
+| `shipment.out_for_delivery`       | shipping-service     | notification-service                                                                             | `ShipmentOutForDeliveryPayload` (`shipmentId`, `orderId`, `carrier`, `trackingNumber`)                                                                             |
+| `shipment.delivered`              | shipping-service     | order-service, notification-service, analytic-service                                            | `ShipmentDeliveredPayload` (`shipmentId`, `orderId`, `carrier`, `trackingNumber`, `deliveredAt`)                                                                   |
+| `shipment.cancelled`              | shipping-service     | order-service, notification-service                                                              | `ShipmentCancelledPayload` (`shipmentId`, `orderId`, `reason`)                                                                                                     |
+| `shipment.failed`                 | shipping-service     | order-service, notification-service                                                              | `ShipmentFailedPayload` (`shipmentId`, `orderId`, `reason`)                                                                                                        |
+| `tracking.updated`                | shipping-service     | notification-service, analytic-service                                                           | `TrackingUpdatedPayload` (`shipmentId`, `trackingNumber`, `carrier`, `status`, `description`, `location`)                                                          |
 
 ### `product.created`
 
@@ -264,6 +273,58 @@ Emitted whenever cart lifecycle actions occur in `cart-service`. Enables decoupl
   - `apps/analytic-service` → cart abandonment rates, popular cart items, add-to-cart conversion funnel.
   - `apps/recommendation-service` → real-time collaborative filtering & cross-selling recommendations.
   - `apps/notification-service` → abandoned cart emails/pushes after `cart.expired`.
+
+### `shipment.*` (`shipment.created`, `shipment.shipped`, `shipment.delivered`, etc.)
+
+Emitted as a package transitions across its lifecycle states in `shipping-service`.
+Allows `order-service` to mirror shipment status without tight coupling, triggers multi-channel delivery updates in `notification-service`, and feeds logistics performance metrics to `analytic-service`.
+
+```jsonc
+{
+  "value": {
+    "eventId": "123e4567-e89b-12d3-a456-426614174000",
+    "eventType": "shipment.delivered",
+    "shipmentId": "ship_abc123",
+    "orderId": "660c1d2e...",
+    "carrier": "tcs",
+    "trackingNumber": "TCS789456123",
+    "deliveredAt": "2026-09-24T12:00:00.000Z",
+    "timestamp": "2026-09-24T12:00:01.000Z",
+  },
+}
+```
+
+- Producer: `apps/shipping-service/src/publishers/shipping.publisher.ts`
+- Consumers:
+  - `apps/order-service` → updates order fulfillment status.
+  - `apps/notification-service` → sends delivery notification (SMS / WhatsApp / Email / In-App).
+  - `apps/analytic-service` → tracks carrier delivery times and SLA fulfillment.
+
+### `tracking.updated`
+
+Emitted whenever carrier webhooks or status checks record a granular milestone event along the package route.
+
+```jsonc
+{
+  "value": {
+    "eventId": "evt_98765",
+    "eventType": "tracking.updated",
+    "shipmentId": "ship_abc123",
+    "trackingNumber": "TCS789456123",
+    "carrier": "tcs",
+    "status": "IN_TRANSIT",
+    "description": "Shipment arrived at central sorting facility",
+    "location": "Lahore Sorting Hub",
+    "occurredAt": "2026-09-24T09:30:00.000Z",
+    "timestamp": "2026-09-24T09:30:05.000Z",
+  },
+}
+```
+
+- Producer: `apps/shipping-service/src/publishers/shipping.publisher.ts`
+- Consumers:
+  - `apps/notification-service` → real-time tracking updates via WebSockets.
+  - `apps/analytic-service` → transit duration analytics per carrier and lane.
 
 ## Adding or changing an event
 

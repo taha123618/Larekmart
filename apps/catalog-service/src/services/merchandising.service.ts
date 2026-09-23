@@ -4,13 +4,14 @@ import { categoryService } from "./category.service.js";
 
 export class MerchandisingService {
   async getStorefrontOverview() {
-    const [featured, newArrivals, bestSellers, collections, categories] = await Promise.all([
-      catalogService.getFeaturedProducts(8),
-      catalogService.getNewArrivals(8),
-      catalogService.getBestSellers(8),
-      collectionService.getAllCollections(),
-      categoryService.getCategoryTree(),
-    ]);
+    const [featured, newArrivals, bestSellers, collections, categories] =
+      await Promise.all([
+        catalogService.getFeaturedProducts(8),
+        catalogService.getNewArrivals(8),
+        catalogService.getBestSellers(8),
+        collectionService.getAllCollections(),
+        categoryService.getCategoryTree(),
+      ]);
 
     return {
       heroCollections: collections.slice(0, 3),

@@ -32,7 +32,9 @@ async function main() {
 
   // 3. Graceful shutdown
   const shutdown = async (signal: string) => {
-    logger.info(`Received ${signal}, shutting down catalog-service gracefully...`);
+    logger.info(
+      `Received ${signal}, shutting down catalog-service gracefully...`,
+    );
     try {
       await app.close();
       logger.info("Fastify server closed");
@@ -63,6 +65,8 @@ async function main() {
 }
 
 main().catch((err) => {
-  logger.fatal("Fatal error bootstrapping catalog-service", { error: String(err) });
+  logger.fatal("Fatal error bootstrapping catalog-service", {
+    error: String(err),
+  });
   process.exit(1);
 });

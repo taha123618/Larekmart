@@ -1,0 +1,37 @@
+{
+  "name": "shipping-service",
+  "version": "1.0.0",
+  "description": "Larekmart Shipping Microservice with Carrier Integrations and Lifecycle Management",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env --watch src/index.ts",
+    "build": "tsc",
+    "start": "tsx --env-file-if-exists=.env src/index.ts",
+    "test:smoke": "tsx --env-file=.env tests/smoke.test.ts",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/koa": "^2.15.0",
+    "@types/koa__cors": "^5.0.0",
+    "@types/koa-bodyparser": "^4.3.12",
+    "@types/node": "^24.3.1",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@koa/cors": "^5.0.0",
+    "@koa/router": "^15.7.0",
+    "@repo/kafka": "workspace:*",
+    "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "@repo/shipping-db": "workspace:*",
+    "@repo/types": "workspace:*",
+    "koa": "^2.15.4",
+    "koa-bodyparser": "^4.4.1",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.2"
+  }
+}

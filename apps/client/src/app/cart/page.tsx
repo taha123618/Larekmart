@@ -2,6 +2,7 @@
 
 import ShippingForm from "@/components/ShippingForm";
 import StripePaymentForm from "@/components/StripePaymentForm";
+import CodConfirmationForm from "@/components/CodConfirmationForm";
 import useCartStore from "@/stores/cartStore";
 import {
   useCartQuery,
@@ -28,7 +29,7 @@ import { Suspense, useEffect, useState } from "react";
 import RecommendationSection from "@/components/RecommendationSection";
 import { useAuth } from "@clerk/nextjs";
 
-const steps = [
+const defaultSteps = [
   {
     id: 1,
     title: "Shopping Cart",
@@ -58,10 +59,12 @@ const CartContent = () => {
   const activeStep = parseInt(searchParams.get("step") || "1");
 
   // Local optimistic store
-  const { cart, removeFromCart, updateQuantity, mergeGuestCart } = useCartStore();
+  const { cart, removeFromCart, updateQuantity, mergeGuestCart } =
+    useCartStore();
 
   // TanStack React Query + Axios hooks
-  const { data: serverCartQueryData, isLoading: isCartLoading } = useCartQuery();
+  const { data: serverCartQueryData, isLoading: isCartLoading } =
+    useCartQuery();
   const applyCouponMutation = useApplyCouponMutation();
   const removeCouponMutation = useRemoveCouponMutation();
   const updateItemMutation = useUpdateCartItemMutation();
@@ -146,11 +149,25 @@ const CartContent = () => {
   const subtotal = activeServerCart?.pricing?.subtotal ?? fallbackSubtotal;
   const discountTotal = activeServerCart?.pricing?.discountTotal ?? 0;
   const shippingFee =
-    activeServerCart?.pricing?.shippingTotal ?? (subtotal > 2000 ? 0 : 250);
+    shippingForm?.shippingAmount !== undefined
+      ? shippingForm.shippingAmount
+      : activeServerCart?.pricing?.shippingTotal ?? (subtotal > 2000 ? 0 : 250);
+  const codFee =
+    shippingForm?.isCod && shippingForm?.codFee ? shippingForm.codFee : 0;
   const taxTotal = activeServerCart?.pricing?.taxTotal ?? 0;
-  const grandTotal =
-    activeServerCart?.pricing?.grandTotal ??
-    Math.max(0, subtotal - discountTotal + shippingFee + taxTotal);
+  const grandTotal = Math.max(
+    0,
+    subtotal - discountTotal + shippingFee + codFee + taxTotal,
+  );
+
+  const steps = [
+    defaultSteps[0]!,
+    defaultSteps[1]!,
+    {
+      id: 3,
+      title: shippingForm?.isCod ? "COD Confirmation" : "Payment Method",
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-8 items-center justify-center mt-12 px-4 max-w-7xl mx-auto">
@@ -185,21 +202,22 @@ const CartContent = () => {
       </div>
 
       {/* INVENTORY ADJUSTMENTS NOTICE */}
-      {activeServerCart?.adjustments && activeServerCart.adjustments.length > 0 && (
-        <div className="w-full bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg flex items-start gap-3 text-sm">
-          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-semibold">
-              Notice regarding your cart items:{" "}
-            </span>
-            {activeServerCart.adjustments.map((adj, i) => (
-              <p key={adj.id || i} className="mt-1">
-                • {adj.reason}
-              </p>
-            ))}
+      {activeServerCart?.adjustments &&
+        activeServerCart.adjustments.length > 0 && (
+          <div className="w-full bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg flex items-start gap-3 text-sm">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold">
+                Notice regarding your cart items:{" "}
+              </span>
+              {activeServerCart.adjustments.map((adj, i) => (
+                <p key={adj.id || i} className="mt-1">
+                  • {adj.reason}
+                </p>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* MAIN CONTAINER */}
       <div className="w-full flex flex-col lg:flex-row gap-12">
@@ -274,7 +292,9 @@ const CartContent = () => {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
                       <button
-                        onClick={() => handleQuantityChange(item, item.quantity - 1)}
+                        onClick={() =>
+                          handleQuantityChange(item, item.quantity - 1)
+                        }
                         className="px-2.5 py-1.5 hover:bg-gray-100 text-gray-600 transition cursor-pointer"
                         aria-label="Decrease quantity"
                       >
@@ -284,7 +304,9 @@ const CartContent = () => {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => handleQuantityChange(item, item.quantity + 1)}
+                        onClick={() =>
+                          handleQuantityChange(item, item.quantity + 1)
+                        }
                         className="px-2.5 py-1.5 hover:bg-gray-100 text-gray-600 transition cursor-pointer"
                         aria-label="Increase quantity"
                       >
@@ -306,7 +328,15 @@ const CartContent = () => {
           ) : activeStep === 2 ? (
             <ShippingForm setShippingForm={setShippingForm} />
           ) : activeStep === 3 && shippingForm ? (
-            <StripePaymentForm shippingForm={shippingForm} />
+            shippingForm.isCod ? (
+              <CodConfirmationForm
+                shippingForm={shippingForm}
+                cart={cart}
+                grandTotal={grandTotal}
+              />
+            ) : (
+              <StripePaymentForm shippingForm={shippingForm} />
+            )
           ) : (
             <p className="text-sm text-gray-500">
               Please fill in the shipping form to continue.
@@ -337,7 +367,9 @@ const CartContent = () => {
                   disabled={couponLoading || !couponCode.trim()}
                   className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition cursor-pointer flex items-center gap-1.5"
                 >
-                  {couponLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {couponLoading && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  )}
                   <span>{couponLoading ? "Applying..." : "Apply"}</span>
                 </button>
               </form>
@@ -360,26 +392,27 @@ const CartContent = () => {
               )}
 
               {/* APPLIED COUPONS LIST */}
-              {activeServerCart?.coupons && activeServerCart.coupons.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {activeServerCart.coupons.map((coupon) => (
-                    <span
-                      key={coupon.code}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
-                    >
-                      <Tag className="w-3 h-3" />
-                      {coupon.code} (-${coupon.appliedAmount.toFixed(2)})
-                      <button
-                        onClick={() => handleRemoveCoupon(coupon.code)}
-                        className="hover:text-emerald-950 ml-1 cursor-pointer"
-                        title="Remove coupon"
+              {activeServerCart?.coupons &&
+                activeServerCart.coupons.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {activeServerCart.coupons.map((coupon) => (
+                      <span
+                        key={coupon.code}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
                       >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
+                        <Tag className="w-3 h-3" />
+                        {coupon.code} (-${coupon.appliedAmount.toFixed(2)})
+                        <button
+                          onClick={() => handleRemoveCoupon(coupon.code)}
+                          className="hover:text-emerald-950 ml-1 cursor-pointer"
+                          title="Remove coupon"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
             </div>
           )}
 
@@ -400,11 +433,23 @@ const CartContent = () => {
             )}
 
             <div className="flex justify-between text-sm">
-              <p className="text-gray-500">Shipping Estimate</p>
+              <p className="text-gray-500">
+                Shipping{" "}
+                {shippingForm?.carrier
+                  ? `(${shippingForm.carrier.toUpperCase()})`
+                  : "Estimate"}
+              </p>
               <p className="font-medium text-gray-900">
                 {shippingFee === 0 ? "Free" : `$${shippingFee.toFixed(2)}`}
               </p>
             </div>
+
+            {codFee > 0 && (
+              <div className="flex justify-between text-sm text-emerald-700 font-medium">
+                <p>COD Handling Fee</p>
+                <p>+${codFee.toFixed(2)}</p>
+              </div>
+            )}
 
             {taxTotal > 0 && (
               <div className="flex justify-between text-sm">

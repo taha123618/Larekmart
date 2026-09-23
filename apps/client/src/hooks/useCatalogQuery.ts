@@ -47,13 +47,17 @@ export function useCatalogProducts(query: CatalogProductQuery = {}) {
   if (query.page) params.set("page", String(query.page));
   if (query.limit) params.set("limit", String(query.limit));
   if (query.sort) params.set("sort", query.sort);
-  if (query.category && query.category !== "all") params.set("category", query.category);
+  if (query.category && query.category !== "all")
+    params.set("category", query.category);
   if (query.brand) params.set("brand", query.brand);
-  if (query.minPrice !== undefined) params.set("minPrice", String(query.minPrice));
-  if (query.maxPrice !== undefined) params.set("maxPrice", String(query.maxPrice));
+  if (query.minPrice !== undefined)
+    params.set("minPrice", String(query.minPrice));
+  if (query.maxPrice !== undefined)
+    params.set("maxPrice", String(query.maxPrice));
   if (query.availability && query.availability !== "all")
     params.set("availability", query.availability);
-  if (query.isFeatured !== undefined) params.set("isFeatured", String(query.isFeatured));
+  if (query.isFeatured !== undefined)
+    params.set("isFeatured", String(query.isFeatured));
   if (query.isNew !== undefined) params.set("isNew", String(query.isNew));
 
   return useQuery({

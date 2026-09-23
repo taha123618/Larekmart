@@ -6,9 +6,11 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
-  DATABASE_URL: z.string().default(
-    "postgresql://postgres:postgres@localhost:5432/catalog_db?schema=public",
-  ),
+  DATABASE_URL: z
+    .string()
+    .default(
+      "postgresql://postgres:postgres@localhost:5432/catalog_db?schema=public",
+    ),
   REDIS_URL: z.string().default("redis://localhost:6379"),
   REDIS_KEY_PREFIX: z.string().default("catalog:v1:"),
   KAFKA_BROKERS: z
@@ -20,4 +22,3 @@ const envSchema = z.object({
 });
 
 export const env = envSchema.parse(process.env);
-

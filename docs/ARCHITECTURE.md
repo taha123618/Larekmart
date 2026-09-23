@@ -137,18 +137,38 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Background Workers: Sorted-set expiration reaper running every 60s for deterministic TTL cleanup.
 - Events: Publishes `cart.*` events (`cart.created`, `cart.item_added`, `cart.item_updated`, `cart.item_removed`, `cart.merged`, `cart.coupon_added`, `cart.coupon_removed`, `cart.expired`, `cart.cleared`). Consumes `product.updated`, `product.deleted`, and `inventory.adjusted`.
 
+**`catalog-service` (Fastify 5, :8010)** — read-optimized product discovery, storefront browsing, categories, collections, and merchandising.
+
+- Routes: `GET /api/v1/catalog/products`, `GET /api/v1/catalog/products/:slugOrId`, `GET /api/v1/catalog/categories`, `GET /api/v1/catalog/collections`, `GET /api/v1/catalog/brands`, `GET /api/v1/catalog/featured`, `POST /api/v1/catalog/sync`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
+- Persistence: PostgreSQL via `@repo/catalog-db` (Prisma) targeting `larekmart_catalog_db`.
+- Caching: Redis (`catalog:v1:*` namespace) for high-speed catalog listing and navigation cache.
+- Event Synchronization: Consumes `product.created`, `product.updated`, `product.deleted` from Kafka to maintain materialized read-models without coupling storefront browsing to writes.
+
+**`shipping-service` (Koa / Node.js, :8011)** — shipment lifecycle, package management, rates, and multi-carrier adapter orchestration.
+
+- Routes: `GET /api/v1/shipping/methods`, `GET /api/v1/shipping/rates`, `POST /api/v1/shipments`, `GET /api/v1/shipments/:id`, `GET /api/v1/shipments/:id/tracking`, `POST /api/v1/shipments/:id/label`, `POST /api/v1/shipments/:id/cancel`, `POST /api/v1/webhooks/carriers/:carrier`, `/api/v1/health`, `/api/v1/health/live`, `/api/v1/health/ready`.
+- Carrier Adapter Layer: Pluggable `ShippingProvider` interface abstracting TCS, Leopards, DHL, FedEx, and Custom carrier integrations.
+- Persistence: PostgreSQL via `@repo/shipping-db` (Prisma) targeting `larekmart_shipping_db` (`shipments`, `shipment_items`, `shipment_packages`, `shipping_methods`, `tracking_events`, `shipping_labels`, `delivery_attempts`, `carrier_accounts`, `shipping_webhooks`, `processed_events`).
+- Address Snapshot: Stores immutable shipping snapshot (`full_name`, `phone`, `address_line1`, `city`, `postal_code`, `country`) rather than depending on mutable customer profiles.
+- Caching: Redis (`shipping:v1:*` namespace) for rate calculation cache, tracking event cache, and carrier webhook idempotency deduplication.
+- Events: Publishes `shipment.created`, `shipment.label_created`, `shipment.shipped`, `shipment.in_transit`, `shipment.out_for_delivery`, `shipment.delivered`, `shipment.cancelled`, `shipment.failed`, `tracking.updated`. Consumes `order.created`, `order.cancelled`, `payment.successful`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                          |
 | ---------- | -------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | PostgreSQL | product-service                  | `@repo/product-db` (Prisma)   | `Product`, `Category`                                                                                                                   |
 | PostgreSQL | inventory-service                | `@repo/inventory-db` (Prisma) | `inventory_items`, `inventory_reservations`, `inventory_movements`                                                                      |
+| PostgreSQL | catalog-service                  | `@repo/catalog-db` (Prisma)   | `catalog_products`, `catalog_categories`, `catalog_brands`, `catalog_collections`                                                       |
+| PostgreSQL | shipping-service                 | `@repo/shipping-db` (Prisma)  | `shipments`, `shipment_items`, `shipment_packages`, `shipping_methods`, `tracking_events`, `shipping_labels`                            |
 | PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`   |
 | PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                           |
 | PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
 | Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                   |
 | Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                               |
 | Redis      | product-service                  | `@repo/redis` (ioredis)       | `product:v1:*` (catalog read-through cache)                                                                                             |
+| Redis      | catalog-service                  | `@repo/redis` (ioredis)       | `catalog:v1:*` (storefront product & collection cache)                                                                                  |
+| Redis      | shipping-service                 | `@repo/redis` (ioredis)       | `shipping:v1:*` (shipping rate cache, tracking cache, webhook idempotency)                                                              |
 | Redis      | analytic-service                 | `@repo/redis` (ioredis)       | `analytics:v1:*` (dashboard read-through cache)                                                                                         |
 | Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                   |
 | Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                            |
@@ -158,7 +178,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Clerk      | auth-service (and all frontends) | Clerk SDKs                    | users, session claims                                                                                                                   |
 | Stripe     | payment-service                  | `stripe` SDK                  | products, prices, sessions                                                                                                              |
 
-`@repo/types` re-exports the persistence-derived types (`Product`, `Category`, `Order`)
+`@repo/types` re-exports the persistence-derived types (`Product`, `Category`, `Order`, `Shipment`, `ShippingRate`)
 so consumers can type against the catalog/order shapes without importing the DB clients
 directly into their runtime.
 

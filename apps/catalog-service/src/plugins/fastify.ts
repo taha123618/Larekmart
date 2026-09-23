@@ -2,7 +2,9 @@ import type { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import { logger } from "../observability/metrics.js";
 
-export async function configureFastifyPlugins(fastify: FastifyInstance): Promise<void> {
+export async function configureFastifyPlugins(
+  fastify: FastifyInstance,
+): Promise<void> {
   // CORS
   await fastify.register(cors, {
     origin: true,

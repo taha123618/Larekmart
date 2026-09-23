@@ -141,7 +141,9 @@ export const cartClient = {
   ): Promise<CartResponseType | null> {
     try {
       const client = createCartApiClient(authToken);
-      const response = await client.delete<CartResponseType>(`/items/${itemId}`);
+      const response = await client.delete<CartResponseType>(
+        `/items/${itemId}`,
+      );
       return response.data;
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data?.message) {
@@ -161,7 +163,9 @@ export const cartClient = {
   ): Promise<CartResponseType> {
     try {
       const client = createCartApiClient(authToken);
-      const response = await client.post<CartResponseType>("/coupons", { code });
+      const response = await client.post<CartResponseType>("/coupons", {
+        code,
+      });
       return response.data;
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data?.message) {

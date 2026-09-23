@@ -7,12 +7,19 @@ import { collectionService } from "../services/collection.service.js";
 import { merchandisingService } from "../services/merchandising.service.js";
 import { httpMetrics, logger } from "../observability/metrics.js";
 
-export async function getProductsHandler(request: FastifyRequest, reply: FastifyReply) {
+export async function getProductsHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   const startTime = Date.now();
   try {
     const parsed = CatalogProductQuerySchema.safeParse(request.query);
     if (!parsed.success) {
-      httpMetrics.requestsTotal.inc({ method: "GET", path: "/products", status: "400" });
+      httpMetrics.requestsTotal.inc({
+        method: "GET",
+        path: "/products",
+        status: "400",
+      });
       return reply.status(400).send({
         message: "Invalid query parameters",
         errors: parsed.error.issues,
@@ -21,13 +28,24 @@ export async function getProductsHandler(request: FastifyRequest, reply: Fastify
 
     const result = await catalogService.getProducts(parsed.data);
     const duration = (Date.now() - startTime) / 1000;
-    httpMetrics.requestDuration.observe({ method: "GET", path: "/products" }, duration);
-    httpMetrics.requestsTotal.inc({ method: "GET", path: "/products", status: "200" });
+    httpMetrics.requestDuration.observe(
+      { method: "GET", path: "/products" },
+      duration,
+    );
+    httpMetrics.requestsTotal.inc({
+      method: "GET",
+      path: "/products",
+      status: "200",
+    });
 
     return reply.status(200).send(result);
   } catch (error) {
     logger.error("Failed to get products", { error: String(error) });
-    httpMetrics.requestsTotal.inc({ method: "GET", path: "/products", status: "500" });
+    httpMetrics.requestsTotal.inc({
+      method: "GET",
+      path: "/products",
+      status: "500",
+    });
     return reply.status(500).send({ message: "Internal server error" });
   }
 }
@@ -49,7 +67,10 @@ export async function getProductByIdHandler(
   }
 }
 
-export async function getCategoriesHandler(request: FastifyRequest, reply: FastifyReply) {
+export async function getCategoriesHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   try {
     const query = request.query as { tree?: string };
     if (query.tree === "true" || query.tree === "1") {
@@ -94,7 +115,12 @@ export async function getCategoryProductsHandler(
     const limit = request.query.limit ? parseInt(request.query.limit, 10) : 24;
     const sort = request.query.sort || "newest";
 
-    const result = await categoryService.getCategoryProducts(id, page, limit, sort);
+    const result = await categoryService.getCategoryProducts(
+      id,
+      page,
+      limit,
+      sort,
+    );
     return reply.status(200).send(result);
   } catch (error) {
     logger.error("Failed to get category products", { error: String(error) });
@@ -102,7 +128,10 @@ export async function getCategoryProductsHandler(
   }
 }
 
-export async function getBrandsHandler(_request: FastifyRequest, reply: FastifyReply) {
+export async function getBrandsHandler(
+  _request: FastifyRequest,
+  reply: FastifyReply,
+) {
   try {
     const brands = await brandService.getAllBrands();
     return reply.status(200).send(brands);
@@ -150,7 +179,10 @@ export async function getBrandProductsHandler(
   }
 }
 
-export async function getCollectionsHandler(_request: FastifyRequest, reply: FastifyReply) {
+export async function getCollectionsHandler(
+  _request: FastifyRequest,
+  reply: FastifyReply,
+) {
   try {
     const collections = await collectionService.getAllCollections();
     return reply.status(200).send(collections);
@@ -177,7 +209,10 @@ export async function getCollectionByIdHandler(
   }
 }
 
-export async function getFeaturedProductsHandler(request: FastifyRequest, reply: FastifyReply) {
+export async function getFeaturedProductsHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   try {
     const query = request.query as { limit?: string };
     const limit = query.limit ? parseInt(query.limit, 10) : 12;
@@ -189,7 +224,10 @@ export async function getFeaturedProductsHandler(request: FastifyRequest, reply:
   }
 }
 
-export async function getNewArrivalsHandler(request: FastifyRequest, reply: FastifyReply) {
+export async function getNewArrivalsHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   try {
     const query = request.query as { limit?: string };
     const limit = query.limit ? parseInt(query.limit, 10) : 12;
@@ -201,7 +239,10 @@ export async function getNewArrivalsHandler(request: FastifyRequest, reply: Fast
   }
 }
 
-export async function getBestSellersHandler(request: FastifyRequest, reply: FastifyReply) {
+export async function getBestSellersHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
   try {
     const query = request.query as { limit?: string };
     const limit = query.limit ? parseInt(query.limit, 10) : 12;
@@ -213,7 +254,10 @@ export async function getBestSellersHandler(request: FastifyRequest, reply: Fast
   }
 }
 
-export async function getStorefrontOverviewHandler(_request: FastifyRequest, reply: FastifyReply) {
+export async function getStorefrontOverviewHandler(
+  _request: FastifyRequest,
+  reply: FastifyReply,
+) {
   try {
     const overview = await merchandisingService.getStorefrontOverview();
     return reply.status(200).send(overview);

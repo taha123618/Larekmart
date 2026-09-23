@@ -71,7 +71,9 @@ const CatalogCard = ({ product }: { product: CatalogProductCard }) => {
           <p className="text-xs text-gray-400">{product.brand.name}</p>
         )}
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm">${product.price.toFixed(2)}</span>
+          <span className="font-semibold text-sm">
+            ${product.price.toFixed(2)}
+          </span>
           {product.compareAtPrice && product.compareAtPrice > product.price && (
             <span className="line-through text-xs text-gray-400">
               ${product.compareAtPrice.toFixed(2)}

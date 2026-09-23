@@ -11,7 +11,9 @@ import {
 import { catalogRepository } from "../repositories/catalog.repository.js";
 
 export class CatalogService {
-  async getProducts(query: CatalogProductQueryType): Promise<CatalogPaginatedResponseType> {
+  async getProducts(
+    query: CatalogProductQueryType,
+  ): Promise<CatalogPaginatedResponseType> {
     // If it's a simple page request for a category, check category cache
     if (
       query.category &&
@@ -34,7 +36,9 @@ export class CatalogService {
     return catalogRepository.findProducts(query);
   }
 
-  async getProductById(idOrSlug: string): Promise<CatalogProductCardType | null> {
+  async getProductById(
+    idOrSlug: string,
+  ): Promise<CatalogProductCardType | null> {
     const cacheKey = CatalogCacheKeys.productCard(idOrSlug);
     const cached = await getCached<CatalogProductCardType>(cacheKey);
     if (cached) return cached;

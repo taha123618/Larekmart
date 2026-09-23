@@ -10,5 +10,22 @@ export const runKafkaSubscriptions = async () => {
         await createOrder(order);
       },
     },
+    {
+      topicName: "shipment.created",
+      topicHandler: async (message) => {
+        try {
+          const { Order } = await import("@repo/order-db");
+          const payload = message.value;
+          if (payload?.orderId && payload?.trackingNumber) {
+            await Order.findByIdAndUpdate(payload.orderId, {
+              trackingNumber: payload.trackingNumber,
+              carrier: payload.carrier,
+            });
+          }
+        } catch (err) {
+          console.warn("[order-service] Failed to link shipment to order:", err);
+        }
+      },
+    },
   ]);
 };

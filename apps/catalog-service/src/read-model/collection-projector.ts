@@ -23,24 +23,37 @@ export class CollectionProjector {
     return !!existing;
   }
 
-  private async markEventProcessed(eventId?: string, eventType = "collection.projector") {
+  private async markEventProcessed(
+    eventId?: string,
+    eventType = "collection.projector",
+  ) {
     if (!eventId) return;
-    await prisma.processedEvent.create({
-      data: {
-        eventId,
-        eventType,
-      },
-    }).catch(() => { });
+    await prisma.processedEvent
+      .create({
+        data: {
+          eventId,
+          eventType,
+        },
+      })
+      .catch(() => {});
   }
 
-  async projectCollectionUpsert(data: CollectionEventData, eventType: string): Promise<void> {
+  async projectCollectionUpsert(
+    data: CollectionEventData,
+    eventType: string,
+  ): Promise<void> {
     const eventId = data.eventId;
     if (await this.isEventProcessed(eventId)) {
       logger.info(`Skipping already processed collection event: ${eventId}`);
       return;
     }
 
-    const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const slug =
+      data.slug ||
+      data.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
 
     const collection = await prisma.catalogCollection.upsert({
       where: { slug },
@@ -69,22 +82,24 @@ export class CollectionProjector {
         });
 
         if (productExists) {
-          await prisma.catalogCollectionProduct.upsert({
-            where: {
-              collectionId_productId: {
+          await prisma.catalogCollectionProduct
+            .upsert({
+              where: {
+                collectionId_productId: {
+                  collectionId: collection.id,
+                  productId: item.productId,
+                },
+              },
+              create: {
                 collectionId: collection.id,
                 productId: item.productId,
+                position: item.position,
               },
-            },
-            create: {
-              collectionId: collection.id,
-              productId: item.productId,
-              position: item.position,
-            },
-            update: {
-              position: item.position,
-            },
-          }).catch(() => { });
+              update: {
+                position: item.position,
+              },
+            })
+            .catch(() => {});
         }
       }
     }

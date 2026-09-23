@@ -17,6 +17,7 @@ import {
   History,
   Sparkles,
   LayoutGrid,
+  Truck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -267,6 +268,21 @@ const AppSidebar = () => {
                   <Link href="/inventory/movements">
                     <History />
                     Movement Ledger
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Logistics & Delivery</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/shipping">
+                    <Truck />
+                    Shipments & Carriers
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

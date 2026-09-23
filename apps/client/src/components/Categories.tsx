@@ -15,7 +15,10 @@ import {
   Venus,
   Tag,
 } from "lucide-react";
-import { fetchCatalogCategories, type CatalogCategory } from "@/services/catalog.service";
+import {
+  fetchCatalogCategories,
+  type CatalogCategory,
+} from "@/services/catalog.service";
 import CategoriesClient from "./CategoriesClient";
 
 // ─── Fallback hardcoded categories ──────────────────────────────────────────
@@ -57,7 +60,11 @@ function getIcon(slug: string): React.ReactNode {
 function buildCategoryList(
   serverCategories: CatalogCategory[],
 ): { name: string; slug: string; icon: React.ReactNode }[] {
-  const all = { name: "All", slug: "all", icon: <ShoppingBasket className="w-4 h-4" /> };
+  const all = {
+    name: "All",
+    slug: "all",
+    icon: <ShoppingBasket className="w-4 h-4" />,
+  };
 
   if (serverCategories.length === 0) {
     return FALLBACK_CATEGORIES.map((c) => ({ ...c, icon: getIcon(c.slug) }));
@@ -69,7 +76,14 @@ function buildCategoryList(
     .sort((a, b) => a.position - b.position)
     .slice(0, 7);
 
-  return [all, ...roots.map((c) => ({ name: c.name, slug: c.slug, icon: getIcon(c.slug) }))];
+  return [
+    all,
+    ...roots.map((c) => ({
+      name: c.name,
+      slug: c.slug,
+      icon: getIcon(c.slug),
+    })),
+  ];
 }
 
 // ─── Server Component ────────────────────────────────────────────────────────

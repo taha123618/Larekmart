@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SearchBar from "./SearchBar";
-import { Home } from "lucide-react";
+import { Home, Truck } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import ShoppingCartIcon from "./ShoppingCartIcon";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
@@ -29,8 +29,11 @@ const Navbar = () => {
         <Suspense fallback={<div className="w-40" />}>
           <SearchBar />
         </Suspense>
-        <Link href="/">
+        <Link href="/" title="Home">
           <Home className="w-4 h-4 text-gray-600" />
+        </Link>
+        <Link href="/track" title="Track Shipment">
+          <Truck className="w-4 h-4 text-gray-600 hover:text-black transition" />
         </Link>
         <NotificationBell />
         <ShoppingCartIcon />
