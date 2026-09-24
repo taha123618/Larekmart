@@ -1,10 +1,10 @@
 "use client";
 
 import { Clock, Loader2, Search } from "lucide-react";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
+import { useAuth } from "@clerk/nextjs";
 import type { SuggestionItem, SuggestionResponse } from "@repo/types";
 
 const SEARCH_SERVICE_URL = process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL;
@@ -46,6 +46,7 @@ const SearchBar = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
+  const { userId } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const listboxId = useId();
@@ -72,9 +73,22 @@ const SearchBar = () => {
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
+        const headers: Record<string, string> = {
+          "x-request-id":
+            typeof crypto !== "undefined" && crypto.randomUUID
+              ? crypto.randomUUID()
+              : `req-${Date.now()}`,
+        };
+        if (userId) {
+          headers["x-user-id"] = userId;
+        }
+
         const res = await fetch(
           `${SEARCH_SERVICE_URL}/api/v1/search/suggestions?q=${encodeURIComponent(query)}&limit=${SUGGESTION_LIMIT}`,
-          { signal: controller.signal },
+          {
+            signal: controller.signal,
+            headers,
+          },
         );
         if (!res.ok)
           throw new Error(`Suggestions request failed (${res.status})`);
@@ -98,7 +112,7 @@ const SearchBar = () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [value]);
+  }, [value, userId]);
 
   // Close the dropdown when clicking outside the search bar.
   useEffect(() => {

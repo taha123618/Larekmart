@@ -24,7 +24,7 @@ func ServeWS(hub *Hub, logger *observability.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := middleware.GetUserID(r.Context())
 		if userID == "" {
-			userID = r.URL.Query().Get("user_id")
+			userID = middleware.ExtractUserID(r)
 		}
 
 		if userID == "" {

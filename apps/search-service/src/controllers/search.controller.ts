@@ -7,6 +7,14 @@ export async function searchProductsHandler(
   reply: FastifyReply,
 ): Promise<void> {
   const queryParams = SearchQueryParamsSchema.parse(request.query);
-  const response = await searchService.executeSearch(queryParams);
-  return reply.status(200).send(response);
+  try {
+    const response = await searchService.executeSearch(queryParams);
+    return reply.status(200).send(response);
+  } catch (error: any) {
+    return reply.status(503).send({
+      message:
+        "Search engine is temporarily unavailable. Please try again shortly.",
+      error: error?.name || "ServiceUnavailable",
+    });
+  }
 }

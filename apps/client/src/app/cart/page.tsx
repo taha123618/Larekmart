@@ -240,10 +240,10 @@ const CartContent = () => {
                 </button>
               </div>
             ) : (
-              cart.map((item) => (
+              cart.map((item, index) => (
                 <div
                   className="flex items-center justify-between pb-6 border-b border-gray-100 last:border-b-0"
-                  key={item.id + item.selectedSize + item.selectedColor}
+                  key={`${item.id}-${item.selectedSize}-${item.selectedColor}-${index}`}
                 >
                   {/* IMAGE AND DETAILS */}
                   <div className="flex gap-6 items-center">

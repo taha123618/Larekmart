@@ -17,11 +17,16 @@ class RecommendationAnalyticsEvent(Base):
     position: Mapped[int | None] = mapped_column(Integer, nullable=True)
     score: Mapped[float | None] = mapped_column(Float, nullable=True)
     timestamp: Mapped[datetime.datetime] = mapped_column(
+        "created_at",
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         index=True,
     )
+
+    @property
+    def created_at(self) -> datetime.datetime:
+        return self.timestamp
 
     __table_args__ = (
         Index("ix_rec_analytics_strat_event", "strategy", "event_type"),

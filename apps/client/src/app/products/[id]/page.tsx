@@ -2,34 +2,21 @@ import ProductInteraction from "@/components/ProductInteraction";
 import RecommendationSection from "@/components/RecommendationSection";
 import { ProductType } from "@repo/types";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 
-// TEMPORARY
-// const product: ProductType = {
-//   id: 1,
-//   name: "Adidas CoreFit T-Shirt",
-//   shortDescription:
-//     "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//   description:
-//     "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//   price: 59.9,
-//   sizes: ["xs", "s", "m", "l", "xl"],
-//   colors: ["gray", "purple", "green"],
-//   images: {
-//     gray: "/products/1g.png",
-//     purple: "/products/1p.png",
-//     green: "/products/1gr.png",
-//   },
-//   categorySlug: "test",
-//   createdAt: new Date(),
-//   updatedAt: new Date(),
-// };
-
-const fetchProduct = async (id: string) => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products/${id}`,
-  );
-  const data: ProductType = await res.json();
-  return data;
+const fetchProduct = async (id: string): Promise<ProductType | null> => {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products/${id}`,
+      { cache: "no-store" },
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || typeof data !== "object" || !("id" in data)) return null;
+    return data as ProductType;
+  } catch {
+    return null;
+  }
 };
 
 export const generateMetadata = async ({
@@ -40,9 +27,16 @@ export const generateMetadata = async ({
   const { id } = await params;
 
   const product = await fetchProduct(id);
+  if (!product) {
+    return {
+      title: "Product Not Found",
+      description: "The requested product does not exist.",
+    };
+  }
+
   return {
     title: product.name,
-    describe: product.description,
+    description: product.description,
   };
 };
 
@@ -51,26 +45,41 @@ const ProductPage = async ({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ color: string; size: string }>;
+  searchParams: Promise<{ color?: string; size?: string }>;
 }) => {
   const { size, color } = await searchParams;
   const { id } = await params;
 
   const product = await fetchProduct(id);
 
-  const selectedSize = size || (product.sizes[0] as string);
-  const selectedColor = color || (product.colors[0] as string);
+  if (!product) {
+    notFound();
+  }
+
+  const selectedSize =
+    size ||
+    (Array.isArray(product.sizes) && product.sizes[0]
+      ? (product.sizes[0] as string)
+      : "m");
+  const selectedColor =
+    color ||
+    (Array.isArray(product.colors) && product.colors[0]
+      ? (product.colors[0] as string)
+      : "black");
+
+  const productImage =
+    (product.images as Record<string, string>)?.[selectedColor] ||
+    (product.images ? Object.values(product.images)[0] : "") ||
+    "";
+
   return (
     <div className="mt-12">
       <div className="flex flex-col gap-4 lg:flex-row md:gap-12">
         {/* IMAGE */}
         <div className="w-full lg:w-5/12 relative aspect-[2/3]">
           <img
-            src={
-              (product.images as Record<string, string>)?.[selectedColor] || ""
-            }
+            src={productImage}
             alt={product.name}
-            // fill
             className="object-contain rounded-md"
           />
         </div>
@@ -79,7 +88,10 @@ const ProductPage = async ({
           <h1 className="text-2xl font-medium">{product.name}</h1>
           <p className="text-gray-500">{product.description}</p>
           <h2 className="text-2xl font-semibold">
-            ${product.price.toFixed(2)}
+            $
+            {typeof product.price === "number"
+              ? product.price.toFixed(2)
+              : "0.00"}
           </h2>
           <ProductInteraction
             product={product}

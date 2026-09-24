@@ -69,9 +69,8 @@ export class SuggestionService {
 
       return result;
     } catch (error: any) {
-      logger.error("Error executing autocomplete in OpenSearch", {
+      logger.error("Error executing autocomplete in OpenSearch", error, {
         params,
-        error: error.message,
       });
       return {
         data: [],

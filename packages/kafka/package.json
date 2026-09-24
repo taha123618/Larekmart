@@ -4,11 +4,13 @@
   "main": "./src/index.ts",
   "type": "module",
   "scripts": {
+    "topics:init": "tsx src/init-topics.ts",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
-    "@types/node": "^24.3.1"
+    "@types/node": "^24.3.1",
+    "tsx": "^4.20.5"
   },
   "dependencies": {
     "@repo/monitoring": "workspace:*",

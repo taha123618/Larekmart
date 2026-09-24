@@ -12,7 +12,14 @@ export async function configureFastifyPlugins(
   await fastify.register(cors, {
     origin: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-request-id",
+      "X-Request-ID",
+      "x-user-id",
+      "X-User-ID",
+    ],
   });
 
   // 2. Clerk Authentication plugin
@@ -22,7 +29,12 @@ export async function configureFastifyPlugins(
   const httpMonitor = createHttpMonitor(logger, metrics);
   const requestHooks = new Map<
     string,
-    { onRequestEnd: (status: number) => void }
+    {
+      onRequestEnd: (
+        status: number,
+        extraMeta?: Record<string, unknown>,
+      ) => void;
+    }
   >();
 
   fastify.addHook("onRequest", async (request) => {
@@ -33,9 +45,29 @@ export async function configureFastifyPlugins(
     ) {
       return;
     }
+
+    const requestId =
+      (request.headers["x-request-id"] as string) ||
+      (request.headers["x-correlation-id"] as string) ||
+      (request.id ? String(request.id) : undefined);
+
+    let userId = (request.headers["x-user-id"] as string) || undefined;
+    if (!userId) {
+      try {
+        const auth = Clerk.getAuth(request);
+        if (auth?.userId) {
+          userId = auth.userId;
+        }
+      } catch {
+        // Optional auth on public search endpoints
+      }
+    }
+
     const hook = httpMonitor.onRequestStart({
       method: request.method,
       url: request.url,
+      requestId: requestId || `req-${request.id}`,
+      userId: userId || "guest",
     });
     requestHooks.set(request.id, hook);
   });
@@ -43,7 +75,27 @@ export async function configureFastifyPlugins(
   fastify.addHook("onResponse", async (request, reply) => {
     const hook = requestHooks.get(request.id);
     if (hook) {
-      hook.onRequestEnd(reply.statusCode);
+      let userId =
+        request.userId || (request.headers["x-user-id"] as string) || undefined;
+      if (!userId) {
+        try {
+          const auth = Clerk.getAuth(request);
+          if (auth?.userId) {
+            userId = auth.userId;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      const requestId =
+        (request.headers["x-request-id"] as string) ||
+        (request.id ? String(request.id) : undefined);
+
+      hook.onRequestEnd(reply.statusCode, {
+        requestId: requestId || `req-${request.id}`,
+        userId: userId || "guest",
+      });
       requestHooks.delete(request.id);
     }
   });

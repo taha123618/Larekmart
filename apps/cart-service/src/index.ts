@@ -34,6 +34,14 @@ app.use(
   cors({
     origin: ["http://localhost:3002", "http://localhost:3003"],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-guest-token",
+      "x-user-id",
+      "x-request-id",
+    ],
     exposedHeaders: ["x-guest-token"],
   }),
 );
@@ -165,3 +173,8 @@ export const startServer = async (): Promise<void> => {
     process.exit(1);
   }
 };
+
+startServer().catch((error) => {
+  logger.fatal("Unhandled startup rejection in cart-service", error);
+  process.exit(1);
+});

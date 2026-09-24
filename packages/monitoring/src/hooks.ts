@@ -40,8 +40,9 @@ export function createHttpMonitor(logger: Logger, metrics: MetricsRegistry) {
             url: context.url,
             statusCode,
             durationMs,
-            requestId: context.requestId,
-            userId: context.userId,
+            requestId:
+              (extraMeta.requestId as string) || context.requestId || undefined,
+            userId: (extraMeta.userId as string) || context.userId || undefined,
           };
 
           if (statusCode >= 500) {

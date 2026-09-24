@@ -12,7 +12,7 @@ import (
 func RequireAuth() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			userID := extractUserID(r)
+			userID := ExtractUserID(r)
 			if userID == "" {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusUnauthorized)
@@ -32,7 +32,7 @@ func RequireAuth() func(http.Handler) http.Handler {
 func OptionalAuth() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			userID := extractUserID(r)
+			userID := ExtractUserID(r)
 			if userID != "" {
 				ctx := context.WithValue(r.Context(), UserIDKey, userID)
 				r = r.WithContext(ctx)
@@ -52,7 +52,8 @@ func GetUserID(ctx context.Context) string {
 	return ""
 }
 
-func extractUserID(r *http.Request) string {
+// ExtractUserID retrieves user identifier from headers, query params (user_id/token), or JWT payload.
+func ExtractUserID(r *http.Request) string {
 	// 1. Direct header (e.g. from internal gateway or service call)
 	if uid := r.Header.Get("X-User-ID"); uid != "" {
 		return uid

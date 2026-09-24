@@ -23,7 +23,7 @@ export default function CodConfirmationForm({
   grandTotal: number;
 }) {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
   const { clearCart } = useCartStore();
 
   const [loading, setLoading] = useState(false);
@@ -47,12 +47,21 @@ export default function CodConfirmationForm({
       const orderServiceUrl =
         process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:8001";
 
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "x-request-id":
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `req-${Date.now()}`,
+      };
+      if (userId) {
+        headers["x-user-id"] = userId;
+      }
+
       const res = await fetch(`${orderServiceUrl}/orders/cod`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify({
           email: shippingForm.email,
           amount: Math.round(grandTotal * 100), // in cents/paisa

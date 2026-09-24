@@ -1,10 +1,15 @@
 import { Request, Response } from "express";
 import { createLogger, measureAsync } from "@repo/monitoring";
-import { searchProductDocuments } from "@repo/opensearch";
+import {
+  searchProductDocuments,
+  type ProductSearchResult,
+} from "@repo/opensearch";
+import { prisma } from "@repo/product-db";
 import {
   SearchBackfillRequestSchema,
   SearchQueryParamsSchema,
   type SearchBackfillResponse,
+  type SearchProductDocument,
   type SearchQueryParams,
   type SearchResponse,
 } from "@repo/types";
@@ -17,8 +22,9 @@ const logger = createLogger("product-service:search");
  * GET /products/search
  *
  * Reads the shared OpenSearch product index using the query DSL from
- * @repo/opensearch. Writes to the index remain owned by search-service via
- * Kafka events; this is a read-only path.
+ * @repo/opensearch. If OpenSearch is temporarily unavailable, gracefully
+ * falls back to querying PostgreSQL via Prisma so storefront discovery
+ * never crashes with an unhandled 500 error.
  */
 export const searchProducts = async (req: Request, res: Response) => {
   const parsed = SearchQueryParamsSchema.safeParse(req.query);
@@ -31,12 +37,93 @@ export const searchProducts = async (req: Request, res: Response) => {
 
   const params: SearchQueryParams = parsed.data;
   const started = Date.now();
+  let result: ProductSearchResult<SearchProductDocument>;
 
-  const { result } = await measureAsync(
-    "opensearch.products.search",
-    async () =>
-      searchProductDocuments(getOpenSearchClient(), OPENSEARCH_ALIAS, params),
-  );
+  try {
+    const searchResult = await measureAsync(
+      "opensearch.products.search",
+      async () =>
+        searchProductDocuments(getOpenSearchClient(), OPENSEARCH_ALIAS, params),
+    );
+    result = searchResult.result;
+    logger.info(
+      `Search "${params.q ?? ""}" returned ${result.total} hits from OpenSearch [${OPENSEARCH_ALIAS}]`,
+    );
+  } catch (error: any) {
+    logger.warn(
+      `OpenSearch search unavailable (${error?.message || "Connection error"}). Falling back to PostgreSQL/Prisma catalog query.`,
+    );
+
+    // Resilient fallback: Query PostgreSQL catalog directly
+    const where: any = {};
+    if (params.q && params.q.trim().length > 0) {
+      where.OR = [
+        { name: { contains: params.q.trim(), mode: "insensitive" } },
+        { description: { contains: params.q.trim(), mode: "insensitive" } },
+      ];
+    }
+    if (params.category) {
+      where.categorySlug = params.category;
+    }
+    if (params.min_price !== undefined || params.max_price !== undefined) {
+      where.price = {};
+      if (params.min_price !== undefined) where.price.gte = params.min_price;
+      if (params.max_price !== undefined) where.price.lte = params.max_price;
+    }
+
+    const orderBy: any = {};
+    if (params.sort === "price_asc") {
+      orderBy.price = "asc";
+    } else if (params.sort === "price_desc") {
+      orderBy.price = "desc";
+    } else if (params.sort === "oldest") {
+      orderBy.createdAt = "asc";
+    } else {
+      orderBy.createdAt = "desc";
+    }
+
+    const skip = (params.page - 1) * params.limit;
+    const [dbProducts, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        orderBy,
+        skip,
+        take: params.limit,
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    const fallbackDocs: SearchProductDocument[] = dbProducts.map((p) => ({
+      id: String(p.id),
+      name: p.name,
+      description: p.description || "",
+      shortDescription: p.shortDescription || "",
+      category: p.categorySlug || "apparel",
+      categorySlug: p.categorySlug || "apparel",
+      price: p.price,
+      sizes: p.sizes || [],
+      colors: p.colors || [],
+      images: (p.images as Record<string, string>) || {},
+      inStock: true,
+      isActive: true,
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
+    }));
+
+    result = {
+      products: fallbackDocs,
+      total,
+      took: Date.now() - started,
+      raw: {} as any,
+      facets: {
+        categories: [],
+        colors: [],
+        sizes: [],
+        brands: [],
+        price_stats: { min: 0, max: 0, avg: 0 },
+      },
+    };
+  }
 
   const response: SearchResponse = {
     data: result.products,
@@ -51,10 +138,6 @@ export const searchProducts = async (req: Request, res: Response) => {
     },
     facets: result.facets,
   };
-
-  logger.info(
-    `Search "${params.q ?? ""}" returned ${result.total} hits from [${OPENSEARCH_ALIAS}]`,
-  );
 
   return res.status(200).json(response);
 };

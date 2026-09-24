@@ -15,7 +15,7 @@ interface NotificationResponse {
 }
 
 export default function NotificationBell() {
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, userId } = useAuth();
   const [token, setToken] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -58,7 +58,13 @@ export default function NotificationBell() {
           },
         },
       );
-      return response.data;
+      return {
+        unread_count: response.data?.unread_count ?? 0,
+        total: response.data?.total ?? 0,
+        notifications: Array.isArray(response.data?.notifications)
+          ? response.data.notifications
+          : [],
+      };
     },
     enabled: !!isSignedIn,
     staleTime: 30 * 1000,
@@ -69,7 +75,9 @@ export default function NotificationBell() {
 
   // 2. WebSocket connection using useWebSocket hook
   const activeWsUrl =
-    isSignedIn && token ? `${wsUrl}?token=${encodeURIComponent(token)}` : null;
+    isSignedIn && userId
+      ? `${wsUrl}?user_id=${encodeURIComponent(userId)}`
+      : null;
 
   const { isReady, value } =
     useWebSocket<WebSocketMessage<NotificationType>>(activeWsUrl);
@@ -83,22 +91,25 @@ export default function NotificationBell() {
       queryClient.setQueryData<NotificationResponse>(
         ["notifications"],
         (prev) => {
-          if (!prev) {
-            return {
-              notifications: [newNotif],
-              unread_count: 1,
-              total: 1,
-            };
-          }
+          const prevList = Array.isArray(prev?.notifications)
+            ? prev.notifications
+            : [];
           // Avoid duplicate notifications in local state
-          const exists = prev.notifications.some((n) => n.id === newNotif.id);
-          if (exists) return prev;
+          const exists = prevList.some((n) => n.id === newNotif.id);
+          if (exists) {
+            return (
+              prev ?? {
+                notifications: [newNotif],
+                unread_count: 1,
+                total: 1,
+              }
+            );
+          }
 
           return {
-            ...prev,
-            unread_count: prev.unread_count + 1,
-            total: prev.total + 1,
-            notifications: [newNotif, ...prev.notifications],
+            notifications: [newNotif, ...prevList],
+            unread_count: (prev?.unread_count ?? 0) + 1,
+            total: (prev?.total ?? 0) + 1,
           };
         },
       );
@@ -128,10 +139,13 @@ export default function NotificationBell() {
       ]);
 
       if (previousData) {
+        const prevList = Array.isArray(previousData.notifications)
+          ? previousData.notifications
+          : [];
         queryClient.setQueryData<NotificationResponse>(["notifications"], {
           ...previousData,
           unread_count: Math.max(0, previousData.unread_count - 1),
-          notifications: previousData.notifications.map((n) =>
+          notifications: prevList.map((n) =>
             n.id === id ? { ...n, read_at: new Date().toISOString() } : n,
           ),
         });
@@ -171,10 +185,13 @@ export default function NotificationBell() {
       ]);
 
       if (previousData) {
+        const prevList = Array.isArray(previousData.notifications)
+          ? previousData.notifications
+          : [];
         queryClient.setQueryData<NotificationResponse>(["notifications"], {
           ...previousData,
           unread_count: 0,
-          notifications: previousData.notifications.map((n) => ({
+          notifications: prevList.map((n) => ({
             ...n,
             read_at: new Date().toISOString(),
           })),

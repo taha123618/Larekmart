@@ -82,15 +82,6 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS configuration
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
     # Request ID and Metrics Middleware
     class ObservabilityMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request: Request, call_next: Any) -> Response:  # type: ignore[name-defined]
@@ -124,6 +115,15 @@ def create_app() -> FastAPI:
             return response
 
     app.add_middleware(ObservabilityMiddleware)
+
+    # CORS configuration - added last so it becomes outermost middleware in ASGI stack
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     # Exception Handlers
     register_exception_handlers(app)

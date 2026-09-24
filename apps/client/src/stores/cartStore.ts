@@ -36,9 +36,16 @@ export interface ExtendedCartActions extends CartStoreActionsType {
 const mapServerItemsToCart = (
   serverItems: CartResponseType["items"],
 ): CartItemsType => {
-  return serverItems.map(
-    (i) =>
-      ({
+  const consolidated = new Map<string, CartItemType>();
+
+  for (const i of serverItems) {
+    const key = `${i.productId}:${i.size || ""}:${i.color || ""}`;
+    const existing = consolidated.get(key);
+
+    if (existing) {
+      existing.quantity = Math.min(existing.quantity + i.quantity, 10);
+    } else {
+      consolidated.set(key, {
         id: isNaN(Number(i.productId))
           ? (i.productId as unknown as number)
           : Number(i.productId),
@@ -55,8 +62,11 @@ const mapServerItemsToCart = (
         images: i.image ? { [i.color || "default"]: i.image } : {},
         createdAt: new Date(),
         updatedAt: new Date(),
-      }) as unknown as CartItemType,
-  );
+      } as unknown as CartItemType);
+    }
+  }
+
+  return Array.from(consolidated.values());
 };
 
 const useCartStore = create<ExtendedCartState & ExtendedCartActions>()(

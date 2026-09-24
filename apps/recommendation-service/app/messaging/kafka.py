@@ -50,6 +50,8 @@ class KafkaConsumerManager:
                 group_id=group_id,
                 auto_offset_reset="earliest",
                 enable_auto_commit=True,
+                metadata_max_age_ms=10000,
+                retry_backoff_ms=500,
                 value_deserializer=lambda m: json.loads(m.decode("utf-8")),
             )
             await self.consumer.start()
@@ -97,8 +99,8 @@ class KafkaConsumerManager:
             except asyncio.CancelledError:
                 break
             except Exception as loop_err:
-                logger.error("kafka_consumer_loop_error", error=str(loop_err))
-                await asyncio.sleep(2)
+                logger.warning("kafka_consumer_transient_warning", error=str(loop_err))
+                await asyncio.sleep(1)
 
     async def stop(self) -> None:
         self._running = False

@@ -12,13 +12,13 @@ func TestExtractUserID(t *testing.T) {
 	// 1. Direct X-User-ID header
 	req1 := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req1.Header.Set("X-User-ID", "user_abc123")
-	if uid := extractUserID(req1); uid != "user_abc123" {
+	if uid := ExtractUserID(req1); uid != "user_abc123" {
 		t.Errorf("expected user_abc123, got %s", uid)
 	}
 
 	// 2. Query param ?user_id=
 	req2 := httptest.NewRequest(http.MethodGet, "/test?user_id=user_query99", nil)
-	if uid := extractUserID(req2); uid != "user_query99" {
+	if uid := ExtractUserID(req2); uid != "user_query99" {
 		t.Errorf("expected user_query99, got %s", uid)
 	}
 
@@ -30,13 +30,13 @@ func TestExtractUserID(t *testing.T) {
 
 	req3 := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req3.Header.Set("Authorization", "Bearer "+fakeJWT)
-	if uid := extractUserID(req3); uid != "user_jwt_sub_777" {
+	if uid := ExtractUserID(req3); uid != "user_jwt_sub_777" {
 		t.Errorf("expected user_jwt_sub_777, got %s", uid)
 	}
 
 	// 4. Empty auth header returns empty string
 	req4 := httptest.NewRequest(http.MethodGet, "/test", nil)
-	if uid := extractUserID(req4); uid != "" {
+	if uid := ExtractUserID(req4); uid != "" {
 		t.Errorf("expected empty user ID, got %s", uid)
 	}
 }

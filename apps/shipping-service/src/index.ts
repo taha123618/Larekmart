@@ -2,8 +2,7 @@ import { createServer } from "./server.js";
 import { env } from "./config/env.js";
 import { ProviderRegistry } from "./providers/registry.js";
 import { ShipmentRepository } from "./repositories/shipment.repository.js";
-import { startOrderConsumer } from "./consumers/order.consumer.js";
-import { startPaymentConsumer } from "./consumers/payment.consumer.js";
+import { startShippingConsumers } from "./consumers/index.js";
 import { disconnectPrisma } from "@repo/shipping-db";
 import { producer, consumer } from "./utils/kafka.js";
 
@@ -35,8 +34,7 @@ async function main() {
   try {
     await producer.connect();
     console.log("[ShippingService] Kafka producer connected");
-    await startOrderConsumer();
-    await startPaymentConsumer();
+    await startShippingConsumers();
     console.log(
       "[ShippingService] Kafka consumers started for order and payment events",
     );

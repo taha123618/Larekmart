@@ -83,9 +83,8 @@ export class SearchService {
         status: "error",
         has_query: String(hasQuery),
       });
-      logger.error("Error executing product search in OpenSearch", {
+      logger.error("Error executing product search in OpenSearch", error, {
         params,
-        error: error.message,
       });
       throw error;
     }

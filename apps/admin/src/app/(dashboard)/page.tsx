@@ -22,13 +22,14 @@ const Homepage = async () => {
         Authorization: `Bearer ${token}`,
       },
     },
-  ).then(async (response) => {
-    if (!response.ok) {
-      throw new Error(`Failed to fetch order chart: ${response.status}`);
-    }
-
-    return (await response.json()) as OrderChartType[];
-  });
+  )
+    .then(async (response) => {
+      if (!response.ok) {
+        return [] as OrderChartType[];
+      }
+      return (await response.json()) as OrderChartType[];
+    })
+    .catch(() => [] as OrderChartType[]);
 
   const dailyAnalyticsData = fetch(
     `${process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL || "http://localhost:8004"}/analytics/daily-chart?days=7`,

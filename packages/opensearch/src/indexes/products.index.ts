@@ -45,9 +45,10 @@ export async function ensureProductIndexExists(
       }
     }
   } catch (error) {
-    logger?.error(`Failed to ensure product index ${indexName} exists`, {
-      error,
-    });
+    logger?.error(
+      `Failed to ensure product index ${indexName} exists`,
+      error instanceof Error ? error : new Error(String(error)),
+    );
     throw error;
   }
 }

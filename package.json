@@ -8,6 +8,8 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md,js,json}\"",
     "check-types": "turbo run check-types",
+    "kafka:init-topics": "pnpm --filter @repo/kafka topics:init",
+    "db:seed": "pnpm --filter @repo/product-db db:seed",
     "install:all": "pnpm install",
     "env:setup": "node scripts/setup-env.js",
     "skills:sync": "node scripts/sync-skills.js",

@@ -120,30 +120,64 @@ export class Logger {
 
   public error(
     message: string,
-    error?: Error | unknown,
-    metadata?: LogMetadata,
+    errorOrMetadata?: Error | unknown,
+    maybeMetadata?: LogMetadata,
   ): void {
-    const err =
-      error instanceof Error
-        ? error
-        : error
-          ? new Error(String(error))
-          : undefined;
-    this.write("error", message, metadata, err);
+    let err: Error | undefined;
+    let meta: LogMetadata | undefined = maybeMetadata;
+
+    if (errorOrMetadata instanceof Error) {
+      err = errorOrMetadata;
+    } else if (
+      errorOrMetadata &&
+      typeof errorOrMetadata === "object" &&
+      !maybeMetadata
+    ) {
+      const record = errorOrMetadata as Record<string, unknown>;
+      if (record.error instanceof Error) {
+        err = record.error;
+      } else if (typeof record.error === "string") {
+        err = new Error(record.error);
+      } else if (typeof record.message === "string") {
+        err = new Error(record.message);
+      }
+      meta = errorOrMetadata as LogMetadata;
+    } else if (errorOrMetadata !== undefined && errorOrMetadata !== null) {
+      err = new Error(String(errorOrMetadata));
+    }
+
+    this.write("error", message, meta, err);
   }
 
   public fatal(
     message: string,
-    error?: Error | unknown,
-    metadata?: LogMetadata,
+    errorOrMetadata?: Error | unknown,
+    maybeMetadata?: LogMetadata,
   ): void {
-    const err =
-      error instanceof Error
-        ? error
-        : error
-          ? new Error(String(error))
-          : undefined;
-    this.write("fatal", message, metadata, err);
+    let err: Error | undefined;
+    let meta: LogMetadata | undefined = maybeMetadata;
+
+    if (errorOrMetadata instanceof Error) {
+      err = errorOrMetadata;
+    } else if (
+      errorOrMetadata &&
+      typeof errorOrMetadata === "object" &&
+      !maybeMetadata
+    ) {
+      const record = errorOrMetadata as Record<string, unknown>;
+      if (record.error instanceof Error) {
+        err = record.error;
+      } else if (typeof record.error === "string") {
+        err = new Error(record.error);
+      } else if (typeof record.message === "string") {
+        err = new Error(record.message);
+      }
+      meta = errorOrMetadata as LogMetadata;
+    } else if (errorOrMetadata !== undefined && errorOrMetadata !== null) {
+      err = new Error(String(errorOrMetadata));
+    }
+
+    this.write("fatal", message, meta, err);
   }
 
   private write(

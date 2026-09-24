@@ -38,24 +38,62 @@ health.register(
 );
 
 const app = new Hono();
-app.use("*", clerkMiddleware());
+
+// 1. CORS must run first so preflight OPTIONS requests succeed immediately
 app.use(
   "*",
   cors({
     origin: ["http://localhost:3002", "http://localhost:3003"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-request-id",
+      "X-Request-ID",
+      "x-user-id",
+      "X-User-ID",
+      "x-correlation-id",
+    ],
     credentials: true,
   }),
 );
+
+// 2. Clerk middleware with environment keys
+app.use(
+  "*",
+  clerkMiddleware({
+    publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
+    secretKey: process.env.CLERK_SECRET_KEY,
+  }),
+);
+
+// 3. HTTP Monitoring hooks with requestId and userId
 app.use("*", async (c, next) => {
-  if (c.req.path === "/health" || c.req.path === "/metrics") {
+  if (
+    c.req.path === "/health" ||
+    c.req.path === "/metrics" ||
+    c.req.path === "/ready"
+  ) {
     return next();
   }
+  const requestId =
+    c.req.header("x-request-id") ||
+    c.req.header("x-correlation-id") ||
+    `req-${Date.now()}`;
+
+  let userId = c.req.header("x-user-id");
+
   const hook = httpMonitor.onRequestStart({
     method: c.req.method,
     url: c.req.path,
+    requestId,
+    userId: userId || "guest",
   });
   await next();
-  hook.onRequestEnd(c.res.status);
+  hook.onRequestEnd(c.res.status, {
+    requestId,
+    userId: userId || (c.get as any)("userId") || "guest",
+  });
 });
 
 app.get("/health", async (c) => {
