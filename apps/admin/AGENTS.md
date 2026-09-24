@@ -61,6 +61,7 @@ This app talks HTTP to:
   not that the index is already rebuilt.
 - `order-service` — orders, order chart.
 - `auth-service` — user admin (list, get, create, delete).
+- `shipping-service` (`NEXT_PUBLIC_SHIPPING_SERVICE_URL` :8011) — logistics dashboard, shipments, multi-carrier adapters, rates, label printing, and tracking.
 - `recommendation-service` (`NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL` :8008) — live health checks (`/health/live`), strategy metrics (`/api/v1/analytics/metrics`), interactive tester (`/api/v1/recommendations/*`), and overview popular product fallback (`/api/v1/recommendations/popular`).
 - every caching service — its `/metrics` endpoint, for the **Cache Performance** page
   (`/cache`). That page reads `cache_hits_total` / `cache_misses_total` / `cache_errors_total`

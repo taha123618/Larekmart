@@ -23,7 +23,10 @@ export const runKafkaSubscriptions = async () => {
             });
           }
         } catch (err) {
-          console.warn("[order-service] Failed to link shipment to order:", err);
+          console.warn(
+            "[order-service] Failed to link shipment to order:",
+            err,
+          );
         }
       },
     },

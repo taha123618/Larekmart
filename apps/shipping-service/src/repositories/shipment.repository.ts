@@ -23,7 +23,8 @@ export class ShipmentRepository {
         isCod: Boolean(data.isCod),
         codAmount: data.codAmount ? Math.round(data.codAmount) : null,
         codFee: data.codFee ? Math.round(data.codFee) : 0,
-        codStatus: (data as any).codStatus ?? (data.isCod ? "PENDING_COLLECTION" : null),
+        codStatus:
+          (data as any).codStatus ?? (data.isCod ? "PENDING_COLLECTION" : null),
         estimatedDeliveryAt: data.estimatedDeliveryAt ?? null,
         metadata: (data.metadata as object) ?? null,
         items: {
@@ -56,15 +57,17 @@ export class ShipmentRepository {
     });
   }
 
-  static async findAll(params: {
-    page?: number;
-    limit?: number;
-    carrier?: string;
-    status?: ShipmentStatus;
-    search?: string;
-    isCod?: boolean;
-    codStatus?: string;
-  } = {}) {
+  static async findAll(
+    params: {
+      page?: number;
+      limit?: number;
+      carrier?: string;
+      status?: ShipmentStatus;
+      search?: string;
+      isCod?: boolean;
+      codStatus?: string;
+    } = {},
+  ) {
     const page = Math.max(1, params.page ?? 1);
     const limit = Math.min(100, Math.max(1, params.limit ?? 20));
     const skip = (page - 1) * limit;

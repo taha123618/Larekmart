@@ -13,7 +13,14 @@ import {
 import { cn } from "@/lib/utils";
 import { OrderType } from "@repo/types";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Truck, ExternalLink, Banknote, CreditCard } from "lucide-react";
+import {
+  ArrowUpDown,
+  MoreHorizontal,
+  Truck,
+  ExternalLink,
+  Banknote,
+  CreditCard,
+} from "lucide-react";
 import Link from "next/link";
 
 const getCarrierBadge = (carrier?: string | null) => {
@@ -104,7 +111,9 @@ export const columns: ColumnDef<OrderType>[] = [
         <div className="flex flex-col">
           <span className="text-xs font-medium">{email}</span>
           {addr?.fullName && (
-            <span className="text-[11px] text-muted-foreground">{addr.fullName}</span>
+            <span className="text-[11px] text-muted-foreground">
+              {addr.fullName}
+            </span>
           )}
         </div>
       );

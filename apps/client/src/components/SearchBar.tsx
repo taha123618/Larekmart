@@ -241,8 +241,9 @@ const SearchBar = () => {
                 id={`${listboxId}-${index}`}
                 role="option"
                 aria-selected={index === activeIndex}
-                className={`cursor-pointer px-3 py-1.5 ${index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
-                  }`}
+                className={`cursor-pointer px-3 py-1.5 ${
+                  index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
+                }`}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => activateOption(option)}
               >

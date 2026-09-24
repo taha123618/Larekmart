@@ -73,7 +73,8 @@ export const startOrderConsumer = async () => {
             carrier: payload.carrier || env.DEFAULT_CARRIER,
             serviceType: payload.serviceType || "standard",
             isCod: Boolean(payload.isCod),
-            codAmount: payload.codAmount ?? (payload.isCod ? payload.amount : null),
+            codAmount:
+              payload.codAmount ?? (payload.isCod ? payload.amount : null),
             codFee: payload.codFee ?? 0,
             shippingAddress,
             items,
@@ -83,7 +84,8 @@ export const startOrderConsumer = async () => {
             metadata: {
               sourceEvent: "order.created",
               customerEmail: payload.email,
-              paymentMethod: payload.paymentMethod || (payload.isCod ? "cod" : "card"),
+              paymentMethod:
+                payload.paymentMethod || (payload.isCod ? "cod" : "card"),
             },
           });
 

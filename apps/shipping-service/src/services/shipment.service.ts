@@ -107,15 +107,17 @@ export class ShipmentService {
     return this.formatShipment(refreshed ?? shipment);
   }
 
-  static async listShipments(params: {
-    page?: number;
-    limit?: number;
-    carrier?: string;
-    status?: string;
-    search?: string;
-    isCod?: boolean;
-    codStatus?: string;
-  } = {}) {
+  static async listShipments(
+    params: {
+      page?: number;
+      limit?: number;
+      carrier?: string;
+      status?: string;
+      search?: string;
+      isCod?: boolean;
+      codStatus?: string;
+    } = {},
+  ) {
     const { shipments, pagination } = await ShipmentRepository.findAll({
       page: params.page,
       limit: params.limit,

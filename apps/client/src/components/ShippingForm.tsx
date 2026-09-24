@@ -1,6 +1,10 @@
 "use client";
 
-import { ShippingFormInputs, shippingFormSchema, ShippingRate } from "@repo/types";
+import {
+  ShippingFormInputs,
+  shippingFormSchema,
+  ShippingRate,
+} from "@repo/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Truck, Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -50,7 +54,7 @@ const ShippingForm = ({
     setValue,
     formState: { errors },
   } = useForm<ShippingFormInputs>({
-    resolver: zodResolver(shippingFormSchema as any),
+    resolver: zodResolver(shippingFormSchema),
     defaultValues: {
       carrier: "custom",
       serviceType: "standard",
@@ -60,7 +64,8 @@ const ShippingForm = ({
 
   const [availableRates, setAvailableRates] = useState<ShippingRate[]>([]);
   const [loadingRates, setLoadingRates] = useState(false);
-  const [selectedRateId, setSelectedRateId] = useState<string>("custom-standard");
+  const [selectedRateId, setSelectedRateId] =
+    useState<string>("custom-standard");
   const [isCodEnabled, setIsCodEnabled] = useState<boolean>(false);
 
   const city = watch("city");
@@ -84,7 +89,8 @@ const ShippingForm = ({
         if (!isCancelled && rates.length > 0) {
           setAvailableRates(rates);
           // Auto-select standard or first rate
-          const standardRate = rates.find((r) => r.service === "standard") || rates[0];
+          const standardRate =
+            rates.find((r) => r.service === "standard") || rates[0];
           if (standardRate) {
             setSelectedRateId(standardRate.id);
             setValue("carrier", standardRate.carrier);
@@ -284,7 +290,8 @@ const ShippingForm = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] text-gray-500">
-                        Est. {rate.estimatedDaysMin ?? 1}-{rate.estimatedDaysMax ?? 3} days
+                        Est. {rate.estimatedDaysMin ?? 1}-
+                        {rate.estimatedDaysMax ?? 3} days
                       </span>
                       {isCodEnabled && (
                         <span
@@ -294,14 +301,20 @@ const ShippingForm = ({
                               : "bg-gray-100 text-gray-500 line-through"
                           }`}
                         >
-                          {isCodSupported ? `COD: +PKR ${rate.codFee ?? 0}` : "Prepaid Only"}
+                          {isCodSupported
+                            ? `COD: +PKR ${rate.codFee ?? 0}`
+                            : "Prepaid Only"}
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="text-right">
                     <span className="text-xs font-bold text-gray-900">
-                      PKR {rate.amount + (isCodEnabled && isCodSupported ? (rate.codFee ?? 0) : 0)}
+                      PKR{" "}
+                      {rate.amount +
+                        (isCodEnabled && isCodSupported
+                          ? (rate.codFee ?? 0)
+                          : 0)}
                     </span>
                     {isSelected && (
                       <div className="w-4 h-4 bg-gray-900 rounded-full flex items-center justify-center text-white ml-auto mt-1">

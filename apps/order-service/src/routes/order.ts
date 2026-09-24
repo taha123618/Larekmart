@@ -19,7 +19,9 @@ export const orderRoute = async (fastify: FastifyInstance) => {
       const { result: orders } = await measureAsync(
         "db.order.findUserOrders",
         async () => {
-          return await Order.find({ userId: request.userId }).sort({ createdAt: -1 });
+          return await Order.find({ userId: request.userId }).sort({
+            createdAt: -1,
+          });
         },
       );
       return reply.send(orders);
@@ -68,7 +70,9 @@ export const orderRoute = async (fastify: FastifyInstance) => {
       };
 
       if (!body.email || !body.amount || !body.shippingAddress) {
-        return reply.status(400).send({ message: "Missing required order fields" });
+        return reply
+          .status(400)
+          .send({ message: "Missing required order fields" });
       }
 
       const newOrder = new Order({

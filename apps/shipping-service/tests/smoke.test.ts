@@ -97,7 +97,9 @@ async function runSmokeTest() {
   console.log("Tracking milestones count:", tracking.events.length);
   console.log("Tracking status:", tracking.status);
 
-  console.log("7. Testing Cash on Delivery (COD) Rate Calculation (Amount: 5000 PKR)...");
+  console.log(
+    "7. Testing Cash on Delivery (COD) Rate Calculation (Amount: 5000 PKR)...",
+  );
   const codRateResult = await RateService.calculateRates({
     country: "PK",
     city: "Lahore",
@@ -160,28 +162,150 @@ async function runSmokeTest() {
   console.log("COD Fee:", codShipment.codFee);
   console.log("Initial COD Status:", codShipment.codStatus);
 
-  if (!codShipment.isCod || codShipment.codAmount !== 5000 || codShipment.codStatus !== "PENDING_COLLECTION") {
+  if (
+    !codShipment.isCod ||
+    codShipment.codAmount !== 5000 ||
+    codShipment.codStatus !== "PENDING_COLLECTION"
+  ) {
     throw new Error("COD shipment initialization attributes mismatch");
   }
 
-  console.log("9. Testing COD Delivery & Cash Collection Lifecycle Transition...");
+  console.log(
+    "9. Testing COD Delivery & Cash Collection Lifecycle Transition...",
+  );
   await TrackingService.recordTrackingEvent({
     shipmentId: codShipment.id,
     status: "DELIVERED",
-    description: "Package delivered to consignee. Cash of PKR 5000 collected by courier rider.",
+    description:
+      "Package delivered to consignee. Cash of PKR 5000 collected by courier rider.",
     location: "Gulberg Lahore",
     source: "manual",
   });
 
-  const deliveredCodShipment = await ShipmentService.getShipmentById(codShipment.id);
+  const deliveredCodShipment = await ShipmentService.getShipmentById(
+    codShipment.id,
+  );
   console.log("Updated Shipment Status:", deliveredCodShipment.status);
   console.log("Updated COD Status:", deliveredCodShipment.codStatus);
 
-  if (deliveredCodShipment.status !== "DELIVERED" || deliveredCodShipment.codStatus !== "COLLECTED") {
-    throw new Error("COD status failed to transition to COLLECTED upon DELIVERED event");
+  if (
+    deliveredCodShipment.status !== "DELIVERED" ||
+    deliveredCodShipment.codStatus !== "COLLECTED"
+  ) {
+    throw new Error(
+      "COD status failed to transition to COLLECTED upon DELIVERED event",
+    );
   }
 
-  console.log("Smoke test and COD workflows completed successfully!");
+  console.log("10. Testing Carrier Webhook ingestion & Idempotency...");
+  const { WebhookService } = await import("../src/services/webhook.service.js");
+  if (!shipment.trackingNumber) {
+    throw new Error("Shipment missing tracking number for webhook test");
+  }
+
+  const webhookEventId = `wh_evt_test_${Date.now()}`;
+  const webhookResult = await WebhookService.processCarrierWebhook("tcs", {
+    eventId: webhookEventId,
+    trackingNumber: shipment.trackingNumber,
+    status: "OutForDelivery",
+    description: "Courier rider is out for delivery",
+    location: "Karachi South Hub",
+    rawPayload: { riderName: "Faisal", riderPhone: "+923001122334" },
+  });
+
+  console.log("Carrier Webhook Process Result:", webhookResult);
+  if (webhookResult.status !== "processed") {
+    throw new Error(
+      `Carrier webhook failed to process: ${webhookResult.message}`,
+    );
+  }
+
+  // Verify status transition
+  const webhookUpdatedShipment = await ShipmentService.getShipmentById(
+    shipment.id,
+  );
+  console.log("Shipment status after webhook:", webhookUpdatedShipment.status);
+  if (webhookUpdatedShipment.status !== "OUT_FOR_DELIVERY") {
+    throw new Error(
+      "Shipment status did not update to OUT_FOR_DELIVERY from carrier webhook",
+    );
+  }
+
+  // Test Webhook Idempotency (replay same eventId)
+  const replayWebhookResult = await WebhookService.processCarrierWebhook(
+    "tcs",
+    {
+      eventId: webhookEventId,
+      trackingNumber: shipment.trackingNumber,
+      status: "OutForDelivery",
+      rawPayload: { riderName: "Faisal" },
+    },
+  );
+  console.log("Replay Webhook Result (Idempotency):", replayWebhookResult);
+  if (replayWebhookResult.status !== "ignored") {
+    throw new Error("Replayed webhook was not ignored by idempotency check");
+  }
+
+  console.log("11. Testing Shipment Cancellation workflow...");
+  const cancellableShipment = await ShipmentService.createShipment({
+    orderId: `ord_cancel_${Date.now()}`,
+    userId: "usr_test_cancel",
+    carrier: "custom",
+    serviceType: "standard",
+    shippingAddress: {
+      fullName: "Zainab Bibi",
+      phone: "+923211234567",
+      addressLine1: "Flat 2B, Gulshan Block 4",
+      city: "Karachi",
+      postalCode: "75300",
+      country: "PK",
+    },
+    items: [
+      {
+        productId: "prod_cancel_1",
+        name: "Lawn Dupatta",
+        quantity: 1,
+        price: 1500,
+        weight: 0.3,
+      },
+    ],
+    packages: [
+      {
+        weight: 0.3,
+        packageType: "flyer",
+      },
+    ],
+    shippingRateAmount: 180,
+    currency: "PKR",
+  });
+
+  console.log("Created Cancellable Shipment ID:", cancellableShipment.id);
+  const cancelledResult = await ShipmentService.cancelShipment(
+    cancellableShipment.id,
+    "Customer requested order cancellation before dispatch",
+  );
+
+  console.log("Cancelled Shipment Status:", cancelledResult.status);
+  if (cancelledResult.status !== "CANCELLED") {
+    throw new Error(
+      `Expected shipment status CANCELLED, got ${cancelledResult.status}`,
+    );
+  }
+
+  const cancelTracking = await TrackingService.getTracking(
+    cancellableShipment.id,
+  );
+  const hasCancelEvent = cancelTracking.events.some(
+    (e) => e.status === "CANCELLED",
+  );
+  if (!hasCancelEvent) {
+    throw new Error("Tracking history does not contain CANCELLED event");
+  }
+  console.log("Shipment cancellation and tracking verified!");
+
+  console.log(
+    "All 11 Smoke test, COD, Webhook, and Cancellation workflows passed successfully!",
+  );
   process.exit(0);
 }
 

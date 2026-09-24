@@ -23,7 +23,6 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import RecommendationSection from "@/components/RecommendationSection";
@@ -151,7 +150,8 @@ const CartContent = () => {
   const shippingFee =
     shippingForm?.shippingAmount !== undefined
       ? shippingForm.shippingAmount
-      : activeServerCart?.pricing?.shippingTotal ?? (subtotal > 2000 ? 0 : 250);
+      : (activeServerCart?.pricing?.shippingTotal ??
+        (subtotal > 2000 ? 0 : 250));
   const codFee =
     shippingForm?.isCod && shippingForm?.codFee ? shippingForm.codFee : 0;
   const taxTotal = activeServerCart?.pricing?.taxTotal ?? 0;
@@ -178,19 +178,22 @@ const CartContent = () => {
       <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
         {steps.map((step) => (
           <div
-            className={`flex items-center gap-2 border-b-2 pb-4 ${step.id === activeStep ? "border-gray-800" : "border-gray-200"
-              }`}
+            className={`flex items-center gap-2 border-b-2 pb-4 ${
+              step.id === activeStep ? "border-gray-800" : "border-gray-200"
+            }`}
             key={step.id}
           >
             <div
-              className={`w-6 h-6 rounded-full text-white p-4 flex items-center justify-center text-sm font-semibold ${step.id === activeStep ? "bg-gray-800" : "bg-gray-400"
-                }`}
+              className={`w-6 h-6 rounded-full text-white p-4 flex items-center justify-center text-sm font-semibold ${
+                step.id === activeStep ? "bg-gray-800" : "bg-gray-400"
+              }`}
             >
               {step.id}
             </div>
             <p
-              className={`text-sm font-medium ${step.id === activeStep ? "text-gray-800" : "text-gray-400"
-                }`}
+              className={`text-sm font-medium ${
+                step.id === activeStep ? "text-gray-800" : "text-gray-400"
+              }`}
             >
               {step.title}
             </p>
@@ -248,12 +251,12 @@ const CartContent = () => {
                       <img
                         src={
                           (item.images as Record<string, string>)?.[
-                          item.selectedColor
+                            item.selectedColor
                           ] ||
                           (typeof item.images === "object" && item.images
                             ? Object.values(
-                              item.images as Record<string, string>,
-                            )[0] || ""
+                                item.images as Record<string, string>,
+                              )[0] || ""
                             : "") ||
                           "/placeholder.png"
                         }
@@ -373,10 +376,11 @@ const CartContent = () => {
 
               {couponFeedback && (
                 <div
-                  className={`text-xs mt-1 flex items-center gap-1.5 ${couponFeedback.type === "success"
-                    ? "text-emerald-700 font-medium"
-                    : "text-rose-600"
-                    }`}
+                  className={`text-xs mt-1 flex items-center gap-1.5 ${
+                    couponFeedback.type === "success"
+                      ? "text-emerald-700 font-medium"
+                      : "text-rose-600"
+                  }`}
                 >
                   {couponFeedback.type === "success" ? (
                     <CheckCircle2 className="w-3.5 h-3.5" />

@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { ShippingFormInputs, CartItemType } from "@repo/types";
 import useCartStore from "@/stores/cartStore";
-import { Truck, CheckCircle2, AlertCircle, Loader2, ArrowRight } from "lucide-react";
+import {
+  Truck,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ArrowRight,
+} from "lucide-react";
 
 export default function CodConfirmationForm({
   shippingForm,
@@ -71,14 +77,18 @@ export default function CodConfirmationForm({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to confirm Cash on Delivery order");
+        throw new Error(
+          data.message || "Failed to confirm Cash on Delivery order",
+        );
       }
 
       const createdOrder = await res.json();
       setConfirmedOrderId(createdOrder._id || createdOrder.id);
       clearCart(token);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setError(
+        err instanceof Error ? err.message : "An unexpected error occurred",
+      );
     } finally {
       setLoading(false);
     }
@@ -92,14 +102,17 @@ export default function CodConfirmationForm({
         </div>
         <h3 className="text-xl font-bold text-gray-900">Order Confirmed!</h3>
         <p className="text-xs text-gray-600 mt-1 max-w-md">
-          Your Cash on Delivery booking with <span className="font-semibold">{carrierName}</span> has been dispatched.
-          Please keep exact cash ready upon delivery.
+          Your Cash on Delivery booking with{" "}
+          <span className="font-semibold">{carrierName}</span> has been
+          dispatched. Please keep exact cash ready upon delivery.
         </p>
 
         <div className="mt-4 p-3 bg-white border border-gray-200 rounded-lg w-full max-w-sm text-left text-xs flex flex-col gap-1.5">
           <div className="flex justify-between">
             <span className="text-gray-500">Order ID:</span>
-            <span className="font-mono font-medium text-gray-900">{confirmedOrderId}</span>
+            <span className="font-mono font-medium text-gray-900">
+              {confirmedOrderId}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Courier:</span>
@@ -107,7 +120,9 @@ export default function CodConfirmationForm({
           </div>
           <div className="flex justify-between border-t pt-1 font-semibold text-sm">
             <span>Pay on Delivery:</span>
-            <span className="text-emerald-700">PKR {Math.round(grandTotal)}</span>
+            <span className="text-emerald-700">
+              PKR {Math.round(grandTotal)}
+            </span>
           </div>
         </div>
 
@@ -139,25 +154,35 @@ export default function CodConfirmationForm({
             Cash on Delivery with {carrierName}
           </h4>
           <p className="text-xs text-emerald-800 leading-relaxed">
-            No upfront card payment required. Our courier rider will collect cash at your doorstep in{" "}
-            <span className="font-semibold">{shippingForm.city}</span> before handing over your package.
+            No upfront card payment required. Our courier rider will collect
+            cash at your doorstep in{" "}
+            <span className="font-semibold">{shippingForm.city}</span> before
+            handing over your package.
           </p>
         </div>
       </div>
 
       <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 flex flex-col gap-2 text-xs">
-        <span className="font-semibold text-gray-900">Delivery & Collection Summary:</span>
+        <span className="font-semibold text-gray-900">
+          Delivery & Collection Summary:
+        </span>
         <div className="flex justify-between text-gray-600">
           <span>Recipient:</span>
-          <span className="font-medium text-gray-900">{shippingForm.name} ({shippingForm.phone})</span>
+          <span className="font-medium text-gray-900">
+            {shippingForm.name} ({shippingForm.phone})
+          </span>
         </div>
         <div className="flex justify-between text-gray-600">
           <span>Address:</span>
-          <span className="font-medium text-gray-900">{shippingForm.address}, {shippingForm.city}</span>
+          <span className="font-medium text-gray-900">
+            {shippingForm.address}, {shippingForm.city}
+          </span>
         </div>
         <div className="flex justify-between text-gray-600">
           <span>Courier Service:</span>
-          <span className="font-medium text-gray-900">{carrierName} ({shippingForm.serviceType})</span>
+          <span className="font-medium text-gray-900">
+            {carrierName} ({shippingForm.serviceType})
+          </span>
         </div>
         {codFee > 0 && (
           <div className="flex justify-between text-emerald-700">

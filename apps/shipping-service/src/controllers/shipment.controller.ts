@@ -8,7 +8,8 @@ import {
 
 export class ShipmentController {
   static async listShipments(ctx: Context): Promise<void> {
-    const { page, limit, carrier, status, search, isCod, codStatus } = ctx.query;
+    const { page, limit, carrier, status, search, isCod, codStatus } =
+      ctx.query;
     try {
       const result = await ShipmentService.listShipments({
         page: page ? Number(page) : undefined,
@@ -16,7 +17,8 @@ export class ShipmentController {
         carrier: typeof carrier === "string" ? carrier : undefined,
         status: typeof status === "string" ? status : undefined,
         search: typeof search === "string" ? search : undefined,
-        isCod: isCod !== undefined ? isCod === "true" || isCod === "1" : undefined,
+        isCod:
+          isCod !== undefined ? isCod === "true" || isCod === "1" : undefined,
         codStatus: typeof codStatus === "string" ? codStatus : undefined,
       });
       ctx.status = 200;
@@ -24,7 +26,8 @@ export class ShipmentController {
     } catch (err) {
       ctx.status = 500;
       ctx.body = {
-        message: err instanceof Error ? err.message : "Failed to list shipments",
+        message:
+          err instanceof Error ? err.message : "Failed to list shipments",
       };
     }
   }

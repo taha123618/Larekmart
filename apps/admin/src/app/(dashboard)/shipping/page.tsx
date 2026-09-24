@@ -25,7 +25,9 @@ async function getShippingHealth(): Promise<{ ok: boolean; status?: string }> {
   try {
     const base =
       process.env.NEXT_PUBLIC_SHIPPING_SERVICE_URL || "http://localhost:8011";
-    const res = await fetch(`${base}/api/v1/health/ready`, { cache: "no-store" });
+    const res = await fetch(`${base}/api/v1/health/ready`, {
+      cache: "no-store",
+    });
     if (res.ok) {
       const data = (await res.json()) as { status?: string };
       return { ok: true, status: data.status };
@@ -53,10 +55,13 @@ const StatCard = ({
     blue: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
     green: "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400",
     amber: "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
-    purple: "bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400",
+    purple:
+      "bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400",
     rose: "bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400",
-    indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400",
-    emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
+    indigo:
+      "bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400",
+    emerald:
+      "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
   };
   return (
     <div className="bg-primary-foreground rounded-xl p-5 flex items-center gap-4 border border-border/40">
@@ -66,7 +71,9 @@ const StatCard = ({
       <div>
         <p className="text-sm text-muted-foreground">{title}</p>
         <p className="text-2xl font-bold">{value}</p>
-        {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
+        {subtitle && (
+          <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>
+        )}
       </div>
     </div>
   );
@@ -172,30 +179,40 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
   const activeStatus = resolvedParams.status || "all";
   const activeCodFilter = resolvedParams.isCod; // "true", "false", or undefined
 
-  const [healthResult, shipmentsResult, methodsResult] = await Promise.allSettled([
-    getShippingHealth(),
-    fetchShipments({
-      limit: 100,
-      carrier: activeCarrier,
-      status: activeStatus,
-      isCod: activeCodFilter ? activeCodFilter === "true" : undefined,
-    }),
-    fetchShippingMethods(),
-  ]);
+  const [healthResult, shipmentsResult, methodsResult] =
+    await Promise.allSettled([
+      getShippingHealth(),
+      fetchShipments({
+        limit: 100,
+        carrier: activeCarrier,
+        status: activeStatus,
+        isCod: activeCodFilter ? activeCodFilter === "true" : undefined,
+      }),
+      fetchShippingMethods(),
+    ]);
 
-  const health = healthResult.status === "fulfilled" ? healthResult.value : { ok: false };
+  const health =
+    healthResult.status === "fulfilled" ? healthResult.value : { ok: false };
   const shipmentsData: ShipmentListResponse =
     shipmentsResult.status === "fulfilled"
       ? shipmentsResult.value
-      : { shipments: [], pagination: { page: 1, limit: 100, total: 0, totalPages: 0 } };
+      : {
+          shipments: [],
+          pagination: { page: 1, limit: 100, total: 0, totalPages: 0 },
+        };
   const methodsData: ShippingMethod[] =
     methodsResult.status === "fulfilled" ? methodsResult.value : [];
 
   const shipments: Shipment[] = shipmentsData.shipments;
   const inTransitCount = shipments.filter(
-    (s) => s.status === "IN_TRANSIT" || s.status === "PICKED_UP" || s.status === "OUT_FOR_DELIVERY",
+    (s) =>
+      s.status === "IN_TRANSIT" ||
+      s.status === "PICKED_UP" ||
+      s.status === "OUT_FOR_DELIVERY",
   ).length;
-  const deliveredCount = shipments.filter((s) => s.status === "DELIVERED").length;
+  const deliveredCount = shipments.filter(
+    (s) => s.status === "DELIVERED",
+  ).length;
 
   const codShipments = shipments.filter((s) => s.isCod);
   const totalCodCollected = codShipments
@@ -205,7 +222,8 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
     .filter((s) => s.codStatus !== "COLLECTED")
     .reduce((sum, s) => sum + (s.codAmount ? Number(s.codAmount) : 0), 0);
 
-  const clientBase = process.env.NEXT_PUBLIC_CLIENT_URL || "http://localhost:3002";
+  const clientBase =
+    process.env.NEXT_PUBLIC_CLIENT_URL || "http://localhost:3002";
 
   return (
     <div className="flex flex-col gap-6 pb-12">
@@ -342,7 +360,8 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
             <Box className="w-8 h-8 text-muted-foreground/60" />
             <p>No shipments matching current filters.</p>
             <p className="text-xs">
-              Shipments are automatically generated when customer orders are placed or triggered via carrier adapters.
+              Shipments are automatically generated when customer orders are
+              placed or triggered via carrier adapters.
             </p>
           </div>
         ) : (
@@ -353,7 +372,9 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
                   <th className="text-left py-2.5 px-3">Shipment / Order</th>
                   <th className="text-left py-2.5 px-3">Carrier & Service</th>
                   <th className="text-left py-2.5 px-3">Tracking Number</th>
-                  <th className="text-left py-2.5 px-3">Destination Snapshot</th>
+                  <th className="text-left py-2.5 px-3">
+                    Destination Snapshot
+                  </th>
                   <th className="text-left py-2.5 px-3">Payment & COD</th>
                   <th className="text-left py-2.5 px-3">Status</th>
                   <th className="text-right py-2.5 px-3">Shipping Fee</th>
@@ -397,7 +418,9 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
                           </a>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground italic">Pending assignment</span>
+                        <span className="text-muted-foreground italic">
+                          Pending assignment
+                        </span>
                       )}
                     </td>
                     <td className="py-3 px-3">
@@ -413,15 +436,18 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
                       {s.isCod ? (
                         <div className="flex flex-col gap-0.5">
                           <span className="font-bold text-xs text-emerald-700 dark:text-emerald-400">
-                            COD: PKR {s.codAmount ? Number(s.codAmount).toLocaleString() : s.shippingRateAmount}
+                            COD: PKR{" "}
+                            {s.codAmount
+                              ? Number(s.codAmount).toLocaleString()
+                              : s.shippingRateAmount}
                           </span>
                           <span
                             className={`text-[10px] font-medium px-1.5 py-0.5 rounded w-fit ${
                               s.codStatus === "COLLECTED"
                                 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                                 : s.codStatus === "REFUSED"
-                                ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
-                                : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                                  ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                                  : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
                             }`}
                           >
                             {s.codStatus || "Pending Collection"}
@@ -482,9 +508,13 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     {getCarrierBadge(m.carrier)}
-                    <span className="text-xs text-emerald-600 font-medium">Active</span>
+                    <span className="text-xs text-emerald-600 font-medium">
+                      Active
+                    </span>
                   </div>
-                  <h3 className="font-semibold text-sm text-foreground">{m.name}</h3>
+                  <h3 className="font-semibold text-sm text-foreground">
+                    {m.name}
+                  </h3>
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                     {m.description}
                   </p>
@@ -509,14 +539,18 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
           Service Ownership & Lifecycle Architecture
         </p>
         <p>
-          <strong>shipping-service</strong> exclusively owns the physical fulfillment lifecycle,
-          carrier provider adapters (TCS, Leopards, DHL, FedEx, Custom Fleet), rate calculations,
-          COD collection tracking, tracking history events, and carrier webhook ingestion. <strong>order-service</strong>{" "}
-          owns the financial and business order record, while <strong>inventory-service</strong>{" "}
-          manages warehouse reservations and stock ledger. All cross-service coordination occurs
-          asynchronously over Kafka topics (<code>order.created</code>, <code>payment.successful</code>,{" "}
-          <code>shipment.*</code>, <code>tracking.updated</code>). Shipping addresses are snapshotted
-          immutably at creation time to prevent customer profile drift from invalidating historical logistics data.
+          <strong>shipping-service</strong> exclusively owns the physical
+          fulfillment lifecycle, carrier provider adapters (TCS, Leopards, DHL,
+          FedEx, Custom Fleet), rate calculations, COD collection tracking,
+          tracking history events, and carrier webhook ingestion.{" "}
+          <strong>order-service</strong> owns the financial and business order
+          record, while <strong>inventory-service</strong> manages warehouse
+          reservations and stock ledger. All cross-service coordination occurs
+          asynchronously over Kafka topics (<code>order.created</code>,{" "}
+          <code>payment.successful</code>, <code>shipment.*</code>,{" "}
+          <code>tracking.updated</code>). Shipping addresses are snapshotted
+          immutably at creation time to prevent customer profile drift from
+          invalidating historical logistics data.
         </p>
       </div>
     </div>

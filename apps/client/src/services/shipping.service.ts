@@ -51,9 +51,12 @@ export async function fetchTracking(
   trackingNumber: string,
 ): Promise<TrackingResult | null> {
   try {
-    const res = await fetch(`${BASE}/tracking/${encodeURIComponent(trackingNumber)}`, {
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${BASE}/tracking/${encodeURIComponent(trackingNumber)}`,
+      {
+        cache: "no-store",
+      },
+    );
     if (!res.ok) return null;
     return (await res.json()) as TrackingResult;
   } catch {

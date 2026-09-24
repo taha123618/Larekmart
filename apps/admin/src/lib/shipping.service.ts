@@ -37,23 +37,32 @@ export async function fetchShipments(
   const query = new URLSearchParams();
   if (params.page) query.set("page", String(params.page));
   if (params.limit) query.set("limit", String(params.limit));
-  if (params.carrier && params.carrier !== "all") query.set("carrier", params.carrier);
-  if (params.status && params.status !== "all") query.set("status", params.status);
+  if (params.carrier && params.carrier !== "all")
+    query.set("carrier", params.carrier);
+  if (params.status && params.status !== "all")
+    query.set("status", params.status);
   if (params.search) query.set("search", params.search);
   if (params.isCod !== undefined) query.set("isCod", String(params.isCod));
-  if (params.codStatus && params.codStatus !== "all") query.set("codStatus", params.codStatus);
+  if (params.codStatus && params.codStatus !== "all")
+    query.set("codStatus", params.codStatus);
 
   try {
     const res = await fetch(`${BASE}/shipments?${query.toString()}`, {
       cache: "no-store",
     });
     if (!res.ok) {
-      return { shipments: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+      return {
+        shipments: [],
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+      };
     }
     return (await res.json()) as ShipmentListResponse;
   } catch (err) {
     console.warn("Failed to fetch shipments:", err);
-    return { shipments: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+    return {
+      shipments: [],
+      pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+    };
   }
 }
 
@@ -94,7 +103,9 @@ export async function cancelShipment(
       body: JSON.stringify({ reason }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: "Failed to cancel" }));
+      const err = await res
+        .json()
+        .catch(() => ({ message: "Failed to cancel" }));
       return { success: false, message: err.message };
     }
     return { success: true };

@@ -2,7 +2,14 @@ import { auth } from "@clerk/nextjs/server";
 import { OrderType } from "@repo/types";
 import RecommendationSection from "@/components/RecommendationSection";
 import Link from "next/link";
-import { Truck, ExternalLink, Package, Calendar, CreditCard, Banknote } from "lucide-react";
+import {
+  Truck,
+  ExternalLink,
+  Package,
+  Calendar,
+  CreditCard,
+  Banknote,
+} from "lucide-react";
 
 const fetchOrders = async () => {
   const { getToken } = await auth();
@@ -69,7 +76,9 @@ const OrdersPage = async () => {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Your Orders & Deliveries</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Your Orders & Deliveries
+          </h1>
           <p className="text-sm text-gray-500 mt-1">
             Track real-time carrier status and manage recent purchases
           </p>
@@ -86,9 +95,12 @@ const OrdersPage = async () => {
       {!orders || orders.length === 0 ? (
         <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200">
           <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-gray-800">No orders placed yet</h3>
+          <h3 className="text-base font-semibold text-gray-800">
+            No orders placed yet
+          </h3>
           <p className="text-xs text-gray-500 mt-1 mb-4">
-            Items you purchase will appear here along with live carrier tracking.
+            Items you purchase will appear here along with live carrier
+            tracking.
           </p>
           <Link
             href="/products"
@@ -132,11 +144,14 @@ const OrdersPage = async () => {
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5" />
                       {order.createdAt
-                        ? new Date(order.createdAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })
+                        ? new Date(order.createdAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )
                         : "-"}
                     </span>
                     <span>•</span>
@@ -147,7 +162,10 @@ const OrdersPage = async () => {
                       <>
                         <span>•</span>
                         <span className="font-mono text-gray-700">
-                          Tracking: <span className="font-semibold text-gray-900">{order.trackingNumber}</span>
+                          Tracking:{" "}
+                          <span className="font-semibold text-gray-900">
+                            {order.trackingNumber}
+                          </span>
                         </span>
                       </>
                     )}
@@ -155,7 +173,9 @@ const OrdersPage = async () => {
 
                   <div className="text-xs text-gray-600 mt-1">
                     <span className="font-medium text-gray-700">Items: </span>
-                    {order.products?.map((p) => `${p.name} (x${p.quantity})`).join(", ") || "-"}
+                    {order.products
+                      ?.map((p) => `${p.name} (x${p.quantity})`)
+                      .join(", ") || "-"}
                   </div>
                 </div>
 

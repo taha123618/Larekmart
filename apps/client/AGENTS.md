@@ -50,7 +50,14 @@ over HTTP with a Clerk token; it does not touch Postgres, Mongo, or Kafka direct
 ## Backend calls from this app
 
 This app talks HTTP to `product-service`, `order-service`, `payment-service`,
-`search-service` (autocomplete only), and `recommendation-service` (`NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL` :8008). It never calls `auth-service` directly — Clerk handles user auth.
+`search-service` (autocomplete only), `recommendation-service` (`NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL` :8008), and `shipping-service` (`NEXT_PUBLIC_SHIPPING_SERVICE_URL` :8011). It never calls `auth-service` directly — Clerk handles user auth.
+
+Shipping & tracking integration:
+
+- `shipping.service.ts` provides helpers to calculate multi-carrier delivery rates (`fetchShippingRates`), list methods (`fetchShippingMethods`), and retrieve tracking checkpoints (`fetchTracking`).
+- `ShippingForm.tsx` dynamically queries rates and supports Cash on Delivery (COD) calculations.
+- `CodConfirmationForm.tsx` handles cash-on-delivery order placement without Stripe.
+- `/track` allows customers to inspect live carrier scan events, COD collection status, and delivery milestones.
 
 Recommendation integration:
 
