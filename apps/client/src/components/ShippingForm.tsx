@@ -58,7 +58,9 @@ const ShippingForm = ({
     defaultValues: {
       carrier: "custom",
       serviceType: "standard",
-      shippingAmount: 250,
+      shippingAmount: 200,
+      codFee: 30,
+      isCod: false,
     },
   });
 
@@ -97,7 +99,7 @@ const ShippingForm = ({
             setValue("serviceType", standardRate.service);
             setValue("shippingAmount", standardRate.amount);
             setValue("isCod", isCodEnabled);
-            setValue("codFee", standardRate.codFee ?? 0);
+            setValue("codFee", isCodEnabled ? (standardRate.codFee ?? 30) : 0);
           }
         }
       } catch (err) {
@@ -120,21 +122,32 @@ const ShippingForm = ({
     setValue("serviceType", rate.service);
     setValue("shippingAmount", rate.amount);
     setValue("isCod", isCodEnabled && rate.isCodAvailable);
-    setValue("codFee", isCodEnabled ? (rate.codFee ?? 0) : 0);
+    setValue("codFee", isCodEnabled ? (rate.codFee ?? 30) : 0);
   };
 
   const handleToggleCod = (checked: boolean) => {
     setIsCodEnabled(checked);
     setValue("isCod", checked);
     const currentRate = availableRates.find((r) => r.id === selectedRateId);
-    if (currentRate) {
-      setValue("codFee", checked ? (currentRate.codFee ?? 0) : 0);
-    }
+    setValue("codFee", checked ? (currentRate?.codFee ?? 30) : 0);
   };
 
   const handleShippingForm: SubmitHandler<ShippingFormInputs> = (data) => {
+    const selectedRate = availableRates.find((r) => r.id === selectedRateId);
+    const resolvedShippingAmount =
+      selectedRate?.amount ??
+      (typeof data.shippingAmount === "number" ? data.shippingAmount : 200);
+    const resolvedCodFee = isCodEnabled
+      ? (selectedRate?.codFee ??
+        (typeof data.codFee === "number" ? data.codFee : 30))
+      : 0;
+
     setShippingForm({
       ...data,
+      carrier: selectedRate?.carrier || data.carrier || "custom",
+      serviceType: selectedRate?.service || data.serviceType || "standard",
+      shippingAmount: resolvedShippingAmount,
+      codFee: resolvedCodFee,
       isCod: isCodEnabled,
     });
     router.push("/cart?step=3", { scroll: false });

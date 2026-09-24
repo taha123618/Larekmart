@@ -20,10 +20,10 @@ export class MergeService {
    */
   private supportsTransactions(): boolean {
     try {
-      const topologyType = (Cart.db as any)?.client?.topology?.description?.type;
+      const topologyType = (Cart.db as any)?.client?.topology?.description
+        ?.type;
       return (
-        topologyType === "ReplicaSetWithPrimary" ||
-        topologyType === "Sharded"
+        topologyType === "ReplicaSetWithPrimary" || topologyType === "Sharded"
       );
     } catch {
       return false;
@@ -122,8 +122,7 @@ export class MergeService {
         } else {
           existingItem.quantity = combinedQuantity;
         }
-        existingItem.subtotal =
-          existingItem.unitPrice * existingItem.quantity;
+        existingItem.subtotal = existingItem.unitPrice * existingItem.quantity;
       } else {
         // Add new item from guest cart
         let qty = guestItem.quantity;

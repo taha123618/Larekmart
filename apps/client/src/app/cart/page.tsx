@@ -58,7 +58,7 @@ const CartContent = () => {
   const activeStep = parseInt(searchParams.get("step") || "1");
 
   // Local optimistic store
-  const { cart, removeFromCart, updateQuantity, mergeGuestCart } =
+  const { cart, serverCart, removeFromCart, updateQuantity, mergeGuestCart } =
     useCartStore();
 
   // TanStack React Query + Axios hooks
@@ -145,16 +145,29 @@ const CartContent = () => {
     (acc, item) => acc + item.price * item.quantity,
     0,
   );
-  const subtotal = activeServerCart?.pricing?.subtotal ?? fallbackSubtotal;
-  const discountTotal = activeServerCart?.pricing?.discountTotal ?? 0;
+  const subtotal =
+    activeServerCart?.pricing?.subtotal && activeServerCart.pricing.subtotal > 0
+      ? activeServerCart.pricing.subtotal
+      : serverCart?.pricing?.subtotal && serverCart.pricing.subtotal > 0
+        ? serverCart.pricing.subtotal
+        : fallbackSubtotal;
+  const discountTotal =
+    activeServerCart?.pricing?.discountTotal ??
+    serverCart?.pricing?.discountTotal ??
+    0;
   const shippingFee =
     shippingForm?.shippingAmount !== undefined
       ? shippingForm.shippingAmount
-      : (activeServerCart?.pricing?.shippingTotal ??
-        (subtotal > 2000 ? 0 : 250));
-  const codFee =
-    shippingForm?.isCod && shippingForm?.codFee ? shippingForm.codFee : 0;
-  const taxTotal = activeServerCart?.pricing?.taxTotal ?? 0;
+      : activeServerCart?.pricing?.shippingTotal &&
+          activeServerCart.pricing.shippingTotal > 0
+        ? activeServerCart.pricing.shippingTotal
+        : serverCart?.pricing?.shippingTotal &&
+            serverCart.pricing.shippingTotal > 0
+          ? serverCart.pricing.shippingTotal
+          : 200;
+  const codFee = shippingForm?.isCod ? (shippingForm.codFee ?? 30) : 0;
+  const taxTotal =
+    activeServerCart?.pricing?.taxTotal ?? serverCart?.pricing?.taxTotal ?? 0;
   const grandTotal = Math.max(
     0,
     subtotal - discountTotal + shippingFee + codFee + taxTotal,

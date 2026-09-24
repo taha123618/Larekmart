@@ -9,7 +9,6 @@
  *   <FeaturedSection type="new-arrivals" title="New Arrivals" />
  *   <FeaturedSection type="best-sellers" title="Best Sellers" />
  */
-import Image from "next/image";
 import Link from "next/link";
 import {
   fetchFeaturedProducts,

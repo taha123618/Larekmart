@@ -193,6 +193,12 @@ export default function CodConfirmationForm({
             {carrierName} ({shippingForm.serviceType})
           </span>
         </div>
+        <div className="flex justify-between text-gray-600">
+          <span>Shipping Fee:</span>
+          <span className="font-medium text-gray-900">
+            PKR {shippingAmount}
+          </span>
+        </div>
         {codFee > 0 && (
           <div className="flex justify-between text-emerald-700">
             <span>COD Handling Fee:</span>

@@ -133,7 +133,16 @@ const useCartStore = create<ExtendedCartState & ExtendedCartActions>()(
             authToken,
           )
           .then((updatedServerCart) => {
-            if (updatedServerCart) {
+            if (
+              updatedServerCart &&
+              updatedServerCart.items &&
+              updatedServerCart.items.length > 0
+            ) {
+              set({
+                serverCart: updatedServerCart,
+                cart: mapServerItemsToCart(updatedServerCart.items),
+              });
+            } else if (updatedServerCart) {
               set({ serverCart: updatedServerCart });
             }
           })
@@ -168,7 +177,14 @@ const useCartStore = create<ExtendedCartState & ExtendedCartActions>()(
           cartClient
             .removeItem(matchingItem.id, authToken)
             .then((updated) => {
-              if (updated) set({ serverCart: updated });
+              if (updated && updated.items) {
+                set({
+                  serverCart: updated,
+                  cart: mapServerItemsToCart(updated.items),
+                });
+              } else if (updated) {
+                set({ serverCart: updated });
+              }
             })
             .catch((err) => {
               console.warn("Failed to remove item on server:", err);
@@ -208,7 +224,14 @@ const useCartStore = create<ExtendedCartState & ExtendedCartActions>()(
               quantity,
               authToken,
             );
-            if (updated) set({ serverCart: updated });
+            if (updated && updated.items) {
+              set({
+                serverCart: updated,
+                cart: mapServerItemsToCart(updated.items),
+              });
+            } else if (updated) {
+              set({ serverCart: updated });
+            }
           } catch (err) {
             console.warn("Error updating quantity on cart-service:", err);
           }
@@ -224,18 +247,14 @@ const useCartStore = create<ExtendedCartState & ExtendedCartActions>()(
         set({ isSyncing: true, error: null });
         try {
           const serverCart = await cartClient.getCart(authToken);
-          if (serverCart) {
-            // If local cart is empty but server has items, hydrate local items
-            const currentLocalCart = get().cart;
-            if (currentLocalCart.length === 0 && serverCart.items.length > 0) {
-              set({
-                cart: mapServerItemsToCart(serverCart.items),
-                serverCart,
-                isSyncing: false,
-              });
-            } else {
-              set({ serverCart, isSyncing: false });
-            }
+          if (serverCart && serverCart.items && serverCart.items.length > 0) {
+            set({
+              cart: mapServerItemsToCart(serverCart.items),
+              serverCart,
+              isSyncing: false,
+            });
+          } else if (serverCart) {
+            set({ serverCart, isSyncing: false });
           } else {
             set({ isSyncing: false });
           }

@@ -10,7 +10,7 @@ const ShoppingCartIcon = () => {
   if (!hasHydrated) return null;
 
   const count =
-    serverCart && serverCart.items
+    serverCart && serverCart.items && serverCart.items.length > 0
       ? serverCart.items.reduce((acc, item) => acc + item.quantity, 0)
       : cart.reduce((acc, item) => acc + item.quantity, 0);
 
