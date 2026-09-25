@@ -5,9 +5,19 @@ import { logger } from "../observability/metrics.js";
 export async function configureFastifyPlugins(
   fastify: FastifyInstance,
 ): Promise<void> {
-  // CORS
+  // CORS with allowed origins
+  const allowedOrigins = [
+    process.env.CLIENT_URL || "http://localhost:3002",
+    process.env.ADMIN_URL || "http://localhost:3003",
+  ];
+
   await fastify.register(cors, {
-    origin: true,
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return cb(null, true);
+      }
+      return cb(null, false);
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   });

@@ -5,6 +5,7 @@ import type { CustomJwtSessionClaims } from "@repo/types";
 declare module "fastify" {
   interface FastifyRequest {
     userId?: string;
+    userRole?: string;
   }
 }
 
@@ -12,12 +13,14 @@ export const shouldBeUser = async (
   request: FastifyRequest,
   reply: FastifyReply,
 ) => {
-  const { userId } = Clerk.getAuth(request);
-  if (!userId) {
+  const auth = Clerk.getAuth(request);
+  if (!auth.userId) {
     return reply.status(401).send({ message: "You are not logged in!" });
   }
 
-  request.userId = userId;
+  const claims = auth.sessionClaims as CustomJwtSessionClaims;
+  request.userId = auth.userId;
+  request.userRole = claims?.metadata?.role;
 };
 
 export const shouldBeAdmin = async (
@@ -31,9 +34,10 @@ export const shouldBeAdmin = async (
 
   const claims = auth.sessionClaims as CustomJwtSessionClaims;
 
-  if (claims.metadata?.role !== "admin") {
+  if (claims?.metadata?.role !== "admin") {
     return reply.status(403).send({ message: "Unauthorized!" });
   }
 
   request.userId = auth.userId;
+  request.userRole = claims?.metadata?.role;
 };

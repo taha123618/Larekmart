@@ -19,9 +19,8 @@ export default clerkMiddleware(async (auth, req) => {
     }
 
     const userRole = (sessionClaims as CustomJwtSessionClaims)?.metadata?.role;
-    const isDev = process.env.NODE_ENV === "development";
 
-    if (userRole !== "admin" && !isDev) {
+    if (userRole !== "admin") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
   }

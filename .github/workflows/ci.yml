@@ -137,22 +137,52 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - client
-          - admin
-          - product-service
-          - order-service
-          - payment-service
-          - auth-service
-          - analytic-service
-          - notification-service
-          - search-service
-          - inventory-service
-          - recommendation-service
-          - cart-service
-          - catalog-service
-          - shipping-service
-          - email-service
+        include:
+          - service: client
+            context: .
+            dockerfile: apps/client/Dockerfile
+          - service: admin
+            context: .
+            dockerfile: apps/admin/Dockerfile
+          - service: product-service
+            context: .
+            dockerfile: apps/product-service/Dockerfile
+          - service: order-service
+            context: .
+            dockerfile: apps/order-service/Dockerfile
+          - service: payment-service
+            context: .
+            dockerfile: apps/payment-service/Dockerfile
+          - service: auth-service
+            context: .
+            dockerfile: apps/auth-service/Dockerfile
+          - service: analytic-service
+            context: .
+            dockerfile: apps/analytic-service/Dockerfile
+          - service: notification-service
+            context: ./apps/notification-service
+            dockerfile: ./apps/notification-service/Dockerfile
+          - service: search-service
+            context: .
+            dockerfile: apps/search-service/Dockerfile
+          - service: inventory-service
+            context: .
+            dockerfile: apps/inventory-service/Dockerfile
+          - service: recommendation-service
+            context: ./apps/recommendation-service
+            dockerfile: ./apps/recommendation-service/Dockerfile
+          - service: cart-service
+            context: .
+            dockerfile: apps/cart-service/Dockerfile
+          - service: catalog-service
+            context: .
+            dockerfile: apps/catalog-service/Dockerfile
+          - service: shipping-service
+            context: .
+            dockerfile: apps/shipping-service/Dockerfile
+          - service: email-service
+            context: .
+            dockerfile: apps/email-service/Dockerfile
 
     permissions:
       contents: read
@@ -189,8 +219,8 @@ jobs:
       - name: Build and push ${{ matrix.service }}
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: apps/${{ matrix.service }}/Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -199,6 +229,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+
 
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@master

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -52,21 +53,32 @@ func GetUserID(ctx context.Context) string {
 	return ""
 }
 
-// ExtractUserID retrieves user identifier from headers, query params (user_id/token), or JWT payload.
+// ExtractUserID retrieves user identifier from headers, query params (for WebSockets), or JWT payload.
 func ExtractUserID(r *http.Request) string {
-	// 1. Direct header (e.g. from internal gateway or service call)
+	internalSecret := os.Getenv("INTERNAL_SERVICE_SECRET")
+
+	// 1. Direct header - trusted only if internal secret matches or if no secret is configured in development/test
 	if uid := r.Header.Get("X-User-ID"); uid != "" {
-		return uid
+		if internalSecret != "" {
+			if r.Header.Get("X-Internal-Secret") == internalSecret {
+				return uid
+			}
+		} else if os.Getenv("APP_ENV") != "production" {
+			return uid
+		}
 	}
 
-	// 2. Query parameter (e.g. for WebSocket connections ?token= or ?user_id=)
-	if uid := r.URL.Query().Get("user_id"); uid != "" {
-		return uid
+	// 2. Query parameter - strictly permitted only for WebSocket handshakes (/ws or Upgrade: websocket)
+	isWS := strings.HasPrefix(r.URL.Path, "/ws") || strings.EqualFold(r.Header.Get("Upgrade"), "websocket")
+	if isWS {
+		if uid := r.URL.Query().Get("user_id"); uid != "" {
+			return uid
+		}
 	}
 
-	// 3. Authorization Bearer token header
+	// 3. Authorization Bearer token header (or token param for WebSockets)
 	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
+	if authHeader == "" && isWS {
 		authHeader = r.URL.Query().Get("token")
 	}
 

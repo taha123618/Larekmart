@@ -8,7 +8,30 @@ import { NextResponse } from "next/server";
  * Clerk publicMetadata to role: "admin". This resolves the issue where
  * newly created Clerk users lack the metadata.role === "admin" claim.
  */
-export async function POST() {
+export async function POST(req: Request) {
+  // 1. Strictly disable in production environments to prevent arbitrary privilege escalation
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      {
+        message:
+          "Admin self-promotion is strictly disabled in production environments.",
+      },
+      { status: 403 },
+    );
+  }
+
+  // 2. If an administrative registration secret is configured, require it
+  const requiredSecret = process.env.ADMIN_REGISTRATION_SECRET;
+  if (requiredSecret) {
+    const providedSecret = req.headers.get("x-admin-claim-secret");
+    if (!providedSecret || providedSecret !== requiredSecret) {
+      return NextResponse.json(
+        { message: "Invalid or missing admin registration secret." },
+        { status: 403 },
+      );
+    }
+  }
+
   const { userId } = await auth();
 
   if (!userId) {

@@ -32,6 +32,7 @@ infrastructure/kubernetes/
 ## 1. Quick Start: Local Testing with Kind or Minikube
 
 ### Validate Kustomize Build
+
 Ensure your manifests synthesize cleanly without syntax errors:
 
 ```bash
@@ -39,11 +40,13 @@ kubectl kustomize infrastructure/kubernetes/overlays/development
 ```
 
 ### Apply Development Overlay
+
 ```bash
 kubectl apply -k infrastructure/kubernetes/overlays/development
 ```
 
 ### Check Rollout Status
+
 ```bash
 kubectl rollout status deployment/product-service -n larekmart-dev
 kubectl rollout status deployment/client -n larekmart-dev
@@ -55,11 +58,13 @@ kubectl get pods,svc,ingress,hpa -n larekmart-dev
 ## 2. Deploying to Staging & Production
 
 ### Staging
+
 ```bash
 kubectl apply -k infrastructure/kubernetes/overlays/staging
 ```
 
 ### Production
+
 ```bash
 kubectl apply -k infrastructure/kubernetes/overlays/production
 ```

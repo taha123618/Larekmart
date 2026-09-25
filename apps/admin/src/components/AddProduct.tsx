@@ -332,10 +332,36 @@ const AddProduct = () => {
                               </div>
                               <Input
                                 type="file"
-                                accept="image/*"
+                                accept="image/jpeg,image/png,image/webp"
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
+                                    // Security validation: file size limit (5MB)
+                                    const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+                                    if (file.size > MAX_SIZE_BYTES) {
+                                      toast.error(
+                                        "Image file size exceeds the 5MB limit!",
+                                      );
+                                      e.target.value = "";
+                                      return;
+                                    }
+
+                                    // Security validation: MIME type allowlist
+                                    const ALLOWED_MIME_TYPES = [
+                                      "image/jpeg",
+                                      "image/png",
+                                      "image/webp",
+                                    ];
+                                    if (
+                                      !ALLOWED_MIME_TYPES.includes(file.type)
+                                    ) {
+                                      toast.error(
+                                        "Only JPEG, PNG, and WebP images are permitted!",
+                                      );
+                                      e.target.value = "";
+                                      return;
+                                    }
+
                                     try {
                                       const formData = new FormData();
                                       formData.append("file", file);

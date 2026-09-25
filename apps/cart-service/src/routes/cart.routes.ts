@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { cartController } from "../controllers/cart.controller.js";
-import { resolveCartIdentity } from "../middleware/auth.middleware.js";
+import {
+  resolveCartIdentity,
+  requireAdmin,
+} from "../middleware/auth.middleware.js";
 
 const router: Router = Router();
 
@@ -11,10 +14,10 @@ router.get("/", (req, res, next) => cartController.getCart(req, res, next));
 router.get("/summary", (req, res, next) =>
   cartController.getSummary(req, res, next),
 );
-router.get("/admin/stats", (req, res, next) =>
+router.get("/admin/stats", requireAdmin, (req, res, next) =>
   cartController.getAdminStats(req, res, next),
 );
-router.get("/admin/recent", (req, res, next) =>
+router.get("/admin/recent", requireAdmin, (req, res, next) =>
   cartController.getRecentCarts(req, res, next),
 );
 

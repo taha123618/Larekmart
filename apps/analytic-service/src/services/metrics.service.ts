@@ -383,6 +383,10 @@ const readDailyAnalytics = async (
 ): Promise<AnalyticsDailyChartType[]> => {
   if (getDbStatus()) {
     try {
+      const safeDays = Math.min(
+        Math.max(1, Math.floor(Number(days) || 30)),
+        365,
+      );
       const result = await pool.query(
         `SELECT
           TO_CHAR(date, 'YYYY-MM-DD') as date,
@@ -391,8 +395,9 @@ const readDailyAnalytics = async (
           COALESCE(total_signups, 0)::int as total_signups,
           COALESCE(total_products_created, 0)::int as total_products_created
          FROM analytics_daily_summary
-         WHERE date >= CURRENT_DATE - INTERVAL '${days} days'
+         WHERE date >= CURRENT_DATE - ($1 * INTERVAL '1 day')
          ORDER BY date ASC`,
+        [safeDays],
       );
 
       return result.rows.map((row) => ({

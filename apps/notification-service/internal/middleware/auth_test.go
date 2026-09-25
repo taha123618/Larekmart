@@ -16,10 +16,16 @@ func TestExtractUserID(t *testing.T) {
 		t.Errorf("expected user_abc123, got %s", uid)
 	}
 
-	// 2. Query param ?user_id=
-	req2 := httptest.NewRequest(http.MethodGet, "/test?user_id=user_query99", nil)
+	// 2. Query param ?user_id= is accepted on WebSocket path /ws
+	req2 := httptest.NewRequest(http.MethodGet, "/ws?user_id=user_query99", nil)
 	if uid := ExtractUserID(req2); uid != "user_query99" {
 		t.Errorf("expected user_query99, got %s", uid)
+	}
+
+	// 2b. Query param ?user_id= is ignored on general HTTP endpoints
+	req2b := httptest.NewRequest(http.MethodGet, "/notifications?user_id=attacker", nil)
+	if uid := ExtractUserID(req2b); uid != "" {
+		t.Errorf("expected empty user ID for query param on HTTP endpoint, got %s", uid)
 	}
 
 	// 3. JWT token with sub claim

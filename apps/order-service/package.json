@@ -5,6 +5,7 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
+    "test": "tsx tests/order-security.test.ts",
     "check-types": "tsc --noEmit",
     "dev": "tsx --env-file=.env --watch src/index.ts"
   },

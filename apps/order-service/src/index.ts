@@ -45,9 +45,19 @@ health.register(
 
 const fastify = Fastify();
 
-// Register CORS
+// Register CORS with strict allowed origins
+const allowedOrigins = [
+  process.env.CLIENT_URL || "http://localhost:3002",
+  process.env.ADMIN_URL || "http://localhost:3003",
+];
+
 await fastify.register(cors, {
-  origin: true,
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return cb(null, true);
+    }
+    return cb(null, false);
+  },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   credentials: true,
   allowedHeaders: [

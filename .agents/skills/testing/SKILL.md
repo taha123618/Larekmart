@@ -1,55 +1,81 @@
 ---
 name: testing
-description: Use when asked to test, verify, or add tests to Larekmart — including type-check/build/manual verification, Go tests, Redis integration checks, and conventions for introducing a JavaScript test runner.
+description: Use when asked to test, verify, or add tests to Larekmart — including monorepo pnpm test, type checks, Go tests, Python tests, pricing, and schema test suites.
 ---
 
-# Testing
+# Testing & Quality Assurance Guide — Larekmart
 
-## Current Reality
+This skill provides the authoritative reference for running, authoring, and maintaining automated test suites and quality gates in the Larekmart monorepo.
 
-- **No general JavaScript test runner is configured** today — there is no Jest, Vitest, or Playwright suite. `notification-service` has Go tests and `@repo/redis` has an opt-in real-server integration check.
-- **No CI/CD pipeline exists** in `.github/workflows`.
-- Verification relies on compiler type safety, production builds, linting, and manual testing.
+---
 
-## Verification Commands
+## 1. Automated Test Architecture
+
+The repository features a unified multi-runtime testing strategy orchestrated via Turborepo (`pnpm test`):
+
+| Workspace | Technology / Framework | Scope & Test Targets |
+| :--- | :--- | :--- |
+| **`@repo/types`** | Node.js Test Runner / `tsx` | Domain contracts, Zod schemas, boundary validations (`tests/schemas.test.ts`) |
+| **`cart-service`** | Node.js Test Runner / `tsx` | Pricing engine, promotional discounts, coupon rules, threshold boundaries (`tests/pricing.test.ts`) |
+| **`shipping-service`** | Node.js Test Runner / `tsx` | Constant-time webhook verification, RBAC middleware, carrier integration smoke test |
+| **`notification-service`** | Go Test Tool (`go test`) | Multi-channel dispatchers, templates, workers, WebSocket lifecycle, recovery (`internal/*`) |
+| **`recommendation-service`** | Pytest (`pytest`) via `uv` | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests) |
+| **`@repo/redis`** | Integration Verifier | Key namespacing, cache TTLs, rate limiter, degraded resilience (`src/scripts/verify-redis.ts`) |
+
+---
+
+## 2. Test Execution Commands
 
 ```bash
-# Monorepo-wide typecheck (all 21 workspaces)
+# 1. Run all automated test suites across the monorepo (Turbo pipeline)
+pnpm test
+
+# 2. Run tests for a specific workspace
+pnpm --filter @repo/types test
+pnpm --filter cart-service test
+pnpm --filter shipping-service test
+pnpm --filter notification-service test
+pnpm --filter recommendation-service test
+
+# 3. Static type-check across all 26 workspaces
 pnpm check-types
 
-# Production builds (configured workspaces, including Next.js, search, payment, and Go notification service)
-pnpm --filter admin build
-pnpm --filter client build
-pnpm --filter payment-service build
-pnpm --filter search-service build
-pnpm --filter notification-service build
+# 4. Monorepo code style and formatting checks
+pnpm format:check
 
-# Infrastructure integration check
-pnpm --filter @repo/redis verify:redis
-
-# Linting (admin and client)
+# 5. Frontend linting (Next.js client and admin)
 pnpm lint
 
-# Recommendation service Python test suite (34 tests)
-cd apps/recommendation-service && uv run pytest tests/
+# 6. Production builds
+pnpm build
 ```
 
-## Minimum Verification by Change Area
+---
 
-| Change Area                         | Verification Step                                                                 |
-| ----------------------------------- | --------------------------------------------------------------------------------- |
-| Contracts & Schemas (`@repo/types`) | `pnpm check-types` from repository root                                           |
-| Service Routes & Handlers           | `pnpm --filter <service> check-types` + manual endpoint verification              |
-| Recommendation Engine & Models      | `cd apps/recommendation-service && uv run pytest tests/`                          |
-| Kafka Producers & Consumers         | `pnpm check-types` + observe topic delivery in Kafka UI (`http://localhost:8080`) |
-| Next.js Pages & Components          | `pnpm --filter <app> check-types` + `pnpm --filter <app> build`                   |
-| Database Schemas (Prisma)           | `pnpm --filter @repo/product-db db:generate` then `pnpm check-types`              |
+## 3. SQA Testing Standards
 
-## Introducing Automated Tests
+When adding or updating tests, adhere to these quality engineering principles:
 
-When introducing tests, follow [`docs/TESTING.md`](../../docs/TESTING.md):
+### A. Boundary & Edge-Case Testing
+- Always test positive (valid inputs), negative (malformed, empty, out-of-range), and boundary values (e.g., exactly 2999 vs 3000 PKR for shipping fee thresholds).
+- Test state-machine lifecycle transitions (e.g., `PENDING` -> `OUT_FOR_DELIVERY` -> `DELIVERED`).
 
-1. Use **Vitest** for new JavaScript/TypeScript unit and integration testing. Keep using the native Go test tool for `notification-service`, `pytest` for `recommendation-service`, and the dedicated Redis verifier for Redis behavior.
-2. Add a `"test": "vitest run"` script to the target workspace and configure the `test` task in `turbo.json`.
-3. Co-locate test files alongside code as `*.test.ts`.
-4. Mock external network services (Stripe, Clerk, Kafka brokers, databases) in unit tests.
+### B. Isolation & Determinism
+- Unit tests must never depend on live external network connections (e.g., Stripe API, live Clerk network, active carrier APIs).
+- Mock or stub network I/O; integration checks requiring real backing containers must be opt-in and self-cleaning.
+
+### C. Financial & Security Accuracy
+- Pricing calculations must prevent negative subtotals or grand totals. Discounts must clamp to the subtotal.
+- Cryptographic comparisons (signatures, digests) must be verified using constant-time algorithms (`crypto.timingSafeEqual`).
+- Endpoint access control tests must verify that non-admin and unauthenticated requests receive `401` or `403`.
+
+---
+
+## 4. Pre-PR / Pre-Merge Quality Checklist
+
+Before submitting code changes:
+- [ ] `pnpm test` passes across all target workspaces.
+- [ ] `pnpm check-types` reports 0 TypeScript errors across 26 workspaces.
+- [ ] `pnpm format:check` confirms all files conform to Prettier style.
+- [ ] `pnpm lint` reports 0 errors in Next.js applications.
+- [ ] Negative and boundary test cases are included for any new business logic.

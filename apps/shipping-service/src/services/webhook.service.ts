@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { prisma } from "@repo/shipping-db";
 import { ShippingCache } from "../cache/shipping-cache.js";
 import { TrackingService } from "./tracking.service.js";
@@ -18,11 +19,20 @@ export interface CarrierWebhookInput {
 
 export class WebhookService {
   static verifySignature(carrier: string, signature?: string): boolean {
-    if (env.NODE_ENV === "development" || env.NODE_ENV === "test") {
-      return true; // relaxed in dev/test
+    const currentEnv = process.env.NODE_ENV || env.NODE_ENV;
+    if (!signature) {
+      return currentEnv === "development" || currentEnv === "test";
     }
-    if (!signature) return false;
-    return signature === env.WEBHOOK_SECRET;
+    const secret = process.env.WEBHOOK_SECRET || env.WEBHOOK_SECRET;
+    if (!secret) return false;
+    try {
+      const sigBuf = Buffer.from(signature);
+      const secretBuf = Buffer.from(secret);
+      if (sigBuf.length !== secretBuf.length) return false;
+      return crypto.timingSafeEqual(sigBuf, secretBuf);
+    } catch {
+      return false;
+    }
   }
 
   static mapCarrierStatusToDomain(rawStatus: string): TypeShipmentStatus {

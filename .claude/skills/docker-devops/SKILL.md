@@ -9,6 +9,7 @@ description: >
 # Docker DevOps & Cloud-Native Operations — Larekmart
 
 ## Purpose
+
 This skill provides the authoritative reference for containerisation, orchestration,
 observability, CI/CD, secrets management, and disaster recovery in the Larekmart
 monorepo. Use it whenever you are:
@@ -65,35 +66,42 @@ docker-compose.observability.yml # Prometheus, Grafana, Alertmanager, Loki, Prom
 ## 2. Docker Conventions
 
 ### Multi-Stage Builds
+
 All service Dockerfiles use Turbo Prune multi-stage builds:
+
 1. `base` — Node.js LTS alpine with `pnpm` and `turbo` installed
 2. `pruner` — runs `turbo prune --scope=<service> --docker` to isolate workspace
 3. `deps` — installs production-only workspace dependencies
 4. `runner` — minimal production image with `tsx` + `src/` source (ESM monorepo)
 
 ### ⚠️ Non-Root Security
+
 All containers use UID 1000 (nodejs / appuser). Never run as root.
 
 ### Container-Internal Service Discovery
+
 Services always use Docker/K8s service names, NEVER `localhost`:
 
-| Infrastructure | Internal Host |
-|---------------|---------------|
-| PostgreSQL    | `postgres:5432` |
-| MongoDB       | `mongo:27017` (aliases: `mongo`, `mongodb`) |
-| Mongo Express | `mongo-express:8081` |
-| Redis         | `redis:6379`  |
-| Kafka         | `kafka:9092`  |
-| OpenSearch    | `opensearch:9200` |
+| Infrastructure | Internal Host                               |
+| -------------- | ------------------------------------------- |
+| PostgreSQL     | `postgres:5432`                             |
+| MongoDB        | `mongo:27017` (aliases: `mongo`, `mongodb`) |
+| Mongo Express  | `mongo-express:8081`                        |
+| Redis          | `redis:6379`                                |
+| Kafka          | `kafka:9092`                                |
+| OpenSearch     | `opensearch:9200`                           |
 
 ### Environment Configuration via `env_file`
+
 In `docker-compose.yml`, all microservices and frontends load their environment configuration directly from their workspace directory via `env_file:`:
+
 ```yaml
 env_file:
   - ./apps/<service>/.env
 ```
 
 ### KAFKA_BROKERS Override
+
 ```ts
 // packages/kafka/src/client.ts already reads process.env.KAFKA_BROKERS
 // Set this env var to "kafka:9092" inside any Docker service/container
@@ -104,6 +112,7 @@ env_file:
 ## 3. Docker Compose Workflows
 
 ### Full Development Stack
+
 ```bash
 # Start all backing infrastructure
 docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui
@@ -122,6 +131,7 @@ docker compose config --quiet
 ```
 
 ### Observability Stack
+
 ```bash
 # Start observability (attaches to larekmart-network)
 pnpm monitoring:up
@@ -142,6 +152,7 @@ docker compose -f docker-compose.observability.yml config --quiet
 ## 4. Kubernetes Operations
 
 ### Validate Before Applying
+
 ```bash
 # Always validate first — never apply without checking
 kubectl kustomize infrastructure/kubernetes/overlays/production
@@ -157,6 +168,7 @@ kubectl get pods,svc,hpa,ingress -n larekmart
 ```
 
 ### Rolling Deployments
+
 ```bash
 # Update an image tag (triggers zero-downtime rolling update)
 kubectl set image deployment/product-service product-service=ghcr.io/org/larekmart/product-service:v1.2.3 -n larekmart
@@ -167,11 +179,13 @@ kubectl rollout history deployment/product-service -n larekmart
 ```
 
 ### Scale Services
+
 ```bash
 kubectl scale deployment/catalog-service --replicas=5 -n larekmart
 ```
 
 ### Watch Pod Events
+
 ```bash
 kubectl describe pod <pod-name> -n larekmart
 kubectl logs -f <pod-name> -n larekmart --previous  # previous container if crashed
@@ -196,6 +210,7 @@ Services expose `GET /metrics` via `@repo/monitoring`. The Prometheus config in
 `infrastructure/observability/prometheus/prometheus.yml` scrapes all services.
 
 **Key Metrics to Watch:**
+
 - `http_requests_total{status=~"5.."}` — error rate
 - `http_request_duration_seconds` — latency histograms
 - `up` — service availability
@@ -209,10 +224,10 @@ Services expose `GET /metrics` via `@repo/monitoring`. The Prometheus config in
 
 ## 7. Grafana Dashboards
 
-| Dashboard | UID | Purpose |
-|-----------|-----|---------|
-| Service Health | `larekmart-service-health` | Error rate, latency, request rate per service |
-| Infrastructure | `larekmart-infra` | CPU, memory, Redis, Postgres, Kafka consumer lag |
+| Dashboard      | UID                        | Purpose                                          |
+| -------------- | -------------------------- | ------------------------------------------------ |
+| Service Health | `larekmart-service-health` | Error rate, latency, request rate per service    |
+| Infrastructure | `larekmart-infra`          | CPU, memory, Redis, Postgres, Kafka consumer lag |
 
 Add new dashboards as JSON files in `infrastructure/observability/grafana/dashboards/`.
 They are auto-provisioned on Grafana startup.
@@ -241,6 +256,7 @@ push to main/develop
 ```
 
 **Manual workflows:**
+
 - `migrate.yml` — manually trigger Prisma DB migrations per environment
 - `security.yml` — weekly Trivy/Snyk scan (runs automatically Mon 03:00 UTC)
 
@@ -249,17 +265,21 @@ push to main/develop
 ## 9. Secrets Management
 
 ### Development
+
 Secrets live in `.env` (gitignored). Reference `.env.example` for all required vars.
 Never commit real secrets.
 
 ### Kubernetes Production
+
 The `infrastructure/kubernetes/base/secrets/secret-templates.yaml` is a **template only**.
 In production, use one of:
+
 - **External Secrets Operator** (ESO) — sync from AWS Secrets Manager / GCP Secret Manager / HashiCorp Vault
 - **Sealed Secrets** — encrypt Kubernetes Secrets and commit the sealed form
 - **Helm Secrets** / SOPS — for Helm-based deployments
 
 **Required Kubernetes Secrets** (`larekmart-secrets`):
+
 ```yaml
 POSTGRES_PASSWORD, MONGODB_URI, MONGODB_CART_URI,
 CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY,
@@ -271,6 +291,7 @@ STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 ## 10. Database Migrations
 
 ### Development
+
 ```bash
 pnpm --filter @repo/product-db db:migrate     # development migration
 pnpm --filter @repo/inventory-db db:migrate
@@ -279,10 +300,12 @@ pnpm --filter @repo/shipping-db db:migrate
 ```
 
 ### Production
+
 Use the manual `migrate.yml` GitHub Actions workflow with environment protection.
 Never run `db:migrate` directly in production — always use `db:deploy` (deterministic).
 
 **Rule:** Generate the Prisma client after every schema change:
+
 ```bash
 pnpm --filter @repo/product-db db:generate
 ```
@@ -292,6 +315,7 @@ pnpm --filter @repo/product-db db:generate
 ## 11. Network Policies (Zero-Trust)
 
 In Kubernetes:
+
 - **Default deny all** is applied globally
 - Only Ingress NGINX can reach frontend/backend pods
 - Only the `monitoring` namespace (Prometheus) can scrape `/metrics`
@@ -302,6 +326,7 @@ In Kubernetes:
 ## 12. Backup & Disaster Recovery
 
 ### PostgreSQL
+
 ```bash
 # Dump all DBs
 docker exec larekmart-postgres pg_dumpall -U postgres > backup_$(date +%Y%m%d).sql
@@ -310,6 +335,7 @@ docker exec -i larekmart-postgres psql -U postgres < backup_20240101.sql
 ```
 
 ### MongoDB
+
 ```bash
 # Dump (requires admin authentication)
 docker exec larekmart-mongo mongodump --uri="mongodb://root:example@localhost:27017/?authSource=admin" --out=/data/backup
@@ -318,6 +344,7 @@ docker exec larekmart-mongo mongorestore --uri="mongodb://root:example@localhost
 ```
 
 ### Redis
+
 - Redis is configured with AOF persistence (every second) in `docker/redis/redis.conf`
 - RDB snapshots also enabled
 
@@ -328,6 +355,7 @@ docker exec larekmart-mongo mongorestore --uri="mongodb://root:example@localhost
 ## 13. Troubleshooting
 
 ### Container not starting
+
 ```bash
 docker compose logs <service>                        # Check logs
 docker inspect larekmart-<service>                   # Check config
@@ -335,22 +363,27 @@ docker compose ps                                    # Check status
 ```
 
 ### Service can't reach Kafka
+
 - Verify `KAFKA_BROKERS=kafka:9092` is set in the service's environment
 - Confirm Kafka container is healthy: `docker compose ps kafka`
 
 ### MongoDB Authentication / Initialization
+
 - Container builds from `docker/mongodb/Dockerfile` with `docker/mongodb/init-db.js` running on first start
 - Web Admin UI: Mongo Express is running on `http://localhost:8081` (`mongoexpressuser` / `mongoexpresspass`)
 - Check ping: `docker exec larekmart-mongo mongosh -u root -p example --authenticationDatabase admin --eval "db.adminCommand('ping')"`
 
 ### Postgres connection refused
+
 - Check `DATABASE_URL` uses `postgres` as host (not `localhost`)
 - Verify pgvector extension: `docker exec larekmart-postgres psql -U postgres -c "\\dx"`
 
 ### OpenSearch not indexing
+
 - Check memory lock: `vm.max_map_count=262144` required on Linux hosts
 - Mac Docker Desktop: ulimits handled by VM, usually fine
 
 ### High Kafka consumer lag
+
 - Increase replicas for affected consumer services (email, analytic, notification)
 - Check for poison-pill messages: inspect DLQ or add error handling in consumer loop

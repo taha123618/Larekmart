@@ -1,0 +1,23 @@
+# Dependencies and caches
+node_modules
+.pnpm-store
+.turbo
+.next
+dist
+build
+coverage
+
+# Generated Prisma Clients
+packages/*/generated/prisma/**
+packages/**/generated/**
+
+# Lockfiles and binary/minified files
+pnpm-lock.yaml
+*.min.js
+*.min.css
+*.map
+
+# Editor and OS
+.DS_Store
+.vscode
+.idea

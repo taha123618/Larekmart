@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma, Prisma } from "@repo/product-db";
+import { ProductFormSchema } from "@repo/types";
 import { publishEvent } from "../utils/kafka";
 import { toProductEventPayload } from "../search/product-payload.js";
 import { createLogger, measureAsync } from "@repo/monitoring";
@@ -14,24 +15,21 @@ import {
 const logger = createLogger("product-service:controller");
 
 export const createProduct = async (req: Request, res: Response) => {
-  const data: Prisma.ProductCreateInput = req.body;
-
-  const { colors, images } = data;
-  if (!colors || !Array.isArray(colors) || colors.length === 0) {
-    return res.status(400).json({ message: "Colors array is required!" });
+  const parsed = ProductFormSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Validation failed",
+      errors: parsed.error.flatten().fieldErrors,
+    });
   }
 
-  if (!images || typeof images !== "object") {
-    return res.status(400).json({ message: "Images object is required!" });
-  }
-
-  const missingColors = colors.filter((color) => !(color in images));
-
-  if (missingColors.length > 0) {
-    return res
-      .status(400)
-      .json({ message: "Missing images for colors!", missingColors });
-  }
+  const { categorySlug, ...rest } = parsed.data;
+  const data: Prisma.ProductCreateInput = {
+    ...rest,
+    category: {
+      connect: { slug: categorySlug },
+    },
+  };
 
   const { result: product } = await measureAsync(
     "db.product.create",

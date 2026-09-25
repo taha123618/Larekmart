@@ -44,8 +44,42 @@ export function createServer(): Koa {
     }
   });
 
-  // 3. CORS and Body Parsing
-  app.use(cors());
+  // 3. Security Headers Middleware
+  app.use(async (ctx, next) => {
+    ctx.set("X-Content-Type-Options", "nosniff");
+    ctx.set("X-Frame-Options", "DENY");
+    ctx.set("X-XSS-Protection", "1; mode=block");
+    ctx.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    await next();
+  });
+
+  // 4. CORS and Body Parsing
+  const allowedOrigins = [
+    process.env.CLIENT_URL || "http://localhost:3002",
+    process.env.ADMIN_URL || "http://localhost:3003",
+  ];
+
+  app.use(
+    cors({
+      origin: (ctx) => {
+        const requestOrigin = ctx.get("Origin");
+        if (allowedOrigins.includes(requestOrigin)) {
+          return requestOrigin;
+        }
+        return allowedOrigins[0] || "http://localhost:3002";
+      },
+      credentials: true,
+      allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowHeaders: [
+        "Content-Type",
+        "Authorization",
+        "x-request-id",
+        "X-Request-ID",
+        "x-internal-secret",
+        "X-Internal-Secret",
+      ],
+    }),
+  );
   app.use(
     bodyParser({
       enableTypes: ["json", "form"],

@@ -2,24 +2,31 @@
 
 This document outlines the testing strategy, current verification mechanisms, and standards for introducing automated tests to Larekmart.
 
-## Current Testing Reality
+## Automated Testing Strategy
 
-The repository does not have a general JavaScript test runner configured (no Jest, Vitest, or Playwright suite). It does have Go unit tests in `notification-service` and an opt-in real-Redis integration verifier. Verification relies on:
+Larekmart features a unified multi-runtime testing strategy orchestrated via Turborepo (`pnpm test`):
 
-1. **Strict TypeScript Compilation**:
+1. **Automated Unit & Integration Test Suites**:
+   - `@repo/types`: Domain contracts and Zod schema validations (`pnpm --filter @repo/types test`).
+   - `cart-service`: Financial pricing engine, discount calculators, and threshold boundary tests (`pnpm --filter cart-service test`).
+   - `shipping-service`: Constant-time webhook verification and authorization middleware tests (`pnpm --filter shipping-service test`).
+   - `notification-service`: Native Go test suite for workers, templates, dispatchers, and WebSockets (`go test ./...`).
+   - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
+   - `@repo/redis`: Opt-in Redis integration verifier (`pnpm --filter @repo/redis verify:redis`).
+
+2. **Strict TypeScript Compilation**:
    ```bash
    pnpm check-types
    ```
-2. **Production Build Validation**:
+3. **Production Build Validation**:
    ```bash
    pnpm build
    ```
-3. **Static Linting**:
+4. **Code Quality & Formatting**:
    ```bash
+   pnpm format:check
    pnpm lint
    ```
-4. **Manual & Integration Verification**:
-   Testing end-to-end user flows against local services, Kafka UI (`http://localhost:8080`), PostgreSQL, MongoDB, Redis, and OpenSearch.
 
 ## Testing Strategy & Standards
 

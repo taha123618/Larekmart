@@ -96,29 +96,29 @@ Default local connection strings used by the examples:
 
 ## Ports
 
-| Service                        | Port               |
-| ------------------------------ | ------------------ |
-| client (storefront)            | 3002               |
-| admin (dashboard)              | 3003               |
-| product-service                | 8000               |
-| order-service                  | 8001               |
-| payment-service                | 8002               |
-| auth-service                   | 8003               |
-| analytic-service               | 8004               |
-| notification-service (Go)      | 8005               |
-| search-service                 | 8006               |
-| inventory-service              | 8007               |
-| recommendation-service (FastAPI)| 8008              |
-| cart-service                   | 8009               |
-| catalog-service                | 8010               |
-| shipping-service               | 8011               |
-| Kafka UI                       | 8080               |
-| Mongo Express                  | 8081               |
-| Kafka brokers                  | 9094 / 9095 / 9096 |
-| PostgreSQL                     | 5432               |
-| MongoDB                        | 27017              |
-| Redis                          | 6379               |
-| OpenSearch                     | 9200               |
+| Service                          | Port               |
+| -------------------------------- | ------------------ |
+| client (storefront)              | 3002               |
+| admin (dashboard)                | 3003               |
+| product-service                  | 8000               |
+| order-service                    | 8001               |
+| payment-service                  | 8002               |
+| auth-service                     | 8003               |
+| analytic-service                 | 8004               |
+| notification-service (Go)        | 8005               |
+| search-service                   | 8006               |
+| inventory-service                | 8007               |
+| recommendation-service (FastAPI) | 8008               |
+| cart-service                     | 8009               |
+| catalog-service                  | 8010               |
+| shipping-service                 | 8011               |
+| Kafka UI                         | 8080               |
+| Mongo Express                    | 8081               |
+| Kafka brokers                    | 9094 / 9095 / 9096 |
+| PostgreSQL                       | 5432               |
+| MongoDB                          | 27017              |
+| Redis                            | 6379               |
+| OpenSearch                       | 9200               |
 
 ## Daily workflow
 
