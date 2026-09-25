@@ -181,3 +181,19 @@ export const CartEventPayloadSchema = z.object({
   timestamp: z.string(),
 });
 export type CartEventPayloadType = z.infer<typeof CartEventPayloadSchema>;
+
+export const CreateCheckoutSessionSchema = z.object({
+  cart: z
+    .array(
+      z.object({
+        id: z.number().int().positive(),
+        name: z.string().min(1).max(250),
+        quantity: z.number().int().positive().max(100),
+      }),
+    )
+    .min(1, "Cart must contain at least one item"),
+  cartId: z.string().max(100).optional(),
+});
+export type CreateCheckoutSessionInputType = z.infer<
+  typeof CreateCheckoutSessionSchema
+>;

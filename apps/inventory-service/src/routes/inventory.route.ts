@@ -406,14 +406,12 @@ inventoryRoute.post("/reservations", shouldBeUser, async (c) => {
 /**
  * POST /api/v1/inventory/reservations/:id/confirm
  * Transitions reservation to CONFIRMED and converts reserved units to sold units.
+ * Restricted to administrators; production customer confirmations happen via payment.successful Kafka event.
  */
-inventoryRoute.post("/reservations/:id/confirm", shouldBeUser, async (c) => {
+inventoryRoute.post("/reservations/:id/confirm", shouldBeAdmin, async (c) => {
   const start = performance.now();
   try {
-    const reservation = await confirmInventoryReservation(
-      c.req.param("id"),
-      c.get("userId"),
-    );
+    const reservation = await confirmInventoryReservation(c.req.param("id"));
     inventoryMetrics.reservationsConfirmedTotal.inc();
     await invalidateInventoryCache();
     await publishItemEvent(
