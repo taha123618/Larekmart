@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: email-service
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: email-service
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/part-of: larekmart
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: email-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: email-service
+        app.kubernetes.io/component: worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: email-service
+          image: larekmart/email-service:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: larekmart-common-config
+            - secretRef:
+                name: larekmart-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi

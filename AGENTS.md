@@ -151,9 +151,11 @@ pnpm --filter @repo/product-db db:deploy     # prisma migrate deploy
 pnpm --filter @repo/inventory-db db:generate # generate inventory Prisma client
 pnpm --filter @repo/inventory-db db:migrate  # inventory migration in development
 
-# Local infrastructure
-docker compose -f packages/kafka/docker-compose.yml up -d   # Kafka cluster
-docker compose -f packages/redis/docker-compose.yml up -d   # Redis (caches, rate limiting)
+# Docker Ecosystem (Full Orchestration & Infrastructure)
+docker compose up -d --build                 # start entire microservices stack (15 apps + backing DBs)
+docker compose down                          # stop all containers preserving volumes
+docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui # backing infra only
+# See docs/DOCKER.md for complete operations manual
 ```
 
 ## 7. Engineering conventions

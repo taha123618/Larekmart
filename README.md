@@ -162,30 +162,35 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 ### 2. Installation & Setup
 
 ```bash
-# 1. Automated monorepo setup (installs all workspace dependencies, initializes .env files, syncs AI skills)
+# ==============================================================================
+# Option A: Full Docker Compose Environment (Recommended)
+# ==============================================================================
+# Spins up backing databases (Postgres with pgvector, MongoDB replica set, Redis,
+# Kafka KRaft broker, OpenSearch), Kafka UI, all 13 backend services, and both Next.js frontends:
+docker compose up -d --build
+
+# View logs:
+docker compose logs -f
+
+# Stop environment (preserving data volumes):
+docker compose down
+
+# ==============================================================================
+# Option B: Local Monorepo Dev (Backing Infrastructure in Docker)
+# ==============================================================================
+# 1. Automated monorepo setup (dependencies, .env files, AI skills sync)
 pnpm run setup
 
-# Or step-by-step:
-pnpm run install:all                      # install all workspace packages
-pnpm run env:setup                        # safely initialize all .env files from .env.example
-pnpm run skills:sync                      # sync canonical .agents/skills to AI agent folders
+# 2. Start backing infrastructure in Docker (PostgreSQL, MongoDB, Mongo-Express, Redis, Kafka, OpenSearch, Kafka UI)
+docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui
 
-# 2. Start local Kafka cluster (3 brokers + Kafka UI at http://localhost:8080)
-docker compose -f packages/kafka/docker-compose.yml up -d
-
-# 3. Start local Redis (caches + rate limiting for product/order/search/analytic services)
-docker compose -f packages/redis/docker-compose.yml up -d
-
-# 4. Initialize local PostgreSQL databases
-createdb ecommerce
-createdb notification_db
-
-# 5. Generate Prisma Client & apply database migrations
+# 3. Generate Prisma Clients & apply database migrations
 pnpm --filter @repo/product-db db:generate
-pnpm --filter @repo/product-db db:migrate
+pnpm --filter @repo/inventory-db db:generate
+pnpm --filter @repo/catalog-db db:generate
+pnpm --filter @repo/shipping-db db:generate
 
-
-# 6. Start all workspaces concurrently in development mode (Next.js apps, Node services, and Go notification-service)
+# 4. Start all workspaces concurrently in development mode
 pnpm dev
 ```
 

@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: larekmart
+
+resources:
+  - ../../base
+
+images:
+  - name: larekmart/client
+    newTag: v1.0.0
+  - name: larekmart/admin
+    newTag: v1.0.0
+  - name: larekmart/product-service
+    newTag: v1.0.0
+  - name: larekmart/order-service
+    newTag: v1.0.0
+  - name: larekmart/payment-service
+    newTag: v1.0.0
+  - name: larekmart/auth-service
+    newTag: v1.0.0
+  - name: larekmart/analytic-service
+    newTag: v1.0.0
+  - name: larekmart/notification-service
+    newTag: v1.0.0
+  - name: larekmart/search-service
+    newTag: v1.0.0
+  - name: larekmart/inventory-service
+    newTag: v1.0.0
+  - name: larekmart/recommendation-service
+    newTag: v1.0.0
+  - name: larekmart/cart-service
+    newTag: v1.0.0
+  - name: larekmart/catalog-service
+    newTag: v1.0.0
+  - name: larekmart/shipping-service
+    newTag: v1.0.0
+  - name: larekmart/email-service
+    newTag: v1.0.0

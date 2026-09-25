@@ -1,8 +1,7 @@
-# Start from the official Redis base image
-FROM redis:7.4
+FROM redis:7.4-alpine
 
-# Copy a custom configuration file into the container
 COPY redis.conf /usr/local/etc/redis/redis.conf
 
-# Run Redis using the custom configuration
-CMD [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+EXPOSE 6379
+
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]

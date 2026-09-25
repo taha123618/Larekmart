@@ -30,7 +30,11 @@ Microservice responsible for order persistence, order history retrieval, and 6-m
 Copy `.env.example` to `.env`:
 
 ```env
-MONGO_URL=mongodb://localhost:27017/ecommerce
+# For host/local development:
+MONGO_URL=mongodb://root:example@localhost:27017/order_db?authSource=admin
+# For Docker Compose (referenced automatically by env_file in docker-compose.yml):
+# MONGO_URL=mongodb://root:example@mongo:27017/order_db?authSource=admin
+
 CLERK_SECRET_KEY=sk_test_...
 
 # Optional — the service serves the chart from MongoDB without it

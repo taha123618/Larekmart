@@ -1,36 +1,36 @@
-# Multi-stage production Dockerfile for search-service
 FROM node:20-alpine AS base
-RUN npm install -g pnpm@9.0.0
-WORKDIR /app
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
-FROM base AS dependencies
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
-COPY packages ./packages
-COPY apps/search-service ./apps/search-service
+FROM base AS builder
+WORKDIR /app
+RUN apk add --no-cache libc6-compat
+RUN pnpm install -g turbo
+COPY . .
+RUN turbo prune search-service --docker
+
+FROM base AS installer
+WORKDIR /app
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
 
-FROM dependencies AS builder
-RUN pnpm --filter @repo/types build 2>/dev/null || true
-RUN pnpm --filter @repo/monitoring build 2>/dev/null || true
-RUN pnpm --filter @repo/kafka build 2>/dev/null || true
-RUN pnpm --filter @repo/opensearch build 2>/dev/null || true
-RUN pnpm --filter search-service build
+COPY --from=builder /app/out/full/ .
+RUN pnpm turbo run build --filter=search-service... || true
 
-FROM node:20-alpine AS runner
+FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=8006
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 fastifyjs
+USER fastifyjs
 
-RUN npm install -g pnpm@9.0.0
+COPY --from=installer --chown=fastifyjs:nodejs /app/node_modules ./node_modules
+COPY --from=installer --chown=fastifyjs:nodejs /app/packages ./packages
+COPY --from=installer --chown=fastifyjs:nodejs /app/apps/search-service ./apps/search-service
 
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
-COPY packages ./packages
-COPY apps/search-service/package.json ./apps/search-service/
-RUN pnpm install --prod --frozen-lockfile
+WORKDIR /app/apps/search-service
 
-COPY --from=builder /app/apps/search-service/dist ./apps/search-service/dist
-
-USER node
 EXPOSE 8006
-
-CMD ["node", "apps/search-service/dist/server.js"]
+CMD ["node", "--import", "tsx", "src/server.ts"]

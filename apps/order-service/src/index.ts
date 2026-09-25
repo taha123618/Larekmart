@@ -158,7 +158,10 @@ const start = async () => {
       consumer.connect(),
     ]);
     await runKafkaSubscriptions();
-    await fastify.listen({ port: 8001 });
+    await fastify.listen({
+      port: 8001,
+      host: process.env.HOST || "0.0.0.0",
+    });
     logger.info("Order service is running on port 8001");
   } catch (err) {
     logger.fatal("Failed to initialize order-service", err);

@@ -1,82 +1,529 @@
-version: '3.8'
-
 services:
-  # 1. Redis Service
+  # ============================================================================
+  # Core Infrastructure
+  # ============================================================================
+
+  postgres:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    container_name: larekmart-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+      POSTGRES_DB: ${POSTGRES_DB:-product_db}
+      POSTGRES_MULTIPLE_DATABASES: "product_db,inventory_db,larekmart_inventory_db,catalog_db,shipping_db,larekmart_shipping_db,analytics_db,larekmart_notification_db,recommendation_db"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - larekmart-network
+
+  mongo:
+    build:
+      context: ./docker/mongodb
+      dockerfile: Dockerfile
+    container_name: larekmart-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-example}
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh -u $${MONGO_INITDB_ROOT_USERNAME:-root} -p $${MONGO_INITDB_ROOT_PASSWORD:-example} --authenticationDatabase admin --quiet --eval \"db.adminCommand('ping')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      larekmart-network:
+        aliases:
+          - mongo
+          - mongodb
+
+  mongo-express:
+    image: mongo-express
+    container_name: larekmart-mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:-root}:${MONGO_INITDB_ROOT_PASSWORD:-example}@mongo:27017/
+      ME_CONFIG_BASICAUTH_ENABLED: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME:-mongoexpressuser}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD:-mongoexpresspass}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
   redis:
     build:
-      context: .
-      dockerfile: Dockerfile.redis
-    container_name: custom_redis
+      context: ./docker/redis
+      dockerfile: Dockerfile
+    container_name: larekmart-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - larekmart-network
 
-  # 2. MongoDB Service
-  mongodb:
-    build:
-      context: .
-      dockerfile: Dockerfile.mongodb
-    container_name: custom_mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password123
-    volumes:
-      - mongo_data:/data/db
-
-  # 3. PostgreSQL Service
-  postgres:
-    build:
-      context: .
-      dockerfile: Dockerfile.postgres
-    container_name: custom_postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password123
-      POSTGRES_DB: my_database
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  # 4. Apache Kafka Service
   kafka:
     build:
-      context: .
-      dockerfile: Dockerfile.kafka
-    container_name: custom_kafka
+      context: ./docker/kafka
+      dockerfile: Dockerfile
+    container_name: larekmart-kafka
+    restart: unless-stopped
     ports:
       - "9092:9092"
+      - "9094:9094"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
-      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
-      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    networks:
+      - larekmart-network
 
-  # 5. OpenSearch Service
   opensearch:
     build:
-      context: .
-      dockerfile: Dockerfile.opensearch
-    container_name: custom_opensearch
+      context: ./docker/opensearch
+      dockerfile: Dockerfile
+    container_name: larekmart-opensearch
+    restart: unless-stopped
     ports:
       - "9200:9200"
+      - "9600:9600"
     environment:
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch
       - discovery.type=single-node
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=SecurePassword123!
+      - bootstrap.memory_lock=false
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "DISABLE_SECURITY_PLUGIN=true"
+      - "DISABLE_PERFORMANCE_ANALYZER_AGENT_CLI=true"
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-SecurePassword123!}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
     volumes:
       - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - larekmart-network
 
-# Named volumes to keep data persistent when containers stop
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: larekmart-kafka-ui
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: larekmart-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_READONLY: "false"
+      KAFKA_CLUSTERS_0_TOPIC_AUTO_CREATE: "true"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  # ============================================================================
+  # Microservices
+  # ============================================================================
+
+  product-service:
+    build:
+      context: .
+      dockerfile: apps/product-service/Dockerfile
+    container_name: larekmart-product-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    
+    env_file:
+      - ./apps/product-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  order-service:
+    build:
+      context: .
+      dockerfile: apps/order-service/Dockerfile
+    container_name: larekmart-order-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    
+    env_file:
+      - ./apps/order-service/.env
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: apps/payment-service/Dockerfile
+    container_name: larekmart-payment-service
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    
+    env_file:
+      - ./apps/payment-service/.env
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: apps/auth-service/Dockerfile
+    container_name: larekmart-auth-service
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    
+    env_file:
+      - ./apps/auth-service/.env
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  analytic-service:
+    build:
+      context: .
+      dockerfile: apps/analytic-service/Dockerfile
+    container_name: larekmart-analytic-service
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    
+    env_file:
+      - ./apps/analytic-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  notification-service:
+    build:
+      context: ./apps/notification-service
+      dockerfile: Dockerfile
+    container_name: larekmart-notification-service
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    
+    env_file:
+      - ./apps/notification-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  search-service:
+    build:
+      context: .
+      dockerfile: apps/search-service/Dockerfile
+    container_name: larekmart-search-service
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    
+    env_file:
+      - ./apps/search-service/.env
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: apps/inventory-service/Dockerfile
+    container_name: larekmart-inventory-service
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    
+    env_file:
+      - ./apps/inventory-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  recommendation-service:
+    build:
+      context: ./apps/recommendation-service
+      dockerfile: Dockerfile
+    container_name: larekmart-recommendation-service
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    
+    env_file:
+      - ./apps/recommendation-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  cart-service:
+    build:
+      context: .
+      dockerfile: apps/cart-service/Dockerfile
+    container_name: larekmart-cart-service
+    restart: unless-stopped
+    ports:
+      - "8009:8009"
+    
+    env_file:
+      - ./apps/cart-service/.env
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: apps/catalog-service/Dockerfile
+    container_name: larekmart-catalog-service
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    
+    env_file:
+      - ./apps/catalog-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  shipping-service:
+    build:
+      context: .
+      dockerfile: apps/shipping-service/Dockerfile
+    container_name: larekmart-shipping-service
+    restart: unless-stopped
+    ports:
+      - "8011:8011"
+    
+    env_file:
+      - ./apps/shipping-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  email-service:
+    build:
+      context: .
+      dockerfile: apps/email-service/Dockerfile
+    container_name: larekmart-email-service
+    restart: unless-stopped
+    
+    env_file:
+      - ./apps/email-service/.env
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  # ============================================================================
+  # Frontends (Storefront & Admin)
+  # ============================================================================
+
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+      args:
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_ORDER_SERVICE_URL: http://localhost:8001
+        NEXT_PUBLIC_PAYMENT_SERVICE_URL: http://localhost:8002
+        NEXT_PUBLIC_CART_SERVICE_URL: http://localhost:8009
+        NEXT_PUBLIC_SEARCH_SERVICE_URL: http://localhost:8006
+        NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: http://localhost:8005
+        NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8008
+        NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8011
+        NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8010
+    container_name: larekmart-client
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    
+    env_file:
+      - ./apps/client/.env
+    depends_on:
+      - catalog-service
+      - search-service
+      - cart-service
+      - order-service
+    networks:
+      - larekmart-network
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_PRODUCT_SERVICE_URL: http://localhost:8000
+        NEXT_PUBLIC_ORDER_SERVICE_URL: http://localhost:8001
+        NEXT_PUBLIC_AUTH_SERVICE_URL: http://localhost:8003
+        NEXT_PUBLIC_ANALYTIC_SERVICE_URL: http://localhost:8004
+        NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: http://localhost:8005
+        NEXT_PUBLIC_SEARCH_SERVICE_URL: http://localhost:8006
+        NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8010
+        NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8011
+        NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8008
+    container_name: larekmart-admin
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    
+    env_file:
+      - ./apps/admin/.env
+    depends_on:
+      - product-service
+      - order-service
+      - analytic-service
+      - auth-service
+    networks:
+      - larekmart-network
+
+# ============================================================================
+# Persistent Storage Volumes
+# ============================================================================
 volumes:
-  redis_data:
-  mongo_data:
   postgres_data:
+    name: larekmart_postgres_data
+  mongo_data:
+    name: larekmart_mongo_data
+  redis_data:
+    name: larekmart_redis_data
+  kafka_data:
+    name: larekmart_kafka_data
   opensearch_data:
+    name: larekmart_opensearch_data
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  larekmart-network:
+    name: larekmart-network
+    driver: bridge

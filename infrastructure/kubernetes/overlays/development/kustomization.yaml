@@ -1,0 +1,65 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: larekmart-dev
+
+resources:
+  - ../../base
+
+namePrefix: dev-
+
+patches:
+  # Reduce replicas to 1 for lightweight local/dev clusters (Minikube / Kind / Docker Desktop K8s)
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+
+  # Patch Ingress hostnames for development
+  - patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: dev.larekmart.local
+      - op: replace
+        path: /spec/rules/1/host
+        value: dev-admin.larekmart.local
+      - op: replace
+        path: /spec/rules/2/host
+        value: dev-api.larekmart.local
+    target:
+      kind: Ingress
+      name: larekmart-ingress
+
+images:
+  - name: larekmart/client
+    newTag: dev
+  - name: larekmart/admin
+    newTag: dev
+  - name: larekmart/product-service
+    newTag: dev
+  - name: larekmart/order-service
+    newTag: dev
+  - name: larekmart/payment-service
+    newTag: dev
+  - name: larekmart/auth-service
+    newTag: dev
+  - name: larekmart/analytic-service
+    newTag: dev
+  - name: larekmart/notification-service
+    newTag: dev
+  - name: larekmart/search-service
+    newTag: dev
+  - name: larekmart/inventory-service
+    newTag: dev
+  - name: larekmart/recommendation-service
+    newTag: dev
+  - name: larekmart/cart-service
+    newTag: dev
+  - name: larekmart/catalog-service
+    newTag: dev
+  - name: larekmart/shipping-service
+    newTag: dev
+  - name: larekmart/email-service
+    newTag: dev

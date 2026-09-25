@@ -49,11 +49,13 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
    pnpm --filter @repo/product-db db:generate
    ```
 
-### MongoDB (order-service / order-db)
+### MongoDB (order-service / cart-service / order-db / cart-db)
 
-1. Verify MongoDB is running on port `27017`:
-   `MONGO_URL="mongodb://localhost:27017/ecommerce"`
-2. Check `connectOrderDB()` in `apps/order-service/src/index.ts` logs for connection errors.
+1. Verify MongoDB is running on port `27017` with authentication enabled:
+   `MONGO_URL="mongodb://root:example@localhost:27017/order_db?authSource=admin"` (order-service)
+   `MONGO_URL="mongodb://root:example@localhost:27017/ecommerce?authSource=admin"` (cart-service)
+2. Use Mongo Express UI at `http://localhost:8081` (`mongoexpressuser` / `mongoexpresspass`) to visually inspect collections.
+3. Check `connectOrderDB()` or `connectCartDB()` service logs for connection or authentication errors.
 
 ## 4. Next.js Hydration & SSR Issues
 

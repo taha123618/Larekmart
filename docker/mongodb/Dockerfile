@@ -1,7 +1,8 @@
 # Start from the official MongoDB base image
-FROM mongo:8.0
+# Reference: https://hub.docker.com/_/mongo
+FROM mongo:latest
 
-# Optional: Copy a custom initialization script (runs on first startup)
+# Copy initialization script (automatically executed on first container startup)
 COPY init-db.js /docker-entrypoint-initdb.d/
 
 # Expose the default MongoDB port

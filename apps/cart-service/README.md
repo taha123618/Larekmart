@@ -29,7 +29,11 @@ Copy `.env.example` to `.env`:
 ```env
 PORT=8009
 NODE_ENV=development
-MONGO_URL=mongodb://localhost:27017/ecommerce
+# For host/local development:
+MONGO_URL=mongodb://root:example@localhost:27017/ecommerce?authSource=admin
+# For Docker Compose (referenced automatically by env_file in docker-compose.yml):
+# MONGO_URL=mongodb://root:example@mongo:27017/ecommerce?authSource=admin
+
 REDIS_URL=redis://localhost:6379
 REDIS_KEY_PREFIX=cart:v1:
 KAFKA_BROKERS=localhost:9092,localhost:9093,localhost:9094

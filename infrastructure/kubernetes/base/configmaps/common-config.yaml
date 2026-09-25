@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: larekmart-common-config
+  namespace: larekmart
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  PORT: "8000"
+  
+  # Kafka Message Bus
+  KAFKA_BROKERS: "kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
+  KAFKA_CLIENT_ID: "larekmart-production"
+  
+  # Redis Cache & Queues
+  REDIS_URL: "redis://redis-master.larekmart.svc.cluster.local:6379"
+  
+  # OpenSearch
+  OPENSEARCH_NODE: "http://opensearch.larekmart.svc.cluster.local:9200"
+  
+  # PostgreSQL Host (Cloud SQL / RDS / In-cluster Operator)
+  POSTGRES_HOST: "postgres-cluster.larekmart.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "postgres"
+  
+  # MongoDB Host (Atlas / MongoDB Community Operator)
+  MONGODB_HOST: "mongodb-service.larekmart.svc.cluster.local"
+  MONGODB_PORT: "27017"
+  MONGODB_DATABASE: "larekmart_orders"
+  
+  # Internal Service Discovery URLs
+  AUTH_SERVICE_URL: "http://auth-service.larekmart.svc.cluster.local:8003"
+  PRODUCT_SERVICE_URL: "http://product-service.larekmart.svc.cluster.local:8000"
+  ORDER_SERVICE_URL: "http://order-service.larekmart.svc.cluster.local:8001"
+  PAYMENT_SERVICE_URL: "http://payment-service.larekmart.svc.cluster.local:8002"
+  ANALYTIC_SERVICE_URL: "http://analytic-service.larekmart.svc.cluster.local:8004"
+  NOTIFICATION_SERVICE_URL: "http://notification-service.larekmart.svc.cluster.local:8005"
+  SEARCH_SERVICE_URL: "http://search-service.larekmart.svc.cluster.local:8006"
+  INVENTORY_SERVICE_URL: "http://inventory-service.larekmart.svc.cluster.local:8007"
+  RECOMMENDATION_SERVICE_URL: "http://recommendation-service.larekmart.svc.cluster.local:8008"
+  CART_SERVICE_URL: "http://cart-service.larekmart.svc.cluster.local:8009"
+  CATALOG_SERVICE_URL: "http://catalog-service.larekmart.svc.cluster.local:8010"
+  SHIPPING_SERVICE_URL: "http://shipping-service.larekmart.svc.cluster.local:8011"

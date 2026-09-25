@@ -1,0 +1,65 @@
+name: Database Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment (staging / production)"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  migrate:
+    name: Run Prisma Migrations (${{ github.event.inputs.environment }})
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Clients
+        run: |
+          pnpm --filter @repo/product-db db:generate
+          pnpm --filter @repo/inventory-db db:generate
+          pnpm --filter @repo/catalog-db db:generate
+          pnpm --filter @repo/shipping-db db:generate
+
+      - name: Run product-db migrations
+        run: pnpm --filter @repo/product-db db:deploy
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCT_DATABASE_URL }}
+
+      - name: Run inventory-db migrations
+        run: pnpm --filter @repo/inventory-db db:deploy
+        env:
+          DATABASE_URL: ${{ secrets.INVENTORY_DATABASE_URL }}
+
+      - name: Run catalog-db migrations
+        run: pnpm --filter @repo/catalog-db db:deploy
+        env:
+          DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+
+      - name: Run shipping-db migrations
+        run: pnpm --filter @repo/shipping-db db:deploy
+        env:
+          DATABASE_URL: ${{ secrets.SHIPPING_DATABASE_URL }}

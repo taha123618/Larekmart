@@ -13,7 +13,13 @@
     "install:all": "pnpm install",
     "env:setup": "node scripts/setup-env.js",
     "skills:sync": "node scripts/sync-skills.js",
-    "setup": "pnpm install && node scripts/setup-env.js && node scripts/sync-skills.js"
+    "setup": "pnpm install && node scripts/setup-env.js && node scripts/sync-skills.js",
+    "monitoring:up": "docker compose -f docker-compose.observability.yml up -d",
+    "monitoring:down": "docker compose -f docker-compose.observability.yml down",
+    "monitoring:logs": "docker compose -f docker-compose.observability.yml logs -f",
+    "k8s:dev": "kubectl apply -k infrastructure/kubernetes/overlays/development",
+    "k8s:staging": "kubectl apply -k infrastructure/kubernetes/overlays/staging",
+    "k8s:validate": "kubectl kustomize infrastructure/kubernetes/overlays/production"
   },
   "devDependencies": {
     "prettier": "^3.6.2",

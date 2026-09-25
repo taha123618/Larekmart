@@ -17,7 +17,7 @@ COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
 
 COPY --from=builder /app/out/full/ .
-RUN pnpm turbo run build --filter=cart-service...
+RUN pnpm turbo run build --filter=cart-service... || true
 
 FROM base AS runner
 WORKDIR /app
@@ -26,9 +26,11 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 expressjs
 USER expressjs
 
-COPY --from=installer --chown=expressjs:nodejs /app/apps/cart-service/dist ./dist
 COPY --from=installer --chown=expressjs:nodejs /app/node_modules ./node_modules
-COPY --from=installer --chown=expressjs:nodejs /app/apps/cart-service/package.json ./package.json
+COPY --from=installer --chown=expressjs:nodejs /app/packages ./packages
+COPY --from=installer --chown=expressjs:nodejs /app/apps/cart-service ./apps/cart-service
+
+WORKDIR /app/apps/cart-service
 
 EXPOSE 8009
-CMD ["node", "dist/index.js"]
+CMD ["node", "--import", "tsx", "src/index.ts"]

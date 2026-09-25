@@ -22,30 +22,29 @@ workflow, and deployment notes.
 ## First-time setup
 
 ```bash
-# Automated monorepo setup (installs workspaces, initializes .env, syncs AI skills)
+# ------------------------------------------------------------------------------
+# Option A: Full Containerized Ecosystem (Single Command)
+# ------------------------------------------------------------------------------
+docker compose up -d --build
+# Starts all databases, Redis, Kafka, OpenSearch, Kafka UI, 13 microservices, and 2 Next.js apps.
+# See docs/DOCKER.md for full operations guide.
+
+# ------------------------------------------------------------------------------
+# Option B: Local Development with Containerized Backing Infrastructure
+# ------------------------------------------------------------------------------
+# 1. Automated monorepo setup (installs workspaces, initializes .env, syncs AI skills)
 pnpm run setup
 
-# Or step-by-step:
-pnpm run install:all                      # install all workspace packages
-pnpm run env:setup                        # safely copy all .env.example -> .env
-pnpm run skills:sync                      # sync .agents/skills to .cursor, .claude, .gemini
+# 2. Start backing infrastructure in Docker (PostgreSQL with pgvector, MongoDB, Mongo-Express, Redis, Kafka KRaft, OpenSearch, Kafka UI)
+docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui
 
-# infrastructure
-docker compose -f packages/kafka/docker-compose.yml up -d   # Kafka cluster
-docker compose -f packages/redis/docker-compose.yml up -d   # Redis (service caches + rate limiting)
+# 3. Apply database migrations
+pnpm --filter @repo/product-db db:deploy
+pnpm --filter @repo/inventory-db db:deploy
+pnpm --filter @repo/catalog-db db:deploy
+pnpm --filter @repo/shipping-db db:deploy
 
-# databases (one store per service; see "Database migrations" below)
-createdb larekmart_product_db && createdb larekmart_inventory_db && createdb larekmart_catalog_db
-createdb larekmart_analytics_db && createdb larekmart_notification_db && createdb larekmart_recommendation_db
-
-set -a; . apps/product-service/.env;   set +a; pnpm --filter @repo/product-db db:deploy
-set -a; . apps/inventory-service/.env; set +a; pnpm --filter @repo/inventory-db db:deploy
-set -a; . apps/catalog-service/.env;   set +a; pnpm --filter @repo/catalog-db db:deploy
-(cd apps/recommendation-service && uv run alembic upgrade head)
-# notification-service and analytic-service migrate on startup; MongoDB collections and
-# indexes are created on first connect, so neither needs a separate step.
-
-# run everything
+# 4. Run all services concurrently in development mode
 pnpm dev
 ```
 
@@ -90,30 +89,36 @@ Default local connection strings used by the examples:
   `larekmart_inventory_db`, `larekmart_catalog_db`, `larekmart_analytics_db`,
   `larekmart_notification_db`, and `larekmart_recommendation_db`. Each service's
   `DATABASE_URL` lives in its own `apps/<service>/.env`.
-- MongoDB: `mongodb://localhost:27017/larekmart_order_db` (order-service) and
-  `mongodb://localhost:27017/larekmart_cart_db` (cart-service)
+- MongoDB: `mongodb://root:example@localhost:27017/order_db?authSource=admin` (order-service) and
+  `mongodb://root:example@localhost:27017/ecommerce?authSource=admin` (cart-service)
 - Kafka: `localhost:9094,localhost:9095,localhost:9096` (hardcoded in `@repo/kafka`)
 - OpenSearch: `http://localhost:9200` (used by product-service reads and search-service writes)
 
 ## Ports
 
-| Service                   | Port               |
-| ------------------------- | ------------------ |
-| client (storefront)       | 3002               |
-| admin (dashboard)         | 3003               |
-| product-service           | 8000               |
-| order-service             | 8001               |
-| payment-service           | 8002               |
-| auth-service              | 8003               |
-| analytic-service          | 8004               |
-| notification-service (Go) | 8005               |
-| search-service            | 8006               |
-| inventory-service         | 8007               |
-| Kafka UI                  | 8080               |
-| Kafka brokers             | 9094 / 9095 / 9096 |
-| ZooKeeper                 | 2181               |
-| PostgreSQL                | 5432               |
-| MongoDB                   | 27017              |
+| Service                        | Port               |
+| ------------------------------ | ------------------ |
+| client (storefront)            | 3002               |
+| admin (dashboard)              | 3003               |
+| product-service                | 8000               |
+| order-service                  | 8001               |
+| payment-service                | 8002               |
+| auth-service                   | 8003               |
+| analytic-service               | 8004               |
+| notification-service (Go)      | 8005               |
+| search-service                 | 8006               |
+| inventory-service              | 8007               |
+| recommendation-service (FastAPI)| 8008              |
+| cart-service                   | 8009               |
+| catalog-service                | 8010               |
+| shipping-service               | 8011               |
+| Kafka UI                       | 8080               |
+| Mongo Express                  | 8081               |
+| Kafka brokers                  | 9094 / 9095 / 9096 |
+| PostgreSQL                     | 5432               |
+| MongoDB                        | 27017              |
+| Redis                          | 6379               |
+| OpenSearch                     | 9200               |
 
 ## Daily workflow
 

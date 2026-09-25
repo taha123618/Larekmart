@@ -1,0 +1,56 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: larekmart-staging
+
+resources:
+  - ../../base
+
+namePrefix: staging-
+
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.larekmart.com
+      - op: replace
+        path: /spec/rules/1/host
+        value: staging-admin.larekmart.com
+      - op: replace
+        path: /spec/rules/2/host
+        value: staging-api.larekmart.com
+    target:
+      kind: Ingress
+      name: larekmart-ingress
+
+images:
+  - name: larekmart/client
+    newTag: staging
+  - name: larekmart/admin
+    newTag: staging
+  - name: larekmart/product-service
+    newTag: staging
+  - name: larekmart/order-service
+    newTag: staging
+  - name: larekmart/payment-service
+    newTag: staging
+  - name: larekmart/auth-service
+    newTag: staging
+  - name: larekmart/analytic-service
+    newTag: staging
+  - name: larekmart/notification-service
+    newTag: staging
+  - name: larekmart/search-service
+    newTag: staging
+  - name: larekmart/inventory-service
+    newTag: staging
+  - name: larekmart/recommendation-service
+    newTag: staging
+  - name: larekmart/cart-service
+    newTag: staging
+  - name: larekmart/catalog-service
+    newTag: staging
+  - name: larekmart/shipping-service
+    newTag: staging
+  - name: larekmart/email-service
+    newTag: staging

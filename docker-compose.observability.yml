@@ -1,0 +1,211 @@
+# ============================================================================
+# Larekmart Observability Stack — Docker Compose
+# Provides: Prometheus + Grafana + Alertmanager + Loki + Promtail + Node Exporter
+# + Redis/Postgres/MongoDB/Kafka Exporters
+#
+# Usage:
+#   docker compose -f docker-compose.observability.yml up -d
+#
+# This file uses the same larekmart-network as docker-compose.yml so that
+# Prometheus can scrape microservices that are already running there.
+# ============================================================================
+
+services:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Prometheus — Metrics collection and alerting engine
+  # ────────────────────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: larekmart-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --web.console.templates=/etc/prometheus/consoles
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/observability/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    networks:
+      - larekmart-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Alertmanager — Deduplication, grouping, routing of alerts
+  # ────────────────────────────────────────────────────────────────────────────
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: larekmart-alertmanager
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./infrastructure/observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - larekmart-network
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Grafana — Dashboards and visualization
+  # ────────────────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: larekmart-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-grafana_admin_secret}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_DOMAIN: monitoring.larekmart.local
+      GF_ALERTING_ENABLED: "true"
+      GF_UNIFIED_ALERTING_ENABLED: "true"
+      GF_FEATURE_TOGGLES_ENABLE: "traceqlSearch traceQLStreaming metricsSummary"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - larekmart-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Loki — Log aggregation (lightweight alternative to ELK)
+  # ────────────────────────────────────────────────────────────────────────────
+  loki:
+    image: grafana/loki:3.1.0
+    container_name: larekmart-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./infrastructure/observability/loki/loki.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - larekmart-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3100/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Promtail — Log shipper: reads Docker container logs and pushes to Loki
+  # ────────────────────────────────────────────────────────────────────────────
+  promtail:
+    image: grafana/promtail:3.1.0
+    container_name: larekmart-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./infrastructure/observability/promtail/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - larekmart-network
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Node Exporter — Host OS / hardware metrics
+  # ────────────────────────────────────────────────────────────────────────────
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: larekmart-node-exporter
+    restart: unless-stopped
+    command:
+      - --path.procfs=/host/proc
+      - --path.rootfs=/rootfs
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    ports:
+      - "9100:9100"
+    networks:
+      - larekmart-network
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Redis Exporter — Redis metrics → Prometheus
+  # ────────────────────────────────────────────────────────────────────────────
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0
+    container_name: larekmart-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    ports:
+      - "9121:9121"
+    networks:
+      - larekmart-network
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Postgres Exporter — PostgreSQL metrics → Prometheus
+  # ────────────────────────────────────────────────────────────────────────────
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: larekmart-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres:5432/product_db?sslmode=disable
+    ports:
+      - "9187:9187"
+    networks:
+      - larekmart-network
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # MongoDB Exporter — MongoDB metrics → Prometheus
+  # ────────────────────────────────────────────────────────────────────────────
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.41.2
+    container_name: larekmart-mongodb-exporter
+    restart: unless-stopped
+    environment:
+      MONGODB_URI: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-root}:${MONGO_INITDB_ROOT_PASSWORD:-example}@mongo:27017/admin?authSource=admin"
+    ports:
+      - "9216:9216"
+    networks:
+      - larekmart-network
+
+# ────────────────────────────────────────────────────────────────────────────
+# Named volumes for observability stack data persistence
+# ────────────────────────────────────────────────────────────────────────────
+volumes:
+  prometheus_data:
+    name: larekmart_prometheus_data
+  alertmanager_data:
+    name: larekmart_alertmanager_data
+  grafana_data:
+    name: larekmart_grafana_data
+  loki_data:
+    name: larekmart_loki_data
+
+# ────────────────────────────────────────────────────────────────────────────
+# Uses the same bridge network as main docker-compose.yml for service discovery
+# ────────────────────────────────────────────────────────────────────────────
+networks:
+  larekmart-network:
+    external: true
+    name: larekmart-network
