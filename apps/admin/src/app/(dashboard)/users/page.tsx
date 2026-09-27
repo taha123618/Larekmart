@@ -1,4 +1,4 @@
-import { auth, type User } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { columns, type UserWithServiceStatus } from "./columns";
 import { DataTable } from "./data-table";
 import { fetchAdminUsers } from "@/services/user.service";
@@ -21,8 +21,9 @@ const getData = async (): Promise<{
         : Promise.resolve(null),
     ]);
 
-    const clerkUsers: User[] =
-      authRes.data || (Array.isArray(authRes) ? authRes : []);
+    const clerkUsers = (authRes.data || (Array.isArray(authRes) ? authRes : [])) as Array<
+      Record<string, unknown> & { id: string }
+    >;
     const userSvcMap = new Map(
       userSvcRes?.users?.map((u) => [u.authUserId, u]) || [],
     );
@@ -31,6 +32,12 @@ const getData = async (): Promise<{
       const su = userSvcMap.get(cu.id);
       return {
         ...cu,
+        id: cu.id,
+        emailAddresses:
+          (cu.emailAddresses as Array<{
+            emailAddress: string;
+            [key: string]: unknown;
+          }>) || [],
         userServiceStatus: su?.status || null,
         phone: su?.phone || null,
       };
