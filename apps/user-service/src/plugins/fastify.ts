@@ -25,7 +25,15 @@ export async function configureFastifyPlugins(
     credentials: true,
   });
 
-  // 2. Clerk Authentication plugin
+  // 2. Defensive HTTP Security Headers
+  fastify.addHook("onSend", async (_request, reply) => {
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("X-XSS-Protection", "1; mode=block");
+    reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+  });
+
+  // 3. Clerk Authentication plugin
   await fastify.register(clerkPlugin, {
     publishableKey: config.clerkPublishableKey,
     secretKey: config.clerkSecretKey,

@@ -70,7 +70,7 @@ export const handleUserDeleted = async (payload: {
   [key: string]: unknown;
 }): Promise<void> => {
   const { userId } = payload;
-  if (!userId) return;
+  if (!userId || typeof userId !== "string" || userId.trim() === "") return;
 
   try {
     await Cart.deleteMany({ userId });

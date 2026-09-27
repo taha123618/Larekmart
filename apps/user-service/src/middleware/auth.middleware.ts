@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { getAuth } from "@clerk/fastify";
 import type { CustomJwtSessionClaims } from "@repo/types";
@@ -47,12 +48,27 @@ export const shouldBeAdmin = async (
   request.userRole = claims?.metadata?.role;
 };
 
+function safeTimingCompare(a: string, b: string): boolean {
+  try {
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+  } catch {
+    return false;
+  }
+}
+
 export const shouldBeInternalOrAdmin = async (
   request: FastifyRequest,
   reply: FastifyReply,
 ) => {
   const internalSecret = request.headers["x-internal-secret"];
-  if (internalSecret && internalSecret === config.internalServiceSecret) {
+  if (
+    typeof internalSecret === "string" &&
+    config.internalServiceSecret &&
+    safeTimingCompare(internalSecret, config.internalServiceSecret)
+  ) {
     return;
   }
 

@@ -21,7 +21,8 @@ const getData = async (): Promise<{
         : Promise.resolve(null),
     ]);
 
-    const clerkUsers = (authRes.data || (Array.isArray(authRes) ? authRes : [])) as Array<
+    const clerkUsers = (authRes.data ||
+      (Array.isArray(authRes) ? authRes : [])) as Array<
       Record<string, unknown> & { id: string }
     >;
     const userSvcMap = new Map(

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { userService } from "../services/user.service.js";
 import {
@@ -6,14 +7,19 @@ import {
 } from "@repo/types";
 import type { UserStatus } from "@repo/user-db";
 
+const GetMeQuerySchema = z.object({
+  email: z.string().email().optional(),
+  phone: z.string().max(30).optional(),
+});
+
 export class UserController {
   async getMe(request: FastifyRequest, reply: FastifyReply) {
     const authUserId = request.authUserId!;
     let user = await userService.getCurrentUser(authUserId);
 
     if (!user) {
-      // Auto-provision if initial request carries email or Clerk metadata
-      const query = request.query as { email?: string; phone?: string };
+      // Auto-provision if initial request carries valid email
+      const query = GetMeQuerySchema.parse(request.query || {});
       if (query.email) {
         user = await userService.getOrCreateUser(
           authUserId,

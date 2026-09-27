@@ -1,6 +1,7 @@
 import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 import { logger } from "../observability/metrics.js";
+import { config } from "../config/env.js";
 
 export function globalErrorHandler(
   error: FastifyError | Error,
@@ -43,7 +44,12 @@ export function globalErrorHandler(
     });
   }
 
+  const message =
+    statusCode >= 500 && config.nodeEnv === "production"
+      ? "Internal Server Error"
+      : error.message || "An unexpected error occurred";
+
   void reply.status(statusCode).send({
-    message: error.message || "An unexpected error occurred",
+    message,
   });
 }
