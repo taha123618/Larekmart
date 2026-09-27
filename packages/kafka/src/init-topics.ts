@@ -60,8 +60,18 @@ export const ALL_LAREKMART_TOPICS = [
   "email-successful",
   "notification.dispatch",
 
-  // Auth
+  // Auth & User Domain
   "user.created",
+  "user.updated",
+  "user.profile_updated",
+  "user.address_created",
+  "user.address_updated",
+  "user.address_deleted",
+  "user.preferences_updated",
+  "user.deleted",
+  "user.deletion_requested",
+  "auth.user_created",
+  "user.registered",
 
   // Inventory
   "inventory.created",

@@ -15,7 +15,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
       POSTGRES_DB: ${POSTGRES_DB:-product_db}
-      POSTGRES_MULTIPLE_DATABASES: "product_db,inventory_db,larekmart_inventory_db,catalog_db,shipping_db,larekmart_shipping_db,analytics_db,larekmart_notification_db,recommendation_db"
+      POSTGRES_MULTIPLE_DATABASES: "product_db,inventory_db,catalog_db,shipping_db,analytics_db,notification_db,recommendation_db,user_db"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -426,6 +426,26 @@ services:
     networks:
       - larekmart-network
 
+  user-service:
+    build:
+      context: .
+      dockerfile: apps/user-service/Dockerfile
+    container_name: larekmart-user-service
+    restart: unless-stopped
+    ports:
+      - "8012:8012"
+    env_file:
+      - ./apps/user-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
   email-service:
     build:
       context: .
@@ -460,6 +480,7 @@ services:
         NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8008
         NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8011
         NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8010
+        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8012
     container_name: larekmart-client
     restart: unless-stopped
     ports:
@@ -472,6 +493,7 @@ services:
       - search-service
       - cart-service
       - order-service
+      - user-service
     networks:
       - larekmart-network
 
@@ -490,6 +512,7 @@ services:
         NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8010
         NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8011
         NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8008
+        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8012
     container_name: larekmart-admin
     restart: unless-stopped
     ports:
