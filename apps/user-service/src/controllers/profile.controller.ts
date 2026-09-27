@@ -25,7 +25,11 @@ export class ProfileController {
     }
 
     const body = UpdateProfileSchema.parse(request.body);
-    const updated = await profileService.updateProfile(user.id, body, authUserId);
+    const updated = await profileService.updateProfile(
+      user.id,
+      body,
+      authUserId,
+    );
 
     return reply.status(200).send(updated);
   }

@@ -31,7 +31,10 @@ async function runTests() {
     url: "/metrics",
   });
   assert.equal(metricsRes.statusCode, 200, "Expected /metrics to return 200");
-  assert.ok(metricsRes.payload.includes("user_requests_total"), "Expected metrics to include user_requests_total");
+  assert.ok(
+    metricsRes.payload.includes("user_requests_total"),
+    "Expected metrics to include user_requests_total",
+  );
   console.log("✓ /metrics passed");
 
   // 2. Test Route Protection (Authentication Gating)
@@ -59,9 +62,15 @@ async function runTests() {
       method: ep.method,
       url: ep.url,
     });
-    assert.equal(res.statusCode, 401, `Expected ${ep.method} ${ep.url} without auth to return 401`);
+    assert.equal(
+      res.statusCode,
+      401,
+      `Expected ${ep.method} ${ep.url} without auth to return 401`,
+    );
   }
-  console.log("✓ All 15 protected user & admin routes strictly reject unauthenticated requests with 401");
+  console.log(
+    "✓ All 15 protected user & admin routes strictly reject unauthenticated requests with 401",
+  );
 
   // 3. Address Schema Validation
   console.log("\n[Test 3] Address Schema Validation");
@@ -87,7 +96,9 @@ async function runTests() {
   };
   const failedAddress = CreateAddressSchema.safeParse(invalidAddress);
   assert.ok(!failedAddress.success, "Invalid address should fail validation");
-  console.log("✓ Address schemas strictly enforce required shipping/billing fields");
+  console.log(
+    "✓ Address schemas strictly enforce required shipping/billing fields",
+  );
 
   // 4. Profile Schema Validation
   console.log("\n[Test 4] Profile Schema Validation");
@@ -98,12 +109,18 @@ async function runTests() {
     avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
     bio: "Fashion enthusiast",
   };
-  assert.ok(UpdateProfileSchema.safeParse(validProfile).success, "Valid profile should parse");
+  assert.ok(
+    UpdateProfileSchema.safeParse(validProfile).success,
+    "Valid profile should parse",
+  );
 
   const invalidAvatar = {
     avatarUrl: "not-a-valid-url",
   };
-  assert.ok(!UpdateProfileSchema.safeParse(invalidAvatar).success, "Invalid avatar URL should fail");
+  assert.ok(
+    !UpdateProfileSchema.safeParse(invalidAvatar).success,
+    "Invalid avatar URL should fail",
+  );
   console.log("✓ Profile schemas validate URL formats and string boundaries");
 
   // 5. Preferences & Settings Validation
@@ -136,7 +153,10 @@ async function runTests() {
   assert.equal(UserCacheKeys.userProfile("usr_123"), "user:profile:usr_123");
   assert.equal(UserCacheKeys.userByAuth("auth_456"), "user:auth:auth_456");
   assert.equal(UserCacheKeys.addresses("usr_123"), "user:addresses:usr_123");
-  assert.equal(UserCacheKeys.preferences("usr_123"), "user:preferences:usr_123");
+  assert.equal(
+    UserCacheKeys.preferences("usr_123"),
+    "user:preferences:usr_123",
+  );
   assert.equal(UserCacheKeys.settings("usr_123"), "user:settings:usr_123");
   console.log("✓ Redis cache keys conform to namespace standards");
 

@@ -23,7 +23,12 @@ export const UpdateProfileSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),
   lastName: z.string().min(1).max(100).optional(),
   displayName: z.string().min(1).max(100).optional(),
-  avatarUrl: z.string().url("Invalid avatar URL format").max(1000).optional().nullable(),
+  avatarUrl: z
+    .string()
+    .url("Invalid avatar URL format")
+    .max(1000)
+    .optional()
+    .nullable(),
   dateOfBirth: z.string().datetime().optional().nullable(),
   gender: z.string().max(50).optional().nullable(),
   bio: z.string().max(500).optional().nullable(),
@@ -118,7 +123,9 @@ export const UserPreferencesResponseSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
-export type UserPreferencesResponse = z.infer<typeof UserPreferencesResponseSchema>;
+export type UserPreferencesResponse = z.infer<
+  typeof UserPreferencesResponseSchema
+>;
 
 // ==========================================
 // Settings Schemas & Types
@@ -159,7 +166,9 @@ export type UpdateUserAccountInput = z.infer<typeof UpdateUserAccountSchema>;
 export const AdminUpdateUserStatusSchema = z.object({
   status: UserStatusEnum,
 });
-export type AdminUpdateUserStatusInput = z.infer<typeof AdminUpdateUserStatusSchema>;
+export type AdminUpdateUserStatusInput = z.infer<
+  typeof AdminUpdateUserStatusSchema
+>;
 
 export const UserDetailResponseSchema = z.object({
   id: z.string(),

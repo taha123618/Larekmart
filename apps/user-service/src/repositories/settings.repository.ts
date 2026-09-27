@@ -12,14 +12,16 @@ export class SettingsRepository {
   async upsert(userId: string, data: UpdateSettingsInput) {
     const updateData: Prisma.UserSettingsUpdateInput = {};
 
-    if (data.twoFactorPrompt !== undefined) updateData.twoFactorPrompt = data.twoFactorPrompt;
+    if (data.twoFactorPrompt !== undefined)
+      updateData.twoFactorPrompt = data.twoFactorPrompt;
     if (data.profileVisibility !== undefined) {
       updateData.profileVisibility = data.profileVisibility;
     }
     if (data.orderUpdatesEmail !== undefined) {
       updateData.orderUpdatesEmail = data.orderUpdatesEmail;
     }
-    if (data.orderUpdatesSms !== undefined) updateData.orderUpdatesSms = data.orderUpdatesSms;
+    if (data.orderUpdatesSms !== undefined)
+      updateData.orderUpdatesSms = data.orderUpdatesSms;
     if (data.metadata !== undefined) {
       updateData.metadata = data.metadata as Prisma.InputJsonValue;
     }

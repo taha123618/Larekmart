@@ -25,7 +25,11 @@ export class PreferenceController {
     }
 
     const body = UpdatePreferencesSchema.parse(request.body);
-    const updated = await preferenceService.updatePreferences(user.id, body, authUserId);
+    const updated = await preferenceService.updatePreferences(
+      user.id,
+      body,
+      authUserId,
+    );
 
     return reply.status(200).send(updated);
   }

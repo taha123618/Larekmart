@@ -1,5 +1,10 @@
 import { settingsRepository } from "../repositories/settings.repository.js";
-import { getCached, setCached, invalidateUserCache, UserCacheKeys } from "../cache/user-cache.js";
+import {
+  getCached,
+  setCached,
+  invalidateUserCache,
+  UserCacheKeys,
+} from "../cache/user-cache.js";
 import { userMetrics, logger } from "../observability/metrics.js";
 import type { UpdateSettingsInput } from "@repo/types";
 
@@ -20,7 +25,11 @@ export class SettingsService {
     return settings;
   }
 
-  async updateSettings(userId: string, input: UpdateSettingsInput, authUserId?: string) {
+  async updateSettings(
+    userId: string,
+    input: UpdateSettingsInput,
+    authUserId?: string,
+  ) {
     const updated = await settingsRepository.upsert(userId, input);
 
     userMetrics.usersUpdated.inc();

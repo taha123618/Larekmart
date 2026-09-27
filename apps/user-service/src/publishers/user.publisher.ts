@@ -32,6 +32,9 @@ export async function publishUserEvent(
     await producer.send(eventType, { value: payload });
     logger.info(`Published ${eventType} event for user ${userId}`, { eventId });
   } catch (error) {
-    logger.error(`Failed to publish Kafka event ${eventType}`, { error, payload });
+    logger.error(`Failed to publish Kafka event ${eventType}`, {
+      error,
+      payload,
+    });
   }
 }

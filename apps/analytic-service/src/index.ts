@@ -173,6 +173,15 @@ const start = async () => {
         },
       },
       {
+        topicName: "user.registered",
+        topicHandler: async (message: any) => {
+          const payload: UserCreatedType = message.value || message;
+          if (payload) {
+            await recordUserSignup(payload);
+          }
+        },
+      },
+      {
         topicName: "email-successful",
         topicHandler: async (message: any) => {
           const payload: UserCreatedType = message.value || message;

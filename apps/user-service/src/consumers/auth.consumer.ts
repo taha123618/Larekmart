@@ -12,7 +12,8 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
     const eventType = target.eventType || "user.created";
 
     // Idempotency check
-    const alreadyProcessed = await idempotencyRepository.isEventProcessed(eventId);
+    const alreadyProcessed =
+      await idempotencyRepository.isEventProcessed(eventId);
     if (alreadyProcessed) {
       logger.info(`Kafka event ${eventId} already processed, skipping`);
       return;
@@ -22,9 +23,7 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
     const data = target.data || target;
     const authUserId = target.userId || data.id || target.authUserId;
     const email =
-      data.email ||
-      data.email_addresses?.[0]?.email_address ||
-      target.email;
+      data.email || data.email_addresses?.[0]?.email_address || target.email;
     const phone =
       data.phone ||
       data.phone_numbers?.[0]?.phone_number ||
@@ -34,7 +33,9 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
     const lastName = data.lastName || data.last_name || null;
 
     if (!authUserId || !email) {
-      logger.warn("Received user creation event without authUserId or email", { target });
+      logger.warn("Received user creation event without authUserId or email", {
+        target,
+      });
       return;
     }
 
@@ -48,15 +49,22 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
         firstName,
         lastName,
       });
-      logger.info(`Created user-service account for authUserId: ${authUserId}, userId: ${user.id}`);
+      logger.info(
+        `Created user-service account for authUserId: ${authUserId}, userId: ${user.id}`,
+      );
     } else {
       // Sync profile fields if missing
       await profileRepository.upsert(user.id, {
         firstName: firstName || undefined,
         lastName: lastName || undefined,
-        displayName: firstName && lastName ? `${firstName} ${lastName}` : (firstName || undefined),
+        displayName:
+          firstName && lastName
+            ? `${firstName} ${lastName}`
+            : firstName || undefined,
       });
-      logger.info(`Updated user profile for existing authUserId: ${authUserId}`);
+      logger.info(
+        `Updated user profile for existing authUserId: ${authUserId}`,
+      );
     }
 
     // Mark event as processed

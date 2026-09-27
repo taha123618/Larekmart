@@ -18,16 +18,16 @@ const envSchema = z.object({
     .default("localhost:9094,localhost:9095,localhost:9096"),
   KAFKA_CLIENT_ID: z.string().default("user-service"),
   KAFKA_GROUP_ID: z.string().default("user-service-group"),
-  CLERK_PUBLISHABLE_KEY: z
-    .string()
-    .default("pk_test_Y2xlcmsuZXhhbXBsZS5jb20k"),
+  CLERK_PUBLISHABLE_KEY: z.string().default("pk_test_Y2xlcmsuZXhhbXBsZS5jb20k"),
   CLERK_SECRET_KEY: z
     .string()
     .default("sk_test_123456789012345678901234567890"),
   INTERNAL_SERVICE_SECRET: z.string().default("internal_secret_dev"),
   ALLOWED_ORIGINS: z
     .string()
-    .default("http://localhost:3000,http://localhost:3002,http://localhost:3003"),
+    .default(
+      "http://localhost:3000,http://localhost:3002,http://localhost:3003",
+    ),
 });
 
 export type Env = z.infer<typeof envSchema>;

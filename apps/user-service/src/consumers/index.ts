@@ -27,7 +27,9 @@ export async function startKafkaConsumers(): Promise<void> {
         },
       },
     ]);
-    logger.info("User-service Kafka consumers successfully connected and subscribed");
+    logger.info(
+      "User-service Kafka consumers successfully connected and subscribed",
+    );
   } catch (err) {
     logger.warn("Kafka consumer connection deferred / offline", {
       error: String(err),

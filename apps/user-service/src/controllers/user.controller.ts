@@ -15,9 +15,16 @@ export class UserController {
       // Auto-provision if initial request carries email or Clerk metadata
       const query = request.query as { email?: string; phone?: string };
       if (query.email) {
-        user = await userService.getOrCreateUser(authUserId, query.email, query.phone);
+        user = await userService.getOrCreateUser(
+          authUserId,
+          query.email,
+          query.phone,
+        );
       } else {
-        return reply.status(404).send({ message: "User account not found. Please sync via auth webhook or provide email." });
+        return reply.status(404).send({
+          message:
+            "User account not found. Please sync via auth webhook or provide email.",
+        });
       }
     }
 
@@ -74,7 +81,10 @@ export class UserController {
     const params = request.params as { id: string };
     const body = AdminUpdateUserStatusSchema.parse(request.body);
 
-    const updated = await userService.adminUpdateUserStatus(params.id, body.status);
+    const updated = await userService.adminUpdateUserStatus(
+      params.id,
+      body.status,
+    );
     return reply.status(200).send(updated);
   }
 }

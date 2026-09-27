@@ -59,7 +59,10 @@ export class UserRepository {
           create: {
             firstName: data.firstName || null,
             lastName: data.lastName || null,
-            displayName: data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : (data.firstName || null),
+            displayName:
+              data.firstName && data.lastName
+                ? `${data.firstName} ${data.lastName}`
+                : data.firstName || null,
           },
         },
         preferences: {

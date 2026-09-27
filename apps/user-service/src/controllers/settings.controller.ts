@@ -25,7 +25,11 @@ export class SettingsController {
     }
 
     const body = UpdateSettingsSchema.parse(request.body);
-    const updated = await settingsService.updateSettings(user.id, body, authUserId);
+    const updated = await settingsService.updateSettings(
+      user.id,
+      body,
+      authUserId,
+    );
 
     return reply.status(200).send(updated);
   }

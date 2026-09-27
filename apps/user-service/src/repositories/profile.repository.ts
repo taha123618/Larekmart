@@ -14,10 +14,13 @@ export class ProfileRepository {
 
     if (data.firstName !== undefined) updateData.firstName = data.firstName;
     if (data.lastName !== undefined) updateData.lastName = data.lastName;
-    if (data.displayName !== undefined) updateData.displayName = data.displayName;
+    if (data.displayName !== undefined)
+      updateData.displayName = data.displayName;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
     if (data.dateOfBirth !== undefined) {
-      updateData.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
+      updateData.dateOfBirth = data.dateOfBirth
+        ? new Date(data.dateOfBirth)
+        : null;
     }
     if (data.gender !== undefined) updateData.gender = data.gender;
     if (data.bio !== undefined) updateData.bio = data.bio;

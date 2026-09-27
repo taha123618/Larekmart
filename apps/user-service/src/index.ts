@@ -20,7 +20,9 @@ async function main() {
   try {
     await initProducer();
   } catch (err) {
-    logger.warn("Kafka producer initialization deferred / offline", { error: String(err) });
+    logger.warn("Kafka producer initialization deferred / offline", {
+      error: String(err),
+    });
   }
 
   await startKafkaConsumers();

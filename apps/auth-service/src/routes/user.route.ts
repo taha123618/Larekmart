@@ -69,8 +69,11 @@ router.post("/", async (req, res) => {
     logger.info(`User created in Clerk with ID: ${user.id}`);
     producer.send("user.created", {
       value: {
+        userId: user.id,
         username: user.username,
         email: user.emailAddresses[0]?.emailAddress,
+        firstName: user.firstName,
+        lastName: user.lastName,
       },
     });
     return res.status(201).json(user);
@@ -97,6 +100,11 @@ router.delete("/:id", async (req, res) => {
     );
 
     logger.info(`User deleted from Clerk with ID: ${id}`);
+    producer.send("user.deleted", {
+      value: {
+        userId: id.trim(),
+      },
+    });
     return res.status(200).json(user);
   } catch (error) {
     logger.error(`Failed to delete user ${id}`, error);

@@ -27,7 +27,10 @@ export const UserCacheKeys = {
 
 const DEFAULT_TTL_SECONDS = 300; // 5 minutes (short, controlled TTL)
 
-export async function getCached<T>(key: string, cacheType = "profile"): Promise<T | null> {
+export async function getCached<T>(
+  key: string,
+  cacheType = "profile",
+): Promise<T | null> {
   const result = await cacheRead<T>(redis.client, key);
   if (result.status === "hit" && result.value) {
     userMetrics.cacheHits.inc({ cache_type: cacheType });
@@ -49,7 +52,10 @@ export async function setCached<T>(
   }
 }
 
-export async function invalidateUserCache(userId: string, authUserId?: string): Promise<void> {
+export async function invalidateUserCache(
+  userId: string,
+  authUserId?: string,
+): Promise<void> {
   try {
     const keysToDelete = [
       UserCacheKeys.userMe(userId),

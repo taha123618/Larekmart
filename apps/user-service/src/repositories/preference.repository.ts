@@ -12,12 +12,16 @@ export class PreferenceRepository {
   async upsert(userId: string, data: UpdatePreferencesInput) {
     const updateData: Prisma.UserPreferencesUpdateInput = {};
 
-    if (data.preferredLanguage !== undefined) updateData.preferredLanguage = data.preferredLanguage;
+    if (data.preferredLanguage !== undefined)
+      updateData.preferredLanguage = data.preferredLanguage;
     if (data.currency !== undefined) updateData.currency = data.currency;
     if (data.timezone !== undefined) updateData.timezone = data.timezone;
-    if (data.marketingEmail !== undefined) updateData.marketingEmail = data.marketingEmail;
-    if (data.marketingSms !== undefined) updateData.marketingSms = data.marketingSms;
-    if (data.pushNotifications !== undefined) updateData.pushNotifications = data.pushNotifications;
+    if (data.marketingEmail !== undefined)
+      updateData.marketingEmail = data.marketingEmail;
+    if (data.marketingSms !== undefined)
+      updateData.marketingSms = data.marketingSms;
+    if (data.pushNotifications !== undefined)
+      updateData.pushNotifications = data.pushNotifications;
     if (data.productRecommendations !== undefined) {
       updateData.productRecommendations = data.productRecommendations;
     }

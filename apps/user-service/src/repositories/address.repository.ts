@@ -59,17 +59,29 @@ export class AddressRepository {
       return tx.userAddress.update({
         where: { id },
         data: {
-          ...(data.type !== undefined ? { type: data.type as AddressType } : {}),
+          ...(data.type !== undefined
+            ? { type: data.type as AddressType }
+            : {}),
           ...(data.label !== undefined ? { label: data.label } : {}),
-          ...(data.recipientName !== undefined ? { recipientName: data.recipientName } : {}),
+          ...(data.recipientName !== undefined
+            ? { recipientName: data.recipientName }
+            : {}),
           ...(data.phone !== undefined ? { phone: data.phone } : {}),
-          ...(data.addressLine1 !== undefined ? { addressLine1: data.addressLine1 } : {}),
-          ...(data.addressLine2 !== undefined ? { addressLine2: data.addressLine2 } : {}),
+          ...(data.addressLine1 !== undefined
+            ? { addressLine1: data.addressLine1 }
+            : {}),
+          ...(data.addressLine2 !== undefined
+            ? { addressLine2: data.addressLine2 }
+            : {}),
           ...(data.city !== undefined ? { city: data.city } : {}),
           ...(data.state !== undefined ? { state: data.state } : {}),
-          ...(data.postalCode !== undefined ? { postalCode: data.postalCode } : {}),
+          ...(data.postalCode !== undefined
+            ? { postalCode: data.postalCode }
+            : {}),
           ...(data.country !== undefined ? { country: data.country } : {}),
-          ...(data.isDefault !== undefined ? { isDefault: data.isDefault } : {}),
+          ...(data.isDefault !== undefined
+            ? { isDefault: data.isDefault }
+            : {}),
         },
       });
     });

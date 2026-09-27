@@ -12,33 +12,101 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
   // ==========================================
 
   // Account endpoints
-  fastify.get("/me", { preHandler: [shouldBeUser] }, userController.getMe.bind(userController));
-  fastify.patch("/me", { preHandler: [shouldBeUser] }, userController.updateMe.bind(userController));
-  fastify.delete("/me", { preHandler: [shouldBeUser] }, userController.deleteMe.bind(userController));
+  fastify.get(
+    "/me",
+    { preHandler: [shouldBeUser] },
+    userController.getMe.bind(userController),
+  );
+  fastify.patch(
+    "/me",
+    { preHandler: [shouldBeUser] },
+    userController.updateMe.bind(userController),
+  );
+  fastify.delete(
+    "/me",
+    { preHandler: [shouldBeUser] },
+    userController.deleteMe.bind(userController),
+  );
 
   // Profile endpoints
-  fastify.get("/me/profile", { preHandler: [shouldBeUser] }, profileController.getMyProfile.bind(profileController));
-  fastify.patch("/me/profile", { preHandler: [shouldBeUser] }, profileController.updateMyProfile.bind(profileController));
+  fastify.get(
+    "/me/profile",
+    { preHandler: [shouldBeUser] },
+    profileController.getMyProfile.bind(profileController),
+  );
+  fastify.patch(
+    "/me/profile",
+    { preHandler: [shouldBeUser] },
+    profileController.updateMyProfile.bind(profileController),
+  );
 
   // Address endpoints
-  fastify.get("/me/addresses", { preHandler: [shouldBeUser] }, addressController.getMyAddresses.bind(addressController));
-  fastify.post("/me/addresses", { preHandler: [shouldBeUser] }, addressController.createMyAddress.bind(addressController));
-  fastify.get("/me/addresses/:addressId", { preHandler: [shouldBeUser] }, addressController.getMyAddress.bind(addressController));
-  fastify.patch("/me/addresses/:addressId", { preHandler: [shouldBeUser] }, addressController.updateMyAddress.bind(addressController));
-  fastify.delete("/me/addresses/:addressId", { preHandler: [shouldBeUser] }, addressController.deleteMyAddress.bind(addressController));
+  fastify.get(
+    "/me/addresses",
+    { preHandler: [shouldBeUser] },
+    addressController.getMyAddresses.bind(addressController),
+  );
+  fastify.post(
+    "/me/addresses",
+    { preHandler: [shouldBeUser] },
+    addressController.createMyAddress.bind(addressController),
+  );
+  fastify.get(
+    "/me/addresses/:addressId",
+    { preHandler: [shouldBeUser] },
+    addressController.getMyAddress.bind(addressController),
+  );
+  fastify.patch(
+    "/me/addresses/:addressId",
+    { preHandler: [shouldBeUser] },
+    addressController.updateMyAddress.bind(addressController),
+  );
+  fastify.delete(
+    "/me/addresses/:addressId",
+    { preHandler: [shouldBeUser] },
+    addressController.deleteMyAddress.bind(addressController),
+  );
 
   // Preferences endpoints
-  fastify.get("/me/preferences", { preHandler: [shouldBeUser] }, preferenceController.getMyPreferences.bind(preferenceController));
-  fastify.patch("/me/preferences", { preHandler: [shouldBeUser] }, preferenceController.updateMyPreferences.bind(preferenceController));
+  fastify.get(
+    "/me/preferences",
+    { preHandler: [shouldBeUser] },
+    preferenceController.getMyPreferences.bind(preferenceController),
+  );
+  fastify.patch(
+    "/me/preferences",
+    { preHandler: [shouldBeUser] },
+    preferenceController.updateMyPreferences.bind(preferenceController),
+  );
 
   // Settings endpoints
-  fastify.get("/me/settings", { preHandler: [shouldBeUser] }, settingsController.getMySettings.bind(settingsController));
-  fastify.patch("/me/settings", { preHandler: [shouldBeUser] }, settingsController.updateMySettings.bind(settingsController));
+  fastify.get(
+    "/me/settings",
+    { preHandler: [shouldBeUser] },
+    settingsController.getMySettings.bind(settingsController),
+  );
+  fastify.patch(
+    "/me/settings",
+    { preHandler: [shouldBeUser] },
+    settingsController.updateMySettings.bind(settingsController),
+  );
 
   // ==========================================
   // Administrative Endpoints
   // ==========================================
-  fastify.get("/admin/users", { preHandler: [shouldBeAdmin] }, userController.adminListUsers.bind(userController));
-  fastify.get("/admin/users/:id", { preHandler: [shouldBeAdmin] }, userController.adminGetUser.bind(userController));
-  fastify.patch("/admin/users/:id/status", { preHandler: [shouldBeAdmin] }, userController.adminUpdateStatus.bind(userController));
+  fastify.get(
+    "/admin/users",
+    { preHandler: [shouldBeAdmin] },
+    userController.adminListUsers.bind(userController),
+  );
+  fastify.get(
+    "/admin/users/:id",
+    { preHandler: [shouldBeAdmin] },
+    userController.adminGetUser.bind(userController),
+  );
+  fastify.patch(
+    "/admin/users/:id/status",
+    { preHandler: [shouldBeAdmin] },
+    userController.adminUpdateStatus.bind(userController),
+  );
 };

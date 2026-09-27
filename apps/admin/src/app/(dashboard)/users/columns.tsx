@@ -91,18 +91,25 @@ export const columns: ColumnDef<User>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const user = row.original;
-      const status = user.banned ? "banned" : "active";
+      const user = row.original as any;
+      const status =
+        user.userServiceStatus || (user.banned ? "banned" : "active");
 
       return (
         <div
           className={cn(
-            `p-1 rounded-md w-max text-xs`,
-            status === "active" && "bg-green-500/40",
-            status === "banned" && "bg-red-500/40",
+            `px-2 py-0.5 rounded-md w-max text-xs font-semibold uppercase`,
+            (status === "active" || status === "ACTIVE") &&
+              "bg-green-500/20 text-green-700 dark:text-green-300",
+            (status === "banned" ||
+              status === "SUSPENDED" ||
+              status === "DEACTIVATED") &&
+              "bg-red-500/20 text-red-700 dark:text-red-300",
+            status === "PENDING_VERIFICATION" &&
+              "bg-amber-500/20 text-amber-700 dark:text-amber-300",
           )}
         >
-          {status as string}
+          {String(status)}
         </div>
       );
     },

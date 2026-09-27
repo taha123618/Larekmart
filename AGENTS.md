@@ -102,7 +102,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `@repo/cart-db`           | `packages/cart-db`            | Library                 | —    | Mongoose connection + Cart models (MongoDB)                                        |
 | `@repo/catalog-db`        | `packages/catalog-db`         | Library                 | —    | Prisma catalog read-model schema (PostgreSQL) for catalog-service                  |
 | `@repo/shipping-db`       | `packages/shipping-db`        | Library                 | —    | Prisma shipping schema, shipments, packages, tracking events & labels (PostgreSQL) |
-| `@repo/user-db`            | `packages/user-db`            | Library                 | —    | Prisma user schema, profiles, addresses, preferences & settings (PostgreSQL)       |
+| `@repo/user-db`           | `packages/user-db`            | Library                 | —    | Prisma user schema, profiles, addresses, preferences & settings (PostgreSQL)       |
 | `@repo/eslint-config`     | `packages/eslint-config`      | Config                  | —    | Shared ESLint flat configs                                                         |
 | `@repo/typescript-config` | `packages/typescript-config`  | Config                  | —    | Shared tsconfig bases                                                              |
 

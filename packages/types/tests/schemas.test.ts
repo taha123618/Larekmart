@@ -16,7 +16,8 @@ async function runSchemaTests() {
   const validProduct = {
     name: "Classic Linen Shirt",
     shortDescription: "Breathable pure linen shirt for summer",
-    description: "Detailed description of the linen shirt with washing instructions.",
+    description:
+      "Detailed description of the linen shirt with washing instructions.",
     price: 3499,
     categorySlug: "shirts",
     sizes: ["m", "l", "xl"],
@@ -27,19 +28,29 @@ async function runSchemaTests() {
     },
   };
   const parsedProduct = ProductFormSchema.safeParse(validProduct);
-  assert.equal(parsedProduct.success, true, "Valid product payload should parse successfully");
+  assert.equal(
+    parsedProduct.success,
+    true,
+    "Valid product payload should parse successfully",
+  );
   console.log("✓ Valid ProductFormSchema successfully parsed");
 
   // 2. ProductFormSchema Validation Errors
   console.log("2. Testing ProductFormSchema Validation Invariants...");
-  
+
   // A. Missing image for selected color
   const missingColorImageProduct = {
     ...validProduct,
     colors: ["blue", "white", "red"], // 'red' has no image in images map
   };
-  const missingImgResult = ProductFormSchema.safeParse(missingColorImageProduct);
-  assert.equal(missingImgResult.success, false, "Product missing image for selected color must fail");
+  const missingImgResult = ProductFormSchema.safeParse(
+    missingColorImageProduct,
+  );
+  assert.equal(
+    missingImgResult.success,
+    false,
+    "Product missing image for selected color must fail",
+  );
   assert.match(
     missingImgResult.error?.issues[0]?.message || "",
     /Image is required for each selected color/,
@@ -49,15 +60,24 @@ async function runSchemaTests() {
   // B. Price <= 0
   const zeroPriceProduct = { ...validProduct, price: 0 };
   const zeroPriceResult = ProductFormSchema.safeParse(zeroPriceProduct);
-  assert.equal(zeroPriceResult.success, false, "Product with price 0 must fail");
+  assert.equal(
+    zeroPriceResult.success,
+    false,
+    "Product with price 0 must fail",
+  );
 
   // C. Short description exceeding 60 characters
   const longDescProduct = {
     ...validProduct,
-    shortDescription: "This short description exceeds the maximum sixty character length limit by far!",
+    shortDescription:
+      "This short description exceeds the maximum sixty character length limit by far!",
   };
   const longDescResult = ProductFormSchema.safeParse(longDescProduct);
-  assert.equal(longDescResult.success, false, "Short description > 60 chars must fail");
+  assert.equal(
+    longDescResult.success,
+    false,
+    "Short description > 60 chars must fail",
+  );
 
   // D. Empty size array
   const noSizeProduct = { ...validProduct, sizes: [] };
@@ -79,10 +99,18 @@ async function runSchemaTests() {
   console.log("4. Testing ShipmentStatusSchema State Machine...");
   for (const status of ShipmentStatusEnum) {
     const parseResult = ShipmentStatusSchema.safeParse(status);
-    assert.equal(parseResult.success, true, `Status '${status}' should be a valid shipment status`);
+    assert.equal(
+      parseResult.success,
+      true,
+      `Status '${status}' should be a valid shipment status`,
+    );
   }
   const invalidStatusResult = ShipmentStatusSchema.safeParse("UNKNOWN_STATE");
-  assert.equal(invalidStatusResult.success, false, "Unknown shipment status must be rejected");
+  assert.equal(
+    invalidStatusResult.success,
+    false,
+    "Unknown shipment status must be rejected",
+  );
   console.log("✓ ShipmentStatusSchema all 11 lifecycle statuses verified");
 
   // 5. ShippingAddressSnapshotSchema
@@ -97,12 +125,19 @@ async function runSchemaTests() {
   const parsedAddress = ShippingAddressSnapshotSchema.safeParse(validAddress);
   assert.equal(parsedAddress.success, true);
   if (parsedAddress.success) {
-    assert.equal(parsedAddress.data.country, "PK", "Default country should be PK");
+    assert.equal(
+      parsedAddress.data.country,
+      "PK",
+      "Default country should be PK",
+    );
   }
 
   // Missing phone number
   const noPhoneAddress = { ...validAddress, phone: "" };
-  assert.equal(ShippingAddressSnapshotSchema.safeParse(noPhoneAddress).success, false);
+  assert.equal(
+    ShippingAddressSnapshotSchema.safeParse(noPhoneAddress).success,
+    false,
+  );
   console.log("✓ ShippingAddressSnapshotSchema verified");
 
   // 6. ShippingRateRequestSchema
@@ -121,8 +156,13 @@ async function runSchemaTests() {
     city: "Lahore",
     items: [{ productId: "p1", quantity: -1 }],
   };
-  assert.equal(ShippingRateRequestSchema.safeParse(invalidRateReq).success, false);
-  console.log("✓ ShippingRateRequestSchema positive integer quantities verified");
+  assert.equal(
+    ShippingRateRequestSchema.safeParse(invalidRateReq).success,
+    false,
+  );
+  console.log(
+    "✓ ShippingRateRequestSchema positive integer quantities verified",
+  );
 
   console.log("\n=======================================================");
   console.log(" All Domain Schema SQA Test Cases Passed Successfully! ");

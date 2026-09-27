@@ -1,5 +1,10 @@
 import { userRepository } from "../repositories/user.repository.js";
-import { getCached, setCached, invalidateUserCache, UserCacheKeys } from "../cache/user-cache.js";
+import {
+  getCached,
+  setCached,
+  invalidateUserCache,
+  UserCacheKeys,
+} from "../cache/user-cache.js";
 import { publishUserEvent } from "../publishers/user.publisher.js";
 import { userMetrics, logger } from "../observability/metrics.js";
 import type { UpdateUserAccountInput } from "@repo/types";
@@ -23,10 +28,15 @@ export class UserService {
 
       userMetrics.usersCreated.inc();
 
-      await publishUserEvent("user.created", user.id, {
-        email: user.email,
-        authUserId: user.authUserId,
-      }, user.authUserId);
+      await publishUserEvent(
+        "user.created",
+        user.id,
+        {
+          email: user.email,
+          authUserId: user.authUserId,
+        },
+        user.authUserId,
+      );
     }
 
     return user;
@@ -62,11 +72,16 @@ export class UserService {
     userMetrics.usersUpdated.inc();
     await invalidateUserCache(user.id, authUserId);
 
-    await publishUserEvent("user.updated", user.id, {
-      fields: Object.keys(input),
-      email: updated.email,
-      phone: updated.phone,
-    }, authUserId);
+    await publishUserEvent(
+      "user.updated",
+      user.id,
+      {
+        fields: Object.keys(input),
+        email: updated.email,
+        phone: updated.phone,
+      },
+      authUserId,
+    );
 
     return updated;
   }
@@ -82,13 +97,22 @@ export class UserService {
 
     await invalidateUserCache(user.id, authUserId);
 
-    await publishUserEvent("user.deletion_requested", user.id, {
-      requestedAt: new Date().toISOString(),
-      email: user.email,
-    }, authUserId);
+    await publishUserEvent(
+      "user.deletion_requested",
+      user.id,
+      {
+        requestedAt: new Date().toISOString(),
+        email: user.email,
+      },
+      authUserId,
+    );
 
     logger.info(`User deletion requested for userId: ${user.id}`);
-    return { success: true, message: "Account deletion requested successfully", status: updated.status };
+    return {
+      success: true,
+      message: "Account deletion requested successfully",
+      status: updated.status,
+    };
   }
 
   async adminListUsers(params: {
@@ -120,22 +144,32 @@ export class UserService {
   }
 
   async adminGetUserById(id: string) {
-    return userRepository.findById(id);
+    const user = await userRepository.findById(id);
+    if (user) return user;
+    return userRepository.findByAuthUserId(id);
   }
 
   async adminUpdateUserStatus(id: string, status: UserStatus) {
-    const user = await userRepository.findById(id);
+    let user = await userRepository.findById(id);
+    if (!user) {
+      user = await userRepository.findByAuthUserId(id);
+    }
     if (!user) {
       throw new Error("User not found");
     }
 
-    const updated = await userRepository.updateStatus(id, status);
+    const updated = await userRepository.updateStatus(user.id, status);
     await invalidateUserCache(user.id, user.authUserId);
 
-    await publishUserEvent("user.updated", user.id, {
-      status,
-      updatedBy: "admin",
-    }, user.authUserId);
+    await publishUserEvent(
+      "user.updated",
+      user.id,
+      {
+        status,
+        updatedBy: "admin",
+      },
+      user.authUserId,
+    );
 
     return updated;
   }

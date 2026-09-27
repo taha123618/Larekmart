@@ -15,7 +15,9 @@ export function globalErrorHandler(
     }));
 
     void reply.status(400).send({
-      message: "Validation failed: " + formattedErrors.map(e => `${e.field}: ${e.message}`).join(", "),
+      message:
+        "Validation failed: " +
+        formattedErrors.map((e) => `${e.field}: ${e.message}`).join(", "),
       errors: formattedErrors,
     });
     return;

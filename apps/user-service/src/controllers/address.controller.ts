@@ -25,10 +25,15 @@ export class AddressController {
     }
 
     const params = request.params as { addressId: string };
-    const address = await addressService.getAddressById(user.id, params.addressId);
+    const address = await addressService.getAddressById(
+      user.id,
+      params.addressId,
+    );
 
     if (!address) {
-      return reply.status(404).send({ message: "Address not found or does not belong to you" });
+      return reply
+        .status(404)
+        .send({ message: "Address not found or does not belong to you" });
     }
 
     return reply.status(200).send(address);
@@ -43,7 +48,11 @@ export class AddressController {
     }
 
     const body = CreateAddressSchema.parse(request.body);
-    const address = await addressService.createAddress(user.id, body, authUserId);
+    const address = await addressService.createAddress(
+      user.id,
+      body,
+      authUserId,
+    );
 
     return reply.status(201).send(address);
   }
@@ -59,9 +68,16 @@ export class AddressController {
     const params = request.params as { addressId: string };
     const body = UpdateAddressSchema.parse(request.body);
 
-    const updated = await addressService.updateAddress(user.id, params.addressId, body, authUserId);
+    const updated = await addressService.updateAddress(
+      user.id,
+      params.addressId,
+      body,
+      authUserId,
+    );
     if (!updated) {
-      return reply.status(404).send({ message: "Address not found or does not belong to you" });
+      return reply
+        .status(404)
+        .send({ message: "Address not found or does not belong to you" });
     }
 
     return reply.status(200).send(updated);
@@ -76,13 +92,21 @@ export class AddressController {
     }
 
     const params = request.params as { addressId: string };
-    const deleted = await addressService.deleteAddress(user.id, params.addressId, authUserId);
+    const deleted = await addressService.deleteAddress(
+      user.id,
+      params.addressId,
+      authUserId,
+    );
 
     if (!deleted) {
-      return reply.status(404).send({ message: "Address not found or does not belong to you" });
+      return reply
+        .status(404)
+        .send({ message: "Address not found or does not belong to you" });
     }
 
-    return reply.status(200).send({ message: "Address deleted successfully", id: params.addressId });
+    return reply
+      .status(200)
+      .send({ message: "Address deleted successfully", id: params.addressId });
   }
 }
 

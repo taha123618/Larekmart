@@ -21,10 +21,21 @@ import EditUser from "@/components/EditUser";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AppLineChart from "@/components/AppLineChart";
 import { auth, User } from "@clerk/nextjs/server";
+import { fetchAdminUserDetail } from "@/services/user.service";
+import type { UserDetailResponse } from "@repo/types";
+import { MapPin, CheckCircle, Bell, Settings } from "lucide-react";
 
-const getData = async (id: string): Promise<User | null> => {
+const getData = async (
+  id: string,
+): Promise<{
+  clerkUser: User | null;
+  userDetail: UserDetailResponse | null;
+}> => {
   const { getToken } = await auth();
   const token = await getToken();
+  let clerkUser: User | null = null;
+  let userDetail: UserDetailResponse | null = null;
+
   try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users/${id}`,
@@ -34,12 +45,18 @@ const getData = async (id: string): Promise<User | null> => {
         },
       },
     );
-    const data = await res.json();
-    return data;
+    if (res.ok) {
+      clerkUser = await res.json();
+    }
   } catch (err) {
-    console.log(err);
-    return null;
+    console.log("Error fetching user from auth-service:", err);
   }
+
+  if (token) {
+    userDetail = await fetchAdminUserDetail(token, id);
+  }
+
+  return { clerkUser, userDetail };
 };
 
 const SingleUserPage = async ({
@@ -48,9 +65,9 @@ const SingleUserPage = async ({
   params: Promise<{ id: string }>;
 }) => {
   const { id } = await params;
-  const data = await getData(id);
+  const { clerkUser: data, userDetail } = await getData(id);
 
-  if (!data) {
+  if (!data && !userDetail) {
     return <div className="">User not found!</div>;
   }
 
@@ -144,10 +161,17 @@ const SingleUserPage = async ({
           <div className="bg-primary-foreground p-4 rounded-lg space-y-2">
             <div className="flex items-center gap-2">
               <Avatar className="size-12">
-                <AvatarImage src={data.imageUrl} />
+                <AvatarImage
+                  src={
+                    data?.imageUrl ||
+                    userDetail?.profile?.avatarUrl ||
+                    undefined
+                  }
+                />
                 <AvatarFallback>
                   {data?.firstName?.charAt(0) ||
-                    data?.username?.charAt(0) ||
+                    userDetail?.profile?.firstName?.charAt(0) ||
+                    data?.username ||
                     "-"}
                 </AvatarFallback>
               </Avatar>
@@ -172,7 +196,26 @@ const SingleUserPage = async ({
                 <SheetTrigger asChild>
                   <Button>Edit User</Button>
                 </SheetTrigger>
-                <EditUser />
+                <EditUser
+                  userId={id}
+                  initialStatus={userDetail?.status || "ACTIVE"}
+                  fullName={
+                    userDetail?.profile?.displayName ||
+                    (data?.firstName
+                      ? data.firstName + " " + (data.lastName || "")
+                      : "")
+                  }
+                  email={
+                    data?.emailAddresses?.[0]?.emailAddress ||
+                    userDetail?.email ||
+                    ""
+                  }
+                  phone={
+                    data?.phoneNumbers?.[0]?.phoneNumber ||
+                    userDetail?.phone ||
+                    ""
+                  }
+                />
               </Sheet>
             </div>
             <div className="space-y-4 mt-4">
@@ -186,31 +229,130 @@ const SingleUserPage = async ({
                 <span className="font-bold">Full name:</span>
                 <span>
                   {data?.firstName + " " + data?.lastName ||
+                    userDetail?.profile?.displayName ||
                     data?.username ||
                     "-"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-bold">Email:</span>
-                <span>{data.emailAddresses[0]?.emailAddress || "-"}</span>
+                <span>
+                  {data?.emailAddresses?.[0]?.emailAddress ||
+                    userDetail?.email ||
+                    "-"}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-bold">Phone:</span>
-                <span>{data.phoneNumbers[0]?.phoneNumber || "-"}</span>
+                <span>
+                  {data?.phoneNumbers?.[0]?.phoneNumber ||
+                    userDetail?.phone ||
+                    "-"}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-bold">Role:</span>
-                <span>{String(data.publicMetadata?.role) || "user"}</span>
+                <span>{String(data?.publicMetadata?.role) || "user"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-bold">Status:</span>
-                <span>{data.banned ? "banned" : "active"}</span>
+                <span
+                  className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                    (userDetail?.status ||
+                      (data?.banned ? "BANNED" : "ACTIVE")) === "ACTIVE"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {userDetail?.status || (data?.banned ? "BANNED" : "ACTIVE")}
+                </span>
               </div>
             </div>
             <p className="text-sm text-muted-foreground mt-4">
-              Joined on {new Date(data.createdAt).toLocaleDateString("en-US")}
+              Joined on{" "}
+              {data?.createdAt
+                ? new Date(data.createdAt).toLocaleDateString("en-US")
+                : userDetail?.createdAt
+                  ? new Date(userDetail.createdAt).toLocaleDateString("en-US")
+                  : "-"}
             </p>
           </div>
+
+          {/* CUSTOMER ADDRESSES CONTAINER (from user-service) */}
+          <div className="bg-primary-foreground p-4 rounded-lg space-y-3">
+            <h1 className="text-xl font-semibold flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-gray-500" />
+              Saved Addresses ({userDetail?.addresses?.length || 0})
+            </h1>
+            {!userDetail?.addresses || userDetail.addresses.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No delivery addresses registered yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {userDetail.addresses.map((addr) => (
+                  <div
+                    key={addr.id}
+                    className="p-3 bg-secondary rounded-md text-xs space-y-1"
+                  >
+                    <div className="flex items-center justify-between font-semibold">
+                      <span>{addr.recipientName}</span>
+                      {addr.isDefault && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-green-200 text-green-900 font-bold">
+                          Default
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-muted-foreground">{addr.addressLine1}</p>
+                    <p className="text-muted-foreground">
+                      {addr.city}, {addr.state} {addr.postalCode} (
+                      {addr.country})
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* CUSTOMER PREFERENCES CONTAINER (from user-service) */}
+          {userDetail?.preferences && (
+            <div className="bg-primary-foreground p-4 rounded-lg space-y-2 text-xs">
+              <h1 className="text-xl font-semibold flex items-center gap-2 mb-3">
+                <Bell className="w-5 h-5 text-gray-500" />
+                Customer Preferences
+              </h1>
+              <div className="flex justify-between py-1 border-b border-secondary">
+                <span className="text-muted-foreground">Language:</span>
+                <span className="font-semibold uppercase">
+                  {userDetail.preferences.preferredLanguage}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-secondary">
+                <span className="text-muted-foreground">Currency:</span>
+                <span className="font-semibold uppercase">
+                  {userDetail.preferences.currency}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-secondary">
+                <span className="text-muted-foreground">Marketing Email:</span>
+                <span className="font-semibold">
+                  {userDetail.preferences.marketingEmail
+                    ? "Enabled"
+                    : "Disabled"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-muted-foreground">
+                  Push Notifications:
+                </span>
+                <span className="font-semibold">
+                  {userDetail.preferences.pushNotifications
+                    ? "Enabled"
+                    : "Disabled"}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
         {/* RIGHT */}
         <div className="w-full xl:w-2/3 space-y-6">

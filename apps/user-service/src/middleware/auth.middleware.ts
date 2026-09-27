@@ -37,7 +37,9 @@ export const shouldBeAdmin = async (
 
   const claims = auth.sessionClaims as CustomJwtSessionClaims;
   if (claims?.metadata?.role !== "admin") {
-    return reply.status(403).send({ message: "Forbidden: Admin role required!" });
+    return reply
+      .status(403)
+      .send({ message: "Forbidden: Admin role required!" });
   }
 
   request.authUserId = auth.userId;

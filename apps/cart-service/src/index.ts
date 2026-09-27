@@ -18,7 +18,10 @@ import {
   handleProductDeleted,
 } from "./consumers/product.consumer.js";
 import { handleInventoryAdjusted } from "./consumers/inventory.consumer.js";
-import { handleOrderCreated } from "./consumers/order.consumer.js";
+import {
+  handleOrderCreated,
+  handleUserDeleted,
+} from "./consumers/order.consumer.js";
 import {
   startCartExpirationWorker,
   stopCartExpirationWorker,
@@ -132,6 +135,12 @@ export const startServer = async (): Promise<void> => {
           topicName: "payment-successful",
           topicHandler: async (msg) => {
             if (msg.value) await handleOrderCreated(msg.value);
+          },
+        },
+        {
+          topicName: "user.deleted",
+          topicHandler: async (msg) => {
+            if (msg.value) await handleUserDeleted(msg.value);
           },
         },
       ]);
