@@ -50,10 +50,9 @@ export const shouldBeAdmin = async (
 
 function safeTimingCompare(a: string, b: string): boolean {
   try {
-    const bufA = Buffer.from(a);
-    const bufB = Buffer.from(b);
-    if (bufA.length !== bufB.length) return false;
-    return crypto.timingSafeEqual(bufA, bufB);
+    const hashA = crypto.createHash("sha256").update(a).digest();
+    const hashB = crypto.createHash("sha256").update(b).digest();
+    return crypto.timingSafeEqual(hashA, hashB);
   } catch {
     return false;
   }

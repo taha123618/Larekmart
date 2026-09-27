@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import type { Context, Next } from "koa";
 import { env } from "../config/env.js";
 
@@ -13,8 +14,22 @@ export async function requireAdminOrInternal(
   const providedSecret =
     ctx.headers["x-internal-secret"] || ctx.headers["X-Internal-Secret"];
 
-  if (internalSecret && providedSecret === internalSecret) {
-    return next();
+  if (internalSecret && typeof providedSecret === "string") {
+    try {
+      const hashProvided = crypto
+        .createHash("sha256")
+        .update(providedSecret)
+        .digest();
+      const hashInternal = crypto
+        .createHash("sha256")
+        .update(internalSecret)
+        .digest();
+      if (crypto.timingSafeEqual(hashProvided, hashInternal)) {
+        return next();
+      }
+    } catch {
+      // Fall through to authentication
+    }
   }
 
   const authHeader = ctx.headers["authorization"] as string | undefined;

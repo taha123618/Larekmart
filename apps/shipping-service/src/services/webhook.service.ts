@@ -26,10 +26,9 @@ export class WebhookService {
     const secret = process.env.WEBHOOK_SECRET || env.WEBHOOK_SECRET;
     if (!secret) return false;
     try {
-      const sigBuf = Buffer.from(signature);
-      const secretBuf = Buffer.from(secret);
-      if (sigBuf.length !== secretBuf.length) return false;
-      return crypto.timingSafeEqual(sigBuf, secretBuf);
+      const sigHash = crypto.createHash("sha256").update(signature).digest();
+      const secretHash = crypto.createHash("sha256").update(secret).digest();
+      return crypto.timingSafeEqual(sigHash, secretHash);
     } catch {
       return false;
     }

@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { shouldBeAdmin, shouldBeUser } from "../middleware/authMiddleware";
-import { Order } from "@repo/order-db";
+import { Order, mongoose } from "@repo/order-db";
 import { startOfMonth, subMonths } from "date-fns";
-import { OrderChartType } from "@repo/types";
+import { OrderChartType, CreateCodOrderSchema } from "@repo/types";
 import { createLogger, measureAsync } from "@repo/monitoring";
 import {
   getCachedOrderChart,
@@ -33,6 +33,9 @@ export const orderRoute = async (fastify: FastifyInstance) => {
     { preHandler: shouldBeUser },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        return reply.status(400).send({ message: "Invalid order ID format" });
+      }
       const order = await Order.findById(id);
       if (!order) {
         return reply.status(404).send({ message: "Order not found" });
@@ -53,35 +56,15 @@ export const orderRoute = async (fastify: FastifyInstance) => {
     "/orders/cod",
     { preHandler: shouldBeUser },
     async (request, reply) => {
-      const body = request.body as {
-        email: string;
-        amount: number;
-        carrier?: string;
-        serviceType?: string;
-        shippingRateAmount?: number;
-        codFee?: number;
-        shippingAddress: {
-          fullName: string;
-          phone: string;
-          addressLine1: string;
-          addressLine2?: string | null;
-          city: string;
-          state?: string | null;
-          postalCode: string;
-          country: string;
-        };
-        products: {
-          name: string;
-          quantity: number;
-          price: number;
-        }[];
-      };
-
-      if (!body.email || !body.amount || !body.shippingAddress) {
-        return reply
-          .status(400)
-          .send({ message: "Missing required order fields" });
+      const parsed = CreateCodOrderSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          message: "Invalid order payload",
+          errors: parsed.error.flatten().fieldErrors,
+        });
       }
+
+      const body = parsed.data;
 
       const newOrder = new Order({
         userId: request.userId,

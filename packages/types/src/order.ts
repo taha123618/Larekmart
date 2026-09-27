@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { OrderSchemaType } from "@repo/order-db";
 
 export type OrderType = OrderSchemaType & {
@@ -70,3 +71,33 @@ export type OrderCreatedType = {
   } | null;
   products?: unknown;
 };
+
+export const CreateCodOrderSchema = z.object({
+  email: z.string().email(),
+  amount: z.number().positive(),
+  carrier: z.string().optional(),
+  serviceType: z.string().optional(),
+  shippingRateAmount: z.number().nonnegative().optional(),
+  codFee: z.number().nonnegative().optional(),
+  shippingAddress: z.object({
+    fullName: z.string().min(1).max(200),
+    phone: z.string().min(1).max(50),
+    addressLine1: z.string().min(1).max(200),
+    addressLine2: z.string().max(200).nullable().optional(),
+    city: z.string().min(1).max(100),
+    state: z.string().max(100).nullable().optional(),
+    postalCode: z.string().min(1).max(20),
+    country: z.string().min(1).max(100),
+  }),
+  products: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        quantity: z.number().int().positive(),
+        price: z.number().positive(),
+      }),
+    )
+    .min(1),
+});
+
+export type CreateCodOrderInput = z.infer<typeof CreateCodOrderSchema>;

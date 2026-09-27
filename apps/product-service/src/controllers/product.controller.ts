@@ -52,19 +52,24 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const productId = Number(id);
+  if (!Number.isInteger(productId) || productId <= 0) {
+    return res.status(400).json({ message: "Invalid product ID format" });
+  }
+
   const data: Prisma.ProductUpdateInput = req.body;
 
   const { result: updatedProduct } = await measureAsync(
     "db.product.update",
     async () => {
       return await prisma.product.update({
-        where: { id: Number(id) },
+        where: { id: productId },
         data,
       });
     },
   );
 
-  logger.info(`Product updated successfully with ID: ${id}`);
+  logger.info(`Product updated successfully with ID: ${productId}`);
   publishEvent("product.updated", updatedProduct);
   await invalidateCatalogCache();
   return res.status(200).json(updatedProduct);
@@ -72,18 +77,22 @@ export const updateProduct = async (req: Request, res: Response) => {
 
 export const deleteProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const productId = Number(id);
+  if (!Number.isInteger(productId) || productId <= 0) {
+    return res.status(400).json({ message: "Invalid product ID format" });
+  }
 
   const { result: deletedProduct } = await measureAsync(
     "db.product.delete",
     async () => {
       return await prisma.product.delete({
-        where: { id: Number(id) },
+        where: { id: productId },
       });
     },
   );
 
-  logger.info(`Product deleted with ID: ${id}`);
-  publishEvent("product.deleted", Number(id));
+  logger.info(`Product deleted with ID: ${productId}`);
+  publishEvent("product.deleted", productId);
   await invalidateCatalogCache();
 
   return res.status(200).json(deletedProduct);
@@ -141,6 +150,9 @@ export const getProducts = async (req: Request, res: Response) => {
 export const getProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
   const productId = Number(id);
+  if (!Number.isInteger(productId) || productId <= 0) {
+    return res.status(400).json({ message: "Invalid product ID format" });
+  }
 
   const cached = await getCachedProduct(productId);
   if (cached) return res.status(200).json(cached);

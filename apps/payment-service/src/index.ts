@@ -23,9 +23,28 @@ health.register("memory", createMemoryCheck(512 * 1024 * 1024), {
   critical: false,
 });
 
+const allowedOrigins = [process.env.CLIENT_URL || "http://localhost:3002"];
+
 const app = new Hono();
+app.use(
+  "*",
+  cors({
+    origin: (origin) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return origin || allowedOrigins[0] || "http://localhost:3002";
+      }
+      return null;
+    },
+    credentials: true,
+  }),
+);
+app.use("*", async (c, next) => {
+  await next();
+  c.res.headers.set("X-Content-Type-Options", "nosniff");
+  c.res.headers.set("X-Frame-Options", "DENY");
+  c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+});
 app.use("*", clerkMiddleware());
-app.use("*", cors({ origin: ["http://localhost:3002"] }));
 
 // HTTP Request Monitoring Middleware
 app.use("*", async (c, next) => {
