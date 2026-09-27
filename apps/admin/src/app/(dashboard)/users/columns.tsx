@@ -14,18 +14,13 @@ import { cn } from "@/lib/utils";
 import type { User } from "@clerk/nextjs/server";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
-// export type User = {
-//   id: string;
-//   avatar: string;
-//   fullName: string;
-//   email: string;
-//   status: "active" | "inactive";
-// };
+export type UserWithServiceStatus = User & {
+  userServiceStatus?: string;
+};
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<UserWithServiceStatus>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -91,7 +86,7 @@ export const columns: ColumnDef<User>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const user = row.original as any;
+      const user = row.original;
       const status =
         user.userServiceStatus || (user.banned ? "banned" : "active");
 

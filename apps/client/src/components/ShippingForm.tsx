@@ -16,7 +16,7 @@ import {
   BookmarkCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { fetchShippingRates } from "@/services/shipping.service";
 import { fetchUserAddresses, createUserAddress } from "@/services/user.service";
@@ -92,6 +92,20 @@ const ShippingForm = ({
   const city = watch("city");
   const router = useRouter();
 
+  const handleSelectSavedAddress = useCallback(
+    (addr: AddressResponse) => {
+      setSelectedAddressId(addr.id);
+      setValue("name", addr.recipientName);
+      setValue("phone", addr.phone);
+      setValue("address", addr.addressLine1);
+      setValue("city", addr.city);
+      if (clerkUser?.primaryEmailAddress?.emailAddress) {
+        setValue("email", clerkUser.primaryEmailAddress.emailAddress);
+      }
+    },
+    [clerkUser, setValue],
+  );
+
   // Load saved user addresses from user-service
   useEffect(() => {
     if (!isSignedIn) return;
@@ -117,7 +131,7 @@ const ShippingForm = ({
     return () => {
       isCancelled = true;
     };
-  }, [isSignedIn]);
+  }, [isSignedIn, getToken, handleSelectSavedAddress]);
 
   // Pre-fill user details from Clerk if available
   useEffect(() => {
@@ -131,17 +145,6 @@ const ShippingForm = ({
       }
     }
   }, [clerkUser, setValue]);
-
-  const handleSelectSavedAddress = (addr: AddressResponse) => {
-    setSelectedAddressId(addr.id);
-    setValue("name", addr.recipientName);
-    setValue("phone", addr.phone);
-    setValue("address", addr.addressLine1);
-    setValue("city", addr.city);
-    if (clerkUser?.primaryEmailAddress?.emailAddress) {
-      setValue("email", clerkUser.primaryEmailAddress.emailAddress);
-    }
-  };
 
   // Fetch real-time shipping rates when city or COD option changes
   useEffect(() => {

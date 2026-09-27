@@ -1,5 +1,3 @@
-import CardList from "@/components/CardList";
-import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -23,7 +21,7 @@ import AppLineChart from "@/components/AppLineChart";
 import { auth, User } from "@clerk/nextjs/server";
 import { fetchAdminUserDetail } from "@/services/user.service";
 import type { UserDetailResponse } from "@repo/types";
-import { MapPin, CheckCircle, Bell, Settings } from "lucide-react";
+import { MapPin, Bell } from "lucide-react";
 
 const getData = async (
   id: string,

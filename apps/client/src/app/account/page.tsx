@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -19,7 +19,6 @@ import {
   Globe,
   DollarSign,
   Loader2,
-  Star,
 } from "lucide-react";
 import {
   fetchCurrentUser,
@@ -68,7 +67,7 @@ export default function AccountPage() {
   const [newCity, setNewCity] = useState("");
   const [newState, setNewState] = useState("");
   const [newPostalCode, setNewPostalCode] = useState("");
-  const [newCountry, setNewCountry] = useState("PK");
+  const newCountry = "PK";
   const [newAddressType, setNewAddressType] = useState<
     "SHIPPING" | "BILLING" | "BOTH"
   >("SHIPPING");
@@ -92,18 +91,7 @@ export default function AccountPage() {
 
   const [isSaving, startSaving] = useTransition();
 
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      router.push("/sign-in");
-      return;
-    }
-
-    if (isSignedIn) {
-      loadUserData();
-    }
-  }, [isLoaded, isSignedIn]);
-
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     try {
       setLoading(true);
       const token = await getToken();
@@ -142,7 +130,10 @@ export default function AccountPage() {
         if (userRes.settings) {
           setTwoFactorPrompt(userRes.settings.twoFactorPrompt ?? false);
           setProfileVisibility(
-            (userRes.settings.profileVisibility as any) || "public",
+            (userRes.settings.profileVisibility as
+              | "public"
+              | "private"
+              | "contacts") || "public",
           );
           setOrderUpdatesEmail(userRes.settings.orderUpdatesEmail ?? true);
           setOrderUpdatesSms(userRes.settings.orderUpdatesSms ?? true);
@@ -156,7 +147,18 @@ export default function AccountPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken, clerkUser]);
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push("/sign-in");
+      return;
+    }
+
+    if (isSignedIn) {
+      loadUserData();
+    }
+  }, [isLoaded, isSignedIn, loadUserData, router]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,8 +178,10 @@ export default function AccountPage() {
         await updateUserProfile(token, payload);
         toast.success("Profile updated successfully!");
         await loadUserData();
-      } catch (err: any) {
-        toast.error(err.message || "Failed to update profile");
+      } catch (err: unknown) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to update profile",
+        );
       }
     });
   };
@@ -220,8 +224,10 @@ export default function AccountPage() {
         setNewPostalCode("");
         setNewIsDefault(false);
         await loadUserData();
-      } catch (err: any) {
-        toast.error(err.message || "Failed to save address");
+      } catch (err: unknown) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to save address",
+        );
       }
     });
   };
@@ -257,8 +263,10 @@ export default function AccountPage() {
 
         await updateUserPreferences(token, payload);
         toast.success("Preferences updated!");
-      } catch (err: any) {
-        toast.error(err.message || "Failed to update preferences");
+      } catch (err: unknown) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to update preferences",
+        );
       }
     });
   };
@@ -279,8 +287,10 @@ export default function AccountPage() {
 
         await updateUserSettings(token, payload);
         toast.success("Settings updated!");
-      } catch (err: any) {
-        toast.error(err.message || "Failed to update settings");
+      } catch (err: unknown) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to update settings",
+        );
       }
     });
   };
@@ -337,7 +347,7 @@ export default function AccountPage() {
           </p>
           {bio && (
             <p className="text-xs text-gray-300 mt-2 max-w-xl italic">
-              "{bio}"
+              &ldquo;{bio}&rdquo;
             </p>
           )}
         </div>
@@ -657,7 +667,9 @@ export default function AccountPage() {
                       <select
                         value={newAddressType}
                         onChange={(e) =>
-                          setNewAddressType(e.target.value as any)
+                          setNewAddressType(
+                            e.target.value as "SHIPPING" | "BILLING" | "BOTH",
+                          )
                         }
                         className="w-full px-3.5 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
                       >
@@ -959,7 +971,11 @@ export default function AccountPage() {
               </p>
               <select
                 value={profileVisibility}
-                onChange={(e) => setProfileVisibility(e.target.value as any)}
+                onChange={(e) =>
+                  setProfileVisibility(
+                    e.target.value as "public" | "private" | "contacts",
+                  )
+                }
                 className="w-full px-3.5 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
               >
                 <option value="public">

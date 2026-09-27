@@ -108,8 +108,8 @@ const EditUser = ({
       } else {
         setErrorMsg("Failed to update user status in user-service");
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }

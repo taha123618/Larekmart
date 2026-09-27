@@ -1,9 +1,12 @@
 import { auth, type User } from "@clerk/nextjs/server";
-import { columns } from "./columns";
+import { columns, type UserWithServiceStatus } from "./columns";
 import { DataTable } from "./data-table";
 import { fetchAdminUsers } from "@/services/user.service";
 
-const getData = async (): Promise<{ data: any[]; totalCount: number }> => {
+const getData = async (): Promise<{
+  data: UserWithServiceStatus[];
+  totalCount: number;
+}> => {
   const { getToken } = await auth();
   const token = await getToken();
   try {
@@ -24,7 +27,7 @@ const getData = async (): Promise<{ data: any[]; totalCount: number }> => {
       userSvcRes?.users?.map((u) => [u.authUserId, u]) || [],
     );
 
-    const enriched = clerkUsers.map((cu) => {
+    const enriched: UserWithServiceStatus[] = clerkUsers.map((cu) => {
       const su = userSvcMap.get(cu.id);
       return {
         ...cu,

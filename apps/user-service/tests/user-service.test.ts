@@ -176,6 +176,7 @@ async function runTests() {
 
   await app.close();
   console.log("\n=== ALL USER SERVICE TESTS PASSED SUCCESSFULLY! ===\n");
+  process.exit(0);
 }
 
 runTests().catch((err) => {
