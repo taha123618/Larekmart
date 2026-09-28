@@ -30,6 +30,38 @@ async function runSecurityTests() {
 
   console.log("✓ Webhook signature timingSafeEqual verification verified");
 
+  // 1b. Regression: unsigned webhooks must be rejected in EVERY environment.
+  // The pre-fix code returned true for a missing signature whenever NODE_ENV
+  // was development/test — and NODE_ENV defaults to development.
+  console.log("1b. Testing unsigned-webhook rejection across environments...");
+  for (const envMode of ["development", "test", "production"]) {
+    process.env.NODE_ENV = envMode;
+    const unsigned = WebhookService.verifySignature("tcs", undefined);
+    assert.equal(
+      unsigned,
+      false,
+      `Unsigned webhook must be rejected in ${envMode} mode`,
+    );
+  }
+
+  // 1c. Regression: the schema-default placeholder secret must never
+  // authenticate, in any environment.
+  for (const envMode of ["development", "test", "production"]) {
+    process.env.NODE_ENV = envMode;
+    const placeholder = WebhookService.verifySignature(
+      "tcs",
+      "shipping_wh_secret_change_me",
+    );
+    assert.equal(
+      placeholder,
+      false,
+      `Placeholder WEBHOOK_SECRET must be rejected in ${envMode} mode`,
+    );
+  }
+  process.env.NODE_ENV = "production";
+
+  console.log("✓ No fail-open branch exists in any environment");
+
   // 2. Test requireAdminOrInternal Middleware
   console.log("2. Testing requireAdminOrInternal authorization middleware...");
   process.env.INTERNAL_SERVICE_SECRET = "internal_secret_key_abc";

@@ -2,12 +2,69 @@ import { FastifyInstance } from "fastify";
 import { shouldBeAdmin, shouldBeUser } from "../middleware/authMiddleware";
 import { Order, mongoose } from "@repo/order-db";
 import { startOfMonth, subMonths } from "date-fns";
-import { OrderChartType, CreateCodOrderSchema } from "@repo/types";
+import {
+  OrderChartType,
+  CreateCodOrderSchema,
+  type CreateCodOrderInput,
+} from "@repo/types";
 import { createLogger, measureAsync } from "@repo/monitoring";
 import {
   getCachedOrderChart,
   setCachedOrderChart,
 } from "../cache/order-chart-cache";
+
+/**
+ * Resolves server-authoritative unit prices (in paisa) for COD line items.
+ *
+ * The client-declared per-product price is ignored; the product database is
+ * the only price authority. Throws when any productId is unknown to the
+ * catalog so a manipulated payload cannot create a mispriced order.
+ */
+const getServerProductPricesPaisa = async (
+  productIds: number[],
+): Promise<Map<number, number>> => {
+  const uniqueIds = Array.from(new Set(productIds));
+
+  const { PrismaClient } = await import("@repo/product-db");
+  const prisma = new PrismaClient();
+  try {
+    const products = await prisma.product.findMany({
+      where: { id: { in: uniqueIds } },
+      select: { id: true, price: true },
+    });
+
+    const prices = new Map<number, number>();
+    for (const product of products) {
+      prices.set(product.id, product.price * 100);
+    }
+    return prices;
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+/**
+ * Recomputes the authoritative COD total (paisa) from server prices and the
+ * declared order components: items + shipping + COD fee - discount + tax.
+ */
+export const computeCodOrderTotalPaisa = (
+  body: CreateCodOrderInput,
+  serverPrices: Map<number, number>,
+): number => {
+  const itemsTotal = body.products.reduce(
+    (sum, product) =>
+      sum + (serverPrices.get(product.productId) ?? 0) * product.quantity,
+    0,
+  );
+  return Math.max(
+    0,
+    itemsTotal +
+      (body.shippingRateAmount ?? 0) +
+      (body.codFee ?? 0) -
+      body.discountTotal +
+      body.taxTotal,
+  );
+};
 
 const logger = createLogger("order-service:routes");
 
@@ -66,16 +123,51 @@ export const orderRoute = async (fastify: FastifyInstance) => {
 
       const body = parsed.data;
 
+      // Price integrity: every line item is priced from the product database
+      // and the total is recomputed server-side. The client-declared amount is
+      // a cross-check only — a mismatch is rejected with 409, and an unknown
+      // productId fails before any order is written.
+      let serverPrices: Map<number, number>;
+      try {
+        serverPrices = await getServerProductPricesPaisa(
+          body.products.map((product) => product.productId),
+        );
+      } catch {
+        return reply.status(502).send({
+          message: "Unable to verify product prices, please retry shortly",
+        });
+      }
+
+      const missingProduct = body.products.find(
+        (product) => !serverPrices.has(product.productId),
+      );
+      if (missingProduct) {
+        return reply.status(409).send({
+          message: "Order contains an unknown product",
+        });
+      }
+
+      const serverAmount = computeCodOrderTotalPaisa(body, serverPrices);
+      if (serverAmount !== body.amount) {
+        return reply.status(409).send({
+          message: "Declared amount does not match server-computed total",
+        });
+      }
+
       const newOrder = new Order({
         userId: request.userId,
         email: body.email,
-        amount: body.amount,
+        amount: serverAmount,
         status: "success",
         paymentMethod: "cod",
         isCod: true,
         carrier: body.carrier || "custom",
         shippingAddress: body.shippingAddress,
-        products: body.products ?? [],
+        products: body.products.map((product) => ({
+          name: String(product.productId),
+          quantity: product.quantity,
+          price: serverPrices.get(product.productId) ?? 0,
+        })),
       });
 
       const saved = await newOrder.save();

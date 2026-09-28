@@ -6,6 +6,7 @@ import {
   ShippingAddressSnapshotSchema,
   ShippingRateRequestSchema,
   ShipmentStatusEnum,
+  CreateCodOrderSchema,
 } from "../src/index.js";
 
 async function runSchemaTests() {
@@ -163,6 +164,56 @@ async function runSchemaTests() {
   console.log(
     "✓ ShippingRateRequestSchema positive integer quantities verified",
   );
+
+  // 7. CreateCodOrderSchema pricing invariants (regression: price integrity)
+  console.log("7. Testing CreateCodOrderSchema pricing invariants...");
+  const validCodOrder = {
+    email: "buyer@example.com",
+    amount: 350030,
+    shippingRateAmount: 20000,
+    codFee: 3000,
+    shippingAddress: {
+      fullName: "Ayesha Khan",
+      phone: "+923001234567",
+      addressLine1: "House 10, St 5",
+      city: "Lahore",
+      postalCode: "54000",
+      country: "PK",
+    },
+    products: [{ productId: 42, quantity: 1, price: 349900 }],
+  };
+  const parsedCod = CreateCodOrderSchema.safeParse(validCodOrder);
+  assert.equal(parsedCod.success, true, "Valid COD order should parse");
+  if (parsedCod.success) {
+    assert.equal(parsedCod.data.discountTotal, 0, "discountTotal defaults to 0");
+    assert.equal(parsedCod.data.taxTotal, 0, "taxTotal defaults to 0");
+  }
+
+  // Non-integer amounts must fail (paisa contract)
+  assert.equal(
+    CreateCodOrderSchema.safeParse({ ...validCodOrder, amount: 3500.5 }).success,
+    false,
+    "Fractional paisa amount must be rejected",
+  );
+
+  // Products without a server product id must fail
+  assert.equal(
+    CreateCodOrderSchema.safeParse({
+      ...validCodOrder,
+      products: [{ quantity: 1, price: 349900 }],
+    }).success,
+    false,
+    "COD product without productId must be rejected",
+  );
+  assert.equal(
+    CreateCodOrderSchema.safeParse({
+      ...validCodOrder,
+      products: [{ productId: 0, quantity: 1 }],
+    }).success,
+    false,
+    "Non-positive productId must be rejected",
+  );
+  console.log("✓ CreateCodOrderSchema paisa + productId invariants verified");
 
   console.log("\n=======================================================");
   console.log(" All Domain Schema SQA Test Cases Passed Successfully! ");

@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "test": "tsx tests/order-security.test.ts",
+    "test": "tsx tests/order-security.test.ts && tsx tests/cod-pricing.test.ts",
     "check-types": "tsc --noEmit",
     "dev": "tsx --env-file=.env --watch src/index.ts"
   },
@@ -25,8 +25,10 @@
     "@repo/kafka": "workspace:*",
     "@repo/monitoring": "workspace:*",
     "@repo/order-db": "workspace:*",
+    "@repo/product-db": "workspace:*",
     "@repo/redis": "workspace:*",
     "date-fns": "^4.1.0",
-    "fastify": "^5.5.0"
+    "fastify": "^5.5.0",
+    "zod": "^4.1.9"
   }
 }

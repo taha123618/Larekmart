@@ -34,6 +34,7 @@ async function main() {
   try {
     await producer.connect();
     console.log("[ShippingService] Kafka producer connected");
+    await consumer.connect();
     await startShippingConsumers();
     console.log(
       "[ShippingService] Kafka consumers started for order and payment events",

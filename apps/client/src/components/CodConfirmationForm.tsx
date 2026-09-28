@@ -17,10 +17,14 @@ export default function CodConfirmationForm({
   shippingForm,
   cart,
   grandTotal,
+  discountTotal,
+  taxTotal,
 }: {
   shippingForm: ShippingFormInputs;
   cart: CartItemType[];
   grandTotal: number;
+  discountTotal: number;
+  taxTotal: number;
 }) {
   const router = useRouter();
   const { getToken, userId } = useAuth();
@@ -64,11 +68,14 @@ export default function CodConfirmationForm({
         headers,
         body: JSON.stringify({
           email: shippingForm.email,
-          amount: Math.round(grandTotal * 100), // in cents/paisa
+          amount: Math.round(grandTotal * 100), // in paisa — verified against
+          // the server-recomputed total (catalog prices + components below).
+          discountTotal: Math.round((discountTotal ?? 0) * 100),
+          taxTotal: Math.round((taxTotal ?? 0) * 100),
           carrier: shippingForm.carrier,
           serviceType: shippingForm.serviceType,
-          shippingRateAmount: shippingAmount,
-          codFee,
+          shippingRateAmount: Math.round(shippingAmount * 100),
+          codFee: Math.round(codFee * 100),
           shippingAddress: {
             fullName: shippingForm.name,
             phone: shippingForm.phone,
@@ -77,7 +84,7 @@ export default function CodConfirmationForm({
             country: "PK",
           },
           products: cart.map((item) => ({
-            name: item.name,
+            productId: Number(item.id),
             quantity: item.quantity,
             price: Math.round(item.price * 100),
           })),

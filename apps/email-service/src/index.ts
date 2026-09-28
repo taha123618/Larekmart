@@ -95,6 +95,7 @@ const start = async () => {
     ]);
   } catch (error) {
     logger.fatal("Email service consumer error", error);
+    process.exit(1);
   }
 };
 

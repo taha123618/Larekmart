@@ -318,6 +318,7 @@ const start = async () => {
       "Analytic Service encountered a critical startup error",
       error,
     );
+    process.exit(1);
   }
 };
 

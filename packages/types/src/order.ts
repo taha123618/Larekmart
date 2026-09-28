@@ -72,9 +72,19 @@ export type OrderCreatedType = {
   products?: unknown;
 };
 
+/**
+ * COD order contract. ALL monetary values are integers in paisa (1/100 PKR).
+ *
+ * `amount` is the client's declared total, kept ONLY as a cross-check: the
+ * server recomputes the authoritative total from catalog prices plus the
+ * declared shipping/COD/discount/tax components and rejects mismatches. The
+ * client-declared per-product `price` fields are ignored for pricing.
+ */
 export const CreateCodOrderSchema = z.object({
   email: z.string().email(),
-  amount: z.number().positive(),
+  amount: z.number().int().positive(),
+  discountTotal: z.number().int().nonnegative().default(0),
+  taxTotal: z.number().int().nonnegative().default(0),
   carrier: z.string().optional(),
   serviceType: z.string().optional(),
   shippingRateAmount: z.number().nonnegative().optional(),
@@ -92,9 +102,10 @@ export const CreateCodOrderSchema = z.object({
   products: z
     .array(
       z.object({
-        name: z.string().min(1),
+        productId: z.coerce.number().int().positive(),
         quantity: z.number().int().positive(),
-        price: z.number().positive(),
+        /** Client-declared unit price in paisa — informational only. */
+        price: z.number().positive().optional(),
       }),
     )
     .min(1),
