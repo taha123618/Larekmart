@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Card, CardContent, CardFooter, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { AnalyticsEventType, OrderType, ProductsType } from "@repo/types";

@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+  PENDING_VERIFICATION
+}
+
+enum AddressType {
+  SHIPPING
+  BILLING
+  BOTH
+}
+
+model User {
+  id          String           @id @default(uuid())
+  authUserId  String           @unique @map("auth_user_id")
+  email       String           @unique
+  phone       String?
+  status      UserStatus       @default(ACTIVE)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  profile     UserProfile?
+  addresses   UserAddress[]
+  preferences UserPreferences?
+  settings    UserSettings?
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model UserProfile {
+  id          String    @id @default(uuid())
+  userId      String    @unique @map("user_id")
+  firstName   String?   @map("first_name")
+  lastName    String?   @map("last_name")
+  displayName String?   @map("display_name")
+  avatarUrl   String?   @map("avatar_url")
+  dateOfBirth DateTime? @map("date_of_birth")
+  gender      String?
+  bio         String?
+  metadata    Json?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserAddress {
+  id            String      @id @default(uuid())
+  userId        String      @map("user_id")
+  type          AddressType @default(SHIPPING)
+  label         String?
+  recipientName String      @map("recipient_name")
+  phone         String
+  addressLine1  String      @map("address_line_1")
+  addressLine2  String?     @map("address_line_2")
+  city          String
+  state         String
+  postalCode    String      @map("postal_code")
+  country       String      @default("US")
+  isDefault     Boolean     @default(false) @map("is_default")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isDefault])
+  @@map("user_addresses")
+}
+
+model UserPreferences {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique @map("user_id")
+  preferredLanguage      String   @default("en") @map("preferred_language")
+  currency               String   @default("USD")
+  timezone               String   @default("UTC")
+  marketingEmail         Boolean  @default(true) @map("marketing_email")
+  marketingSms           Boolean  @default(false) @map("marketing_sms")
+  pushNotifications      Boolean  @default(true) @map("push_notifications")
+  productRecommendations Boolean  @default(true) @map("product_recommendations")
+  metadata               Json?
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model UserSettings {
+  id                 String   @id @default(uuid())
+  userId             String   @unique @map("user_id")
+  twoFactorPrompt    Boolean  @default(false) @map("two_factor_prompt")
+  profileVisibility  String   @default("private") @map("profile_visibility")
+  orderUpdatesEmail  Boolean  @default(true) @map("order_updates_email")
+  orderUpdatesSms    Boolean  @default(false) @map("order_updates_sms")
+  metadata           Json?
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model ProcessedEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique @map("event_id")
+  eventType   String   @map("event_type")
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@index([eventType])
+  @@map("processed_events")
+}

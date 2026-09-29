@@ -4,13 +4,23 @@ import {
   ShippingFormInputs,
   shippingFormSchema,
   ShippingRate,
+  AddressResponse,
 } from "@repo/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Truck, Check, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+  Truck,
+  Check,
+  Loader2,
+  MapPin,
+  BookmarkCheck,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { fetchShippingRates } from "@/services/shipping.service";
+import { fetchUserAddresses, createUserAddress } from "@/services/user.service";
+import { useAuth, useUser } from "@clerk/nextjs";
 
 const getCarrierBadge = (carrier: string) => {
   const c = carrier.toLowerCase();
@@ -47,6 +57,9 @@ const ShippingForm = ({
 }: {
   setShippingForm: (data: ShippingFormInputs) => void;
 }) => {
+  const { isSignedIn, getToken } = useAuth();
+  const { user: clerkUser } = useUser();
+
   const {
     register,
     handleSubmit,
@@ -64,6 +77,12 @@ const ShippingForm = ({
     },
   });
 
+  const [savedAddresses, setSavedAddresses] = useState<AddressResponse[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    null,
+  );
+  const [saveAddressToAccount, setSaveAddressToAccount] =
+    useState<boolean>(false);
   const [availableRates, setAvailableRates] = useState<ShippingRate[]>([]);
   const [loadingRates, setLoadingRates] = useState(false);
   const [selectedRateId, setSelectedRateId] =
@@ -72,6 +91,60 @@ const ShippingForm = ({
 
   const city = watch("city");
   const router = useRouter();
+
+  const handleSelectSavedAddress = useCallback(
+    (addr: AddressResponse) => {
+      setSelectedAddressId(addr.id);
+      setValue("name", addr.recipientName);
+      setValue("phone", addr.phone);
+      setValue("address", addr.addressLine1);
+      setValue("city", addr.city);
+      if (clerkUser?.primaryEmailAddress?.emailAddress) {
+        setValue("email", clerkUser.primaryEmailAddress.emailAddress);
+      }
+    },
+    [clerkUser, setValue],
+  );
+
+  // Load saved user addresses from user-service
+  useEffect(() => {
+    if (!isSignedIn) return;
+    let isCancelled = false;
+    const loadAddresses = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const addrs = await fetchUserAddresses(token);
+        if (!isCancelled && addrs.length > 0) {
+          setSavedAddresses(addrs);
+          // If there is a default address, select and auto-populate it
+          const def = addrs.find((a) => a.isDefault) || addrs[0];
+          if (def) {
+            handleSelectSavedAddress(def);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load user addresses from user-service:", err);
+      }
+    };
+    loadAddresses();
+    return () => {
+      isCancelled = true;
+    };
+  }, [isSignedIn, getToken, handleSelectSavedAddress]);
+
+  // Pre-fill user details from Clerk if available
+  useEffect(() => {
+    if (clerkUser) {
+      if (clerkUser.fullName) setValue("name", clerkUser.fullName);
+      if (clerkUser.primaryEmailAddress?.emailAddress) {
+        setValue("email", clerkUser.primaryEmailAddress.emailAddress);
+      }
+      if (clerkUser.primaryPhoneNumber?.phoneNumber) {
+        setValue("phone", clerkUser.primaryPhoneNumber.phoneNumber);
+      }
+    }
+  }, [clerkUser, setValue]);
 
   // Fetch real-time shipping rates when city or COD option changes
   useEffect(() => {
@@ -132,7 +205,9 @@ const ShippingForm = ({
     setValue("codFee", checked ? (currentRate?.codFee ?? 30) : 0);
   };
 
-  const handleShippingForm: SubmitHandler<ShippingFormInputs> = (data) => {
+  const handleShippingForm: SubmitHandler<ShippingFormInputs> = async (
+    data,
+  ) => {
     const selectedRate = availableRates.find((r) => r.id === selectedRateId);
     const resolvedShippingAmount =
       selectedRate?.amount ??
@@ -141,6 +216,28 @@ const ShippingForm = ({
       ? (selectedRate?.codFee ??
         (typeof data.codFee === "number" ? data.codFee : 30))
       : 0;
+
+    // If customer opted to save this address and is signed in
+    if (saveAddressToAccount && isSignedIn) {
+      try {
+        const token = await getToken();
+        if (token) {
+          await createUserAddress(token, {
+            recipientName: data.name,
+            phone: data.phone,
+            addressLine1: data.address,
+            city: data.city,
+            state: "Province",
+            postalCode: "00000",
+            country: "PK",
+            type: "SHIPPING",
+            isDefault: savedAddresses.length === 0,
+          });
+        }
+      } catch (e) {
+        console.warn("Could not save address to user-service:", e);
+      }
+    }
 
     setShippingForm({
       ...data,
@@ -158,6 +255,45 @@ const ShippingForm = ({
       className="flex flex-col gap-4"
       onSubmit={handleSubmit(handleShippingForm)}
     >
+      {/* Saved Addresses Selector (if signed in and has addresses) */}
+      {isSignedIn && savedAddresses.length > 0 && (
+        <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl mb-1">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-gray-600" />
+              Use Saved Address
+            </span>
+            <span className="text-[11px] text-gray-500">Click to autofill</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {savedAddresses.map((addr) => {
+              const isSelected = selectedAddressId === addr.id;
+              return (
+                <div
+                  key={addr.id}
+                  onClick={() => handleSelectSavedAddress(addr)}
+                  className={`p-2.5 rounded-lg border text-left cursor-pointer transition text-xs ${
+                    isSelected
+                      ? "border-black bg-white ring-1 ring-black shadow-xs"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-semibold text-gray-900 mb-0.5">
+                    <span>{addr.recipientName}</span>
+                    {addr.isDefault && (
+                      <span className="text-[10px] px-1 py-0.2 bg-emerald-100 text-emerald-800 rounded font-bold">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-gray-500 truncate">{addr.addressLine1}</p>
+                  <p className="text-gray-500 font-medium">{addr.city}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-xs text-gray-500 font-medium">
           Name
@@ -237,6 +373,22 @@ const ShippingForm = ({
           <p className="text-xs text-red-500">{errors.city.message}</p>
         )}
       </div>
+
+      {/* SAVE ADDRESS TO ACCOUNT OPTION */}
+      {isSignedIn && (
+        <label className="flex items-center gap-2 py-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={saveAddressToAccount}
+            onChange={(e) => setSaveAddressToAccount(e.target.checked)}
+            className="rounded border-gray-300 text-black focus:ring-black w-4 h-4 cursor-pointer"
+          />
+          <span className="text-xs text-gray-700 font-medium flex items-center gap-1">
+            <BookmarkCheck className="w-3.5 h-3.5 text-gray-500" />
+            Save this address to my account for future orders
+          </span>
+        </label>
+      )}
 
       {/* CASH ON DELIVERY TOGGLE */}
       <div className="mt-2 p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg flex items-center justify-between">

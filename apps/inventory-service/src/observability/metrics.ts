@@ -33,6 +33,13 @@ export const inventoryMetrics = {
     "Total number of inventory reservations expired and released",
   ),
 
+  // Payment verification (Stripe cross-check on payment.successful)
+  paymentVerificationRejectedTotal: createCounter(
+    metrics,
+    "inventory_payment_verification_rejected_total",
+    "Total number of payment.successful events rejected by Stripe paid-session verification",
+  ),
+
   // Stock mutations
   restocksTotal: createCounter(
     metrics,

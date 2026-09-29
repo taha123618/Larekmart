@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SearchBar from "./SearchBar";
-import { Home, Truck } from "lucide-react";
+import { Home, Truck, User } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import ShoppingCartIcon from "./ShoppingCartIcon";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
@@ -41,6 +41,9 @@ const Navbar = () => {
           <SignInButton />
         </SignedOut>
         <SignedIn>
+          <Link href="/account" title="Account & Addresses">
+            <User className="w-4 h-4 text-gray-600 hover:text-black transition" />
+          </Link>
           <ProfileButton />
         </SignedIn>
       </div>

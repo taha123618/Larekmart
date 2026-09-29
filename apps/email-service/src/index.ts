@@ -22,7 +22,22 @@ const start = async () => {
             await sendMail({
               email,
               subject: "Welcome to Larekmart",
-              text: `Welcome ${username}. Your account has been created!`,
+              text: `Welcome ${username || "Customer"}. Your account has been created!`,
+            });
+          }
+        },
+      },
+      {
+        topicName: "user.registered",
+        topicHandler: async (message) => {
+          const { email, firstName, username } = message.value;
+
+          if (email) {
+            logger.info(`Sending welcome email on user.registered to ${email}`);
+            await sendMail({
+              email,
+              subject: "Welcome to Larekmart",
+              text: `Welcome ${firstName || username || "Customer"}! Thank you for joining Larekmart.`,
             });
           }
         },
@@ -80,6 +95,7 @@ const start = async () => {
     ]);
   } catch (error) {
     logger.fatal("Email service consumer error", error);
+    process.exit(1);
   }
 };
 

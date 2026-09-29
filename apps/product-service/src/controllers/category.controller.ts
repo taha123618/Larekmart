@@ -1,6 +1,6 @@
 import { Prisma, prisma } from "@repo/product-db";
 import { Request, Response } from "express";
-import type { CategoryEventPayload } from "@repo/types";
+import { CategoryFormSchema, type CategoryEventPayload } from "@repo/types";
 import { createLogger, measureAsync } from "@repo/monitoring";
 import { publishEvent } from "../utils/kafka.js";
 import {
@@ -29,7 +29,15 @@ const toCategoryEventPayload = (category: {
 });
 
 export const createCategory = async (req: Request, res: Response) => {
-  const data: Prisma.CategoryCreateInput = req.body;
+  const parsed = CategoryFormSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Validation failed",
+      errors: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  const data: Prisma.CategoryCreateInput = parsed.data;
 
   const { result: category } = await measureAsync(
     "db.category.create",
@@ -45,19 +53,32 @@ export const createCategory = async (req: Request, res: Response) => {
 
 export const updateCategory = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const data: Prisma.CategoryUpdateInput = req.body;
+  const categoryId = Number(id);
+  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+    return res.status(400).json({ message: "Invalid category ID format" });
+  }
+
+  const parsed = CategoryFormSchema.partial().safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Validation failed",
+      errors: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  const data: Prisma.CategoryUpdateInput = parsed.data;
 
   const { result: category } = await measureAsync(
     "db.category.update",
     async () => {
       return await prisma.category.update({
-        where: { id: Number(id) },
+        where: { id: categoryId },
         data,
       });
     },
   );
 
-  logger.info(`Category updated: ID ${id}`);
+  logger.info(`Category updated: ID ${categoryId}`);
   publishEvent("category.updated", toCategoryEventPayload(category));
   await invalidateCatalogCache();
   return res.status(200).json(category);
@@ -65,20 +86,24 @@ export const updateCategory = async (req: Request, res: Response) => {
 
 export const deleteCategory = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const categoryId = Number(id);
+  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+    return res.status(400).json({ message: "Invalid category ID format" });
+  }
 
   const { result: category } = await measureAsync(
     "db.category.delete",
     async () => {
       return await prisma.category.delete({
-        where: { id: Number(id) },
+        where: { id: categoryId },
       });
     },
   );
 
-  logger.info(`Category deleted: ID ${id}`);
+  logger.info(`Category deleted: ID ${categoryId}`);
   // Bare id, matching `product.deleted`: the catalog-service projector only needs
   // the identifier to deactivate the read-model row.
-  publishEvent("category.deleted", Number(id));
+  publishEvent("category.deleted", categoryId);
   await invalidateCatalogCache();
   return res.status(200).json(category);
 };

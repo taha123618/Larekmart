@@ -59,12 +59,27 @@ const app = express();
 const PORT = process.env.PORT || 8004;
 
 // Middleware
+const allowedOrigins = [
+  process.env.CLIENT_URL || "http://localhost:3002",
+  process.env.ADMIN_URL || "http://localhost:3003",
+];
 app.use(
   cors({
-    origin: ["http://localhost:3002", "http://localhost:3003"],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
   }),
 );
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
 app.use(express.json());
 app.use(clerkMiddleware());
 
@@ -165,6 +180,15 @@ const start = async () => {
       },
       {
         topicName: "user.created",
+        topicHandler: async (message: any) => {
+          const payload: UserCreatedType = message.value || message;
+          if (payload) {
+            await recordUserSignup(payload);
+          }
+        },
+      },
+      {
+        topicName: "user.registered",
         topicHandler: async (message: any) => {
           const payload: UserCreatedType = message.value || message;
           if (payload) {
@@ -294,6 +318,7 @@ const start = async () => {
       "Analytic Service encountered a critical startup error",
       error,
     );
+    process.exit(1);
   }
 };
 

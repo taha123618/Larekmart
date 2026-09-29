@@ -153,6 +153,14 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Caching: Redis (`shipping:v1:*` namespace) for rate calculation cache, tracking event cache, and carrier webhook idempotency deduplication.
 - Events: Publishes `shipment.created`, `shipment.label_created`, `shipment.shipped`, `shipment.in_transit`, `shipment.out_for_delivery`, `shipment.delivered`, `shipment.cancelled`, `shipment.failed`, `tracking.updated`. Consumes `order.created`, `order.cancelled`, `payment.successful`.
 
+**`user-service` (Fastify 5, :8012)** — customer profiles, saved addresses, preferences, and account settings domain authority.
+
+- Routes: `GET /api/v1/users/me`, `PATCH /api/v1/users/me`, `DELETE /api/v1/users/me`, `GET /api/v1/users/me/profile`, `PATCH /api/v1/users/me/profile`, `GET /api/v1/users/me/addresses`, `POST /api/v1/users/me/addresses`, `GET /api/v1/users/me/addresses/:addressId`, `PATCH /api/v1/users/me/addresses/:addressId`, `DELETE /api/v1/users/me/addresses/:addressId`, `GET /api/v1/users/me/preferences`, `PATCH /api/v1/users/me/preferences`, `GET /api/v1/users/me/settings`, `PATCH /api/v1/users/me/settings`, `GET /api/v1/users/admin/users`, `GET /api/v1/users/admin/users/:id`, `PATCH /api/v1/users/admin/users/:id/status`, `/health`, `/ready`, `/metrics`.
+- Persistence: PostgreSQL via `@repo/user-db` (Prisma) targeting `user_db` (`users`, `user_profiles`, `user_addresses`, `user_preferences`, `user_settings`, `processed_events`). Keeps authentication credentials and passwords completely out of the database (strictly delegated to Clerk / `auth-service`).
+- Caching: Redis (`user:v1:*` namespace) through `@repo/redis` — read-through cache for user profile, address lists, preferences, and settings with controlled short TTLs (300s) and write invalidation.
+- Address Management: Manages customer default shipping & billing addresses, ensuring transactional single-default guarantees. Downstream checkout/shipping services snapshot addresses immutably to preserve historical records.
+- Events: Publishes `user.created`, `user.updated`, `user.profile_updated`, `user.address_created`, `user.address_updated`, `user.address_deleted`, `user.preferences_updated`, `user.deleted`, `user.deletion_requested`. Consumes `user.created`, `auth.user_created`, `user.registered` with idempotency deduplication via `processed_events`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                          |
@@ -161,6 +169,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | inventory-service                | `@repo/inventory-db` (Prisma) | `inventory_items`, `inventory_reservations`, `inventory_movements`                                                                      |
 | PostgreSQL | catalog-service                  | `@repo/catalog-db` (Prisma)   | `catalog_products`, `catalog_categories`, `catalog_brands`, `catalog_collections`                                                       |
 | PostgreSQL | shipping-service                 | `@repo/shipping-db` (Prisma)  | `shipments`, `shipment_items`, `shipment_packages`, `shipping_methods`, `tracking_events`, `shipping_labels`                            |
+| PostgreSQL | user-service                     | `@repo/user-db` (Prisma)      | `users`, `user_profiles`, `user_addresses`, `user_preferences`, `user_settings`, `processed_events`                                     |
 | PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`   |
 | PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                           |
 | PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
@@ -169,6 +178,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | product-service                  | `@repo/redis` (ioredis)       | `product:v1:*` (catalog read-through cache)                                                                                             |
 | Redis      | catalog-service                  | `@repo/redis` (ioredis)       | `catalog:v1:*` (storefront product & collection cache)                                                                                  |
 | Redis      | shipping-service                 | `@repo/redis` (ioredis)       | `shipping:v1:*` (shipping rate cache, tracking cache, webhook idempotency)                                                              |
+| Redis      | user-service                     | `@repo/redis` (ioredis)       | `user:v1:*` (profile, address, preference, settings read-through cache)                                                                 |
 | Redis      | analytic-service                 | `@repo/redis` (ioredis)       | `analytics:v1:*` (dashboard read-through cache)                                                                                         |
 | Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                   |
 | Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                            |

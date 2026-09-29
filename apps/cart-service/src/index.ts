@@ -18,7 +18,10 @@ import {
   handleProductDeleted,
 } from "./consumers/product.consumer.js";
 import { handleInventoryAdjusted } from "./consumers/inventory.consumer.js";
-import { handleOrderCreated } from "./consumers/order.consumer.js";
+import {
+  handleOrderCreated,
+  handleUserDeleted,
+} from "./consumers/order.consumer.js";
 import {
   startCartExpirationWorker,
   stopCartExpirationWorker,
@@ -30,9 +33,19 @@ import { errorHandler } from "./middleware/error.middleware.js";
 const httpMonitor = createHttpMonitor(logger, metrics);
 export const app: Express = express();
 
+const allowedOrigins = [
+  process.env.CLIENT_URL || "http://localhost:3002",
+  process.env.ADMIN_URL || "http://localhost:3003",
+];
+
 app.use(
   cors({
-    origin: ["http://localhost:3002", "http://localhost:3003"],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
@@ -45,6 +58,12 @@ app.use(
     exposedHeaders: ["x-guest-token"],
   }),
 );
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
 app.use(express.json());
 app.use(clerkMiddleware());
 
@@ -132,6 +151,12 @@ export const startServer = async (): Promise<void> => {
           topicName: "payment-successful",
           topicHandler: async (msg) => {
             if (msg.value) await handleOrderCreated(msg.value);
+          },
+        },
+        {
+          topicName: "user.deleted",
+          topicHandler: async (msg) => {
+            if (msg.value) await handleUserDeleted(msg.value);
           },
         },
       ]);

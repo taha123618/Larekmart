@@ -8,9 +8,19 @@ import { createHttpMonitor } from "@repo/monitoring";
 export async function configureFastifyPlugins(
   fastify: FastifyInstance,
 ): Promise<void> {
-  // 1. CORS
+  // 1. CORS with strict allowed origins
+  const allowedOrigins = [
+    process.env.CLIENT_URL || "http://localhost:3002",
+    process.env.ADMIN_URL || "http://localhost:3003",
+  ];
+
   await fastify.register(cors, {
-    origin: true,
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return cb(null, true);
+      }
+      return cb(null, false);
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
@@ -19,10 +29,18 @@ export async function configureFastifyPlugins(
       "X-Request-ID",
       "x-user-id",
       "X-User-ID",
+      "x-correlation-id",
     ],
   });
 
-  // 2. Clerk Authentication plugin
+  // 2. Defensive HTTP Security Headers
+  fastify.addHook("onSend", async (request, reply) => {
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+  });
+
+  // 3. Clerk Authentication plugin
   await fastify.register(Clerk.clerkPlugin);
 
   // 3. HTTP Monitoring Hooks

@@ -37,13 +37,23 @@ health.register(
   { critical: false },
 );
 
+const allowedOrigins = [
+  process.env.CLIENT_URL || "http://localhost:3002",
+  process.env.ADMIN_URL || "http://localhost:3003",
+];
+
 const app = new Hono();
 
 // 1. CORS must run first so preflight OPTIONS requests succeed immediately
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3002", "http://localhost:3003"],
+    origin: (origin) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return origin || allowedOrigins[0] || "http://localhost:3002";
+      }
+      return null;
+    },
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: [
       "Content-Type",
@@ -57,6 +67,14 @@ app.use(
     credentials: true,
   }),
 );
+
+// Defensive HTTP Security Headers
+app.use("*", async (c, next) => {
+  await next();
+  c.res.headers.set("X-Content-Type-Options", "nosniff");
+  c.res.headers.set("X-Frame-Options", "DENY");
+  c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+});
 
 // 2. Clerk middleware with environment keys
 app.use(

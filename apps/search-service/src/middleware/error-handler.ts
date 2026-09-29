@@ -51,10 +51,16 @@ export function globalErrorHandler(
     stack: error.stack,
   });
 
+  const isProd = process.env.NODE_ENV === "production";
+  const safeMessage =
+    statusCode >= 500 && isProd
+      ? "Internal Server Error"
+      : error.message || "An unexpected error occurred";
+
   void reply.status(statusCode).send({
     error: {
       code: statusCode === 404 ? "NOT_FOUND" : "INTERNAL_SERVER_ERROR",
-      message: error.message || "An unexpected error occurred",
+      message: safeMessage,
     },
   });
 }

@@ -128,7 +128,7 @@ func (h *DomainEventHandler) HandleEvent(ctx context.Context, topic string, msgK
 
 func (h *DomainEventHandler) dispatchDomainNotification(ctx context.Context, topic string, payload map[string]interface{}) error {
 	switch topic {
-	case "user.created":
+	case "user.created", "user.registered":
 		return h.handleUserCreated(ctx, payload)
 	case "order.created":
 		return h.handleOrderCreated(ctx, payload)
@@ -306,6 +306,8 @@ func extractSourceService(topic string) string {
 	switch topic {
 	case "user.created":
 		return "auth-service"
+	case "user.registered", "user.profile_updated", "user.address_created":
+		return "user-service"
 	case "order.created":
 		return "order-service"
 	case "payment.successful":

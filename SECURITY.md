@@ -34,7 +34,7 @@ Please include:
 - Identity verification is strictly delegated to Clerk across storefront and admin applications.
 - Tokens and session claims are cryptographically verified by backend middleware before executing any controller logic.
 - Roles (`admin` vs. `user`) are stored in verified JWT claims (`sessionClaims.metadata.role`).
-- The admin privilege claim route (`/api/claim-admin`) is permanently disabled in production and secured with `ADMIN_REGISTRATION_SECRET` in development.
+- The admin privilege claim route (`/api/claim-admin`) is fail-closed: it is disabled unless `ALLOW_ADMIN_CLAIM === "true"` AND `ADMIN_REGISTRATION_SECRET` is configured; the secret is compared in constant time. No environment-mode detection exists — a missing env var can never silently enable admin self-promotion.
 
 ### Broken Object-Level Authorization (IDOR) Protection
 

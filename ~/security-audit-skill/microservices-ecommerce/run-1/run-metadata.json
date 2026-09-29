@@ -1,0 +1,26 @@
+{
+  "run_id": "microservices-ecommerce-run-1",
+  "repo": "microservices-ecommerce",
+  "target": "/Users/taha/projects/microservices-ecommerce",
+  "source_ref": "c05d7478b90d6cae4bdb40e9522a262681510471 (features/user-service, worktree dirty: 5 files from session Kafka-reliability fixes in apps/analytic-service, apps/email-service, apps/shipping-service, packages/kafka)",
+  "profile": "standard",
+  "scope_paths": ["apps/", "packages/", "infrastructure/", "docker-compose.yml", "packages/kafka/docker-compose.yml"],
+  "budget": null,
+  "execution_policy": "source-and-local-only",
+  "execution_note": "OS-enforced sandbox (empty allowlisted env, no-external-network, scratch-only writes, resource limits) was NOT available on this platform; per SKILL.md no target-controlled code was executed. All checks are source-only; candidates that would require a bounded local execution to promote to confirmed are recorded as needs_validation with exact local plans.",
+  "platform_limitations": [
+    "No sub-agent delegation available: hunting and verification were performed by one agent with a deliberate independent re-verification pass over every trace line (grep re-confirmation of each cited location) instead of fresh-agent isolation.",
+    "No OS-enforced sandbox: no target-controlled process was executed; Docker daemon not running so no local cluster or service reproduction was possible."
+  ],
+  "prior_runs": [],
+  "prior_ledgers_found": false,
+  "selected_companions": [
+    "WEB-PROTOCOL-AND-AUTH.md",
+    "PROTOCOLS-RPC-AND-MESSAGING.md",
+    "CLOUD-AND-DEPLOYMENT.md",
+    "DATA-ISOLATION-AND-LIFECYCLE.md",
+    "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md"
+  ],
+  "run_status": "complete",
+  "incomplete_reason": null
+}

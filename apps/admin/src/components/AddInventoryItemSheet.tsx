@@ -41,8 +41,12 @@ export default function AddInventoryItemSheet({
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
 
-  const form = useForm<z.infer<typeof CreateItemSchema>>({
-    resolver: zodResolver(CreateItemSchema) as any,
+  const form = useForm<
+    z.input<typeof CreateItemSchema>,
+    unknown,
+    z.infer<typeof CreateItemSchema>
+  >({
+    resolver: zodResolver(CreateItemSchema),
     defaultValues: {
       productId: 1,
       variantId: "default",

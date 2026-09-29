@@ -20,8 +20,8 @@ This document specifies the mandatory cybersecurity standards and implementation
   - **Koa**: Use `requireAdminOrInternal` in `apps/shipping-service/src/middleware/auth.middleware.ts`.
 - **Status Codes**: Return `401 Unauthorized` for missing/invalid tokens, and `403 Forbidden` for authenticated requests lacking admin privileges.
 - **Admin Privilege Escalation Protection**:
-  - The `/api/claim-admin` endpoint in `apps/admin` MUST remain disabled in production (`NODE_ENV === "production"`).
-  - In development, access requires an explicit secret header (`x-admin-claim-secret`) matching `ADMIN_REGISTRATION_SECRET`.
+  - The `/api/claim-admin` endpoint in `apps/admin` is fail-closed: disabled unless `ALLOW_ADMIN_CLAIM === "true"` AND `ADMIN_REGISTRATION_SECRET` is set. Do not reintroduce NODE_ENV-based gating — a missing env var must never enable self-promotion.
+  - When enabled, every request requires the `x-admin-claim-secret` header, compared in constant time against `ADMIN_REGISTRATION_SECRET`.
   - Admin UI route middleware (`apps/admin/src/middleware.ts`) strictly requires `sessionClaims?.metadata?.role === "admin"`.
 - **Internal Service Verification**:
   - Direct HTTP calls between microservices are prohibited for business flows (use Kafka).

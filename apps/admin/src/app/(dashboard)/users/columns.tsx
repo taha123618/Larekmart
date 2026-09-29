@@ -11,21 +11,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { User } from "@clerk/nextjs/server";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
-// export type User = {
-//   id: string;
-//   avatar: string;
-//   fullName: string;
-//   email: string;
-//   status: "active" | "inactive";
-// };
+export interface UserWithServiceStatus {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  username?: string | null;
+  imageUrl?: string | null;
+  emailAddresses: Array<{ emailAddress: string; [key: string]: unknown }>;
+  banned?: boolean;
+  userServiceStatus?: string | null;
+  phone?: string | null;
+  [key: string]: unknown;
+}
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<UserWithServiceStatus>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -92,17 +95,24 @@ export const columns: ColumnDef<User>[] = [
     header: "Status",
     cell: ({ row }) => {
       const user = row.original;
-      const status = user.banned ? "banned" : "active";
+      const status =
+        user.userServiceStatus || (user.banned ? "banned" : "active");
 
       return (
         <div
           className={cn(
-            `p-1 rounded-md w-max text-xs`,
-            status === "active" && "bg-green-500/40",
-            status === "banned" && "bg-red-500/40",
+            `px-2 py-0.5 rounded-md w-max text-xs font-semibold uppercase`,
+            (status === "active" || status === "ACTIVE") &&
+              "bg-green-500/20 text-green-700 dark:text-green-300",
+            (status === "banned" ||
+              status === "SUSPENDED" ||
+              status === "DEACTIVATED") &&
+              "bg-red-500/20 text-red-700 dark:text-red-300",
+            status === "PENDING_VERIFICATION" &&
+              "bg-amber-500/20 text-amber-700 dark:text-amber-300",
           )}
         >
-          {status as string}
+          {String(status)}
         </div>
       );
     },

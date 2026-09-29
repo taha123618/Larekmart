@@ -3,7 +3,7 @@ import { prisma } from "@repo/shipping-db";
 import { ShippingCache } from "../cache/shipping-cache.js";
 import { TrackingService } from "./tracking.service.js";
 import { ShipmentRepository } from "../repositories/shipment.repository.js";
-import { env } from "../config/env.js";
+import { env, DEFAULT_WEBHOOK_SECRET } from "../config/env.js";
 import type { ShipmentStatus as TypeShipmentStatus } from "@repo/types";
 
 export interface CarrierWebhookInput {
@@ -19,17 +19,18 @@ export interface CarrierWebhookInput {
 
 export class WebhookService {
   static verifySignature(carrier: string, signature?: string): boolean {
-    const currentEnv = process.env.NODE_ENV || env.NODE_ENV;
-    if (!signature) {
-      return currentEnv === "development" || currentEnv === "test";
-    }
+    // Signatures are mandatory in EVERY environment. An unsigned request must
+    // never be treated as authenticated — there is no development fail-open.
+    if (!signature) return false;
+
     const secret = process.env.WEBHOOK_SECRET || env.WEBHOOK_SECRET;
-    if (!secret) return false;
+    // The schema-default placeholder never authenticates: a deployment that
+    // forgot to configure WEBHOOK_SECRET fails closed, not open.
+    if (!secret || secret === DEFAULT_WEBHOOK_SECRET) return false;
     try {
-      const sigBuf = Buffer.from(signature);
-      const secretBuf = Buffer.from(secret);
-      if (sigBuf.length !== secretBuf.length) return false;
-      return crypto.timingSafeEqual(sigBuf, secretBuf);
+      const sigHash = crypto.createHash("sha256").update(signature).digest();
+      const secretHash = crypto.createHash("sha256").update(secret).digest();
+      return crypto.timingSafeEqual(sigHash, secretHash);
     } catch {
       return false;
     }

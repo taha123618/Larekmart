@@ -27,117 +27,195 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "./ui/button";
+import { useState, useEffect } from "react";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { updateAdminUserStatus } from "@/services/user.service";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   fullName: z
     .string()
     .min(2, { message: "Full name must be at least 2 characters!" })
-    .max(50),
+    .max(100),
   email: z.string().email({ message: "Invalid email address!" }),
-  phone: z.string().min(10).max(15),
-  address: z.string().min(2),
-  city: z.string().min(2),
+  phone: z.string().optional(),
+  status: z.enum([
+    "ACTIVE",
+    "SUSPENDED",
+    "DEACTIVATED",
+    "PENDING_VERIFICATION",
+  ]),
 });
 
-const EditUser = () => {
+export interface EditUserProps {
+  userId?: string;
+  initialStatus?:
+    | "ACTIVE"
+    | "SUSPENDED"
+    | "DEACTIVATED"
+    | "PENDING_VERIFICATION";
+  fullName?: string;
+  email?: string;
+  phone?: string;
+}
+
+const EditUser = ({
+  userId,
+  initialStatus = "ACTIVE",
+  fullName = "",
+  email = "",
+  phone = "",
+}: EditUserProps) => {
+  const { getToken } = useAuth();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fullName: "John Doe",
-      email: "john.doe@gmail.com",
-      phone: "+1 234 5678",
-      address: "123 Main St",
-      city: "New York",
+      fullName: fullName || "Customer",
+      email: email || "",
+      phone: phone || "",
+      status: initialStatus,
     },
   });
+
+  useEffect(() => {
+    form.reset({
+      fullName: fullName || "Customer",
+      email: email || "",
+      phone: phone || "",
+      status: initialStatus,
+    });
+  }, [userId, initialStatus, fullName, email, phone, form]);
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!userId) return;
+    setLoading(true);
+    setSuccessMsg(null);
+    setErrorMsg(null);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Authentication token not available");
+
+      const ok = await updateAdminUserStatus(token, userId, values.status);
+      if (ok) {
+        setSuccessMsg(`User status updated to ${values.status}!`);
+        router.refresh();
+      } else {
+        setErrorMsg("Failed to update user status in user-service");
+      }
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SheetContent>
       <SheetHeader>
-        <SheetTitle className="mb-4">Edit User</SheetTitle>
+        <SheetTitle className="mb-4">Edit Customer Record</SheetTitle>
         <SheetDescription asChild>
-          <Form {...form}>
-            <form className="space-y-8">
-              <FormField
-                control={form.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>Enter user full name.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Only admin can see your email.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Only admin can see your phone number (optional)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Enter user address (optional)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Enter user city (optional)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit">Submit</Button>
-            </form>
-          </Form>
+          <div>
+            {successMsg && (
+              <div className="p-3 mb-4 rounded bg-emerald-100 text-emerald-900 text-xs font-semibold">
+                {successMsg}
+              </div>
+            )}
+            {errorMsg && (
+              <div className="p-3 mb-4 rounded bg-red-100 text-red-900 text-xs font-semibold">
+                {errorMsg}
+              </div>
+            )}
+
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
+                <FormField
+                  control={form.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled />
+                      </FormControl>
+                      <FormDescription>Customer name</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled />
+                      </FormControl>
+                      <FormDescription>
+                        Verified primary email address
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Account Status (User Service Domain)
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ACTIVE">
+                            ACTIVE (Normal customer access)
+                          </SelectItem>
+                          <SelectItem value="SUSPENDED">
+                            SUSPENDED (Restricted access)
+                          </SelectItem>
+                          <SelectItem value="DEACTIVATED">
+                            DEACTIVATED (Account closed)
+                          </SelectItem>
+                          <SelectItem value="PENDING_VERIFICATION">
+                            PENDING_VERIFICATION
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Directly controls customer status in user-service
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button type="submit" disabled={loading} className="w-full">
+                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Save Status
+                </Button>
+              </form>
+            </Form>
+          </div>
         </SheetDescription>
       </SheetHeader>
     </SheetContent>

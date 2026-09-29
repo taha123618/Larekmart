@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+/**
+ * Placeholder value that MUST NOT authenticate anything. Carrier webhooks
+ * signed with this value are rejected (see WebhookService.verifySignature);
+ * deployments must set a strong per-environment WEBHOOK_SECRET.
+ */
+export const DEFAULT_WEBHOOK_SECRET = "shipping_wh_secret_change_me";
+
 const EnvSchema = z.object({
   PORT: z.coerce.number().default(8011),
   NODE_ENV: z
@@ -21,7 +28,7 @@ const EnvSchema = z.object({
   SHIPPING_RATE_CACHE_TTL_SECONDS: z.coerce.number().default(1800),
   TRACKING_CACHE_TTL_SECONDS: z.coerce.number().default(300),
   DEFAULT_CARRIER: z.string().default("custom"),
-  WEBHOOK_SECRET: z.string().default("shipping_wh_secret_change_me"),
+  WEBHOOK_SECRET: z.string().default(DEFAULT_WEBHOOK_SECRET),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

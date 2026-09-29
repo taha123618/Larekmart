@@ -47,8 +47,12 @@ export default function AdjustSheet({
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
 
-  const form = useForm<z.infer<typeof InventoryAdjustmentSchema>>({
-    resolver: zodResolver(InventoryAdjustmentSchema) as any,
+  const form = useForm<
+    z.input<typeof InventoryAdjustmentSchema>,
+    unknown,
+    z.infer<typeof InventoryAdjustmentSchema>
+  >({
+    resolver: zodResolver(InventoryAdjustmentSchema),
     defaultValues: {
       productId: defaultValues?.productId ?? 1,
       variantId: defaultValues?.variantId ?? "default",

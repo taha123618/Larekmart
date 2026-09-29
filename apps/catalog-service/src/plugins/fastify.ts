@@ -22,6 +22,13 @@ export async function configureFastifyPlugins(
     allowedHeaders: ["Content-Type", "Authorization"],
   });
 
+  // Defensive HTTP Security Headers
+  fastify.addHook("onSend", async (request, reply) => {
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+  });
+
   // Global Error Handler
   fastify.setErrorHandler((error, request, reply) => {
     logger.error("Fastify request error", {
@@ -32,8 +39,14 @@ export async function configureFastifyPlugins(
     });
 
     const statusCode = error.statusCode || 500;
+    const isProd = process.env.NODE_ENV === "production";
+    const safeMessage =
+      statusCode >= 500 && isProd
+        ? "Internal Server Error"
+        : error.message || "Internal server error";
+
     return reply.status(statusCode).send({
-      message: error.message || "Internal server error",
+      message: safeMessage,
       statusCode,
     });
   });

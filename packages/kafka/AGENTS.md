@@ -34,6 +34,9 @@ Current helper surface is intentionally small. Expose helpers, not raw clients.
 - `packages/kafka/docker-compose.yml` runs 3 brokers (`confluentinc/cp-kafka:7.5.0`) on
   `localhost:9094`, `:9095`, `:9096`, plus ZooKeeper `:2181` and Kafka UI `:8080`.
 - Start it with `docker compose -f packages/kafka/docker-compose.yml up -d`.
+- Broker ports are bound to `127.0.0.1` only: a PLAINTEXT broker reachable from the
+  network lets any peer impersonate any service on the event bus. Do not re-publish
+  these ports on `0.0.0.0`; SASL/SCRAM + ACLs are required before any shared exposure.
 - Broker addresses are hardcoded in `packages/kafka/src/client.ts` for local development.
   There is no configuration layer for managed/remote Kafka yet.
 

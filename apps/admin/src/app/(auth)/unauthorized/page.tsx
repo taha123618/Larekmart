@@ -22,8 +22,16 @@ const Page = () => {
     setLoading(true);
     setMessage(null);
     try {
+      const secret =
+        process.env.NEXT_PUBLIC_ADMIN_CLAIM_SECRET ??
+        window.prompt("Admin registration secret:");
+      if (!secret) {
+        setMessage("Admin claim secret is required.");
+        return;
+      }
       const res = await fetch("/api/claim-admin", {
         method: "POST",
+        headers: { "x-admin-claim-secret": secret },
       });
       const data = await res.json();
       if (res.ok) {

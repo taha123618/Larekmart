@@ -61,3 +61,24 @@ export const handleOrderCreated = async (
     );
   }
 };
+
+/**
+ * When a user is deleted, purge their active and saved carts and invalidate cache
+ */
+export const handleUserDeleted = async (payload: {
+  userId?: string;
+  [key: string]: unknown;
+}): Promise<void> => {
+  const { userId } = payload;
+  if (!userId || typeof userId !== "string" || userId.trim() === "") return;
+
+  try {
+    await Cart.deleteMany({ userId });
+    await invalidateCartCache({ userId });
+    logger.info("Purged user carts after user.deleted event", { userId });
+  } catch (err) {
+    logger.error("Error purging carts for deleted user", err as Error, {
+      userId,
+    });
+  }
+};

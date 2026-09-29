@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
@@ -60,7 +61,8 @@ func ExtractUserID(r *http.Request) string {
 	// 1. Direct header - trusted only if internal secret matches or if no secret is configured in development/test
 	if uid := r.Header.Get("X-User-ID"); uid != "" {
 		if internalSecret != "" {
-			if r.Header.Get("X-Internal-Secret") == internalSecret {
+			providedSecret := r.Header.Get("X-Internal-Secret")
+			if subtle.ConstantTimeCompare([]byte(providedSecret), []byte(internalSecret)) == 1 {
 				return uid
 			}
 		} else if os.Getenv("APP_ENV") != "production" {

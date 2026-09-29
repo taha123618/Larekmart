@@ -346,6 +346,8 @@ const CartContent = () => {
                 shippingForm={shippingForm}
                 cart={cart}
                 grandTotal={grandTotal}
+                discountTotal={discountTotal}
+                taxTotal={taxTotal}
               />
             ) : (
               <StripePaymentForm shippingForm={shippingForm} />

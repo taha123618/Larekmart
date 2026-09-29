@@ -1,5 +1,8 @@
 import assert from "assert";
-import { shouldBeAdmin, shouldBeUser } from "../src/middleware/authMiddleware.js";
+import {
+  shouldBeAdmin,
+  shouldBeUser,
+} from "../src/middleware/authMiddleware.js";
 
 async function runOrderSecurityTests() {
   console.log("=== Order Service Security & IDOR SQA Test Suite ===\n");
@@ -28,8 +31,14 @@ async function runOrderSecurityTests() {
   const mockReplyUnauth = createMockReply();
 
   await shouldBeUser(mockReqUnauth, mockReplyUnauth as any);
-  assert.equal(mockReplyUnauth.statusCode, 401, "Unauthenticated request should return 401");
-  assert.deepEqual(mockReplyUnauth.sentBody, { message: "You are not logged in!" });
+  assert.equal(
+    mockReplyUnauth.statusCode,
+    401,
+    "Unauthenticated request should return 401",
+  );
+  assert.deepEqual(mockReplyUnauth.sentBody, {
+    message: "You are not logged in!",
+  });
   console.log("✓ shouldBeUser 401 unauthenticated check passed");
 
   // 2. Test shouldBeUser with Authenticated User
@@ -46,7 +55,11 @@ async function runOrderSecurityTests() {
   await shouldBeUser(mockReqUser, mockReplyUser as any);
   assert.equal(mockReqUser.userId, "usr_alice_123");
   assert.equal(mockReqUser.userRole, "user");
-  assert.equal(mockReplyUser.statusCode, 200, "Authenticated user should not be rejected");
+  assert.equal(
+    mockReplyUser.statusCode,
+    200,
+    "Authenticated user should not be rejected",
+  );
   console.log("✓ shouldBeUser identity extraction passed");
 
   // 3. Test shouldBeAdmin blocks Standard User
@@ -61,7 +74,11 @@ async function runOrderSecurityTests() {
   const mockReplyNonAdmin = createMockReply();
 
   await shouldBeAdmin(mockReqNonAdmin, mockReplyNonAdmin as any);
-  assert.equal(mockReplyNonAdmin.statusCode, 403, "Non-admin user should be blocked with 403");
+  assert.equal(
+    mockReplyNonAdmin.statusCode,
+    403,
+    "Non-admin user should be blocked with 403",
+  );
   assert.deepEqual(mockReplyNonAdmin.sentBody, { message: "Unauthorized!" });
   console.log("✓ shouldBeAdmin 403 role gate passed");
 
@@ -79,15 +96,26 @@ async function runOrderSecurityTests() {
   await shouldBeAdmin(mockReqAdmin, mockReplyAdmin as any);
   assert.equal(mockReqAdmin.userId, "usr_admin_999");
   assert.equal(mockReqAdmin.userRole, "admin");
-  assert.equal(mockReplyAdmin.statusCode, 200, "Admin account should be permitted");
+  assert.equal(
+    mockReplyAdmin.statusCode,
+    200,
+    "Admin account should be permitted",
+  );
   console.log("✓ shouldBeAdmin admin access passed");
 
   // 5. Test IDOR Boundary Invariants
   console.log("5. Testing IDOR Ownership Logic Invariants...");
 
-  function checkOrderAccess(order: { userId: string }, request: { userId?: string; userRole?: string }) {
+  function checkOrderAccess(
+    order: { userId: string },
+    request: { userId?: string; userRole?: string },
+  ) {
     if (order.userId !== request.userId && request.userRole !== "admin") {
-      return { allowed: false, statusCode: 403, message: "Access forbidden: order does not belong to you" };
+      return {
+        allowed: false,
+        statusCode: 403,
+        message: "Access forbidden: order does not belong to you",
+      };
     }
     return { allowed: true, statusCode: 200 };
   }
@@ -95,18 +123,41 @@ async function runOrderSecurityTests() {
   const orderA = { id: "ord_100", userId: "usr_alice_123" };
 
   // Case A: Alice accesses her own order
-  const aliceAccess = checkOrderAccess(orderA, { userId: "usr_alice_123", userRole: "user" });
-  assert.equal(aliceAccess.allowed, true, "User accessing own order must be allowed");
+  const aliceAccess = checkOrderAccess(orderA, {
+    userId: "usr_alice_123",
+    userRole: "user",
+  });
+  assert.equal(
+    aliceAccess.allowed,
+    true,
+    "User accessing own order must be allowed",
+  );
 
   // Case B: Bob attempts to access Alice's order (IDOR attack)
-  const bobAccess = checkOrderAccess(orderA, { userId: "usr_bob_456", userRole: "user" });
-  assert.equal(bobAccess.allowed, false, "User accessing another user's order must be blocked");
+  const bobAccess = checkOrderAccess(orderA, {
+    userId: "usr_bob_456",
+    userRole: "user",
+  });
+  assert.equal(
+    bobAccess.allowed,
+    false,
+    "User accessing another user's order must be blocked",
+  );
   assert.equal(bobAccess.statusCode, 403);
 
   // Case C: Admin accesses Alice's order for customer support
-  const adminAccess = checkOrderAccess(orderA, { userId: "usr_admin_999", userRole: "admin" });
-  assert.equal(adminAccess.allowed, true, "Admin accessing any order must be permitted");
-  console.log("✓ IDOR ownership rules verified under all user and admin permutations");
+  const adminAccess = checkOrderAccess(orderA, {
+    userId: "usr_admin_999",
+    userRole: "admin",
+  });
+  assert.equal(
+    adminAccess.allowed,
+    true,
+    "Admin accessing any order must be permitted",
+  );
+  console.log(
+    "✓ IDOR ownership rules verified under all user and admin permutations",
+  );
 
   console.log("\n=======================================================");
   console.log(" All Order Security & IDOR Tests Passed Successfully!  ");

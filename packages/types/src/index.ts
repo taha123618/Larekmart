@@ -10,3 +10,4 @@ export * from "./inventory";
 export * from "./recommendation";
 export * from "./catalog";
 export * from "./shipping";
+export * from "./user";
