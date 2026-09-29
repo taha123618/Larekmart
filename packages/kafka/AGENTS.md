@@ -37,8 +37,10 @@ Current helper surface is intentionally small. Expose helpers, not raw clients.
 - Broker ports are bound to `127.0.0.1` only: a PLAINTEXT broker reachable from the
   network lets any peer impersonate any service on the event bus. Do not re-publish
   these ports on `0.0.0.0`; SASL/SCRAM + ACLs are required before any shared exposure.
-- Broker addresses are hardcoded in `packages/kafka/src/client.ts` for local development.
-  There is no configuration layer for managed/remote Kafka yet.
+- Broker addresses resolve from the `KAFKA_BROKERS` env var (comma-separated) when
+  set, falling back to the three local development brokers. media-service uses this
+  for its containerized single-broker setup. Note the local brokers are still bound
+  to `127.0.0.1` only: do not re-publish them on `0.0.0.0` without SASL/SCRAM + ACLs.
 
 ## Error handling
 

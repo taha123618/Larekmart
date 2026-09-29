@@ -4,7 +4,13 @@
   "target": "/Users/taha/projects/microservices-ecommerce",
   "source_ref": "c05d7478b90d6cae4bdb40e9522a262681510471 (features/user-service, worktree dirty: 5 files from session Kafka-reliability fixes in apps/analytic-service, apps/email-service, apps/shipping-service, packages/kafka)",
   "profile": "standard",
-  "scope_paths": ["apps/", "packages/", "infrastructure/", "docker-compose.yml", "packages/kafka/docker-compose.yml"],
+  "scope_paths": [
+    "apps/",
+    "packages/",
+    "infrastructure/",
+    "docker-compose.yml",
+    "packages/kafka/docker-compose.yml"
+  ],
   "budget": null,
   "execution_policy": "source-and-local-only",
   "execution_note": "OS-enforced sandbox (empty allowlisted env, no-external-network, scratch-only writes, resource limits) was NOT available on this platform; per SKILL.md no target-controlled code was executed. All checks are source-only; candidates that would require a bounded local execution to promote to confirmed are recorded as needs_validation with exact local plans.",

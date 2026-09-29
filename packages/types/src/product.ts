@@ -34,6 +34,21 @@ export type ProductCreatedPayload = {
 };
 
 /**
+ * Product image references.
+ *
+ * Since media-service owns all media, the `images` JSON stores **media
+ * references** keyed by color — `"media:<uuid>"` — instead of storage URLs.
+ * Frontends resolve references dynamically via media-service
+ * (`POST /api/v1/media/resolve`), so URL expiration, provider changes, and
+ * credential rotation never require rewriting product rows.
+ *
+ * Legacy products may still hold raw URLs (Cloudinary or local paths);
+ * resolvers pass those through untouched, so both shapes render side by
+ * side during migration.
+ */
+export type ProductImageRefs = Record<string, string>;
+
+/**
  * `category.created` and `category.updated` Kafka payloads.
  *
  * `product-service` owns categories and publishes the authoritative row;

@@ -7,6 +7,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
+import { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -34,6 +35,7 @@ import { CategoryType, colors, ProductFormSchema, sizes } from "@repo/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useAuth } from "@clerk/nextjs";
+import { uploadProductImage } from "@/services/media.service";
 
 // const categories = [
 //   "T-shirts",
@@ -58,6 +60,17 @@ const fetchCategories = async () => {
 };
 
 const AddProduct = () => {
+  // Stable owner id grouping draft media uploaded in this session, before
+  // the product row exists. media-service's product.created consumer
+  // reassigns ownership to the real product id once the product is created.
+  const [draftOwnerId] = useState(() => {
+    // crypto.randomUUID() (browser Crypto API) — no Node deps in client code.
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return `draft-${crypto.randomUUID()}`;
+    }
+    return `draft-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  });
+
   const form = useForm<z.infer<typeof ProductFormSchema>>({
     resolver: zodResolver(ProductFormSchema),
     defaultValues: {
@@ -336,17 +349,16 @@ const AddProduct = () => {
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
-                                    // Security validation: file size limit (5MB)
-                                    const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+                                    // Client-side pre-checks only; media-service
+                                    // re-validates size, MIME, and magic bytes.
+                                    const MAX_SIZE_BYTES = 10 * 1024 * 1024;
                                     if (file.size > MAX_SIZE_BYTES) {
                                       toast.error(
-                                        "Image file size exceeds the 5MB limit!",
+                                        "Image file size exceeds the 10MB limit!",
                                       );
                                       e.target.value = "";
                                       return;
                                     }
-
-                                    // Security validation: MIME type allowlist
                                     const ALLOWED_MIME_TYPES = [
                                       "image/jpeg",
                                       "image/png",
@@ -363,40 +375,37 @@ const AddProduct = () => {
                                     }
 
                                     try {
-                                      const formData = new FormData();
-                                      formData.append("file", file);
-                                      formData.append(
-                                        "upload_preset",
-                                        "ecommerce",
+                                      // Presigned direct-to-storage upload via
+                                      // media-service; returns a mediaId that the
+                                      // product references instead of a URL.
+                                      const mediaId = await uploadProductImage(
+                                        file,
+                                        draftOwnerId,
+                                        getToken,
                                       );
-
-                                      const res = await fetch(
-                                        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-                                        {
-                                          method: "POST",
-                                          body: formData,
-                                        },
+                                      const currentImages =
+                                        form.getValues("images") || {};
+                                      form.setValue("images", {
+                                        ...currentImages,
+                                        [color]: mediaId,
+                                      });
+                                      toast.success(
+                                        "Image uploaded — processing variants in background",
                                       );
-                                      const data = await res.json();
-
-                                      if (data.secure_url) {
-                                        const currentImages =
-                                          form.getValues("images") || {};
-                                        form.setValue("images", {
-                                          ...currentImages,
-                                          [color]: data.secure_url,
-                                        });
-                                      }
                                     } catch (error) {
                                       console.log(error);
-                                      toast.error("Upload failed!");
+                                      toast.error(
+                                        error instanceof Error
+                                          ? error.message
+                                          : "Upload failed!",
+                                      );
                                     }
                                   }
                                 }}
                               />
                               {field.value?.[color] ? (
                                 <span className="text-green-600 text-sm">
-                                  Image selected
+                                  Uploaded ✓
                                 </span>
                               ) : (
                                 <span className="text-red-600 text-sm">

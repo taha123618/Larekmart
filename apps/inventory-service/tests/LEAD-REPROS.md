@@ -61,7 +61,7 @@ Requires `STRIPE_SECRET_KEY` in inventory-service's env.
 **Regression scripts.**
 
 - Offline (no Stripe/network needed): `pnpm --filter inventory-service
-  test:stripe-verify` — asserts the forged lead payload is rejected before
+test:stripe-verify` — asserts the forged lead payload is rejected before
   any confirm path runs, and that unknown `cs_` sessions fail closed.
 
 - Live end-to-end (Docker + service running):

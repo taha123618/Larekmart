@@ -33,7 +33,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`
-   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`
+   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`
    - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.
@@ -91,6 +91,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `catalog-service`         | `apps/catalog-service`        | Fastify 5               | 8010 | Read-optimized product discovery, categories, brands, collections & storefront     |
 | `shipping-service`        | `apps/shipping-service`       | Koa (Node.js)           | 8011 | Shipment lifecycle, rates, carrier adapters (TCS/Leopards/DHL/FedEx), tracking     |
 | `user-service`            | `apps/user-service`           | Fastify 5               | 8012 | Customer profiles, saved addresses, preferences, and account domain                |
+| `media-service`           | `apps/media-service`          | Hono 4                  | 8013 | Media uploads, object storage, image variants & lifecycle events                   |
 | `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                              |
 | `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                      |
 | `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                        |
@@ -152,11 +153,12 @@ pnpm --filter @repo/product-db db:migrate    # prisma migrate dev
 pnpm --filter @repo/product-db db:deploy     # prisma migrate deploy
 pnpm --filter @repo/inventory-db db:generate # generate inventory Prisma client
 pnpm --filter @repo/inventory-db db:migrate  # inventory migration in development
+pnpm --filter media-service db:migrate       # media-service Drizzle migrations (media_db)
 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
 docker compose up -d --build                 # start entire microservices stack (15 apps + backing DBs)
 docker compose down                          # stop all containers preserving volumes
-docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui # backing infra only
+docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui minio minio-init # backing infra only
 # See docs/DOCKER.md for complete operations manual
 ```
 

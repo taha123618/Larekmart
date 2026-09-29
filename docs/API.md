@@ -15,6 +15,7 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 | `search-service`         | `8006` | Fastify 5              | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete       |
 | `inventory-service`      | `8007` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory     |
 | `recommendation-service` | `8008` | Python 3.12+ / FastAPI | Public / User telemetry            | AI recommendations, embeddings & interactions |
+| `media-service`          | `8013` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Media uploads, storage, variants & lifecycle  |
 | `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                  |
 
 ---

@@ -105,7 +105,14 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `user.address_deleted`            | user-service         | analytic-service                                                                                 | `UserEventPayload` (`eventId`, `eventType`, `userId`, `data`: `addressId`)                                                                                         |
 | `user.preferences_updated`        | user-service         | recommendation-service, notification-service                                                     | `UserEventPayload` (`eventId`, `eventType`, `userId`, `data`: `preferredLanguage`, `currency`, `marketingEmail`)                                                   |
 | `user.deletion_requested`         | user-service         | auth-service, recommendation-service, notification-service, analytic-service                     | `UserEventPayload` (`eventId`, `eventType`, `userId`, `data`: `requestedAt`)                                                                                       |
-| `user.deleted`                    | user-service         | auth-service, recommendation-service, notification-service, analytic-service                     | `UserEventPayload` (`eventId`, `eventType`, `userId`)                                                                                                              |
+| `user.deleted`                    | user-service         | auth-service, recommendation-service, notification-service, analytic-service, media-service      | `UserEventPayload` (`eventId`, `eventType`, `userId`)                                                                                                              |
+| `media.upload_requested`          | media-service        | none yet                                                                                         | `MediaEventPayloadType` (`eventId`, `eventType`, `mediaId`, `ownerType`, `ownerId`, …)                                                                             |
+| `media.uploaded`                  | media-service        | analytic-service (optional)                                                                      | `MediaEventPayloadType` (`eventId`, `eventType`, `mediaId`, `ownerType`, `ownerId`, `bucket`, `objectKey`, `mimeType`, `sizeBytes`)                                |
+| `media.processing_started`        | media-service        | none yet                                                                                         | `MediaEventPayloadType`                                                                                                                                            |
+| `media.processing_completed`      | media-service        | product/catalog services (optional)                                                              | `MediaEventPayloadType` (+ `width`, `height`, `checksum`)                                                                                                          |
+| `media.processing_failed`         | media-service        | none yet                                                                                         | `MediaEventPayloadType` (+ `error`)                                                                                                                                |
+| `media.deleted`                   | media-service        | none yet                                                                                         | `MediaEventPayloadType`                                                                                                                                            |
+| `media.quarantined`               | media-service        | notification-service (optional)                                                                  | `MediaEventPayloadType` (+ `error`)                                                                                                                                |
 
 ### `product.created`
 
@@ -115,6 +122,12 @@ The payload is the full product (`ProductCreatedPayload`), a superset of `Stripe
 The rich fields let search-service index images, sizes, and colors immediately — a freshly
 created product is searchable with facets without waiting for an update event — while
 payment-service still finds the `id`/`name`/`price` it mirrors into Stripe.
+
+The `images` map holds **media references** (`color → "media:<uuid>"`) rather than storage
+URLs. media-service consumes `product.created`/`product.updated` to claim the referenced
+media rows (assigning `ownerType=product`), and frontends resolve references to URLs via
+`POST /api/v1/media/resolve`. Legacy URL values are passed through by resolvers, so
+pre-existing products keep rendering.
 
 ```jsonc
 {
@@ -336,6 +349,39 @@ Emitted whenever carrier webhooks or status checks record a granular milestone e
 - Consumers:
   - `apps/notification-service` → real-time tracking updates via WebSockets.
   - `apps/analytic-service` → transit duration analytics per carrier and lane.
+
+### `media.*` lifecycle events
+
+media-service emits a `MediaEventPayloadType` (see `@repo/types/src/media.ts`) on every
+lifecycle transition, always with the repository envelope `{ value: payload }`:
+
+```jsonc
+{
+  "value": {
+    "eventId": "evt_555",
+    "eventType": "media.processing_completed",
+    "mediaId": "0f0a1b2c-…",
+    "ownerType": "product",
+    "ownerId": "42",
+    "bucket": "media",
+    "objectKey": "products/42/0f0a1b2c-…/original.jpg",
+    "mimeType": "image/jpeg",
+    "sizeBytes": 248931,
+    "width": 1600,
+    "height": 1600,
+    "checksum": "sha256-…",
+    "occurredAt": "2026-09-30T00:00:00.000Z",
+  },
+}
+```
+
+- Producer: `apps/media-service/src/messaging/publishers/media.publisher.ts`
+- Consumer (inbound, idempotent via `processed_events`): media-service consumes
+  `product.deleted`, `seller.deleted`, `review.deleted`, `user.deleted`,
+  `category.deleted`, `brand.deleted` and soft-deletes the associated media
+  (`apps/media-service/src/messaging/consumers/domain-deletion.consumer.ts`).
+  Producers without an `eventId` are deduplicated by a deterministic
+  `<topic>:<ownerType>:<ownerId>` key.
 
 ## Adding or changing an event
 

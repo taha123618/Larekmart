@@ -19,16 +19,32 @@ export type AddressType = z.infer<typeof AddressTypeEnum>;
 // Profile Schemas & Types
 // ==========================================
 
+/**
+ * Media reference shape shared by all domains: `media:<uuid>` (or a bare
+ * uuid from legacy rows). Anything else is a passthrough URL.
+ */
+export const MediaRefSchema = z
+  .string()
+  .min(1)
+  .max(200)
+  .regex(
+    /^(media:)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    "Must be a media reference (media:<uuid>)",
+  );
+
 export const UpdateProfileSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),
   lastName: z.string().min(1).max(100).optional(),
   displayName: z.string().min(1).max(100).optional(),
+  /** Legacy avatar URL (Clerk or external). Prefer avatarMediaId. */
   avatarUrl: z
     .string()
     .url("Invalid avatar URL format")
     .max(1000)
     .optional()
     .nullable(),
+  /** Media reference for the avatar; wins over avatarUrl when both are set. */
+  avatarMediaId: MediaRefSchema.optional().nullable(),
   dateOfBirth: z.string().datetime().optional().nullable(),
   gender: z.string().max(50).optional().nullable(),
   bio: z.string().max(500).optional().nullable(),
@@ -42,7 +58,10 @@ export const UserProfileResponseSchema = z.object({
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
   displayName: z.string().nullable(),
+  /** Legacy avatar URL (Clerk or external). New avatars use avatarMediaId. */
   avatarUrl: z.string().nullable(),
+  /** Media reference (`media:<uuid>`) resolved via media-service. */
+  avatarMediaId: z.string().nullable(),
   dateOfBirth: z.string().nullable(),
   gender: z.string().nullable(),
   bio: z.string().nullable(),
@@ -193,6 +212,7 @@ export const UserEventNameSchema = z.enum([
   "user.created",
   "user.updated",
   "user.profile_updated",
+  "user.avatar_uploaded",
   "user.address_created",
   "user.address_updated",
   "user.address_deleted",

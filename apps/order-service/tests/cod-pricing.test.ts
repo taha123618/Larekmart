@@ -43,10 +43,7 @@ async function runCodPricingTests() {
 
   // 1. Server total is derived from catalog prices, ignoring client price
   console.log("1. Total is computed from server prices...");
-  const serverTotal = computeCodOrderTotalPaisa(
-    buildBody(),
-    catalogPrices,
-  );
+  const serverTotal = computeCodOrderTotalPaisa(buildBody(), catalogPrices);
   assert.equal(
     serverTotal,
     349900 + 20000 + 3000,

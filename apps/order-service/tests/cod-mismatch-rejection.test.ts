@@ -111,7 +111,9 @@ async function runCodMismatchTests() {
 
   // 5. Unknown product is a rejection (mismatch is unavoidable)
   console.log("5. Unknown productId cannot be priced → rejected...");
-  const unknownProduct = buildBody({ products: [{ productId: 999999, quantity: 1 }] });
+  const unknownProduct = buildBody({
+    products: [{ productId: 999999, quantity: 1 }],
+  });
   assert.equal(
     !catalogPrices.has(unknownProduct.products[0]!.productId),
     true,
