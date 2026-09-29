@@ -3,6 +3,7 @@ import { PaymentSuccessfulType } from "@repo/types";
 import { invalidateInventoryCache } from "../cache/inventory-cache.js";
 import { inventoryMetrics, logger } from "../observability/metrics.js";
 import { consumer, producer } from "../utils/kafka.js";
+import { verifyPaidCheckoutSession } from "../utils/stripe-verify.js";
 
 /**
  * Subscribes to cross-service payment and order Kafka events to synchronize inventory state.
@@ -35,6 +36,18 @@ export async function startInventoryEventConsumer(): Promise<void> {
           logger.info(
             `Processing payment.successful event for reference: ${referenceId}`,
           );
+
+          // Application-level producer verification: never trust the event
+          // alone. The reference must be a checkout session that Stripe
+          // itself reports as paid before any stock changes hands.
+          const verification = await verifyPaidCheckoutSession(referenceId);
+          if (!verification.verified) {
+            logger.warn(
+              `Rejected payment.successful for reference ${referenceId}: ${verification.reason}`,
+            );
+            inventoryMetrics.paymentVerificationRejectedTotal.inc();
+            return;
+          }
 
           const confirmed = await confirmReservationsByReference(
             referenceId,

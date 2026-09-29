@@ -1,18 +1,18 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
-  "globalEnv": ["NODE_ENV", "ADMIN_REGISTRATION_SECRET"],
-  "globalPassThroughEnv": ["NODE_ENV", "ADMIN_REGISTRATION_SECRET"],
+  "globalEnv": ["NODE_ENV", "ADMIN_REGISTRATION_SECRET", "ALLOW_ADMIN_CLAIM", "STRIPE_SECRET_KEY"],
+  "globalPassThroughEnv": ["NODE_ENV", "ADMIN_REGISTRATION_SECRET", "ALLOW_ADMIN_CLAIM", "STRIPE_SECRET_KEY"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", "bin/**"],
-      "env": ["DATABASE_URL", "NODE_ENV", "ADMIN_REGISTRATION_SECRET"]
+      "env": ["DATABASE_URL", "NODE_ENV", "ADMIN_REGISTRATION_SECRET", "ALLOW_ADMIN_CLAIM", "STRIPE_SECRET_KEY"]
     },
     "lint": {
       "dependsOn": ["^lint"],
-      "env": ["NODE_ENV", "ADMIN_REGISTRATION_SECRET"]
+      "env": ["NODE_ENV", "ADMIN_REGISTRATION_SECRET", "ALLOW_ADMIN_CLAIM"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]
