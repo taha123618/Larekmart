@@ -18,7 +18,10 @@ import { isProcessableImage } from "../src/processing/image.processor.js";
 import { UploadService } from "../src/services/upload.service.js";
 import { MediaService } from "../src/services/media.service.js";
 import { ValidationError } from "../src/errors/errors.js";
-import { createObjectStorage } from "../src/storage/index.js";
+import {
+  createObjectStorage,
+  type ObjectStorage,
+} from "../src/storage/index.js";
 import { env } from "../src/config/env.js";
 import { producer } from "../src/utils/kafka.js";
 
@@ -829,17 +832,40 @@ async function runTests(): Promise<void> {
   await ok(
     "non-READY media cannot serve URLs (MediaNotReadyError)",
     async () => {
-      const { mediaService } = makeServices();
-      const processingRow = makeMediaRow({ status: "PROCESSING" });
-      await assert
-        .rejects(
-          mediaService.getMediaUrl("media_public", null, null),
-          // media_public row is READY in repos? getMediaUrl reads from repos — use direct assert:
-        )
-        .catch(() => undefined);
-      mediaService.assertCanView(processingRow, null);
-      // Direct service-level check via the row's status:
-      assert.equal(processingRow.status !== "READY", true);
+      const { mediaService, repos } = makeServices();
+      const actor = { userId: "user_1", role: "user" as const };
+      await repos.media.insert({
+        id: "media_not_ready_url_test",
+        ownerType: "user",
+        ownerId: "user_1",
+        bucket: "media",
+        objectKey: "users/user_1/media_not_ready_url_test/original.png",
+        originalFilename: "avatar.png",
+        mimeType: "image/png",
+        extension: "png",
+        sizeBytes: 1024,
+        status: "PROCESSING",
+        visibility: "PUBLIC",
+        createdBy: "user_1",
+      });
+      await assert.rejects(
+        mediaService.getMediaUrl("media_not_ready_url_test", null, actor),
+        (err: unknown) => {
+          assert.equal((err as { name?: string }).name, "MediaNotReadyError");
+          return true;
+        },
+      );
+      // The same media serves its URL once processing completes.
+      await repos.media.updateStatus("media_not_ready_url_test", "READY");
+      const ready = await mediaService.getMediaUrl(
+        "media_not_ready_url_test",
+        null,
+        actor,
+      );
+      assert.ok(
+        ready.url.includes("original.png"),
+        "READY media serves its object URL",
+      );
     },
   );
 
@@ -857,13 +883,9 @@ async function runTests(): Promise<void> {
       "getObjectBuffer",
       "putObject",
       "checkConnectivity",
-    ];
+    ] as const satisfies readonly (keyof ObjectStorage)[];
     for (const method of required) {
-      assert.equal(
-        typeof (storage as Record<string, unknown>)[method],
-        "function",
-        method,
-      );
+      assert.equal(typeof storage[method], "function", method);
     }
   });
 
@@ -873,7 +895,8 @@ async function runTests(): Promise<void> {
   await ok("media lifecycle states follow the spec enum", async () => {
     const { MediaStatusEnum } = await import("@repo/types");
     const statuses = MediaStatusEnum.options;
-    for (const expected of [
+    // Typed against the enum so a renamed/removed status fails check-types too.
+    const expectedStatuses: (typeof MediaStatusEnum.options)[number][] = [
       "PENDING",
       "UPLOADING",
       "PROCESSING",
@@ -881,7 +904,8 @@ async function runTests(): Promise<void> {
       "FAILED",
       "QUARANTINED",
       "DELETED",
-    ]) {
+    ];
+    for (const expected of expectedStatuses) {
       assert.ok(statuses.includes(expected), `missing status ${expected}`);
     }
   });
@@ -904,7 +928,10 @@ async function runTests(): Promise<void> {
   function indexesOf(table: Parameters<typeof getTableConfig>[0]) {
     return getTableConfig(table).indexes.map((i) => ({
       name: i.config.name,
-      columns: i.config.columns.map((c) => c.name),
+      // Index config columns can be raw SQL expressions without a name.
+      columns: i.config.columns.map((c) =>
+        "name" in c && typeof c.name === "string" ? c.name : "<expression>",
+      ),
       unique: (i.config as { unique?: boolean }).unique === true,
     }));
   }
