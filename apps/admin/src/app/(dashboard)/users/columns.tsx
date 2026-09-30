@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import MediaImage from "@/components/MediaImage";
 
 export interface UserWithServiceStatus {
   id: string;
@@ -53,12 +54,12 @@ export const columns: ColumnDef<UserWithServiceStatus>[] = [
     cell: ({ row }) => {
       const user = row.original;
       return (
-        <div className="w-9 h-9 relative">
-          <img
-            src={user.imageUrl ?? ""}
+        <div className="w-9 h-9 relative flex items-center justify-center">
+          <MediaImage
+            ref_={user.imageUrl || undefined}
             alt={user.firstName || user.username || "-"}
-            // fill
-            className="rounded-full object-cover"
+            size={36}
+            className="w-9 h-9 rounded-full object-cover"
           />
         </div>
       );

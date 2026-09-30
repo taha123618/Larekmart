@@ -12,7 +12,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 
 - **Two frontends** own all user interaction and call backend services over HTTP with a
   Clerk Bearer token: `client` (storefront, :3002) and `admin` (dashboard, :3003).
-- **Eight HTTP backend services & two workers** own business logic and each owns its data:
+- **Thirteen HTTP backend services & two headless workers** own business logic and each owns its data:
   - `product-service` (:8000) — catalog, PostgreSQL via Prisma.
   - `order-service` (:8001) — orders, MongoDB via Mongoose.
   - `payment-service` (:8002) — Stripe; stateless.
@@ -23,6 +23,10 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `inventory-service` (:8007) — Hono, PostgreSQL stock authority, atomic reservations, warehouse inventory, and Kafka events.
   - `recommendation-service` (:8008) — Python 3.12+ (FastAPI), collaborative & content filtering, pgvector embeddings, trending algorithms, Celery worker.
   - `cart-service` (:8009) — Express 5, authoritative MongoDB carts, guest-to-user merge, pricing estimates, TTL expiration reaper.
+  - `catalog-service` (:8010) — Fastify 5, read-optimized product discovery (categories, brands, collections) over a Prisma catalog read model.
+  - `shipping-service` (:8011) — Koa, shipment lifecycle, carrier adapters (TCS/Leopards/DHL/FedEx), tracking, labels; PostgreSQL.
+  - `user-service` (:8012) — Fastify 5, customer profiles, addresses, preferences; PostgreSQL via `@repo/user-db`.
+  - `media-service` (:8013) — Hono 4, S3/MinIO object storage behind an `ObjectStorage` interface, Drizzle/PostgreSQL metadata, Redis-cached resolve, Sharp processing + cleanup workers.
   - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).
@@ -44,6 +48,10 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Inventory availability, reservations, stock ledger | `apps/inventory-service`                               |
 | AI recommendations, embeddings, user interactions  | `apps/recommendation-service`                          |
 | Cart persistence, items, coupons, merge engine     | `apps/cart-service`                                    |
+| Product discovery, categories, brands, collections | `apps/catalog-service`                                 |
+| Shipments, rates, tracking, carrier adapters       | `apps/shipping-service`                                |
+| Customer profiles, addresses, preferences          | `apps/user-service`                                    |
+| Media uploads, variants, image processing          | `apps/media-service`                                   |
 | Kafka client/producer/consumer helpers             | `packages/kafka`                                       |
 | Shared types, Zod schemas, Kafka payload types     | `packages/types`                                       |
 | Telemetry, structured logging, health checks       | `packages/monitoring`                                  |
@@ -52,6 +60,9 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Inventory DB schema and transactions               | `packages/inventory-db`                                |
 | Order persistence schema                           | `packages/order-db`                                    |
 | Cart persistence schema (Mongoose)                 | `packages/cart-db`                                     |
+| Catalog read-model schema                          | `packages/catalog-db`                                  |
+| Shipping schema, tracking events, labels           | `packages/shipping-db`                                 |
+| User profiles, addresses, preferences schema       | `packages/user-db`                                     |
 | TS/ESLint baselines                                | `packages/typescript-config`, `packages/eslint-config` |
 
 ## Data ownership

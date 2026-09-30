@@ -17,14 +17,15 @@ Larekmart's container topology is organized into an isolated Docker bridge netwo
     ┌───────────────────────────┴────────────────────────────┐
     ▼                                                        ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                  13 Microservices Tier                       │
+│                    Microservices Tier                        │
 │  product-service (8000)        cart-service (8009)           │
 │  order-service (8001)          catalog-service (8010)        │
 │  payment-service (8002)        shipping-service (8011)       │
-│  auth-service (8003)           notification-service (8005)   │
-│  analytic-service (8004)       recommendation-service (8008) │
+│  auth-service (8003)           media-service (8013)          │
+│  analytic-service (8004)       media-worker / media-cleanup  │
 │  search-service (8006)         email-service (worker)        │
 │  inventory-service (8007)                                    │
+│  notification-service (8005)   recommendation-service (8008) │
 └──────────────┬──────────────────┬─────────────────┬──────────┘
                │                  │                 │
                ▼                  ▼                 ▼
@@ -68,30 +69,32 @@ docker/
 
 ## 3. Network & Port Allocations
 
-| Service / Container      | Container Port                    | Host Port    | Protocol / Purpose                   |
-| ------------------------ | --------------------------------- | ------------ | ------------------------------------ |
-| `postgres`               | `5432`                            | `5432`       | PostgreSQL + pgvector databases      |
-| `mongo`                  | `27017`                           | `27017`      | MongoDB Database                     |
-| `mongo-express`          | `8081`                            | `8081`       | Mongo-Express Web Admin UI           |
-| `redis`                  | `6379`                            | `6379`       | In-memory cache & pub/sub            |
-| `kafka`                  | `9092` (internal) / `9094` (host) | `9092, 9094` | Apache Kafka event bus               |
-| `opensearch`             | `9200`                            | `9200`       | Product search & autocomplete        |
-| `kafka-ui`               | `8080`                            | `8080`       | Web UI for topics & consumers        |
-| `product-service`        | `8000`                            | `8000`       | Product catalog CRUD & sync          |
-| `order-service`          | `8001`                            | `8001`       | Order lifecycle & MongoDB storage    |
-| `payment-service`        | `8002`                            | `8002`       | Stripe payments & webhook processing |
-| `auth-service`           | `8003`                            | `8003`       | Clerk user & admin gateway           |
-| `analytic-service`       | `8004`                            | `8004`       | Event stream metrics aggregator      |
-| `notification-service`   | `8005`                            | `8005`       | Multi-channel alerts & WebSockets    |
-| `search-service`         | `8006`                            | `8006`       | OpenSearch query engine              |
-| `inventory-service`      | `8007`                            | `8007`       | Stock ledgers & reservations         |
-| `recommendation-service` | `8008`                            | `8008`       | Hybrid pgvector recommendations      |
-| `cart-service`           | `8009`                            | `8009`       | Authoritative shopping carts         |
-| `catalog-service`        | `8010`                            | `8010`       | Read-optimized storefront catalog    |
-| `shipping-service`       | `8011`                            | `8011`       | Carrier rate quote & dispatch        |
-| `email-service`          | None                              | None         | Background Kafka email worker        |
-| `client`                 | `3002`                            | `3002`       | Next.js 15 Storefront UI             |
-| `admin`                  | `3003`                            | `3003`       | Next.js 15 Admin Dashboard UI        |
+| Service / Container      | Container Port                    | Host Port    | Protocol / Purpose                                                             |
+| ------------------------ | --------------------------------- | ------------ | ------------------------------------------------------------------------------ |
+| `postgres`               | `5432`                            | `5432`       | PostgreSQL + pgvector databases                                                |
+| `mongo`                  | `27017`                           | `27017`      | MongoDB Database                                                               |
+| `mongo-express`          | `8081`                            | `8081`       | Mongo-Express Web Admin UI                                                     |
+| `redis`                  | `6379`                            | `6379`       | In-memory cache & pub/sub                                                      |
+| `kafka`                  | `9092` (internal) / `9094` (host) | `9092, 9094` | Apache Kafka event bus                                                         |
+| `opensearch`             | `9200`                            | `9200`       | Product search & autocomplete                                                  |
+| `kafka-ui`               | `8080`                            | `8080`       | Web UI for topics & consumers                                                  |
+| `product-service`        | `8000`                            | `8000`       | Product catalog CRUD & sync                                                    |
+| `order-service`          | `8001`                            | `8001`       | Order lifecycle & MongoDB storage                                              |
+| `payment-service`        | `8002`                            | `8002`       | Stripe payments & webhook processing                                           |
+| `auth-service`           | `8003`                            | `8003`       | Clerk user & admin gateway                                                     |
+| `analytic-service`       | `8004`                            | `8004`       | Event stream metrics aggregator                                                |
+| `notification-service`   | `8005`                            | `8005`       | Multi-channel alerts & WebSockets                                              |
+| `search-service`         | `8006`                            | `8006`       | OpenSearch query engine                                                        |
+| `inventory-service`      | `8007`                            | `8007`       | Stock ledgers & reservations                                                   |
+| `recommendation-service` | `8008`                            | `8008`       | Hybrid pgvector recommendations                                                |
+| `cart-service`           | `8009`                            | `8009`       | Authoritative shopping carts                                                   |
+| `catalog-service`        | `8010`                            | `8010`       | Read-optimized storefront catalog                                              |
+| `shipping-service`       | `8011`                            | `8011`       | Carrier rate quote & dispatch                                                  |
+| `media-service`          | `8013`                            | `8013`       | Media uploads, variants & lifecycle                                            |
+| `media-worker`           | None                              | None         | Sharp image-processing job claimer                                             |
+| `media-cleanup`          | None                              | None         | Session expiry, stale-job requeue (`MEDIA_WORKER_STALE_JOB_SECONDS`), purge GC |
+| `client`                 | `3002`                            | `3002`       | Next.js 15 Storefront UI                                                       |
+| `admin`                  | `3003`                            | `3003`       | Next.js 15 Admin Dashboard UI                                                  |
 
 ---
 

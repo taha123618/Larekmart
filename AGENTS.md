@@ -8,7 +8,7 @@ and the relevant scoped `AGENTS.md`.
 ## 1. What this is
 
 **Larekmart** is a microservices e-commerce platform for clothing. It is a
-**pnpm + Turborepo monorepo** with two Next.js frontends, six backend services, and
+**pnpm + Turborepo monorepo** with two Next.js frontends, 15 backend services, and
 shared internal packages. Cross-service communication is **asynchronous via Kafka**;
 there are no service-to-service HTTP calls.
 
@@ -33,7 +33,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`
-   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`
+   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`
    - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.
@@ -91,6 +91,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `catalog-service`         | `apps/catalog-service`        | Fastify 5               | 8010 | Read-optimized product discovery, categories, brands, collections & storefront     |
 | `shipping-service`        | `apps/shipping-service`       | Koa (Node.js)           | 8011 | Shipment lifecycle, rates, carrier adapters (TCS/Leopards/DHL/FedEx), tracking     |
 | `user-service`            | `apps/user-service`           | Fastify 5               | 8012 | Customer profiles, saved addresses, preferences, and account domain                |
+| `media-service`           | `apps/media-service`          | Hono 4                  | 8013 | Media uploads, object storage, image variants & lifecycle events                   |
 | `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                              |
 | `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                      |
 | `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                        |
@@ -152,11 +153,12 @@ pnpm --filter @repo/product-db db:migrate    # prisma migrate dev
 pnpm --filter @repo/product-db db:deploy     # prisma migrate deploy
 pnpm --filter @repo/inventory-db db:generate # generate inventory Prisma client
 pnpm --filter @repo/inventory-db db:migrate  # inventory migration in development
+pnpm --filter media-service db:migrate       # media-service Drizzle migrations (media_db)
 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
 docker compose up -d --build                 # start entire microservices stack (15 apps + backing DBs)
 docker compose down                          # stop all containers preserving volumes
-docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui # backing infra only
+docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui minio minio-init # backing infra only
 # See docs/DOCKER.md for complete operations manual
 ```
 
@@ -170,9 +172,17 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
   Follow the extension style of the file you are editing.
 - **Type-check before you finish.** Run `pnpm check-types` (or the workspace filter)
   and `pnpm build` for changes that affect a Next.js app or payment-service.
-- **Testing strategy.** There is no general JavaScript test runner yet. Verification relies
-  on `check-types`, `build`, `lint`, the Go test suite in `notification-service`, the opt-in
-  Redis integration check, and manual testing. When adding tests, follow `docs/TESTING.md`.
+- **Testing strategy.** Eight workspaces ship real test suites run by `pnpm test`
+  (Turborepo): `@repo/types`, `user-service`, `cart-service`, `shipping-service`,
+  `order-service`, and `media-service` use standalone tsx-run test files under
+  `tests/` (follow the file's internal runner convention, e.g.
+  `media-service/tests/index.test.ts`); `notification-service` uses `go test ./...`;
+  `recommendation-service` uses pytest via `uv`. There is **no Vitest/Jest anywhere** —
+  do not introduce a new runner when extending an existing suite. When adding tests,
+  follow `docs/TESTING.md`. Note: `tsc` configs typecheck `src/` only — test files are
+  not covered by `pnpm check-types`, so keep test code strict-clean by hand (no `any`,
+  no casts that hide type mismatches) and typecheck new test files directly with
+  `npx tsc --noEmit --strict ...` when hardening them.
 - **Logging** is `console.log`/`console.error` today. Keep it structured and sparse.
 - **Error handling** at boundaries: services return `{ message }` JSON with correct
   status codes; async Kafka handlers catch and log so a bad message cannot kill the
@@ -187,5 +197,6 @@ Before considering a task complete:
 - [ ] `pnpm check-types` passes for affected workspaces.
 - [ ] `pnpm build` passes if a Next.js app or `payment-service` changed.
 - [ ] `pnpm lint` passes if `admin` or `client` changed.
+- [ ] `pnpm test` passes for affected workspaces with test suites.
 - [ ] New env vars were added to the relevant `.env.example` (never a real `.env`).
 - [ ] Docs/AGENTS.md updated when architecture, contracts, or workflows changed.

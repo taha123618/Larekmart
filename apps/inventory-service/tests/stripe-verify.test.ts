@@ -31,7 +31,9 @@ async function runStripeVerifyTests() {
   try {
     // 1. The forged lead payload: reference is a reservation id, not a
     //    Stripe session — rejected without a network call.
-    console.log("1. Non-Stripe reference (forged reservation id) is rejected...");
+    console.log(
+      "1. Non-Stripe reference (forged reservation id) is rejected...",
+    );
     const forged = await verifyPaidCheckoutSession("repro-forged-123456");
     assert.equal(forged.verified, false, "non-cs_ reference must not verify");
     assert.ok(forged.reason, "rejection must carry a reason");

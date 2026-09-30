@@ -64,6 +64,14 @@ apps/user-service ─────────┬─▶ @repo/user-db ─▶ @pri
                            ├─▶ @repo/monitoring
                            └─▶ @repo/types
 
+apps/media-service ────────┬─▶ drizzle-orm + pg ─▶ PostgreSQL (media_db)
+                           ├─▶ @repo/kafka
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           ├─▶ @repo/monitoring
+                           ├─▶ @repo/types
+                           ├─▶ @aws-sdk/client-s3 + @aws-sdk/s3-request-presigner ─▶ S3/MinIO
+                           └─▶ sharp (worker image processing)
+
 apps/admin, apps/client ─▶ @repo/eslint-config, @repo/typescript-config
 all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 ```

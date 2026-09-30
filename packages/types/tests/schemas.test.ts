@@ -185,13 +185,18 @@ async function runSchemaTests() {
   const parsedCod = CreateCodOrderSchema.safeParse(validCodOrder);
   assert.equal(parsedCod.success, true, "Valid COD order should parse");
   if (parsedCod.success) {
-    assert.equal(parsedCod.data.discountTotal, 0, "discountTotal defaults to 0");
+    assert.equal(
+      parsedCod.data.discountTotal,
+      0,
+      "discountTotal defaults to 0",
+    );
     assert.equal(parsedCod.data.taxTotal, 0, "taxTotal defaults to 0");
   }
 
   // Non-integer amounts must fail (paisa contract)
   assert.equal(
-    CreateCodOrderSchema.safeParse({ ...validCodOrder, amount: 3500.5 }).success,
+    CreateCodOrderSchema.safeParse({ ...validCodOrder, amount: 3500.5 })
+      .success,
     false,
     "Fractional paisa amount must be rejected",
   );

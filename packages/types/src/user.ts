@@ -19,16 +19,22 @@ export type AddressType = z.infer<typeof AddressTypeEnum>;
 // Profile Schemas & Types
 // ==========================================
 
+import { MediaRefSchema } from "./media";
+export { MediaRefSchema };
+
 export const UpdateProfileSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),
   lastName: z.string().min(1).max(100).optional(),
   displayName: z.string().min(1).max(100).optional(),
+  /** Legacy avatar URL (Clerk or external). Prefer avatarMediaId. */
   avatarUrl: z
     .string()
     .url("Invalid avatar URL format")
     .max(1000)
     .optional()
     .nullable(),
+  /** Media reference for the avatar; wins over avatarUrl when both are set. */
+  avatarMediaId: MediaRefSchema.optional().nullable(),
   dateOfBirth: z.string().datetime().optional().nullable(),
   gender: z.string().max(50).optional().nullable(),
   bio: z.string().max(500).optional().nullable(),
@@ -42,7 +48,10 @@ export const UserProfileResponseSchema = z.object({
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
   displayName: z.string().nullable(),
+  /** Legacy avatar URL (Clerk or external). New avatars use avatarMediaId. */
   avatarUrl: z.string().nullable(),
+  /** Media reference (`media:<uuid>`) resolved via media-service. */
+  avatarMediaId: z.string().nullable(),
   dateOfBirth: z.string().nullable(),
   gender: z.string().nullable(),
   bio: z.string().nullable(),
@@ -193,6 +202,7 @@ export const UserEventNameSchema = z.enum([
   "user.created",
   "user.updated",
   "user.profile_updated",
+  "user.avatar_uploaded",
   "user.address_created",
   "user.address_updated",
   "user.address_deleted",

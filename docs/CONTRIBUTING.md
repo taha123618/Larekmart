@@ -31,8 +31,11 @@ pnpm --filter product-service dev
 
 Before opening a pull request or submitting code changes:
 
-- [ ] **Type Check**: `pnpm check-types` passes across all 21 workspaces.
-- [ ] **Build Validation**: `pnpm build` succeeds for all configured build workspaces, including the Next.js apps, Node services, packages, and Go notification service.
+- [ ] **Type Check**: `pnpm check-types` passes across all 31 workspaces.
+- [ ] **Tests**: `pnpm test` passes for every workspace with a test suite that your
+      change touches (8 suites exist: `@repo/types`, `user-service`, `order-service`,
+      `cart-service`, `shipping-service`, `media-service`, `notification-service`,
+      `recommendation-service`).
 - [ ] **Linting**: `pnpm lint` passes for `apps/admin` and `apps/client`.
 - [ ] **Formatting**: `pnpm format` has been executed.
 - [ ] **No Committed Secrets**: No `.env` files or API keys staged.

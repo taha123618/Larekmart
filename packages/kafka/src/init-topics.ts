@@ -64,6 +64,7 @@ export const ALL_LAREKMART_TOPICS = [
   "user.created",
   "user.updated",
   "user.profile_updated",
+  "user.avatar_uploaded",
   "user.address_created",
   "user.address_updated",
   "user.address_deleted",
@@ -84,6 +85,15 @@ export const ALL_LAREKMART_TOPICS = [
   "inventory.adjusted",
   "inventory.low_stock",
   "inventory.out_of_stock",
+
+  // Media
+  "media.upload_requested",
+  "media.uploaded",
+  "media.processing_started",
+  "media.processing_completed",
+  "media.processing_failed",
+  "media.deleted",
+  "media.quarantined",
 ] as const;
 
 export async function initializeTopics(): Promise<void> {

@@ -42,7 +42,10 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
   react-hook-form + Zod schemas from `@repo/types`.
-- Image uploads go directly to Cloudinary from the browser.
+- Product images upload through media-service's presigned direct-to-storage flow
+  (`src/services/media.service.ts`); products reference them by `mediaId`, and the
+  `MediaImage` component resolves references to URLs dynamically (legacy URL values
+  pass through untouched during migration).
 - Access control: `src/middleware.ts` requires `metadata.role === "admin"`.
 
 ### Services
@@ -161,6 +164,15 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Address Management: Manages customer default shipping & billing addresses, ensuring transactional single-default guarantees. Downstream checkout/shipping services snapshot addresses immutably to preserve historical records.
 - Events: Publishes `user.created`, `user.updated`, `user.profile_updated`, `user.address_created`, `user.address_updated`, `user.address_deleted`, `user.preferences_updated`, `user.deleted`, `user.deletion_requested`. Consumes `user.created`, `auth.user_created`, `user.registered` with idempotency deduplication via `processed_events`.
 
+**`media-service` (Hono, :8013)** — object storage, media metadata, upload lifecycle, and image variants.
+
+- Routes: `POST /api/v1/media/uploads` (validate + presigned PUT URL), `POST /api/v1/media/:mediaId/complete` (verify object + enqueue processing), `GET /api/v1/media/:mediaId`, `GET /api/v1/media/:mediaId/url`, `GET /api/v1/media/owner/:ownerType/:ownerId`, `DELETE /api/v1/media/:mediaId` (soft), admin list/reprocess/restore/purge, `/health`, `/health/live`, `/health/ready`, `/metrics`.
+- Persistence: PostgreSQL via Drizzle ORM targeting `media_db` (`media`, `media_variants`, `media_uploads`, `media_processing_jobs`, `processed_events`). Binaries never live in the database.
+- Storage: S3-compatible object storage behind the `ObjectStorage` interface — MinIO in development (`minio` + `minio-init` compose services), any S3-compatible provider in production. Uploads are presigned and direct-to-storage; binaries never traverse the API. URLs are generated dynamically from `bucket` + `object_key`, never persisted.
+- Processing: `media-worker` claims jobs from `media_processing_jobs` (`FOR UPDATE SKIP LOCKED`) and runs Sharp (thumbnail/small/medium/large WebP variants) independently of the API; `media-cleanup` requeues stale `PROCESSING` jobs (crashed-worker recovery, `MEDIA_WORKER_STALE_JOB_SECONDS`, default 900s), expires abandoned upload sessions, and purges soft-deleted media past the retention window.
+- Ownership: generic `(ownerType, ownerId)` references with no cross-database foreign keys; mutations are gated by the Clerk `createdBy` identity; PRIVATE media resolves through presigned URLs only.
+- Events: publishes `media.upload_requested`, `media.uploaded`, `media.processing_started`, `media.processing_completed`, `media.processing_failed`, `media.deleted`, `media.quarantined`. Consumes `product.deleted`, `seller.deleted`, `review.deleted`, `user.deleted`, `category.deleted`, `brand.deleted` (idempotently via `processed_events`) to soft-delete associated media.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                          |
@@ -173,6 +185,8 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`   |
 | PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                           |
 | PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events` |
+| PostgreSQL | media-service                    | Drizzle (`pg`)                | `media`, `media_variants`, `media_uploads`, `media_processing_jobs`, `processed_events`                                                 |
+| S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                  |
 | Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                   |
 | Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                               |
 | Redis      | product-service                  | `@repo/redis` (ioredis)       | `product:v1:*` (catalog read-through cache)                                                                                             |

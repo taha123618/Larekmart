@@ -8,8 +8,11 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
 
 1. **Automated Unit & Integration Test Suites**:
    - `@repo/types`: Domain contracts and Zod schema validations (`pnpm --filter @repo/types test`).
+   - `user-service`: Profile, address, and account-domain service tests (`pnpm --filter user-service test`).
+   - `order-service`: Order security and authorization tests (`pnpm --filter order-service test`).
    - `cart-service`: Financial pricing engine, discount calculators, and threshold boundary tests (`pnpm --filter cart-service test`).
    - `shipping-service`: Constant-time webhook verification and authorization middleware tests (`pnpm --filter shipping-service test`).
+   - `media-service`: Six offline suites (unit validation, storage, API, messaging, workers, and a full lifecycle suite) covering object-key traversal safety, magic-byte MIME detection, per-category size limits, cross-owner authorization, private-media visibility, URL strategy, worker claim SQL, index strategy, and cleanup sweeps (`pnpm --filter media-service test`).
    - `notification-service`: Native Go test suite for workers, templates, dispatchers, and WebSockets (`go test ./...`).
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
    - `@repo/redis`: Opt-in Redis integration verifier (`pnpm --filter @repo/redis verify:redis`).
@@ -34,11 +37,22 @@ When writing automated tests in Larekmart, adhere to the following architecture:
 
 ### 1. Recommended Test Runner
 
-- **Vitest** is the standard test runner for this monorepo due to native ESM support, rapid execution, and TypeScript integration.
+- **The established convention is standalone tsx-run test files**: a `tests/` directory
+  per workspace whose `test` script executes the suite entrypoint directly, e.g.
+  `"test": "tsx tests/index.test.ts"` (media-service) or
+  `"test": "tsx tests/pricing.test.ts"` (cart-service). Suites use `node:assert/strict`,
+  keep their own pass/fail counting, and exit non-zero on failure so Turbo reports them.
+  There is **no Vitest or Jest anywhere in the monorepo** — do not add a new runner to a
+  workspace that already has one of these suites.
+- **Go services** use `go test ./...`; the Python service uses pytest via `uv`.
+- **Important gap:** tsconfig `include` covers `src/` only, so `pnpm check-types` does
+  **not** typecheck test files. Keep test code strict-clean by hand, and when hardening a
+  test file run strict tsc on it directly:
+  `npx tsc --noEmit --strict --noUncheckedIndexedAccess tests/<file>.ts` (from the workspace root).
 
 ### 2. Unit Testing Layer
 
-- **Location**: Co-located with implementation files (`foo.test.ts` next to `foo.ts`).
+- **Location**: A `tests/` directory in the workspace (the established convention), with suite files named by domain (e.g. `tests/media-service.test.ts`, `tests/pricing.test.ts`).
 - **Scope**:
   - Zod validation schemas in `@repo/types`.
   - Utility functions and calculation logic.
@@ -68,23 +82,16 @@ When writing automated tests in Larekmart, adhere to the following architecture:
 
 ## Adding Tests to a Workspace
 
-To introduce tests to a workspace:
+To introduce tests to a workspace that has none yet:
 
-1. Add `vitest` as a devDependency in the target workspace:
-   ```bash
-   pnpm add -D vitest --filter <workspace>
-   ```
+1. Create a `tests/` directory and follow the existing file conventions (see
+   `apps/media-service/tests/index.test.ts` for the composition-root pattern and
+   `tests/media-service.test.ts` for the in-file runner).
 2. Add a test script in `apps/<workspace>/package.json`:
    ```json
    "scripts": {
-     "test": "vitest run"
+     "test": "tsx tests/index.test.ts"
    }
    ```
-3. Register the `test` task in `turbo.json`:
-   ```json
-   "tasks": {
-     "test": {
-       "dependsOn": ["^build"]
-     }
-   }
-   ```
+3. The `test` task is already registered in `turbo.json`, so `pnpm test` picks it up
+   automatically; ensure `tsx` is a devDependency of the workspace.

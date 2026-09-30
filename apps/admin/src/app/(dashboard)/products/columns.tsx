@@ -14,6 +14,7 @@ import { ProductType } from "@repo/types";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import MediaImage from "@/components/MediaImage";
 
 // export type Product = {
 //   id: string | number;
@@ -50,20 +51,11 @@ export const columns: ColumnDef<ProductType>[] = [
     header: "Image",
     cell: ({ row }) => {
       const product = row.original;
-      return (
-        <div className="w-9 h-9 relative">
-          <img
-            src={
-              (product.images as Record<string, string>)?.[
-                product.colors[0] || ""
-              ] || ""
-            }
-            alt={product.name}
-            // fill
-            className="rounded-full object-cover"
-          />
-        </div>
-      );
+      // images values are media references (media:<uuid>) for new products
+      // or legacy URLs for pre-existing rows — MediaImage handles both.
+      const firstColor = product.colors?.[0] || "";
+      const ref = (product.images as Record<string, string>)?.[firstColor];
+      return <MediaImage ref_={ref} alt={product.name} />;
     },
   },
   {

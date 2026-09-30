@@ -11,3 +11,4 @@ export * from "./recommendation";
 export * from "./catalog";
 export * from "./shipping";
 export * from "./user";
+export * from "./media";

@@ -45,9 +45,23 @@ export class ProfileService {
         lastName: updated.lastName,
         displayName: updated.displayName,
         avatarUrl: updated.avatarUrl,
+        avatarMediaId: updated.avatarMediaId,
       },
       authUserId,
     );
+
+    // Avatar media claim: tell media-service to reassign the uploaded media
+    // row to this user's Clerk identity (ownership loop for avatars).
+    if (input.avatarMediaId) {
+      await publishUserEvent(
+        "user.avatar_uploaded",
+        userId,
+        {
+          avatarMediaId: input.avatarMediaId,
+        },
+        authUserId,
+      );
+    }
 
     logger.info(`Profile updated for user: ${userId}`);
     return updated;

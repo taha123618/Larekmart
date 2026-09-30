@@ -41,20 +41,22 @@ model User {
 }
 
 model UserProfile {
-  id          String    @id @default(uuid())
-  userId      String    @unique @map("user_id")
-  firstName   String?   @map("first_name")
-  lastName    String?   @map("last_name")
-  displayName String?   @map("display_name")
-  avatarUrl   String?   @map("avatar_url")
-  dateOfBirth DateTime? @map("date_of_birth")
-  gender      String?
-  bio         String?
-  metadata    Json?
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id            String    @id @default(uuid())
+  userId        String    @unique @map("user_id")
+  firstName     String?   @map("first_name")
+  lastName      String?   @map("last_name")
+  displayName   String?   @map("display_name")
+  avatarUrl     String?   @map("avatar_url")
+  /// Media reference (media-service) — preferred over avatarUrl for new avatars.
+  avatarMediaId String?   @map("avatar_media_id")
+  dateOfBirth   DateTime? @map("date_of_birth")
+  gender        String?
+  bio           String?
+  metadata      Json?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
 }

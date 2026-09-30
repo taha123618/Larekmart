@@ -7,12 +7,14 @@
 **Stack & build.** pnpm 9 + Turborepo, TypeScript strict, Prisma (Postgres) / Mongoose (MongoDB), kafkajs, ioredis, Clerk auth everywhere, Stripe payments. Offline verification available: `pnpm --filter <ws> check-types`, `pnpm test` (mock-based suites: order, shipping, cart). No general test runner. Docker compose for local infra.
 
 **Entry surfaces.**
+
 - HTTP APIs per service (ports 8000–8012): product, order, payment (Stripe webhooks), auth (Clerk admin proxy), email (none), analytic, notification (Go, WebSocket), search (OpenSearch), inventory, recommendation (FastAPI), cart, catalog, shipping (carrier webhooks), user.
 - Next.js apps: SSR pages + API routes (`/api/claim-admin` in admin).
 - Kafka topics (~70 in `packages/kafka/src/init-topics.ts`) consumed by 11 Node services + Go consumer manager.
 - No file uploads, no dynamic code evaluation, no raw SQL string building (Prisma parameterization).
 
 **Trust boundaries and strongest source-visible controls.**
+
 1. Internet → storefront/admin (Clerk middleware; admin gated on `sessionClaims.metadata.role === "admin"` in `apps/admin/src/middleware.ts`).
 2. Browser → backend APIs (`shouldBeUser`/`shouldBeAdmin` middleware derived from verified Clerk sessions in every service).
 3. External carriers → shipping webhook (HMAC-style compare; **fail-open in dev/test observed**).

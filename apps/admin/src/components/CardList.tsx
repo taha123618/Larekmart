@@ -2,6 +2,7 @@ import { Card, CardContent, CardFooter, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { AnalyticsEventType, OrderType, ProductsType } from "@repo/types";
 import { auth } from "@clerk/nextjs/server";
+import MediaImage from "./MediaImage";
 
 const CardList = async ({ title }: { title: string }) => {
   let products: ProductsType = [];
@@ -95,15 +96,15 @@ const CardList = async ({ title }: { title: string }) => {
                 key={item.id}
                 className="flex-row items-center justify-between gap-4 p-4"
               >
-                <div className="w-12 h-12 rounded-sm relative overflow-hidden">
-                  <img
-                    src={
+                <div className="w-12 h-12 rounded-sm relative overflow-hidden flex items-center justify-center">
+                  <MediaImage
+                    ref_={
                       Object.values(item.images as Record<string, string>)[0] ||
                       ""
                     }
                     alt={item.name}
-                    // fill
-                    className="object-cover"
+                    size={48}
+                    className="w-12 h-12 rounded-sm object-cover"
                   />
                 </div>
                 <CardContent className="flex-1 p-0">

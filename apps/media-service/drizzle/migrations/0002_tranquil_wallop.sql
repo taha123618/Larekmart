@@ -1,0 +1,1 @@
+CREATE INDEX "media_owner_status_idx" ON "media" USING btree ("owner_type","owner_id","status");

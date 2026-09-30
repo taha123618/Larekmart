@@ -16,10 +16,9 @@ let stripeClient: Stripe | null = null;
 
 const getStripe = (): Stripe => {
   if (!stripeClient) {
-    stripeClient = new Stripe(
-      process.env.STRIPE_SECRET_KEY!,
-      { apiVersion: "2025-08-27.basil" },
-    );
+    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: "2025-08-27.basil",
+    });
   }
   return stripeClient;
 };

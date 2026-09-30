@@ -17,6 +17,8 @@ export class ProfileRepository {
     if (data.displayName !== undefined)
       updateData.displayName = data.displayName;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+    if (data.avatarMediaId !== undefined)
+      updateData.avatarMediaId = data.avatarMediaId;
     if (data.dateOfBirth !== undefined) {
       updateData.dateOfBirth = data.dateOfBirth
         ? new Date(data.dateOfBirth)
@@ -36,6 +38,7 @@ export class ProfileRepository {
         lastName: data.lastName || null,
         displayName: data.displayName || null,
         avatarUrl: data.avatarUrl || null,
+        avatarMediaId: data.avatarMediaId || null,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         gender: data.gender || null,
         bio: data.bio || null,

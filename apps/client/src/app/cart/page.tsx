@@ -3,6 +3,7 @@
 import ShippingForm from "@/components/ShippingForm";
 import StripePaymentForm from "@/components/StripePaymentForm";
 import CodConfirmationForm from "@/components/CodConfirmationForm";
+import MediaImage from "@/components/MediaImage";
 import useCartStore from "@/stores/cartStore";
 import {
   useCartQuery,
@@ -260,8 +261,8 @@ const CartContent = () => {
                 >
                   {/* IMAGE AND DETAILS */}
                   <div className="flex gap-6 items-center">
-                    <div className="relative w-24 h-24 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-100">
-                      <img
+                    <div className="relative w-24 h-24 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-100 flex items-center justify-center">
+                      <MediaImage
                         src={
                           (item.images as Record<string, string>)?.[
                             item.selectedColor
@@ -271,11 +272,12 @@ const CartContent = () => {
                                 item.images as Record<string, string>,
                               )[0] || ""
                             : "") ||
-                          "/placeholder.png"
+                          (item as any).image ||
+                          ""
                         }
                         alt={item.name}
-                        // fill
-                        className="object-contain"
+                        fallbackSrc="/placeholder.png"
+                        className="w-full h-full object-contain"
                       />
                     </div>
                     <div className="flex flex-col gap-1">

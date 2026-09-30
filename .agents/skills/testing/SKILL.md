@@ -13,14 +13,17 @@ This skill provides the authoritative reference for running, authoring, and main
 
 The repository features a unified multi-runtime testing strategy orchestrated via Turborepo (`pnpm test`):
 
-| Workspace                    | Technology / Framework      | Scope & Test Targets                                                                                |
-| :--------------------------- | :-------------------------- | :-------------------------------------------------------------------------------------------------- |
-| **`@repo/types`**            | Node.js Test Runner / `tsx` | Domain contracts, Zod schemas, boundary validations (`tests/schemas.test.ts`)                       |
-| **`cart-service`**           | Node.js Test Runner / `tsx` | Pricing engine, promotional discounts, coupon rules, threshold boundaries (`tests/pricing.test.ts`) |
-| **`shipping-service`**       | Node.js Test Runner / `tsx` | Constant-time webhook verification, RBAC middleware, carrier integration smoke test                 |
-| **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle, recovery (`internal/*`)         |
-| **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                     |
-| **`@repo/redis`**            | Integration Verifier        | Key namespacing, cache TTLs, rate limiter, degraded resilience (`src/scripts/verify-redis.ts`)      |
+| Workspace                    | Technology / Framework      | Scope & Test Targets                                                                                                                                                                                                                                                                                             |
+| :--------------------------- | :-------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`@repo/types`**            | Node.js Test Runner / `tsx` | Domain contracts, Zod schemas, boundary validations (`tests/schemas.test.ts`)                                                                                                                                                                                                                                    |
+| **`user-service`**           | Node.js Test Runner / `tsx` | Profile/address/preferences service logic (`tests/user-service.test.ts`)                                                                                                                                                                                                                                         |
+| **`order-service`**          | Node.js Test Runner / `tsx` | Order security and authorization (`tests/order-security.test.ts`)                                                                                                                                                                                                                                                |
+| **`cart-service`**           | Node.js Test Runner / `tsx` | Pricing engine, promotional discounts, coupon rules, threshold boundaries (`tests/pricing.test.ts`)                                                                                                                                                                                                              |
+| **`shipping-service`**       | Node.js Test Runner / `tsx` | Constant-time webhook verification, RBAC middleware, carrier integration smoke test                                                                                                                                                                                                                              |
+| **`media-service`**          | Node.js Test Runner / `tsx` | Six offline suites via `tests/index.test.ts`: unit validation, storage contract, HTTP API, Kafka messaging, workers, integration schema, plus the full lifecycle suite (`tests/media-service.test.ts`) — object keys, magic bytes, authorization, URL strategy, worker claim SQL, index strategy, cleanup sweeps |
+| **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle, recovery (`internal/*`)                                                                                                                                                                                                                      |
+| **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                  |
+| **`@repo/redis`**            | Integration Verifier        | Key namespacing, cache TTLs, rate limiter, degraded resilience (`src/scripts/verify-redis.ts`)                                                                                                                                                                                                                   |
 
 ---
 
@@ -32,12 +35,15 @@ pnpm test
 
 # 2. Run tests for a specific workspace
 pnpm --filter @repo/types test
+pnpm --filter user-service test
+pnpm --filter order-service test
 pnpm --filter cart-service test
 pnpm --filter shipping-service test
+pnpm --filter media-service test
 pnpm --filter notification-service test
 pnpm --filter recommendation-service test
 
-# 3. Static type-check across all 26 workspaces
+# 3. Static type-check across all 31 workspaces
 pnpm check-types
 
 # 4. Monorepo code style and formatting checks
@@ -79,7 +85,12 @@ When adding or updating tests, adhere to these quality engineering principles:
 Before submitting code changes:
 
 - [ ] `pnpm test` passes across all target workspaces.
-- [ ] `pnpm check-types` reports 0 TypeScript errors across 26 workspaces.
+- [ ] `pnpm check-types` reports 0 TypeScript errors across 31 workspaces.
+- [ ] Test files are strict-mode clean: tsconfig `include` covers `src/` only, so
+      `pnpm check-types` does not typecheck tests — run
+      `npx tsc --noEmit --strict tests/<file>.ts` directly when hardening a test file,
+      and never weaken assertions to make a test pass (no `.catch(() => undefined)`
+      swallowing, no asserting tautologies on local test data).
 - [ ] `pnpm format:check` confirms all files conform to Prettier style.
 - [ ] `pnpm lint` reports 0 errors in Next.js applications.
 - [ ] Negative and boundary test cases are included for any new business logic.

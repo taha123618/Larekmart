@@ -22,9 +22,9 @@ const Page = () => {
     setLoading(true);
     setMessage(null);
     try {
-      const secret =
-        process.env.NEXT_PUBLIC_ADMIN_CLAIM_SECRET ??
-        window.prompt("Admin registration secret:");
+      // Never source the claim secret from NEXT_PUBLIC_* — it would be embedded
+      // in the client bundle served to every visitor. Always prompt the user.
+      const secret = window.prompt("Admin registration secret:");
       if (!secret) {
         setMessage("Admin claim secret is required.");
         return;

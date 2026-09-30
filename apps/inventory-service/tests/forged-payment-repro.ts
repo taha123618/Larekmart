@@ -90,7 +90,9 @@ async function main() {
     ],
   });
   await producer.disconnect();
-  console.log(`Produced forged ${TOPIC} message (non-Stripe reference, amount=1)`);
+  console.log(
+    `Produced forged ${TOPIC} message (non-Stripe reference, amount=1)`,
+  );
 
   // 3. Give the consumer time to process + reject, then assert the stock
   //    never changed hands.

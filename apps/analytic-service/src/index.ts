@@ -12,6 +12,7 @@ import {
   recordProductDeleted,
   recordInventoryEvent,
   recordCartEvent,
+  recordMediaEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
 import type {
@@ -292,6 +293,51 @@ const start = async () => {
           const payload = message.value || message;
           if (payload) {
             await recordCartEvent("cart.cleared", payload);
+          }
+        },
+      },
+      {
+        topicName: "media.uploaded",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordMediaEvent("media.uploaded", payload);
+          }
+        },
+      },
+      {
+        topicName: "media.processing_completed",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordMediaEvent("media.processing_completed", payload);
+          }
+        },
+      },
+      {
+        topicName: "media.processing_failed",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordMediaEvent("media.processing_failed", payload);
+          }
+        },
+      },
+      {
+        topicName: "media.deleted",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordMediaEvent("media.deleted", payload);
+          }
+        },
+      },
+      {
+        topicName: "media.quarantined",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordMediaEvent("media.quarantined", payload);
           }
         },
       },

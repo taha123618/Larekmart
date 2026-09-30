@@ -29,6 +29,7 @@ import {
   updateUserPreferences,
   updateUserSettings,
 } from "@/services/user.service";
+import { uploadAvatar, resolveMediaUrls } from "@/services/media.service";
 import type {
   UserDetailResponse,
   AddressResponse,
@@ -89,6 +90,11 @@ export default function AccountPage() {
   const [orderUpdatesEmail, setOrderUpdatesEmail] = useState(true);
   const [orderUpdatesSms, setOrderUpdatesSms] = useState(true);
 
+  // Avatar state: media reference (media:<uuid>) wins over legacy avatarUrl.
+  const [avatarMediaId, setAvatarMediaId] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
   const [isSaving, startSaving] = useTransition();
 
   const loadUserData = useCallback(async () => {
@@ -110,6 +116,8 @@ export default function AccountPage() {
           setDisplayName(userRes.profile.displayName || "");
           setBio(userRes.profile.bio || "");
           setGender(userRes.profile.gender || "");
+          setAvatarMediaId(userRes.profile.avatarMediaId || null);
+          setAvatarUrl(userRes.profile.avatarUrl || null);
         } else {
           setFirstName(clerkUser?.firstName || "");
           setLastName(clerkUser?.lastName || "");
@@ -295,6 +303,54 @@ export default function AccountPage() {
     });
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side pre-checks; media-service re-validates everything.
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Avatar must be under 2MB");
+      e.target.value = "";
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Only JPEG, PNG, and WebP avatars are supported");
+      e.target.value = "";
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      // Owner = this user's verified Clerk id (media-service authorizes
+      // user-owned media against the session identity).
+      const ownerId = clerkUser?.id;
+      if (!ownerId) throw new Error("User identity unavailable");
+
+      const { mediaId } = await uploadAvatar(file, ownerId, getToken);
+
+      // Persist the reference on the profile; user-service announces
+      // user.avatar_uploaded and media-service claims ownership.
+      await updateUserProfile(token, {
+        avatarMediaId: mediaId,
+      } as UpdateProfileInput);
+
+      // Resolve immediately (the 256px avatar variant may still be processing;
+      // resolution returns null then and the fallback initials render).
+      const resolved = await resolveMediaUrls([mediaId]);
+      setAvatarMediaId(mediaId);
+      setAvatarUrl(resolved[mediaId] ?? null);
+      toast.success("Avatar uploaded!");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Avatar upload failed");
+    } finally {
+      setAvatarUploading(false);
+      e.target.value = "";
+    }
+  };
+
   if (!isLoaded || loading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
@@ -315,7 +371,13 @@ export default function AccountPage() {
       {/* Top Profile Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-gray-900 to-zinc-900 text-white rounded-2xl p-6 sm:p-8 mb-8 shadow-xl flex flex-col sm:flex-row items-center gap-6">
         <div className="relative">
-          {clerkUser?.imageUrl ? (
+          {avatarMediaId ? (
+            <AvatarMediaImage
+              mediaRef={avatarMediaId}
+              fallbackUrl={avatarUrl}
+              userInitial={userInitial.toUpperCase()}
+            />
+          ) : clerkUser?.imageUrl ? (
             <img
               src={clerkUser.imageUrl}
               alt="Avatar"
@@ -326,7 +388,43 @@ export default function AccountPage() {
               {userInitial.toUpperCase()}
             </div>
           )}
-          <span className="absolute bottom-0 right-0 w-5 h-5 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+          <label
+            className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-400 flex items-center justify-center cursor-pointer border-2 border-slate-900 transition-colors ${
+              avatarUploading ? "opacity-60 pointer-events-none" : ""
+            }`}
+            title="Upload new avatar"
+          >
+            {avatarUploading ? (
+              <Loader2 className="w-4 h-4 text-white animate-spin" />
+            ) : (
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0016.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            )}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleAvatarUpload}
+              disabled={avatarUploading}
+            />
+          </label>
         </div>
 
         <div className="text-center sm:text-left flex-1">
@@ -1001,5 +1099,50 @@ export default function AccountPage() {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Avatar renderer for media references: resolves `media:<uuid>` via
+ * media-service (session-memoized), falling back to the legacy avatarUrl,
+ * then to the initial letter. Used on the account page banner.
+ */
+function AvatarMediaImage({
+  mediaRef,
+  fallbackUrl,
+  userInitial,
+}: {
+  mediaRef: string;
+  fallbackUrl: string | null;
+  userInitial: string;
+}) {
+  const [url, setUrl] = useState<string | null>(fallbackUrl);
+
+  useEffect(() => {
+    let cancelled = false;
+    resolveMediaUrls([mediaRef]).then((items) => {
+      if (!cancelled) {
+        setUrl(items[mediaRef] ?? fallbackUrl);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [mediaRef, fallbackUrl]);
+
+  if (!url) {
+    return (
+      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-amber-500 flex items-center justify-center text-white text-3xl font-bold border-4 border-white/20">
+        {userInitial}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={url}
+      alt="Avatar"
+      className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white/20 object-cover shadow-lg"
+    />
   );
 }

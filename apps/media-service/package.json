@@ -1,0 +1,43 @@
+{
+  "name": "media-service",
+  "version": "0.1.0",
+  "description": "Media object storage, upload lifecycle, image variants, and lifecycle events",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env --watch src/server.ts",
+    "dev:worker": "tsx --env-file=.env --watch src/workers/processing.worker.ts",
+    "dev:cleanup": "tsx --env-file=.env --watch src/workers/cleanup.worker.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "start:worker": "node dist/workers/processing.worker.js",
+    "start:cleanup": "node dist/workers/cleanup.worker.js",
+    "check-types": "tsc --noEmit",
+    "test": "tsx tests/index.test.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.750.0",
+    "@aws-sdk/s3-request-presigner": "^3.750.0",
+    "@hono/clerk-auth": "^3.0.3",
+    "@hono/node-server": "^1.19.0",
+    "@repo/kafka": "workspace:*",
+    "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "@repo/types": "workspace:*",
+    "drizzle-orm": "^0.44.2",
+    "hono": "^4.9.6",
+    "pg": "^8.16.0",
+    "sharp": "^0.34.2",
+    "zod": "^4.1.9"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^24.5.2",
+    "@types/pg": "^8.15.4",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

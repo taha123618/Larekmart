@@ -35,9 +35,12 @@ owns it; don't centralize everything in one file.
 - **READMEs are for humans.** Lead with what the workspace does, then setup, then env.
 - **ADRs record the _why_.** Use `docs/adr/NNNN-title.md`, one decision per record,
   status `Proposed | Accepted | Superseded`, and note the alternatives considered.
-- **Docs describe reality.** If something isn't implemented (tests, CI, Docker), say so
-  plainly rather than documenting an aspiration as fact. This repo currently has no test
-  suite and no CI.
+- **Docs describe reality.** If something isn't implemented, say so plainly rather than
+  documenting an aspiration as fact. The repo has CI (`.github/workflows/ci.yml`,
+  `migrate.yml`, `security.yml`), `pnpm test` suites in 8 workspaces, Docker Compose
+  orchestration, and an observability stack — verify current state with `ls
+.github/workflows` and `grep -l '"test"' apps/*/package.json packages/*/package.json`
+  before claiming a capability is missing.
 - **Keep docs accurate as code changes.** A change to architecture, an event contract, a
   public export, or an env var is incomplete until the owning doc is updated.
 
