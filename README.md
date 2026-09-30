@@ -1,6 +1,6 @@
 # Larekmart
 
-**Larekmart** is a production-grade microservices e-commerce platform for clothing. It pairs a customer storefront and an admin management dashboard with **nine backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for catalog, analytics, notifications, and inventory; and MongoDB for order management).
+**Larekmart** is a production-grade microservices e-commerce platform for clothing. It pairs a customer storefront and an admin management dashboard with **fifteen backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, and notifications; MongoDB for orders and carts).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node and Go services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 
@@ -73,7 +73,11 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── search-service/       # Fastify + OpenSearch + Redis + Kafka search and indexing (:8006)
 │   ├── inventory-service/    # Hono + PostgreSQL + Redis + Kafka inventory API (:8007)
 │   ├── recommendation-service/ # Python 3.12+ (FastAPI) + pgvector + Redis + Celery recommendation engine (:8008)
-│   └── cart-service/          # Express 5 + MongoDB + Redis + Kafka cart management & pricing estimates (:8009)
+│   ├── cart-service/          # Express 5 + MongoDB + Redis + Kafka cart management & pricing estimates (:8009)
+│   ├── catalog-service/       # Fastify 5 + Prisma read-model catalog discovery, brands & collections (:8010)
+│   ├── shipping-service/      # Koa + PostgreSQL + carrier adapters shipment lifecycle & tracking (:8011)
+│   ├── user-service/          # Fastify 5 + Prisma customer profiles, addresses & preferences (:8012)
+│   └── media-service/         # Hono + S3/MinIO + Drizzle media uploads, variants & workers (:8013)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -84,6 +88,9 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── inventory-db/         # @repo/inventory-db — Prisma inventory schema, reservations & ledger (PostgreSQL)
 │   ├── order-db/             # @repo/order-db  — Mongoose connection & Order model (MongoDB)
 │   ├── cart-db/              # @repo/cart-db   — Mongoose connection & Cart models (MongoDB)
+│   ├── catalog-db/           # @repo/catalog-db — Prisma catalog read-model schema (PostgreSQL)
+│   ├── shipping-db/          # @repo/shipping-db — Prisma shipments, tracking events & labels (PostgreSQL)
+│   ├── user-db/              # @repo/user-db   — Prisma profiles, addresses & preferences (PostgreSQL)
 │   ├── eslint-config/        # @repo/eslint-config — shared ESLint flat configs
 │   └── typescript-config/    # @repo/typescript-config — shared tsconfig bases
 ├── docs/                     # Architecture, dependencies, conventions, testing, ADRs
@@ -111,6 +118,10 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`inventory-service`**      | Hono 4, Prisma, PostgreSQL, Redis, Kafka, Clerk                                       | `8007` | Stock availability, atomic reservations, warehouse inventory, restocks, adjustments, and inventory events.                                      |
 | **`recommendation-service`** | Python 3.12+ (FastAPI), SQLAlchemy async, PostgreSQL, pgvector, Redis, Celery, Kafka  | `8008` | Hybrid candidate generation (collaborative & content filtering, embeddings, trending velocity), interactive tester, and behavioral telemetry.   |
 | **`cart-service`**           | Express 5, Mongoose, MongoDB, Redis, Kafka, Clerk                                     | `8009` | Authoritative cart persistence, guest-to-user merge, coupon management, estimated totals, and TTL expiration worker.                            |
+| **`catalog-service`**        | Fastify 5, Prisma, PostgreSQL, Redis, Kafka, Clerk                                    | `8010` | Read-optimized product discovery: categories, brands, collections, and storefront listing projections.                                          |
+| **`shipping-service`**       | Koa (Node.js), Prisma, PostgreSQL, Redis, Kafka, Clerk                                | `8011` | Shipment lifecycle, rate quotes, carrier adapters (TCS/Leopards/DHL/FedEx), tracking, and labels.                                               |
+| **`user-service`**           | Fastify 5, Prisma, PostgreSQL, Redis, Kafka, Clerk                                    | `8012` | Customer profiles, saved addresses, preferences, and account-domain events.                                                                     |
+| **`media-service`**          | Hono 4, Drizzle, PostgreSQL, S3/MinIO, Redis, Kafka, Clerk, Sharp                     | `8013` | Presigned direct uploads, media metadata, image variants, lifecycle events, and processing/cleanup workers.                                     |
 
 ---
 
@@ -127,8 +138,11 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`@repo/inventory-db`**      | PostgreSQL inventory persistence via Prisma, atomic reservations, and an inventory movement ledger.          | `inventory-service`                                 |
 | **`@repo/order-db`**          | MongoDB persistence via Mongoose `Order` model and connection helper.                                        | `order-service`, `@repo/types` (type-only)          |
 | **`@repo/cart-db`**           | MongoDB persistence via Mongoose `Cart` and `ProcessedEvent` models and connection helper.                   | `cart-service`, `@repo/types` (type-only)           |
+| **`@repo/catalog-db`**        | PostgreSQL catalog read-model persistence via Prisma schema and generated client.                            | `catalog-service`                                   |
+| **`@repo/shipping-db`**       | PostgreSQL shipping persistence via Prisma: shipments, packages, tracking events, labels.                    | `shipping-service`                                  |
+| **`@repo/user-db`**           | PostgreSQL user-domain persistence via Prisma: profiles, addresses, preferences, settings.                   | `user-service`                                      |
 | **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                     | `admin`, `client`                                   |
-| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 21 workspaces                                   |
+| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 31 workspaces                                   |
 
 ---
 
@@ -166,7 +180,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 # Option A: Full Docker Compose Environment (Recommended)
 # ==============================================================================
 # Spins up backing databases (Postgres with pgvector, MongoDB replica set, Redis,
-# Kafka KRaft broker, OpenSearch), Kafka UI, all 13 backend services, and both Next.js frontends:
+# Kafka KRaft broker, OpenSearch), Kafka UI, all 15 backend services, and both Next.js frontends:
 docker compose up -d --build
 
 # View logs:
@@ -201,7 +215,7 @@ pnpm dev
 | **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                        |
 | **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                 |
 | **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                            |
-| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet`) across all 21 workspaces                       |
+| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet`) across all 31 workspaces                       |
 | **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                      |
 | **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                         |
 | **Build**           | `pnpm build`                                                | Run configured builds for the Next.js apps, Node services, packages, and Go service |
@@ -234,6 +248,9 @@ Workspace Skills (<workspace>/.agents/skills/*)
     - `testing`: Monorepo verification guidelines, Go test coverage, and opt-in Redis integration checks.
   - `code-review`: Checklist for boundary validation, event contracts, and quality verification.
   - `documentation`: Scoped documentation rules and ADR maintenance.
+  - `docker-devops`: Docker, Compose, Kubernetes, CI/CD, and production operations.
+  - `security-audit`: Vulnerability review workflow for codebases, APIs, and services.
+  - `monitoring`: Telemetry, structured logging, health checks, and metrics via `@repo/monitoring`.
 - **Workspace-specific rules**: Each app and package has a scoped `AGENTS.md`. There are currently no workspace-local `.agents/skills` directories; root skills are mirrored with `pnpm run skills:sync`.
 
 ---

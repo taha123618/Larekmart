@@ -81,6 +81,21 @@ pnpm --filter media-service build
 pnpm --filter media-service db:generate # drizzle-kit generate
 ```
 
+### Test discipline (hard-learned rules)
+
+- `tsconfig.json` includes `src/**/*` only, so **`check-types` never sees `tests/`**.
+  Keep test files strict-clean by hand; when hardening one, typecheck it directly:
+  `npx tsc --noEmit --strict --noUncheckedIndexedAccess tests/<file>.ts`.
+- **No vacuous assertions.** Never swallow errors to make a rejection test pass
+  (`assert.rejects(p).catch(() => undefined)` passes even when the wrong error is
+  thrown). Assert on the error `name`/status, and where possible assert the positive
+  path too (e.g. the operation succeeds once the blocking condition is fixed).
+- **No unsafe cross-type casts.** `x as Record<string, unknown>` against a typed
+  interface is a compile error under strict mode and hides contract drift. Prefer
+  `satisfies readonly (keyof Interface)[]` over reflection-style checks.
+- Fake repos use in-memory maps and boundary casts (`as never` at constructor seams);
+  that is accepted convention here. Do not let fakes weaken what the assertions prove.
+
 Live verification needs PostgreSQL (`media_db`), Redis, Kafka, and MinIO:
 `docker compose up -d postgres redis kafka minio minio-init` then
 `pnpm --filter media-service db:migrate` and `pnpm --filter media-service dev`.

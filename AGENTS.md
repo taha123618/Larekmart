@@ -8,7 +8,7 @@ and the relevant scoped `AGENTS.md`.
 ## 1. What this is
 
 **Larekmart** is a microservices e-commerce platform for clothing. It is a
-**pnpm + Turborepo monorepo** with two Next.js frontends, six backend services, and
+**pnpm + Turborepo monorepo** with two Next.js frontends, 15 backend services, and
 shared internal packages. Cross-service communication is **asynchronous via Kafka**;
 there are no service-to-service HTTP calls.
 
@@ -172,9 +172,17 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
   Follow the extension style of the file you are editing.
 - **Type-check before you finish.** Run `pnpm check-types` (or the workspace filter)
   and `pnpm build` for changes that affect a Next.js app or payment-service.
-- **Testing strategy.** There is no general JavaScript test runner yet. Verification relies
-  on `check-types`, `build`, `lint`, the Go test suite in `notification-service`, the opt-in
-  Redis integration check, and manual testing. When adding tests, follow `docs/TESTING.md`.
+- **Testing strategy.** Eight workspaces ship real test suites run by `pnpm test`
+  (Turborepo): `@repo/types`, `user-service`, `cart-service`, `shipping-service`,
+  `order-service`, and `media-service` use standalone tsx-run test files under
+  `tests/` (follow the file's internal runner convention, e.g.
+  `media-service/tests/index.test.ts`); `notification-service` uses `go test ./...`;
+  `recommendation-service` uses pytest via `uv`. There is **no Vitest/Jest anywhere** —
+  do not introduce a new runner when extending an existing suite. When adding tests,
+  follow `docs/TESTING.md`. Note: `tsc` configs typecheck `src/` only — test files are
+  not covered by `pnpm check-types`, so keep test code strict-clean by hand (no `any`,
+  no casts that hide type mismatches) and typecheck new test files directly with
+  `npx tsc --noEmit --strict ...` when hardening them.
 - **Logging** is `console.log`/`console.error` today. Keep it structured and sparse.
 - **Error handling** at boundaries: services return `{ message }` JSON with correct
   status codes; async Kafka handlers catch and log so a bad message cannot kill the
@@ -189,5 +197,6 @@ Before considering a task complete:
 - [ ] `pnpm check-types` passes for affected workspaces.
 - [ ] `pnpm build` passes if a Next.js app or `payment-service` changed.
 - [ ] `pnpm lint` passes if `admin` or `client` changed.
+- [ ] `pnpm test` passes for affected workspaces with test suites.
 - [ ] New env vars were added to the relevant `.env.example` (never a real `.env`).
 - [ ] Docs/AGENTS.md updated when architecture, contracts, or workflows changed.
