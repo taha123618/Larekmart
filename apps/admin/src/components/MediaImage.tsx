@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { resolveMediaUrls } from "@/services/media.service";
+import { isMediaRef } from "@repo/types";
 
 /**
  * Resolves mixed media references to URLs, memoized per render batch.
@@ -34,35 +35,43 @@ export function pickMediaUrl(
 ): string | null {
   if (!ref) return null;
   // Legacy URLs and local paths are valid as-is.
-  if (!ref.startsWith("media:") && !/^[0-9a-f-]{36}$/i.test(ref)) return ref;
+  if (!isMediaRef(ref)) return ref;
   return resolved[ref] ?? null;
 }
 
-interface MediaImageProps {
-  ref_: string | undefined;
+export interface MediaImageProps {
+  ref_?: string | undefined;
+  src?: string | undefined;
   alt: string;
   className?: string;
   size?: number;
 }
 
 /**
- * Product-table image that renders either a legacy URL or a resolved
+ * Image component that renders either a legacy URL or a resolved
  * media reference, with a neutral placeholder while unresolved.
  */
 export default function MediaImage({
   ref_,
+  src,
   alt,
   className,
-  size = 36,
+  size,
 }: MediaImageProps) {
-  const resolved = useMediaUrls(ref_ ? [ref_] : []);
-  const url = pickMediaUrl(ref_, resolved);
+  const targetRef = ref_ ?? src;
+  const resolved = useMediaUrls(targetRef ? [targetRef] : []);
+  const url = pickMediaUrl(targetRef, resolved);
+
+  const style = size ? { width: size, height: size } : undefined;
 
   if (!url) {
     return (
       <div
-        className="rounded-full bg-muted"
-        style={{ width: size, height: size }}
+        className={
+          className ??
+          "rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground"
+        }
+        style={style}
         aria-label={alt}
       />
     );
@@ -74,7 +83,7 @@ export default function MediaImage({
       src={url}
       alt={alt}
       className={className ?? "rounded-full object-cover"}
-      style={{ width: size, height: size }}
+      style={style}
     />
   );
 }

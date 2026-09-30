@@ -31,7 +31,7 @@ image variants, lifecycle events. Port 8013.
 - `src/workers/cleanup.worker.ts` — expired upload sessions, abandoned
   uploads, purge of soft-deleted media past the retention window.
 
-## Routes
+## Routes & Handlers
 
 - `POST /api/v1/media/uploads` — validate + authorize + metadata row +
   presigned PUT URL. Binaries upload directly to storage; they never
@@ -41,6 +41,8 @@ image variants, lifecycle events. Port 8013.
   publish `media.uploaded`, enqueue the Sharp job.
 - `GET /api/v1/media/:mediaId`, `GET /api/v1/media/:mediaId/url`,
   `GET /api/v1/media/owner/:ownerType/:ownerId`,
+  `POST /api/v1/media/resolve`,
+  `POST /api/v1/media/:mediaId/variants`,
   `DELETE /api/v1/media/:mediaId` (soft delete).
 - Admin: `GET /api/v1/admin/media`, reprocess, restore, purge
   (`shouldBeAdmin`).
@@ -67,12 +69,14 @@ image variants, lifecycle events. Port 8013.
   `user.deleted`, `category.deleted`, `brand.deleted` → soft-delete
   associated media. Idempotent via the `processed_events` ledger; handlers
   catch errors so one bad message cannot kill the loop.
+- Consumes `product.created`, `product.updated`, `user.avatar_uploaded` to
+  authoritatively claim media references.
 
 ## Verification
 
 ```bash
 pnpm --filter media-service check-types
-pnpm --filter media-service test        # offline unit tests (tsx)
+pnpm --filter media-service test        # runs unit, storage, api, messaging, worker suites
 pnpm --filter media-service build
 pnpm --filter media-service db:generate # drizzle-kit generate
 ```

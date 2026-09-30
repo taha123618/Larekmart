@@ -2,8 +2,6 @@ import { getServiceContainer } from "../container.js";
 import { env } from "../config/env.js";
 import { logger, mediaMetrics } from "../observability/metrics.js";
 import { jobTraceFields } from "../observability/tracing.js";
-import { createProcessingJobRepository } from "../db/repositories/upload.repository.js";
-import { db } from "../db/client.js";
 import { shutdown } from "../app.js";
 import { producer } from "../utils/kafka.js";
 
@@ -20,7 +18,7 @@ export function startProcessingWorker(
   pollIntervalMs = env.MEDIA_WORKER_POLL_INTERVAL_MS,
 ): () => void {
   const container = getServiceContainer();
-  const jobs = createProcessingJobRepository(db);
+  const jobs = container.repos.jobs;
   const workerId = `worker-${process.pid}`;
   let running = true;
   let loopPromise: Promise<void> | null = null;

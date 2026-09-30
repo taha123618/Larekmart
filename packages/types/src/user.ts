@@ -19,18 +19,8 @@ export type AddressType = z.infer<typeof AddressTypeEnum>;
 // Profile Schemas & Types
 // ==========================================
 
-/**
- * Media reference shape shared by all domains: `media:<uuid>` (or a bare
- * uuid from legacy rows). Anything else is a passthrough URL.
- */
-export const MediaRefSchema = z
-  .string()
-  .min(1)
-  .max(200)
-  .regex(
-    /^(media:)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    "Must be a media reference (media:<uuid>)",
-  );
+import { MediaRefSchema } from "./media";
+export { MediaRefSchema };
 
 export const UpdateProfileSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),

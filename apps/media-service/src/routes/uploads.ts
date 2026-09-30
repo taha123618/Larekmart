@@ -5,7 +5,7 @@ import {
   mediaRateLimitRules,
 } from "../middleware/rate-limit.js";
 import type { AuthVariables } from "../middleware/auth.js";
-import { getServiceContainer } from "../container.js";
+import { UploadHandler } from "../handlers/upload.handler.js";
 
 const uploadsRoute = new Hono<{ Variables: AuthVariables }>();
 
@@ -18,14 +18,7 @@ uploadsRoute.post(
   "/uploads",
   createRateLimiter(mediaRateLimitRules.uploadCreate),
   shouldBeUser,
-  async (c) => {
-    const { uploadService } = getServiceContainer();
-    const actor = c.get("mediaActor");
-    const body = await c.req.json().catch(() => null);
-
-    const result = await uploadService.createUpload(body, actor);
-    return c.json(result, 201);
-  },
+  UploadHandler.createUpload,
 );
 
 /**
@@ -37,14 +30,18 @@ uploadsRoute.post(
   "/:mediaId/complete",
   createRateLimiter(mediaRateLimitRules.uploadComplete),
   shouldBeUser,
-  async (c) => {
-    const { uploadService } = getServiceContainer();
-    const actor = c.get("mediaActor");
-    const mediaId = c.req.param("mediaId");
+  UploadHandler.completeUpload,
+);
 
-    const result = await uploadService.completeUpload(mediaId, actor);
-    return c.json(result);
-  },
+/**
+ * POST /api/v1/media/:mediaId/abort
+ * Aborts an active upload session.
+ */
+uploadsRoute.post(
+  "/:mediaId/abort",
+  createRateLimiter(mediaRateLimitRules.uploadComplete),
+  shouldBeUser,
+  UploadHandler.abortUpload,
 );
 
 export default uploadsRoute;

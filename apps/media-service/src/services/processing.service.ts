@@ -67,8 +67,7 @@ export class ProcessingService {
       // (square 256px), review images thumbnail/medium, product images the
       // full responsive ladder. Config-driven — never hard-coded per domain.
       const category = categoryFor(media.mimeType);
-      const variantConfigs =
-        env.categoryVariants[category] ?? env.variants;
+      const variantConfigs = env.categoryVariants[category] ?? env.variants;
       const results = await generateVariants(original, {
         variantConfigs,
       });

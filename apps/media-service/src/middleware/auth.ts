@@ -34,7 +34,13 @@ export const shouldBeUser = createMiddleware<{ Variables: AuthVariables }>(
       return;
     }
 
-    const auth = getAuth(c);
+    let auth: ReturnType<typeof getAuth> | null = null;
+    try {
+      auth = getAuth(c);
+    } catch {
+      auth = null;
+    }
+
     if (!auth?.userId) {
       return c.json({ message: "You are not logged in." }, 401);
     }
@@ -62,7 +68,13 @@ export const shouldBeAdmin = createMiddleware<{ Variables: AuthVariables }>(
       return;
     }
 
-    const auth = getAuth(c);
+    let auth: ReturnType<typeof getAuth> | null = null;
+    try {
+      auth = getAuth(c);
+    } catch {
+      auth = null;
+    }
+
     if (!auth?.userId) {
       return c.json({ message: "You are not logged in." }, 401);
     }

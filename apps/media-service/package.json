@@ -12,7 +12,7 @@
     "start:worker": "node dist/workers/processing.worker.js",
     "start:cleanup": "node dist/workers/cleanup.worker.js",
     "check-types": "tsc --noEmit",
-    "test": "tsx tests/media-service.test.ts",
+    "test": "tsx tests/index.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
     "db:studio": "drizzle-kit studio"

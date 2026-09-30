@@ -49,7 +49,10 @@ async function start(): Promise<void> {
           try {
             await handleUserAvatarClaim(message, db);
           } catch (error) {
-            logger.error("Failed handling user.avatar_uploaded media claim", error);
+            logger.error(
+              "Failed handling user.avatar_uploaded media claim",
+              error,
+            );
           }
         },
       },

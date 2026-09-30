@@ -28,14 +28,29 @@ export interface MediaResolveResponse {
   items: Record<string, string | null>;
 }
 
+export interface UploadMediaOptions {
+  ownerType:
+    | "product"
+    | "category"
+    | "brand"
+    | "collection"
+    | "user"
+    | "review"
+    | "seller"
+    | "marketing";
+  ownerId: string;
+  category?: string;
+  visibility?: "PUBLIC" | "PRIVATE" | "PROTECTED";
+}
+
 /**
  * Creates a media record + presigned upload URL, uploads the file directly
  * to object storage, then completes the session (starts async variant
- * processing). Returns the mediaId products should reference.
+ * processing). Returns the canonical mediaId reference.
  */
-export async function uploadProductImage(
+export async function uploadMedia(
   file: File,
-  productIdHint: string,
+  options: UploadMediaOptions,
   getToken: () => Promise<string | null>,
 ): Promise<string> {
   const token = await getToken();
@@ -48,16 +63,13 @@ export async function uploadProductImage(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      ownerType: "product",
-      // Product rows are created after their images upload; the media claim
-      // consumer reassigns ownership when product.created arrives. The hint
-      // keeps draft media grouped under a stable owner id meanwhile.
-      ownerId: productIdHint,
+      ownerType: options.ownerType,
+      ownerId: options.ownerId,
       filename: file.name,
       contentType: file.type,
       size: file.size,
-      category: "product-image",
-      visibility: "PUBLIC",
+      category: options.category || "general",
+      visibility: options.visibility || "PUBLIC",
     }),
   });
 
@@ -92,6 +104,66 @@ export async function uploadProductImage(
   }
 
   return session.mediaId;
+}
+
+/**
+ * Uploads a product image using the direct-to-storage presigned upload flow.
+ */
+export async function uploadProductImage(
+  file: File,
+  productIdHint: string,
+  getToken: () => Promise<string | null>,
+): Promise<string> {
+  return uploadMedia(
+    file,
+    {
+      ownerType: "product",
+      ownerId: productIdHint,
+      category: "product-image",
+      visibility: "PUBLIC",
+    },
+    getToken,
+  );
+}
+
+/**
+ * Uploads a category banner/thumbnail using the direct-to-storage presigned upload flow.
+ */
+export async function uploadCategoryImage(
+  file: File,
+  categorySlugHint: string,
+  getToken: () => Promise<string | null>,
+): Promise<string> {
+  return uploadMedia(
+    file,
+    {
+      ownerType: "category",
+      ownerId: categorySlugHint,
+      category: "category-image",
+      visibility: "PUBLIC",
+    },
+    getToken,
+  );
+}
+
+/**
+ * Uploads a brand logo/asset using the direct-to-storage presigned upload flow.
+ */
+export async function uploadBrandLogo(
+  file: File,
+  brandSlugHint: string,
+  getToken: () => Promise<string | null>,
+): Promise<string> {
+  return uploadMedia(
+    file,
+    {
+      ownerType: "brand",
+      ownerId: brandSlugHint,
+      category: "brand-logo",
+      visibility: "PUBLIC",
+    },
+    getToken,
+  );
 }
 
 /** Batch-resolves media references (`media:<uuid>` or legacy URLs) to URLs. */

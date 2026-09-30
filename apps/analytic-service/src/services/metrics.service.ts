@@ -28,11 +28,78 @@ const inMemoryMetrics = {
   totalCartsCreated: 0,
   totalCartsUpdated: 0,
   totalCartsExpired: 0,
+  totalMediaUploaded: 0,
+  totalMediaProcessed: 0,
+  totalMediaDeleted: 0,
   lastEventTime: new Date().toISOString(),
 };
 
 // In-memory event stream buffer (last 100 events)
 const inMemoryEvents: AnalyticsEventType[] = [];
+
+export const recordMediaEvent = async (
+  eventType:
+    | "media.uploaded"
+    | "media.processing_completed"
+    | "media.processing_failed"
+    | "media.deleted"
+    | "media.quarantined",
+  payload: any,
+) => {
+  if (eventType === "media.uploaded") inMemoryMetrics.totalMediaUploaded += 1;
+  else if (eventType === "media.processing_completed")
+    inMemoryMetrics.totalMediaProcessed += 1;
+  else if (eventType === "media.deleted")
+    inMemoryMetrics.totalMediaDeleted += 1;
+
+  inMemoryMetrics.lastEventTime = new Date().toISOString();
+
+  const userId = payload?.ownerId || payload?.createdBy || "system";
+
+  const memoryEvent: AnalyticsEventType = {
+    id: inMemoryEvents.length + 1,
+    event_type: eventType,
+    user_id: String(userId),
+    amount: 0,
+    metadata: {
+      mediaId: payload?.mediaId || payload?.id,
+      ownerType: payload?.ownerType,
+      ownerId: payload?.ownerId,
+      sizeBytes: payload?.sizeBytes,
+      mimeType: payload?.mimeType,
+    },
+    created_at: payload?.occurredAt || new Date().toISOString(),
+  };
+
+  inMemoryEvents.unshift(memoryEvent);
+  if (inMemoryEvents.length > 100) inMemoryEvents.pop();
+
+  if (getDbStatus()) {
+    try {
+      await pool.query(
+        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          eventType,
+          String(userId),
+          0,
+          JSON.stringify(memoryEvent.metadata),
+          memoryEvent.created_at,
+        ],
+      );
+    } catch (err) {
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordMediaEvent.dbInsert",
+      });
+    }
+  }
+
+  logger.info(
+    `[Media Event] ${eventType} for ${userId} (mediaId: ${payload?.mediaId || payload?.id})`,
+  );
+};
 
 export const recordCartEvent = async (
   eventType:

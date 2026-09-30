@@ -18,12 +18,14 @@ import { mediaMetrics, logger } from "../../observability/metrics.js";
  * cleanup consumer authoritative. Idempotent via `processed_events`.
  */
 
+import { parseMediaReferences, extractMediaId } from "@repo/types";
+
 const ProductImagesPayloadSchema = z.object({
   id: z.union([z.number(), z.string()]),
   images: z.unknown().nullable().optional(),
 });
 
-/** Extracts media ids from the mixed `images` JSON products store. */
+/** Extracts media refs from the mixed `images` JSON products store. */
 export function extractMediaIds(images: unknown): string[] {
   if (typeof images !== "object" || images === null) return [];
   const values = Object.values(images as Record<string, unknown>);
@@ -49,14 +51,7 @@ export async function handleProductMediaClaim(
 
   const { id, images } = parsed.data;
   const productId = String(id);
-  const mediaRefs = extractMediaIds(images);
-  if (mediaRefs.length === 0) return;
-
-  const UUID_RE =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const mediaIds = mediaRefs
-    .map((ref) => (ref.startsWith("media:") ? ref.slice(6) : ref))
-    .filter((ref) => UUID_RE.test(ref));
+  const mediaIds = parseMediaReferences(images);
   if (mediaIds.length === 0) return;
 
   const eventId = `${topic}:media-claim:${productId}:${

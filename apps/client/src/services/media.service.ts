@@ -19,7 +19,9 @@ export async function resolveMediaUrls(
   refs: string[],
 ): Promise<Record<string, string | null>> {
   const missing = [...new Set(refs.filter(Boolean))].filter(
-    (ref) => !cache.has(ref) && (ref.startsWith("media:") || /^[0-9a-f-]{36}$/i.test(ref)),
+    (ref) =>
+      !cache.has(ref) &&
+      (ref.startsWith("media:") || /^[0-9a-f-]{36}$/i.test(ref)),
   );
 
   if (missing.length > 0) {

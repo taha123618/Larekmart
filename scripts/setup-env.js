@@ -4,6 +4,12 @@
  * Cross-platform environment file setup script.
  * Discovers every `.env.example` in `apps/*` and `packages/*` (and root),
  * and creates the corresponding `.env` file if it does not already exist.
+ *
+ * Note: existing `.env` files are never modified or merged. When a new
+ * variable is added to a workspace (e.g. media-service's
+ * `MEDIA_WORKER_STALE_JOB_SECONDS`), re-run `pnpm run env:setup` after
+ * deleting that workspace's `.env`, or diff your `.env` against its
+ * `.env.example` manually.
  */
 
 import fs from "node:fs";

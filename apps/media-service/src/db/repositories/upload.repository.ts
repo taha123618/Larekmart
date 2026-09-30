@@ -8,6 +8,26 @@ export type MediaUploadInsert = typeof mediaUploads.$inferInsert;
 export type ProcessingJobRow = typeof mediaProcessingJobs.$inferSelect;
 export type ProcessingJobInsert = typeof mediaProcessingJobs.$inferInsert;
 
+/**
+ * Atomic job-claim statement (used by claimNextPending). One
+ * UPDATE ... subquery; FOR UPDATE SKIP LOCKED prevents two worker replicas
+ * from claiming the same job. Exported so tests can assert the claim path
+ * keeps matching the (status, created_at) index.
+ */
+export const CLAIM_NEXT_PENDING_SQL = sql`
+  UPDATE media_processing_jobs
+  SET status = 'PROCESSING', attempts = attempts + 1,
+      started_at = now(), updated_at = now(), error = NULL
+  WHERE id = (
+    SELECT id FROM media_processing_jobs
+    WHERE status = 'PENDING'
+    ORDER BY created_at ASC
+    FOR UPDATE SKIP LOCKED
+    LIMIT 1
+  )
+  RETURNING *;
+`;
+
 export const createUploadRepository = (database: MediaDb = db) => ({
   async insert(values: MediaUploadInsert): Promise<MediaUploadRow> {
     const rows = await database.insert(mediaUploads).values(values).returning();
@@ -39,6 +59,13 @@ export const createUploadRepository = (database: MediaDb = db) => ({
     await database
       .update(mediaUploads)
       .set({ status: "EXPIRED" })
+      .where(eq(mediaUploads.id, id));
+  },
+
+  async markAborted(id: string): Promise<void> {
+    await database
+      .update(mediaUploads)
+      .set({ status: "ABORTED" })
       .where(eq(mediaUploads.id, id));
   },
 
@@ -82,19 +109,7 @@ export const createProcessingJobRepository = (database: MediaDb = db) => ({
      * FOR UPDATE SKIP LOCKED inside the subquery prevents two workers from
      * claiming the same job.
      */
-    const result = await database.execute(sql`
-      UPDATE media_processing_jobs
-      SET status = 'PROCESSING', attempts = attempts + 1,
-          started_at = now(), updated_at = now(), error = NULL
-      WHERE id = (
-        SELECT id FROM media_processing_jobs
-        WHERE status = 'PENDING'
-        ORDER BY created_at ASC
-        FOR UPDATE SKIP LOCKED
-        LIMIT 1
-      )
-      RETURNING *;
-    `);
+    const result = await database.execute(CLAIM_NEXT_PENDING_SQL);
 
     const rows = (result as unknown as { rows: ProcessingJobRow[] }).rows;
     const job = rows[0] ?? null;

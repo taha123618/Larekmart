@@ -251,3 +251,77 @@ export const DomainDeletedPayloadSchema = z.union([
 export type DomainDeletedPayloadType = z.infer<
   typeof DomainDeletedPayloadSchema
 >;
+
+// ==========================================
+// Media Reference Utilities & Topic Contracts
+// ==========================================
+
+export const MediaTopicEnum = z.enum([
+  "media.upload_requested",
+  "media.uploaded",
+  "media.processing_started",
+  "media.processing_completed",
+  "media.processing_failed",
+  "media.deleted",
+  "media.quarantined",
+]);
+export type MediaTopic = z.infer<typeof MediaTopicEnum>;
+
+/**
+ * Media reference shape shared by all domains: `media:<uuid>` (or a bare
+ * uuid from legacy rows). Anything else is a passthrough URL.
+ */
+export const MediaRefSchema = z
+  .string()
+  .min(1)
+  .max(200)
+  .regex(
+    /^(media:)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    "Must be a media reference (media:<uuid> or bare uuid)",
+  );
+export type MediaRefType = z.infer<typeof MediaRefSchema>;
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Tests whether a string is a media reference (`media:<uuid>` or a bare UUID). */
+export function isMediaRef(val: unknown): val is string {
+  if (typeof val !== "string" || !val) return false;
+  const stripped = val.startsWith("media:") ? val.slice(6) : val;
+  return UUID_REGEX.test(stripped);
+}
+
+/** Extracts the raw media UUID from a reference string, or null if not a media ref. */
+export function extractMediaId(val: unknown): string | null {
+  if (typeof val !== "string" || !val) return null;
+  const stripped = val.startsWith("media:") ? val.slice(6) : val;
+  return UUID_REGEX.test(stripped) ? stripped : null;
+}
+
+/** Formats a media UUID as a canonical `media:<uuid>` reference. */
+export function buildMediaRef(mediaId: string): string {
+  const stripped = mediaId.startsWith("media:") ? mediaId.slice(6) : mediaId;
+  return `media:${stripped}`;
+}
+
+/** Extracts all unique media IDs from an arbitrary object, map, array, or string. */
+export function parseMediaReferences(input: unknown): string[] {
+  if (!input) return [];
+  const found = new Set<string>();
+
+  const scan = (item: unknown) => {
+    if (typeof item === "string") {
+      const id = extractMediaId(item);
+      if (id) found.add(id);
+    } else if (Array.isArray(item)) {
+      for (const el of item) scan(el);
+    } else if (typeof item === "object" && item !== null) {
+      for (const val of Object.values(item as Record<string, unknown>)) {
+        scan(val);
+      }
+    }
+  };
+
+  scan(input);
+  return Array.from(found);
+}

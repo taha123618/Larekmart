@@ -102,6 +102,12 @@ const EnvSchema = z.object({
     .positive()
     .default(2000),
   MEDIA_WORKER_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
+  /** PROCESSING jobs whose started_at is older than this are requeued. */
+  MEDIA_WORKER_STALE_JOB_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(900),
   MEDIA_CLEANUP_INTERVAL_MS: z.coerce.number().int().positive().default(300000),
   MEDIA_UPLOAD_SESSION_TTL_SECONDS: z.coerce
     .number()
@@ -123,7 +129,7 @@ const EnvSchema = z.object({
   MEDIA_CATEGORY_VARIANTS: z
     .string()
     .default(
-      'product-image:thumbnail:160,small:480,medium:960,large:1600|review-image:thumbnail:160,medium:960|avatar:avatar:256,thumbnail:160',
+      "product-image:thumbnail:160,small:480,medium:960,large:1600|review-image:thumbnail:160,medium:960|avatar:avatar:256,thumbnail:160",
     )
     .transform((raw, ctx) => {
       const map: Record<string, { name: string; maxEdge: number }[]> = {};

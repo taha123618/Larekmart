@@ -507,3 +507,88 @@ only a best-effort availability cache.
 
 - **Auth**: Public / Scraper
 - **Response**: Health status, MongoDB connection probe, Redis probe, Kafka probe, and Prometheus metrics exposition.
+
+---
+
+## 11. Media Service (`:8013`)
+
+### `POST /api/v1/media/uploads`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `UploadRequestSchema` — `{ ownerType, ownerId, filename, contentType, size, category?, visibility? }`
+- **Response**: `201` — `{ mediaId, uploadUrl, objectKey, bucket, expiresAt, media }` (`uploadUrl` is a short-lived presigned PUT)
+- **Side Effect**: Creates the `PENDING` metadata row + upload session; binaries upload **directly** to S3/MinIO — never through this API
+- **Errors**: `MediaTooLargeError` (per-category limits), `MediaTypeNotSupportedError` (MIME allowlist), `ForbiddenError` (cross-owner), `ValidationError`
+
+### `POST /api/v1/media/:mediaId/complete`
+
+- **Auth**: User (owner)
+- **Response**: `MediaResponseType` — media now in `PROCESSING`
+- **Side Effect**: Verifies the stored object (existence, size re-read from storage, extension/MIME consistency), transitions `PENDING → UPLOADING → PROCESSING`, publishes `media.uploaded`, enqueues the Sharp job
+- **Errors**: `ConflictError` (session missing/expired/completed), `UploadError` (object absent), `MediaTooLargeError`, `MediaTypeNotSupportedError` (quarantines the media)
+
+### `POST /api/v1/media/:mediaId/abort`
+
+- **Auth**: User (owner) or Admin
+- **Response**: `{ success: true, message: "Upload session aborted" }`
+- **Side Effect**: Marks upload session aborted and transitions media status to `FAILED`, preventing subsequent completion
+- **Errors**: `NotFoundError` (session or media not found), `ForbiddenError` (caller is not owner or admin)
+
+### `GET /api/v1/media/:mediaId`
+
+- **Auth**: Public (PRIVATE requires owner/admin, enforced in the service)
+- **Response**: `MediaResponseType`
+
+### `GET /api/v1/media/:mediaId/url?variant=`
+
+- **Auth**: User
+- **Query Params**: `variant` (optional; generated set per upload category)
+- **Response**: `{ mediaId, variant, url, expiresIn }` — unsigned public URL for PUBLIC media, presigned for PRIVATE
+- **Errors**: `MediaNotReadyError` (media not `READY`), `NotFoundError`
+
+### `GET /api/v1/media/owner/:ownerType/:ownerId`
+
+- **Auth**: Public (PRIVATE entries filtered by actor)
+- **Query Params**: `limit` (≤ 200, default 50), `offset`
+- **Response**: `{ items: MediaResponseType[], total: number }` — READY media for an owner
+
+### `POST /api/v1/media/resolve`
+
+- **Auth**: Public (rate-limited)
+- **Body**: `MediaResolveRequestSchema` — `{ ids: string[] }`
+- **Response**: `{ items: Array<{ id, url, ... }> }` — batch-resolves media references to URLs; unknown ids and raw URLs pass through unchanged; unresolved ids negative-cached
+- **Cache**: Redis batch + per-entry keys, TTL-bounded, invalidated on READY/quarantine/soft-delete/restore/owner-reassignment/purge
+
+### `DELETE /api/v1/media/:mediaId`
+
+- **Auth**: User (owner)
+- **Response**: `{ message: "Media deleted" }` — soft delete; binaries survive the 7-day recovery window
+- **Side Effect**: Publishes `media.deleted`, invalidates resolve cache
+
+### `GET /api/v1/admin/media`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `status`, `ownerType`, `ownerId`, `limit`, `offset`
+- **Response**: `{ items, total }` — media across all owners
+
+### `POST /api/v1/admin/media/:mediaId/reprocess`
+
+- **Auth**: Admin
+- **Response**: `202` — `{ message: "Reprocessing queued", jobId }` — re-enqueues the Sharp variant job
+
+### `POST /api/v1/admin/media/:mediaId/restore`
+
+- **Auth**: Admin
+- **Response**: `{ message: "Media restored" }` — undo soft delete (status back to `READY`)
+- **Errors**: `NotFoundError`
+
+### `DELETE /api/v1/admin/media/:mediaId/purge`
+
+- **Auth**: Admin
+- **Response**: `{ message: "Media purged" }` — permanent binary + variant + metadata removal
+
+### `GET /health`, `GET /health/live`, `GET /health/ready`, `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Health status, PostgreSQL probe, Redis probe, storage (S3/MinIO) connectivity probe, and Prometheus metrics exposition.
+- **Note**: `media-worker` (Sharp variants) and `media-cleanup` (session expiry, stale-job requeue, purge GC) run as separate containers with no HTTP surface.

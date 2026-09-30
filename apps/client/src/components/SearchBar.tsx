@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { useAuth } from "@clerk/nextjs";
 import type { SuggestionItem, SuggestionResponse } from "@repo/types";
+import MediaImage from "@/components/MediaImage";
 
 const SEARCH_SERVICE_URL = process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL;
 const SUGGESTION_LIMIT = 6;
@@ -273,8 +274,8 @@ const SearchBar = () => {
                         ? Object.values(option.item.images)[0]
                         : undefined;
                       return image ? (
-                        <img
-                          src={image ?? ""}
+                        <MediaImage
+                          src={image}
                           alt=""
                           width={32}
                           height={32}

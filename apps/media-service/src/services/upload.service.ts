@@ -290,7 +290,23 @@ export class UploadService {
     return this.mediaService.toMediaResponse(updated, variants);
   }
 
+  /** Step 2b: client aborted the upload — cancel session + mark media FAILED. */
+  async abortUpload(mediaId: string, actor: MediaActor): Promise<void> {
+    const media = await this.repos.media.findByIdNotDeleted(mediaId);
+    if (!media) throw new NotFoundError();
+    this.mediaService.assertCanManage(media, actor);
+
+    const session = await this.repos.uploads.findLatestForMedia(media.id);
+    if (session && session.status === "PENDING") {
+      await this.repos.uploads.markAborted(session.id);
+    }
+    await this.repos.media.updateStatus(media.id, "FAILED" as MediaStatusType);
+    await this.storage.deleteObject(media.objectKey).catch(() => undefined);
+    await invalidateMedia(media.id);
+  }
+
   /** Used by the worker after successful processing: mark READY + publish. */
+
   async markProcessedReady(mediaId: string): Promise<MediaRow> {
     const media = await this.repos.media.updateStatus(
       mediaId,

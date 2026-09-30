@@ -12,6 +12,8 @@ import { MediaService } from "./services/media.service.js";
 import { UploadService } from "./services/upload.service.js";
 import { ProcessingService } from "./services/processing.service.js";
 import { AdminService } from "./services/admin.service.js";
+import { VariantService } from "./services/variant.service.js";
+import { CleanupService } from "./services/cleanup.service.js";
 
 /**
  * Composition root. Storage is created once behind the ObjectStorage
@@ -23,6 +25,8 @@ export interface ServiceContainer {
   mediaService: MediaService;
   uploadService: UploadService;
   processingService: ProcessingService;
+  variantService: VariantService;
+  cleanupService: CleanupService;
   adminService: AdminService;
   /** Direct repository access for workers (cleanup/purge paths). */
   repos: {
@@ -57,6 +61,16 @@ export function getServiceContainer(): ServiceContainer {
     media: repos.media,
     variants: repos.variants,
   });
+  const variantService = new VariantService(storage, {
+    media: repos.media,
+    variants: repos.variants,
+  });
+  const cleanupService = new CleanupService(storage, {
+    media: repos.media,
+    variants: repos.variants,
+    uploads: repos.uploads,
+    jobs: repos.jobs,
+  });
   const adminService = new AdminService(storage, {
     media: repos.media,
     variants: repos.variants,
@@ -68,13 +82,17 @@ export function getServiceContainer(): ServiceContainer {
     mediaService,
     uploadService,
     processingService,
+    variantService,
+    cleanupService,
     adminService,
     repos,
   };
   return container;
 }
 
-/** Test seam: allows injecting an in-memory storage provider. */
-export function setServiceContainerForTests(override: ServiceContainer): void {
+/** Test seam: allows injecting an in-memory storage provider or resetting. */
+export function setServiceContainerForTests(
+  override: ServiceContainer | null,
+): void {
   container = override;
 }

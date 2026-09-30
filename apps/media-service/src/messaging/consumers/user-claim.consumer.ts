@@ -33,14 +33,13 @@ const UserAvatarPayloadSchema = z.object({
     .optional(),
 });
 
-/** Extracts a media id from a `media:<uuid>` ref or bare uuid. */
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { extractMediaId } from "@repo/types";
 
-export function normalizeMediaRef(ref: string | null | undefined): string | null {
-  if (!ref) return null;
-  const id = ref.startsWith("media:") ? ref.slice(6) : ref;
-  return UUID_RE.test(id) ? id : null;
+/** Extracts a media id from a `media:<uuid>` ref or bare uuid using @repo/types. */
+export function normalizeMediaRef(
+  ref: string | null | undefined,
+): string | null {
+  return extractMediaId(ref);
 }
 
 export async function handleUserAvatarClaim(
@@ -52,7 +51,9 @@ export async function handleUserAvatarClaim(
     envelope.value !== undefined ? envelope.value : rawMessage,
   );
   if (!parsed.success) {
-    logger.warn("Ignoring malformed user.avatar_uploaded event for media claiming");
+    logger.warn(
+      "Ignoring malformed user.avatar_uploaded event for media claiming",
+    );
     return;
   }
 
@@ -76,6 +77,10 @@ export async function handleUserAvatarClaim(
 
   await mediaRepo.updateOwner(media.id, "user", ownerRef);
   await invalidateMedia(media.id);
-  mediaMetrics.kafka_events_consumed_total.inc({ event: "user.avatar_uploaded" });
-  logger.info(`user.avatar_uploaded: claimed media ${media.id} for user/${ownerRef}`);
+  mediaMetrics.kafka_events_consumed_total.inc({
+    event: "user.avatar_uploaded",
+  });
+  logger.info(
+    `user.avatar_uploaded: claimed media ${media.id} for user/${ownerRef}`,
+  );
 }

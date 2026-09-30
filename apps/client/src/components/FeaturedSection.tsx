@@ -10,6 +10,7 @@
  *   <FeaturedSection type="best-sellers" title="Best Sellers" />
  */
 import Link from "next/link";
+import MediaImage from "@/components/MediaImage";
 import {
   fetchFeaturedProducts,
   fetchNewArrivals,
@@ -42,17 +43,17 @@ const CatalogCard = ({ product }: { product: CatalogProductCard }) => {
     >
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden">
         {imageSrc ? (
-          <img
+          <MediaImage
             src={imageSrc}
             alt={product.name}
-            // fill
-            className="object-cover group-hover:scale-105 transition-all duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
           />
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
             No image
           </div>
         )}
+
         {product.badges && product.badges.length > 0 && (
           <span className="absolute top-2 left-2 bg-black text-white text-xs px-2 py-0.5 rounded-md">
             {product.badges[0]}

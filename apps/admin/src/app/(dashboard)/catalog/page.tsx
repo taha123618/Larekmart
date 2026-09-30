@@ -32,6 +32,7 @@ import {
   Star,
   Flame,
 } from "lucide-react";
+import MediaImage from "@/components/MediaImage";
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 
@@ -99,6 +100,14 @@ const CategoryRow = ({
           className="flex items-center gap-2"
         >
           {depth > 0 && <span className="text-muted-foreground">└</span>}
+          {category.image && (
+            <MediaImage
+              ref_={category.image}
+              alt={category.name}
+              size={22}
+              className="w-5 h-5 rounded object-cover"
+            />
+          )}
           {category.name}
         </span>
       </td>
@@ -292,7 +301,19 @@ const CatalogPage = async () => {
                       key={brand.id}
                       className={`border-b ${!brand.isActive ? "opacity-40" : ""}`}
                     >
-                      <td className="py-2 px-4 font-medium">{brand.name}</td>
+                      <td className="py-2 px-4 font-medium">
+                        <span className="flex items-center gap-2">
+                          {brand.logoUrl && (
+                            <MediaImage
+                              ref_={brand.logoUrl}
+                              alt={brand.name}
+                              size={22}
+                              className="w-5 h-5 rounded object-cover"
+                            />
+                          )}
+                          {brand.name}
+                        </span>
+                      </td>
                       <td className="py-2 px-4 font-mono text-muted-foreground">
                         {brand.slug}
                       </td>
