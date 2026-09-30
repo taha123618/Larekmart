@@ -43,8 +43,7 @@ export const media = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
-    index("media_owner_idx").on(table.ownerType, table.ownerId),
-    index("media_status_idx").on(table.status),
+    index("media_owner_status_idx").on(table.ownerType, table.ownerId, table.status),
     index("media_created_at_idx").on(table.createdAt),
     index("media_deleted_at_idx").on(table.deletedAt),
   ],
@@ -77,7 +76,6 @@ export const mediaVariants = pgTable(
       table.mediaId,
       table.variant,
     ),
-    index("media_variants_media_idx").on(table.mediaId),
   ],
 );
 
@@ -99,8 +97,10 @@ export const mediaUploads = pgTable(
   },
   (table) => [
     index("media_uploads_media_idx").on(table.mediaId),
-    index("media_uploads_status_idx").on(table.status),
-    index("media_uploads_expires_idx").on(table.expiresAt),
+    index("media_uploads_status_expires_idx").on(
+      table.status,
+      table.expiresAt,
+    ),
   ],
 );
 
@@ -127,7 +127,10 @@ export const mediaProcessingJobs = pgTable(
   },
   (table) => [
     index("media_jobs_media_idx").on(table.mediaId),
-    index("media_jobs_status_idx").on(table.status),
+    index("media_jobs_status_created_idx").on(
+      table.status,
+      table.createdAt,
+    ),
   ],
 );
 
