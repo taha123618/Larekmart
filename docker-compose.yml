@@ -41,7 +41,11 @@ services:
     volumes:
       - mongo_data:/data/db
     healthcheck:
-      test: ["CMD-SHELL", "mongosh -u $${MONGO_INITDB_ROOT_USERNAME:-root} -p $${MONGO_INITDB_ROOT_PASSWORD:-example} --authenticationDatabase admin --quiet --eval \"db.adminCommand('ping')\" || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          'mongosh -u $${MONGO_INITDB_ROOT_USERNAME:-root} -p $${MONGO_INITDB_ROOT_PASSWORD:-example} --authenticationDatabase admin --quiet --eval "db.adminCommand(''ping'')" || exit 1',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -115,7 +119,11 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 || exit 1",
+        ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -230,7 +238,7 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
-    
+
     env_file:
       - ./apps/product-service/.env
     depends_on:
@@ -253,7 +261,7 @@ services:
     restart: unless-stopped
     ports:
       - "8001:8001"
-    
+
     env_file:
       - ./apps/order-service/.env
     depends_on:
@@ -274,7 +282,7 @@ services:
     restart: unless-stopped
     ports:
       - "8002:8002"
-    
+
     env_file:
       - ./apps/payment-service/.env
     depends_on:
@@ -291,7 +299,7 @@ services:
     restart: unless-stopped
     ports:
       - "8003:8003"
-    
+
     env_file:
       - ./apps/auth-service/.env
     depends_on:
@@ -308,7 +316,7 @@ services:
     restart: unless-stopped
     ports:
       - "8004:8004"
-    
+
     env_file:
       - ./apps/analytic-service/.env
     depends_on:
@@ -329,7 +337,7 @@ services:
     restart: unless-stopped
     ports:
       - "8005:8005"
-    
+
     env_file:
       - ./apps/notification-service/.env
     depends_on:
@@ -350,7 +358,7 @@ services:
     restart: unless-stopped
     ports:
       - "8006:8006"
-    
+
     env_file:
       - ./apps/search-service/.env
     depends_on:
@@ -371,7 +379,7 @@ services:
     restart: unless-stopped
     ports:
       - "8007:8007"
-    
+
     env_file:
       - ./apps/inventory-service/.env
     depends_on:
@@ -392,7 +400,7 @@ services:
     restart: unless-stopped
     ports:
       - "8008:8008"
-    
+
     env_file:
       - ./apps/recommendation-service/.env
     depends_on:
@@ -413,7 +421,7 @@ services:
     restart: unless-stopped
     ports:
       - "8009:8009"
-    
+
     env_file:
       - ./apps/cart-service/.env
     depends_on:
@@ -434,7 +442,7 @@ services:
     restart: unless-stopped
     ports:
       - "8010:8010"
-    
+
     env_file:
       - ./apps/catalog-service/.env
     depends_on:
@@ -455,7 +463,7 @@ services:
     restart: unless-stopped
     ports:
       - "8011:8011"
-    
+
     env_file:
       - ./apps/shipping-service/.env
     depends_on:
@@ -494,7 +502,7 @@ services:
       dockerfile: apps/email-service/Dockerfile
     container_name: larekmart-email-service
     restart: unless-stopped
-    
+
     env_file:
       - ./apps/email-service/.env
     depends_on:
@@ -581,11 +589,12 @@ services:
         NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8011
         NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8010
         NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8012
+        NEXT_PUBLIC_MEDIA_SERVICE_URL: http://localhost:8013
     container_name: larekmart-client
     restart: unless-stopped
     ports:
       - "3002:3002"
-    
+
     env_file:
       - ./apps/client/.env
     depends_on:
@@ -594,6 +603,7 @@ services:
       - cart-service
       - order-service
       - user-service
+      - media-service
     networks:
       - larekmart-network
 
@@ -613,11 +623,12 @@ services:
         NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8011
         NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8008
         NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8012
+        NEXT_PUBLIC_MEDIA_SERVICE_URL: http://localhost:8013
     container_name: larekmart-admin
     restart: unless-stopped
     ports:
       - "3003:3003"
-    
+
     env_file:
       - ./apps/admin/.env
     depends_on:
