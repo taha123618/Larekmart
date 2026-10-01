@@ -34,12 +34,12 @@ infrastructure/
 │   │   ├── configmaps/         # common-config.yaml
 │   │   ├── secrets/            # secret-templates.yaml (DO NOT store real secrets here)
 │   │   ├── frontends/          # client.yaml, admin.yaml
-│   │   ├── services/           # 12 backend service Deployments + ClusterIP Services
+│   │   ├── services/           # 14 backend service Deployments + ClusterIP Services (including user & media)
 │   │   ├── workers/            # email-service.yaml (headless Kafka consumer)
 │   │   ├── autoscaling/        # hpa.yaml (HPA for high-traffic services)
 │   │   ├── pdb/                # pod-disruption-budgets.yaml
 │   │   ├── network-policies/   # Zero-trust isolation rules
-│   │   ├── ingress.yaml        # NGINX Ingress with TLS, CORS, WebSocket
+│   │   ├── ingress.yaml        # NGINX Ingress with TLS, CORS, WebSocket (routes all 14 services + 2 frontends)
 │   │   └── kustomization.yaml
 │   └── overlays/
 │       ├── development/        # 1 replica, local hostnames, :dev tags
@@ -106,6 +106,29 @@ env_file:
 // packages/kafka/src/client.ts already reads process.env.KAFKA_BROKERS
 // Set this env var to "kafka:9092" inside any Docker service/container
 ```
+
+### Docker Hardened Images (DHI) & Docker Scout Workflow
+
+All production container images must adhere to the zero-known-remediable-vulnerability gate before release:
+
+1. **Docker Hardened Images (DHI) Standard**:
+   - Use `ARG BASE_IMAGE` parameterization in all Dockerfiles.
+   - Default base is pinned Alpine (`node:20-alpine`, `alpine:3.20`, `redis:7.4-alpine`).
+   - For enterprise builds, provide DHI drop-in: `docker build --build-arg BASE_IMAGE=dhi.io/node:20 .`
+
+2. **Docker Scout Quickview Audits**:
+   - Run audit command across all project images:
+     ```bash
+     pnpm docker:scout                     # Full catalog audit
+     pnpm docker:scout <image>:<tag>       # Single image quickview
+     pnpm docker:scout --cves <image>:<tag># Detailed CVE breakdown
+     ```
+   - Automatically supports `registry://` lookups when the local Docker daemon is offline.
+
+3. **Production Gate SLA**:
+   - **Critical Vulnerabilities**: 0 tolerated. Must be remediated immediately.
+   - **High Vulnerabilities**: 0 remediable tolerated. Fix via base image upgrade or package update.
+   - **Medium / Low**: Remediate when upstream fix is available; document non-remediable findings in `docs/DOCKER.md` VEX register.
 
 ---
 
