@@ -144,3 +144,17 @@ spec:
                 name: shipping-service
                 port:
                   number: 8011
+          - path: /api/v1/users
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8012
+          - path: /api/v1/media
+            pathType: Prefix
+            backend:
+              service:
+                name: media-service
+                port:
+                  number: 8013

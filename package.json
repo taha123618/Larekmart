@@ -22,7 +22,8 @@
     "monitoring:logs": "docker compose -f docker-compose.observability.yml logs -f",
     "k8s:dev": "kubectl apply -k infrastructure/kubernetes/overlays/development",
     "k8s:staging": "kubectl apply -k infrastructure/kubernetes/overlays/staging",
-    "k8s:validate": "kubectl kustomize infrastructure/kubernetes/overlays/production"
+    "k8s:validate": "kubectl kustomize infrastructure/kubernetes/overlays/production",
+    "docker:scout": "bash scripts/docker-scout-audit.sh"
   },
   "devDependencies": {
     "prettier": "^3.6.2",

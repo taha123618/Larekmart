@@ -35,5 +35,9 @@ images:
     newTag: v1.0.0
   - name: larekmart/shipping-service
     newTag: v1.0.0
+  - name: larekmart/user-service
+    newTag: v1.0.0
+  - name: larekmart/media-service
+    newTag: v1.0.0
   - name: larekmart/email-service
     newTag: v1.0.0

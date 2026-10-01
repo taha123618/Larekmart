@@ -22,6 +22,8 @@ resources:
   - services/cart-service.yaml
   - services/catalog-service.yaml
   - services/shipping-service.yaml
+  - services/user-service.yaml
+  - services/media-service.yaml
   - workers/email-service.yaml
   - autoscaling/hpa.yaml
   - pdb/pod-disruption-budgets.yaml

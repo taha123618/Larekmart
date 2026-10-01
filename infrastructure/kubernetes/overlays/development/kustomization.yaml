@@ -61,5 +61,9 @@ images:
     newTag: dev
   - name: larekmart/shipping-service
     newTag: dev
+  - name: larekmart/user-service
+    newTag: dev
+  - name: larekmart/media-service
+    newTag: dev
   - name: larekmart/email-service
     newTag: dev

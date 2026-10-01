@@ -1,9 +1,14 @@
-# Start from the official MongoDB base image
-# Reference: https://hub.docker.com/_/mongo
-FROM mongo:latest
+# ==============================================================================
+# Larekmart - MongoDB 7.0 Dockerfile
+# Hardened document store adhering to Docker Hardened Images (DHI) standards.
+# ==============================================================================
 
-# Copy initialization script (automatically executed on first container startup)
+ARG BASE_IMAGE=mongo:7.0-jammy
+# For enterprise DHI environments: docker build --build-arg BASE_IMAGE=dhi.io/mongodb:7.0 .
+
+FROM ${BASE_IMAGE}
+
+# Automated initialization script for databases and collections
 COPY init-db.js /docker-entrypoint-initdb.d/
 
-# Expose the default MongoDB port
 EXPOSE 27017

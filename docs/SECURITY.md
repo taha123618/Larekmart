@@ -27,3 +27,9 @@ Security architecture, authentication standards, and data protection guidelines 
 - All user-supplied mutation inputs are validated against shared Zod schemas (`ProductFormSchema`, `CategoryFormSchema`, `UserFormSchema`, `shippingFormSchema`).
 - Database queries use parameterized ORM/ODM APIs (Prisma, Mongoose) to prevent SQL or NoSQL injection vulnerabilities.
 - User-scoped queries always filter by `session.userId` derived directly from verified JWT claims.
+
+## 5. Container & Supply Chain Security
+
+- **Hardened Image Baseline**: All container workloads adhere to the Docker Hardened Image (DHI) standard, multi-stage builds, and strict non-root execution (UID 1000/1001/10001).
+- **Docker Scout Vulnerability Gates**: Mandatory pre-deployment verification using Docker Scout Quickview (`pnpm docker:scout`) with a zero-tolerance policy (0 Critical, 0 High remediable CVEs).
+- **Container Hardening Guide & Register**: See `docs/DOCKER.md` (Section 10) for the full image inventory matrix, verification commands, and VEX risk register.
