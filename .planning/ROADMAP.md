@@ -14,7 +14,7 @@ The platform development is structured into distinct executable phases: Storefro
 ## Phase Details
 
 ### Phase 1: Storefront Customer Journey
-**Goal**: Customers can browse clothing apparel, filter categories, select size/color variants, and maintain a persistent cart.
+**Goal**: Customers can browse marketplace products, filter categories, select size/color variants, and maintain a persistent cart.
 **Depends on**: Nothing (Phase 1)
 **Requirements**: [CLI-01, CLI-02, CLI-03]
 **Success Criteria** (what must be TRUE):

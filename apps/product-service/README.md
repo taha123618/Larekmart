@@ -1,6 +1,6 @@
 # Product Service (`apps/product-service`)
 
-Microservice managing the clothing product and category catalog.
+Microservice managing the marketplace product and category catalog.
 
 ## Tech Stack
 

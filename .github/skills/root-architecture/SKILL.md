@@ -5,7 +5,7 @@ description: Use when you need to understand Larekmart's overall system design, 
 
 # Root architecture
 
-Larekmart is a microservices clothing e-commerce platform in a pnpm + Turborepo
+**Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other , built in a pnpm + Turborepo
 monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTURE.md`.
 
 ## Mental model

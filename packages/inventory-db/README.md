@@ -139,7 +139,7 @@ The `transferInventory()` repository operation coordinates stock migration betwe
 
 ## 5. Integer Quantities Justification
 
-For Larekmart's apparel and retail merchandise domain, all items are countable, discrete units (shirts, trousers, accessories). PostgreSQL `INTEGER` (and `BIGINT` ready) is used:
+For Larekmart's marketplace and retail merchandise domain, all items are countable, discrete units (products, packages, accessories). PostgreSQL `INTEGER` (and `BIGINT` ready) is used:
 
 - Avoids floating-point rounding errors common with decimals.
 - Matches atomic integer increment/decrement semantics.

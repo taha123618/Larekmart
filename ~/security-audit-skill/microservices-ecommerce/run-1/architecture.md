@@ -1,6 +1,6 @@
 # Architecture summary — microservices-ecommerce (Larekmart)
 
-**Product.** Microservices e-commerce platform for clothing: two Next.js 15 frontends (client storefront :3002, admin dashboard :3003), 12 backend services (Express/Fastify/Hono/Koa Node, one Go service), shared packages, Kafka as the only inter-service channel. Operators are admins; customers are Clerk-authenticated users; guests use self-issued cart tokens.
+**Product.** Microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other : two Next.js 15 frontends (client storefront :3002, admin dashboard :3003), 12 backend services (Express/Fastify/Hono/Koa Node, one Go service), shared packages, Kafka as the only inter-service channel. Operators are admins; customers are Clerk-authenticated users; guests use self-issued cart tokens.
 
 **Comparable baseline.** Standard SaaS e-commerce reference architecture (storefront + admin + event bus). Baseline accepts dev-first convenience defaults; this repo follows that pattern (compose stacks, PLAINTEXT Kafka, localhost binds), which calibrates but does not dismiss findings evaluated against a production deployment of the same source.
 

@@ -6,7 +6,7 @@ with this summary.
 
 ## Repository Architecture
 
-pnpm 9 + Turborepo monorepo for a microservices clothing e-commerce platform. Two
+pnpm 9 + Turborepo monorepo for **Larekmart**, a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . Two
 Next.js apps (`client` :3002, `admin` :3003), ten backend services (`product-service` :8000,
 `order-service` :8001, `payment-service` :8002, `auth-service` :8003, `analytic-service` :8004,
 `notification-service` :8005, `search-service` :8006, `inventory-service` :8007,

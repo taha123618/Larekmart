@@ -2,16 +2,16 @@
 
 ## What This Is
 
-Larekmart is an asynchronous event-driven microservices e-commerce platform for clothing apparel, built within a pnpm + Turborepo monorepo. It features two Next.js 15 frontends (a customer-facing retail storefront and an operations admin portal), 15 polyglot backend microservices (Node.js, Go, Python), and 11 shared packages.
+**Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other , built within a pnpm + Turborepo monorepo. It features two Next.js 15 frontends (a customer-facing retail storefront and an operations admin portal), 15 polyglot backend microservices (Node.js, Go, Python), and 11 shared packages.
 
 ## Core Value
 
-Reliable, zero-downtime apparel discovery and checkout powered by strictly asynchronous event-driven microservices with zero service-to-service HTTP coupling.
+Reliable, zero-downtime product discovery and checkout powered by strictly asynchronous event-driven microservices with zero service-to-service HTTP coupling.
 
 ## Business Context
 
-- **Customer**: Online clothing and apparel shoppers browsing and purchasing retail clothing products.
-- **Revenue model**: Direct-to-consumer apparel sales processed securely through Stripe Checkout.
+- **Customer**: Online shoppers browsing and purchasing products from the marketplace.
+- **Revenue model**: Direct-to-consumer and marketplace sales processed securely through Stripe Checkout.
 - **Success metric**: High transaction throughput, sub-second product search latency, and zero checkout dropped events.
 - **Strategy notes**: Follows `docs/PRD.md` and `docs/EVENT-DRIVEN-ARCHITECTURE.md`.
 

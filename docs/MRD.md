@@ -98,7 +98,7 @@ CREATE TABLE analytics_daily_summary (
 
 ### 4.1 Recommendation Engine (Collaborative & Content-Based)
 
-- **Model Objective**: Recommend relevant clothing items based on cart contents, selected color variants, and purchase history.
+- **Model Objective**: Recommend relevant products and marketplace items based on cart contents, selected color variants, and purchase history.
 - **Input Features**: `product.category`, `product.colors`, `cart.items`, `user.past_orders`.
 - **Target Metric**: Hit Rate@5 > 25%, Mean Reciprocal Rank (MRR) > 0.35.
 

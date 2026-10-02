@@ -2,9 +2,9 @@
 
 ## 1. Product Overview
 
-Larekmart is a modern clothing retail e-commerce platform consisting of two dedicated Next.js App Router frontends and six headless backend microservices.
+**Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other , consisting of two dedicated Next.js App Router frontends and headless backend microservices.
 
-- **Customer Storefront (`apps/client`)**: Clean, responsive, high-conversion apparel storefront.
+- **Customer Storefront (`apps/client`)**: Clean, responsive, high-conversion marketplace storefront.
 - **Admin Management Portal (`apps/admin`)**: Operations hub for products, orders, customers, and analytics.
 
 ---

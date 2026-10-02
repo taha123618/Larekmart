@@ -7,7 +7,7 @@ and the relevant scoped `AGENTS.md`.
 
 ## 1. What this is
 
-**Larekmart** is a microservices e-commerce platform for clothing. It is a
+**Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . It is a
 **pnpm + Turborepo monorepo** with two Next.js frontends, 15 backend services, and
 shared internal packages. Cross-service communication is **asynchronous via Kafka**;
 there are no service-to-service HTTP calls.

@@ -14,7 +14,7 @@ The administrator dashboard for Larekmart, providing catalog management, user ad
 ## Key Features
 
 - **Product Management**: List, create, and update products with multi-color image mappings and size matrices.
-- **Category Management**: Create and manage hierarchical clothing categories.
+- **Category Management**: Create and manage hierarchical marketplace categories.
 - **User Management**: Admin interface proxying Clerk user management via `auth-service`.
 - **Order Analytics**: 6-month order trends and order status summaries.
 - **AI Recommendation Observability**: Live engine status, strategy performance metrics (CTR & conversions), and interactive recommendation tester for simulation of multi-shelf AI outputs.

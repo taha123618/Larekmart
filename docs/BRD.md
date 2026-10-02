@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-**Larekmart** is a modern, high-performance, event-driven microservices e-commerce platform designed for premium apparel and clothing retail. The platform provides a seamless, lightning-fast shopping experience for global consumers alongside a centralized, real-time administration dashboard for catalog managers, inventory controllers, and business executives.
+**Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . The platform provides a seamless, lightning-fast shopping experience for global consumers alongside a centralized, real-time administration dashboard for catalog managers, inventory controllers, and business executives.
 
 The system is architected as an enterprise-grade monorepo combining independent frontend applications with resilient backend microservices communicating asynchronously over Apache Kafka.
 
