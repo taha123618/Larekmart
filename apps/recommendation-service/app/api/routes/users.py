@@ -1,8 +1,9 @@
 from typing import Any
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db
+from app.core.security import validate_user_ownership
 from app.repositories.embedding_repository import EmbeddingRepository
 from app.repositories.interaction_repository import InteractionRepository
 
@@ -12,10 +13,12 @@ router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 @router.get("/{user_id}/preferences")
 async def get_user_preference_profile(
     user_id: str,
+    request: Request,
     limit: int = Query(default=5, ge=1, le=20),
     session: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Inspects user preference model, category affinities, and preference vector status."""
+    validate_user_ownership(request, user_id)
     inter_repo = InteractionRepository(session)
     emb_repo = EmbeddingRepository(session)
 

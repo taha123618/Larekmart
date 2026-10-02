@@ -18,7 +18,11 @@ export interface CarrierWebhookInput {
 }
 
 export class WebhookService {
-  static verifySignature(carrier: string, signature?: string): boolean {
+  static verifySignature(
+    carrier: string,
+    signature?: string,
+    rawBody?: string,
+  ): boolean {
     // Signatures are mandatory in EVERY environment. An unsigned request must
     // never be treated as authenticated — there is no development fail-open.
     if (!signature) return false;
@@ -28,6 +32,23 @@ export class WebhookService {
     // forgot to configure WEBHOOK_SECRET fails closed, not open.
     if (!secret || secret === DEFAULT_WEBHOOK_SECRET) return false;
     try {
+      // 1. If rawBody is provided, verify cryptographic HMAC-SHA256 payload binding
+      if (rawBody && typeof rawBody === "string") {
+        const computedHmac = crypto
+          .createHmac("sha256", secret)
+          .update(rawBody)
+          .digest("hex");
+        const sigBuf = Buffer.from(signature, "utf8");
+        const expBuf = Buffer.from(computedHmac, "utf8");
+        if (
+          sigBuf.length === expBuf.length &&
+          crypto.timingSafeEqual(sigBuf, expBuf)
+        ) {
+          return true;
+        }
+      }
+
+      // 2. Fall back to constant-time pre-shared token comparison for backward-compatibility
       const sigHash = crypto.createHash("sha256").update(signature).digest();
       const secretHash = crypto.createHash("sha256").update(secret).digest();
       return crypto.timingSafeEqual(sigHash, secretHash);

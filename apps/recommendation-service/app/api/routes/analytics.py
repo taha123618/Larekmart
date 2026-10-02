@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, status
 
 from app.api.dependencies import get_analytics_service
+from app.core.security import require_admin_or_internal
 from app.schemas.analytics import AnalyticsEventCreate, StrategyMetrics
 from app.services.analytics_service import AnalyticsService
 
@@ -20,6 +21,7 @@ async def record_analytics_event(
 @router.get("/metrics", response_model=list[StrategyMetrics])
 async def get_strategy_metrics(
     service: AnalyticsService = Depends(get_analytics_service),
+    _auth: dict = Depends(require_admin_or_internal),
 ) -> list[StrategyMetrics]:
     """Returns aggregated performance metrics (impressions, clicks, CTR, conversions) by strategy."""
     return await service.get_metrics()

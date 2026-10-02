@@ -2,6 +2,8 @@ package websocket
 
 import (
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -9,13 +11,38 @@ import (
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/observability"
 )
 
+func isOriginAllowed(origin string) bool {
+	if origin == "" {
+		return true // non-browser requests
+	}
+	allowed := []string{
+		"http://localhost:3000",
+		"http://localhost:3001",
+		"http://localhost:3002",
+		"http://localhost:3003",
+		"https://larekmart.com",
+		"https://admin.larekmart.com",
+		"https://staging.larekmart.com",
+	}
+	if envOrigins := os.Getenv("WEBSOCKET_ALLOWED_ORIGINS"); envOrigins != "" {
+		for _, o := range strings.Split(envOrigins, ",") {
+			allowed = append(allowed, strings.TrimSpace(o))
+		}
+	}
+	for _, a := range allowed {
+		if strings.EqualFold(origin, a) {
+			return true
+		}
+	}
+	return os.Getenv("APP_ENV") != "production"
+}
+
 // Websocket Work
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		// Allow origin check (validated in router CORS or allow all in development)
-		return true
+		return isOriginAllowed(r.Header.Get("Origin"))
 	},
 }
 

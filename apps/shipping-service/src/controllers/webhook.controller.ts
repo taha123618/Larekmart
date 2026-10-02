@@ -15,8 +15,12 @@ export class WebhookController {
       (ctx.headers["x-webhook-signature"] as string) ||
       (ctx.headers["authorization"] as string);
 
-    // Verify signature
-    const isValid = WebhookService.verifySignature(carrier, signature);
+    // Verify signature with payload binding
+    const rawBody =
+      typeof (ctx.request as any).rawBody === "string"
+        ? (ctx.request as any).rawBody
+        : JSON.stringify(ctx.request.body ?? {});
+    const isValid = WebhookService.verifySignature(carrier, signature, rawBody);
     if (!isValid) {
       ctx.status = 401;
       ctx.body = { message: "Invalid webhook signature" };

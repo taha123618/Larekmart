@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
@@ -70,11 +72,14 @@ func ExtractUserID(r *http.Request) string {
 		}
 	}
 
-	// 2. Query parameter - strictly permitted only for WebSocket handshakes (/ws or Upgrade: websocket)
+	// 2. Query parameter - strictly permitted only for WebSocket handshakes in development/test
 	isWS := strings.HasPrefix(r.URL.Path, "/ws") || strings.EqualFold(r.Header.Get("Upgrade"), "websocket")
 	if isWS {
 		if uid := r.URL.Query().Get("user_id"); uid != "" {
-			return uid
+			// In production, unauthenticated query parameter user ID is rejected
+			if os.Getenv("APP_ENV") != "production" {
+				return uid
+			}
 		}
 	}
 
@@ -88,7 +93,17 @@ func ExtractUserID(r *http.Request) string {
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 		parts := strings.Split(token, ".")
 		if len(parts) >= 2 {
-			// Decode JWT payload without cryptographic verification for sub/userId
+			secretKey := os.Getenv("CLERK_SECRET_KEY")
+			if secretKey != "" && len(parts) == 3 {
+				mac := hmac.New(sha256.New, []byte(secretKey))
+				mac.Write([]byte(parts[0] + "." + parts[1]))
+				expectedSig := mac.Sum(nil)
+				providedSig, err := base64.RawURLEncoding.DecodeString(parts[2])
+				if err != nil || subtle.ConstantTimeCompare(providedSig, expectedSig) != 1 {
+					return ""
+				}
+			}
+
 			payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
 			if err == nil {
 				var claims struct {

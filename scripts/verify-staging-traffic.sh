@@ -31,6 +31,18 @@ echo -e "${BLUE}  Larekmart Staging Ingress Traffic & Route Verification Suite  
 echo -e "${BLUE}  Target Ingress Base: ${STAGING_URL}${NC}"
 echo -e "${BLUE}====================================================================${NC}\n"
 
+# Pre-flight: check if target ingress endpoint is reachable
+probe_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "${STAGING_URL}" || echo "000")
+if [[ "${probe_code}" == "000" || "${probe_code}" == "000000" ]]; then
+  echo -e "${RED}[ERROR] Target Ingress endpoint '${STAGING_URL}' is not reachable (connection refused).${NC}"
+  echo -e "${YELLOW}Please ensure your staging cluster or local ingress controller is running before testing:${NC}"
+  echo -e "  - Deploy Kubernetes staging:  pnpm run k8s:staging"
+  echo -e "  - Point to remote staging:    bash scripts/verify-staging-traffic.sh https://staging.larekmart.com"
+  echo -e "  - Start local backing stack:  docker compose up -d\n"
+  exit 1
+fi
+
+
 check_endpoint() {
   local host="$1"
   local path="$2"

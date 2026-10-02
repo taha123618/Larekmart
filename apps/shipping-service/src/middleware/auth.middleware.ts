@@ -47,8 +47,50 @@ export async function requireAdminOrInternal(
 
   const token = authHeader.substring(7).trim();
   const parts = token.split(".");
-  if (parts.length >= 2) {
+  if (parts.length === 3) {
     try {
+      const jwtKey = process.env.CLERK_JWT_KEY;
+      const clerkSecret = process.env.CLERK_SECRET_KEY;
+      const isProduction = (process.env.NODE_ENV || env.NODE_ENV) === "production";
+
+      // If a signing key is configured, verify signature cryptographically
+
+      // If a signing key is configured, verify signature
+      if (jwtKey || clerkSecret) {
+        const key = jwtKey || clerkSecret!;
+        const signedData = `${parts[0]}.${parts[1]}`;
+        const signature = Buffer.from(parts[2]!, "base64url");
+
+        let verified = false;
+        if (key.includes("-----BEGIN")) {
+          try {
+            const verifier = crypto.createVerify("RSA-SHA256");
+            verifier.update(signedData);
+            verified = verifier.verify(key, signature);
+          } catch {
+            verified = false;
+          }
+        } else {
+          try {
+            const expectedSig = crypto
+              .createHmac("sha256", key)
+              .update(signedData)
+              .digest();
+            verified =
+              signature.length === expectedSig.length &&
+              crypto.timingSafeEqual(signature, expectedSig);
+          } catch {
+            verified = false;
+          }
+        }
+
+        if (!verified) {
+          ctx.status = 401;
+          ctx.body = { message: "Invalid or tampered token signature" };
+          return;
+        }
+      }
+
       const payloadJson = Buffer.from(parts[1]!, "base64url").toString("utf8");
       const claims = JSON.parse(payloadJson);
       const role = claims?.metadata?.role || claims?.role;
