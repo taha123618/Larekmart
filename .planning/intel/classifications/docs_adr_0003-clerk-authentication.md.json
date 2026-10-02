@@ -1,0 +1,13 @@
+{
+  "source_path": "docs/adr/0003-clerk-authentication.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "ADR 0003: Centralized Authentication and Role Management via Clerk",
+  "summary": "Standardizes all user authentication, session verification, and role-based access control (RBAC) on Clerk across frontends and backend services.",
+  "scope": ["Clerk", "authentication", "authorization", "RBAC", "JWT"],
+  "cross_refs": ["apps/client", "apps/admin", "apps/auth-service"],
+  "locked": true,
+  "precedence": 0,
+  "notes": "Accepted ADR delegating authentication and credentials to Clerk."
+}

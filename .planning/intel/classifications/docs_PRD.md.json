@@ -1,0 +1,13 @@
+{
+  "source_path": "docs/PRD.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Product Requirement Document (PRD) — Larekmart E-Commerce Platform",
+  "summary": "Full functional product requirements for Larekmart e-commerce storefront, admin portal, catalog browsing, shopping cart, and Stripe payment experience.",
+  "scope": ["Storefront", "Admin Portal", "Shopping Cart", "Stripe Checkout", "Product Catalog"],
+  "cross_refs": ["apps/client", "apps/admin", "apps/product-service", "apps/order-service", "apps/payment-service"],
+  "locked": false,
+  "precedence": 2,
+  "notes": "Canonical product requirement specification for customer and admin capabilities."
+}

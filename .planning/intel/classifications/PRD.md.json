@@ -1,0 +1,13 @@
+{
+  "source_path": "PRD.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Product Requirement Document (PRD) — Root Mirror",
+  "summary": "Root mirror of Larekmart product requirements covering customer storefront, operations hub, and microservice capabilities.",
+  "scope": ["Storefront", "Admin Portal", "Microservices", "E-Commerce"],
+  "cross_refs": ["docs/PRD.md"],
+  "locked": false,
+  "precedence": 2,
+  "notes": "Root mirror of docs/PRD.md."
+}

@@ -1,0 +1,13 @@
+{
+  "source_path": "docs/adr/0002-polyglot-persistence.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "ADR 0002: Polyglot Persistence (PostgreSQL for Catalog, MongoDB for Orders)",
+  "summary": "Establishes a database-per-service architecture using PostgreSQL for relational catalog/inventory/user/shipping models and MongoDB for order/cart document models.",
+  "scope": ["PostgreSQL", "MongoDB", "database-per-service", "Prisma", "Mongoose"],
+  "cross_refs": ["packages/product-db", "packages/order-db", "packages/cart-db", "@repo/types"],
+  "locked": true,
+  "precedence": 0,
+  "notes": "Accepted ADR defining database isolation and storage technology selection."
+}
