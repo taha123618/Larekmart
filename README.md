@@ -222,6 +222,69 @@ pnpm dev
 | **Prisma Generate** | `pnpm --filter @repo/product-db db:generate`                | Regenerate Prisma client                                                            |
 | **Prisma Migrate**  | `pnpm --filter @repo/product-db db:migrate`                 | Create and apply development migrations                                             |
 
+### 4. Running Kubernetes Staging & Development Environments
+
+The repository includes declarative Kustomize overlays in `infrastructure/kubernetes/overlays/` (`development`, `staging`, `production`). Applying these overlays requires an active Kubernetes cluster context configured in `~/.kube/config`.
+
+#### A. Local Cluster Setup with Minikube (Recommended)
+
+```bash
+# 1. Start a local cluster using the Docker driver
+minikube start --driver=docker
+
+# 2. Enable the NGINX Ingress controller addon
+minikube addons enable ingress
+
+# 3. Verify the cluster is active
+kubectl cluster-info
+```
+
+#### B. Local Cluster Setup with Docker Desktop
+
+1. Open **Docker Desktop Settings** → **Kubernetes**.
+2. Check **"Enable Kubernetes"** and click **Apply & Restart**.
+3. Verify your context:
+   ```bash
+   kubectl config use-context docker-desktop
+   kubectl cluster-info
+   ```
+
+#### C. Remote Cloud Cluster (EKS / GKE / AKS)
+
+Configure your local kubeconfig to point to your cloud staging or dev cluster:
+
+```bash
+# AWS EKS:
+aws eks update-kubeconfig --name larekmart-staging --region <region>
+
+# Google Cloud GKE:
+gcloud container clusters get-credentials larekmart-staging --zone <zone>
+```
+
+#### D. Deploying Overlays & Verifying Ingress Traffic
+
+```bash
+# Deploy staging overlay:
+pnpm run k8s:staging
+
+# Deploy development overlay:
+pnpm run k8s:dev
+
+# Validate manifests offline without an active cluster:
+pnpm run k8s:validate
+
+# Verify deployment rollout & pods:
+kubectl get pods,svc,ingress -n larekmart-staging
+
+# Run the 20-point staging ingress & route verification suite:
+bun run test:staging:traffic
+
+# Or point the traffic suite to a custom/remote host:
+bash scripts/verify-staging-traffic.sh https://staging.larekmart.com
+```
+
+For complete ingress routing architecture, network policies, and horizontal autoscaling details, see [`infrastructure/kubernetes/README.md`](infrastructure/kubernetes/README.md).
+
 ---
 
 ## AI-Assisted Development System
