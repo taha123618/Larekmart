@@ -181,8 +181,8 @@ S3 (`S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`,
 ## Local development
 
 ```bash
-# 1. Infrastructure: PostgreSQL (creates media_db), Redis, Kafka, MinIO + bucket
-docker compose up -d postgres redis kafka minio minio-init
+# 1. Infrastructure: PostgreSQL (creates media_db), Redis, Kafka
+docker compose up -d postgres redis kafka
 
 # 2. Environment
 cp apps/media-service/.env.example apps/media-service/.env
@@ -195,8 +195,6 @@ pnpm --filter media-service dev
 pnpm --filter media-service dev:worker
 pnpm --filter media-service dev:cleanup
 ```
-
-MinIO console: http://localhost:9001 (minioadmin/minioadmin).
 
 ### Testing
 

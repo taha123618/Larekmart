@@ -117,8 +117,6 @@ docker/
 | `media-worker`           | None                              | None         | Sharp image-processing job claimer                                             |
 | `media-cleanup`          | None                              | None         | Session expiry, stale-job requeue (`MEDIA_WORKER_STALE_JOB_SECONDS`), purge GC |
 | `email-service`          | None (worker)                     | None         | Consumes Kafka events, sends email notifications                               |
-| `minio`                  | `9000, 9001`                      | `9000, 9001` | S3-compatible object storage (API + Console)                                   |
-| `minio-init`             | None (one-shot)                   | None         | Idempotent bucket creation task                                                |
 | `client`                 | `3002`                            | `3002`       | Next.js 15 Storefront UI                                                       |
 | `admin`                  | `3003`                            | `3003`       | Next.js 15 Admin Dashboard UI                                                  |
 
@@ -386,8 +384,6 @@ Every single container image used in the Larekmart platform is cataloged below, 
 | **redis**                  | In-Memory Cache        | `redis:7.4-alpine`                 | `dhi/redis:7.4`          | `redis` (999)       | 0 Critical / 0 High    | Pinned & Hardened conf   |
 | **kafka**                  | Event Broker           | `apache/kafka:3.8.0`               | `dhi/kafka:3.8`          | `appuser` (1000)    | 0 Critical / 0 High    | Pinned & Scanned         |
 | **opensearch**             | Search Engine          | `opensearch:2.17.1`                | `dhi/opensearch:2.17`    | `opensearch` (1000) | 0 Critical / 0 High    | Pinned & Scanned         |
-| **minio**                  | Local Object Store     | `minio:RELEASE.2024-09-22`         | `dhi/minio`              | `minio` (1000)      | 0 Critical / 0 High    | Pinned (Dev-only)        |
-| **minio-init**             | Storage Provisioner    | `mc:RELEASE.2024-09-16`            | `dhi/mc`                 | `root` (One-shot)   | 0 Critical / 0 High    | Pinned (One-shot task)   |
 | **kafka-ui**               | Management Web UI      | `provectuslabs/kafka-ui:v0.7.2`    | N/A (Internal)           | `appuser` (1000)    | 0 Critical / 0 High    | Pinned (Dev-only)        |
 | **mongo-express**          | Database Web UI        | `mongo-express:1.0.2-alpha.4`      | N/A (Internal)           | `node` (1000)       | 0 Critical / 0 High    | Pinned (Dev-only)        |
 | **prometheus**             | Observability          | `prom/prometheus:v2.53.0`          | Distroless Hardened      | `nobody` (65534)    | 0 Critical / 0 High    | Pinned & Distroless      |

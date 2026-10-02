@@ -164,8 +164,6 @@ declare -a IMAGES=(
     "pgvector/pgvector:pg16|postgres|dhi/postgres:16|Core Relational DB"
 
     # Supporting / Development Infrastructure
-    "minio/minio:RELEASE.2024-09-22T00-33-43Z|minio|dhi/minio|Object Storage"
-    "minio/mc:RELEASE.2024-09-16T17-43-14Z|minio-init|dhi/mc|MinIO Client Provisioner"
     "provectuslabs/kafka-ui:v0.7.2|kafka-ui|Internal UI|Kafka Management Dashboard"
     "mongo-express:1.0.2-alpha.4|mongo-express|Internal UI|MongoDB Admin Dashboard"
 

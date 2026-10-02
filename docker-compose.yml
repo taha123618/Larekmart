@@ -185,13 +185,6 @@ services:
       - larekmart-network
 
   # ============================================================================
-  # Object Storage (S3-compatible; MinIO for local development)
-  # ============================================================================
-  # NOTE: MinIO is optional and disabled by default. To enable, install from:
-  # https://min.io/download#/docker or use docker run minio/minio:latest
-  # Then uncomment the services below and update media-service dependencies.
-
-  # ============================================================================
   # Microservices
   # ============================================================================
 

@@ -158,7 +158,7 @@ pnpm --filter media-service db:migrate       # media-service Drizzle migrations 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
 docker compose up -d --build                 # start entire microservices stack (15 apps + backing DBs)
 docker compose down                          # stop all containers preserving volumes
-docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui minio minio-init # backing infra only
+docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui # backing infra only
 # See docs/DOCKER.md for complete operations manual
 ```
 
@@ -202,6 +202,7 @@ Before considering a task complete:
 - [ ] Docs/AGENTS.md updated when architecture, contracts, or workflows changed.
 
 <!-- GSD Configuration — managed by gsd-core installer -->
+
 # Instructions for GSD
 
 - Use the gsd-core skill when the user asks for GSD or uses a `gsd-*` command.

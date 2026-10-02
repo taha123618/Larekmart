@@ -96,6 +96,6 @@ pnpm --filter media-service db:generate # drizzle-kit generate
 - Fake repos use in-memory maps and boundary casts (`as never` at constructor seams);
   that is accepted convention here. Do not let fakes weaken what the assertions prove.
 
-Live verification needs PostgreSQL (`media_db`), Redis, Kafka, and MinIO:
-`docker compose up -d postgres redis kafka minio minio-init` then
+Live verification needs PostgreSQL (`media_db`), Redis, Kafka, and S3-compatible storage:
+`docker compose up -d postgres redis kafka` then
 `pnpm --filter media-service db:migrate` and `pnpm --filter media-service dev`.
