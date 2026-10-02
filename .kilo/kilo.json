@@ -1,0 +1,10 @@
+{
+  "permission": {
+    "read": {
+      "/Users/taha/projects/microservices-ecommerce/.kilo/gsd-core/*": "allow"
+    },
+    "external_directory": {
+      "/Users/taha/projects/microservices-ecommerce/.kilo/gsd-core/*": "allow"
+    }
+  }
+}
