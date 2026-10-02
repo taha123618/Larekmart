@@ -1,13 +1,9 @@
 ---
 name: gsd-onboard
 description: "Guide existing codebase onboarding through mapping, doc ingest, and planning setup"
-argument-hint: "[--fast] [--text]"
-allowed-tools: Read, Bash, Write, Glob, Grep, Agent, AskUserQuestion
 ---
 
-<runtime_note>
-**Copilot (VS Code):** Use `vscode_askquestions` wherever this workflow calls `AskUserQuestion`. They are equivalent — `vscode_askquestions` is the VS Code Copilot implementation of the same interactive question API.
-</runtime_note>
+
 
 <objective>
 Guide brownfield onboarding for an existing codebase by routing through the existing GSD primitives in the safe order: codebase map → docs ingest → project initialization → onboarding summary.
@@ -21,9 +17,9 @@ Guide brownfield onboarding for an existing codebase by routing through the exis
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/onboard.md
-@.github/gsd-core/references/ui-brand.md
-@.github/gsd-core/references/gate-prompts.md
+@.agents/gsd-core/workflows/onboard.md
+@.agents/gsd-core/references/ui-brand.md
+@.agents/gsd-core/references/gate-prompts.md
 </execution_context>
 
 <context>

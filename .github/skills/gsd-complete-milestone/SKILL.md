@@ -1,8 +1,6 @@
 ---
 name: gsd-complete-milestone
 description: "Archive completed milestone and prepare for next version"
-argument-hint: "<version>"
-allowed-tools: Read, Write, Bash, Grep
 ---
 
 
@@ -16,8 +14,8 @@ Output: Milestone archived (roadmap + requirements), PROJECT.md evolved, git tag
 <execution_context>
 **Load these files NOW (before proceeding):**
 
-- @.github/gsd-core/workflows/complete-milestone.md (main workflow)
-- @.github/gsd-core/templates/milestone-archive.md (archive template)
+- @.agents/gsd-core/workflows/complete-milestone.md (main workflow)
+- @.agents/gsd-core/templates/milestone-archive.md (archive template)
   </execution_context>
 
 <context>

@@ -1,0 +1,102 @@
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-kafka-auth
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: keda-kafka-auth
+    app.kubernetes.io/part-of: larekmart
+spec:
+  secretTargetRef:
+    - parameter: sasl
+      name: larekmart-secrets
+      key: KAFKA_SASL_MECHANISM
+    - parameter: username
+      name: larekmart-secrets
+      key: KAFKA_USERNAME
+    - parameter: password
+      name: larekmart-secrets
+      key: KAFKA_PASSWORD
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: email-service-scaledobject
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: email-service-scaledobject
+    app.kubernetes.io/part-of: larekmart
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: email-service
+  minReplicaCount: 1
+  maxReplicaCount: 8
+  cooldownPeriod: 300
+  pollingInterval: 15
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 15
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Percent
+              value: 25
+              periodSeconds: 60
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-service.larekmart.svc.cluster.local:9092
+        consumerGroup: email-service-group
+        topic: order.created
+        lagThreshold: "25"
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-service.larekmart.svc.cluster.local:9092
+        consumerGroup: email-service-group
+        topic: order.status_updated
+        lagThreshold: "25"
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-service.larekmart.svc.cluster.local:9092
+        consumerGroup: email-service-group
+        topic: user.registered
+        lagThreshold: "25"
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: notification-service-scaledobject
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: notification-service-scaledobject
+    app.kubernetes.io/part-of: larekmart
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: notification-service
+  minReplicaCount: 2
+  maxReplicaCount: 10
+  cooldownPeriod: 300
+  pollingInterval: 15
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-service.larekmart.svc.cluster.local:9092
+        consumerGroup: notification-service-group
+        topic: notification.send
+        lagThreshold: "50"
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-service.larekmart.svc.cluster.local:9092
+        consumerGroup: notification-service-group
+        topic: order.status_updated
+        lagThreshold: "50"

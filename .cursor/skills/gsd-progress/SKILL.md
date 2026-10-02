@@ -3,30 +3,6 @@ name: gsd-progress
 description: "Check progress, advance workflow, or dispatch freeform intent — the unified GSD situational command"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-progress` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
-
 <objective>
 Check project progress, summarize recent work and what's ahead, then intelligently route to the next action.
 
@@ -47,14 +23,14 @@ Three modes:
 </flags>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/progress.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/next.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/do.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/progress.md
+@.agents/gsd-core/workflows/next.md
+@.agents/gsd-core/workflows/do.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <process>
-Arguments provided: "{{GSD_ARGS}}"
+Arguments provided: "$ARGUMENTS"
 Parse the first token from the provided arguments:
 - If it is `--next`: strip the flag, execute the next workflow (passing remaining args e.g. --force, --auto).
 - If it is `--do`: strip the flag, pass remainder as freeform intent to the do workflow.

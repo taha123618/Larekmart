@@ -3,29 +3,6 @@ name: gsd-update
 description: "Update GSD to latest version with changelog display"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-update` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
 
 <objective>
 Check for GSD updates, install if available, and display what changed.
@@ -40,7 +17,7 @@ Routes to the update workflow which handles:
 </objective>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/update.md
+@.agents/gsd-core/workflows/update.md
 </execution_context>
 
 <flags>
@@ -51,14 +28,14 @@ Routes to the update workflow which handles:
 </flags>
 
 <process>
-Parse the first token of {{GSD_ARGS}}:
+Parse the first token of $ARGUMENTS:
 - If it is `--sync`: strip the flag, execute the sync-skills workflow (passing remaining args for --from/--to/--dry-run/--apply).
 - If it is `--reapply`: strip the flag, execute the reapply-patches workflow.
-- Otherwise (including `--next` / `--rc`): execute the update workflow end-to-end, passing `{{GSD_ARGS}}` through so the workflow's parse_update_channel step can select the release channel.
+- Otherwise (including `--next` / `--rc`): execute the update workflow end-to-end, passing `$ARGUMENTS` through so the workflow's parse_update_channel step can select the release channel.
 
 </process>
 
 <execution_context_extended>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/sync-skills.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/reapply-patches.md
+@.agents/gsd-core/workflows/sync-skills.md
+@.agents/gsd-core/workflows/reapply-patches.md
 </execution_context_extended>

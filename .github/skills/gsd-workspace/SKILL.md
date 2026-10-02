@@ -1,8 +1,6 @@
 ---
 name: gsd-workspace
 description: "Manage GSD workspaces — create, list, or remove isolated workspace environments"
-argument-hint: "[--new | --list | --remove] [name]"
-allowed-tools: Read, Write, Bash, Grep, AskUserQuestion
 ---
 
 
@@ -26,10 +24,10 @@ Mode routing:
 </routing>
 
 <execution_context>
-@.github/gsd-core/workflows/new-workspace.md
-@.github/gsd-core/workflows/list-workspaces.md
-@.github/gsd-core/workflows/remove-workspace.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/new-workspace.md
+@.agents/gsd-core/workflows/list-workspaces.md
+@.agents/gsd-core/workflows/remove-workspace.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

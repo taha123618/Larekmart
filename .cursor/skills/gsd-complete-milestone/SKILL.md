@@ -3,29 +3,6 @@ name: gsd-complete-milestone
 description: "Archive completed milestone and prepare for next version"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-complete-milestone` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
 
 <objective>
 Mark milestone {{version}} complete, archive to milestones/, and update ROADMAP.md and REQUIREMENTS.md.
@@ -37,8 +14,8 @@ Output: Milestone archived (roadmap + requirements), PROJECT.md evolved, git tag
 <execution_context>
 **Load these files NOW (before proceeding):**
 
-- @/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/complete-milestone.md (main workflow)
-- @/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/templates/milestone-archive.md (archive template)
+- @.agents/gsd-core/workflows/complete-milestone.md (main workflow)
+- @.agents/gsd-core/templates/milestone-archive.md (archive template)
   </execution_context>
 
 <context>

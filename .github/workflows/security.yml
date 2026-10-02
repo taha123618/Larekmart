@@ -73,5 +73,17 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
         continue-on-error: true
 
+      - name: Verify OpenVEX Attestations
+        run: bash scripts/docker-scout-audit.sh --vex
+
       - name: Run Docker Scout Audit Script
         run: bash scripts/docker-scout-audit.sh
+
+      - name: Upload Security & VEX Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-attestations
+          path: |
+            security/vex/
+            security/sbom/

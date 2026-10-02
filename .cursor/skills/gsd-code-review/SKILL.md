@@ -3,30 +3,6 @@ name: gsd-code-review
 description: "Review source files changed during a phase for bugs, security issues, and code quality problems"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-code-review` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
-
 <objective>
 Review source files changed during a phase for bugs, security vulnerabilities, and code quality problems.
 
@@ -48,17 +24,17 @@ Output: {padded_phase}-REVIEW.md in phase directory + inline summary of findings
 </objective>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/code-review.md
+@.agents/gsd-core/workflows/code-review.md
 </execution_context>
 
 <context>
-Phase: {{GSD_ARGS}} (first positional argument is phase number)
+Phase: $ARGUMENTS (first positional argument is phase number)
 
-Optional flags parsed from {{GSD_ARGS}}:
+Optional flags parsed from $ARGUMENTS:
 - `--depth=VALUE` — Depth override (quick|standard|deep). If provided, overrides workflow.code_review_depth config.
 - `--files=file1,file2,...` — Explicit file list override. Has highest precedence for file scoping per D-08. When provided, workflow skips SUMMARY.md extraction and git diff fallback entirely.
 
-Context files (.cursor/rules/, SUMMARY.md, phase state) are resolved inside the workflow via `gsd-tools query init.phase-op` and delegated to agent via `<required_reading>` blocks.
+Context files (GEMINI.md, SUMMARY.md, phase state) are resolved inside the workflow via `gsd-tools query init.phase-op` and delegated to agent via `<required_reading>` blocks.
 </context>
 
 <process>

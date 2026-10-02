@@ -1,8 +1,6 @@
 ---
 name: gsd-ship
 description: "Create PR, run review, and prepare for merge after verification passes"
-argument-hint: "[phase number or milestone, e.g., '4' or 'v1.0']"
-allowed-tools: Read, Bash, Grep, Glob, Write, AskUserQuestion
 ---
 
 <objective>
@@ -12,7 +10,7 @@ Closes the plan → execute → verify → ship loop.
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/ship.md
+@.agents/gsd-core/workflows/ship.md
 </execution_context>
 
-Execute the ship workflow from @.github/gsd-core/workflows/ship.md end-to-end.
+Execute the ship workflow from @.agents/gsd-core/workflows/ship.md end-to-end.

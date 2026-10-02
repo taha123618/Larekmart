@@ -1,8 +1,6 @@
 ---
 name: gsd-audit-milestone
 description: "Audit milestone completion against original intent before archiving"
-argument-hint: "[version]"
-allowed-tools: Read, Glob, Grep, Bash, Agent, Write
 ---
 
 <objective>
@@ -12,7 +10,7 @@ Verify milestone achieved its definition of done. Check requirements coverage, c
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/audit-milestone.md
+@.agents/gsd-core/workflows/audit-milestone.md
 </execution_context>
 
 <context>

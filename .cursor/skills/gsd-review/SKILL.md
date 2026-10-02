@@ -3,32 +3,9 @@ name: gsd-review
 description: "Request cross-AI peer review of phase plans from external AI CLIs"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-review` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
 
 <objective>
-Invoke external AI CLIs (Claude, Codex, OpenCode, Qwen Code, Cursor, Antigravity) to independently review phase plans.
+Invoke external AI CLIs (the agent, Codex, OpenCode, Qwen Code, Cursor, Antigravity) to independently review phase plans.
 Produces a structured REVIEWS.md with per-reviewer feedback that can be fed back into
 planning via /gsd-plan-phase --reviews.
 
@@ -36,14 +13,14 @@ planning via /gsd-plan-phase --reviews.
 </objective>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/review.md
+@.agents/gsd-core/workflows/review.md
 </execution_context>
 
 <context>
-Phase number: extracted from {{GSD_ARGS}} (required)
+Phase number: extracted from $ARGUMENTS (required)
 
 **Flags:**
-- `--claude` — Include Claude CLI review (uses separate session)
+- `--claude` — Include the agent CLI review (uses separate session)
 - `--codex` — Include Codex CLI review
 - `--opencode` — Include OpenCode review (uses model from user's OpenCode config)
 - `--qwen` — Include Qwen Code review (Alibaba Qwen models)

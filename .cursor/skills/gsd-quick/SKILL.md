@@ -3,30 +3,6 @@ name: gsd-quick
 description: "Execute a quick task with GSD guarantees (atomic commits, state tracking) but skip optional agents"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-quick` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
-
 <objective>
 Execute small, ad-hoc tasks with GSD guarantees (atomic commits, STATE.md tracking).
 
@@ -54,23 +30,23 @@ Granular flags are composable: `--discuss --research --validate` gives the same 
 </objective>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/quick.md
+@.agents/gsd-core/workflows/quick.md
 </execution_context>
 
 <context>
-{{GSD_ARGS}}
+$ARGUMENTS
 
 Context files are resolved inside the workflow (`init quick`) and delegated via `<required_reading>` blocks.
 </context>
 
 <process>
 
-**Parse {{GSD_ARGS}} for subcommands FIRST:**
+**Parse $ARGUMENTS for subcommands FIRST:**
 
-- If {{GSD_ARGS}} starts with "list": SUBCMD=list
-- If {{GSD_ARGS}} starts with "status ": SUBCMD=status, SLUG=remainder (strip whitespace, sanitize)
-- If {{GSD_ARGS}} starts with "resume ": SUBCMD=resume, SLUG=remainder (strip whitespace, sanitize)
-- Otherwise: SUBCMD=run, pass full {{GSD_ARGS}} to the quick workflow as-is
+- If $ARGUMENTS starts with "list": SUBCMD=list
+- If $ARGUMENTS starts with "status ": SUBCMD=status, SLUG=remainder (strip whitespace, sanitize)
+- If $ARGUMENTS starts with "resume ": SUBCMD=resume, SLUG=remainder (strip whitespace, sanitize)
+- Otherwise: SUBCMD=run, pass full $ARGUMENTS to the quick workflow as-is
 
 **Slug sanitization (for status and resume):** Strip any characters not matching `[a-z0-9-]`. Reject slugs longer than 60 chars or containing `..` or `/`. If invalid, output "Invalid session slug." and stop.
 
@@ -185,7 +161,7 @@ Preserve all workflow gates (validation, task description, planning, execution, 
 </notes>
 
 <security_notes>
-- Slugs from {{GSD_ARGS}} are sanitized before use in file paths: only [a-z0-9-] allowed, max 60 chars, reject ".." and "/"
+- Slugs from $ARGUMENTS are sanitized before use in file paths: only [a-z0-9-] allowed, max 60 chars, reject ".." and "/"
 - File names from readdir/ls are sanitized before display: strip non-printable chars and ANSI sequences
 - Artifact content (plan descriptions, task titles) rendered as plain text only — never executed or passed to agent prompts without DATA_START/DATA_END boundaries
 - Status fields read via `gsd-tools query frontmatter.get` — never eval'd or shell-expanded

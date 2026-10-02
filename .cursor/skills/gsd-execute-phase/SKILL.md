@@ -3,30 +3,6 @@ name: gsd-execute-phase
 description: "SDD phase execution — execute all plans in a phase with dependency-aware wave parallelization"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-execute-phase` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
-
 <objective>
 Execute all plans in a phase using wave-based parallel execution.
 
@@ -38,31 +14,31 @@ Optional wave filter:
 
 Flag handling rule:
 - The optional flags documented below are available behaviors, not implied active behaviors
-- A flag is active only when its literal token appears in `{{GSD_ARGS}}`
-- If a documented flag is absent from `{{GSD_ARGS}}`, treat it as inactive
+- A flag is active only when its literal token appears in `$ARGUMENTS`
+- If a documented flag is absent from `$ARGUMENTS`, treat it as inactive
 
 Context budget: ~15% orchestrator, 100% fresh per subagent.
 </objective>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/execute-phase.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/execute-phase.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 
 
 <context>
-Phase: {{GSD_ARGS}}
+Phase: $ARGUMENTS
 
 **Available optional flags (documentation only — not automatically active):**
 - `--wave N` — Execute only Wave `N` in the phase. Use when you want to pace execution or stay inside usage limits.
 - `--gaps-only` — Execute only gap closure plans (plans with `gap_closure: true` in frontmatter). Use after verify-work creates fix plans.
 - `--interactive` — Execute plans sequentially inline (no subagents) with user checkpoints between tasks. Lower token usage, pair-programming style. Best for small phases, bug fixes, and verification gaps.
 
-**Active flags must be derived from `{{GSD_ARGS}}`:**
-- `--wave N` is active only if the literal `--wave` token is present in `{{GSD_ARGS}}`
-- `--gaps-only` is active only if the literal `--gaps-only` token is present in `{{GSD_ARGS}}`
-- `--interactive` is active only if the literal `--interactive` token is present in `{{GSD_ARGS}}`
+**Active flags must be derived from `$ARGUMENTS`:**
+- `--wave N` is active only if the literal `--wave` token is present in `$ARGUMENTS`
+- `--gaps-only` is active only if the literal `--gaps-only` token is present in `$ARGUMENTS`
+- `--interactive` is active only if the literal `--interactive` token is present in `$ARGUMENTS`
 - If none of these tokens appear, run the standard full-phase execution flow with no flag-specific filtering
 - Do not infer that a flag is active just because it is documented in this prompt
 

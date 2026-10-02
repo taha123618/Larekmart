@@ -1,8 +1,6 @@
 ---
 name: gsd-milestone-summary
 description: "Generate a comprehensive project summary from milestone artifacts for team onboarding and review"
-argument-hint: "[version]"
-allowed-tools: Read, Write, Bash, Grep, Glob
 ---
 
 
@@ -14,7 +12,7 @@ Output: MILESTONE_SUMMARY written to `.planning/reports/`, presented inline, opt
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/milestone-summary.md
+@.agents/gsd-core/workflows/milestone-summary.md
 </execution_context>
 
 <context>

@@ -88,3 +88,68 @@ kubectl apply -k infrastructure/kubernetes/overlays/production
    - All pods run as non-root user `1000:1000`.
    - Privilege escalation is disabled (`allowPrivilegeEscalation: false`).
    - Linux capabilities are dropped (`drop: ["ALL"]`).
+
+---
+
+## 4. External Secrets Operator (ESO)
+
+Production secret synchronization is managed via `ExternalSecret` and `SecretStore` resources located in `base/secrets/`:
+
+- **SecretStore (`secret-store.yaml`)**: Connects to AWS Secrets Manager (`SecretsManager` provider in `us-east-1` with IRSA) and HashiCorp Vault (`ClusterSecretStore`).
+- **ExternalSecret (`external-secrets.yaml`)**: Continuously syncs keys into `larekmart-secrets` every `1h`:
+  - `POSTGRES_PASSWORD`, `MONGODB_URI`, `MONGODB_CART_URI`
+  - `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`
+  - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+  - `REDIS_PASSWORD`, `OPENSEARCH_INITIAL_ADMIN_PASSWORD`
+
+Deploy ESO:
+```bash
+helm repo add external-secrets https://charts.external-secrets.io
+helm install external-secrets external-secrets/external-secrets -n external-secrets --create-namespace
+```
+
+---
+
+## 5. KEDA Event-Driven Autoscaling
+
+In addition to resource-based HPA (CPU/memory), event-driven workloads scale on **Kafka partition lag** via KEDA `ScaledObject` in `base/autoscaling/keda-scaledobjects.yaml`:
+
+- **`email-service-scaledobject`**: Scales from 1 to 8 replicas when consumer group lag (`email-service-group`) on topics `order.created`, `order.status_updated`, or `user.registered` exceeds 25 messages per pod.
+- **`notification-service-scaledobject`**: Scales from 2 to 10 replicas when lag on `notification.send` exceeds 50 messages per pod.
+
+Deploy KEDA:
+```bash
+helm repo add kedacore https://kedacore.github.io/charts
+helm install keda kedacore/keda -n keda --create-namespace
+```
+
+---
+
+## 6. Staging Ingress Setup & Traffic Verification
+
+Deploy NGINX Ingress Controller using project-tuned Helm values:
+
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  -n ingress-nginx --create-namespace \
+  -f infrastructure/kubernetes/ingress-controller/ingress-nginx-values.yaml
+```
+
+Run the automated synthetic traffic and route verification suite:
+
+```bash
+# Test against staging ingress:
+pnpm test:staging:traffic https://staging.larekmart.com
+
+# Test against local ingress port-forward:
+pnpm test:staging:traffic http://localhost:80
+```
+
+The test validates:
+- Next.js Storefront (`client`) and Admin Portal (`admin`) HTTP 200/30x resolution.
+- All 14 microservice health endpoints (`/api/v1/*/health`).
+- WebSocket upgrade route `/ws` on `notification-service`.
+- CORS preflight headers (`Access-Control-Allow-Origin`).
+- Defensive HTTP security headers (`X-Content-Type-Options`).
+

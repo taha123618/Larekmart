@@ -3,29 +3,6 @@ name: gsd-map-codebase
 description: "Analyze codebase with parallel mapper agents to produce .planning/codebase/ documents"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-map-codebase` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
 
 <objective>
 Analyze existing codebase using parallel gsd-codebase-mapper agents to produce structured codebase documents.
@@ -36,7 +13,7 @@ Output: .planning/codebase/ folder with 7 structured documents about the codebas
 </objective>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/map-codebase.md
+@.agents/gsd-core/workflows/map-codebase.md
 </execution_context>
 
 <flags>
@@ -46,12 +23,12 @@ Output: .planning/codebase/ folder with 7 structured documents about the codebas
 </flags>
 
 <context>
-Arguments: {{GSD_ARGS}}
+Arguments: $ARGUMENTS
 
-Parse the first token of {{GSD_ARGS}}:
-- If it is `--fast`: strip the flag, then read and execute `/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/scan.md` (passing remaining args including optional --focus). Load it on demand here — it is deliberately not in `<execution_context>`, so the common full-map path does not pay for it.
+Parse the first token of $ARGUMENTS:
+- If it is `--fast`: strip the flag, then read and execute `.agents/gsd-core/workflows/scan.md` (passing remaining args including optional --focus). Load it on demand here — it is deliberately not in `<execution_context>`, so the common full-map path does not pay for it.
 - If it is `--query`: strip the flag, run the intel workflow (passing remaining args as the subcommand).
-- Otherwise: pass all of {{GSD_ARGS}} as focus area to the map-codebase workflow.
+- Otherwise: pass all of $ARGUMENTS as focus area to the map-codebase workflow.
 
 **Load project state if exists:**
 Check for .planning/STATE.md - loads context if project already initialized

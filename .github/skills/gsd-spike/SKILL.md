@@ -1,8 +1,6 @@
 ---
 name: gsd-spike
 description: "Spike an idea through experiential exploration, or propose what to spike next (frontier mode)"
-argument-hint: "[idea to validate] [--quick] [--text] [--wrap-up] or [frontier]"
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, WebSearch, WebFetch, mcp__context7__resolve-library-id, mcp__context7__query-docs
 ---
 
 <objective>
@@ -19,14 +17,12 @@ Does not require prior new-project setup — auto-creates `.planning/spikes/` if
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/spike.md
-@.github/gsd-core/workflows/spike-wrap-up.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/spike.md
+@.agents/gsd-core/workflows/spike-wrap-up.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
-<runtime_note>
-**Copilot (VS Code):** Use `vscode_askquestions` wherever this workflow calls `AskUserQuestion`.
-</runtime_note>
+
 
 <context>
 Idea: $ARGUMENTS

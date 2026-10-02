@@ -1,8 +1,6 @@
 ---
 name: gsd-ui-phase
 description: "Generate UI design contract (UI-SPEC.md) for frontend phases"
-argument-hint: "[phase]"
-allowed-tools: Read, Write, Bash, Glob, Grep, Agent, WebFetch, AskUserQuestion, mcp__context7__*
 ---
 
 <objective>
@@ -12,8 +10,8 @@ Flow: Validate → Research UI → Verify UI-SPEC → Done
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/ui-phase.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/ui-phase.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

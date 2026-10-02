@@ -1,8 +1,6 @@
 ---
 name: gsd-undo
 description: "Safe git revert. Roll back phase or plan commits using the phase manifest with dependency checks."
-argument-hint: "--last N | --phase NN | --plan NN-MM"
-allowed-tools: Read, Bash, Glob, Grep, AskUserQuestion
 ---
 
 
@@ -16,9 +14,9 @@ Three modes:
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/undo.md
-@.github/gsd-core/references/ui-brand.md
-@.github/gsd-core/references/gate-prompts.md
+@.agents/gsd-core/workflows/undo.md
+@.agents/gsd-core/references/ui-brand.md
+@.agents/gsd-core/references/gate-prompts.md
 </execution_context>
 
 <context>

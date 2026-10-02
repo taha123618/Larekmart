@@ -1,7 +1,6 @@
 ---
 name: gsd-explore
 description: "Socratic ideation and idea routing — think through ideas before committing to plans"
-allowed-tools: Read, Write, Bash, Grep, Glob, Agent, AskUserQuestion
 ---
 
 <objective>
@@ -13,7 +12,7 @@ Accepts an optional topic argument: `/gsd-explore authentication strategy`
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/explore.md
+@.agents/gsd-core/workflows/explore.md
 </execution_context>
 
 <process>

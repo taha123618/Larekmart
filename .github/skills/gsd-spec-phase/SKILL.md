@@ -1,8 +1,6 @@
 ---
 name: gsd-spec-phase
 description: "Clarify WHAT a phase delivers with ambiguity scoring; produces a SPEC.md before discuss-phase."
-argument-hint: "<phase> [--auto] [--text]"
-allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
 ---
 
 
@@ -23,13 +21,11 @@ Clarify phase requirements through structured Socratic questioning with quantita
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/spec-phase.md
-@.github/gsd-core/templates/spec.md
+@.agents/gsd-core/workflows/spec-phase.md
+@.agents/gsd-core/templates/spec.md
 </execution_context>
 
-<runtime_note>
-**Copilot (VS Code):** Use `vscode_askquestions` wherever this workflow calls `AskUserQuestion`. They are equivalent.
-</runtime_note>
+
 
 <context>
 Phase number: $ARGUMENTS (required)

@@ -1,8 +1,6 @@
 ---
 name: gsd-fast
 description: "Execute a trivial task inline — no subagents, no planning overhead"
-argument-hint: "[task description]"
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 ---
 
 
@@ -17,7 +15,7 @@ you could describe in one sentence and execute in under 2 minutes.
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/fast.md
+@.agents/gsd-core/workflows/fast.md
 </execution_context>
 
 <process>

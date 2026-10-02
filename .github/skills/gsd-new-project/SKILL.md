@@ -1,13 +1,9 @@
 ---
 name: gsd-new-project
 description: "Initialize a new project with deep context gathering and PROJECT.md"
-argument-hint: "[--auto]"
-allowed-tools: Read, Bash, Grep, Write, Agent, AskUserQuestion
 ---
 
-<runtime_note>
-**Copilot (VS Code):** Use `vscode_askquestions` wherever this workflow calls `AskUserQuestion`. They are equivalent — `vscode_askquestions` is the VS Code Copilot implementation of the same interactive question API.
-</runtime_note>
+
 
 <context>
 **Flags:**
@@ -29,11 +25,11 @@ Initialize a new project through unified flow: questioning → research (optiona
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/new-project.md
-@.github/gsd-core/references/questioning.md
-@.github/gsd-core/references/ui-brand.md
-@.github/gsd-core/templates/project.md
-@.github/gsd-core/templates/requirements.md
+@.agents/gsd-core/workflows/new-project.md
+@.agents/gsd-core/references/questioning.md
+@.agents/gsd-core/references/ui-brand.md
+@.agents/gsd-core/templates/project.md
+@.agents/gsd-core/templates/requirements.md
 </execution_context>
 
 <process>

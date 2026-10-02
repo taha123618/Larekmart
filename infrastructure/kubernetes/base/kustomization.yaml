@@ -7,6 +7,8 @@ resources:
   - namespace.yaml
   - configmaps/common-config.yaml
   - secrets/secret-templates.yaml
+  - secrets/secret-store.yaml
+  - secrets/external-secrets.yaml
   - ingress.yaml
   - frontends/client.yaml
   - frontends/admin.yaml
@@ -26,6 +28,7 @@ resources:
   - services/media-service.yaml
   - workers/email-service.yaml
   - autoscaling/hpa.yaml
+  - autoscaling/keda-scaledobjects.yaml
   - pdb/pod-disruption-budgets.yaml
   - network-policies/network-policies.yaml
 

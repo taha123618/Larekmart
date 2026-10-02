@@ -1,7 +1,6 @@
 ---
 name: gsd-ns-context
 description: "codebase intel | map graphify docs learnings mempalace"
-allowed-tools: Read, Skill
 ---
 
 

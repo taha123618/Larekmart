@@ -1,8 +1,6 @@
 ---
 name: gsd-validate-phase
 description: "Retroactively audit and fill Nyquist validation gaps for a completed phase"
-argument-hint: "[phase number]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent, AskUserQuestion
 ---
 
 <objective>
@@ -15,7 +13,7 @@ Output: updated VALIDATION.md + generated test files.
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/validate-phase.md
+@.agents/gsd-core/workflows/validate-phase.md
 </execution_context>
 
 <context>

@@ -1,8 +1,6 @@
 ---
 name: gsd-review
 description: "Request cross-AI peer review of phase plans from external AI CLIs"
-argument-hint: "--phase N [--claude] [--codex] [--opencode] [--qwen] [--cursor] [--agy] [--all]"
-allowed-tools: Read, Write, Bash, Glob, Grep
 ---
 
 
@@ -15,7 +13,7 @@ planning via /gsd-plan-phase --reviews.
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/review.md
+@.agents/gsd-core/workflows/review.md
 </execution_context>
 
 <context>

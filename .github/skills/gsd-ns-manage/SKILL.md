@@ -1,7 +1,6 @@
 ---
 name: gsd-ns-manage
 description: "config workspace | workstreams thread update ship inbox"
-allowed-tools: Read, Skill
 ---
 
 

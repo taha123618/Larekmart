@@ -3,29 +3,6 @@ name: gsd-workspace
 description: "Manage GSD workspaces — create, list, or remove isolated workspace environments"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-workspace` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
 
 <objective>
 Manage GSD workspaces with a single consolidated command.
@@ -47,16 +24,16 @@ Mode routing:
 </routing>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/new-workspace.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/list-workspaces.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/remove-workspace.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/new-workspace.md
+@.agents/gsd-core/workflows/list-workspaces.md
+@.agents/gsd-core/workflows/remove-workspace.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>
-Arguments: {{GSD_ARGS}}
+Arguments: $ARGUMENTS
 
-Parse the first token of {{GSD_ARGS}}:
+Parse the first token of $ARGUMENTS:
 - If it is `--new`: strip the flag, pass remainder (--name, --repos, --path, --strategy, --branch, --auto flags) to new-workspace workflow
 - If it is `--list`: execute list-workspaces workflow (no argument needed)
 - If it is `--remove`: strip the flag, pass remainder (workspace-name) to remove-workspace workflow
@@ -64,7 +41,7 @@ Parse the first token of {{GSD_ARGS}}:
 </context>
 
 <process>
-1. Parse the leading flag from {{GSD_ARGS}}.
+1. Parse the leading flag from $ARGUMENTS.
 2. Load and execute the appropriate workflow end-to-end based on the routing table above.
 3. Preserve all workflow gates from the target workflow (validation, approvals, commits, routing).
 </process>

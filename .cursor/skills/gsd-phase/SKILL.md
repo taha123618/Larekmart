@@ -3,29 +3,6 @@ name: gsd-phase
 description: "Multi-phase management — add, insert, remove, or edit phases in ROADMAP.md (roadmap phase CRUD)"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-phase` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
 
 <objective>
 Manage phases in ROADMAP.md with a single consolidated command.
@@ -49,26 +26,26 @@ Mode routing:
 </routing>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/add-phase.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/insert-phase.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/remove-phase.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/edit-phase.md
+@.agents/gsd-core/workflows/add-phase.md
+@.agents/gsd-core/workflows/insert-phase.md
+@.agents/gsd-core/workflows/remove-phase.md
+@.agents/gsd-core/workflows/edit-phase.md
 </execution_context>
 
 <context>
-Arguments: {{GSD_ARGS}}
+Arguments: $ARGUMENTS
 
-Parse the first token of {{GSD_ARGS}}:
+Parse the first token of $ARGUMENTS:
 - If it is `--insert`: strip the flag, pass remainder (format: <after-phase-number> <description>) to insert-phase workflow
 - If it is `--remove`: strip the flag, pass remainder (phase number) to remove-phase workflow
 - If it is `--edit`: strip the flag, pass remainder (phase-number [--force]) to edit-phase workflow
-- Otherwise: pass all of {{GSD_ARGS}} (phase description) to add-phase workflow
+- Otherwise: pass all of $ARGUMENTS (phase description) to add-phase workflow
 
 Roadmap and state are resolved in-workflow via `init phase-op` and targeted reads.
 </context>
 
 <process>
-1. Parse the leading flag (if any) from {{GSD_ARGS}}.
+1. Parse the leading flag (if any) from $ARGUMENTS.
 2. Load and execute the appropriate workflow end-to-end based on the routing table above.
 3. Preserve all validation gates from the target workflow.
 </process>

@@ -1,8 +1,6 @@
 ---
 name: gsd-help
 description: "Show available GSD commands and usage guide"
-argument-hint: "[--brief | --full | <topic> | --brief <topic>]"
-allowed-tools: Read
 ---
 
 <objective>
@@ -16,7 +14,7 @@ Output ONLY the reference content of the chosen tier. Do NOT add:
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/help.md
+@.agents/gsd-core/workflows/help.md
 </execution_context>
 
 <context>
@@ -24,5 +22,5 @@ Arguments: $ARGUMENTS
 </context>
 
 <process>
-Follow .github/gsd-core/workflows/help.md with $ARGUMENTS.
+Follow .agents/gsd-core/workflows/help.md with $ARGUMENTS.
 </process>

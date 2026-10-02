@@ -1,7 +1,6 @@
 ---
 name: gsd-settings
 description: "Configure GSD workflow toggles and model profile"
-allowed-tools: Read, Write, Bash, Grep, AskUserQuestion
 ---
 
 
@@ -17,7 +16,7 @@ Routes to the settings workflow which handles:
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/settings.md
+@.agents/gsd-core/workflows/settings.md
 </execution_context>
 
 <process>

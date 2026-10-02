@@ -1,7 +1,6 @@
 ---
 name: gsd-next
 description: "Smart entry — detect project state and route to the right next GSD action."
-allowed-tools: Read, Bash, Glob, Grep, SlashCommand, AskUserQuestion
 ---
 
 <objective>
@@ -11,8 +10,8 @@ This is a launcher/router only. It never does the work itself. It reads project 
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/smart-entry.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/smart-entry.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>
@@ -20,5 +19,5 @@ Arguments: $ARGUMENTS
 </context>
 
 <process>
-Follow .github/gsd-core/workflows/smart-entry.md. Detect the situation, present the menu, and dispatch exactly one command. Then stop.
+Follow .agents/gsd-core/workflows/smart-entry.md. Detect the situation, present the menu, and dispatch exactly one command. Then stop.
 </process>

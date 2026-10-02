@@ -1,8 +1,6 @@
 ---
 name: gsd-ai-integration-phase
 description: "Generate an AI-SPEC.md design contract for phases that involve building AI systems."
-argument-hint: "[phase number]"
-allowed-tools: Read, Write, Bash, Glob, Grep, Agent, WebFetch, WebSearch, AskUserQuestion, mcp__context7__*
 ---
 
 <objective>
@@ -12,9 +10,9 @@ Flow: Select Framework → Research Docs → Research Domain → Design Eval Str
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/ai-integration-phase.md
-@.github/gsd-core/references/ai-frameworks.md
-@.github/gsd-core/references/ai-evals.md
+@.agents/gsd-core/workflows/ai-integration-phase.md
+@.agents/gsd-core/references/ai-frameworks.md
+@.agents/gsd-core/references/ai-evals.md
 </execution_context>
 
 <context>

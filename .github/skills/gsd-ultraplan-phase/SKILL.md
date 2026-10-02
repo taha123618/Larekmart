@@ -1,8 +1,6 @@
 ---
 name: gsd-ultraplan-phase
 description: "[BETA] Offload plan phase to Claude Code's ultraplan cloud; review in browser and import back."
-argument-hint: "[phase-number]"
-allowed-tools: Read, Bash, Glob, Grep
 ---
 
 
@@ -17,8 +15,8 @@ Requirements: Claude Code v2.1.91+, claude.ai account, GitHub repository.
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/ultraplan-phase.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/ultraplan-phase.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

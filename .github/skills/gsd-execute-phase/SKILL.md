@@ -1,8 +1,6 @@
 ---
 name: gsd-execute-phase
 description: "SDD phase execution — execute all plans in a phase with dependency-aware wave parallelization"
-argument-hint: "<phase-number> [--wave N] [--gaps-only] [--interactive] [--tdd]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, TodoWrite, AskUserQuestion
 ---
 
 <objective>
@@ -23,13 +21,11 @@ Context budget: ~15% orchestrator, 100% fresh per subagent.
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/execute-phase.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/execute-phase.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
-<runtime_note>
-**Copilot (VS Code):** Use `vscode_askquestions` wherever this workflow calls `AskUserQuestion`. They are equivalent — `vscode_askquestions` is the VS Code Copilot implementation of the same interactive question API.
-</runtime_note>
+
 
 <context>
 Phase: $ARGUMENTS

@@ -1,8 +1,6 @@
 ---
 name: gsd-update
 description: "Update GSD to latest version with changelog display"
-argument-hint: "[--sync | --reapply | --next | --rc]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 
 
@@ -19,7 +17,7 @@ Routes to the update workflow which handles:
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/update.md
+@.agents/gsd-core/workflows/update.md
 </execution_context>
 
 <flags>
@@ -38,6 +36,6 @@ Parse the first token of $ARGUMENTS:
 </process>
 
 <execution_context_extended>
-@.github/gsd-core/workflows/sync-skills.md
-@.github/gsd-core/workflows/reapply-patches.md
+@.agents/gsd-core/workflows/sync-skills.md
+@.agents/gsd-core/workflows/reapply-patches.md
 </execution_context_extended>

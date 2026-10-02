@@ -1,8 +1,6 @@
 ---
 name: gsd-plan-phase
 description: "Create detailed phase plan (PLAN.md) with verification loop"
-argument-hint: "[phase] [--auto] [--research] [--skip-research] [--research-phase <N>] [--view] [--gaps] [--skip-verify] [--skip-ui] [--prd <file>] [--ingest <path-or-glob>] [--ingest-format <auto|nygard|madr|narrative>] [--reviews] [--text] [--bounce] [--skip-bounce] [--chunked] [--tdd] [--mvp] [--granularity <coarse|standard|fine>] [--no-tracer] [--no-reversibility-gates]"
-allowed-tools: Read, Write, Bash, Glob, Grep, Agent, AskUserQuestion, WebFetch, mcp__context7__*
 ---
 
 <objective>
@@ -21,13 +19,11 @@ Create executable phase prompts (PLAN.md files) for a roadmap phase with integra
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/plan-phase.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/plan-phase.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
-<runtime_note>
-**Copilot (VS Code):** Use `vscode_askquestions` wherever this workflow calls `AskUserQuestion`. They are equivalent — `vscode_askquestions` is the VS Code Copilot implementation of the same interactive question API. Do not skip questioning steps because `AskUserQuestion` appears unavailable; use `vscode_askquestions` instead.
-</runtime_note>
+
 
 <context>
 Phase number: $ARGUMENTS (optional — when omitted, the orchestrating workflow reads ROADMAP.md and selects the next unplanned phase; `gsd-tools.cjs` itself has no auto-detect feature and requires an explicit phase number)

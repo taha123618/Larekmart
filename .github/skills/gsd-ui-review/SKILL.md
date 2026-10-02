@@ -1,8 +1,6 @@
 ---
 name: gsd-ui-review
 description: "Retroactive 6-pillar visual audit of implemented frontend code"
-argument-hint: "[phase]"
-allowed-tools: Read, Write, Bash, Glob, Grep, Agent, AskUserQuestion
 ---
 
 <objective>
@@ -12,8 +10,8 @@ Output: {phase_num}-UI-REVIEW.md
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/ui-review.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/ui-review.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

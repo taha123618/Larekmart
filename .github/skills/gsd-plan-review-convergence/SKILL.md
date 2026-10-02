@@ -1,8 +1,6 @@
 ---
 name: gsd-plan-review-convergence
 description: "Cross-AI plan convergence - replan until review concerns are resolved."
-argument-hint: "<phase> [--claude] [--codex] [--coderabbit] [--opencode] [--qwen] [--cursor] [--antigravity] [--agy] [--ollama] [--lm-studio] [--llama-cpp] [--kimi-code] [--text] [--ws <name>] [--all] [--max-cycles N]"
-allowed-tools: Read, Write, Bash, Glob, Grep, Agent, Skill, AskUserQuestion
 ---
 
 
@@ -18,15 +16,13 @@ Replaces gsd-plan-phase's internal gsd-plan-checker with external AI reviewers (
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/plan-review-convergence.md
-@.github/gsd-core/references/revision-loop.md
-@.github/gsd-core/references/gates.md
-@.github/gsd-core/references/agent-contracts.md
+@.agents/gsd-core/workflows/plan-review-convergence.md
+@.agents/gsd-core/references/revision-loop.md
+@.agents/gsd-core/references/gates.md
+@.agents/gsd-core/references/agent-contracts.md
 </execution_context>
 
-<runtime_note>
-**Copilot (VS Code):** Use `vscode_askquestions` wherever this workflow calls `AskUserQuestion`. They are equivalent — `vscode_askquestions` is the VS Code Copilot implementation of the same interactive question API. Do not skip questioning steps because `AskUserQuestion` appears unavailable; use `vscode_askquestions` instead.
-</runtime_note>
+
 
 <context>
 Phase number: extracted from $ARGUMENTS (required)

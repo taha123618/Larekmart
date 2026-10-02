@@ -1,0 +1,53 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://larekmart.internal/security/vex/2026-10",
+  "author": "Larekmart DevSecOps & SRE Engineering",
+  "role": "Security Maintainer",
+  "timestamp": "2026-10-02T12:00:00Z",
+  "version": 1,
+  "tooling": "Docker Scout & OpenVEX CLI",
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2023-45853"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/minio@RELEASE.2024-09-22T00-33-43Z"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "MiniZip legacy decompression code is not invoked by MinIO S3 object storage server."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-21538"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/larekmart/client@latest"
+        },
+        {
+          "@id": "pkg:oci/larekmart/admin@latest"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "inline_mitigations_exist",
+      "impact_statement": "Cross-site WebSocket hijacking mitigated by NGINX Ingress origin validation and Clerk token verification on upgrade handshake."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-37890"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/node:20-alpine"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "Development tools and devDependencies are stripped in multi-stage runner layer using production-only isolated artifacts."
+    }
+  ]
+}

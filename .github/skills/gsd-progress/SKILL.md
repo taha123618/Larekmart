@@ -1,8 +1,6 @@
 ---
 name: gsd-progress
 description: "Check progress, advance workflow, or dispatch freeform intent — the unified GSD situational command"
-argument-hint: "[--forensic | --next [--auto] [--converge] | --do \\\"task description\\\"]"
-allowed-tools: Read, Bash, Grep, Glob, SlashCommand, AskUserQuestion
 ---
 
 <objective>
@@ -25,10 +23,10 @@ Three modes:
 </flags>
 
 <execution_context>
-@.github/gsd-core/workflows/progress.md
-@.github/gsd-core/workflows/next.md
-@.github/gsd-core/workflows/do.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/progress.md
+@.agents/gsd-core/workflows/next.md
+@.agents/gsd-core/workflows/do.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <process>

@@ -1,8 +1,6 @@
 ---
 name: gsd-sketch
 description: "Sketch UI/design ideas with throwaway HTML mockups, or propose what to sketch next (frontier mode)"
-argument-hint: "[design idea to explore] [--quick] [--text] [--wrap-up] or [frontier]"
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, WebSearch, WebFetch, mcp__context7__resolve-library-id, mcp__context7__query-docs
 ---
 
 <objective>
@@ -19,18 +17,16 @@ Does not require prior new-project setup — auto-creates `.planning/sketches/` 
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/sketch.md
-@.github/gsd-core/workflows/sketch-wrap-up.md
-@.github/gsd-core/references/ui-brand.md
-@.github/gsd-core/references/sketch-theme-system.md
-@.github/gsd-core/references/sketch-interactivity.md
-@.github/gsd-core/references/sketch-tooling.md
-@.github/gsd-core/references/sketch-variant-patterns.md
+@.agents/gsd-core/workflows/sketch.md
+@.agents/gsd-core/workflows/sketch-wrap-up.md
+@.agents/gsd-core/references/ui-brand.md
+@.agents/gsd-core/references/sketch-theme-system.md
+@.agents/gsd-core/references/sketch-interactivity.md
+@.agents/gsd-core/references/sketch-tooling.md
+@.agents/gsd-core/references/sketch-variant-patterns.md
 </execution_context>
 
-<runtime_note>
-**Copilot (VS Code):** Use `vscode_askquestions` wherever this workflow calls `AskUserQuestion`.
-</runtime_note>
+
 
 <context>
 Design idea: $ARGUMENTS

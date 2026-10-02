@@ -1,7 +1,6 @@
 ---
 name: gsd-review-backlog
 description: "Review and promote backlog items to active milestone"
-allowed-tools: Read, Write, Bash, Grep, AskUserQuestion
 ---
 
 

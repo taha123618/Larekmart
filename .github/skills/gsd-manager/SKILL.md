@@ -1,8 +1,6 @@
 ---
 name: gsd-manager
 description: "Interactive command center for managing multiple phases from one terminal"
-argument-hint: "[--analyze-deps]"
-allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion, Skill, Agent
 ---
 
 <objective>
@@ -18,8 +16,8 @@ Designed for power users who want to parallelize work across phases from one ter
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/manager.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/manager.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>
@@ -30,7 +28,7 @@ Project context, phase list, dependencies, and recommendations are resolved insi
 
 <process>
 If `--analyze-deps` is in $ARGUMENTS:
-Read and execute `.github/gsd-core/workflows/analyze-dependencies.md` end-to-end.
+Read and execute `.agents/gsd-core/workflows/analyze-dependencies.md` end-to-end.
 
 Execute end-to-end.
 Maintain the dashboard refresh loop until the user exits or all phases complete.

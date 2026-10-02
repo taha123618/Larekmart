@@ -1,8 +1,6 @@
 ---
 name: gsd-autonomous
 description: "Run all remaining phases autonomously — discuss→plan→execute per phase"
-argument-hint: "[--from N] [--to N] [--only N] [--interactive] [--converge]"
-allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
 <objective>
@@ -19,8 +17,8 @@ Uses ROADMAP.md phase discovery and Skill() flat invocations for each phase comm
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/autonomous.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/autonomous.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

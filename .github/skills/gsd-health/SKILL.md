@@ -1,8 +1,6 @@
 ---
 name: gsd-health
 description: "Diagnose planning directory health and optionally repair issues"
-argument-hint: "[--repair] [--context]"
-allowed-tools: Read, Bash, Grep, Write, AskUserQuestion
 ---
 
 <objective>
@@ -18,7 +16,7 @@ Validate `.planning/` directory integrity and report actionable issues. Checks f
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/health.md
+@.agents/gsd-core/workflows/health.md
 </execution_context>
 
 <process>

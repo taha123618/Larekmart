@@ -1,8 +1,6 @@
 ---
 name: gsd-extract-learnings
 description: "Extract decisions, lessons, patterns, and surprises from completed phase artifacts"
-argument-hint: "<phase-number>"
-allowed-tools: Read, Write, Bash, Grep, Glob, Agent
 ---
 
 <objective>
@@ -10,7 +8,7 @@ Extract structured learnings from completed phase artifacts (PLAN.md, SUMMARY.md
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/extract-learnings.md
+@.agents/gsd-core/workflows/extract-learnings.md
 </execution_context>
 
-Execute the extract-learnings workflow from @.github/gsd-core/workflows/extract-learnings.md end-to-end.
+Execute the extract-learnings workflow from @.agents/gsd-core/workflows/extract-learnings.md end-to-end.

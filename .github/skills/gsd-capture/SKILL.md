@@ -1,8 +1,6 @@
 ---
 name: gsd-capture
 description: "Capture ideas, tasks, notes, and seeds to their destination"
-argument-hint: "[--note | --backlog | --seed | --list | --list-seeds] [text]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 
 
@@ -32,13 +30,13 @@ Mode routing:
 </routing>
 
 <execution_context>
-@.github/gsd-core/workflows/add-todo.md
-@.github/gsd-core/workflows/note.md
-@.github/gsd-core/workflows/add-backlog.md
-@.github/gsd-core/workflows/plant-seed.md
-@.github/gsd-core/workflows/check-todos.md
-@.github/gsd-core/workflows/list-seeds.md
-@.github/gsd-core/references/ui-brand.md
+@.agents/gsd-core/workflows/add-todo.md
+@.agents/gsd-core/workflows/note.md
+@.agents/gsd-core/workflows/add-backlog.md
+@.agents/gsd-core/workflows/plant-seed.md
+@.agents/gsd-core/workflows/check-todos.md
+@.agents/gsd-core/workflows/list-seeds.md
+@.agents/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

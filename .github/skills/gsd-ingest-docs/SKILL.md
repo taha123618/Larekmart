@@ -1,8 +1,6 @@
 ---
 name: gsd-ingest-docs
 description: "Bootstrap or merge a .planning/ setup from existing ADRs, PRDs, SPECs, and docs in a repo."
-argument-hint: "[path] [--mode new|merge] [--manifest <file>] [--resolve auto|interactive]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
 
@@ -20,10 +18,10 @@ Auto-synthesizes most conflicts using the precedence rule `ADR > SPEC > PRD > DO
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/ingest-docs.md
-@.github/gsd-core/references/ui-brand.md
-@.github/gsd-core/references/gate-prompts.md
-@.github/gsd-core/references/doc-conflict-engine.md
+@.agents/gsd-core/workflows/ingest-docs.md
+@.agents/gsd-core/references/ui-brand.md
+@.agents/gsd-core/references/gate-prompts.md
+@.agents/gsd-core/references/doc-conflict-engine.md
 </execution_context>
 
 <context>

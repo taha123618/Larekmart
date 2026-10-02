@@ -3,29 +3,6 @@ name: gsd-forensics
 description: "Post-mortem investigation for failed GSD workflows — diagnoses what went wrong."
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-forensics` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
 
 <objective>
 Investigate what went wrong during a GSD workflow execution. Analyzes git history, `.planning/` artifacts, and file system state to detect anomalies and generate a structured diagnostic report.
@@ -35,7 +12,7 @@ Output: Forensic report saved to `.planning/forensics/`, presented inline, with 
 </objective>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/forensics.md
+@.agents/gsd-core/workflows/forensics.md
 </execution_context>
 
 <context>
@@ -48,7 +25,7 @@ Output: Forensic report saved to `.planning/forensics/`, presented inline, with 
 - `.planning/reports/SESSION_REPORT.md` (last session outcomes)
 
 **User input:**
-- Problem description: {{GSD_ARGS}} (optional — will ask if not provided)
+- Problem description: $ARGUMENTS (optional — will ask if not provided)
 </context>
 
 <process>

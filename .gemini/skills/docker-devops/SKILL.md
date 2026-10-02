@@ -32,15 +32,16 @@ infrastructure/
 ├── kubernetes/
 │   ├── base/                   # Namespace, ConfigMaps, Secrets, all Deployments/Services
 │   │   ├── configmaps/         # common-config.yaml
-│   │   ├── secrets/            # secret-templates.yaml (DO NOT store real secrets here)
+│   │   ├── secrets/            # secret-templates.yaml, secret-store.yaml, external-secrets.yaml (ESO)
 │   │   ├── frontends/          # client.yaml, admin.yaml
 │   │   ├── services/           # 14 backend service Deployments + ClusterIP Services (including user & media)
 │   │   ├── workers/            # email-service.yaml (headless Kafka consumer)
-│   │   ├── autoscaling/        # hpa.yaml (HPA for high-traffic services)
+│   │   ├── autoscaling/        # hpa.yaml (resource HPA) + keda-scaledobjects.yaml (Kafka lag autoscaling)
 │   │   ├── pdb/                # pod-disruption-budgets.yaml
 │   │   ├── network-policies/   # Zero-trust isolation rules
 │   │   ├── ingress.yaml        # NGINX Ingress with TLS, CORS, WebSocket (routes all 14 services + 2 frontends)
 │   │   └── kustomization.yaml
+│   ├── ingress-controller/     # ingress-nginx-values.yaml (Tuned Helm values for staging & prod)
 │   └── overlays/
 │       ├── development/        # 1 replica, local hostnames, :dev tags
 │       ├── staging/            # staging hostnames, :staging tags

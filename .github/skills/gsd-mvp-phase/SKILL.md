@@ -1,8 +1,6 @@
 ---
 name: gsd-mvp-phase
 description: "Plan a phase as a vertical MVP slice — user story, SPIDR splitting, then plan-phase"
-argument-hint: "<phase-number>"
-allowed-tools: Read, Write, Bash, Glob, Grep, Agent, AskUserQuestion
 ---
 
 <objective>
@@ -17,14 +15,12 @@ Phase 1 of the vertical-mvp-slice PRD shipped the planner-side machinery; this c
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/mvp-phase.md
-@.github/gsd-core/references/spidr-splitting.md
-@.github/gsd-core/references/user-story-template.md
+@.agents/gsd-core/workflows/mvp-phase.md
+@.agents/gsd-core/references/spidr-splitting.md
+@.agents/gsd-core/references/user-story-template.md
 </execution_context>
 
-<runtime_note>
-**Copilot (VS Code):** Use `vscode_askquestions` wherever this workflow calls `AskUserQuestion`. Equivalent API.
-</runtime_note>
+
 
 <context>
 Phase number: $ARGUMENTS (required — integer or decimal like `2.1`)
@@ -33,6 +29,6 @@ The phase must already exist in ROADMAP.md (created via `/gsd new-project`, `/gs
 </context>
 
 <process>
-Execute the mvp-phase workflow from @.github/gsd-core/workflows/mvp-phase.md end-to-end.
+Execute the mvp-phase workflow from @.agents/gsd-core/workflows/mvp-phase.md end-to-end.
 Preserve all gates: phase existence, status guard (refuse in_progress/completed), user-story format validation, SPIDR splitting check, ROADMAP write confirmation, plan-phase delegation.
 </process>

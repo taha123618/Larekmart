@@ -1,8 +1,6 @@
 ---
 name: gsd-secure-phase
 description: "Retroactively verify threat mitigations for a completed phase"
-argument-hint: "[phase number]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent, AskUserQuestion
 ---
 
 <objective>
@@ -15,7 +13,7 @@ Output: updated SECURITY.md.
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/secure-phase.md
+@.agents/gsd-core/workflows/secure-phase.md
 </execution_context>
 
 <context>

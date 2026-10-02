@@ -1,15 +1,13 @@
 ---
 name: gsd-surface
 description: "Toggle which skills are surfaced — apply a profile, list, or disable a cluster without reinstall"
-argument-hint: "[list|status|profile <name>|disable <cluster>|enable <cluster>|reset]"
-allowed-tools: Read, Write, Bash
 ---
 
 
 <objective>
-Manage the runtime skill surface without reinstall. Reads/writes `.github/.gsd-surface.json`
-(sibling to `.github/.gsd-profile`) and re-stages the active skills directory in place.
-Skill dirs live at `.github/skills/gsd-*/`.
+Manage the runtime skill surface without reinstall. Reads/writes `.agents/.gsd-surface.json`
+(sibling to `.agents/.gsd-profile`) and re-stages the active skills directory in place.
+Skill dirs live at `.agents/skills/gsd-*/`.
 
 Sub-commands: list · status · profile · disable · enable · reset
 </objective>
@@ -130,16 +128,16 @@ Valid cluster names: `core_loop`, `audit_review`, `milestone`, `research_ideate`
 ## runtimeConfigDir resolution
 
 The `runtimeConfigDir` for `applySurface` is the **base the agent config directory**
-(`.github`), NOT the skills sub-directory (`.github/skills`).
+(`.agents`), NOT the skills sub-directory (`.agents/skills`).
 
 This matches `installRuntimeArtifacts` and `uninstallRuntimeArtifacts`, which also
-receive `.github` as `configDir`. The skill dirs themselves live at
-`.github/skills/gsd-*/` because the `claude global` layout has `destSubpath =
+receive `.agents` as `configDir`. The skill dirs themselves live at
+`.agents/skills/gsd-*/` because the `claude global` layout has `destSubpath =
 'skills'` — they are derived from `configDir`, not the root for it.
 
 ```bash
 # Claude Code — global install
-RUNTIME_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-.github}"
+RUNTIME_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-.agents}"
 SCOPE="global"
 
 # Artifact destinations are derived from runtime layout
@@ -148,7 +146,7 @@ SCOPE="global"
 ```
 
 Surface state is stored at `${RUNTIME_CONFIG_DIR}/.gsd-surface.json`
-(i.e. `.github/.gsd-surface.json`).
+(i.e. `.agents/.gsd-surface.json`).
 
 All paths can be overridden by reading the `CLAUDE_CONFIG_DIR` env var if set.
 
@@ -161,9 +159,9 @@ All paths can be overridden by reading the `CLAUDE_CONFIG_DIR` env var if set.
 - Missing `surface.cjs` → prompt: "Run `npm i -g @opengsd/gsd-core` to reinstall GSD."
 
 <execution_context>
-Surface state file: `.github/.gsd-surface.json`
-Install profile marker: `.github/.gsd-profile`
-Skill dirs: `.github/skills/gsd-*/`
-Engine module: `.github/gsd-core/bin/lib/surface.cjs`
-Cluster definitions: `.github/gsd-core/bin/lib/clusters.cjs`
+Surface state file: `.agents/.gsd-surface.json`
+Install profile marker: `.agents/.gsd-profile`
+Skill dirs: `.agents/skills/gsd-*/`
+Engine module: `.agents/gsd-core/bin/lib/surface.cjs`
+Cluster definitions: `.agents/gsd-core/bin/lib/clusters.cjs`
 </execution_context>

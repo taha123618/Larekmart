@@ -3,29 +3,6 @@ name: gsd-plan-review-convergence
 description: "Cross-AI plan convergence - replan until review concerns are resolved."
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-plan-review-convergence` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
 
 <objective>
 Cross-AI plan convergence loop — an outer revision gate around gsd-review and gsd-planner.
@@ -39,21 +16,21 @@ Replaces gsd-plan-phase's internal gsd-plan-checker with external AI reviewers (
 </objective>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/plan-review-convergence.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/references/revision-loop.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/references/gates.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/references/agent-contracts.md
+@.agents/gsd-core/workflows/plan-review-convergence.md
+@.agents/gsd-core/references/revision-loop.md
+@.agents/gsd-core/references/gates.md
+@.agents/gsd-core/references/agent-contracts.md
 </execution_context>
 
 
 
 <context>
-Phase number: extracted from {{GSD_ARGS}} (required)
+Phase number: extracted from $ARGUMENTS (required)
 
 **Flags:**
 - `--codex` — Use Codex CLI as reviewer (default if no reviewer flag given AND `review.default_reviewers` is unset; otherwise `review.default_reviewers` wins per ADR-0011 — #2315)
 - `--agy` / `--antigravity` — Use Antigravity CLI as reviewer
-- `--claude` — Use Claude CLI as reviewer (separate session)
+- `--claude` — Use the agent CLI as reviewer (separate session)
 - `--coderabbit` — Use CodeRabbit as reviewer (reviews the working-tree diff, not the source tree)
 - `--opencode` — Use OpenCode as reviewer
 - `--qwen` — Use Qwen Code CLI as reviewer (Alibaba Qwen models)

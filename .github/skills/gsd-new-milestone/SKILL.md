@@ -1,8 +1,6 @@
 ---
 name: gsd-new-milestone
 description: "Start a new milestone cycle — update PROJECT.md and route to requirements"
-argument-hint: "[milestone name, e.g., 'v1.1 Notifications'] [--ws <name>] [--reset-phase-numbers]"
-allowed-tools: Read, Write, Bash, Grep, Agent, AskUserQuestion
 ---
 
 <objective>
@@ -21,11 +19,11 @@ Brownfield equivalent of new-project. Project exists, PROJECT.md has history. Ga
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/new-milestone.md
-@.github/gsd-core/references/questioning.md
-@.github/gsd-core/references/ui-brand.md
-@.github/gsd-core/templates/project.md
-@.github/gsd-core/templates/requirements.md
+@.agents/gsd-core/workflows/new-milestone.md
+@.agents/gsd-core/references/questioning.md
+@.agents/gsd-core/references/ui-brand.md
+@.agents/gsd-core/templates/project.md
+@.agents/gsd-core/templates/requirements.md
 </execution_context>
 
 <context>

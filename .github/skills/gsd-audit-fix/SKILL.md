@@ -1,8 +1,6 @@
 ---
 name: gsd-audit-fix
 description: "Autonomous audit-to-fix pipeline — find issues, classify, fix, test, commit"
-argument-hint: "--source <audit-uat> [--severity <medium|high|all>] [--max N] [--dry-run]"
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, Agent, AskUserQuestion
 ---
 
 <objective>
@@ -17,7 +15,7 @@ Flags:
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/audit-fix.md
+@.agents/gsd-core/workflows/audit-fix.md
 </execution_context>
 
 <process>

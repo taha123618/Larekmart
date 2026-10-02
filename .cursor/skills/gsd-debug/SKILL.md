@@ -3,29 +3,6 @@ name: gsd-debug
 description: "Systematic debugging with persistent state across context resets"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-debug` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
 
 <objective>
 Debug issues using scientific method with subagent isolation.
@@ -45,17 +22,17 @@ Valid GSD subagent types (use exact names — do not fall back to 'general-purpo
 </available_agent_types>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/debug.md
+@.agents/gsd-core/workflows/debug.md
 </execution_context>
 
 <context>
-User's input: {{GSD_ARGS}}
+User's input: $ARGUMENTS
 
-Parse subcommands and flags from {{GSD_ARGS}} BEFORE the active-session check:
-- If {{GSD_ARGS}} starts with "list": SUBCMD=list, no further args
-- If {{GSD_ARGS}} starts with "status ": SUBCMD=status, SLUG=remainder (trim whitespace)
-- If {{GSD_ARGS}} starts with "continue ": SUBCMD=continue, SLUG=remainder (trim whitespace)
-- If {{GSD_ARGS}} contains `--diagnose`: SUBCMD=debug, diagnose_only=true, strip `--diagnose` from description
+Parse subcommands and flags from $ARGUMENTS BEFORE the active-session check:
+- If $ARGUMENTS starts with "list": SUBCMD=list, no further args
+- If $ARGUMENTS starts with "status ": SUBCMD=status, SLUG=remainder (trim whitespace)
+- If $ARGUMENTS starts with "continue ": SUBCMD=continue, SLUG=remainder (trim whitespace)
+- If $ARGUMENTS contains `--diagnose`: SUBCMD=debug, diagnose_only=true, strip `--diagnose` from description
 - Otherwise: SUBCMD=debug, diagnose_only=false
 
 Check for active sessions (used for non-list/status/continue flows):

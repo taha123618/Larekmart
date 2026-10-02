@@ -1,8 +1,6 @@
 ---
 name: gsd-config
 description: "Configure GSD settings — workflow toggles, advanced knobs, integrations, and model profile"
-argument-hint: "[--advanced | --integrations | --profile <name>]"
-allowed-tools: Read, Write, Bash, Grep, AskUserQuestion
 ---
 
 
@@ -28,9 +26,9 @@ Mode routing:
 </routing>
 
 <execution_context>
-@.github/gsd-core/workflows/settings.md
-@.github/gsd-core/workflows/settings-advanced.md
-@.github/gsd-core/workflows/settings-integrations.md
+@.agents/gsd-core/workflows/settings.md
+@.agents/gsd-core/workflows/settings-advanced.md
+@.agents/gsd-core/workflows/settings-integrations.md
 </execution_context>
 
 <context>

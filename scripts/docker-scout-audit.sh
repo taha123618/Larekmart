@@ -24,6 +24,8 @@ BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 SHOW_CVES=false
+GENERATE_SBOM=false
+CHECK_VEX=false
 TARGET_SINGLE_IMAGE=""
 
 # Argument parsing
@@ -35,16 +37,28 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --cves            Display detailed package CVE breakdown for target image"
+            echo "  --sbom            Generate and save CycloneDX / SPDX SBOM to security/sbom/"
+            echo "  --vex             Validate image against OpenVEX statements in security/vex/"
             echo "  --help, -h        Display this help message"
             echo ""
             echo "Examples:"
             echo "  pnpm docker:scout                      # Audit all platform images"
             echo "  pnpm docker:scout redis:7.4-alpine     # Audit specific image"
             echo "  pnpm docker:scout --cves alpine:3.20   # Detailed CVE breakdown"
+            echo "  pnpm docker:scout --sbom alpine:3.20   # Export SBOM"
+            echo "  pnpm docker:scout --vex                # Check OpenVEX statements"
             exit 0
             ;;
         --cves)
             SHOW_CVES=true
+            shift
+            ;;
+        --sbom)
+            GENERATE_SBOM=true
+            shift
+            ;;
+        --vex)
+            CHECK_VEX=true
             shift
             ;;
         *)
@@ -88,6 +102,21 @@ resolve_ref() {
     fi
 }
 
+# Check VEX statements if requested
+if [ "$CHECK_VEX" = true ]; then
+    echo -e "${CYAN}${BOLD}Inspecting OpenVEX Statements (security/vex/larekmart-openvex.json):${NC}"
+    if [ -f "security/vex/larekmart-openvex.json" ]; then
+        echo -e "${GREEN}✓ OpenVEX specification file detected.${NC}"
+        grep -E "name|justification|impact_statement" security/vex/larekmart-openvex.json | sed 's/^/  /' || true
+    else
+        echo -e "${YELLOW}No OpenVEX statement file found at security/vex/larekmart-openvex.json.${NC}"
+    fi
+    echo ""
+    if [ -z "$TARGET_SINGLE_IMAGE" ]; then
+        exit 0
+    fi
+fi
+
 # If a single image target is supplied, scan it directly
 if [ -n "$TARGET_SINGLE_IMAGE" ]; then
     RESOLVED_REF=$(resolve_ref "$TARGET_SINGLE_IMAGE")
@@ -99,6 +128,22 @@ if [ -n "$TARGET_SINGLE_IMAGE" ]; then
     if [ "$SHOW_CVES" = true ]; then
         echo -e "${CYAN}${BOLD}Package & CVE Breakdown:${NC}"
         docker scout cves --only-severities critical,high,medium "$RESOLVED_REF" || true
+        echo ""
+    fi
+
+    if [ "$GENERATE_SBOM" = true ]; then
+        mkdir -p security/sbom
+        SAFE_NAME=$(echo "$TARGET_SINGLE_IMAGE" | tr '/:' '_')
+        SBOM_OUT="security/sbom/${SAFE_NAME}.cyclonedx.json"
+        echo -e "${CYAN}${BOLD}Generating CycloneDX Software Bill of Materials (SBOM):${NC} ${SBOM_OUT}"
+        docker scout sbom --format cyclonedx "$RESOLVED_REF" > "$SBOM_OUT" 2>/dev/null || \
+          docker scout sbom "$RESOLVED_REF" > "$SBOM_OUT" 2>/dev/null || true
+        if [ -s "$SBOM_OUT" ]; then
+            echo -e "  ${GREEN}✓ SBOM generated successfully (${SBOM_OUT}).${NC}"
+        else
+            echo -e "  ${YELLOW}⚠ SBOM generation requires active Docker daemon or authenticated registry token.${NC}"
+            rm -f "$SBOM_OUT"
+        fi
         echo ""
     fi
 

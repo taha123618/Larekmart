@@ -1,8 +1,6 @@
 ---
 name: gsd-quick-batch
 description: "Batch several `/gsd-quick`-shaped tasks together — planned, dispatched, and merged as one run"
-argument-hint: "[--file <path>] [--jobs auto|N] [--validate] [--research] [--resume <batch-id>] [task list]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 ---
 
 <objective>
@@ -37,7 +35,7 @@ instead, or file the tasks individually.
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/quick-batch.md
+@.agents/gsd-core/workflows/quick-batch.md
 </execution_context>
 
 <context>

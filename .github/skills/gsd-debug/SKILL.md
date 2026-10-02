@@ -1,8 +1,6 @@
 ---
 name: gsd-debug
 description: "Systematic debugging with persistent state across context resets"
-argument-hint: "[list | status <slug> | continue <slug> | --diagnose] [issue description]"
-allowed-tools: Read, Write, Bash, Grep, Agent, AskUserQuestion
 ---
 
 
@@ -24,7 +22,7 @@ Valid GSD subagent types (use exact names — do not fall back to 'general-purpo
 </available_agent_types>
 
 <execution_context>
-@.github/gsd-core/workflows/debug.md
+@.agents/gsd-core/workflows/debug.md
 </execution_context>
 
 <context>

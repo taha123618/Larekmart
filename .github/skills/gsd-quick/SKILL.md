@@ -1,8 +1,6 @@
 ---
 name: gsd-quick
 description: "Execute a quick task with GSD guarantees (atomic commits, state tracking) but skip optional agents"
-argument-hint: "[list | status <slug> | resume <slug> | --full] [--validate] [--discuss] [--research] [task description]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion
 ---
 
 <objective>
@@ -32,7 +30,7 @@ Granular flags are composable: `--discuss --research --validate` gives the same 
 </objective>
 
 <execution_context>
-@.github/gsd-core/workflows/quick.md
+@.agents/gsd-core/workflows/quick.md
 </execution_context>
 
 <context>

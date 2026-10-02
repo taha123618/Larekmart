@@ -3,30 +3,6 @@ name: gsd-mvp-phase
 description: "Plan a phase as a vertical MVP slice — user story, SPIDR splitting, then plan-phase"
 ---
 
-<cursor_skill_adapter>
-## A. Skill Invocation
-- This skill is invoked when the user mentions `gsd-mvp-phase` or describes a task matching this skill.
-- Treat all user text after the skill mention as `{{GSD_ARGS}}`.
-- If no arguments are present, treat `{{GSD_ARGS}}` as empty.
-
-## B. User Prompting
-When the workflow needs user input, prompt the user conversationally:
-- Present options as a numbered list in your response text
-- Ask the user to reply with their choice
-- For multi-select, ask for comma-separated numbers
-
-## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
-- `Shell` for running commands (terminal operations)
-- `StrReplace` for editing existing files
-- `Read`, `Write`, `Glob`, `Grep`, `Task`, `WebSearch`, `WebFetch`, `TodoWrite` as needed
-
-## D. Subagent Spawning
-When the workflow needs to spawn a subagent:
-- Use `Task(subagent_type="generalPurpose", ...)`
-- The `model` parameter maps to Cursor's model options (e.g., "fast")
-</cursor_skill_adapter>
-
 <objective>
 Guide the user through MVP-mode planning for a phase. The command:
 
@@ -39,20 +15,20 @@ Phase 1 of the vertical-mvp-slice PRD shipped the planner-side machinery; this c
 </objective>
 
 <execution_context>
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/mvp-phase.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/references/spidr-splitting.md
-@/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/references/user-story-template.md
+@.agents/gsd-core/workflows/mvp-phase.md
+@.agents/gsd-core/references/spidr-splitting.md
+@.agents/gsd-core/references/user-story-template.md
 </execution_context>
 
 
 
 <context>
-Phase number: {{GSD_ARGS}} (required — integer or decimal like `2.1`)
+Phase number: $ARGUMENTS (required — integer or decimal like `2.1`)
 
 The phase must already exist in ROADMAP.md (created via `/gsd new-project`, `/gsd add-phase`, or `/gsd insert-phase`). This command does not create new phases — it converts an existing phase to MVP mode.
 </context>
 
 <process>
-Execute the mvp-phase workflow from @/Users/taha/projects/microservices-ecommerce/.cursor/gsd-core/workflows/mvp-phase.md end-to-end.
+Execute the mvp-phase workflow from @.agents/gsd-core/workflows/mvp-phase.md end-to-end.
 Preserve all gates: phase existence, status guard (refuse in_progress/completed), user-story format validation, SPIDR splitting check, ROADMAP write confirmation, plan-phase delegation.
 </process>
