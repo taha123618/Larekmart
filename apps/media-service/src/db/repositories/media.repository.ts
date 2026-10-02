@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, sql, inArray } from "drizzle-orm";
 import type { MediaStatusType } from "@repo/types";
 import { db } from "../client.js";
 import type { MediaDb } from "../client.js";
@@ -164,9 +164,7 @@ export const createMediaRepository = (database: MediaDb = db) => ({
       .where(
         and(
           isNull(media.deletedAt),
-          sql`${media.status} = ANY(${sql.raw(
-            `ARRAY[${statuses.map((s) => `'${s}'`).join(",")}]::text[]`,
-          )})`,
+          inArray(media.status, statuses as MediaStatusType[]),
           sql`${media.createdAt} < ${olderThan}`,
         ),
       )
