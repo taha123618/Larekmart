@@ -165,7 +165,7 @@ declare -a IMAGES=(
 
     # Supporting / Development Infrastructure
     "provectuslabs/kafka-ui:v0.7.2|kafka-ui|Internal UI|Kafka Management Dashboard"
-    "mongo-express:1.0.2-alpha.4|mongo-express|Internal UI|MongoDB Admin Dashboard"
+    "mongo-express:1.0.2|mongo-express|Internal UI|MongoDB Admin Dashboard"
 
     # Microservices & Frontends Base Runtimes
     "node:20-alpine|node-microservices|dhi/node:20|Base Runtime for 14 Node Services"

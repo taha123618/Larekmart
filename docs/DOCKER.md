@@ -385,7 +385,7 @@ Every single container image used in the Larekmart platform is cataloged below, 
 | **kafka**                  | Event Broker           | `apache/kafka:3.8.0`               | `dhi/kafka:3.8`          | `appuser` (1000)    | 0 Critical / 0 High    | Pinned & Scanned         |
 | **opensearch**             | Search Engine          | `opensearch:2.17.1`                | `dhi/opensearch:2.17`    | `opensearch` (1000) | 0 Critical / 0 High    | Pinned & Scanned         |
 | **kafka-ui**               | Management Web UI      | `provectuslabs/kafka-ui:v0.7.2`    | N/A (Internal)           | `appuser` (1000)    | 0 Critical / 0 High    | Pinned (Dev-only)        |
-| **mongo-express**          | Database Web UI        | `mongo-express:1.0.2-alpha.4`      | N/A (Internal)           | `node` (1000)       | 0 Critical / 0 High    | Pinned (Dev-only)        |
+| **mongo-express**          | Database Web UI        | `mongo-express:1.0.2`              | N/A (Internal)           | `node` (1000)       | 0 Critical / 0 High    | Pinned (Dev-only)        |
 | **prometheus**             | Observability          | `prom/prometheus:v2.53.0`          | Distroless Hardened      | `nobody` (65534)    | 0 Critical / 0 High    | Pinned & Distroless      |
 | **alertmanager**           | Observability          | `prom/alertmanager:v0.27.0`        | Distroless Hardened      | `nobody` (65534)    | 0 Critical / 0 High    | Pinned & Distroless      |
 | **grafana**                | Observability          | `grafana/grafana:11.2.0`           | Hardened Alpine          | `grafana` (472)     | 0 Critical / 0 High    | Pinned & Scanned         |
