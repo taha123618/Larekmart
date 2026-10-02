@@ -10,14 +10,21 @@ print("Initializing Larekmart MongoDB databases and collections...");
 
 // 1. Order Service Database
 const orderDb = db.getSiblingDB("order_db");
+orderDb.createUser({
+    user: "order_user",
+    pwd: "order_password",
+    roles: [{ role: "readWrite", db: "order_db" }]
+});
+
 orderDb.createCollection("orders");
 print("Created 'orders' collection in 'order_db'.");
 
 // 2. Cart Service Database
-const cartDb = db.getSiblingDB("ecommerce");
+const cartDb = db.getSiblingDB("cart_db");
 cartDb.createCollection("carts");
 cartDb.createCollection("processedevents");
-print("Created 'carts' and 'processedevents' collections in 'ecommerce'.");
+
+print("Created 'carts' and 'processedevents' collections in 'cart_db'.");
 
 // 3. Local Development Database Aliases
 const devOrderDb = db.getSiblingDB("larekmart_order_db");

@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   # ============================================================================
   # Core Infrastructure
@@ -51,10 +53,7 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      larekmart-network:
-        aliases:
-          - mongo
-          - mongodb
+      - larekmart-network
 
   mongo-express:
     image: mongo-express:1.0.2
@@ -196,14 +195,13 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
-
     env_file:
       - ./apps/product-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8000/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -229,14 +227,13 @@ services:
     restart: unless-stopped
     ports:
       - "8001:8001"
-
     env_file:
       - ./apps/order-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8001/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8001/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -260,14 +257,13 @@ services:
     restart: unless-stopped
     ports:
       - "8002:8002"
-
     env_file:
       - ./apps/payment-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8002/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8002/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -287,14 +283,13 @@ services:
     restart: unless-stopped
     ports:
       - "8003:8003"
-
     env_file:
       - ./apps/auth-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8003/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8003/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -314,14 +309,13 @@ services:
     restart: unless-stopped
     ports:
       - "8004:8004"
-
     env_file:
       - ./apps/analytic-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8004/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8004/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -345,11 +339,14 @@ services:
     restart: unless-stopped
     ports:
       - "8005:8005"
-
     env_file:
       - ./apps/notification-service/.env
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8005/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8005/health || exit 1",
+        ]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -372,14 +369,13 @@ services:
     restart: unless-stopped
     ports:
       - "8006:8006"
-
     env_file:
       - ./apps/search-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8006/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8006/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -403,14 +399,13 @@ services:
     restart: unless-stopped
     ports:
       - "8007:8007"
-
     env_file:
       - ./apps/inventory-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8007/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8007/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -434,14 +429,13 @@ services:
     restart: unless-stopped
     ports:
       - "8008:8008"
-
     env_file:
       - ./apps/recommendation-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8008/health/live'')"',
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8008/health/live'')" || exit 1',
         ]
       interval: 15s
       timeout: 5s
@@ -465,14 +459,13 @@ services:
     restart: unless-stopped
     ports:
       - "8009:8009"
-
     env_file:
       - ./apps/cart-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8009/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8009/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -496,14 +489,13 @@ services:
     restart: unless-stopped
     ports:
       - "8010:8010"
-
     env_file:
       - ./apps/catalog-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8010/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8010/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -527,14 +519,13 @@ services:
     restart: unless-stopped
     ports:
       - "8011:8011"
-
     env_file:
       - ./apps/shipping-service/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8011/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8011/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -564,7 +555,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8012/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8012/health || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -586,7 +577,6 @@ services:
       dockerfile: apps/email-service/Dockerfile
     container_name: larekmart-email-service
     restart: unless-stopped
-
     env_file:
       - ./apps/email-service/.env
     depends_on:
@@ -609,7 +599,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:8013/health/live'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:8013/health/live || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -684,26 +674,31 @@ services:
     restart: unless-stopped
     ports:
       - "3002:3002"
-
     env_file:
       - ./apps/client/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:3002/'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:3002/ || exit 1",
         ]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 25s
     depends_on:
-      - catalog-service
-      - search-service
-      - cart-service
-      - order-service
-      - user-service
-      - media-service
+      catalog-service:
+        condition: service_healthy
+      search-service:
+        condition: service_healthy
+      cart-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      media-service:
+        condition: service_healthy
     networks:
       - larekmart-network
 
@@ -728,24 +723,27 @@ services:
     restart: unless-stopped
     ports:
       - "3003:3003"
-
     env_file:
       - ./apps/admin/.env
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "fetch(''http://localhost:3003/'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          "wget --no-verbose --tries=1 --spider http://localhost:3003/ || exit 1",
         ]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 25s
     depends_on:
-      - product-service
-      - order-service
-      - analytic-service
-      - auth-service
+      product-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      analytic-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
     networks:
       - larekmart-network
 
