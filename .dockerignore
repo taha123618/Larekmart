@@ -1,0 +1,58 @@
+# Root and nested node_modules
+node_modules
+**/node_modules
+**/node_modules/**
+
+# Build outputs
+.next
+**/.next
+**/.next/**
+.turbo
+**/.turbo
+**/.turbo/**
+dist
+**/dist
+**/dist/**
+build
+**/build
+**/build/**
+
+# Version control and agent configuration directories
+.git
+**/.git
+**/.git/**
+.github
+**/.github
+**/.github/**
+.agent
+.agents
+.cursor
+.windsurf
+.codex
+.zcode
+.qwen
+.opencode
+.kilo
+.hermes
+.codebuddy
+.planning
+.vscode
+.idea
+**/.agent*
+**/.agent*/**
+
+# Python caches and virtualenvs
+.venv
+**/.venv
+**/__pycache__
+**/.pytest_cache
+
+# Logs & temporary files
+**/*.log
+.DS_Store
+**/coverage
+
+# Infrastructure and documentation
+docs
+infrastructure/kubernetes
+infrastructure/terraform

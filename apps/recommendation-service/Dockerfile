@@ -14,6 +14,7 @@ WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 ENV PYTHONUNBUFFERED=1
+ENV UV_HTTP_TIMEOUT=120
 
 # Security: Create unprivileged application user
 RUN groupadd -g 1001 pygroup && \

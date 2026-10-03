@@ -1,0 +1,31 @@
+# Dependencies & environments
+node_modules
+**/node_modules
+.venv
+**/__pycache__
+*.pyc
+vendor
+
+# Build outputs
+.next
+**/.next
+.turbo
+**/.turbo
+dist
+**/dist
+build
+**/build
+bin
+
+# Tests, coverage & logs
+coverage
+**/coverage
+.pytest_cache
+*.log
+**/*.log
+
+# Environment & OS files
+.DS_Store
+.env
+.env.local
+.env.*.local

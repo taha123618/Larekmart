@@ -4,19 +4,15 @@
 # ==============================================================================
 
 ARG BASE_IMAGE=node:20-alpine
+ARG BUILD_BASE_IMAGE=larekmart-base-node:latest
 # For enterprise DHI environments: docker build --build-arg BASE_IMAGE=dhi.io/node:20 .
 
-# Stage 1: Base image with package managers for build stages only
-FROM ${BASE_IMAGE} AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+# Stage 1: Base build environment pre-configured with pnpm and turbo
+FROM ${BUILD_BASE_IMAGE} AS base
 
 # Stage 2: Turbo pruning to isolate workspace
 FROM base AS builder
 WORKDIR /app
-RUN apk add --no-cache libc6-compat
-RUN pnpm install -g turbo
 COPY . .
 RUN turbo prune product-service --docker
 

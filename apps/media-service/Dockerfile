@@ -4,27 +4,21 @@
 # ==============================================================================
 
 ARG BASE_IMAGE=node:20-alpine
+ARG BUILD_BASE_IMAGE=larekmart-base-node:latest
 # For enterprise DHI environments: docker build --build-arg BASE_IMAGE=dhi.io/node:20 .
 
-# Stage 1: Base image with package managers for build stages only
-FROM ${BASE_IMAGE} AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+# Stage 1: Base build environment pre-configured with pnpm and turbo
+FROM ${BUILD_BASE_IMAGE} AS base
 
 # Stage 2: Turbo pruning to isolate workspace
 FROM base AS builder
 WORKDIR /app
-RUN apk add --no-cache libc6-compat
-RUN pnpm install -g turbo
 COPY . .
 RUN turbo prune media-service --docker
 
 # Stage 3: Install dependencies
 FROM base AS installer
 WORKDIR /app
-# Sharp ships prebuilt musl binaries; vips/libc6-compat cover edge builds.
-RUN apk add --no-cache libc6-compat vips
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
@@ -37,9 +31,6 @@ RUN pnpm turbo run build --filter=media-service... || true
 FROM ${BASE_IMAGE} AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-
-# Install runtime libraries required for Sharp image processing
-RUN apk add --no-cache vips
 
 # Security: Run as unprivileged system user
 RUN (getent group nodejs || addgroup -g 1001 -S nodejs 2>/dev/null || addgroup --system --gid 1001 nodejs) && \
