@@ -23,15 +23,16 @@ RUN groupadd -g 1001 pygroup && \
 # Copy dependency files first for layer caching
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies using uv
-RUN uv sync --frozen --no-dev --no-install-project
+# Install dependencies using uv with cache mount
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project
 
-# Copy application source code and adjust ownership
-COPY . .
-RUN chown -R appuser:pygroup /app
+# Copy application source code with ownership directly
+COPY --chown=appuser:pygroup . .
 
-# Sync project
-RUN uv sync --frozen --no-dev
+# Sync project with cache mount
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
 
 USER appuser
 

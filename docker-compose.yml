@@ -190,6 +190,7 @@ services:
       context: .
       dockerfile: docker/base-node/Dockerfile
     image: larekmart-base-node:latest
+    pull_policy: build
     container_name: larekmart-base-node
     restart: "no"
     entrypoint: ["echo", "larekmart-base-node build image ready"]

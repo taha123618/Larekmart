@@ -18,13 +18,12 @@ RUN apk add --no-cache ca-certificates git
 
 # Cache go modules
 COPY go.mod go.sum* ./
-RUN go mod download || true
+RUN go mod download
 
 # Copy source
 COPY . .
 
-# Ensure modules are resolved and build static binary
-RUN go mod tidy
+# Build static binary
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/notification ./cmd/notification/main.go
 
 # Stage 2: Minimal hardened runtime
