@@ -15,8 +15,17 @@ const Homepage = async () => {
   const { getToken } = await auth();
   const token = await getToken();
 
+  const orderUrl =
+    process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8080";
+  const analyticUrl =
+    process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL ||
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8080";
+
   const orderChartData = fetch(
-    `${process.env.NEXT_PUBLIC_ORDER_SERVICE_URL}/order-chart`,
+    `${orderUrl}/order-chart`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -32,7 +41,7 @@ const Homepage = async () => {
     .catch(() => [] as OrderChartType[]);
 
   const dailyAnalyticsData = fetch(
-    `${process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL || "http://localhost:8004"}/analytics/daily-chart?days=7`,
+    `${analyticUrl}/analytics/daily-chart?days=7`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -46,7 +55,7 @@ const Homepage = async () => {
     .catch(() => [] as AnalyticsDailyChartType[]);
 
   const summaryAnalyticsData = fetch(
-    `${process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL || "http://localhost:8004"}/analytics/summary`,
+    `${analyticUrl}/analytics/summary`,
     {
       headers: {
         Authorization: `Bearer ${token}`,

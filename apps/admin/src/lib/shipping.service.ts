@@ -7,7 +7,9 @@ import type {
 } from "@repo/types";
 
 const SHIPPING_BASE =
-  process.env.NEXT_PUBLIC_SHIPPING_SERVICE_URL || "http://localhost:8011";
+  process.env.NEXT_PUBLIC_SHIPPING_SERVICE_URL ||
+  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+  "http://localhost:8080";
 
 const BASE = `${SHIPPING_BASE}/api/v1`;
 

@@ -48,8 +48,12 @@ import { uploadProductImage } from "@/services/media.service";
 // ] as const;
 
 const fetchCategories = async () => {
+  const productServiceUrl =
+    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8080";
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/categories`,
+    `${productServiceUrl}/categories`,
   );
 
   if (!res.ok) {
@@ -94,9 +98,13 @@ const AddProduct = () => {
 
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof ProductFormSchema>) => {
+      const productServiceUrl =
+        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
+        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+        "http://localhost:8080";
       const token = await getToken();
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products`,
+        `${productServiceUrl}/products`,
         {
           method: "POST",
           body: JSON.stringify(data),

@@ -42,8 +42,12 @@ const AddUser = () => {
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof UserFormSchema>) => {
       const token = await getToken();
+      const authServiceUrl =
+        process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
+        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+        "http://localhost:8080";
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users`,
+        `${authServiceUrl}/users`,
         {
           method: "POST",
           body: JSON.stringify(data),

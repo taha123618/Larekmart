@@ -8,7 +8,10 @@ import { useAuth } from "@clerk/nextjs";
 import type { SuggestionItem, SuggestionResponse } from "@repo/types";
 import MediaImage from "@/components/MediaImage";
 
-const SEARCH_SERVICE_URL = process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL;
+const SEARCH_SERVICE_URL =
+  process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL ||
+  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+  "http://localhost:8080";
 const SUGGESTION_LIMIT = 6;
 const DEBOUNCE_MS = 250;
 const RECENT_SEARCHES_KEY = "larekmart:recent-searches";

@@ -257,8 +257,12 @@ const fetchSearch = async ({
   if (max_price) query.set("max_price", max_price);
   query.set("sort", SEARCH_SORT[sort ?? "newest"] ?? "relevance");
 
+  const productServiceUrl =
+    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8080";
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products/search?${query.toString()}`,
+    `${productServiceUrl}/products/search?${query.toString()}`,
   );
   if (!res.ok) return null;
 

@@ -22,9 +22,11 @@ export default function NotificationBell() {
   const queryClient = useQueryClient();
 
   const serviceUrl =
-    process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL || "http://localhost:8005";
+    process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL ||
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8080";
   const wsUrl =
-    process.env.NEXT_PUBLIC_NOTIFICATION_WS_URL || "ws://localhost:8005/ws";
+    process.env.NEXT_PUBLIC_NOTIFICATION_WS_URL || "ws://localhost:8080/ws";
 
   // Fetch Clerk session token
   useEffect(() => {

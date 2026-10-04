@@ -61,7 +61,8 @@ const ProductInteraction = ({
       try {
         const inventoryUrl =
           process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ||
-          "http://localhost:8007";
+          process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+          "http://localhost:8080";
         const res = await fetch(
           `${inventoryUrl}/api/v1/inventory/${product.id}/availability?variantId=${encodeURIComponent(
             variantId,

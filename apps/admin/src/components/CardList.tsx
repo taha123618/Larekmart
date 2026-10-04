@@ -14,8 +14,12 @@ const CardList = async ({ title }: { title: string }) => {
 
   if (title === "Popular Products") {
     try {
+      const prodUrl =
+        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
+        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+        "http://localhost:8080";
       products = await fetch(
-        `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products?limit=5&popular=true`,
+        `${prodUrl}/products?limit=5&popular=true`,
       ).then((res) => (res.ok ? res.json() : []));
     } catch {
       products = [];
@@ -25,10 +29,12 @@ const CardList = async ({ title }: { title: string }) => {
       try {
         const recUrl =
           process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
-          "http://localhost:8008";
+          process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+          "http://localhost:8080";
         const prodUrl =
           process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
-          "http://localhost:8000";
+          process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+          "http://localhost:8080";
         const recRes = await fetch(
           `${recUrl}/api/v1/recommendations/popular?limit=5`,
         );
@@ -57,8 +63,12 @@ const CardList = async ({ title }: { title: string }) => {
   } else {
     // Attempt to fetch from analytic-service first, fallback to order-service
     try {
+      const analyticUrl =
+        process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL ||
+        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+        "http://localhost:8080";
       events = await fetch(
-        `${process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL || "http://localhost:8004"}/analytics/events?limit=5`,
+        `${analyticUrl}/analytics/events?limit=5`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -71,8 +81,12 @@ const CardList = async ({ title }: { title: string }) => {
 
     if (events.length === 0) {
       try {
+        const orderUrl =
+          process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
+          process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+          "http://localhost:8080";
         orders = await fetch(
-          `${process.env.NEXT_PUBLIC_ORDER_SERVICE_URL}/orders?limit=5`,
+          `${orderUrl}/orders?limit=5`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

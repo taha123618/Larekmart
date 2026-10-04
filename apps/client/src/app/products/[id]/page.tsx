@@ -7,8 +7,12 @@ import { notFound } from "next/navigation";
 
 const fetchProduct = async (id: string): Promise<ProductType | null> => {
   try {
+    const productServiceUrl =
+      process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
+      process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+      "http://localhost:8080";
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products/${id}`,
+      `${productServiceUrl}/products/${id}`,
       { cache: "no-store" },
     );
     if (!res.ok) return null;

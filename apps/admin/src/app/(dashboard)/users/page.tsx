@@ -8,10 +8,14 @@ const getData = async (): Promise<{
   totalCount: number;
 }> => {
   const { getToken } = await auth();
-  const token = await getToken();
   try {
+    const authUrl =
+      process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
+      process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+      "http://localhost:8080";
+    const token = getToken();
     const [authRes, userSvcRes] = await Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users`, {
+      fetch(`${authUrl}/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -23,8 +27,8 @@ const getData = async (): Promise<{
 
     const clerkUsers = (authRes.data ||
       (Array.isArray(authRes) ? authRes : [])) as Array<
-      Record<string, unknown> & { id: string }
-    >;
+        Record<string, unknown> & { id: string }
+      >;
     const userSvcMap = new Map(
       userSvcRes?.users?.map((u) => [u.authUserId, u]) || [],
     );

@@ -39,7 +39,9 @@ import MediaImage from "@/components/MediaImage";
 async function getCatalogHealth(): Promise<{ ok: boolean; status?: string }> {
   try {
     const base =
-      process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL || "http://localhost:8010";
+      process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL ||
+      process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+      "http://localhost:8080";
     const res = await fetch(`${base}/ready`, { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as { status?: string };

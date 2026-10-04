@@ -8,7 +8,11 @@ import type {
 const GUEST_TOKEN_KEY = "larekmart_guest_token";
 
 export const getCartServiceUrl = (): string => {
-  return process.env.NEXT_PUBLIC_CART_SERVICE_URL || "http://localhost:8009";
+  return (
+    process.env.NEXT_PUBLIC_CART_SERVICE_URL ||
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8080"
+  );
 };
 
 export const getOrCreateGuestToken = (): string => {

@@ -49,7 +49,9 @@ export default function CodConfirmationForm({
       }
 
       const orderServiceUrl =
-        process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:8001";
+        process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
+        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+        "http://localhost:8080";
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",

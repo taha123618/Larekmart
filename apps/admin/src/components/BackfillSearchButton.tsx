@@ -20,8 +20,12 @@ const MAX_WINDOWS = 50;
  * request open.
  */
 const runBackfillWindow = async (token: string | null, afterId?: number) => {
+  const productServiceUrl =
+    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8080";
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products/backfill-search`,
+    `${productServiceUrl}/products/backfill-search`,
     {
       method: "POST",
       headers: {

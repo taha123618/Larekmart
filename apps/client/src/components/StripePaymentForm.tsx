@@ -9,8 +9,7 @@ import CheckoutForm from "./CheckoutForm";
 import useCartStore from "@/stores/cartStore";
 
 const stripe = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-    "pk_test_51MdCLkDhkeDdZct5FkM9qMlMvAzsJpObS6eUy44jYLuVMhUFjYjzr4VLodA0GiUj0WBaOSzm38QJ8ju3SAYhdNkF00myyAyh6M",
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
 );
 
 const fetchClientSecret = async (
@@ -18,8 +17,12 @@ const fetchClientSecret = async (
   token: string,
   cartId?: string,
 ) => {
+  const paymentServiceUrl =
+    process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL ||
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8080";
   return fetch(
-    `${process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL}/sessions/create-checkout-session`,
+    `${paymentServiceUrl}/sessions/create-checkout-session`,
     {
       method: "POST",
       body: JSON.stringify({
