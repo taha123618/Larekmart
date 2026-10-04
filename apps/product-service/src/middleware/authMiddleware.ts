@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { getAuth } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
 import { type CustomJwtSessionClaims, GATEWAY_HEADERS } from "@repo/types";
@@ -11,21 +12,37 @@ declare global {
   }
 }
 
+function safeTimingCompare(a: string, b: string): boolean {
+  try {
+    const hashA = crypto.createHash("sha256").update(a).digest();
+    const hashB = crypto.createHash("sha256").update(b).digest();
+    return crypto.timingSafeEqual(hashA, hashB);
+  } catch {
+    return false;
+  }
+}
+
 export const shouldBeUser = (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   // 1. Fast-path: Check trusted API Gateway internal header propagation
-  const internalSecret = req.headers[GATEWAY_HEADERS.INTERNAL_SECRET] as string | undefined;
+  const internalSecret = req.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
   const configuredSecret = process.env.INTERNAL_SERVICE_SECRET;
-  const gatewayUserId = req.headers[GATEWAY_HEADERS.USER_ID] as string | undefined;
-  const gatewayUserRole = req.headers[GATEWAY_HEADERS.USER_ROLE] as string | undefined;
+  const gatewayUserId = req.headers?.[GATEWAY_HEADERS.USER_ID] as
+    | string
+    | undefined;
+  const gatewayUserRole = req.headers?.[GATEWAY_HEADERS.USER_ROLE] as
+    | string
+    | undefined;
 
   if (
     internalSecret &&
     configuredSecret &&
-    internalSecret === configuredSecret &&
+    safeTimingCompare(internalSecret, configuredSecret) &&
     gatewayUserId
   ) {
     req.userId = gatewayUserId;
@@ -51,15 +68,21 @@ export const shouldBeAdmin = (
   next: NextFunction,
 ) => {
   // 1. Fast-path: Check trusted API Gateway internal header propagation
-  const internalSecret = req.headers[GATEWAY_HEADERS.INTERNAL_SECRET] as string | undefined;
+  const internalSecret = req.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
   const configuredSecret = process.env.INTERNAL_SERVICE_SECRET;
-  const gatewayUserId = req.headers[GATEWAY_HEADERS.USER_ID] as string | undefined;
-  const gatewayUserRole = req.headers[GATEWAY_HEADERS.USER_ROLE] as string | undefined;
+  const gatewayUserId = req.headers?.[GATEWAY_HEADERS.USER_ID] as
+    | string
+    | undefined;
+  const gatewayUserRole = req.headers?.[GATEWAY_HEADERS.USER_ROLE] as
+    | string
+    | undefined;
 
   if (
     internalSecret &&
     configuredSecret &&
-    internalSecret === configuredSecret &&
+    safeTimingCompare(internalSecret, configuredSecret) &&
     gatewayUserId
   ) {
     if (gatewayUserRole !== "admin") {

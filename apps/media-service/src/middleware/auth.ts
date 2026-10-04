@@ -1,6 +1,7 @@
+import crypto from "node:crypto";
 import { getAuth } from "@hono/clerk-auth";
 import { createMiddleware } from "hono/factory";
-import type { CustomJwtSessionClaims } from "@repo/types";
+import { type CustomJwtSessionClaims, GATEWAY_HEADERS } from "@repo/types";
 import { env } from "../config/env.js";
 import type { MediaActor } from "../services/media.service.js";
 
@@ -9,9 +10,20 @@ export type AuthVariables = {
   mediaActor: MediaActor;
 };
 
+function safeTimingCompare(a: string, b: string): boolean {
+  try {
+    const hashA = crypto.createHash("sha256").update(a).digest();
+    const hashB = crypto.createHash("sha256").update(b).digest();
+    return crypto.timingSafeEqual(hashA, hashB);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Authentication: Clerk everywhere (repo golden rule). Derives the verified
  * userId from session claims — never from client-supplied headers or body.
+ * Also supports trusted API Gateway internal header propagation.
  *
  * MEDIA_DEV_AUTH_BYPASS=true permits local testing without Clerk keys by
  * trusting x-user-id/x-user-role headers. The env module hard-fails startup
@@ -19,6 +31,25 @@ export type AuthVariables = {
  */
 export const shouldBeUser = createMiddleware<{ Variables: AuthVariables }>(
   async (c, next) => {
+    // 1. Fast-path: Check trusted API Gateway internal header propagation
+    const internalSecret = c.req.header(GATEWAY_HEADERS.INTERNAL_SECRET);
+    const configuredSecret = process.env.INTERNAL_SERVICE_SECRET;
+    const gatewayUserId = c.req.header(GATEWAY_HEADERS.USER_ID);
+    const gatewayUserRole = c.req.header(GATEWAY_HEADERS.USER_ROLE);
+
+    if (
+      internalSecret &&
+      configuredSecret &&
+      safeTimingCompare(internalSecret, configuredSecret) &&
+      gatewayUserId
+    ) {
+      const role = gatewayUserRole === "admin" ? "admin" : "user";
+      c.set("userId", gatewayUserId);
+      c.set("mediaActor", { userId: gatewayUserId, role });
+      await next();
+      return;
+    }
+
     if (env.isDevAuthBypass) {
       const userId = c.req.header("x-user-id");
       if (!userId) {
@@ -56,6 +87,27 @@ export const shouldBeUser = createMiddleware<{ Variables: AuthVariables }>(
 
 export const shouldBeAdmin = createMiddleware<{ Variables: AuthVariables }>(
   async (c, next) => {
+    // 1. Fast-path: Check trusted API Gateway internal header propagation
+    const internalSecret = c.req.header(GATEWAY_HEADERS.INTERNAL_SECRET);
+    const configuredSecret = process.env.INTERNAL_SERVICE_SECRET;
+    const gatewayUserId = c.req.header(GATEWAY_HEADERS.USER_ID);
+    const gatewayUserRole = c.req.header(GATEWAY_HEADERS.USER_ROLE);
+
+    if (
+      internalSecret &&
+      configuredSecret &&
+      safeTimingCompare(internalSecret, configuredSecret) &&
+      gatewayUserId
+    ) {
+      if (gatewayUserRole !== "admin") {
+        return c.json({ message: "Admin access required" }, 403);
+      }
+      c.set("userId", gatewayUserId);
+      c.set("mediaActor", { userId: gatewayUserId, role: "admin" });
+      await next();
+      return;
+    }
+
     if (env.isDevAuthBypass) {
       const userId = c.req.header("x-user-id");
       const role = c.req.header("x-user-role");

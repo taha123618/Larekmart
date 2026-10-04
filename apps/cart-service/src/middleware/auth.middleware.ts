@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { getAuth } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
 import { v4 as uuidv4 } from "uuid";
@@ -14,6 +15,16 @@ declare global {
   }
 }
 
+function safeTimingCompare(a: string, b: string): boolean {
+  try {
+    const hashA = crypto.createHash("sha256").update(a).digest();
+    const hashB = crypto.createHash("sha256").update(b).digest();
+    return crypto.timingSafeEqual(hashA, hashB);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Hybrid authentication middleware:
  * - Checks for trusted API Gateway internal header propagation
@@ -27,14 +38,20 @@ export const resolveCartIdentity = (
   next: NextFunction,
 ): void => {
   // 1. Fast-path: Check trusted API Gateway internal header propagation
-  const internalSecret = req.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as string | undefined;
-  const gatewayUserId = req.headers?.[GATEWAY_HEADERS.USER_ID] as string | undefined;
-  const gatewayUserRole = req.headers?.[GATEWAY_HEADERS.USER_ROLE] as string | undefined;
+  const internalSecret = req.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
+  const gatewayUserId = req.headers?.[GATEWAY_HEADERS.USER_ID] as
+    | string
+    | undefined;
+  const gatewayUserRole = req.headers?.[GATEWAY_HEADERS.USER_ROLE] as
+    | string
+    | undefined;
 
   if (
     internalSecret &&
     env.INTERNAL_SERVICE_SECRET &&
-    internalSecret === env.INTERNAL_SERVICE_SECRET &&
+    safeTimingCompare(internalSecret, env.INTERNAL_SERVICE_SECRET) &&
     gatewayUserId
   ) {
     req.userId = gatewayUserId;
@@ -76,14 +93,20 @@ export const requireAuth = (
   next: NextFunction,
 ): void => {
   // 1. Fast-path: Check trusted API Gateway internal header propagation
-  const internalSecret = req.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as string | undefined;
-  const gatewayUserId = req.headers?.[GATEWAY_HEADERS.USER_ID] as string | undefined;
-  const gatewayUserRole = req.headers?.[GATEWAY_HEADERS.USER_ROLE] as string | undefined;
+  const internalSecret = req.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
+  const gatewayUserId = req.headers?.[GATEWAY_HEADERS.USER_ID] as
+    | string
+    | undefined;
+  const gatewayUserRole = req.headers?.[GATEWAY_HEADERS.USER_ROLE] as
+    | string
+    | undefined;
 
   if (
     internalSecret &&
     env.INTERNAL_SERVICE_SECRET &&
-    internalSecret === env.INTERNAL_SERVICE_SECRET &&
+    safeTimingCompare(internalSecret, env.INTERNAL_SERVICE_SECRET) &&
     gatewayUserId
   ) {
     req.userId = gatewayUserId;
@@ -107,14 +130,20 @@ export const requireAdmin = (
   next: NextFunction,
 ): void => {
   // 1. Fast-path: Check trusted API Gateway internal header propagation
-  const internalSecret = req.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as string | undefined;
-  const gatewayUserId = req.headers?.[GATEWAY_HEADERS.USER_ID] as string | undefined;
-  const gatewayUserRole = req.headers?.[GATEWAY_HEADERS.USER_ROLE] as string | undefined;
+  const internalSecret = req.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
+  const gatewayUserId = req.headers?.[GATEWAY_HEADERS.USER_ID] as
+    | string
+    | undefined;
+  const gatewayUserRole = req.headers?.[GATEWAY_HEADERS.USER_ROLE] as
+    | string
+    | undefined;
 
   if (
     internalSecret &&
     env.INTERNAL_SERVICE_SECRET &&
-    internalSecret === env.INTERNAL_SERVICE_SECRET &&
+    safeTimingCompare(internalSecret, env.INTERNAL_SERVICE_SECRET) &&
     gatewayUserId
   ) {
     if (gatewayUserRole !== "admin") {
