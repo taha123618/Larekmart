@@ -20,6 +20,9 @@ const envSchema = z.object({
   GUEST_CART_TTL_SECONDS: z.coerce.number().default(7 * 24 * 60 * 60), // 7 days
   USER_CART_TTL_SECONDS: z.coerce.number().default(30 * 24 * 60 * 60), // 30 days
   CART_CACHE_TTL_SECONDS: z.coerce.number().default(300), // 5 minutes
+  INTERNAL_SERVICE_SECRET: z
+    .string()
+    .default("dev-shared-internal-secret-larekmart"),
 });
 
 export const env = envSchema.parse(process.env);
