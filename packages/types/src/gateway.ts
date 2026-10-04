@@ -79,3 +79,19 @@ export const GatewayErrorResponseSchema = z.object({
 export type GatewayErrorResponse = z.infer<
   typeof GatewayErrorResponseSchema
 >;
+
+/**
+ * Gateway Home Aggregation Response schema.
+ */
+export const GatewayHomeAggregationResponseSchema = z.object({
+  featured: z.array(z.any()),
+  categories: z.array(z.any()),
+  recommendations: z.any(),
+  timestamp: z.string(),
+  requestId: z.string(),
+});
+
+export type GatewayHomeAggregationResponse = z.infer<
+  typeof GatewayHomeAggregationResponseSchema
+>;
+
