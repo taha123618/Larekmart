@@ -1,16 +1,7 @@
 import { downstreamServices } from "./services.js";
+import type { GatewayRouteConfig } from "@repo/types";
 
-export interface RouteMapping {
-  prefix: string;
-  target: string;
-  serviceName: string;
-  timeoutMs: number;
-  rewritePrefix?: string;
-  websocket?: boolean;
-  requireAuth?: boolean;
-  requireAdmin?: boolean;
-  requireSeller?: boolean;
-}
+export type RouteMapping = GatewayRouteConfig;
 
 export const apiRoutes: RouteMapping[] = [
   // 1. Auth Service
@@ -261,6 +252,6 @@ export const apiRoutes: RouteMapping[] = [
     target: downstreamServices.media.url,
     serviceName: downstreamServices.media.name,
     timeoutMs: downstreamServices.media.timeoutMs,
-    rewritePrefix: "/api/v1/admin",
+    rewritePrefix: "/api/v1/admin/media",
   },
 ];

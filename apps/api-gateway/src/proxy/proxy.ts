@@ -8,6 +8,7 @@ import {
   requireAuth,
   requireSeller,
 } from "../middleware/auth.js";
+import { GATEWAY_HEADERS } from "@repo/types";
 
 export async function registerProxyRoutes(
   fastify: FastifyInstance,
@@ -59,17 +60,21 @@ export async function registerProxyRoutes(
         rewriteRequestHeaders: (originalReq, headers) => {
           const rewritten: Record<string, string | string[] | undefined> = {
             ...headers,
-            "x-request-id":
-              (originalReq.headers["x-request-id"] as string) ||
+            [GATEWAY_HEADERS.REQUEST_ID]:
+              (originalReq.headers[GATEWAY_HEADERS.REQUEST_ID] as string) ||
               String(originalReq.id),
-            "x-internal-secret": env.INTERNAL_SERVICE_SECRET,
+            [GATEWAY_HEADERS.INTERNAL_SECRET]: env.INTERNAL_SERVICE_SECRET,
           };
 
-          if (originalReq.headers["x-user-id"]) {
-            rewritten["x-user-id"] = originalReq.headers["x-user-id"] as string;
+          if (originalReq.headers[GATEWAY_HEADERS.USER_ID]) {
+            rewritten[GATEWAY_HEADERS.USER_ID] = originalReq.headers[
+              GATEWAY_HEADERS.USER_ID
+            ] as string;
           }
-          if (originalReq.headers["x-user-role"]) {
-            rewritten["x-user-role"] = originalReq.headers["x-user-role"] as string;
+          if (originalReq.headers[GATEWAY_HEADERS.USER_ROLE]) {
+            rewritten[GATEWAY_HEADERS.USER_ROLE] = originalReq.headers[
+              GATEWAY_HEADERS.USER_ROLE
+            ] as string;
           }
 
           return rewritten;

@@ -7,6 +7,9 @@ import {
   ShippingRateRequestSchema,
   ShipmentStatusEnum,
   CreateCodOrderSchema,
+  GatewayHealthResponseSchema,
+  GatewayErrorResponseSchema,
+  GATEWAY_HEADERS,
 } from "../src/index.js";
 
 async function runSchemaTests() {
@@ -219,6 +222,40 @@ async function runSchemaTests() {
     "Non-positive productId must be rejected",
   );
   console.log("✓ CreateCodOrderSchema paisa + productId invariants verified");
+
+  // 10. Gateway Contracts
+  console.log("10. Testing Gateway Contracts & Headers...");
+  const validHealth = {
+    status: "ready",
+    service: "api-gateway",
+    timestamp: new Date().toISOString(),
+  };
+  const parsedHealth = GatewayHealthResponseSchema.safeParse(validHealth);
+  assert.equal(parsedHealth.success, true, "GatewayHealthResponseSchema should parse valid payload");
+
+  const invalidHealth = {
+    status: "running",
+    service: "api-gateway",
+    timestamp: "invalid",
+  };
+  assert.equal(
+    GatewayHealthResponseSchema.safeParse(invalidHealth).success,
+    false,
+    "GatewayHealthResponseSchema must reject unknown status",
+  );
+
+  const validError = {
+    message: "Service Unavailable",
+    statusCode: 503,
+    code: "GATEWAY_TIMEOUT",
+    requestId: "req-12345",
+  };
+  const parsedError = GatewayErrorResponseSchema.safeParse(validError);
+  assert.equal(parsedError.success, true, "GatewayErrorResponseSchema should parse valid payload");
+
+  assert.equal(GATEWAY_HEADERS.REQUEST_ID, "x-request-id");
+  assert.equal(GATEWAY_HEADERS.INTERNAL_SECRET, "x-internal-secret");
+  console.log("✓ Gateway schemas and header contracts verified");
 
   console.log("\n=======================================================");
   console.log(" All Domain Schema SQA Test Cases Passed Successfully! ");
