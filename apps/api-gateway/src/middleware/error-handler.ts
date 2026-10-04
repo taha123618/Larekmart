@@ -79,10 +79,15 @@ export function globalErrorHandler(
     stack: statusCode >= 500 ? error.stack : undefined,
   });
 
+  const isServerError = statusCode >= 500;
+  const clientMessage = isServerError
+    ? "An unexpected internal gateway error occurred"
+    : error.message || "An error occurred";
+
   reply.status(statusCode).send({
     statusCode,
-    error: error.name || "Error",
-    message: error.message || "An unexpected error occurred",
+    error: error.name || (isServerError ? "Internal Server Error" : "Error"),
+    message: clientMessage,
     requestId,
   });
 }

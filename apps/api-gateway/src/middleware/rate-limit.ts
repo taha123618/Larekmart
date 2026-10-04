@@ -1,34 +1,19 @@
 import type { FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
-import { createRedisClient } from "@repo/redis";
-import { env } from "../config/env.js";
-import { logger } from "../observability/logger.js";
+import { getRedisClient } from "../cache/redis.js";
+import { getRateLimitForRoute } from "../gateway/policies.js";
 import { gatewayRateLimitHitsTotal } from "../observability/metrics.js";
 
 export async function registerRateLimitMiddleware(
   fastify: FastifyInstance,
 ): Promise<void> {
-  let redisClient: ReturnType<typeof createRedisClient> | undefined = undefined;
-
-  try {
-    redisClient = createRedisClient({
-      url: env.REDIS_URL,
-      serviceName: "api-gateway",
-    });
-
-    redisClient.on("error", (err) => {
-      logger.warn("Gateway Redis rate-limiter connection warning", {
-        error: String(err),
-      });
-    });
-  } catch (err) {
-    logger.warn("Could not initialize Redis for rate limiting, falling back to local memory", {
-      error: String(err),
-    });
-  }
+  const redisClient = getRedisClient();
 
   await fastify.register(rateLimit, {
-    max: 1000,
+    max: (req) => {
+      const policy = getRateLimitForRoute(req.url);
+      return policy.limit;
+    },
     timeWindow: "1 minute",
     redis: redisClient as any,
     keyGenerator: (req) => {

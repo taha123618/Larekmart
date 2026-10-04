@@ -8,6 +8,7 @@
     "dev": "tsx --env-file=.env --watch src/index.ts",
     "build": "tsc",
     "start": "tsx --env-file-if-exists=.env src/index.ts",
+    "test": "tsx tests/index.test.ts",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
