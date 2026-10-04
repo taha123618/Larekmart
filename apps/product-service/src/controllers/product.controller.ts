@@ -99,9 +99,10 @@ export const deleteProduct = async (req: Request, res: Response) => {
 };
 
 export const getProducts = async (req: Request, res: Response) => {
-  const { sort, category, search, limit } = req.query;
+  const { sort, category, search, limit, ids } = req.query;
 
   const query = {
+    ids: typeof ids === "string" ? ids : undefined,
     sort: typeof sort === "string" ? sort : undefined,
     category: typeof category === "string" ? category : undefined,
     search: typeof search === "string" ? search : undefined,
@@ -129,13 +130,14 @@ export const getProducts = async (req: Request, res: Response) => {
     async () => {
       return await prisma.product.findMany({
         where: {
-          category: {
+          id: ids ? { in: (ids as string).split(",").map(Number).filter(n => !isNaN(n)) } : undefined,
+          category: category ? {
             slug: category as string,
-          },
-          name: {
+          } : undefined,
+          name: search ? {
             contains: search as string,
             mode: "insensitive",
-          },
+          } : undefined,
         },
         orderBy,
         take: limit ? Number(limit) : undefined,
