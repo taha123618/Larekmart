@@ -72,6 +72,11 @@ apps/media-service ────────┬─▶ drizzle-orm + pg ─▶ Pos
                            ├─▶ @aws-sdk/client-s3 + @aws-sdk/s3-request-presigner ─▶ S3/MinIO
                            └─▶ sharp (worker image processing)
 
+apps/api-gateway ──────────┬─▶ @fastify/http-proxy
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           ├─▶ @repo/monitoring
+                           └─▶ @repo/types
+
 apps/admin, apps/client ─▶ @repo/eslint-config, @repo/typescript-config
 all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 ```
