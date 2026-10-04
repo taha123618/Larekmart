@@ -27,6 +27,7 @@ const envSchema = z.object({
 
   // Redis
   REDIS_URL: z.string().default("redis://localhost:6379"),
+  REDIS_KEY_PREFIX: z.string().default("gateway:v1:"),
 
   // Downstream Microservices
   PRODUCT_SERVICE_URL: z.string().default("http://localhost:8000"),

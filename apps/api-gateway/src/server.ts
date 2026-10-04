@@ -1,7 +1,7 @@
 import { env } from "./config/env.js";
 import { logger } from "./observability/logger.js";
 import { buildApp } from "./app.js";
-import { closeRedis } from "./cache/redis.js";
+import { redis } from "./utils/redis.js";
 
 export { buildApp, buildGatewayServer } from "./app.js";
 
@@ -29,7 +29,7 @@ export async function startServer() {
     logger.info(`Received ${signal}, shutting down API Gateway gracefully...`);
     try {
       await app.close();
-      await closeRedis();
+      await redis.close();
       logger.info("API Gateway server closed successfully");
       process.exit(0);
     } catch (error) {
