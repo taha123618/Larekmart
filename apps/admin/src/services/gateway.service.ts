@@ -7,10 +7,7 @@
 import type { GatewayHealthResponse } from "@repo/types";
 
 export const getApiGatewayUrl = (): string => {
-  return (
-    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080"
-  );
+  return process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080";
 };
 
 /**
@@ -63,13 +60,19 @@ export async function fetchViaGateway<T>(
   });
 
   if (!res.ok) {
-    let errorPayload: any;
+    let errorPayload: { message?: string; statusCode?: number } = {};
     try {
-      errorPayload = await res.json();
+      errorPayload = (await res.json()) as {
+        message?: string;
+        statusCode?: number;
+      };
     } catch {
       errorPayload = { message: res.statusText, statusCode: res.status };
     }
-    throw new Error(errorPayload.message || `Gateway request failed with status ${res.status}`);
+    throw new Error(
+      errorPayload.message ||
+        `Gateway request failed with status ${res.status}`,
+    );
   }
 
   return (await res.json()) as T;
