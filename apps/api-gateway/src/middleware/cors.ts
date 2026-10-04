@@ -15,7 +15,8 @@ export async function registerCorsMiddleware(
         return;
       }
 
-      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      // Disallow wildcard reflection when credentials: true is enabled
+      if (allowedOrigins.includes(origin)) {
         cb(null, true);
         return;
       }

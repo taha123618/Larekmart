@@ -679,7 +679,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://localhost:8080/health/ready || exit 1",
+          "wget --no-verbose --tries=1 --spider http://localhost:8090/health/ready || exit 1",
         ]
       interval: 10s
       timeout: 5s
@@ -728,19 +728,19 @@ services:
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_API_GATEWAY_URL: http://localhost:8080
-        NEXT_PUBLIC_PRODUCT_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_ORDER_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_PAYMENT_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_CART_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_SEARCH_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_MEDIA_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_API_GATEWAY_URL: http://localhost:8090
+        NEXT_PUBLIC_PRODUCT_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_ORDER_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_PAYMENT_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_CART_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_SEARCH_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_MEDIA_SERVICE_URL: http://localhost:8090
     container_name: larekmart-client
     restart: unless-stopped
     ports:
@@ -769,20 +769,20 @@ services:
       dockerfile: apps/admin/Dockerfile
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_API_GATEWAY_URL: http://localhost:8080
-        NEXT_PUBLIC_PRODUCT_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_ORDER_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_AUTH_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_ANALYTIC_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_SEARCH_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_CART_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8080
-        NEXT_PUBLIC_MEDIA_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_API_GATEWAY_URL: http://localhost:8090
+        NEXT_PUBLIC_PRODUCT_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_ORDER_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_AUTH_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_ANALYTIC_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_SEARCH_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_CART_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8090
+        NEXT_PUBLIC_MEDIA_SERVICE_URL: http://localhost:8090
     container_name: larekmart-admin
     restart: unless-stopped
     ports:
