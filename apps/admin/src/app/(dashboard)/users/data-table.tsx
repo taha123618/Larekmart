@@ -63,6 +63,7 @@ export function DataTable<TData, TValue>({
 
       await Promise.all(
         selectedRows.map(async (row) => {
+          const userId = (row.original as User).id;
           const authUrl =
             process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
             process.env.NEXT_PUBLIC_API_GATEWAY_URL ||

@@ -662,6 +662,62 @@ services:
       - larekmart-network
 
   # ============================================================================
+  # API Gateway (Centralized API Gateway for the Application)
+  # ============================================================================
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: larekmart-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./apps/api-gateway/.env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8080/health/ready || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      redis:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      analytic-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      search-service:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+      cart-service:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      shipping-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      media-service:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
+  # ============================================================================
   # Frontends (Storefront & Admin)
   # ============================================================================
 
@@ -672,16 +728,19 @@ services:
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_ORDER_SERVICE_URL: http://localhost:8001
-        NEXT_PUBLIC_PAYMENT_SERVICE_URL: http://localhost:8002
-        NEXT_PUBLIC_CART_SERVICE_URL: http://localhost:8009
-        NEXT_PUBLIC_SEARCH_SERVICE_URL: http://localhost:8006
-        NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: http://localhost:8005
-        NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8008
-        NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8011
-        NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8010
-        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8012
-        NEXT_PUBLIC_MEDIA_SERVICE_URL: http://localhost:8013
+        NEXT_PUBLIC_API_GATEWAY_URL: http://localhost:8080
+        NEXT_PUBLIC_PRODUCT_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_ORDER_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_PAYMENT_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_CART_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_SEARCH_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_MEDIA_SERVICE_URL: http://localhost:8080
     container_name: larekmart-client
     restart: unless-stopped
     ports:
@@ -699,17 +758,7 @@ services:
       retries: 3
       start_period: 25s
     depends_on:
-      catalog-service:
-        condition: service_healthy
-      search-service:
-        condition: service_healthy
-      cart-service:
-        condition: service_healthy
-      order-service:
-        condition: service_healthy
-      user-service:
-        condition: service_healthy
-      media-service:
+      api-gateway:
         condition: service_healthy
     networks:
       - larekmart-network
@@ -720,17 +769,20 @@ services:
       dockerfile: apps/admin/Dockerfile
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_PRODUCT_SERVICE_URL: http://localhost:8000
-        NEXT_PUBLIC_ORDER_SERVICE_URL: http://localhost:8001
-        NEXT_PUBLIC_AUTH_SERVICE_URL: http://localhost:8003
-        NEXT_PUBLIC_ANALYTIC_SERVICE_URL: http://localhost:8004
-        NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: http://localhost:8005
-        NEXT_PUBLIC_SEARCH_SERVICE_URL: http://localhost:8006
-        NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8010
-        NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8011
-        NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8008
-        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8012
-        NEXT_PUBLIC_MEDIA_SERVICE_URL: http://localhost:8013
+        NEXT_PUBLIC_API_GATEWAY_URL: http://localhost:8080
+        NEXT_PUBLIC_PRODUCT_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_ORDER_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_AUTH_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_ANALYTIC_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_SEARCH_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_CART_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_CATALOG_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_SHIPPING_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:8080
+        NEXT_PUBLIC_MEDIA_SERVICE_URL: http://localhost:8080
     container_name: larekmart-admin
     restart: unless-stopped
     ports:
@@ -748,13 +800,7 @@ services:
       retries: 3
       start_period: 25s
     depends_on:
-      product-service:
-        condition: service_healthy
-      order-service:
-        condition: service_healthy
-      analytic-service:
-        condition: service_healthy
-      auth-service:
+      api-gateway:
         condition: service_healthy
     networks:
       - larekmart-network
