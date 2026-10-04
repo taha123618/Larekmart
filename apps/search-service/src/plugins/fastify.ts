@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
-import Clerk from "@clerk/fastify";
+import { clerkPlugin, getAuth } from "@clerk/fastify";
 import { globalErrorHandler } from "../middleware/error-handler.js";
 import { logger, metrics } from "../observability/metrics.js";
 import { createHttpMonitor } from "@repo/monitoring";
@@ -41,7 +41,7 @@ export async function configureFastifyPlugins(
   });
 
   // 3. Clerk Authentication plugin
-  await fastify.register(Clerk.clerkPlugin);
+  await fastify.register(clerkPlugin);
 
   // 3. HTTP Monitoring Hooks
   const httpMonitor = createHttpMonitor(logger, metrics);
@@ -72,7 +72,7 @@ export async function configureFastifyPlugins(
     let userId = (request.headers["x-user-id"] as string) || undefined;
     if (!userId) {
       try {
-        const auth = Clerk.getAuth(request);
+        const auth = getAuth(request);
         if (auth?.userId) {
           userId = auth.userId;
         }
@@ -97,7 +97,7 @@ export async function configureFastifyPlugins(
         request.userId || (request.headers["x-user-id"] as string) || undefined;
       if (!userId) {
         try {
-          const auth = Clerk.getAuth(request);
+          const auth = getAuth(request);
           if (auth?.userId) {
             userId = auth.userId;
           }
