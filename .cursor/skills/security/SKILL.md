@@ -23,9 +23,12 @@ This document specifies the mandatory cybersecurity standards and implementation
   - The `/api/claim-admin` endpoint in `apps/admin` is fail-closed: disabled unless `ALLOW_ADMIN_CLAIM === "true"` AND `ADMIN_REGISTRATION_SECRET` is set. Do not reintroduce NODE_ENV-based gating — a missing env var must never enable self-promotion.
   - When enabled, every request requires the `x-admin-claim-secret` header, compared in constant time against `ADMIN_REGISTRATION_SECRET`.
   - Admin UI route middleware (`apps/admin/src/middleware.ts`) strictly requires `sessionClaims?.metadata?.role === "admin"`.
-- **Internal Service Verification**:
+- **Internal Service Verification & API Gateway Perimeter**:
   - Direct HTTP calls between microservices are prohibited for business flows (use Kafka).
-  - For infrastructure or notification relay endpoints accepting internal traffic (e.g. `notification-service`), identity headers like `X-User-ID` are only trusted if accompanied by `X-Internal-Secret` matching `INTERNAL_SERVICE_SECRET`.
+  - All public traffic enters through the centralized API Gateway (`apps/api-gateway`). The Gateway unconditionally strips client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`) to prevent identity spoofing.
+  - The Gateway injects verified Clerk claims downstream (`x-user-id`, `x-user-role`) along with `x-internal-secret`.
+  - Downstream services verify `x-internal-secret` against `INTERNAL_SERVICE_SECRET` using constant-time SHA-256 digest comparison (`safeTimingCompare` via `crypto.timingSafeEqual`).
+  - Production deployments must fail startup if `INTERNAL_SERVICE_SECRET` equals the development placeholder.
 
 ---
 
@@ -88,11 +91,12 @@ This document specifies the mandatory cybersecurity standards and implementation
 
 ## 5. File Uploads & Malware Protection
 
-- **Validation at Client & Server Boundaries**:
-  - **MIME Type Allowlist**: Strictly limit uploads to safe image types: `image/jpeg`, `image/png`, `image/webp`.
-  - **File Size Restrictions**: Cap uploads to a strict maximum (e.g., 5MB).
-  - **Storage Isolation**: Do not write uploads to local executable directories. Use managed object storage (e.g. Cloudinary, S3) with server-generated UUIDs for asset naming.
-  - **Executable Prevention**: Never accept `.exe`, `.sh`, `.php`, `.js`, `.svg` (without SVG sanitization), or double-extension files (`image.jpg.exe`).
+- **Validation at Client & Server Boundaries (`media-service`)**:
+  - **Presigned Upload Architecture**: Clients upload directly to S3/MinIO via presigned PUT URLs with short TTLs. Binary payloads never buffer on application servers.
+  - **Magic-Byte Signature Inspection**: Verify file contents using actual magic bytes (`MAGIC_BYTES` for JPEG, PNG, WebP, AVIF, PDF) before finalizing uploads to prevent MIME-confusion attacks.
+  - **Path Traversal Sanitization**: `sanitizeFilename` strips directory traversal sequences (`../`), null bytes, and shell metacharacters. Object keys use deterministic server-generated UUID paths.
+  - **Category-Based Size Limits**: Enforce strict caps by category (`avatar`, `product-image`, `seller-document`).
+  - **Quarantine Workflow**: Invalid or failed files are quarantined (`QUARANTINED` status) and trigger audit events.
 
 ---
 
