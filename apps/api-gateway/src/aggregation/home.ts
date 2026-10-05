@@ -4,7 +4,11 @@ import { logger } from "../observability/logger.js";
 import { GATEWAY_HEADERS } from "@repo/types";
 import { env } from "../config/env.js";
 
-async function fetchWithTimeout(url: string, timeoutMs: number, headers: HeadersInit): Promise<any> {
+async function fetchWithTimeout(
+  url: string,
+  timeoutMs: number,
+  headers: HeadersInit,
+): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -27,7 +31,8 @@ async function fetchWithTimeout(url: string, timeoutMs: number, headers: Headers
 export const homeAggregationRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get("/api/v1/home", async (request, reply) => {
     const requestId =
-      (request.headers[GATEWAY_HEADERS.REQUEST_ID] as string) || String(request.id);
+      (request.headers[GATEWAY_HEADERS.REQUEST_ID] as string) ||
+      String(request.id);
 
     const outboundHeaders: Record<string, string> = {
       [GATEWAY_HEADERS.REQUEST_ID]: requestId,
@@ -41,7 +46,9 @@ export const homeAggregationRoutes: FastifyPluginAsync = async (fastify) => {
       ] as string;
     }
 
-    const userId = request.headers[GATEWAY_HEADERS.USER_ID] as string | undefined;
+    const userId = request.headers[GATEWAY_HEADERS.USER_ID] as
+      | string
+      | undefined;
 
     // Concurrent read aggregation with 2.5s bounded timeout to prevent fan-out latency
     const [featuredProductsResult, categoriesResult, recommendationsResult] =
@@ -66,7 +73,8 @@ export const homeAggregationRoutes: FastifyPluginAsync = async (fastify) => {
       ]);
 
     const featured =
-      featuredProductsResult.status === "fulfilled" && featuredProductsResult.value
+      featuredProductsResult.status === "fulfilled" &&
+      featuredProductsResult.value
         ? featuredProductsResult.value
         : [];
 
@@ -76,7 +84,8 @@ export const homeAggregationRoutes: FastifyPluginAsync = async (fastify) => {
         : [];
 
     const recommendations =
-      recommendationsResult.status === "fulfilled" && recommendationsResult.value
+      recommendationsResult.status === "fulfilled" &&
+      recommendationsResult.value
         ? recommendationsResult.value
         : [];
 
@@ -84,7 +93,9 @@ export const homeAggregationRoutes: FastifyPluginAsync = async (fastify) => {
       requestId,
       featuredCount: Array.isArray(featured) ? featured.length : 0,
       categoriesCount: Array.isArray(categories) ? categories.length : 0,
-      recommendationsCount: Array.isArray(recommendations) ? recommendations.length : 0,
+      recommendationsCount: Array.isArray(recommendations)
+        ? recommendations.length
+        : 0,
     });
 
     return reply.status(200).send({

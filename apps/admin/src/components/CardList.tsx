@@ -18,9 +18,9 @@ const CardList = async ({ title }: { title: string }) => {
         process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
         process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
         "http://localhost:8080";
-      products = await fetch(
-        `${prodUrl}/products?limit=5&popular=true`,
-      ).then((res) => (res.ok ? res.json() : []));
+      products = await fetch(`${prodUrl}/products?limit=5&popular=true`).then(
+        (res) => (res.ok ? res.json() : []),
+      );
     } catch {
       products = [];
     }
@@ -67,14 +67,11 @@ const CardList = async ({ title }: { title: string }) => {
         process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL ||
         process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
         "http://localhost:8080";
-      events = await fetch(
-        `${analyticUrl}/analytics/events?limit=5`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      events = await fetch(`${analyticUrl}/analytics/events?limit=5`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      ).then((res) => (res.ok ? res.json() : []));
+      }).then((res) => (res.ok ? res.json() : []));
     } catch {
       events = [];
     }
@@ -85,14 +82,11 @@ const CardList = async ({ title }: { title: string }) => {
           process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
           process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
           "http://localhost:8080";
-        orders = await fetch(
-          `${orderUrl}/orders?limit=5`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        orders = await fetch(`${orderUrl}/orders?limit=5`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        ).then((res) => (res.ok ? res.json() : []));
+        }).then((res) => (res.ok ? res.json() : []));
       } catch {
         orders = [];
       }

@@ -3,10 +3,10 @@
 // Check for GSD updates in background, write result to cache
 // Called by SessionStart hook - runs once per session
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { spawn } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const { spawn } = require("child_process");
 
 // #3582: gsd-core/bin/lib/package-identity.cjs is a tsc build artifact
 // (ADR-457), gitignored and absent on a raw plugin-marketplace / git-clone
@@ -18,11 +18,15 @@ const { spawn } = require('child_process');
 // doubly-degraded case. This try/require/ensureRuntimeBuild/require/catch
 // shape is deliberately duplicated (not extracted to hooks/lib/) — see
 // gsd-check-update-worker.js's identical #3582 comment for why.
-let updateCacheFileName = 'gsd-update-check.json';
+let updateCacheFileName = "gsd-update-check.json";
 try {
-  const { ensureRuntimeBuild } = require('../gsd-core/bin/ensure-runtime-build.cjs');
+  const {
+    ensureRuntimeBuild,
+  } = require("../gsd-core/bin/ensure-runtime-build.cjs");
   ensureRuntimeBuild();
-  ({ updateCacheFileName } = require('../gsd-core/bin/lib/package-identity.cjs'));
+  ({
+    updateCacheFileName,
+  } = require("../gsd-core/bin/lib/package-identity.cjs"));
 } catch (e) {
   // Runtime library missing/broken and could not self-build — degrade to the
   // fallback filename above rather than crash the SessionStart hook.
@@ -36,15 +40,22 @@ const cwd = process.cwd();
 function detectConfigDir(baseDir) {
   // Check env override first (supports multi-account setups)
   const envDir = process.env.CLAUDE_CONFIG_DIR;
-  if (envDir && fs.existsSync(path.join(envDir, 'gsd-core', 'VERSION'))) {
+  if (envDir && fs.existsSync(path.join(envDir, "gsd-core", "VERSION"))) {
     return envDir;
   }
-  for (const dir of ['.kilo', '.gemini', '.config/kilo', '.kilo', '.config/opencode', '.opencode']) {
-    if (fs.existsSync(path.join(baseDir, dir, 'gsd-core', 'VERSION'))) {
+  for (const dir of [
+    ".kilo",
+    ".gemini",
+    ".config/kilo",
+    ".kilo",
+    ".config/opencode",
+    ".opencode",
+  ]) {
+    if (fs.existsSync(path.join(baseDir, dir, "gsd-core", "VERSION"))) {
       return path.join(baseDir, dir);
     }
   }
-  return envDir || path.join(baseDir, '.kilo');
+  return envDir || path.join(baseDir, ".kilo");
 }
 
 const globalConfigDir = detectConfigDir(homeDir);
@@ -52,12 +63,12 @@ const projectConfigDir = detectConfigDir(cwd);
 // Use a shared, tool-agnostic cache directory to avoid multi-runtime
 // resolution mismatches where check-update writes to one runtime's cache
 // but statusline reads from another (#1421).
-const cacheDir = path.join(homeDir, '.cache', 'gsd');
+const cacheDir = path.join(homeDir, ".cache", "gsd");
 const cacheFile = path.join(cacheDir, updateCacheFileName);
 
 // VERSION file locations (check project first, then global)
-const projectVersionFile = path.join(projectConfigDir, 'gsd-core', 'VERSION');
-const globalVersionFile = path.join(globalConfigDir, 'gsd-core', 'VERSION');
+const projectVersionFile = path.join(projectConfigDir, "gsd-core", "VERSION");
+const globalVersionFile = path.join(globalConfigDir, "gsd-core", "VERSION");
 
 // Ensure cache directory exists
 if (!fs.existsSync(cacheDir)) {
@@ -68,11 +79,11 @@ if (!fs.existsSync(cacheDir)) {
 // Spawning a file (rather than node -e '<inline code>') keeps the worker logic
 // in plain JS with no template-literal regex-escaping concerns, and makes the
 // worker independently testable.
-const workerPath = path.join(__dirname, 'gsd-check-update-worker.js');
+const workerPath = path.join(__dirname, "gsd-check-update-worker.js");
 const child = spawn(process.execPath, [workerPath], {
-  stdio: 'ignore',
+  stdio: "ignore",
   windowsHide: true,
-  detached: true,  // Required on Windows for proper process detachment
+  detached: true, // Required on Windows for proper process detachment
   env: {
     ...process.env,
     GSD_CACHE_FILE: cacheFile,

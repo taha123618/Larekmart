@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { buildApp } from "../../src/app.js";
 
 export async function runHealthIntegrationTests() {
-  console.log("▶ [INTEGRATION] Running Gateway Health & Endpoint integration tests...");
+  console.log(
+    "▶ [INTEGRATION] Running Gateway Health & Endpoint integration tests...",
+  );
 
   const app = await buildApp();
 
@@ -59,9 +61,14 @@ export async function runHealthIntegrationTests() {
   const homeBody = JSON.parse(res5.payload);
   assert.ok(Array.isArray(homeBody.featured), "featured must be an array");
   assert.ok(Array.isArray(homeBody.categories), "categories must be an array");
-  assert.ok(Array.isArray(homeBody.recommendations), "recommendations must be an array");
+  assert.ok(
+    Array.isArray(homeBody.recommendations),
+    "recommendations must be an array",
+  );
   assert.ok(homeBody.requestId, "Response must include requestId");
 
   await app.close();
-  console.log("✔ [INTEGRATION] Gateway Health & Endpoint integration tests passed");
+  console.log(
+    "✔ [INTEGRATION] Gateway Health & Endpoint integration tests passed",
+  );
 }

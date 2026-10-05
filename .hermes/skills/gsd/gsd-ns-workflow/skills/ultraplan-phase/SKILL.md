@@ -10,7 +10,6 @@ allowed-tools:
   - Grep
 ---
 
-
 <objective>
 Offload GSD's plan phase to Hermes Agent's ultraplan cloud infrastructure.
 

@@ -1,7 +1,7 @@
 # UI-Consideration Probe — Spec-Completeness Reference
 
 The **third** adapter of the shared `probe-core` resolution model (ADR-550 Decision 7), on
-the **UI element/state axis**. It surfaces the shape-rooted UI *state* considerations a
+the **UI element/state axis**. It surfaces the shape-rooted UI _state_ considerations a
 UI-SPEC must resolve before a dimension may PASS — the visual analog of the requirement-side
 [edge-probe](./edge-probe.md), reusing its exact lifecycle, validators, and plan-phase lift
 (see edge-probe.md for the shared status×verification model — this doc does not re-argue it).
@@ -32,16 +32,16 @@ Closed and small by design: the finite, project-independent content/robustness s
 UI surface must account for. Growth toward open UX topics happens in `domain-probes.md`, not by
 bloating this closed core.
 
-| id | name | applies to element kinds | consideration question |
-|----|------|--------------------------|------------------------|
-| empty | Empty / no data | form, list-collection, media | What is shown when there is no data — zero items, an unfilled form, or absent media? |
-| loading | Loading / in-flight | form, list-collection, media, nav, interactive-control | What is shown while data or content is still loading (skeleton, spinner, progressive reveal)? |
-| error | Error / failure | form, list-collection, media, nav, interactive-control | What is shown when the load or submit fails (message, retry affordance, partial fallback)? |
-| populated | Populated / happy path | list-collection, media | What does the normal populated (happy-path) state look like at a typical volume of content? |
-| partial | Partial / incomplete | form, list-collection | What is shown for partial or incomplete data — some fields or rows present, others missing? |
-| overflow | Overflow / truncation | list-collection, nav, static-content | What happens when content exceeds its container — scroll, clip, wrap, or truncate? |
-| zero-one-many | Zero / one / many | list-collection | How does the layout read at zero, one, and many items (singular vs plural copy, spacing)? |
-| long-text | Long text | form, static-content, interactive-control, nav | What happens with unusually long text — truncation, wrapping, ellipsis, or reflow? |
+| id            | name                   | applies to element kinds                               | consideration question                                                                        |
+| ------------- | ---------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| empty         | Empty / no data        | form, list-collection, media                           | What is shown when there is no data — zero items, an unfilled form, or absent media?          |
+| loading       | Loading / in-flight    | form, list-collection, media, nav, interactive-control | What is shown while data or content is still loading (skeleton, spinner, progressive reveal)? |
+| error         | Error / failure        | form, list-collection, media, nav, interactive-control | What is shown when the load or submit fails (message, retry affordance, partial fallback)?    |
+| populated     | Populated / happy path | list-collection, media                                 | What does the normal populated (happy-path) state look like at a typical volume of content?   |
+| partial       | Partial / incomplete   | form, list-collection                                  | What is shown for partial or incomplete data — some fields or rows present, others missing?   |
+| overflow      | Overflow / truncation  | list-collection, nav, static-content                   | What happens when content exceeds its container — scroll, clip, wrap, or truncate?            |
+| zero-one-many | Zero / one / many      | list-collection                                        | How does the layout read at zero, one, and many items (singular vs plural copy, spacing)?     |
+| long-text     | Long text              | form, static-content, interactive-control, nav         | What happens with unusually long text — truncation, wrapping, ellipsis, or reflow?            |
 
 ## Relevance filter + resolution states
 

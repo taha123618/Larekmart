@@ -34,8 +34,9 @@ example** of a route to that property — an illustration, never an instruction.
 issue by making `required_property` true; the hint's own mechanism is optional.
 
 An older checker may return an issue with no `required_property`. Derive it from `dimension`
-+ `description` and state the derived property in your revision summary. Never treat the
-absence of the field as licence to apply `fix_hint` literally.
+
+- `description` and state the derived property in your revision summary. Never treat the
+  absence of the field as licence to apply `fix_hint` literally.
 
 **Prefer the smallest sufficient mechanism.** If a smaller change than the hint makes
 `required_property` true, take it — that fully addresses the issue and must be reported as
@@ -55,19 +56,19 @@ unreachable without breaking a constraint — do NOT edit around it and do NOT b
 iteration on it: emit `## REVISION_CONFLICT` (Step 7) for that issue, apply every
 non-conflicting issue normally, and return.
 
-A hint that merely proposes a *bigger* mechanism than needed is not a conflict. Take the
+A hint that merely proposes a _bigger_ mechanism than needed is not a conflict. Take the
 smaller route under Step 2 and report it as addressed.
 
 ### Step 3: Revision Strategy
 
-| Dimension | Strategy |
-|-----------|----------|
-| requirement_coverage | Add task(s) for missing requirement |
-| task_completeness | Add missing elements to existing task |
-| dependency_correctness | Fix depends_on, recompute waves |
-| key_links_planned | Add wiring task or update action |
-| scope_sanity | Split into multiple plans |
-| must_haves_derivation | Derive and add must_haves to frontmatter |
+| Dimension              | Strategy                                 |
+| ---------------------- | ---------------------------------------- |
+| requirement_coverage   | Add task(s) for missing requirement      |
+| task_completeness      | Add missing elements to existing task    |
+| dependency_correctness | Fix depends_on, recompute waves          |
+| key_links_planned      | Add wiring task or update action         |
+| scope_sanity           | Split into multiple plans                |
+| must_haves_derivation  | Derive and add must_haves to frontmatter |
 
 Each strategy is the usual route, not the only one. Any change that makes the issue's
 `required_property` true is a valid strategy.
@@ -108,10 +109,10 @@ gsd_run query commit "fix($PHASE): revise plans based on checker feedback" --fil
 
 ### Changes Made
 
-| Plan | Change | Issue Addressed |
-|------|--------|-----------------|
-| 16-01 | Added <verify> to Task 2 | task_completeness |
-| 16-02 | Added logout task | requirement_coverage (AUTH-02) |
+| Plan  | Change                   | Issue Addressed                |
+| ----- | ------------------------ | ------------------------------ |
+| 16-01 | Added <verify> to Task 2 | task_completeness              |
+| 16-02 | Added logout task        | requirement_coverage (AUTH-02) |
 
 ### Files Updated
 
@@ -122,8 +123,8 @@ gsd_run query commit "fix($PHASE): revise plans based on checker feedback" --fil
 
 ### Unaddressed Issues
 
-| Issue | Reason |
-|-------|--------|
+| Issue   | Reason                                               |
+| ------- | ---------------------------------------------------- |
 | {issue} | {why - needs user input, architectural change, etc.} |
 ```
 
@@ -137,17 +138,17 @@ configured plan-review convergence loop; it does not count as a failed revision 
 ```markdown
 ## REVISION_CONFLICT
 
-**Conflicts:** {N}  |  **Issues addressed anyway:** {M}
+**Conflicts:** {N} | **Issues addressed anyway:** {M}
 
-| Issue | required_property | Conflicts with | Why the hint cannot be applied |
-|-------|-------------------|----------------|-------------------------------|
-| {dimension}/{plan} | {property} | {locked decision D-nn / .clinerules rule / plan constraint} | {one line} |
+| Issue              | required_property | Conflicts with                                              | Why the hint cannot be applied |
+| ------------------ | ----------------- | ----------------------------------------------------------- | ------------------------------ |
+| {dimension}/{plan} | {property}        | {locked decision D-nn / .clinerules rule / plan constraint} | {one line}                     |
 
 ### Alternatives Considered
 
-| Issue | Alternative | Satisfies required_property? | Cost of adopting |
-|-------|-------------|------------------------------|------------------|
-| {dimension}/{plan} | {smaller or different mechanism} | {yes / partially — how} | {what it changes} |
+| Issue              | Alternative                      | Satisfies required_property? | Cost of adopting  |
+| ------------------ | -------------------------------- | ---------------------------- | ----------------- |
+| {dimension}/{plan} | {smaller or different mechanism} | {yes / partially — how}      | {what it changes} |
 
 ### Changes Made
 

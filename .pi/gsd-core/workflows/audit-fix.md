@@ -7,8 +7,9 @@ after each fix, and commits atomically with finding IDs for traceability.
 </purpose>
 
 <available_agent_types>
+
 - gsd-executor — executes a specific, scoped code change
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
@@ -21,18 +22,22 @@ Extract flags from the user's invocation:
 - `--source <audit>` — which audit to run (default: **audit-uat**)
 
 Validate `--source` is a supported audit. Currently supported:
+
 - `audit-uat`
 
 If `--source` is not supported, stop with an error:
+
 ```
 Error: Unsupported audit source "{source}". Supported sources: audit-uat
 ```
+
 </step>
 
 <step name="run-audit">
 Invoke the source audit command and capture output.
 
 For `audit-uat` source:
+
 ```bash
 _GSD_SHIM_NAME="gsd-tools.cjs"; _GSD_RUNTIME_ROOT="${RUNTIME_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"; GSD_TOOLS="${_GSD_RUNTIME_ROOT}/gsd-core/bin/${_GSD_SHIM_NAME}"; _gsd_at() { for _p; do if [ -f "$_p" ]; then GSD_TOOLS="$_p"; return 0; fi; done; return 1; }; _gsd_id_ok() { case "$("$1" runtime-identity --raw 2>/dev/null || true)" in '{"packageName":"@opengsd/gsd-core"'*'}') return 0;; *) return 1;; esac; }; _gsd_homes() { _gsd_at "${CLAUDE_CONFIG_DIR:-/Users/taha/projects/microservices-ecommerce/.pi}/gsd-core/bin/${_GSD_SHIM_NAME}" "${HERMES_HOME:-$HOME/.hermes}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CURSOR_CONFIG_DIR:-$HOME/.cursor}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CODEX_HOME:-$HOME/.codex}/gsd-core/bin/${_GSD_SHIM_NAME}" "${GEMINI_CONFIG_DIR:-$HOME/.gemini}/gsd-core/bin/${_GSD_SHIM_NAME}" "${COPILOT_CONFIG_DIR:-$HOME/.copilot}/gsd-core/bin/${_GSD_SHIM_NAME}" "${WINDSURF_CONFIG_DIR:-$HOME/.codeium/windsurf}/gsd-core/bin/${_GSD_SHIM_NAME}" "${AUGMENT_CONFIG_DIR:-$HOME/.augment}/gsd-core/bin/${_GSD_SHIM_NAME}" "${TRAE_CONFIG_DIR:-$HOME/.trae}/gsd-core/bin/${_GSD_SHIM_NAME}" "${QWEN_CONFIG_DIR:-$HOME/.qwen}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CODEBUDDY_CONFIG_DIR:-$HOME/.codebuddy}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CLINE_CONFIG_DIR:-$HOME/.cline}/gsd-core/bin/${_GSD_SHIM_NAME}" "${GROK_AGENTS_HOME:-$HOME/.agents}/gsd-core/bin/${_GSD_SHIM_NAME}" "${ANTIGRAVITY_CONFIG_DIR:-$HOME/.gemini/antigravity}/gsd-core/bin/${_GSD_SHIM_NAME}" "${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}/gsd-core/bin/${_GSD_SHIM_NAME}" "${KILO_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/kilo}/gsd-core/bin/${_GSD_SHIM_NAME}"; }; if _gsd_at "${_GSD_RUNTIME_ROOT}/gsd-core/bin/${_GSD_SHIM_NAME}" "${_GSD_RUNTIME_ROOT}/.claude/gsd-core/bin/${_GSD_SHIM_NAME}" "${_GSD_RUNTIME_ROOT}/.codex/gsd-core/bin/${_GSD_SHIM_NAME}"; then gsd_run() { node "$GSD_TOOLS" "$@"; }; elif _gsd_homes; then gsd_run() { node "$GSD_TOOLS" "$@"; }; elif unset -f gsd_run; _G="$(command -v gsd_run)"; [ -n "$_G" ] && _gsd_id_ok "$_G"; then GSD_TOOLS="$_G"; gsd_run() { "$GSD_TOOLS" "$@"; }; else echo "ERROR: gsd-tools.cjs not found at $GSD_TOOLS and no identity-proving gsd_run is on PATH. Run: npx -y @opengsd/gsd-core@latest --claude --local" >&2; exit 1; fi; GSD_IDENTITY_STATUS=unverified; _gsd_id_ok gsd_run && GSD_IDENTITY_STATUS=ok; export GSD_IDENTITY_STATUS; [ "$GSD_IDENTITY_STATUS" = ok ] || echo "WARNING: \"$GSD_TOOLS\" did not prove it is @opengsd/gsd-core - it is either a different package or an @opengsd/gsd-core older than the runtime-identity verb. See docs/how-to/diagnose-a-foreign-gsd-tools.md" >&2; if [ -n "${CLAUDE_ENV_FILE:-}" ] && [ -n "${GSD_TOOLS:-}" ]; then printf "export PATH='%s':\"\$PATH\"\n" "${GSD_TOOLS%/*}" >> "$CLAUDE_ENV_FILE" 2>/dev/null || true; fi
 INIT=$(gsd_run query audit-uat 2>/dev/null || echo "{}")
@@ -40,15 +45,17 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
 Read existing UAT and verification files to extract findings:
+
 - Glob: `.planning/phases/*/*-UAT.md`
 - Glob: `.planning/phases/*/*-VERIFICATION.md`
 
 Parse each finding into a structured record:
+
 - **ID** — sequential identifier (F-01, F-02, ...)
 - **description** — concise summary of the issue
 - **severity** — high, medium, or low
 - **file_refs** — specific file paths referenced in the finding
-</step>
+  </step>
 
 <step name="classify-findings">
 For each finding, classify as one of:
@@ -60,12 +67,14 @@ For each finding, classify as one of:
 **Classification heuristics** (err on manual-only when uncertain):
 
 Auto-fixable signals:
+
 - References a specific file path + line number
 - Describes a missing test or assertion
 - Missing export, wrong import path, typo in identifier
 - Clear single-file change with obvious expected behavior
 
 Manual-only signals:
+
 - Uses words like "consider", "evaluate", "design", "rethink"
 - Requires new architecture or API changes
 - Ambiguous scope or multiple valid approaches
@@ -109,6 +118,7 @@ EXECUTOR_MODEL=$(gsd_run query resolve-model gsd-executor --raw)
 > **Model omission (#2517).** Omit the `model` parameter entirely when the value it would carry (`EXECUTOR_MODEL`) is `"inherit"` or empty. An empty value 404s on runtimes without native tier aliases — the default on non-Claude runtimes. Omitting it inherits the orchestrator's model. See @gsd-core/references/model-profile-resolution.md.
 
 **a. Spawn executor agent** (runs in a subagent — no output until it returns, ~1–5 min; expected, not a freeze)**:**
+
 ```
 Agent(
   prompt="Fix finding {ID}: {description}. Files: {file_refs}. Make the minimal change to resolve this specific finding. Do not refactor surrounding code.",
@@ -120,6 +130,7 @@ Agent(
 > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Agent() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
 **b. Run tests:**
+
 ```bash
 AUDIT_TEST_CMD=$(gsd_run query config-get workflow.test_command --default "" --raw 2>/dev/null || true)
 if [ -z "$AUDIT_TEST_CMD" ]; then
@@ -151,16 +162,20 @@ fi
 ```
 
 **c. If tests pass** — commit atomically:
+
 ```bash
 git add {changed_files}
 git commit -m "fix({scope}): resolve {ID} — {description}"
 ```
+
 The commit message **must** include the finding ID (e.g., F-01) for traceability.
 
 **d. If tests fail** — revert changes, mark finding as `fix-failed`, and **stop the pipeline**:
+
 ```bash
 git checkout -- {changed_files} 2>/dev/null
 ```
+
 Log the failure reason and stop processing — do not continue to the next finding.
 A test failure indicates the codebase may be in an unexpected state, so the pipeline
 must halt to avoid cascading issues. Remaining auto-fixable findings will appear in the
@@ -186,11 +201,13 @@ Present the final summary:
 ### Manual-only findings (require developer attention):
 - F-02: No error handling in payment flow — requires design decisions
 ```
+
 </step>
 
 </process>
 
 <success_criteria>
+
 - Auto-fixable findings processed sequentially until --max reached or a test failure stops the pipeline
 - Tests pass after each committed fix (no broken commits)
 - Failed fixes are reverted cleanly (no partial changes left)
@@ -198,4 +215,4 @@ Present the final summary:
 - Every commit message contains the finding ID
 - Manual-only findings are surfaced for developer attention
 - --dry-run produces a useful standalone classification table
-</success_criteria>
+  </success_criteria>

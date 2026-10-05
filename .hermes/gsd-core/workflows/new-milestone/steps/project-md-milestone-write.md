@@ -8,6 +8,7 @@ Add/update:
 **Goal:** [One sentence describing milestone focus]
 
 **Target features:**
+
 - [Feature 1]
 - [Feature 2]
 - [Feature 3]

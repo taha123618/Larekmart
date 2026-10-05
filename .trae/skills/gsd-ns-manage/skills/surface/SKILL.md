@@ -4,7 +4,6 @@ description: "Toggle which skills are surfaced — apply a profile, list, or dis
 stage: workflow
 ---
 
-
 <objective>
 Manage the runtime skill surface without reinstall. Reads/writes `/Users/taha/projects/microservices-ecommerce/.trae/.gsd-surface.json`
 (sibling to `/Users/taha/projects/microservices-ecommerce/.trae/.gsd-profile`) and re-stages the active skills directory in place.
@@ -17,16 +16,16 @@ Sub-commands: list · status · profile · disable · enable · reset
 
 Parse the first token of {{GSD_ARGS}}:
 
-| Token | Action |
-|---|---|
-| `list` | Show enabled + disabled clusters and skills |
-| `status` | Alias for `list` plus token cost summary |
-| `profile <name>` | Write `baseProfile` and re-stage |
-| `profile <n1>,<n2>` | Composed profiles (comma-separated, no spaces) |
-| `disable <cluster>` | Add cluster to `disabledClusters`, re-stage |
-| `enable <cluster>` | Remove cluster from `disabledClusters`, re-stage |
-| `reset` | Delete `.gsd-surface.json`, return to install-time profile |
-| *(none)* | Treat as `list` |
+| Token               | Action                                                     |
+| ------------------- | ---------------------------------------------------------- |
+| `list`              | Show enabled + disabled clusters and skills                |
+| `status`            | Alias for `list` plus token cost summary                   |
+| `profile <name>`    | Write `baseProfile` and re-stage                           |
+| `profile <n1>,<n2>` | Composed profiles (comma-separated, no spaces)             |
+| `disable <cluster>` | Add cluster to `disabledClusters`, re-stage                |
+| `enable <cluster>`  | Remove cluster from `disabledClusters`, re-stage           |
+| `reset`             | Delete `.gsd-surface.json`, return to install-time profile |
+| _(none)_            | Treat as `list`                                            |
 
 ---
 
@@ -34,9 +33,13 @@ Parse the first token of {{GSD_ARGS}}:
 
 Load the capability registry and call `listSurface(runtimeConfigDir, manifest, CLUSTERS, registry)` from
 the engine module at `${runtimeConfigDir}/gsd-core/bin/lib/surface.cjs`. The registry is loaded via:
+
 ```js
-const registry = require(runtimeConfigDir + '/gsd-core/bin/lib/capability-registry.cjs');
+const registry = require(
+  runtimeConfigDir + "/gsd-core/bin/lib/capability-registry.cjs",
+);
 ```
+
 Display:
 
 ```
@@ -76,9 +79,17 @@ materialization succeeds. Pass `null` to reset to the install-time profile.
 3. Keep the new state in memory; do not write it directly.
 4. Resolve and re-apply:
    ```js
-   const registry = require(runtimeConfigDir + '/gsd-core/bin/lib/capability-registry.cjs');
-   const layout = resolveRuntimeArtifactLayout(runtime, runtimeConfigDir, scope);
-   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, { surfaceState });
+   const registry = require(
+     runtimeConfigDir + "/gsd-core/bin/lib/capability-registry.cjs",
+   );
+   const layout = resolveRuntimeArtifactLayout(
+     runtime,
+     runtimeConfigDir,
+     scope,
+   );
+   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, {
+     surfaceState,
+   });
    ```
 5. Confirm: "Surface updated to profile `<name>`. N skills enabled."
 
@@ -94,9 +105,17 @@ Valid cluster names: `core_loop`, `audit_review`, `milestone`, `research_ideate`
 3. Add cluster to `surfaceState.disabledClusters` (deduplicate).
 4. Resolve layout and apply the in-memory candidate:
    ```js
-   const registry = require(runtimeConfigDir + '/gsd-core/bin/lib/capability-registry.cjs');
-   const layout = resolveRuntimeArtifactLayout(runtime, runtimeConfigDir, scope);
-   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, { surfaceState });
+   const registry = require(
+     runtimeConfigDir + "/gsd-core/bin/lib/capability-registry.cjs",
+   );
+   const layout = resolveRuntimeArtifactLayout(
+     runtime,
+     runtimeConfigDir,
+     scope,
+   );
+   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, {
+     surfaceState,
+   });
    ```
 5. Confirm: "Disabled cluster `<cluster>`. N skills removed from surface."
 
@@ -108,9 +127,17 @@ Valid cluster names: `core_loop`, `audit_review`, `milestone`, `research_ideate`
 2. Remove cluster from `surfaceState.disabledClusters`.
 3. Resolve layout and apply the in-memory candidate:
    ```js
-   const registry = require(runtimeConfigDir + '/gsd-core/bin/lib/capability-registry.cjs');
-   const layout = resolveRuntimeArtifactLayout(runtime, runtimeConfigDir, scope);
-   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, { surfaceState });
+   const registry = require(
+     runtimeConfigDir + "/gsd-core/bin/lib/capability-registry.cjs",
+   );
+   const layout = resolveRuntimeArtifactLayout(
+     runtime,
+     runtimeConfigDir,
+     scope,
+   );
+   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, {
+     surfaceState,
+   });
    ```
 4. Confirm: "Enabled cluster `<cluster>`. N skills added back to surface."
 

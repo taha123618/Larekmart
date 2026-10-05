@@ -19,12 +19,14 @@ Guide the user through MVP-mode planning for a phase. Prompts for an "As a / I w
 Extract the phase number from `$ARGUMENTS` (integer or decimal like `2.1`). Optional flag: `--force` (allow operating on `in_progress` / `completed` phases).
 
 If no argument:
+
 ```
 ERROR: Phase number required
 Usage: /gsd mvp-phase <phase-number>
 Example: /gsd mvp-phase 1
 Example: /gsd mvp-phase 2.1
 ```
+
 Exit.
 
 Normalize per `@/Users/taha/projects/microservices-ecommerce/.opencode/gsd-core/references/phase-argument-parsing.md` (zero-pad integer phases to two digits).
@@ -81,14 +83,17 @@ Use `question` with options [Re-prompt / Abort]. On Abort, exit cleanly. On Re-p
 Run three sequential `question` calls. Each is free-text. After all three, assemble into the canonical sentence per `@/Users/taha/projects/microservices-ecommerce/.opencode/gsd-core/references/user-story-template.md`:
 
 **Prompt 1 — As a:**
+
 > "As a [user role]?"
 > (Examples: "new user", "admin", "signed-in customer", "API consumer")
 
 **Prompt 2 — I want to:**
+
 > "I want to [capability]?"
 > (Examples: "register and log in", "upload a CSV", "see my dashboard")
 
 **Prompt 3 — So that:**
+
 > "So that [outcome]?"
 > (Examples: "I can access my account", "I can bulk-import contacts", "I can see at a glance what needs attention")
 
@@ -152,6 +157,7 @@ Free-text response. Workflow parses to identify the split.
 d) Produce a split proposal. Example:
 
 > "Proposed split (Paths axis):
+>
 > - **Phase ${PHASE} (this one):** Happy path — ${HAPPY_STORY}
 > - **Phase ${PHASE+1} (new):** Edge case — ${EDGE_STORY}
 >
@@ -193,6 +199,7 @@ NEW_GOAL=$(gsd_run query roadmap.get-phase "${PHASE}" --pick goal)
 ```
 
 Assert:
+
 - `NEW_MODE` equals `mvp`
 - `NEW_GOAL` equals the assembled user story
 

@@ -4,7 +4,6 @@ description: "Generate developer behavioral profile and create Claude-discoverab
 stage: workflow
 ---
 
-
 <objective>
 Generate a developer behavioral profile from session analysis (or questionnaire) and produce artifacts (USER-PROFILE.md, `gsd-dev-preferences` skill config, .trae/rules/rules.md section) that personalize Claude's responses.
 
@@ -26,6 +25,7 @@ Flags from {{GSD_ARGS}}:
 Execute the profile-user workflow end-to-end.
 
 The workflow handles all logic including:
+
 1. Initialization and existing profile detection
 2. Consent gate before session analysis
 3. Session scanning and data sufficiency checks
@@ -36,4 +36,4 @@ The workflow handles all logic including:
 8. Artifact selection (dev-preferences, .trae/rules/rules.md sections)
 9. Sequential artifact generation
 10. Summary with refresh diff (if applicable)
-</process>
+    </process>

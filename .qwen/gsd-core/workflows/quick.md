@@ -18,18 +18,20 @@ Read all files referenced by the invoking prompt's execution_context before star
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-phase-researcher — Researches technical approaches for a phase
 - gsd-planner — Creates detailed plans from phase scope
 - gsd-plan-checker — Reviews plan quality before execution
 - gsd-executor — Executes plan tasks, commits, creates SUMMARY.md
 - gsd-verifier — Verifies phase completion, checks quality gates
 - gsd-code-reviewer — Reviews source files for bugs, security issues, and code quality
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 **Step 1: Parse arguments and get task description**
 
 Parse `$ARGUMENTS` for:
+
 - `--full` flag → store `$FULL_MODE=true`, `$DISCUSS_MODE=true`, `$RESEARCH_MODE=true`, `$VALIDATE_MODE=true`
 - `--validate` flag → store `$VALIDATE_MODE=true`
 - `--discuss` flag → store `$DISCUSS_MODE=true`
@@ -64,6 +66,7 @@ If still empty, re-prompt: "Please provide a task description."
 Display banner based on active flags:
 
 If `$FULL_MODE` (all phases enabled — `--full` or all granular flags):
+
 ```
 ### GSD ► QUICK TASK (FULL)
 
@@ -71,6 +74,7 @@ If `$FULL_MODE` (all phases enabled — `--full` or all granular flags):
 ```
 
 If `$DISCUSS_MODE` and `$VALIDATE_MODE` (no research):
+
 ```
 ### GSD ► QUICK TASK (DISCUSS + VALIDATE)
 
@@ -78,6 +82,7 @@ If `$DISCUSS_MODE` and `$VALIDATE_MODE` (no research):
 ```
 
 If `$DISCUSS_MODE` and `$RESEARCH_MODE` (no validate):
+
 ```
 ### GSD ► QUICK TASK (DISCUSS + RESEARCH)
 
@@ -85,6 +90,7 @@ If `$DISCUSS_MODE` and `$RESEARCH_MODE` (no validate):
 ```
 
 If `$RESEARCH_MODE` and `$VALIDATE_MODE` (no discuss):
+
 ```
 ### GSD ► QUICK TASK (RESEARCH + VALIDATE)
 
@@ -92,6 +98,7 @@ If `$RESEARCH_MODE` and `$VALIDATE_MODE` (no discuss):
 ```
 
 If `$DISCUSS_MODE` only:
+
 ```
 ### GSD ► QUICK TASK (DISCUSS)
 
@@ -99,6 +106,7 @@ If `$DISCUSS_MODE` only:
 ```
 
 If `$RESEARCH_MODE` only:
+
 ```
 ### GSD ► QUICK TASK (RESEARCH)
 
@@ -106,6 +114,7 @@ If `$RESEARCH_MODE` only:
 ```
 
 If `$VALIDATE_MODE` only:
+
 ```
 ### GSD ► QUICK TASK (VALIDATE)
 
@@ -133,6 +142,7 @@ AGENT_SKILLS_RESEARCHER=$(gsd_run query agent-skills gsd-phase-researcher)
 Parse JSON for: `planner_model`, `executor_model`, `checker_model`, `verifier_model`, `reviewer_model`, `researcher_model`, `commit_docs`, `branch_name`, `quick_id`, `slug`, `date`, `timestamp`, `quick_dir`, `task_dir`, `roadmap_exists`, `planning_exists`, `response_language`.
 
 `init.quick` does not emit dedicated `state_path`/`project_path` fields, so derive them from the already-absolute `quick_dir` (#2376 — files handed to a spawned subagent must resolve regardless of that subagent's own cwd):
+
 ```bash
 STATE_PATH="$(dirname "${quick_dir}")/STATE.md"
 PROJECT_PATH="$(dirname "${quick_dir}")/PROJECT.md"
@@ -262,6 +272,7 @@ mkdir -p "$QUICK_DIR"
 ```
 
 Report to user:
+
 ```
 Creating quick task ${quick_id}: ${DESCRIPTION}
 Directory: ${QUICK_DIR}
@@ -284,6 +295,7 @@ If `section_manifest` is `null` or `"research-phase"` is in its `included` list:
 **Step 5: Spawn planner (quick mode)**
 
 **Capability gate:**
+
 ```bash
 PLAN_PRE_HOOKS_JSON=$(gsd_run loop render-hooks plan:pre --raw)
 ```
@@ -345,6 +357,7 @@ Return: ## PLANNING COMPLETE with plan path
 > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Agent() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
 After planner returns:
+
 1. Verify plan exists at `${QUICK_DIR}/${quick_id}-PLAN.md`
 2. Extract plan count (typically 1 for quick tasks)
 3. Report: "Plan created: ${QUICK_DIR}/${quick_id}-PLAN.md"
@@ -400,6 +413,7 @@ gsd_run query dispatch-isolation --raw --force-isolation "$ISOLATION" >/dev/null
 ```
 
 Capture current HEAD before spawning (used for worktree branch check):
+
 ```bash
 EXPECTED_BASE=$(git rev-parse HEAD)
 if [ "$ISOLATION" = "harness-worktree" ]; then   # keyed on ISOLATION like every other dispatch-coupled branch (#2652)
@@ -502,7 +516,9 @@ SUMMARY.md and stop — the user must rerun with worktrees disabled.
 If the executor ran isolated (`ISOLATION = "harness-worktree"` at dispatch), append its returned `{agent_id, worktree_path, branch, expected_base, allowed_bases}` metadata to `QUICK_WORKTREE_MANIFEST` before cleanup. Set `expected_base` to `${EXPECTED_BASE}` and `allowed_bases` to `["${EXPECTED_BASE}", "${QUICK_PLAN_PARENT}"]` with duplicates removed. If any required field is unavailable, stop and ask for recovery; do not discover global worktrees.
 
 After executor returns:
+
 1. **Worktree cleanup:** If the executor ran isolated (`ISOLATION = "harness-worktree"` at dispatch), merge the worktree branch back and clean up:
+
    ```bash
    QUICK_WORKTREE_MANIFEST=${QUICK_WORKTREE_MANIFEST:-$WAVE_WORKTREE_MANIFEST}
    [ -n "${QUICK_WORKTREE_MANIFEST:-}" ] && [ -f "$QUICK_WORKTREE_MANIFEST" ] || {
@@ -516,9 +532,10 @@ After executor returns:
    # Fail closed: SDK refusal (safety guard #3174/#3384) must surface — do not swallow exit 1.
    gsd_run query worktree.cleanup-wave --manifest "$QUICK_WORKTREE_MANIFEST" || exit 1
    ```
-   If `ISOLATION` was not `"harness-worktree"` at dispatch (including a #1941 base-check degrade — that is *this* file's degrade; #2649 is the `diagnose-issues.md` / `execute-plan.md` one), skip this step.
 
-   > **ISOLATED-RUN RECOVERY — FAIL SAFE (#1292):** When an isolated (worktree) run is *rejected* — the user declines to merge it, the orchestrator surfaces recovery guidance for a blocked/halted plan, or the run over-reached the requested scope — the worktree-isolation contract MUST hold through recovery. Do **NOT** propose continuing on `main`/the primary checkout as the default or recommended recovery path. Default to a **safe halt** and offer: (a) re-attempt in a **fresh, narrowly-scoped worktree**, or (b) inspect or discard the rejected worktree without merging. Any path that edits the primary checkout requires an **explicit, clearly-labeled confirmation** from the user first — editing `main` directly is never the proposed or default option for a run the user configured to be isolated.
+   If `ISOLATION` was not `"harness-worktree"` at dispatch (including a #1941 base-check degrade — that is _this_ file's degrade; #2649 is the `diagnose-issues.md` / `execute-plan.md` one), skip this step.
+
+   > **ISOLATED-RUN RECOVERY — FAIL SAFE (#1292):** When an isolated (worktree) run is _rejected_ — the user declines to merge it, the orchestrator surfaces recovery guidance for a blocked/halted plan, or the run over-reached the requested scope — the worktree-isolation contract MUST hold through recovery. Do **NOT** propose continuing on `main`/the primary checkout as the default or recommended recovery path. Default to a **safe halt** and offer: (a) re-attempt in a **fresh, narrowly-scoped worktree**, or (b) inspect or discard the rejected worktree without merging. Any path that edits the primary checkout requires an **explicit, clearly-labeled confirmation** from the user first — editing `main` directly is never the proposed or default option for a run the user configured to be isolated.
 
 2. Verify summary exists at `${QUICK_DIR}/${quick_id}-SUMMARY.md`
 3. Extract commit hash from executor output
@@ -537,6 +554,7 @@ Note: For quick tasks producing multiple plans (rare), spawn executors in parall
 Skip this step entirely if `$FULL_MODE` is false.
 
 **Capability gate:**
+
 ```bash
 EXECUTE_POST_HOOKS_JSON=$(gsd_run loop render-hooks execute:post --raw)
 ```
@@ -548,6 +566,7 @@ Resolve active step hooks from `EXECUTE_POST_HOOKS_JSON` where `kind == "step"` 
 If no active code-review step hook exists, skip with message "Code review skipped (code-review capability inactive)" — after dispatching any other active step hooks above — and proceed.
 
 **Scope files from executor's commits:**
+
 ```bash
 # Find the diff base: last commit before quick task started
 # Use git log to find commits referencing the quick task id, then take the parent of the oldest
@@ -578,6 +597,7 @@ fi
 If `CHANGED_FILES` is empty, skip with "No source files changed — skipping code review."
 
 **Invoke review:**
+
 ```
 Agent(
   prompt="Review these files for bugs, security issues, and code quality.
@@ -612,19 +632,21 @@ Read STATE.md and check for `### Quick Tasks Completed` section.
 Insert after `### Blockers/Concerns` section:
 
 **If `$VALIDATE_MODE`:**
+
 ```markdown
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Status | Directory |
-|---|-------------|------|--------|--------|-----------|
+| #   | Description | Date | Commit | Status | Directory |
+| --- | ----------- | ---- | ------ | ------ | --------- |
 ```
 
 **If NOT `$VALIDATE_MODE`:**
+
 ```markdown
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
+| #   | Description | Date | Commit | Directory |
+| --- | ----------- | ---- | ------ | --------- |
 ```
 
 **Note:** If the table already exists in a legacy (pre-registry) column format, first run `gsd_run quick-tasks-migrate` — the maintainer-decided repair path (#3730) that rewrites the table onto the canonical schema, losslessly bucketing unmapped columns into Description. It is a silent no-op when the table is already canonical or the section is absent, so running it before the first append of every quick task migrates exactly once and never prompts otherwise. After migration, use the canonical column format below.
@@ -639,11 +661,13 @@ Do NOT use the Edit tool to write this row directly; that raw-interpolation path
 step now avoids.
 
 **If `$VALIDATE_MODE` (or table has Status column):**
+
 ```bash
 gsd_run quick-tasks-append --quick-id "${quick_id}" --slug "${slug}" --task "${DESCRIPTION}" --status "${VERIFICATION_STATUS}"
 ```
 
 **If NOT `$VALIDATE_MODE` (and table has no Status column):**
+
 ```bash
 gsd_run quick-tasks-append --quick-id "${quick_id}" --slug "${slug}" --task "${DESCRIPTION}"
 ```
@@ -659,6 +683,7 @@ a positional ordinal and `Directory` reads `—`.
 **7d. Update "Last activity" line:**
 
 Use `date` from init:
+
 ```
 Last activity: ${date} - Completed quick task ${quick_id}: ${DESCRIPTION}
 ```
@@ -672,6 +697,7 @@ Use the Edit tool for 7a/7b/7d (section creation and the Last activity line). 7c
 Stage and commit quick task artifacts. This step MUST always run — even if the executor already committed some files (e.g. when running without worktree isolation). The `gsd_run query commit` command handles already-committed files gracefully.
 
 Build file list:
+
 - `${QUICK_DIR}/${quick_id}-PLAN.md`
 - `${QUICK_DIR}/${quick_id}-SUMMARY.md`
 - `.planning/STATE.md`
@@ -695,6 +721,7 @@ gsd_run query commit "docs(quick-${quick_id}): ${DESCRIPTION}" --files ${file_li
 ```
 
 Get final commit hash:
+
 ```bash
 commit_hash=$(git rev-parse --short HEAD)
 ```
@@ -702,6 +729,7 @@ commit_hash=$(git rev-parse --short HEAD)
 Display completion output:
 
 **If `$VALIDATE_MODE`:**
+
 ```
 ---
 
@@ -720,6 +748,7 @@ Ready for next task: /gsd-quick ${GSD_WS}
 ```
 
 **If NOT `$VALIDATE_MODE`:**
+
 ```
 ---
 
@@ -739,6 +768,7 @@ Ready for next task: /gsd-quick ${GSD_WS}
 </process>
 
 <success_criteria>
+
 - [ ] ROADMAP.md validation passes
 - [ ] User provides task description
 - [ ] `--full`, `--validate`, `--discuss`, and `--research` flags parsed from arguments when present
@@ -754,4 +784,4 @@ Ready for next task: /gsd-quick ${GSD_WS}
 - [ ] (--validate) `${quick_id}-VERIFICATION.md` created by verifier
 - [ ] STATE.md updated with quick task row (Status column when --validate)
 - [ ] Artifacts committed
-</success_criteria>
+      </success_criteria>

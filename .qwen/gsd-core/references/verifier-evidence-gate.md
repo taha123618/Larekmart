@@ -10,7 +10,7 @@ is a pure no-op there.
 Steps 4-7c re-verify at full, unbounded scope on every re-verification pass —
 that is documented, intended design, not the bug. The bug is narrower: Step
 7's `Categorize:` line lets the verifier's own free-form judgment label
-*anything* it believes "prevents goal" a 🛑 Blocker, and Step 9 Rule 1
+_anything_ it believes "prevents goal" a 🛑 Blocker, and Step 9 Rule 1
 promotes any 🛑 Blocker straight into `status: gaps_found` — with no
 distinction between a blocker tied to what the gap-closure round was actually
 supposed to fix and a blocker that is simply a new opinion formed on this
@@ -23,7 +23,7 @@ cycle — with no bound on how many times that could repeat.
 Truths, artifacts, and key links (Steps 3-6) can **never** produce this
 failure mode: Step 0 re-verification mode reuses the must-haves extracted in
 Step 2 verbatim ("Skip to Step 3") rather than re-establishing them, so
-whatever a truth/artifact/link *is* was fixed before this re-verification
+whatever a truth/artifact/link _is_ was fixed before this re-verification
 round started. Only Step 7's blanket per-file scan is unbounded by that
 must-haves contract — which is exactly the mechanism the issue's diagnosis
 names. This gate therefore touches Step 7 only.
@@ -32,7 +32,7 @@ names. This gate therefore touches Step 7 only.
 
 **Self-evidencing blocker (unaffected by this gate).** The debt-marker gate
 (`TBD`/`FIXME`/`XXX` with no `issue #123`/`PR #123`/`#123`/`DEF-*` reference
-on the same line) is the *only* Step 7 category with zero judgment
+on the same line) is the _only_ Step 7 category with zero judgment
 component — a regex match plus the absence of a follow-up reference, nothing
 inferred. Its own textual presence in the file is the deterministic evidence.
 It keeps blocking unconditionally, exactly as before. Do **not** extend this
@@ -66,7 +66,7 @@ which case it is in-contract and blocks unconditionally, evidence or not:
    history is unavailable, ambiguous, or the timestamp can't be parsed,
    treat the file as modified (blocks). The imprecision this trades away
    (a big file with one unrelated hunk touched treats every pattern in it as
-   "new") only ever makes *more* things block, never fewer — consistent with
+   "new") only ever makes _more_ things block, never fewer — consistent with
    `<adversarial_stance>`.
 
 A finding that is neither a carried-forward gap nor on a file modified since
@@ -112,8 +112,8 @@ evidence, not contract-traceability, is the bar. A finding with no
 pre-existing requirement to point at but with a real failing test still
 blocks. Do not implement A/B: that would demote a genuine, reproducible
 defect to advisory purely for being newly discovered, which is exactly the
-deferral this project's no-defer rule forbids. This gate narrows *when a
-blocker needs proof*, not *what counts as in scope*.
+deferral this project's no-defer rule forbids. This gate narrows _when a
+blocker needs proof_, not _what counts as in scope_.
 
 ## Advisory frontmatter
 
@@ -133,9 +133,9 @@ advisory: # Only if new-scope findings lack deterministic evidence (Step 7)
 New-scope findings from Step 7 with no deterministic evidence — reported,
 not blocking, do not revert a completed must-have.
 
-| # | Finding | Category | Why Advisory |
-|---|---------|----------|--------------|
-| 1 | {finding} | {category} | new-scope, no deterministic evidence |
+| #   | Finding   | Category   | Why Advisory                         |
+| --- | --------- | ---------- | ------------------------------------ |
+| 1   | {finding} | {category} | new-scope, no deterministic evidence |
 ```
 
 Include this section (even if empty, stating "None") whenever

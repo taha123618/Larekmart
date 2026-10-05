@@ -174,6 +174,7 @@ After plan-phase completes, verify plans were created. This asks "did initial
 planning write files to disk" — a planner-produced-nothing check, not
 outstanding-work counting — so it takes the PHYSICAL set (`plan_count_all`,
 `status: superseded` INCLUDED, #3218):
+
 ```bash
 PLAN_COUNT=$(gsd_run query find-phase "${PHASE}" | jq -r '.plan_count_all // 0')
 ```
@@ -295,28 +296,31 @@ Run this pass unless `plan_review.source_grounding` is `false`. It verifies ever
 3. **Resolve each remaining symbol** using the effective authority adapter (resolved deterministically — see step 4a):
    - `grep` — ripgrep / Read the source; confirm the name appears as a real declaration.
    - `intel` — consult `.planning/intel/API-SURFACE.md` / `api-map.json` (only when `intel.enabled`).
-   Record one verdict per symbol: **VERIFIED** (quote `file:line`), **MISSING** (adapter can check this language/kind and the symbol is absent), **AMBIGUOUS** (multiple candidates), or **UNCHECKABLE** (adapter cannot analyze this language/kind — e.g. non-JS under `intel`, or any signature under `grep`). Never treat UNCHECKABLE as verified or missing.
-4a. **Resolve effective authority** (deterministic — replaces manual `intel.enabled` reasoning):
+     Record one verdict per symbol: **VERIFIED** (quote `file:line`), **MISSING** (adapter can check this language/kind and the symbol is absent), **AMBIGUOUS** (multiple candidates), or **UNCHECKABLE** (adapter cannot analyze this language/kind — e.g. non-JS under `intel`, or any signature under `grep`). Never treat UNCHECKABLE as verified or missing.
+     4a. **Resolve effective authority** (deterministic — replaces manual `intel.enabled` reasoning):
    ```bash
    EFFECTIVE_AUTHORITY=$(gsd_run drift-guard authority --raw)
    ```
 4. **Severity & gating** — classify each symbol's verdict using the seam (do not apply the table manually):
+
    ```bash
    # For each symbol, e.g.:
    RESULT=$(gsd_run drift-guard severity --status <verdict> --authority "$EFFECTIVE_AUTHORITY")
    # $RESULT is JSON: {"severity":"…","hardBlock":true|false}
    ```
+
    - `hardBlock: true` (HIGH at authority `lsp`/`scip`) — stops the review cycle immediately; do not proceed until the plan author resolves the missing symbol.
    - `hardBlock: false`, severity `needs-acknowledgement` — plan proceeds only if the author confirms the symbol is genuinely new or dynamically resolved, and that acknowledgement is recorded.
    - `AMBIGUOUS` → MEDIUM. `UNCHECKABLE` → INFO.
    - Signature mismatches cannot be asserted under `grep`/`intel`; report the signature as UNCHECKABLE.
+
 5. **Coverage block.** Append a "Verification coverage" section to `REVIEWS.md` listing every UNCHECKABLE/skipped symbol and why — a clean review must never silently mean "nothing was checked."
 
 ### Cross-artifact fact-drift pass (same gate: `plan_review.source_grounding`)
 
-Run this pass whenever the source-grounding pass ran — it is the second axis of the same drift guard, gated by the same `plan_review.source_grounding` key and adding no config surface of its own. Where source-grounding asks *"does this symbol exist in the source?"*, this asks *"does the project state the same fact in two planning artifacts, and do the two disagree?"* Because each phase runs in a fresh context, an agent typically reads only one artifact and trusts it, so a stale duplicate silently steers it wrong.
+Run this pass whenever the source-grounding pass ran — it is the second axis of the same drift guard, gated by the same `plan_review.source_grounding` key and adding no config surface of its own. Where source-grounding asks _"does this symbol exist in the source?"_, this asks _"does the project state the same fact in two planning artifacts, and do the two disagree?"_ Because each phase runs in a fresh context, an agent typically reads only one artifact and trusts it, so a stale duplicate silently steers it wrong.
 
-**Key on knowledge, not on similar text.** DRY is about a single authoritative representation of a piece of *knowledge*. Two passages that merely read alike, or that restate one fact at different levels of detail, are NOT drift. Only a contradiction is.
+**Key on knowledge, not on similar text.** DRY is about a single authoritative representation of a piece of _knowledge_. Two passages that merely read alike, or that restate one fact at different levels of detail, are NOT drift. Only a contradiction is.
 
 1. **Phase status — decided by the seam, not by judgment.** Do not eyeball this axis:
 
@@ -334,22 +338,21 @@ Run this pass whenever the source-grounding pass ran — it is the second axis o
 
 2. **Pair up the remaining facts by judgment.** The authority column names the source of truth, so a finding can say which side to keep:
 
-   | Fact class | Artifact pair | Authority | Decided by |
-   |---|---|---|---|
-   | Success criteria / must-have truths | ROADMAP.md Success Criteria ↔ PLAN.md `must_haves.truths` | ROADMAP.md | judgment |
-   | Requirement IDs | ROADMAP.md `**Requirements:**` ↔ PLAN.md task requirement refs | ROADMAP.md | judgment |
-   | Phase status | STATE.md status ↔ ROADMAP.md phase state | STATE.md | step 1 (deterministic) |
-   | Glossary / domain term | CONTEXT.md `Decisions` ↔ PLAN.md usage of the term | CONTEXT.md | judgment |
+   | Fact class                          | Artifact pair                                                   | Authority  | Decided by             |
+   | ----------------------------------- | --------------------------------------------------------------- | ---------- | ---------------------- |
+   | Success criteria / must-have truths | ROADMAP.md Success Criteria ↔ PLAN.md `must_haves.truths`      | ROADMAP.md | judgment               |
+   | Requirement IDs                     | ROADMAP.md `**Requirements:**` ↔ PLAN.md task requirement refs | ROADMAP.md | judgment               |
+   | Phase status                        | STATE.md status ↔ ROADMAP.md phase state                       | STATE.md   | step 1 (deterministic) |
+   | Glossary / domain term              | CONTEXT.md `Decisions` ↔ PLAN.md usage of the term             | CONTEXT.md | judgment               |
 
 3. **Judge each judgment pair.** FLAG only when ALL THREE hold:
-
-   1. both sides name the *same* fact — same requirement ID, same success criterion, or the same defined term; and
-   2. the two representations *contradict*, one asserting what the other denies, rather than differing in wording or in level of detail; and
+   1. both sides name the _same_ fact — same requirement ID, same success criterion, or the same defined term; and
+   2. the two representations _contradict_, one asserting what the other denies, rather than differing in wording or in level of detail; and
    3. the pair is one of the judgment pairs above.
 
 4. **Record.** Emit each finding into `REVIEWS.md` beside the source-grounding coverage block, quoting both locations and naming the divergence and the authority, so the author can collapse the two copies to a single source of truth.
 
-**Do NOT flag:** a wording-only difference that asserts the same thing; a fact that appears in one artifact only — single-source is the target state, not a finding; a PLAN that ADDS a truth beyond the roadmap Success Criteria, which is sanctioned (plans may add, never subtract); a `lag` verdict from step 1 — two non-terminal statuses a single lifecycle step apart, in either direction, since STATE.md is written at planning time independently of ROADMAP.md and can lead as readily as trail (a disagreement about *completion* is never lag, and step 1 already reports it as `drifted`); anything under CONTEXT.md's `Claude's Discretion` or `Deferred Ideas`, which are non-authoritative by design.
+**Do NOT flag:** a wording-only difference that asserts the same thing; a fact that appears in one artifact only — single-source is the target state, not a finding; a PLAN that ADDS a truth beyond the roadmap Success Criteria, which is sanctioned (plans may add, never subtract); a `lag` verdict from step 1 — two non-terminal statuses a single lifecycle step apart, in either direction, since STATE.md is written at planning time independently of ROADMAP.md and can lead as readily as trail (a disagreement about _completion_ is never lag, and step 1 already reports it as `drifted`); anything under CONTEXT.md's `Claude's Discretion` or `Deferred Ideas`, which are non-authoritative by design.
 
 **Report once, not twice — these belong to `gsd-plan-checker`:** a PLAN that omits a roadmap Success Criterion is scope reduction (Dimension 7b); a requirement ID the ROADMAP never defines is requirement coverage (Dimension 1); two PLAN.md files in one phase disagreeing is cross-plan data contracts (Dimension 9).
 
@@ -359,6 +362,7 @@ Run this pass whenever the source-grounding pass ran — it is the second axis o
 
 After agent returns, verify REVIEWS.md exists. Assign the path directly and quote it — an unquoted
 `${phase_dir}` inside `$(ls …)` word-splits and glob-expands, and a discarded stderr hides it (#3899):
+
 ```bash
 if [ -z "${phase_dir}" ]; then
   echo "ERROR: phase_dir is empty — cannot resolve the expected REVIEWS.md path." >&2
@@ -481,6 +485,7 @@ gsd_run state planned-phase --phase "${PHASE}" --name "${phase_name}" --plans "$
 ```
 
 Display:
+
 ```text
 ### GSD ► CONVERGENCE COMPLETE ✓
 
@@ -501,6 +506,7 @@ Exit — convergence achieved.
 Display: `◆ Cycle {cycle}/{MAX_CYCLES} — {HIGH_COUNT} HIGH, {ACTIONABLE_COUNT} actionable non-HIGH review concerns, {OPEN_CONFLICTS} open plan-revision conflicts found`
 
 **Stall detection:** If `UNRESOLVED_COUNT >= prev_unresolved_count`:
+
 ```text
 ⚠ Convergence stalled — unresolved review concern count not decreasing
   ({UNRESOLVED_COUNT} unresolved concerns, previous cycle had {prev_unresolved_count})
@@ -514,6 +520,7 @@ banner paper over it, so escalation cannot end in the same silent acceptance a H
 concern can. Only "Manual review" is available:
 
 If `TEXT_MODE` is true, present as plain text:
+
 ```text
 Plan convergence did not complete after {MAX_CYCLES} cycles.
 {OPEN_CONFLICTS} open plan-revision conflict(s) remain — these are blockers and cannot be accepted:
@@ -527,11 +534,13 @@ Review the concerns in: {REVIEWS_FILE}
 To replan manually:  /gsd:plan-phase {PHASE} --reviews
 To restart loop:     /gsd:plan-review-convergence {PHASE} {REVIEWER_FLAGS}
 ```
+
 Exit workflow.
 
 **Otherwise (`OPEN_CONFLICTS` == 0):**
 
 If `TEXT_MODE` is true, present as plain-text numbered list:
+
 ```text
 Plan convergence did not complete after {MAX_CYCLES} cycles.
 {HIGH_COUNT} HIGH concerns and {ACTIONABLE_COUNT} actionable non-HIGH concerns remain:
@@ -549,28 +558,40 @@ Enter number:
 ```
 
 Otherwise use AskUserQuestion:
+
 ```js
 AskUserQuestion([
   {
-    question: "Plan convergence did not complete after {MAX_CYCLES} cycles. {HIGH_COUNT} HIGH concerns and {ACTIONABLE_COUNT} actionable non-HIGH concerns remain:\n\n{HIGH_LINES}\n\n{ACTIONABLE_LINES}\n\nHow would you like to proceed?",
+    question:
+      "Plan convergence did not complete after {MAX_CYCLES} cycles. {HIGH_COUNT} HIGH concerns and {ACTIONABLE_COUNT} actionable non-HIGH concerns remain:\n\n{HIGH_LINES}\n\n{ACTIONABLE_LINES}\n\nHow would you like to proceed?",
     header: "Convergence",
     multiSelect: false,
     options: [
-      { label: "Proceed anyway", description: "Accept plans with remaining review concerns and move to execution" },
-      { label: "Manual review", description: "Stop here — review REVIEWS.md and address concerns manually" }
-    ]
-  }
-])
+      {
+        label: "Proceed anyway",
+        description:
+          "Accept plans with remaining review concerns and move to execution",
+      },
+      {
+        label: "Manual review",
+        description:
+          "Stop here — review REVIEWS.md and address concerns manually",
+      },
+    ],
+  },
+]);
 ```
 
 If "Proceed anyway": Display final status and exit.
 If "Manual review":
+
 ```text
 Review the concerns in: {REVIEWS_FILE}
 
 To replan manually:  /gsd:plan-phase {PHASE} --reviews
 To restart loop:     /gsd:plan-review-convergence {PHASE} {REVIEWER_FLAGS}
 ```
+
 Exit workflow.
 
 ### 5d. Replan (Inline)
@@ -592,6 +613,7 @@ After plan-phase completes → go back to **step 5a** (review again).
 </process>
 
 <success_criteria>
+
 - [ ] Config gate checked before running — exits with enable instructions if workflow.plan_review_convergence is false (an explicit `--override-gate` dispatch — how `/gsd:autonomous --converge` invokes this workflow — bypasses it for that run, #4600)
 - [ ] Initial planning via inline Skill("gsd-plan-phase") if no plans exist — NOT wrapped in Agent() (bug #936: depth-1 Agent has no Agent tool)
 - [ ] Review via Agent → Skill("gsd-review") — isolated Agent is correct; gsd-review is a Bash leaf with no sub-agent spawns; {GSD_WS} forwarded
@@ -608,4 +630,4 @@ After plan-phase completes → go back to **step 5a** (review again).
 - [ ] OPEN_CONFLICTS read from REVIEWS.md and evaluated BEFORE the converged branch writes state or prints the banner
 - [ ] Stall detection reported when total unresolved review concern count is not decreasing
 - [ ] STATE.md updated on convergence completion
-</success_criteria>
+      </success_criteria>

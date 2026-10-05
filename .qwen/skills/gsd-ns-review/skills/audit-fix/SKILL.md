@@ -18,11 +18,12 @@ Run an audit, classify findings as auto-fixable vs manual-only, then autonomousl
 auto-fixable issues with test verification and atomic commits.
 
 Flags:
+
 - `--max N` — maximum findings to fix (default: 5)
 - `--severity high|medium|all` — minimum severity to process (default: medium)
 - `--dry-run` — classify findings without fixing (shows classification table)
 - `--source <audit>` — which audit to run (default: audit-uat)
-</objective>
+  </objective>
 
 <execution_context>
 @/Users/taha/projects/microservices-ecommerce/.qwen/gsd-core/workflows/audit-fix.md

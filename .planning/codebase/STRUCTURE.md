@@ -2,6 +2,7 @@
 last_mapped_commit: 056473daac295e995dc34f9bdb56d4d180211c77
 last_mapped_at: 2026-10-02
 ---
+
 # Codebase Structure
 
 **Analysis Date:** 2026-10-02
@@ -54,26 +55,31 @@ microservices-ecommerce/
 ## Directory Purposes
 
 **`apps/`:**
+
 - Purpose: Application entry points and runtime containers
 - Contains: Frontends (Next.js), REST APIs (Node.js/Go/Python), headless workers
 - Key files: `apps/*/Dockerfile`, `apps/*/package.json`, `apps/*/src/index.ts`
 
 **`packages/`:**
+
 - Purpose: Reusable libraries, database clients, contracts, and configs
 - Contains: TypeScript packages shared across `apps/`
 - Key files: `packages/types/src/index.ts`, `packages/kafka/src/index.ts`
 
 **`infrastructure/`:**
+
 - Purpose: Declarative Kubernetes Kustomize manifests and observability configs
 - Key files: `infrastructure/kubernetes/base/kustomization.yaml`, `infrastructure/kubernetes/base/ingress.yaml`
 
 **`scripts/`:**
+
 - Purpose: Monorepo operational tooling, AI skills sync, and Docker Scout security automation
 - Key files: `scripts/docker-scout-audit.sh`, `scripts/sync-skills.js`, `scripts/setup-env.js`
 
 ## Key File Locations
 
 **Entry Points:**
+
 - `apps/client/src/app/page.tsx` - Storefront home page
 - `apps/admin/src/app/page.tsx` - Admin control dashboard
 - `apps/*/src/index.ts` - Microservices Node.js server entrypoints
@@ -81,12 +87,14 @@ microservices-ecommerce/
 - `apps/recommendation-service/main.py` - FastAPI entrypoint
 
 **Configuration:**
+
 - `package.json` - Root monorepo workspace configuration
 - `turbo.json` - Turborepo build pipeline and task dependency graph
 - `docker-compose.yml` - Local multi-container orchestration
 - `docker-compose.observability.yml` - Metrics & logging stack
 
 **Core Logic:**
+
 - `packages/kafka/src/producer.ts` - Kafka event publication
 - `packages/types/src/events/` - Kafka event schemas and contracts
 - `packages/monitoring/src/metrics.ts` - Prometheus application metrics registry
@@ -94,17 +102,20 @@ microservices-ecommerce/
 ## Naming Conventions
 
 **Files:**
+
 - TypeScript modules: `kebab-case.ts` (e.g. `order-service.ts`)
 - React components: `kebab-case.tsx` or `PascalCase.tsx`
 - Documentation & ADRs: `UPPERCASE.md` or `kebab-case.md`
 
 **Directories:**
+
 - Microservices: `apps/<name>-service`
 - Database packages: `packages/<domain>-db`
 
 ## Where to Add New Code
 
 **New Microservice:**
+
 - Location: `apps/<name>-service/`
 - Add to `package.json` workspaces
 - Create Dockerfile with multi-stage non-root build
@@ -112,25 +123,29 @@ microservices-ecommerce/
 - Add route to `infrastructure/kubernetes/base/ingress.yaml`
 
 **New Event Contract / Shared Type:**
+
 - Location: `packages/types/src/events/<event-name>.ts`
 - Export from `packages/types/src/index.ts`
 
 **New Database Schema / Migration:**
+
 - Relational (PostgreSQL): `packages/<domain>-db/prisma/schema.prisma`
 - Document (MongoDB): `packages/<domain>-db/src/models/`
 
 ## Special Directories
 
 **`.planning/`:**
+
 - Purpose: GSD workflow state, project roadmap, and codebase intelligence maps
 - Generated: Managed by GSD CLI
 - Committed: Yes
 
 **`packages/*-db/generated/`:**
+
 - Purpose: Generated Prisma client code
 - Generated: Yes (via `pnpm db:generate`)
 - Committed: No (gitignored)
 
 ---
 
-*Structure analysis: 2026-10-02*
+_Structure analysis: 2026-10-02_

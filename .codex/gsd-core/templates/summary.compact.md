@@ -10,7 +10,8 @@ Template for `.planning/phases/XX-name/{phase}-{plan}-SUMMARY.md` - phase comple
 ---
 phase: XX-name
 plan: YY
-subsystem: [primary category: auth, payments, ui, api, database, infra, testing, etc.]
+subsystem:
+  [primary category: auth, payments, ui, api, database, infra, testing, etc.]
 tags: [searchable tech: jwt, stripe, react, postgres, prisma]
 
 # Dependency graph
@@ -45,7 +46,7 @@ patterns-established:
   - "Pattern 1: description"
   - "Pattern 2: description"
 
-requirements-completed: []  # REQUIRED — Copy ALL requirement IDs from this plan's `requirements` frontmatter field.
+requirements-completed: [] # REQUIRED — Copy ALL requirement IDs from this plan's `requirements` frontmatter field.
 
 # Coverage metadata (#1602) — one entry per shipped deliverable. Drives DETERMINISTIC UAT routing in verify-work.
 # OMIT this whole block for legacy/prose-only SUMMARYs — verify-work then falls back to the ## Accomplishments bullets
@@ -55,10 +56,10 @@ coverage:
     description: "[deliverable in human-readable form — what would have been a prose ## Accomplishments bullet]"
     requirement: "[REQ-ID from this plan's `requirements`, or omit if none]"
     verification:
-      - kind: unit            # unit | integration | e2e | automated_ui | manual_procedural | other
+      - kind: unit # unit | integration | e2e | automated_ui | manual_procedural | other
         ref: "[tests/path.test.ts#test name | playwright:shot.png | command invocation]"
-        status: pass          # pass | fail | unknown — from the latest run
-    human_judgment: false     # REQUIRED boolean. false => may auto-pass IF every verification status is `pass`.
+        status: pass # pass | fail | unknown — from the latest run
+    human_judgment: false # REQUIRED boolean. false => may auto-pass IF every verification status is `pass`.
   - id: D2
     description: "[a deliverable that needs a human to sign off]"
     verification: []
@@ -84,6 +85,7 @@ status: complete
 - **Files modified:** [count]
 
 ## Accomplishments
+
 - [Most important outcome]
 - [Second key accomplishment]
 - [Third if applicable]
@@ -101,10 +103,12 @@ Each task was committed atomically:
 _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
 ## Files Created/Modified
+
 - `path/to/file.ts` - What it does
 - `path/to/another.ts` - What it does
 
 ## Decisions Made
+
 [Key decisions with brief rationale, or "None - followed plan as specified"]
 
 ## Deviations from Plan
@@ -116,6 +120,7 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 ### Auto-fixed Issues
 
 **1. [Rule X - Category] Brief description**
+
 - **Found during:** Task [N] ([task name])
 - **Issue:** [What was wrong]
 - **Fix:** [What was done]
@@ -131,6 +136,7 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 **Impact on plan:** [Brief assessment - e.g., "All auto-fixes necessary for correctness/security. No scope creep."]
 
 ## Issues Encountered
+
 [Problems and how they were resolved, or "None"]
 
 [Note: "Deviations from Plan" documents unplanned work that was handled automatically via deviation rules. "Issues Encountered" documents problems during planned work that required problem-solving.]
@@ -139,6 +145,7 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
 [If USER-SETUP.md was generated:]
 **External services require manual configuration.** See [{phase}-USER-SETUP.md](./{phase}-USER-SETUP.md) for:
+
 - Environment variables to add
 - Dashboard configuration steps
 - Verification commands
@@ -147,12 +154,14 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 None - no external service configuration required.
 
 ## Next Phase Readiness
+
 [What's ready for next phase]
 [Any blockers or concerns]
 
 ---
-*Phase: XX-name*
-*Completed: [date]*
+
+_Phase: XX-name_
+_Completed: [date]_
 ```
 
 <frontmatter_guidance>
@@ -170,23 +179,24 @@ None - no external service configuration required.
 
 **Field semantics:**
 
-| Field | Purpose |
-|---|---|
-| `id` | Stable identifier (`D1`, `D2`…) for cross-referencing from UAT.md and audit reports. Must be unique within the SUMMARY. |
-| `description` | The deliverable in human-readable form — what would have been a prose bullet. |
-| `requirement` | Links back to a REQUIREMENTS.md REQ-ID (joins `requirements-completed`). Optional. |
-| `verification[].kind` | Enum: `unit \| integration \| e2e \| automated_ui \| manual_procedural \| other`. |
-| `verification[].ref` | Test path + descriptor (`file#test name`), Playwright screenshot ref, or command invocation. Required per entry. |
-| `verification[].status` | `pass \| fail \| unknown` — populated from the latest test run. |
-| `human_judgment` | Explicit boolean; REQUIRED. `true` always routes to a human. |
-| `rationale` | REQUIRED when `human_judgment: true`. The audit trail for why automation is insufficient. |
+| Field                   | Purpose                                                                                                                 |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | Stable identifier (`D1`, `D2`…) for cross-referencing from UAT.md and audit reports. Must be unique within the SUMMARY. |
+| `description`           | The deliverable in human-readable form — what would have been a prose bullet.                                           |
+| `requirement`           | Links back to a REQUIREMENTS.md REQ-ID (joins `requirements-completed`). Optional.                                      |
+| `verification[].kind`   | Enum: `unit \| integration \| e2e \| automated_ui \| manual_procedural \| other`.                                       |
+| `verification[].ref`    | Test path + descriptor (`file#test name`), Playwright screenshot ref, or command invocation. Required per entry.        |
+| `verification[].status` | `pass \| fail \| unknown` — populated from the latest test run.                                                         |
+| `human_judgment`        | Explicit boolean; REQUIRED. `true` always routes to a human.                                                            |
+| `rationale`             | REQUIRED when `human_judgment: true`. The audit trail for why automation is insufficient.                               |
 
 **Deterministic contract (what the classifier does):**
+
 - A deliverable auto-passes (no human prompt) **only** when `human_judgment: false` AND `verification` is non-empty AND every `verification[].status` is `pass`. This is the narrow, fully-proven case.
 - **Everything else is presented to a human** — `human_judgment: true`, an empty `verification:`, any non-`pass`/`unknown` status, or any schema error. A false-negative is a redundant prompt (the status quo); a false-positive ships a bug UAT existed to catch.
 - **Fail-safe default:** if you cannot determine coverage for a deliverable, you MUST set `human_judgment: true` with `rationale: "Coverage not determined at authoring time — verifier must classify"`. Never leave a deliverable's `human_judgment` empty, and never set it `false` just to skip the prompt — auto-pass additionally requires a passing `verification` entry, so the flag alone cannot skip the human.
 - `coverage: []` means "no deliverables to classify" (the single-confirmation path). OMITTING the block entirely means "legacy" — `verify-work` falls back to prose `## Accomplishments` extraction unchanged.
-</coverage_guidance>
+  </coverage_guidance>
 
 <one_liner_rules>
 The one-liner MUST be substantive:
@@ -204,6 +214,7 @@ The one-liner should tell someone what actually shipped.
 **One-liner:** Must be substantive. "JWT auth with refresh rotation using jose library" not "Authentication implemented".
 
 **Decisions section:**
+
 - Key decisions made during execution with rationale
 - Extracted to STATE.md accumulated context
 - Use "None - followed plan as specified" if no deviations

@@ -41,6 +41,7 @@ The **Larekmart API Gateway** is the single public HTTP entry point for storefro
 ```
 
 The gateway acts as the **security and routing boundary**:
+
 1. **Request Correlation:** Generates or validates `x-request-id` and sets standard W3C `traceparent` headers.
 2. **Client Header Sanitization:** Removes any client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`).
 3. **Authentication Verification:** Verifies Clerk session tokens, extracts identity claims, and injects trusted identity headers.
@@ -126,41 +127,45 @@ apps/api-gateway/
 
 ## 3. Public Route Mapping Table
 
-| Public Prefix | Target Microservice | Mount / Rewrite | Auth Tier | Timeout |
-| :--- | :--- | :--- | :--- | :--- |
-| `/api/v1/auth/*` | `auth-service` (8003) | `""` | Public | 5,000ms |
-| `/api/v1/catalog/*` | `catalog-service` (8010) | `/api/v1/catalog` | Public | 5,000ms |
-| `/api/v1/products/*` | `product-service` (8000) | `/products` | Public | 5,000ms |
-| `/api/v1/categories/*` | `product-service` (8000) | `/categories` | Public | 5,000ms |
-| `/api/v1/search/*` | `search-service` (8006) | `/api/v1/search` | Public | 3,000ms |
-| `/api/v1/recommendations/*` | `recommendation-service` (8008) | `/api/v1/recommendations` | Public | 6,000ms |
-| `/api/v1/users/*` | `user-service` (8012) | `/api/v1/users` | Authenticated | 5,000ms |
-| `/api/v1/cart/*` | `cart-service` (8009) | `/api/v1/cart` | Authenticated | 5,000ms |
-| `/api/v1/orders/*` | `order-service` (8001) | `/orders` | Authenticated | 10,000ms |
-| `/api/v1/payments/*` | `payment-service` (8002) | `""` | Authenticated | 15,000ms |
-| `/api/v1/inventory/*` | `inventory-service` (8007) | `/api/v1/inventory` | Authenticated | 5,000ms |
-| `/api/v1/shipping/*` | `shipping-service` (8011) | `/api/v1/shipping` | Authenticated | 10,000ms |
-| `/api/v1/tracking/*` | `shipping-service` (8011) | `/api/v1/tracking` | Public | 10,000ms |
-| `/api/v1/notifications/*` | `notification-service` (8005) | `/notifications` (WS) | Authenticated | 5,000ms |
-| `/api/v1/media/*` | `media-service` (8013) | `/api/v1/media` | Public Read | 15,000ms |
-| `/api/v1/admin/media/*` | `media-service` (8013) | `/api/v1/admin/media` | Admin Only | 15,000ms |
-| `/order-chart` | `order-service` (8001) | `/order-chart` | Admin Only | 10,000ms |
-| `/api/v1/analytics/*` | `analytic-service` (8004) | `/analytics` | Admin Only | 5,000ms |
-| `/api/v1/home` | *Gateway Aggregated* | *Internal Fan-out* | Public | 2,500ms |
+| Public Prefix               | Target Microservice             | Mount / Rewrite           | Auth Tier     | Timeout  |
+| :-------------------------- | :------------------------------ | :------------------------ | :------------ | :------- |
+| `/api/v1/auth/*`            | `auth-service` (8003)           | `""`                      | Public        | 5,000ms  |
+| `/api/v1/catalog/*`         | `catalog-service` (8010)        | `/api/v1/catalog`         | Public        | 5,000ms  |
+| `/api/v1/products/*`        | `product-service` (8000)        | `/products`               | Public        | 5,000ms  |
+| `/api/v1/categories/*`      | `product-service` (8000)        | `/categories`             | Public        | 5,000ms  |
+| `/api/v1/search/*`          | `search-service` (8006)         | `/api/v1/search`          | Public        | 3,000ms  |
+| `/api/v1/recommendations/*` | `recommendation-service` (8008) | `/api/v1/recommendations` | Public        | 6,000ms  |
+| `/api/v1/users/*`           | `user-service` (8012)           | `/api/v1/users`           | Authenticated | 5,000ms  |
+| `/api/v1/cart/*`            | `cart-service` (8009)           | `/api/v1/cart`            | Authenticated | 5,000ms  |
+| `/api/v1/orders/*`          | `order-service` (8001)          | `/orders`                 | Authenticated | 10,000ms |
+| `/api/v1/payments/*`        | `payment-service` (8002)        | `""`                      | Authenticated | 15,000ms |
+| `/api/v1/inventory/*`       | `inventory-service` (8007)      | `/api/v1/inventory`       | Authenticated | 5,000ms  |
+| `/api/v1/shipping/*`        | `shipping-service` (8011)       | `/api/v1/shipping`        | Authenticated | 10,000ms |
+| `/api/v1/tracking/*`        | `shipping-service` (8011)       | `/api/v1/tracking`        | Public        | 10,000ms |
+| `/api/v1/notifications/*`   | `notification-service` (8005)   | `/notifications` (WS)     | Authenticated | 5,000ms  |
+| `/api/v1/media/*`           | `media-service` (8013)          | `/api/v1/media`           | Public Read   | 15,000ms |
+| `/api/v1/admin/media/*`     | `media-service` (8013)          | `/api/v1/admin/media`     | Admin Only    | 15,000ms |
+| `/order-chart`              | `order-service` (8001)          | `/order-chart`            | Admin Only    | 10,000ms |
+| `/api/v1/analytics/*`       | `analytic-service` (8004)       | `/analytics`              | Admin Only    | 5,000ms  |
+| `/api/v1/home`              | _Gateway Aggregated_            | _Internal Fan-out_        | Public        | 2,500ms  |
 
 ---
 
 ## 4. Security & Authentication Architecture
 
 ### Header Sanitization
+
 Incoming requests from public clients may attempt to spoof internal identity headers. The gateway strips the following client headers immediately upon arrival:
+
 - `x-user-id`
 - `x-user-role`
 - `x-user-permissions`
 - `x-internal-secret`
 
 ### Trusted Header Propagation
+
 After validating the Clerk session token, the gateway injects trusted headers for downstream consumption:
+
 - `x-request-id`: UUIDv4 request correlation ID.
 - `x-user-id`: Verified Clerk user ID.
 - `x-user-role`: `admin`, `seller`, or `customer`.
@@ -173,15 +178,15 @@ After validating the Clerk session token, the gateway injects trusted headers fo
 
 Configured via Redis distributed sliding window with automatic memory fallback:
 
-| Policy Tier | Limit | Window | Target Routes |
-| :--- | :--- | :--- | :--- |
-| **AUTH** | 15 req | 60 sec | `/api/v1/auth/*` |
-| **PAYMENT** | 20 req | 60 sec | `/api/v1/payments/*`, `/sessions/*` |
-| **CHECKOUT** | 30 req | 60 sec | `/api/v1/checkout/*` |
-| **ADMIN** | 60 req | 60 sec | `/api/v1/admin/*`, `/analytics`, `/order-chart` |
-| **SEARCH** | 120 req | 60 sec | `/api/v1/search/*` |
-| **PUBLIC_READ** | 300 req | 60 sec | `/api/v1/catalog/*`, `/api/v1/products/*` |
-| **DEFAULT** | 100 req | 60 sec | All other API routes |
+| Policy Tier     | Limit   | Window | Target Routes                                   |
+| :-------------- | :------ | :----- | :---------------------------------------------- |
+| **AUTH**        | 15 req  | 60 sec | `/api/v1/auth/*`                                |
+| **PAYMENT**     | 20 req  | 60 sec | `/api/v1/payments/*`, `/sessions/*`             |
+| **CHECKOUT**    | 30 req  | 60 sec | `/api/v1/checkout/*`                            |
+| **ADMIN**       | 60 req  | 60 sec | `/api/v1/admin/*`, `/analytics`, `/order-chart` |
+| **SEARCH**      | 120 req | 60 sec | `/api/v1/search/*`                              |
+| **PUBLIC_READ** | 300 req | 60 sec | `/api/v1/catalog/*`, `/api/v1/products/*`       |
+| **DEFAULT**     | 100 req | 60 sec | All other API routes                            |
 
 ---
 
@@ -196,12 +201,15 @@ Configured via Redis distributed sliding window with automatic memory fallback:
 ## 7. Observability & Health
 
 ### Health Endpoints
+
 - `GET /health`: Process liveness check.
 - `GET /health/live`: Kubernetes / Docker liveness probe.
 - `GET /health/ready`: Readiness probe verifying configuration and Redis availability.
 
 ### Prometheus Metrics
+
 Exposed at `GET /metrics`:
+
 - `gateway_requests_total`: Total incoming requests (labels: `method`, `route`).
 - `gateway_request_duration_seconds`: Request duration histogram.
 - `gateway_request_errors_total`: Gateway error counts.

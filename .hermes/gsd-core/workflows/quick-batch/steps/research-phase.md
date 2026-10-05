@@ -26,6 +26,7 @@ mkdir -p "$ITEM_DIR"
 ```
 
 Display banner:
+
 ```
 ### GSD ► RESEARCHING QUICK BATCH ITEMS
 ◆ Investigating approaches for ${ITEM_COUNT} item(s) (runs in subagents — no output until each returns, ~1–5 min each; expected, not a freeze)

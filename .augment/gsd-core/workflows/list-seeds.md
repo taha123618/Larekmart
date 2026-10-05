@@ -30,6 +30,7 @@ If `count` is 0:
 No seeds found.
 
 Plant one with /gsd:capture --seed "<forward-looking idea>".
+
 ```
 (If a status filter was given and nothing matched, say so: `No seeds with status "<filter>".`) Exit.
 </step>
@@ -38,21 +39,27 @@ Plant one with /gsd:capture --seed "<forward-looking idea>".
 Render the seeds as a table, sorted by `seed_id` (already sorted by the tool). Truncate `trigger_when` and `title` to keep the table readable.
 
 ```
+
 Seeds
 
 ---
-ID        Status     Scope    Trigger                  Title
-SEED-001  dormant    large    when websockets land     Real-time collaboration
-SEED-006  triggered  medium   MILE-04 planning         Remove legacy auth crates
+
+ID Status Scope Trigger Title
+SEED-001 dormant large when websockets land Real-time collaboration
+SEED-006 triggered medium MILE-04 planning Remove legacy auth crates
 
 ---
-<count> seeds  (<summary rendered as "N status" pairs, e.g. "1 dormant, 1 triggered">)
+
+<count> seeds (<summary rendered as "N status" pairs, e.g. "1 dormant, 1 triggered">)
+
 ```
 
 Then offer next actions as plain text (no mutation here):
 ```
-- /gsd:capture --seed --enrich <ID>   enrich a seed with trigger, why, and scope
-- /gsd:capture --list-seeds <status>  filter by status
+
+- /gsd:capture --seed --enrich <ID> enrich a seed with trigger, why, and scope
+- /gsd:capture --list-seeds <status> filter by status
+
 ```
 </step>
 
@@ -65,3 +72,4 @@ Then offer next actions as plain text (no mutation here):
 - [ ] Summary line shows total and per-status counts
 - [ ] No seed files were modified (read-only)
 </success_criteria>
+```

@@ -9,6 +9,7 @@ allowed-tools:
   - conversational prompting
 requires: [phase]
 ---
+
 <objective>
 Archive phase directories from completed milestones into `.planning/milestones/v{X.Y}-phases/`.
 

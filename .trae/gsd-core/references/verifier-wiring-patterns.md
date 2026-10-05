@@ -46,22 +46,22 @@ grep -r -A 3 "<${COMPONENT_NAME}" "${search_path:-src/}" --include="*.tsx" 2>/de
 
 **Data-flow status:**
 
-| Data Source | Produces Real Data | Status |
-| ---------- | ------------------ | ------ |
-| DB query found | Yes | ✓ FLOWING |
-| Fetch exists, static fallback only | No | ⚠️ STATIC |
-| No data source found | N/A | ✗ DISCONNECTED |
-| Props hardcoded empty at call site | No | ✗ HOLLOW_PROP |
+| Data Source                        | Produces Real Data | Status         |
+| ---------------------------------- | ------------------ | -------------- |
+| DB query found                     | Yes                | ✓ FLOWING      |
+| Fetch exists, static fallback only | No                 | ⚠️ STATIC      |
+| No data source found               | N/A                | ✗ DISCONNECTED |
+| Props hardcoded empty at call site | No                 | ✗ HOLLOW_PROP  |
 
 **Final Artifact Status (updated with Level 4):**
 
-| Exists | Substantive | Wired | Data Flows | Status |
-| ------ | ----------- | ----- | ---------- | ------ |
-| ✓ | ✓ | ✓ | ✓ | ✓ VERIFIED |
-| ✓ | ✓ | ✓ | ✗ | ⚠️ HOLLOW — wired but data disconnected |
-| ✓ | ✓ | ✗ | - | ⚠️ ORPHANED |
-| ✓ | ✗ | - | - | ✗ STUB |
-| ✗ | - | - | - | ✗ MISSING |
+| Exists | Substantive | Wired | Data Flows | Status                                  |
+| ------ | ----------- | ----- | ---------- | --------------------------------------- |
+| ✓      | ✓           | ✓     | ✓          | ✓ VERIFIED                              |
+| ✓      | ✓           | ✓     | ✗          | ⚠️ HOLLOW — wired but data disconnected |
+| ✓      | ✓           | ✗     | -          | ⚠️ ORPHANED                             |
+| ✓      | ✗           | -     | -          | ✗ STUB                                  |
+| ✗      | -           | -     | -          | ✗ MISSING                               |
 
 ### Pattern: Component → API
 

@@ -49,12 +49,14 @@ npx @opengsd/gsd-core@latest
 Initialize new project through unified flow.
 
 One command takes you from idea to ready-for-planning:
+
 - Deep questioning to understand what you're building
 - Optional domain research (spawns 4 parallel researcher agents)
 - Requirements definition with v1/v2/out-of-scope scoping
 - Roadmap creation with phase breakdown and success criteria
 
 Creates all `.planning/` artifacts:
+
 - `PROJECT.md` — vision and requirements
 - `config.json` — workflow mode (interactive/yolo)
 - `research/` — domain research (if selected)
@@ -116,7 +118,7 @@ Create detailed execution plan for a specific phase.
 - `--gaps` — focus only on closing gaps from a prior plan-check
 - `--skip-verify` — skip the post-plan verifier loop
 - `--skip-ui` — skip the UI-SPEC gate for a detected frontend phase (not recommended for frontend phases)
-- `--ingest <path-or-glob>` — pre-ingest external ADRs/PRDs/SPECs before planning (see *PRD Express Path* below)
+- `--ingest <path-or-glob>` — pre-ingest external ADRs/PRDs/SPECs before planning (see _PRD Express Path_ below)
 - `--ingest-format <auto|nygard|madr|narrative>` — hint the ADR ingester's parser when `--ingest` is set; defaults to `auto`
 - `--bounce` — run the optional external plan-refinement pass (or set `workflow.plan_bounce: true` to activate by default); requires `workflow.plan_bounce_script`
 - `--skip-bounce` — disable the plan-refinement pass even when `workflow.plan_bounce` config enables it
@@ -145,7 +147,7 @@ Result: Creates `.planning/phases/01-foundation/01-01-PLAN.md`
 **`/gsd-execute-phase <phase-number> [--wave N] [--gaps-only] [--tdd]`**
 Execute all plans in a phase, or run a specific wave.
 
-- `--wave N` — execute only wave N (see *Plans within each wave* below)
+- `--wave N` — execute only wave N (see _Plans within each wave_ below)
 - `--gaps-only` — re-run only plans flagged as gaps by a prior verifier
 - `--tdd` — enforce test-driven order during execution
 
@@ -178,11 +180,13 @@ Usage: `/gsd-progress --do "I want to start a new milestone"`
 Execute small, ad-hoc tasks with GSD guarantees but skip optional agents.
 
 Quick mode uses the same system with a shorter path:
+
 - Spawns planner + executor (skips researcher, checker, verifier by default)
 - Quick tasks live in `.planning/quick/` separate from planned phases
 - Updates STATE.md tracking (not ROADMAP.md)
 
 Flags enable additional quality steps:
+
 - `--full` — Complete quality pipeline: discussion + research + plan-checking + verification
 - `--validate` — Plan-checking (max 2 iterations) and post-execution verification only
 - `--discuss` — Lightweight discussion to surface gray areas before planning
@@ -299,12 +303,13 @@ Check project status and intelligently route to next action.
 - Detects 100% milestone completion
 
 Modes:
+
 - **default** — progress report + intelligent routing
 - **`--next`** — auto-advance to the next logical step (use `--next --force` to bypass safety gates)
 - **`--next --auto`** — like `--next`, but chains steps automatically until milestone completion or a blocking decision
 - **`--next --converge`** — when the next action is planning, route it through `/gsd-plan-review-convergence` instead of `/gsd-plan-phase`; requires `workflow.plan_review_convergence=true`. `--cross-ai` is an alias. Reviewer flags (`--codex`, `--claude`, `--opencode`, `--ollama`, `--lm-studio`, `--llama-cpp`, `--all`) and `--max-cycles N` forward to the convergence loop.
 - **`--forensic`** — append a 6-check integrity audit after the progress report
-- **`--do "<text>"`** — smart router: dispatch freeform intent to the matching `/gsd-*` command (see *Smart Router* above)
+- **`--do "<text>"`** — smart router: dispatch freeform intent to the matching `/gsd-*` command (see _Smart Router_ above)
 
 Usage: `/gsd-progress`
 Usage: `/gsd-progress --next`
@@ -523,6 +528,7 @@ Usage: `/gsd-capture --backlog "real-time notifications when events ship"`
 
 **`/gsd-audit-uat`**
 Cross-phase audit of all outstanding UAT and verification items.
+
 - Scans every phase for pending, skipped, blocked, and human_needed items
 - Cross-references against codebase to detect stale documentation
 - Produces prioritized human test plan grouped by testability
@@ -596,12 +602,12 @@ Usage: `/gsd-cleanup`
 Show GSD command help at the tier you ask for.
 
 - `--brief` — one-liner refresher of the top commands (~10 lines)
-- *(no flag)* — one-page newcomer tour (default)
+- _(no flag)_ — one-page newcomer tour (default)
 - `--full` — the complete reference you are reading now
 - `<topic>` — emit only the matching section (e.g. `/gsd-help debug`, `/gsd-help workflow`)
 - `--brief <topic>` — compact scoped lookup: signature + one-line summary of the matched section
 
-Every topic output starts with a `**Topic:** \`<alias>\` → \`<heading>\` *(scope: full | compact)*` preamble so resolved routing is visible. See `gsd-core/workflows/help/modes/topic.md` for the full alias table. Unknown topics print the recognized list.
+Every topic output starts with a `**Topic:** \`<alias>\` → \`<heading>\` _(scope: full | compact)_`preamble so resolved routing is visible. See`gsd-core/workflows/help/modes/topic.md` for the full alias table. Unknown topics print the recognized list.
 
 Usage: `/gsd-help`
 Usage: `/gsd-help --brief`
@@ -761,19 +767,23 @@ Change anytime by editing `.planning/config.json`
 Configure how planning artifacts are managed in `.planning/config.json`:
 
 **`planning.commit_docs`** (default: `true`)
+
 - `true`: Planning artifacts committed to git (standard workflow)
 - `false`: Planning artifacts kept local-only, not committed
 
 When `commit_docs: false`:
+
 - Add `.planning/` to your `.gitignore`
 - Useful for OSS contributions, client projects, or keeping planning private
 - All planning files still work normally, just not tracked in git
 
 **`planning.search_gitignored`** (default: `false`)
+
 - `true`: Add `--no-ignore` to broad ripgrep searches
 - Only needed when `.planning/` is gitignored and you want project-wide searches to include it
 
 Example config:
+
 ```json
 {
   "planning": {
@@ -843,4 +853,4 @@ Example config:
 - Read `.planning/STATE.md` for current context
 - Check `.planning/ROADMAP.md` for phase status
 - Run `/gsd-progress` to check where you're up to
-</reference>
+  </reference>

@@ -5,6 +5,7 @@ Its compact grammar card below is generated from `src/phase-id-card.cts`; edit
 that module, not this block.
 
 <!-- PHASE-ID-CARD:START -->
+
 ```text
 [GSD.02] 05.03-01
  │   │   │  │   │
@@ -16,6 +17,7 @@ that module, not this block.
 
 milestone = bracket integer; dots = phase-levels; one hyphen = plan; no 'Phase' word, no vX.Y
 ```
+
 <!-- PHASE-ID-CARD:END -->
 
 The display form is `[PROJECT.MM] PP[.SS][-LL]`: the bracket carries the

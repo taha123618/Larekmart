@@ -17,9 +17,11 @@ Read `/Users/taha/projects/microservices-ecommerce/.claude/gsd-core/references/a
 
 <project_context>
 Scan for existing technology signals before the interview:
+
 ```bash
 find . -maxdepth 2 \( -name "package.json" -o -name "pyproject.toml" -o -name "requirements*.txt" \) -not -path "*/node_modules/*" 2>/dev/null | head -5
 ```
+
 Read found files to extract: existing AI libraries, model providers, language, team size signals. This prevents recommending a framework the team has already rejected.
 </project_context>
 
@@ -106,6 +108,7 @@ AskUserQuestion([
   }
 ])
 ```
+
 </interview>
 
 <scoring>
@@ -146,9 +149,11 @@ Display to user:
 ◆ System Type Classified: {system_type}
 ◆ Key Eval Dimensions: {eval_concerns}
 ```
+
 </output_format>
 
 <success_criteria>
+
 - [ ] Codebase scanned for existing framework signals
 - [ ] Interview completed (≤ 6 questions, single AskUserQuestion call)
 - [ ] Hard constraints applied to eliminate incompatible frameworks
@@ -156,4 +161,4 @@ Display to user:
 - [ ] Alternative identified
 - [ ] System type classified
 - [ ] Structured result returned to orchestrator
-</success_criteria>
+      </success_criteria>

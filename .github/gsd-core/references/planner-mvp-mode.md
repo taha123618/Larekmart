@@ -1,26 +1,28 @@
 # Planner — Tracer-First Decomposition (Vertical Slices)
 
-> Loaded by `gsd-planner` for the **default** tracer-first decomposition: every phase LEADS with one thin end-to-end `type="tracer"` slice, then expansion tasks. `--no-tracer` (`TRACER_MODE=false`) restores standard horizontal-layer planning. The MVP enrichment (user-story framing) and Walking Skeleton mode apply *on top* when `MVP_MODE=true` / `WALKING_SKELETON=true`.
+> Loaded by `gsd-planner` for the **default** tracer-first decomposition: every phase LEADS with one thin end-to-end `type="tracer"` slice, then expansion tasks. `--no-tracer` (`TRACER_MODE=false`) restores standard horizontal-layer planning. The MVP enrichment (user-story framing) and Walking Skeleton mode apply _on top_ when `MVP_MODE=true` / `WALKING_SKELETON=true`.
 
 ## Core Rule
 
 **Decompose by feature slice, not by technical layer.** Every task must move the user-facing capability forward. After each task, a real user can click through more of the feature than they could before.
 
 **Forbidden** under tracer-first:
+
 - "Create the database schema" as a standalone task
 - "Build the API layer" as a standalone task
 - "Wire up the UI" as a final integration task
 
 **Required** under tracer-first:
+
 - The leading `tracer` task produces a working end-to-end path — production-quality, not a prototype. Stubs are allowed ONLY where they can later be filled without an architectural change; the happy path must be real.
 - Each subsequent expansion task either adds a new slice OR refines an existing slice (validation, error states, edge cases).
-- *(MVP enrichment, `MVP_MODE=true`)* The phase goal is framed as a user story: "**As a** [user], **I want to** [do X], **so that** [Y]."
+- _(MVP enrichment, `MVP_MODE=true`)_ The phase goal is framed as a user story: "**As a** [user], **I want to** [do X], **so that** [Y]."
 
 ## Task Order Pattern
 
 For a feature `F`:
 
-1. **Tracer slice** — the thinnest end-to-end path (UI form → API endpoint → DB read/write), wired through every layer with a real runnable `<verify>`. This task is always `type="tracer"`; production-quality, not a prototype; stubs only where later-fillable without an architectural change. Under `--tdd` it *also* starts red — its first move is a failing end-to-end test for the happy path of `F`.
+1. **Tracer slice** — the thinnest end-to-end path (UI form → API endpoint → DB read/write), wired through every layer with a real runnable `<verify>`. This task is always `type="tracer"`; production-quality, not a prototype; stubs only where later-fillable without an architectural change. Under `--tdd` it _also_ starts red — its first move is a failing end-to-end test for the happy path of `F`.
 2. **Real data layer** — replace any stubs from the tracer with real queries.
 3. **Validation + error states** — invalid input, network failure, empty states.
 4. **Production polish** — loading indicators, edge cases, accessibility checks.
@@ -44,9 +46,9 @@ When the orchestrator sets `WALKING_SKELETON=true` (Phase 1 of a new project und
 ## Anti-Patterns to Reject
 
 - **Layer cake disguised as slices.** Three "vertical" tasks where Task 1 is "all the schemas", Task 2 is "all the endpoints", Task 3 is "all the UI" — that is horizontal planning with new labels. Reject.
-- **Skeleton bloat.** Walking Skeleton is the *thinnest* working stack, not "Phase 1 of a normal app." If Skeleton has more than ~5 tasks, you are not skeletonizing.
+- **Skeleton bloat.** Walking Skeleton is the _thinnest_ working stack, not "Phase 1 of a normal app." If Skeleton has more than ~5 tasks, you are not skeletonizing.
 - **Premature SPIDR splitting.** SPIDR splitting is the `mvp-phase` command's job (Phase 2 of the PRD), not the planner's. If the phase scope feels too large, surface it via the verification loop, do not split silently.
 
 ## Acceptance Test for Your Plan
 
-Before emitting the plan, ask: **after Task N completes, can a real user *do* something they could not do after Task N-1?** If the answer is "no, but the foundation is laid", you have a horizontal task disguised as a slice. Restructure.
+Before emitting the plan, ask: **after Task N completes, can a real user _do_ something they could not do after Task N-1?** If the answer is "no, but the foundation is laid", you have a horizontal task disguised as a slice. Restructure.

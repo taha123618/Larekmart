@@ -6,7 +6,7 @@ Chunked mode splits the single planner run into a short outline run + N short pe
 runs (~3–5 min each), committing each plan individually for crash resilience. Rerunning
 `/gsd:plan-phase {N} --chunked` resumes from the last committed plan.
 
-For recovering plans from a prior *non-chunked* run, use step 6's "Add more plans" or
+For recovering plans from a prior _non-chunked_ run, use step 6's "Add more plans" or
 proceed to `/gsd:execute-phase` — don't start a fresh chunked run over them.
 
 Set `CHUNKED_PARALLEL` from config, here rather than in `plan-phase.md`, so the two extra
@@ -20,6 +20,7 @@ safe default. `dispatch-capacity` is the same negotiated dispatch-capability que
 `quick-batch-dispatch.cts` already consults (#3673) — a host that declares no `maxConcurrency`
 (reason `missing`/`undocumented`) resolves to the fail-closed floor of `1`, which degrades this
 flag to serial regardless of the config value:
+
 ```bash
 _GSD_SHIM_NAME="gsd-tools.cjs"; _GSD_RUNTIME_ROOT="${RUNTIME_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"; GSD_TOOLS="${_GSD_RUNTIME_ROOT}/gsd-core/bin/${_GSD_SHIM_NAME}"; _gsd_at() { for _p; do if [ -f "$_p" ]; then GSD_TOOLS="$_p"; return 0; fi; done; return 1; }; _gsd_id_ok() { case "$("$1" runtime-identity --raw 2>/dev/null || true)" in '{"packageName":"@opengsd/gsd-core"'*'}') return 0;; *) return 1;; esac; }; _gsd_homes() { _gsd_at "${CLAUDE_CONFIG_DIR:-/Users/taha/projects/microservices-ecommerce/.augment}/gsd-core/bin/${_GSD_SHIM_NAME}" "${HERMES_HOME:-$HOME/.hermes}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CURSOR_CONFIG_DIR:-$HOME/.cursor}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CODEX_HOME:-$HOME/.codex}/gsd-core/bin/${_GSD_SHIM_NAME}" "${GEMINI_CONFIG_DIR:-$HOME/.gemini}/gsd-core/bin/${_GSD_SHIM_NAME}" "${COPILOT_CONFIG_DIR:-$HOME/.copilot}/gsd-core/bin/${_GSD_SHIM_NAME}" "${WINDSURF_CONFIG_DIR:-$HOME/.codeium/windsurf}/gsd-core/bin/${_GSD_SHIM_NAME}" "${AUGMENT_CONFIG_DIR:-$HOME/.augment}/gsd-core/bin/${_GSD_SHIM_NAME}" "${TRAE_CONFIG_DIR:-$HOME/.trae}/gsd-core/bin/${_GSD_SHIM_NAME}" "${QWEN_CONFIG_DIR:-$HOME/.qwen}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CODEBUDDY_CONFIG_DIR:-$HOME/.codebuddy}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CLINE_CONFIG_DIR:-$HOME/.cline}/gsd-core/bin/${_GSD_SHIM_NAME}" "${GROK_AGENTS_HOME:-$HOME/.agents}/gsd-core/bin/${_GSD_SHIM_NAME}" "${ANTIGRAVITY_CONFIG_DIR:-$HOME/.gemini/antigravity}/gsd-core/bin/${_GSD_SHIM_NAME}" "${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}/gsd-core/bin/${_GSD_SHIM_NAME}" "${KILO_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/kilo}/gsd-core/bin/${_GSD_SHIM_NAME}"; }; if _gsd_at "${_GSD_RUNTIME_ROOT}/gsd-core/bin/${_GSD_SHIM_NAME}" "${_GSD_RUNTIME_ROOT}/.claude/gsd-core/bin/${_GSD_SHIM_NAME}" "${_GSD_RUNTIME_ROOT}/.codex/gsd-core/bin/${_GSD_SHIM_NAME}"; then gsd_run() { node "$GSD_TOOLS" "$@"; }; elif _gsd_homes; then gsd_run() { node "$GSD_TOOLS" "$@"; }; elif unset -f gsd_run; _G="$(command -v gsd_run)"; [ -n "$_G" ] && _gsd_id_ok "$_G"; then GSD_TOOLS="$_G"; gsd_run() { "$GSD_TOOLS" "$@"; }; else echo "ERROR: gsd-tools.cjs not found at $GSD_TOOLS and no identity-proving gsd_run is on PATH. Run: npx -y @opengsd/gsd-core@latest --claude --local" >&2; exit 1; fi; GSD_IDENTITY_STATUS=unverified; _gsd_id_ok gsd_run && GSD_IDENTITY_STATUS=ok; export GSD_IDENTITY_STATUS; [ "$GSD_IDENTITY_STATUS" = ok ] || echo "WARNING: \"$GSD_TOOLS\" did not prove it is @opengsd/gsd-core - it is either a different package or an @opengsd/gsd-core older than the runtime-identity verb. See docs/how-to/diagnose-a-foreign-gsd-tools.md" >&2; if [ -n "${CLAUDE_ENV_FILE:-}" ] && [ -n "${GSD_TOOLS:-}" ]; then printf "export PATH='%s':\"\$PATH\"\n" "${GSD_TOOLS%/*}" >> "$CLAUDE_ENV_FILE" 2>/dev/null || true; fi
 CHUNKED_PARALLEL_CFG=$(gsd_run query config-get planning.chunked_parallel --raw 2>/dev/null || echo "false")
@@ -43,6 +44,7 @@ fi
 ```
 
 Display:
+
 ```text
 ◆ Chunked mode: spawning outline planner... (runs in a subagent — no output until it returns, ~1–5 min; expected, not a freeze)
 ```
@@ -51,6 +53,7 @@ Spawn the planner in **outline-only** mode — it must write only the outline ma
 PLAN.md files:
 
 **Dispatch/wait gate — `PLANNER_STALL_DETECTION_ENABLED`:**
+
 - **`true` (default):** use `run_in_background=true` in the Agent() call below, then use `gsd_stall_watch` after it.
 
 ```javascript
@@ -79,6 +82,7 @@ Agent(
 - **`false`:** issue the same Agent() call but omit `run_in_background`; await its ordinary runtime-native completion and consume the real returned result. Skip `gsd_stall_watch` entirely and treat a recognized `## OUTLINE COMPLETE` return exactly like `marker_received`; empty or unrecognized returns keep the existing Retry/Stop path.
 
 Handle return:
+
 - **`marker_received`:** Read `PLAN-OUTLINE.md`, extract plan list. Continue to 8.5.2.
 - **`stalled` / any other return or empty:** Display error. Offer: 1) Retry outline, 2) Stop.
 
@@ -97,6 +101,7 @@ path regardless of `CHUNKED_PARALLEL` — there is nothing to batch.
    row order, deduplicated defensively — a malformed outline naming the same Plan ID twice must
    never produce two concurrent Agent() calls targeting the same `{plan_id}-PLAN.md` output path
    (mirrors `review.md`'s `DISPATCH_SLUGS` dedup, #3034):
+
    ```bash
    # Rewrapped through unquoted command substitution, not consumed as a bare
    # `$WAVE_PLAN_IDS`: bash word-splits an unquoted scalar on IFS by default,
@@ -112,6 +117,7 @@ path regardless of `CHUNKED_PARALLEL` — there is nothing to batch.
      BATCH_PLAN_IDS="$BATCH_PLAN_IDS $PLAN_ID"
    done
    ```
+
    `WAVE_PLAN_IDS` is the space-separated Plan ID list for this Wave, in outline row order — the
    orchestrator (already reading the outline table to extract plan entries, per §8.5.1) populates
    it directly from the table before this block runs.
@@ -121,19 +127,23 @@ path regardless of `CHUNKED_PARALLEL` — there is nothing to batch.
    UNLESS `--reviews` is set, whose purpose is to REPLAN with review feedback (§6), so existing
    plans are overwritten, not skipped (#2762). Unchanged from before this change, applied per entry
    before dispatch rather than immediately before each individual spawn:
+
    ```bash
    PLAN_FILE="${PHASE_DIR}/${plan_id}-PLAN.md"
    if [[ -f "$PLAN_FILE" ]] && head -1 "$PLAN_FILE" | grep -q '^---' && [[ "$ARGUMENTS" != *"--reviews"* ]]; then
      : # resume safety — skip this plan, remove from the batch's runnable set — NOT under --reviews (replan)
    fi
    ```
+
    If every entry in the Wave is resumed (runnable set empty), skip straight to the next Wave —
    nothing to dispatch, nothing to wait on.
 
 3. Display:
+
    ```text
    ◆ Chunked mode: planning {plan_id} ({k}/{N})... (runs in a subagent — no output until it returns, ~1–5 min; expected, not a freeze)
    ```
+
    Serial dispatch (`CHUNKED_PARALLEL` is `false`, or the runnable set has exactly one entry):
    print one line per plan, immediately before that plan's own Agent() call, exactly as before.
    Concurrent dispatch: print one line per plan in the runnable set, immediately before issuing
@@ -144,6 +154,7 @@ path regardless of `CHUNKED_PARALLEL` — there is nothing to batch.
    at a time (serial) or together in one message (concurrent, every call still carrying
    `run_in_background=true` exactly as today when `PLANNER_STALL_DETECTION_ENABLED` is `true`
    (default)):
+
    ```javascript
    Agent(
      prompt="{same planning_context as step 8, plus:}
@@ -161,6 +172,7 @@ path regardless of `CHUNKED_PARALLEL` — there is nothing to batch.
      run_in_background=true
    )
    ```
+
    **Serial dispatch:** issue one Agent() call, wait for it (step 5), verify and commit it
    (steps 6-7), THEN move to the next entry in the runnable set — byte-identical to the
    pre-#3777 loop.
@@ -175,7 +187,6 @@ path regardless of `CHUNKED_PARALLEL` — there is nothing to batch.
    this round has reached `marker_received` or `stalled`. A `stalled` entry falls into step 7's
    Retry/Stop recovery for that one plan; it does not block verifying/committing sibling entries
    in the same batch that already reached `marker_received`.
-
    - **`false`:** when `PLANNER_STALL_DETECTION_ENABLED` is `false`, omit `run_in_background`
      from every call, skip `gsd_stall_watch`, and await each real returned result through the
      ordinary runtime-native completion mechanism. A concurrent batch still issues the runnable
@@ -190,6 +201,7 @@ path regardless of `CHUNKED_PARALLEL` — there is nothing to batch.
    never one combined commit for the batch — preserving crash resilience: an interrupt mid-batch
    leaves every already-verified entry committed, exactly as a mid-loop interrupt did before this
    change.
+
 ```bash
 gsd_run query commit "docs(${PADDED_PHASE}): plan ${plan_id} (chunked)" --files "${PHASE_DIR}/${plan_id}-PLAN.md"
 ```

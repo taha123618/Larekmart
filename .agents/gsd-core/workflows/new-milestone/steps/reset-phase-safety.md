@@ -15,5 +15,6 @@ find .planning/phases -mindepth 1 -maxdepth 1 -type d -exec mv {} "${phase_archi
 Then verify `.planning/phases/` no longer contains old milestone directories before continuing.
 
 If `phase_dir_count > 0` but `phase_archive_path` is missing:
+
 - Stop and explain that reset numbering is unsafe without a completed milestone archive target.
 - Tell the user to complete/archive the previous milestone first, then rerun `/gsd-new-milestone --reset-phase-numbers ${GSD_WS}`.

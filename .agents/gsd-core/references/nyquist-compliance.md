@@ -30,6 +30,7 @@ Skip checks 8a-8d entirely. Report Dimension 8 as FAIL with this single issue.
 ## Check 8a — Automated Verify Presence
 
 For each `<task>` in each plan:
+
 - `<verify>` must contain `<automated>` command, OR a Wave 0 dependency that creates the test
   first
 - If `<automated>` is absent with no Wave 0 dependency → **BLOCKING FAIL**
@@ -39,6 +40,7 @@ For each `<task>` in each plan:
 ## Check 8b — Feedback Latency Assessment
 
 For each `<automated>` command:
+
 - Full E2E suite (playwright, cypress, selenium) → **WARNING** — suggest faster unit/smoke test
 - Watch mode flags (`--watchAll`) → **BLOCKING FAIL**
 - Delays > 30 seconds → **WARNING**
@@ -51,6 +53,7 @@ with `<automated>` verify. 3 consecutive without → **BLOCKING FAIL**.
 ## Check 8d — Wave 0 Completeness
 
 For each `<automated>MISSING</automated>` reference:
+
 - Wave 0 task must exist with matching `<files>` path
 - Wave 0 plan must execute before dependent task
 - Missing match → **BLOCKING FAIL**

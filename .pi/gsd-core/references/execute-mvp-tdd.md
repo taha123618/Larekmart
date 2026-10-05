@@ -19,6 +19,7 @@ For each task gated by TDD, the executor MUST verify (before running the impleme
    ```bash
    gsd_run check tdd-red-evidence <record.json> --raw
    ```
+
    - `RED_EVIDENCE_OK` (reason `target_test_failed`): the TARGET test named by the plan failed on a real assertion — the ONLY verdict that authorizes GREEN.
    - `INVALID_RED` (reasons `unexpected_green`, `zero_tests_discovered`, `nonzero_exit_without_test_failure`, `fixture_or_load_failure`, `no_target_test_failure`, `invalid_record`, `unreadable_record`): the gate trips — halt, fix the RED phase (test identity, fixture, discovery), and re-verify before any implementation step. A `RED:` prefix or `(RED)` tag in the commit message is NOT sufficient evidence on its own.
 3. **No implementation commit yet.** No `feat({phase}-{plan})` commit may exist for the same plan ID before the failing-test commit.
@@ -28,6 +29,7 @@ If any check fails, the gate trips. For check 2, an INVALID_RED verdict (`check 
 ## What "behavior-adding task" means
 
 A task is behavior-adding when:
+
 - Its frontmatter has `tdd="true"` AND
 - Its `<behavior>` block names at least one user-visible outcome (not a config-only or doc-only task) AND
 - Its `<files>` list includes at least one source file (not exclusively docs/tests/config files such as `*.md`, `*.json`, `*.test.*`, `*.spec.*`, `*.yml`, `*.yaml`, `*.toml`, `*.ini`, `.env*`)
@@ -42,18 +44,24 @@ The executor MUST:
 2. Emit a structured halt report:
 
    ```
+
+   ```
+
 ### TDD GATE TRIPPED — Plan {plan_id}, Task {task_id}
 
-   Reason: {missing_red_commit | red_commit_not_failing | feat_before_test | invalid_red}
+Reason: {missing_red_commit | red_commit_not_failing | feat_before_test | invalid_red}
 
-   Behavior expected to be tested:
-   - {first behavior bullet}
+Behavior expected to be tested:
 
-   Required next step:
-   1. Write a failing test for the behavior above.
-   2. Commit it as: test({phase}-{plan}): {short description}
-   3. Re-run /gsd execute-phase
-   ```
+- {first behavior bullet}
+
+Required next step:
+
+1.  Write a failing test for the behavior above.
+2.  Commit it as: test({phase}-{plan}): {short description}
+3.  Re-run /gsd execute-phase
+
+```
 
 3. Exit the current execution wave cleanly. Do NOT roll back any prior commits in the same wave.
 4. Update `STATE.md` with `last_gate_trip: {plan_id}/{task_id}` so the user can resume after writing the test.
@@ -65,7 +73,7 @@ The existing end-of-phase TDD review (in `workflows/execute-phase.md`'s `tdd_rev
 Under TDD mode, escalate this to **blocking**:
 - If any TDD plan is missing a RED or GREEN commit, the executor MUST refuse to mark the phase complete.
 - The user is shown the same review table, but the verdict line reads:
-  > "Phase blocked: {N} TDD plan(s) violate the RED→GREEN gate sequence under TDD. Resolve and re-run /gsd execute-phase, or override with `/gsd execute-phase {phase} --force-mvp-gate` to ship anyway."
+> "Phase blocked: {N} TDD plan(s) violate the RED→GREEN gate sequence under TDD. Resolve and re-run /gsd execute-phase, or override with `/gsd execute-phase {phase} --force-mvp-gate` to ship anyway."
 
 The `--force-mvp-gate` flag is documented but not introduced by this plan — it is the escape hatch the spec mentions; if the user later builds it, the workflow already references the contract.
 
@@ -79,3 +87,4 @@ The `--force-mvp-gate` flag is documented but not introduced by this plan — it
 ## Compatibility with existing TDD discipline
 
 This gate is additive to `gsd-core/references/tdd.md`. Tasks not under TDD mode continue to use the existing advisory TDD discipline (RED/GREEN/REFACTOR commits with end-of-phase review checkpoint). Only the runtime gate and the blocking escalation are new.
+```

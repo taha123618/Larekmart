@@ -66,6 +66,7 @@ Parse `project_exists`, `planning_exists`, `has_git`, `git_worktree_root`, `in_n
 **Absolute path fields (#2376):** INIT also carries `requirements_path`, `roadmap_path`, `state_path`, `intel_dir`, and `conflicts_path` — all anchored on `project_root`, not the orchestrator's own cwd. Use these (not bare `.planning/...` literals) whenever building `<required_reading>`/output paths for a spawned subagent, since that subagent's own cwd may differ from the orchestrator's.
 
 **Auto-detect MODE** if not set:
+
 - `planning_exists: true` → `MODE=merge`
 - `planning_exists: false` → `MODE=new`
 
@@ -82,6 +83,7 @@ git init
 ```
 
 **Detect runtime** using the same pattern as `new-project.md`:
+
 - execution_context path `/.codex/` → `RUNTIME=codex`
 - `/.gemini/antigravity/`, `/.gemini/antigravity-ide/` or `/.gemini/antigravity-cli/` → `RUNTIME=antigravity`
 - `/.opencode/` or `/.config/opencode/` → `RUNTIME=opencode`
@@ -104,7 +106,7 @@ Read `MANIFEST_PATH`. Expected YAML shape:
 docs:
   - path: docs/adr/0001-db.md
     type: ADR
-    precedence: 0   # optional, lower = higher precedence
+    precedence: 0 # optional, lower = higher precedence
   - path: docs/prd/auth.md
     type: PRD
 ```
@@ -156,6 +158,7 @@ Discovered {N} documents:
 **Text mode:** apply the same `--text`/`text_mode` rule as other workflows — replace `AskUserQuestion` with a numbered list.
 
 Use `AskUserQuestion` (approve-revise-abort):
+
 - question: "Proceed with classification of these {N} documents?"
 - header: "Approve?"
 - options: Approve | Revise | Abort
@@ -180,6 +183,7 @@ For each discovered doc, spawn `gsd-doc-classifier` in parallel. In Qwen Code, i
 > **Model omission (#2517).** Omit the `model` parameter entirely when the value it would carry (`CLASSIFIER_MODEL`, `SYNTHESIZER_MODEL`, `ROADMAPPER_MODEL`) is `"inherit"` or empty. An empty value 404s on runtimes without native tier aliases — the default on non-Claude runtimes. Omitting it inherits the orchestrator's model. See @gsd-core/references/model-profile-resolution.md.
 
 Per-spawn prompt fields:
+
 - `FILEPATH` — absolute path to the doc
 - `OUTPUT_DIR` — `{intel_dir}/classifications` (absolute — from `init ingest-docs`; #2376: a spawned classifier's own cwd may differ from the orchestrator's)
 - `MANIFEST_TYPE` — the type from the manifest if present, else omit
@@ -223,6 +227,7 @@ Agent({
 > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Agent() above, stop working on this task immediately. Do not read or synthesize any classified documents independently while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
 The synthesizer writes:
+
 - `.planning/intel/decisions.md`, `.planning/intel/requirements.md`, `.planning/intel/constraints.md`, `.planning/intel/context.md`
 - `.planning/intel/SYNTHESIS.md`
 - `.planning/INGEST-CONFLICTS.md`
@@ -248,6 +253,7 @@ Exit WITHOUT writing PROJECT.md, REQUIREMENTS.md, ROADMAP.md, or STATE.md. The s
 **If WARNINGS > 0 and BLOCKERS = 0:**
 
 Render the report, then ask via AskUserQuestion (approve-revise-abort):
+
 - question: "Review the competing variants above. Resolve manually and proceed, or abort?"
 - header: "Approve?"
 - options: Approve | Abort
@@ -278,6 +284,7 @@ Routing — create the planning setup now?
 ```
 
 Use `AskUserQuestion`:
+
 - question: "Routing — create the planning setup now?"
 - header: "Routing"
 - options: Create planning setup | Keep synthesized intel only | Abort
@@ -328,6 +335,7 @@ Load existing `.planning/ROADMAP.md`, `.planning/PROJECT.md`, `.planning/REQUIRE
 The synthesizer has already hard-blocked on any LOCKED-in-ingest vs LOCKED-in-existing contradiction; if we reach this step, no such blockers remain.
 
 Plan the merge:
+
 - **New requirements** from synthesized `.planning/intel/requirements.md` that do not overlap existing REQUIREMENTS.md entries → append to REQUIREMENTS.md
 - **New decisions** from synthesized `.planning/intel/decisions.md` that do not overlap existing CONTEXT.md `<decisions>` blocks → write to a new phase's CONTEXT.md or append to the next milestone's requirements
 - **New scope** → derive phase additions following the `new-milestone.md` pattern; append phases to `.planning/ROADMAP.md`
@@ -360,6 +368,7 @@ Display completion:
 ```
 
 Show:
+
 - Mode ran (new, new (intel only), or merge)
 - Docs ingested (count + type breakdown)
 - Decisions locked, requirements created, constraints captured
@@ -373,6 +382,7 @@ Show:
 ## Anti-Patterns
 
 Do NOT:
+
 - Violate the shared conflict-engine contract in `gsd-core/references/doc-conflict-engine.md` (no markdown tables, no new severity labels, no bypass of the BLOCKER gate)
 - Write PROJECT.md, REQUIREMENTS.md, ROADMAP.md, or STATE.md when BLOCKERs exist in the conflict report
 - Skip the 50-doc cap — larger sets must use `--manifest` to narrow the scope

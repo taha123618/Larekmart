@@ -15,11 +15,11 @@ allowed-tools:
   - mcp__context7__query-docs
 ---
 
-
 <objective>
 Extract implementation decisions that downstream agents need — researcher and planner will use CONTEXT.md to know what to investigate and what choices are locked.
 
 **How it works:**
+
 1. Load prior context (PROJECT.md, REQUIREMENTS.md, STATE.md, prior CONTEXT.md files)
 2. Scout codebase for reusable assets and patterns
 3. Analyze phase — skip gray areas already decided in prior phases
@@ -34,8 +34,6 @@ Extract implementation decisions that downstream agents need — researcher and 
 Workflow files are loaded on-demand in the <process> section below — not upfront.
 Do not pre-load any workflow files before reading the mode routing instructions.
 </execution_context>
-
-
 
 <context>
 Phase number: $ARGUMENTS (required)
@@ -66,6 +64,7 @@ Read and execute `/Users/taha/projects/microservices-ecommerce/.hermes/gsd-core/
 </process>
 
 <success_criteria>
+
 - Prior context loaded and applied (no re-asking decided questions)
 - Gray areas identified through intelligent analysis
 - User chose which areas to discuss
@@ -73,4 +72,4 @@ Read and execute `/Users/taha/projects/microservices-ecommerce/.hermes/gsd-core/
 - Scope creep redirected to deferred ideas
 - CONTEXT.md captures decisions, not vague vision
 - User knows next steps
-</success_criteria>
+  </success_criteria>

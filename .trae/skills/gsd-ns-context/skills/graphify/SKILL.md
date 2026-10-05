@@ -4,7 +4,6 @@ description: "Build, query, and inspect the project knowledge graph in .planning
 stage: workflow
 ---
 
-
 **STOP -- DO NOT READ THIS FILE. You are already reading it. This prompt was injected into your context by Trae's command system. Using the Read tool on this file wastes tokens. Begin executing Step 0 immediately.**
 
 **CJS-only (graphify):** `graphify` subcommands are not registered on `gsd-tools query`. Use the `gsd_run` launcher shim (defined in each bash block below) or invoke the binary directly: `node <runtime-home>/gsd-core/bin/gsd-tools.cjs graphify …` where `<runtime-home>` is your runtime's config directory (e.g. `~/.trae`, `~/.hermes`, `~/.cursor`). See `docs/CLI-TOOLS.md` for details. Other tooling may still use `gsd-tools query` where a handler exists.
@@ -49,13 +48,13 @@ Then run /gsd-graphify build to create the initial graph.
 
 Parse `{{GSD_ARGS}}` to determine the operation mode:
 
-| Argument | Action |
-|----------|--------|
-| `build` | Run inline build (Step 3) |
-| `query <term>` | Run inline query (Step 2a) |
-| `status` | Run inline status check (Step 2b) |
-| `diff` | Run inline diff check (Step 2c) |
-| No argument or unknown | Show usage message |
+| Argument               | Action                            |
+| ---------------------- | --------------------------------- |
+| `build`                | Run inline build (Step 3)         |
+| `query <term>`         | Run inline query (Step 2a)        |
+| `status`               | Run inline status check (Step 2b) |
+| `diff`                 | Run inline diff check (Step 2c)   |
+| No argument or unknown | Show usage message                |
 
 **Usage message** (shown when no argument or unrecognized argument):
 
@@ -81,6 +80,7 @@ gsd_run graphify query <term>
 ```
 
 Parse the JSON output and display results:
+
 - If the output contains `"disabled": true`, display the disabled message from Step 1 and **STOP**
 - If the output contains `"error"` field, display the error message and **STOP**
 - If no nodes found, display: `No graph matches for '<term>'. Try /gsd-graphify build to create or rebuild the graph.`
@@ -98,6 +98,7 @@ gsd_run graphify status
 ```
 
 Parse the JSON output and display:
+
 - If `exists: false`, display the message field
 - Otherwise show last build time, node/edge/hyperedge counts, and STALE or FRESH indicator
 - If `built_at_commit` is non-null, also display a `Source commit:` line:
@@ -123,6 +124,7 @@ gsd_run graphify diff
 ```
 
 Parse the JSON output and display:
+
 - If `no_baseline: true`, display the message field
 - Otherwise show node and edge change counts (added/removed/changed)
 
@@ -142,6 +144,7 @@ gsd_run graphify build
 ```
 
 Parse the JSON output:
+
 - If `disabled: true`: display the disabled message from Step 1 and **STOP**
 - If `error`: display the error message and **STOP**
 - If `action: "spawn_agent"`: pre-flight passed -- proceed with the inline build below
@@ -169,11 +172,13 @@ graphify update . \
 Do NOT pass `run_in_background: true`. Typical builds complete in 15-60 seconds and the entire chain must run foreground.
 
 If the chain fails (non-zero exit):
+
 - Display: `## GRAPHIFY BUILD FAILED` followed by the captured stderr
 - Do NOT delete `.planning/graphs/` -- the prior valid graph remains available
 - **STOP**
 
 If the chain succeeds:
+
 - Parse the trailing `graphify status` JSON
 - Display: `## GRAPHIFY BUILD COMPLETE` with the node, edge, and hyperedge counts
 

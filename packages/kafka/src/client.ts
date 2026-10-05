@@ -7,10 +7,6 @@ export const createKafkaClient = (service: string) => {
   });
 };
 
-
-
-
-
 // import { Kafka } from "kafkajs";
 
 // /**

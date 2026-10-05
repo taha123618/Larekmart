@@ -1,5 +1,8 @@
 import type { FastifyInstance } from "fastify";
-import { extractOrCreateTraceContext, type TraceContext } from "../observability/tracing.js";
+import {
+  extractOrCreateTraceContext,
+  type TraceContext,
+} from "../observability/tracing.js";
 
 declare module "fastify" {
   interface FastifyRequest {

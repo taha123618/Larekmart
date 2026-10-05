@@ -24,14 +24,11 @@ const Homepage = async () => {
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
     "http://localhost:8080";
 
-  const orderChartData = fetch(
-    `${orderUrl}/order-chart`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  const orderChartData = fetch(`${orderUrl}/order-chart`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-  )
+  })
     .then(async (response) => {
       if (!response.ok) {
         return [] as OrderChartType[];
@@ -54,14 +51,11 @@ const Homepage = async () => {
     })
     .catch(() => [] as AnalyticsDailyChartType[]);
 
-  const summaryAnalyticsData = fetch(
-    `${analyticUrl}/analytics/summary`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  const summaryAnalyticsData = fetch(`${analyticUrl}/analytics/summary`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-  )
+  })
     .then(async (response) => {
       if (!response.ok) return null;
       return (await response.json()) as AnalyticsSummaryType;

@@ -13,17 +13,20 @@ Quickly capture an idea, task, or issue without interrupting current work flow.
 **Item:** $ARGUMENTS (the todo description)
 
 **Flags:**
+
 - `--priority high|medium|low` — Set priority (default: medium)
 
 **Output:**
+
 - `.gsd/TODO.md` — Accumulated todo items
-</context>
+  </context>
 
 <process>
 
 ## 1. Parse Arguments
 
 Extract:
+
 - Todo description
 - Priority (default: medium)
 

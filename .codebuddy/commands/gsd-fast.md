@@ -2,6 +2,7 @@
 description: "Execute a trivial task inline — no subagents, no planning overhead"
 argument-hint: "[task description]"
 ---
+
 <objective>
 Execute a trivial task directly in the current context without spawning subagents
 or generating PLAN.md files. For tasks too small to justify planning overhead:

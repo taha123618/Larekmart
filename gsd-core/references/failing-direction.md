@@ -5,8 +5,8 @@
 **Question:** For each runnable `<automated>` command, does the plan say what output constitutes
 failure?
 
-Checks 8a–8d ask whether an acceptance command is *present*, and Verify Command Path
-Resolvability asks whether its target *resolves*. This one asks whether the command is
+Checks 8a–8d ask whether an acceptance command is _present_, and Verify Command Path
+Resolvability asks whether its target _resolves_. This one asks whether the command is
 **falsifiable at all**. A command with no expressible failure mode is not an acceptance test —
 it reads as rigour and delivers none.
 
@@ -39,17 +39,17 @@ prompt, treat this check as silent (nothing to check) rather than trying to run 
 
 The probe never executes command text (PLAN.md is untrusted, LLM-authored). It is a **presence**
 recognizer: it proves a statement exists and is not a placeholder. It does not judge whether the
-statement names the *right* signal — that judgment is yours, below.
+statement names the _right_ signal — that judgment is yours, below.
 
 ## Process — act on `severity` only
 
-| `severity` | `status` | Action |
-|---|---|---|
-| `blocker` | `missing` | **BLOCKER** — quote the `command` verbatim: it has no stated failing direction |
-| `blocker` | `empty` | **BLOCKER** — a `<fails_when>` is present but blank |
-| `blocker` | `placeholder` | **BLOCKER** — quote the placeholder text; `TBD` is not a failure signal |
-| `warning` | `orphan` | **WARNING** — a `<fails_when>` that follows no command; it satisfies nothing |
-| `none` | `ok` / `sentinel` | silent |
+| `severity` | `status`          | Action                                                                         |
+| ---------- | ----------------- | ------------------------------------------------------------------------------ |
+| `blocker`  | `missing`         | **BLOCKER** — quote the `command` verbatim: it has no stated failing direction |
+| `blocker`  | `empty`           | **BLOCKER** — a `<fails_when>` is present but blank                            |
+| `blocker`  | `placeholder`     | **BLOCKER** — quote the placeholder text; `TBD` is not a failure signal        |
+| `warning`  | `orphan`          | **WARNING** — a `<fails_when>` that follows no command; it satisfies nothing   |
+| `none`     | `ok` / `sentinel` | silent                                                                         |
 
 Rules:
 
@@ -63,8 +63,8 @@ Rules:
 - A non-empty `readError` means the probe **could not look**. Report that as a WARNING in its own
   words; it is not a clean bill of health.
 - **Your added judgment, on `ok` rows only:** a statement that is present, non-empty and
-  non-placeholder can still be vacuous — *"the command fails"*, *"it doesn't work"*, *"an error
-  occurs"* restate the word "failure" without naming an observable signal. Raise those as a
+  non-placeholder can still be vacuous — _"the command fails"_, _"it doesn't work"_, _"an error
+  occurs"_ restate the word "failure" without naming an observable signal. Raise those as a
   **WARNING**, naming what a usable statement looks like (an exit code, a string in the output, a
   missing line). Do **not** escalate a vacuous statement to BLOCKER: the deterministic layer owns
   the blockers so that a BLOCKER is always reproducible, and prose judgment stays advisory.

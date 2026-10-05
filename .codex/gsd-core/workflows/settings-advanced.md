@@ -49,6 +49,7 @@ Parse the following current values. If a key is absent, fall back to the documen
 shown in parentheses:
 
 Planning Tuning:
+
 - `planner.stall_detection_enabled` (default: `true`)
 - `workflow.plan_bounce` (default: `false`)
 - `workflow.plan_bounce_passes` (default: `2`)
@@ -57,36 +58,43 @@ Planning Tuning:
 - `workflow.inline_plan_threshold` (default: `2`)
 
 Execution Tuning:
+
 - `workflow.node_repair` (default: `true`)
 - `workflow.node_repair_budget` (default: `2`)
 - `workflow.auto_prune_state` (default: `false`)
 
 Discussion Tuning:
+
 - `workflow.max_discuss_passes` (default: `3`)
 
 Cross-AI Execution:
+
 - `workflow.cross_ai_execution` (default: `false`)
 - `workflow.cross_ai_command` (default: `null`)
 - `workflow.cross_ai_timeout` (default: `300`)
 
 Git Customization:
+
 - `git.base_branch` (default: `main`)
 - `git.phase_branch_template` (default: `gsd/phase-{phase}-{slug}`)
 - `git.milestone_branch_template` (default: `gsd/{milestone}-{slug}`)
 
 Runtime / Output:
+
 - `response_language` (default: `null`)
 - `context_window` (default: `200000`)
 - `search_gitignored` (default: `false`)
 - `graphify.build_timeout` (default: `300`)
 
 Runtime Model Tiers:
+
 - `runtime` (default: `null` — reads as `"claude"`)
 - `model_profile_overrides.<runtime>.opus` (default: built-in for the runtime, or absent)
 - `model_profile_overrides.<runtime>.sonnet` (default: built-in for the runtime, or absent)
 - `model_profile_overrides.<runtime>.haiku` (default: built-in for the runtime, or absent)
 
 Model Policy:
+
 - `model_policy.provider` (default: `null` — known values: anthropic, anthropic-fable, openai, google, qwen)
 - `model_policy.budget` (default: `null` — known values: high, medium, low)
 - `model_policy.high` (default: `null` — model ID for the high-cost tier; used by generic provider path)
@@ -367,17 +375,17 @@ tier map from the table below. For each tier, also read the current override fro
 
 Built-in tier defaults by runtime:
 
-| Runtime    | `opus`                        | `sonnet`                        | `haiku`                       |
-|------------|-------------------------------|---------------------------------|-------------------------------|
-| `claude`   | `claude-opus-4-8`             | `claude-sonnet-5`             | `claude-haiku-4-5`            |
-| `codex`    | `gpt-5.6-sol`                 | `gpt-5.6-terra`                 | `gpt-5.6-luna`                |
-| `qwen`     | `qwen3-max-2026-01-23`        | `qwen3-coder-plus`              | `qwen3-coder-next`            |
-| `opencode` | `anthropic/claude-opus-4-8`   | `anthropic/claude-sonnet-5`   | `anthropic/claude-haiku-4-5`  |
-| `copilot`  | `claude-opus-4-8`             | `claude-sonnet-5`             | `claude-haiku-4-5`            |
-| `hermes`   | `anthropic/claude-opus-4-8`   | `anthropic/claude-sonnet-5`   | `anthropic/claude-haiku-4-5`  |
-| `kilo`     | `anthropic/claude-opus-4-8`   | `anthropic/claude-sonnet-5`   | `anthropic/claude-haiku-4-5`  |
-| `pi`       | `claude-opus-4-8`             | `claude-sonnet-5`             | `claude-haiku-4-5`            |
-| Group B (`cline`, `cursor`, `windsurf`, `augment`, `trae`, `codebuddy`, `antigravity`) | (no built-in default — your runtime handles model selection) | | |
+| Runtime                                                                                | `opus`                                                       | `sonnet`                    | `haiku`                      |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------- | ---------------------------- |
+| `claude`                                                                               | `claude-opus-4-8`                                            | `claude-sonnet-5`           | `claude-haiku-4-5`           |
+| `codex`                                                                                | `gpt-5.6-sol`                                                | `gpt-5.6-terra`             | `gpt-5.6-luna`               |
+| `qwen`                                                                                 | `qwen3-max-2026-01-23`                                       | `qwen3-coder-plus`          | `qwen3-coder-next`           |
+| `opencode`                                                                             | `anthropic/claude-opus-4-8`                                  | `anthropic/claude-sonnet-5` | `anthropic/claude-haiku-4-5` |
+| `copilot`                                                                              | `claude-opus-4-8`                                            | `claude-sonnet-5`           | `claude-haiku-4-5`           |
+| `hermes`                                                                               | `anthropic/claude-opus-4-8`                                  | `anthropic/claude-sonnet-5` | `anthropic/claude-haiku-4-5` |
+| `kilo`                                                                                 | `anthropic/claude-opus-4-8`                                  | `anthropic/claude-sonnet-5` | `anthropic/claude-haiku-4-5` |
+| `pi`                                                                                   | `claude-opus-4-8`                                            | `claude-sonnet-5`           | `claude-haiku-4-5`           |
+| Group B (`cline`, `cursor`, `windsurf`, `augment`, `trae`, `codebuddy`, `antigravity`) | (no built-in default — your runtime handles model selection) |                             |                              |
 
 Display a table to the user showing the effective configuration:
 
@@ -490,11 +498,13 @@ AskUserQuestion([
 **Step D — Apply the changes:**
 
 For each tier where the user chose "Enter model ID":
+
 ```bash
 gsd_run query config-set model_profile_overrides.<runtime>.<tier> "<model-id>"
 ```
 
 For each tier where the user chose "Clear override", remove the key by setting it to null:
+
 ```bash
 gsd_run query config-set model_profile_overrides.<runtime>.<tier> null
 ```
@@ -677,23 +687,23 @@ AskUserQuestion([
 
 Canonical tier mappings by provider and budget:
 
-| Provider  | Budget | high                       | medium                     | low                        |
-|-----------|--------|----------------------------|----------------------------|----------------------------|
-| anthropic | high   | claude-opus-4-8            | claude-opus-4-8            | claude-sonnet-5          |
-| anthropic | medium | claude-opus-4-8            | claude-sonnet-5          | claude-haiku-4-5           |
-| anthropic | low    | claude-haiku-4-5           | claude-haiku-4-5           | claude-haiku-4-5           |
-| anthropic-fable | high   | claude-fable-5             | claude-fable-5             | claude-sonnet-5          |
-| anthropic-fable | medium | claude-opus-4-8            | claude-sonnet-5          | claude-haiku-4-5           |
-| anthropic-fable | low    | claude-haiku-4-5           | claude-haiku-4-5           | claude-haiku-4-5           |
-| openai    | high   | gpt-5.6-sol                | gpt-5.6-sol                | gpt-5.6-sol                |
-| openai    | medium | gpt-5.6-sol                | gpt-5.6-terra              | gpt-5.6-luna               |
-| openai    | low    | gpt-5.6-luna               | gpt-5.6-luna               | gpt-5.6-luna               |
-| google    | high   | gemini-3.1-pro-preview     | gemini-3.1-pro-preview     | gemini-3.1-pro-preview     |
-| google    | medium | gemini-3.1-pro-preview     | gemini-3-flash             | gemini-2.5-flash-lite      |
-| google    | low    | gemini-2.5-flash-lite      | gemini-2.5-flash-lite      | gemini-2.5-flash-lite      |
-| qwen      | high   | qwen3-max-2026-01-23       | qwen3-max-2026-01-23       | qwen3-max-2026-01-23       |
-| qwen      | medium | qwen3-max-2026-01-23       | qwen3-coder-plus           | qwen3-coder-next           |
-| qwen      | low    | qwen3-coder-next           | qwen3-coder-next           | qwen3-coder-next           |
+| Provider        | Budget | high                   | medium                 | low                    |
+| --------------- | ------ | ---------------------- | ---------------------- | ---------------------- |
+| anthropic       | high   | claude-opus-4-8        | claude-opus-4-8        | claude-sonnet-5        |
+| anthropic       | medium | claude-opus-4-8        | claude-sonnet-5        | claude-haiku-4-5       |
+| anthropic       | low    | claude-haiku-4-5       | claude-haiku-4-5       | claude-haiku-4-5       |
+| anthropic-fable | high   | claude-fable-5         | claude-fable-5         | claude-sonnet-5        |
+| anthropic-fable | medium | claude-opus-4-8        | claude-sonnet-5        | claude-haiku-4-5       |
+| anthropic-fable | low    | claude-haiku-4-5       | claude-haiku-4-5       | claude-haiku-4-5       |
+| openai          | high   | gpt-5.6-sol            | gpt-5.6-sol            | gpt-5.6-sol            |
+| openai          | medium | gpt-5.6-sol            | gpt-5.6-terra          | gpt-5.6-luna           |
+| openai          | low    | gpt-5.6-luna           | gpt-5.6-luna           | gpt-5.6-luna           |
+| google          | high   | gemini-3.1-pro-preview | gemini-3.1-pro-preview | gemini-3.1-pro-preview |
+| google          | medium | gemini-3.1-pro-preview | gemini-3-flash         | gemini-2.5-flash-lite  |
+| google          | low    | gemini-2.5-flash-lite  | gemini-2.5-flash-lite  | gemini-2.5-flash-lite  |
+| qwen            | high   | qwen3-max-2026-01-23   | qwen3-max-2026-01-23   | qwen3-max-2026-01-23   |
+| qwen            | medium | qwen3-max-2026-01-23   | qwen3-coder-plus       | qwen3-coder-next       |
+| qwen            | low    | qwen3-coder-next       | qwen3-coder-next       | qwen3-coder-next       |
 
 Look up the selected (provider, budget) row and proceed to Step E to write those values.
 
@@ -817,11 +827,13 @@ and $gsd-ship runs.
 For common-case toggles (model profile, research/plan_check/verifier, branching strategy,
 UI/AI phase gates), use $gsd-settings.
 ```
+
 </step>
 
 </process>
 
 <success_criteria>
+
 - [ ] Current config read from resolved `$GSD_CONFIG_PATH`
 - [ ] Eight sections rendered (Planning, Execution, Discussion, Cross-AI, Git, Runtime/Output, Runtime Model Tiers, Model Policy)
 - [ ] Every field pre-selected to its current value (or documented default if absent)
@@ -838,4 +850,4 @@ UI/AI phase gates), use $gsd-settings.
 - [ ] Generic-provider path: per-tier manual model IDs; "Keep current" tiers are never written; provider=custom budget=null
 - [ ] model_policy written under the model_policy key in config.json, never as a top-level flat key
 - [ ] Confirmation table rendered listing all fields including model_policy.{provider,budget,high,medium,low}
-</success_criteria>
+      </success_criteria>

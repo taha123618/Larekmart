@@ -47,6 +47,7 @@ of ROADMAP.md:
 **Plans:** 0 plans
 
 Plans:
+
 - [ ] TBD (promote with $gsd-review-backlog when ready)
 ```
 

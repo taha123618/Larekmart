@@ -4,19 +4,25 @@ description: "File a phase artifact into MemPalace; mirror decision facts into i
 ---
 
 <augment_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked when the user mentions `gsd-mempalace-capture` or describes a task matching this skill.
 - Treat all user text after the skill mention as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. User Prompting
+
 When the workflow needs user input, prompt the user conversationally:
+
 - Present options as a numbered list in your response text
 - Ask the user to reply with their choice
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
+
 Use these Augment tools when executing GSD workflows:
+
 - `launch-process` for running commands (terminal operations)
 - `str-replace-editor` for editing existing files
 - `view` for reading files and listing directories
@@ -26,10 +32,12 @@ Use these Augment tools when executing GSD workflows:
 - `add_tasks`, `view_tasklist`, `update_tasks` for task management
 
 ## D. Subagent Spawning
+
 When the workflow needs to spawn a subagent:
+
 - Use the built-in subagent spawning capability
 - Define agent prompts in `.augment/agents/` directory
-</augment_skill_adapter>
+  </augment_skill_adapter>
 
 **STOP -- DO NOT READ THIS FILE. You are already reading it. This prompt was injected into your context by the command system. Using the Read tool on this file wastes tokens. Begin executing Step 0 immediately.**
 
@@ -69,7 +77,7 @@ This step is `onError: skip` at `discuss:post` / `plan:post` / `verify:post` -- 
    - `CONTEXT.md` → `decisions`
    - `PLAN.md` → `planning`
    - `SUMMARY.md` → `milestones`
-   (Confirmed problem→fix pairs go to `problems` — see the `capture-problems` fragment used at `execute:wave:post`.)
+     (Confirmed problem→fix pairs go to `problems` — see the `capture-problems` fragment used at `execute:wave:post`.)
 3. **Wing.** `config.mempalace.wing` if non-empty, else `config.project_code`, else the repo directory name.
 4. **Mode / transport.** Read `config.mempalace.memory_mode`. Prefer MCP (`mempalace_*`) when your MemPalace MCP server is registered and your runtime permits those tools; otherwise use the `mempalace` CLI (covered by this skill's `Bash` allow-tool), as in `mempalace-recall`.
 
@@ -113,7 +121,8 @@ On any error or timeout, stop and let the phase continue -- capture is best-effo
    # capture. The background queue defers the job until the lock frees.
    mempalace mine "$STAGE" --wing <wing> --daemon --background
    ```
-3. **Mirror KG facts** unless `config.mempalace.mirror_kg === false` (registry default is true — an absent key means enabled): extract decision/delivery facts and `mempalace_kg_add` them with `valid_from` = the phase date (e.g. `(<project>, decided, <decision>)` from CONTEXT; `(<phase>, delivered, <capability>)` from SUMMARY). Under `augment` these are an *additive* mirror of GSD's native `.planning/graphs/`. Under `kg_backend`/`replace` the palace KG is the *authoritative* fact store — GSD still produces `.planning/graphs/` through its normal graphify, so an unreachable palace never loses a fact.
+
+3. **Mirror KG facts** unless `config.mempalace.mirror_kg === false` (registry default is true — an absent key means enabled): extract decision/delivery facts and `mempalace_kg_add` them with `valid_from` = the phase date (e.g. `(<project>, decided, <decision>)` from CONTEXT; `(<phase>, delivered, <capability>)` from SUMMARY). Under `augment` these are an _additive_ mirror of GSD's native `.planning/graphs/`. Under `kg_backend`/`replace` the palace KG is the _authoritative_ fact store — GSD still produces `.planning/graphs/` through its normal graphify, so an unreachable palace never loses a fact.
 4. Re-running a phase MUST NOT create duplicate drawers (deterministic ids + `check_duplicate`).
 
 ## Step 4 -- Report

@@ -62,9 +62,7 @@ export const GatewayHealthResponseSchema = z.object({
   timestamp: z.string(),
 });
 
-export type GatewayHealthResponse = z.infer<
-  typeof GatewayHealthResponseSchema
->;
+export type GatewayHealthResponse = z.infer<typeof GatewayHealthResponseSchema>;
 
 /**
  * Standard Gateway Structured Error Response schema.
@@ -76,9 +74,7 @@ export const GatewayErrorResponseSchema = z.object({
   requestId: z.string().optional(),
 });
 
-export type GatewayErrorResponse = z.infer<
-  typeof GatewayErrorResponseSchema
->;
+export type GatewayErrorResponse = z.infer<typeof GatewayErrorResponseSchema>;
 
 /**
  * Gateway Home Aggregation Response schema.
@@ -94,4 +90,3 @@ export const GatewayHomeAggregationResponseSchema = z.object({
 export type GatewayHomeAggregationResponse = z.infer<
   typeof GatewayHomeAggregationResponseSchema
 >;
-

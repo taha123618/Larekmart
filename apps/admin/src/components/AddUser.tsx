@@ -46,17 +46,14 @@ const AddUser = () => {
         process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
         process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
         "http://localhost:8080";
-      const res = await fetch(
-        `${authServiceUrl}/users`,
-        {
-          method: "POST",
-          body: JSON.stringify(data),
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+      const res = await fetch(`${authServiceUrl}/users`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
       if (!res.ok) {
         throw new Error("Failed to create user!");
       }

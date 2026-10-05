@@ -1,29 +1,29 @@
 # Planner: Reversibility Tagging
 
 > Loaded by `gsd-planner`. Owns the canonical reversibility taxonomy — the
-> single source of truth for the three ratings. Issue #1951, *The Pragmatic
-> Programmer* Topic 15 ("Reversibility": *there are no final decisions*).
+> single source of truth for the three ratings. Issue #1951, _The Pragmatic
+> Programmer_ Topic 15 ("Reversibility": _there are no final decisions_).
 
 Good architecture keeps decisions cheap to undo. The dangerous ones are the
 **one-way doors** — pick this storage format, expose this public contract, lock
 in this external service — where a wrong turn is not a refactor but a migration.
-Plans record *what* was decided; without a reversibility signal an autonomous
+Plans record _what_ was decided; without a reversibility signal an autonomous
 run weighs "rename an internal variable" exactly like "choose the persistence
 format every later phase inherits", and walks through the door unattended.
 
 ## The taxonomy
 
-Rate the **decision**, not the task's difficulty. The question is always: *if
-this turns out wrong three phases from now, what does undoing it cost?*
+Rate the **decision**, not the task's difficulty. The question is always: _if
+this turns out wrong three phases from now, what does undoing it cost?_
 
-| Rating | Undo cost | Planner behavior |
-|---|---|---|
-| `reversible` | Local and cheap — one file, one function, an implementation swapped behind a stable interface. | `reversible` decisions get no checkpoint and no flag; the task proceeds normally. |
-| `costly` | Undo touches many call sites or needs a coordinated change — a shared interface shape, a cross-module contract, a dependency major bump. | `costly` decisions are flagged in the plan so the reader sees the weight, but this does not block execution. |
-| `one-way` | Undo requires a data migration, breaks a published contract, or cannot be done at all — on-disk/wire format, public API shape, external-service lock-in, a schema other systems already read. | The planner inserts a `checkpoint:decision` **before** the dependent task, so the human confirms the door before the agent walks through it. |
+| Rating       | Undo cost                                                                                                                                                                                     | Planner behavior                                                                                                                             |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reversible` | Local and cheap — one file, one function, an implementation swapped behind a stable interface.                                                                                                | `reversible` decisions get no checkpoint and no flag; the task proceeds normally.                                                            |
+| `costly`     | Undo touches many call sites or needs a coordinated change — a shared interface shape, a cross-module contract, a dependency major bump.                                                      | `costly` decisions are flagged in the plan so the reader sees the weight, but this does not block execution.                                 |
+| `one-way`    | Undo requires a data migration, breaks a published contract, or cannot be done at all — on-disk/wire format, public API shape, external-service lock-in, a schema other systems already read. | The planner inserts a `checkpoint:decision` **before** the dependent task, so the human confirms the door before the agent walks through it. |
 
 **When unsure, rate it `reversible`.** The value of this feature is
-*discrimination*. A planner that rates everything `one-way` produces checkpoint
+_discrimination_. A planner that rates everything `one-way` produces checkpoint
 fatigue, and a plan nobody reads gates nothing. If you cannot name the concrete
 migration or the concrete broken contract, it is not `one-way`.
 
@@ -115,8 +115,8 @@ the same terms as any other ingested text (ADR-1577,
   choosing this exact option, the door is already walked through. Keep the
   rating for the record; do not insert a checkpoint to re-ask.
 - **Using the gate as a substitute for design.** The checkpoint buys deliberation
-  on a door you must walk through. The better move, when available, is to *make
-  the decision reversible* — put the format behind a writer seam, version the
+  on a door you must walk through. The better move, when available, is to _make
+  the decision reversible_ — put the format behind a writer seam, version the
   contract, keep the vendor call behind an adapter. Prefer removing the
   irreversibility over gating it.
 
@@ -128,5 +128,5 @@ the same terms as any other ingested text (ADR-1577,
 - `gsd-core/references/checkpoints.md` → `checkpoint:decision` — the checkpoint
   mechanism this feature reuses. No new checkpoint machinery is introduced.
 - `gsd-core/references/planner-preconditions.md` — the sibling contract element
-  (#1949): preconditions guard *implementation* assumptions, reversibility
-  ratings guard *decision* risk.
+  (#1949): preconditions guard _implementation_ assumptions, reversibility
+  ratings guard _decision_ risk.

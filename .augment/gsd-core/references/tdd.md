@@ -7,9 +7,11 @@ TDD is about design quality, not coverage metrics. The red-green-refactor cycle 
 </overview>
 
 <when_to_use_tdd>
+
 ## When TDD Improves Quality
 
 **TDD candidates (create a TDD plan):**
+
 - Business logic with defined inputs/outputs
 - API endpoints with request/response contracts
 - Data transformations, parsing, formatting
@@ -19,6 +21,7 @@ TDD is about design quality, not coverage metrics. The red-green-refactor cycle 
 - Utility functions with clear specifications
 
 **Skip TDD (use standard plan with `type="auto"` tasks):**
+
 - UI layout, styling, visual components
 - Configuration changes
 - Glue code connecting existing components
@@ -32,6 +35,7 @@ TDD is about design quality, not coverage metrics. The red-green-refactor cycle 
 </when_to_use_tdd>
 
 <tdd_plan_structure>
+
 ## TDD Plan Structure
 
 Each TDD plan implements **one feature** through the full RED-GREEN-REFACTOR cycle.
@@ -70,11 +74,12 @@ Output: [Working, tested feature]
 </verification>
 
 <success_criteria>
+
 - Failing test written and committed
 - Implementation passes test
 - Refactor complete (if needed)
 - All 2-3 commits present
-</success_criteria>
+  </success_criteria>
 
 <output>
 After completion, create SUMMARY.md with:
@@ -89,9 +94,11 @@ After completion, create SUMMARY.md with:
 </tdd_plan_structure>
 
 <execution_flow>
+
 ## Red-Green-Refactor Cycle
 
 **RED - Write failing test:**
+
 1. Create test file following project conventions
 2. Write test describing expected behavior (from `<behavior>` element)
 3. Run test - it MUST fail **intentionally** (#3770): the TARGET test you named must be the test that fails, on an assertion for the planned behavior. A nonzero exit alone is NOT RED — syntax errors, zero-test discovery, fixture crashes, parser errors, and unrelated assertions are INVALID_RED and must not authorize GREEN.
@@ -100,12 +107,14 @@ After completion, create SUMMARY.md with:
 6. Commit: `test({phase}-{plan}): add failing test for [feature]`
 
 **GREEN - Implement to pass:**
+
 1. Write minimal code to make test pass
 2. No cleverness, no optimization - just make it work
 3. Run test - it MUST pass
 4. Commit: `feat({phase}-{plan}): implement [feature]`
 
 **REFACTOR (if needed):**
+
 1. Clean up implementation if obvious improvements exist
 2. Run tests - MUST still pass
 3. Only commit if changes made: `refactor({phase}-{plan}): clean up [feature]`
@@ -114,32 +123,39 @@ After completion, create SUMMARY.md with:
 </execution_flow>
 
 <test_quality>
+
 ## Good Tests vs Bad Tests
 
 **Test behavior, not implementation:**
+
 - Good: "returns formatted date string"
 - Bad: "calls formatDate helper with correct params"
 - Tests should survive refactors
 
 **One concept per test:**
+
 - Good: Separate tests for valid input, empty input, malformed input
 - Bad: Single test checking all edge cases with multiple assertions
 
 **Descriptive names:**
+
 - Good: "should reject empty email", "returns null for invalid ID"
 - Bad: "test1", "handles error", "works correctly"
 
 **No implementation details:**
+
 - Good: Test public API, observable behavior
 - Bad: Mock internals, test private methods, assert on internal state
-</test_quality>
+  </test_quality>
 
 <framework_setup>
+
 ## Test Framework Setup (If None Exists)
 
 When executing a TDD plan but no test framework is configured, set it up as part of the RED phase:
 
 **1. Detect project type:**
+
 ```bash
 # JavaScript/TypeScript
 if [ -f package.json ]; then echo "node"; fi
@@ -164,11 +180,13 @@ if [ -f Cargo.toml ]; then echo "rust"; fi
 | Rust | cargo test | Built-in |
 
 **3. Create config if needed:**
+
 - Jest: `jest.config.js` with ts-jest preset
 - Vitest: `vitest.config.ts` with test globals
 - pytest: `pytest.ini` or `pyproject.toml` section
 
 **4. Verify setup:**
+
 ```bash
 # Run empty test suite - should pass with 0 tests
 npm test  # Node
@@ -184,6 +202,7 @@ included. Note the gate's pathspec is deliberately **wider than the project type
 detection step above enumerates** — it costs nothing to recognise a convention the
 onboarding flow does not yet auto-detect, and a project using one should not have its
 RED commits go unseen:
+
 - `*.test.*` / `*.spec.*` next to source — JS/TS and anything sharing the convention
 - `__tests__/` directory
 - `tests/` directory at root
@@ -202,37 +221,43 @@ currently-supported case and not part of making other languages visible.
 **Known gap — Rust (#4379).** `#[test]` conventionally lives inside the implementation file, so a
 Rust RED commit touches `src/*.rs` and no path-based gate can distinguish it from ordinary source.
 Widening the pathspec to cover it would match all source and make the gate meaningless. `cargo test`
-works; the RED-*commit* gate cannot see it, so a Rust project using `workflow.tdd_mode` should
+works; the RED-_commit_ gate cannot see it, so a Rust project using `workflow.tdd_mode` should
 expect the gate to trip.
 
 Framework setup is a one-time cost included in the first TDD plan's RED phase.
 </framework_setup>
 
 <error_handling>
+
 ## Error Handling
 
 **Test doesn't fail in RED phase:**
+
 - Feature may already exist - investigate
 - Test may be wrong (not testing what you think)
 - Fix before proceeding
 
 **Test doesn't pass in GREEN phase:**
+
 - Debug implementation
 - Don't skip to refactor
 - Keep iterating until green
 
 **Tests fail in REFACTOR phase:**
+
 - Undo refactor
 - Commit was premature
 - Refactor in smaller steps
 
 **Unrelated tests break:**
+
 - Stop and investigate
 - May indicate coupling issue
 - Fix before proceeding
-</error_handling>
+  </error_handling>
 
 <commit_pattern>
+
 ## Commit Pattern for TDD Plans
 
 TDD plans produce 2-3 atomic commits (one per phase):
@@ -258,30 +283,33 @@ refactor(08-02): extract regex to constant (optional)
 ```
 
 **Comparison with standard plans:**
+
 - Standard plans: 1 commit per task, 2-4 commits per plan
 - TDD plans: 2-3 commits for single feature
 
 Both follow same format: `{type}({phase}-{plan}): {description}`
 
 **Benefits:**
+
 - Each commit independently revertable
 - Git bisect works at commit level
 - Clear history showing TDD discipline
 - Consistent with overall commit strategy
-</commit_pattern>
+  </commit_pattern>
 
 <gate_enforcement>
+
 ## Gate Enforcement Rules
 
 When `workflow.tdd_mode` is enabled in config, the RED/GREEN/REFACTOR gate sequence is enforced for all `type: tdd` plans.
 
 ### Gate Definitions
 
-| Gate | Required | Commit Pattern | Validation |
-|------|----------|---------------|------------|
-| RED | Yes | `test({phase}-{plan}): ...` | Test exists AND fails before implementation — intentionally: `check tdd-red-evidence` returns `RED_EVIDENCE_OK` (target test failed on an assertion for the behavior; anything else is INVALID_RED) |
-| GREEN | Yes | `feat({phase}-{plan}): ...` | Test passes after implementation |
-| REFACTOR | No | `refactor({phase}-{plan}): ...` | Tests still pass after cleanup |
+| Gate     | Required | Commit Pattern                  | Validation                                                                                                                                                                                          |
+| -------- | -------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RED      | Yes      | `test({phase}-{plan}): ...`     | Test exists AND fails before implementation — intentionally: `check tdd-red-evidence` returns `RED_EVIDENCE_OK` (target test failed on an assertion for the behavior; anything else is INVALID_RED) |
+| GREEN    | Yes      | `feat({phase}-{plan}): ...`     | Test passes after implementation                                                                                                                                                                    |
+| REFACTOR | No       | `refactor({phase}-{plan}): ...` | Tests still pass after cleanup                                                                                                                                                                      |
 
 ### Fail-Fast Rules
 
@@ -293,6 +321,7 @@ When `workflow.tdd_mode` is enabled in config, the RED/GREEN/REFACTOR gate seque
 ### Executor Gate Validation
 
 After completing a `type: tdd` plan, the executor validates the git log:
+
 ```bash
 # The commit protocol promises no zero-padding for ${PHASE}/${PLAN} — strip both and
 # match the commit-scope position anchored (#4003). #4619: PHASE may be decimal/
@@ -303,7 +332,7 @@ PHASE_N="$((10#$PHASE_INT))${PHASE_REST//./\\.}"
 PLAN_N=$((10#${PLAN}))
 # Check for RED gate commit
 git log --oneline -E --grep="^test\((0*${PHASE_N})-(0*${PLAN_N})\):" | head -1
-# Check for GREEN gate commit  
+# Check for GREEN gate commit
 git log --oneline -E --grep="^feat\((0*${PHASE_N})-(0*${PLAN_N})\):" | head -1
 # Check for optional REFACTOR gate commit
 git log --oneline -E --grep="^refactor\((0*${PHASE_N})-(0*${PLAN_N})\):" | head -1
@@ -313,6 +342,7 @@ If RED or GREEN gate commits are missing, add a `## TDD Gate Compliance` section
 </gate_enforcement>
 
 <end_of_phase_review>
+
 ## End-of-Phase TDD Review Checkpoint
 
 When `workflow.tdd_mode` is enabled, the execute-phase orchestrator inserts a collaborative review checkpoint after all waves complete but before phase verification.
@@ -344,11 +374,13 @@ This checkpoint is advisory — it does not block phase completion but surfaces 
 </end_of_phase_review>
 
 <context_budget>
+
 ## Context Budget
 
 TDD plans target **~40% context usage** (lower than standard plans' ~50%).
 
 Why lower:
+
 - RED phase: write test, run test, potentially debug why it didn't fail
 - GREEN phase: implement, run test, potentially iterate on failures
 - REFACTOR phase: modify code, run tests, verify no regressions

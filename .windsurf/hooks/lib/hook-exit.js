@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 // hooks/lib/hook-exit.js — hand-written, NOT generated. A tiny hook-facing
 // vocabulary layered over hooks/lib/cli-exit.js's terminateNow (ADR-3889 §3),
 // for the 19 enforcement hooks P7/#3911 is migrating off raw process.exit().
@@ -24,17 +24,17 @@
 // policy terminates via terminateNow('INTERNAL', ...) with a diagnostic
 // payload naming the offending value, so a typo'd/misspelled policy is
 // debuggable on stderr rather than silently reinterpreted as ALLOW or DENY.
-const { terminateNow } = require('./cli-exit.js');
+const { terminateNow } = require("./cli-exit.js");
 
 /** Frozen enum of the two declarable crash policies. No third option. */
 const HOOK_ON_CRASH = Object.freeze({
-  ALLOW: 'allow',
-  DENY: 'deny',
+  ALLOW: "allow",
+  DENY: "deny",
 });
 
 /** Terminate with the hook-protocol PASS outcome (exit 0). */
 function allow(payload) {
-  terminateNow('PASS', payload);
+  terminateNow("PASS", payload);
 }
 
 /**
@@ -47,7 +47,7 @@ function allow(payload) {
  *   written raw, anything else is JSON-stringified.
  */
 function deny(payload, stderrPayload) {
-  terminateNow('HOOK_DENY', payload, stderrPayload);
+  terminateNow("HOOK_DENY", payload, stderrPayload);
 }
 
 /**
@@ -70,8 +70,8 @@ function crash(onCrash, payload) {
   // caller's own outer catch — the fail-open-by-accident defect this module
   // exists to remove). Terminate deterministically with INTERNAL, naming the
   // offending value so a misspelled/omitted policy is diagnosable.
-  terminateNow('INTERNAL', {
-    error: 'hook-exit: crash() called with an unrecognized onCrash policy',
+  terminateNow("INTERNAL", {
+    error: "hook-exit: crash() called with an unrecognized onCrash policy",
     receivedOnCrash: onCrash,
     expectedOneOf: [HOOK_ON_CRASH.ALLOW, HOOK_ON_CRASH.DENY],
     originalPayload: payload,

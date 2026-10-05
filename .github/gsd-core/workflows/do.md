@@ -43,37 +43,37 @@ Track whether `.planning/` exists — some routes require it, others don't.
 
 Evaluate `$ARGUMENTS` against these routing rules. Rules are ordered **most-specific first**: apply the **first matching** rule, and never let a generic keyword rule ("set up", "spike", "review") preempt a more specific operation that also matches ("set up this existing codebase", "wrap up the spike findings", "review the changed source code").
 
-| If the text describes... | Route to | Why |
-|--------------------------|----------|-----|
-| First-time setup for an existing codebase, brownfield onboarding, "onboard this codebase" | `/gsd-onboard` | Safe map → docs ingest → project setup sequence |
-| Starting a new greenfield project, "set up", "initialize" (no existing codebase named) | `/gsd-new-project` | Needs full project initialization |
-| Mapping or analyzing an existing codebase map | `/gsd-map-codebase` | Codebase discovery or refresh |
-| A bug, error, crash, failure, or something broken | `/gsd-debug` | Needs systematic investigation |
-| Wrapping up spikes, "package the spikes", "consolidate spike findings" | `/gsd-spike --wrap-up` | Package spike findings into reusable skill |
-| Wrapping up sketches, "package the designs", "consolidate sketch findings" | `/gsd-sketch --wrap-up` | Package sketch findings into reusable skill |
-| Spiking, "test if", "will this work", "experiment", "prove this out", validate feasibility | `/gsd-spike` | Throwaway experiment to validate feasibility |
-| Sketching, "mockup", "what would this look like", "prototype the UI", "design this", explore visual direction | `/gsd-sketch` | Throwaway HTML mockups to explore design |
-| Reviewing changed source code for bugs, security issues, or code quality ("code review the changes") | `/gsd-code-review` | Source review of phase-changed files |
-| Requesting peer review of phase plans from another AI CLI ("plan review", "review the plan") | `/gsd-review` | Cross-AI plan review |
-| Reviewing or hardening implemented UI ("visual audit", "review the UI") | `/gsd-ui-review` | Retroactive 6-pillar visual audit |
-| Verifying security mitigations of a completed phase ("security check", "secure phase N") | `/gsd-secure-phase` | Retroactive threat-mitigation verification |
-| Auditing milestone completion against original intent ("audit the milestone") | `/gsd-audit-milestone` | Milestone audit against original intent |
-| An autonomous audit-to-fix pass ("audit and fix", "audit the repo and fix what it finds") | `/gsd-audit-fix` | Audit-to-fix pipeline |
-| Generating or updating project documentation ("update the docs", "documentation update") | `/gsd-docs-update` | Docs verified against the codebase |
-| Exploring, researching, comparing, or "how does X work" | `/gsd-explore` | Socratic ideation and idea routing |
-| Discussing vision, "how should X look", brainstorming | `/gsd-discuss-phase` | Needs context gathering |
-| Planning a specific phase or "plan phase N" | `/gsd-plan-phase` | Direct planning request |
-| Executing a phase or "build phase N", "run phase N" (SDD dependency-aware wave execution) | `/gsd-execute-phase` | Direct execution request |
-| Adding, inserting, removing, or editing phases in the roadmap ("multi-phase", roadmap phase management) | `/gsd-phase` | Roadmap phase CRUD |
-| A complex task: refactoring, migration, multi-file architecture, system redesign | `/gsd-plan-phase` | Needs a full phase with plan/build cycle |
-| Running all remaining phases automatically | `/gsd-autonomous` | Full autonomous execution |
-| A review or quality concern about existing work | `/gsd-verify-work` | Needs verification |
-| Checking progress, status, "where am I" | `/gsd-progress` | Status check |
-| Resuming work, "pick up where I left off" | `/gsd-resume-work` | Session restoration |
-| A note, idea, or "remember to..." | `/gsd-capture` | Capture for later |
-| Adding tests, "write tests", "test coverage" | `/gsd-add-tests` | Test generation |
-| Completing a milestone, shipping, releasing | `/gsd-complete-milestone` | Milestone lifecycle |
-| A specific, actionable, small task (add feature, fix typo, update config) | `/gsd-quick` | Self-contained, single executor |
+| If the text describes...                                                                                      | Route to                  | Why                                             |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------- |
+| First-time setup for an existing codebase, brownfield onboarding, "onboard this codebase"                     | `/gsd-onboard`            | Safe map → docs ingest → project setup sequence |
+| Starting a new greenfield project, "set up", "initialize" (no existing codebase named)                        | `/gsd-new-project`        | Needs full project initialization               |
+| Mapping or analyzing an existing codebase map                                                                 | `/gsd-map-codebase`       | Codebase discovery or refresh                   |
+| A bug, error, crash, failure, or something broken                                                             | `/gsd-debug`              | Needs systematic investigation                  |
+| Wrapping up spikes, "package the spikes", "consolidate spike findings"                                        | `/gsd-spike --wrap-up`    | Package spike findings into reusable skill      |
+| Wrapping up sketches, "package the designs", "consolidate sketch findings"                                    | `/gsd-sketch --wrap-up`   | Package sketch findings into reusable skill     |
+| Spiking, "test if", "will this work", "experiment", "prove this out", validate feasibility                    | `/gsd-spike`              | Throwaway experiment to validate feasibility    |
+| Sketching, "mockup", "what would this look like", "prototype the UI", "design this", explore visual direction | `/gsd-sketch`             | Throwaway HTML mockups to explore design        |
+| Reviewing changed source code for bugs, security issues, or code quality ("code review the changes")          | `/gsd-code-review`        | Source review of phase-changed files            |
+| Requesting peer review of phase plans from another AI CLI ("plan review", "review the plan")                  | `/gsd-review`             | Cross-AI plan review                            |
+| Reviewing or hardening implemented UI ("visual audit", "review the UI")                                       | `/gsd-ui-review`          | Retroactive 6-pillar visual audit               |
+| Verifying security mitigations of a completed phase ("security check", "secure phase N")                      | `/gsd-secure-phase`       | Retroactive threat-mitigation verification      |
+| Auditing milestone completion against original intent ("audit the milestone")                                 | `/gsd-audit-milestone`    | Milestone audit against original intent         |
+| An autonomous audit-to-fix pass ("audit and fix", "audit the repo and fix what it finds")                     | `/gsd-audit-fix`          | Audit-to-fix pipeline                           |
+| Generating or updating project documentation ("update the docs", "documentation update")                      | `/gsd-docs-update`        | Docs verified against the codebase              |
+| Exploring, researching, comparing, or "how does X work"                                                       | `/gsd-explore`            | Socratic ideation and idea routing              |
+| Discussing vision, "how should X look", brainstorming                                                         | `/gsd-discuss-phase`      | Needs context gathering                         |
+| Planning a specific phase or "plan phase N"                                                                   | `/gsd-plan-phase`         | Direct planning request                         |
+| Executing a phase or "build phase N", "run phase N" (SDD dependency-aware wave execution)                     | `/gsd-execute-phase`      | Direct execution request                        |
+| Adding, inserting, removing, or editing phases in the roadmap ("multi-phase", roadmap phase management)       | `/gsd-phase`              | Roadmap phase CRUD                              |
+| A complex task: refactoring, migration, multi-file architecture, system redesign                              | `/gsd-plan-phase`         | Needs a full phase with plan/build cycle        |
+| Running all remaining phases automatically                                                                    | `/gsd-autonomous`         | Full autonomous execution                       |
+| A review or quality concern about existing work                                                               | `/gsd-verify-work`        | Needs verification                              |
+| Checking progress, status, "where am I"                                                                       | `/gsd-progress`           | Status check                                    |
+| Resuming work, "pick up where I left off"                                                                     | `/gsd-resume-work`        | Session restoration                             |
+| A note, idea, or "remember to..."                                                                             | `/gsd-capture`            | Capture for later                               |
+| Adding tests, "write tests", "test coverage"                                                                  | `/gsd-add-tests`          | Test generation                                 |
+| Completing a milestone, shipping, releasing                                                                   | `/gsd-complete-milestone` | Milestone lifecycle                             |
+| A specific, actionable, small task (add feature, fix typo, update config)                                     | `/gsd-quick`              | Self-contained, single executor                 |
 
 **Requires `.planning/` directory:** All routes except `/gsd-new-project`, `/gsd-onboard`, `/gsd-map-codebase`, `/gsd-spike`, `/gsd-sketch`, and `/gsd-help`. If the project doesn't exist and the route requires it, suggest `/gsd-onboard` for existing codebases or `/gsd-new-project` for greenfield projects.
 
@@ -86,6 +86,7 @@ Evaluate `$ARGUMENTS` against these routing rules. Rules are ordered **most-spec
 
 Which approach fits better?
 ```
+
 </step>
 
 <step name="display">
@@ -98,6 +99,7 @@ Which approach fits better?
 **Routing to:** {chosen command}
 **Reason:** {one-line explanation}
 ```
+
 </step>
 
 <step name="confirm">
@@ -134,6 +136,7 @@ After invoking the command, stop. The dispatched command handles everything from
 </process>
 
 <success_criteria>
+
 - [ ] Input validated (not empty)
 - [ ] Intent matched to exactly one GSD command
 - [ ] Ambiguity resolved via user question (if needed)
@@ -142,4 +145,4 @@ After invoking the command, stop. The dispatched command handles everything from
 - [ ] Route confirmed by the user before dispatch (REQ-DO-03), with TEXT_MODE equivalent
 - [ ] Command invoked with only the arguments it accepts (argument-hint aware; freeform text only where the command takes a freeform description)
 - [ ] No work done directly — dispatcher only
-</success_criteria>
+      </success_criteria>

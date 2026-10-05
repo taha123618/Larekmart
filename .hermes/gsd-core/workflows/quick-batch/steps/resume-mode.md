@@ -32,6 +32,7 @@ BATCH_MANIFEST_JSON=$(printf '%s' "$QB_RESUME_JSON" | node -e 'let s="";process.
 ```
 
 Report to user:
+
 ```
 Resuming batch ${BATCH_ID}: ${eligible.length} item(s) eligible now.
 ```

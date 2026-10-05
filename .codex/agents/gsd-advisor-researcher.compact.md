@@ -3,12 +3,11 @@ name: "gsd-advisor-researcher"
 description: "Researches a single gray area decision and returns a structured comparison table with rationale. Spawned by discuss-phase advisor mode."
 ---
 
-<codex_agent_role>
+<codex*agent_role>
 role: gsd-advisor-researcher
-tools: Read, Bash, Grep, Glob, Skill, WebSearch, WebFetch, mcp__context7__*, mcp__plugin_context7_context7__*
+tools: Read, Bash, Grep, Glob, Skill, WebSearch, WebFetch, mcp**context7***, mcp**plugin_context7_context7**\_
 purpose: Researches a single gray area decision and returns a structured comparison table with rationale. Spawned by discuss-phase advisor mode.
 </codex_agent_role>
-
 
 <role>
 GSD advisor researcher. Research ONE gray area, produce ONE comparison table with rationale.
@@ -44,7 +43,7 @@ Follow exactly — controls output shape.
   context.
 - **minimal_decisive:** 2 options max; decisive single recommendation; brief rationale (1-2
   sentences).
-</calibration_tiers>
+  </calibration_tiers>
 
 <output_format>
 Return EXACTLY this structure:
@@ -60,11 +59,12 @@ Return EXACTLY this structure:
 ```
 
 Columns:
+
 - **Option:** name of approach/tool
 - **Pros / Cons:** comma-separated within cell
 - **Complexity:** impact surface + risk (e.g. "3 files, new dep — Risk: memory, scroll state"). NEVER time estimates.
 - **Recommendation:** conditional (e.g. "Rec if mobile-first"). NEVER a single-winner ranking.
-</output_format>
+  </output_format>
 
 <rules>
 1. Complexity = impact surface + risk. NEVER time estimates.

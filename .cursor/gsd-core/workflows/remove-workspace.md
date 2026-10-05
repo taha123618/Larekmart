@@ -27,9 +27,9 @@ Parse JSON for: `workspace_name`, `workspace_path`, `has_manifest`, `strategy`, 
 
 First run `/gsd-workspace --list` to show available workspaces, then ask:
 
-
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `{{GSD_ARGS}}` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `conversational prompting` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-Claude runtimes (OpenAI Codex, Antigravity, etc.) where `conversational prompting` is not available.
 Use conversational prompting:
+
 - header: "Remove Workspace"
 - question: "Which workspace do you want to remove?"
 - requireAnswer: true
@@ -56,6 +56,7 @@ Exit. Do NOT proceed.
 ## 3. Confirm Removal
 
 Use conversational prompting:
+
 - header: "Confirm Removal"
 - question: "Remove workspace '$WORKSPACE_NAME' at $WORKSPACE_PATH? This will delete all files in the workspace directory. Type the workspace name to confirm:"
 - requireAnswer: true
@@ -83,6 +84,7 @@ fi
 ```
 
 If any `git worktree remove` fails, stop before deleting the workspace directory:
+
 ```text
 Refusing to delete "$WORKSPACE_PATH" because one or more git worktrees could not be removed.
 Resolve the failed worktree removal manually, then rerun remove-workspace.

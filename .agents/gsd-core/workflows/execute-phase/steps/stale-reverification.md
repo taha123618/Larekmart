@@ -6,6 +6,7 @@ matches, so the report cannot be trusted until the verifier re-runs (#4682). The
 summarized: there is no wave work to do.
 
 Report:
+
 ```
 "Verification is stale — covered source changed after the verifier ran (#4682). Re-running the verifier for this phase."
 ```

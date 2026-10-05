@@ -11,6 +11,7 @@ tools:
   agent: true
   question: true
 ---
+
 <objective>
 Guide the user through MVP-mode planning for a phase. The command:
 
@@ -27,8 +28,6 @@ Phase 1 of the vertical-mvp-slice PRD shipped the planner-side machinery; this c
 @/Users/taha/projects/microservices-ecommerce/.opencode/gsd-core/references/spidr-splitting.md
 @/Users/taha/projects/microservices-ecommerce/.opencode/gsd-core/references/user-story-template.md
 </execution_context>
-
-
 
 <context>
 Phase number: $ARGUMENTS (required — integer or decimal like `2.1`)

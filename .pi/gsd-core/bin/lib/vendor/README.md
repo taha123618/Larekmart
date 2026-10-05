@@ -25,7 +25,7 @@ in-tree instead of depending on it being installed as an npm package.
   (upstream package `js-yaml`, pinned version see `package.json`
   `devDependencies.js-yaml`). ADR-3473 §8.1 (#3881): the single YAML parser
   this repo standardizes on. The `dist` UMD bundle is the vendorable
-  artifact — js-yaml's `exports.require` entry (`index.js`) is *not*
+  artifact — js-yaml's `exports.require` entry (`index.js`) is _not_
   self-contained; `dist/js-yaml.js` loads under `require()`, contains zero
   `require()` calls of its own, and exposes `load`/`dump`/`FAILSAFE_SCHEMA`/
   `YAMLException`.

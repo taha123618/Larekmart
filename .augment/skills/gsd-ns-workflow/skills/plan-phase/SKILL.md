@@ -4,19 +4,25 @@ description: "Create detailed phase plan (PLAN.md) with verification loop"
 ---
 
 <augment_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked when the user mentions `gsd-plan-phase` or describes a task matching this skill.
 - Treat all user text after the skill mention as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. User Prompting
+
 When the workflow needs user input, prompt the user conversationally:
+
 - Present options as a numbered list in your response text
 - Ask the user to reply with their choice
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
+
 Use these Augment tools when executing GSD workflows:
+
 - `launch-process` for running commands (terminal operations)
 - `str-replace-editor` for editing existing files
 - `view` for reading files and listing directories
@@ -26,10 +32,12 @@ Use these Augment tools when executing GSD workflows:
 - `add_tasks`, `view_tasklist`, `update_tasks` for task management
 
 ## D. Subagent Spawning
+
 When the workflow needs to spawn a subagent:
+
 - Use the built-in subagent spawning capability
 - Define agent prompts in `.augment/agents/` directory
-</augment_skill_adapter>
+  </augment_skill_adapter>
 
 <objective>
 Create executable phase prompts (PLAN.md files) for a roadmap phase with integrated research and verification.
@@ -39,6 +47,7 @@ Create executable phase prompts (PLAN.md files) for a roadmap phase with integra
 **Research-only mode (`--research-phase <N>`):** Spawn `gsd-phase-researcher` for phase `N`, write `RESEARCH.md`, then exit before the planner runs. Useful for cross-phase research, doc review before committing to a planning approach, and correction-without-replanning loops where iterating on research alone is dramatically cheaper than re-spawning the planner. Replaces the deleted research-phase command (#3042).
 
 **Research-only modifiers:**
+
 - **No flag** — when `RESEARCH.md` already exists, auto-uses it: emits a one-line notice and exits cleanly, no prompt.
 - **`--research`** — force-refresh: re-spawn the researcher unconditionally, no prompt. Bypasses the existing-RESEARCH.md auto-use path.
 - **`--view`** — view-only: print existing `RESEARCH.md` to stdout. Does not spawn the researcher. Cheapest mode for the correction-without-replanning loop. If no `RESEARCH.md` exists yet, errors with a hint to drop `--view`.
@@ -51,12 +60,11 @@ Create executable phase prompts (PLAN.md files) for a roadmap phase with integra
 @/Users/taha/projects/microservices-ecommerce/.augment/gsd-core/references/ui-brand.md
 </execution_context>
 
-
-
 <context>
 Phase number: {{GSD_ARGS}} (optional — when omitted, the orchestrating workflow reads ROADMAP.md and selects the next unplanned phase; `gsd-tools.cjs` itself has no auto-detect feature and requires an explicit phase number)
 
 **Flags:**
+
 - `--research` — Force re-research even if RESEARCH.md exists
 - `--skip-research` — Skip research, go straight to planning
 - `--gaps` — Gap closure mode (reads VERIFICATION.md, skips research)
@@ -66,7 +74,7 @@ Phase number: {{GSD_ARGS}} (optional — when omitted, the orchestrating workflo
 - `--ingest-format <auto|nygard|madr|narrative>` — Optional ADR parser format override (`auto` default).
 - `--reviews` — Replan incorporating cross-AI review feedback from REVIEWS.md (produced by `/gsd-review`)
 - `--text` — Use plain-text numbered lists instead of TUI menus (required for `/rc` remote sessions)
-- `--mvp` — MVP enrichment on top of the default tracer-first ordering: frames the phase goal as a user story and, on Phase 1 of a new project, also emits `SKELETON.md` (Walking Skeleton). Vertical slicing itself is now the default (see `--no-tracer`); `--mvp` no longer *turns it on*. Can be persisted on a phase via `**Mode:** mvp` in ROADMAP.md.
+- `--mvp` — MVP enrichment on top of the default tracer-first ordering: frames the phase goal as a user story and, on Phase 1 of a new project, also emits `SKELETON.md` (Walking Skeleton). Vertical slicing itself is now the default (see `--no-tracer`); `--mvp` no longer _turns it on_. Can be persisted on a phase via `**Mode:** mvp` in ROADMAP.md.
 - `--no-tracer` — Opt out of the default **tracer-first** decomposition and plan horizontal layers (the legacy default). By default every plan LEADS with one production-quality end-to-end `tracer` slice that is verified before any expansion task.
 - `--no-reversibility-gates` — Suppress the human checkpoint that a **one-way-door** decision normally earns, for runs you intend to leave unattended. By default a decision rated `one-way` (undo needs a migration, breaks a published contract, or is impossible) gets a `checkpoint:decision` before the task implementing it. Ratings are still recorded on tasks and `costly` items still flagged — the flag changes what stops the run, not what the plan remembers.
 

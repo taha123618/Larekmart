@@ -69,6 +69,7 @@ The remaining lanes (`claude`, `codex`, `coderabbit`, `qwen`, `cursor`)
 do not require jq and must stay selectable on a jq-less host.
 
 Parse flags from `{{GSD_ARGS}}`:
+
 - `--claude` → include Claude
 - `--codex` → include Codex
 - `--coderabbit` → include CodeRabbit
@@ -84,6 +85,7 @@ Parse flags from `{{GSD_ARGS}}`:
 - No flags → if `review.default_reviewers` is set, include only configured reviewers that are detected; otherwise include all available
 
 Reviewer-selection precedence:
+
 1. Individual reviewer flags (`--claude`, `--codex`, etc.)
 2. `--all`
 3. `review.default_reviewers`
@@ -96,11 +98,12 @@ when other named lanes did run. Do not proceed with a thinner reviewer set and r
 review. This applies however the lane became unavailable — binary missing, prerequisite `jq`
 absent, or a local server not reachable.
 
-The asymmetry is deliberate: *not finding a lane nobody asked for is normal; failing to run a
-lane somebody asked for is an error.* A user who wants "whatever is available" has `--all`; a
+The asymmetry is deliberate: _not finding a lane nobody asked for is normal; failing to run a
+lane somebody asked for is an error._ A user who wants "whatever is available" has `--all`; a
 user who wants a preferred set has `review.default_reviewers`. Both stay lenient below.
 
 `review.default_reviewers` behavior:
+
 - Value must be a non-empty array of slug strings (configured via `gsd config-set review.default_reviewers '["codex","claude"]'`)
 - Unknown slugs warn and are ignored
 - Known-but-undetected slugs emit an info note and are ignored — a configured default is a
@@ -110,6 +113,7 @@ user who wants a preferred set has `review.default_reviewers`. Both stay lenient
 If `section_manifest` is `null` or `"reviewer-instances-note-1"` is in its `included` list: read and execute `gsd-core/workflows/review/steps/reviewer-instances-note-1.md`. Otherwise skip — do not read the file.
 
 If no CLIs are available:
+
 ```
 No external AI CLIs found. Install at least one:
 - codex: https://github.com/openai/codex
@@ -121,6 +125,7 @@ No external AI CLIs found. Install at least one:
 
 Then run /gsd-review again.
 ```
+
 Exit.
 
 Determine which CLI to skip based on the current runtime environment:
@@ -144,11 +149,12 @@ fi
 ```
 
 Rules:
+
 - If `SELF_CLI="none"` → invoke ALL available CLIs (no skip)
 - If `SELF_CLI="claude"` → skip claude, use codex/antigravity
 - If `SELF_CLI="auto"` → the executing AI identifies itself and skips its own CLI
 - At least one DIFFERENT CLI must be available for the review to proceed.
-</step>
+  </step>
 
 <step name="gather_context">
 Collect phase artifacts for the review prompt:
@@ -172,13 +178,14 @@ re-run `mktemp -d` later — every block must resolve to this same directory, or
 `build_prompt`'s writes and `invoke_reviewers`' reads split.
 
 Then read:
+
 1. `.planning/PROJECT.md` (first 80 lines — project context)
 2. Phase section from `.planning/ROADMAP.md`
 3. All `*-PLAN.md` files in the phase directory
 4. `*-CONTEXT.md` if present (user decisions)
 5. `*-RESEARCH.md` if present (domain research)
 6. `.planning/REQUIREMENTS.md` (requirements this phase addresses)
-</step>
+   </step>
 
 <step name="build_prompt">
 Build a structured review prompt:
@@ -190,28 +197,36 @@ You are reviewing implementation plans for a software project phase.
 Provide structured feedback on plan quality, completeness, and risks.
 
 ## Project Context
+
 {first 80 lines of PROJECT.md}
 
 ## Phase {N}: {phase name}
+
 ### Roadmap Section
+
 {roadmap phase section}
 
 ### Requirements Addressed
+
 {requirements for this phase}
 
 ### User Decisions (CONTEXT.md)
+
 {context if present}
 
 ### Research Findings
+
 {research if present}
 
 ### Plans to Review
+
 For each `*-PLAN.md` in the phase directory, in glob order, include its full content preceded by a `####` header carrying the plan's **repo-relative path** (e.g. `#### .planning/phases/<phase>/<NN>-PLAN.md`). The path header is the citable anchor for findings about the plan itself — cite it as `<repo-relative plan path>:<line>` (name the heading in prose beside the citation if it helps the reader); reserve `path:line` for repo files the plan references.
 {per-plan: `#### <repo-relative plan path>` + full plan contents}
 
 ## Review Instructions
 
 **Verify against source — do not review the plan text in isolation.** The plans reference real files, migrations, routes, and tests in this repo.
+
 1. Open the referenced files and check each claim against the actual code.
 2. For every strength or concern, cite concrete `path/to/file:line` evidence plus the mechanism.
 3. When a plan asserts a mechanism works (a guard, a query filter, a test that exercises a path), trace whether it actually does what is claimed — do not take the plan's word for it.
@@ -235,6 +250,7 @@ Analyze each plan and provide:
 5. **Risk Assessment** — Overall risk level (LOW/MEDIUM/HIGH) with justification
 
 Focus on:
+
 - Missing edge cases or error handling
 - Dependency ordering issues
 - Scope creep or over-engineering
@@ -353,9 +369,9 @@ a bespoke block here.
 **Effort and model resolution (#4255).** A lane's reasoning effort and model each resolve through
 their own declared key, and the resolution order is inspectable rather than implicit:
 
-| piece | order, highest first |
-|---|---|
-| model | pinned reviewer-instance `--model` → the lane's `modelConfigKey` (`review.models.<slug>`) → the CLI's own default |
+| piece  | order, highest first                                                                                                                                      |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| model  | pinned reviewer-instance `--model` → the lane's `modelConfigKey` (`review.models.<slug>`) → the CLI's own default                                         |
 | effort | the lane's `effortConfigKey` (`review.effort.<slug>`) → the lane's declared `defaultEffort` → **nothing emitted**, so the CLI's own configuration applies |
 
 Both come from the LANE. Effort in particular is never read from an agent's execution settings:
@@ -378,7 +394,7 @@ than diagnosing a CLI or sandbox failure. A cross-AI review that silently drops 
 one eye.
 
 **No hook-trust bypass (#2479):** no lane passes a hook-trust bypass flag and none runs a capability
-probe for one. That flag only bypasses *persisted* hook trust (a first-run condition) and flagless
+probe for one. That flag only bypasses _persisted_ hook trust (a first-run condition) and flagless
 invocations work in steady state, while host-harness safety classifiers deny commands carrying it.
 An environment that genuinely hits an untrusted-hook prompt surfaces through the `.err` capture and
 the empty-output stub as a dropped lane with diagnosable stderr, not silent attrition. Do not
@@ -390,7 +406,7 @@ Lanes run **sequentially by default** — concurrent invocation trips provider r
 lost to one is a cross-AI review that quietly went blind in one eye. A project whose providers can
 accept the concurrency opts in with `review.parallel_lanes: true` (#3034): the selected lanes are
 dispatched together and **all** joined before aggregation. The default is unchanged, and convergence
-cycles stay sequential either way — only the lanes *within* one pass overlap.
+cycles stay sequential either way — only the lanes _within_ one pass overlap.
 
 ```bash
 # #2962: zsh aborts the block on an unmatched for-list glob (nomatch); bash passes it through. nullglob both.
@@ -551,12 +567,14 @@ was consented to send plans to one destination and `.planning/config.json` now n
 blocked, not silently redirected** (ADR-2782 D5).
 
 Display progress:
+
 ```
 ### GSD ► CROSS-AI REVIEW — Phase {N}
 
 ◆ Reviewing with {CLI}... done ✓
 ◆ Reviewing with {CLI}... done ✓
 ```
+
 </step>
 
 <step name="write_reviews">
@@ -618,7 +636,7 @@ fi
   their `.err`/stub files preserved under `.review-diagnostics/` by `present_results`) and stop.
 - **Otherwise** (at least one lane produced a result — R1, unchanged): proceed exactly as below.
 
-**#3301: plan coverage check.** For each dispatched lane that produced a *real* review (not a
+**#3301: plan coverage check.** For each dispatched lane that produced a _real_ review (not a
 stub, not budget-skipped, not empty), check whether its output mentions every plan id from
 `.plans-manifest.md` — the same manifest `build_prompt` gave the reviewer, so the expected-id list
 here can never diverge from what the reviewer was actually told. This is diagnostic only: it never
@@ -629,10 +647,10 @@ CodeRabbit is excluded — it is a diff-only lane that never receives the source
 (and therefore never receives the manifest or the per-id section instruction either), the same fact
 that already excludes it from grounded-review weighting in the Consensus Summary below.
 
-The match is intentionally lenient about *where* an id appears (a `##`-headed section is asked for,
+The match is intentionally lenient about _where_ an id appears (a `##`-headed section is asked for,
 but plain prose mentioning the id still counts as coverage — grading only the letter of the
 formatting instruction would produce false INCOMPLETE verdicts against a reviewer that cited real
-evidence correctly). It is strict about *what* counts as a match: the id is regex-escaped (a
+evidence correctly). It is strict about _what_ counts as a match: the id is regex-escaped (a
 decimal phase like `12.6` must not let `12X6-01` satisfy `12.6-01` through an unescaped `.`), and a
 `-`/word character immediately before or after the candidate match does not count as a boundary (so
 a threat id like `T-04-07` elsewhere in the review must not register as covering plan `04-07`).
@@ -688,7 +706,7 @@ graded lane has `complete: false` (mirrors the existing `trimmed_reviewers` prec
 only when there is something to report):
 
 ```yaml
-plan_coverage:        # only present if at least one graded lane is incomplete
+plan_coverage: # only present if at least one graded lane is incomplete
   <slug>:
     total: 7
     missing: ["12.6-07"]
@@ -714,8 +732,8 @@ instances print a one-line shared-adapter caveat. Format in
 its `value` and `model_sources:` from its `source`. Both maps carry exactly one entry per
 reviewer that appears in `reviewers:` — the two key sets always match. Write the literal
 `unknown` rather than omitting a key: an omitted key is indistinguishable from the feature
-not having run, and a reader must be able to tell *no model recorded* from *nothing to
-look at*. Emit every `models:`/`model_sources:` value as a DOUBLE-QUOTED YAML scalar — a
+not having run, and a reader must be able to tell _no model recorded_ from _nothing to
+look at_. Emit every `models:`/`model_sources:` value as a DOUBLE-QUOTED YAML scalar — a
 legitimate model id can contain `:` (`llama3:70b`, `qwen2.5:7b`), which is unquotable as a
 bare scalar; a control character is already refused at the recording seam, so quoting is
 what closes the remaining `:`/`#`/leading-`-` cases. When GSD applied a reasoning effort to
@@ -724,17 +742,28 @@ a lane, its `value` already carries a `(reasoning=<level>)` suffix (e.g.
 
 ```markdown
 ---
-phase: {N}
-reviewers: [claude, codex, coderabbit, opencode, qwen, cursor, antigravity, ollama, lm_studio, llama_cpp]  # populate at runtime with only the reviewers actually invoked
-reviewed_at: {ISO timestamp}
-plans_reviewed: [{list of PLAN.md files}]
-models:                   # resolved model per reviewer; `unknown` when not recoverable
+phase: { N }
+reviewers: [
+    claude,
+    codex,
+    coderabbit,
+    opencode,
+    qwen,
+    cursor,
+    antigravity,
+    ollama,
+    lm_studio,
+    llama_cpp,
+  ] # populate at runtime with only the reviewers actually invoked
+reviewed_at: { ISO timestamp }
+plans_reviewed: [{ list of PLAN.md files }]
+models: # resolved model per reviewer; `unknown` when not recoverable
   codex: "gpt-5.6-sol (reasoning=low)"
   antigravity: "unknown"
-model_sources:            # how each value above was determined
+model_sources: # how each value above was determined
   codex: "banner"
   antigravity: "unknown"
-trimmed_reviewers:        # only present if at least one reviewer was trimmed
+trimmed_reviewers: # only present if at least one reviewer was trimmed
   ollama:
     budget: 6000
     effective_budget: 5400
@@ -744,7 +773,7 @@ trimmed_reviewers:        # only present if at least one reviewer was trimmed
     plan_truncation_pct: 22
     hard_failed: false
     note_injected: true
-plan_coverage:            # only present if at least one graded lane is incomplete (#3301)
+plan_coverage: # only present if at least one graded lane is incomplete (#3301)
   ollama:
     total: 7
     missing: ["12.6-07"]
@@ -753,8 +782,11 @@ plan_coverage:            # only present if at least one graded lane is incomple
 # Cross-AI Plan Review — Phase {N}
 
 <!-- gsd-plan-revision-conflicts:begin -->
+
 ## Plan-Revision Conflicts
+
 {preserved_plan_revision_conflict_entries}
+
 <!-- gsd-plan-revision-conflicts:end -->
 
 <!-- Sections are RENDERED from each lane's declared `reviewsSection`, in descriptor order.
@@ -783,20 +815,25 @@ plan_coverage:            # only present if at least one graded lane is incomple
 {synthesize common concerns across all reviewers. CodeRabbit is a diff-only reviewer (it never received the source-grounding prompt), so do not weight its verdict as a grounded plan review — fold in its diff findings, but base plan-level consensus on the prompt-fed reviewers. A reviewer output carrying the `[reviewed-without-repo-access]` marker (or beginning with `REVIEWED-WITHOUT-REPO-ACCESS`) ran without repo access (#2176) — treat it the same way: note its concerns, but do not count its verdict at full consensus weight. A reviewer output carrying the `[reviewed-without-source-citations]` marker (#3194) declared source-grounded evidence but cited no `file:line` evidence, so it reviewed the plan text only — treat it the same way: note its concerns, but do not count its verdict at full consensus weight.}
 
 ### Agreed Strengths
+
 {strengths mentioned by 2+ reviewers}
 
 ### Agreed Concerns
+
 {concerns raised by 2+ reviewers — highest priority}
 
 ### Divergent Views
+
 {where reviewers disagreed — worth investigating}
 ```
 
 Commit (only reached when `TOTAL_LANE_FAILURE` and `ALL_LANES_SKIPPED` are both `false` — the
 gate above):
+
 ```bash
 gsd_run query commit "docs: cross-AI review for phase {N}" --files {phase_dir}/{padded_phase}-REVIEWS.md
 ```
+
 </step>
 
 <step name="present_results">
@@ -921,14 +958,16 @@ else
   echo "WARNING: evidence preservation to ${_DIAG_RUN_DIR:-$DIAG_DIR} failed — leaving the un-preserved run directory intact at: $RUN_DIR" >&2
 fi
 ```
+
 </step>
 
 </process>
 
 <success_criteria>
+
 - [ ] At least one external CLI invoked successfully
 - [ ] REVIEWS.md written with structured feedback
 - [ ] Consensus summary synthesized from multiple reviewers
 - [ ] Temp files cleaned up
 - [ ] User knows how to use feedback (/gsd-plan-phase --reviews)
-</success_criteria>
+      </success_criteria>

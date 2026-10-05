@@ -149,6 +149,7 @@ STATE_CONTENT=$(cat "$STATE_PATH" 2>/dev/null || true)
 Parse the JSON `phases` array.
 
 Parse the optional `## Deferred Verification` table from `STATE_CONTENT` into a phase-number map:
+
 - `verification_deferred_human` -> `/gsd-verify-work <phase>`
 - `verification_deferred_gaps` -> `/gsd-plan-phase <phase> --gaps`
 
@@ -283,11 +284,13 @@ Extract `goal` and `requirements` from JSON. Write `${phase_dir}/${padded_phase}
 ## Implementation Decisions
 
 ### the agent's Discretion
+
 All implementation choices are at the agent's discretion — discuss phase was skipped per user setting. Use ROADMAP phase goal, success criteria, and codebase conventions to guide decisions.
 
 </decisions>
 
 <code_context>
+
 ## Existing Code Insights
 
 Codebase context will be gathered during plan-phase research.
@@ -357,7 +360,6 @@ FLATTEN=$(gsd_run query dispatch-should-flatten --raw 2>/dev/null || echo "true"
 - **If `FLATTEN` is `false`:** Dispatch plan as a background agent to keep the main context lean. While plan runs, the workflow can immediately start discussing the next phase (see step 4).
 
   If `section_manifest` is `null` or `"converge-dispatch-bg"` is in its `included` list: read and execute `gsd-core/workflows/autonomous/steps/converge-dispatch-bg.md`. Otherwise skip — do not read the file.
-
   - Otherwise, print: `◆ Spawning background planner for phase ${PHASE_NUM}... (runs in a subagent — no output until it returns, ~1–5 min; expected, not a freeze)`
 
   ```
@@ -373,7 +375,6 @@ FLATTEN=$(gsd_run query dispatch-should-flatten --raw 2>/dev/null || echo "true"
 - **Otherwise (`FLATTEN` is `true` — run inline):** Run plan **inline** (do NOT background) so the plan-checker runs. The next phase's discuss does not overlap planning here — correctness over overlap.
 
   If `section_manifest` is `null` or `"converge-dispatch-inline"` is in its `included` list: read and execute `gsd-core/workflows/autonomous/steps/converge-dispatch-inline.md`. Otherwise skip — do not read the file.
-
   - Otherwise (local planning):
 
   ```
@@ -410,7 +411,7 @@ Agent(
 )
 ```
 
-  Store the agent task_id. The workflow can now start discussing the next phase while this phase executes in the background. Before starting post-execution routing for this phase, wait for the execute agent to complete.
+Store the agent task_id. The workflow can now start discussing the next phase while this phase executes in the background. Before starting post-execution routing for this phase, wait for the execute agent to complete.
 
 - **Otherwise (`FLATTEN` is `true` — run inline):** Run execute **inline** (do NOT background) so worktree isolation and verification run:
 
@@ -429,6 +430,7 @@ Skill(skill="gsd-execute-phase", args="${PHASE_NUM} --no-transition")
 Auto-invoke code review and fix chain. Autonomous mode chains both review and fix (unlike execute-phase/quick which only suggest fix).
 
 **Capability dispatch:**
+
 ```bash
 EXECUTE_POST_HOOKS_JSON=$(gsd_run loop render-hooks execute:post --raw)
 ```
@@ -444,6 +446,7 @@ Skill(skill="gsd-${ref.skill}", args="${PHASE_NUM}")
 ```
 
 Parse status from REVIEW.md frontmatter. If "clean" or "skipped": proceed to 3d. If findings found after the capability-dispatched review, auto-invoke the consolidated fix entry point:
+
 ```
 Skill(skill="gsd-code-review", args="${PHASE_NUM} --fix --auto")
 ```
@@ -481,8 +484,8 @@ On **"Continue without validation"**: record an explicit deferred state and stop
 ```markdown
 ## Deferred Verification
 
-| Phase | State | Resume |
-|-------|-------|--------|
+| Phase        | State                       | Resume                        |
+| ------------ | --------------------------- | ----------------------------- |
 | ${PHASE_NUM} | verification_deferred_human | /gsd-verify-work ${PHASE_NUM} |
 ```
 
@@ -491,6 +494,7 @@ Append/update this STATE.md section, display `Phase ${PHASE_NUM} ⏭ verificatio
 **If `gaps_found`:**
 
 Read gap score/items from VERIFICATION.md. Display:
+
 ```
 ⚠ Phase ${PHASE_NUM}: ${PHASE_NAME} — Gaps Found
 Score: {N}/{M} must-haves verified
@@ -507,11 +511,13 @@ Skill(skill="gsd-plan-phase", args="${PHASE_NUM} --gaps")
 Re-run `init phase-op ${PHASE_NUM}`; if `has_plans` is false, handle_blocker: "Gap closure planning for phase ${PHASE_NUM} did not produce plans."
 
 Re-execute:
+
 ```
 Skill(skill="gsd-execute-phase", args="${PHASE_NUM} --no-transition")
 ```
 
 Re-read verification status:
+
 ```bash
 VERIFY_STATUS=$(gsd_run query verification.status "${PHASE_DIR}" --pick status 2>/dev/null || true)
 ```
@@ -532,8 +538,8 @@ On **"Continue without fixing"**: record an explicit deferred state and stop aut
 ```markdown
 ## Deferred Verification
 
-| Phase | State | Resume |
-|-------|-------|--------|
+| Phase        | State                      | Resume                              |
+| ------------ | -------------------------- | ----------------------------------- |
 | ${PHASE_NUM} | verification_deferred_gaps | /gsd-plan-phase ${PHASE_NUM} --gaps |
 ```
 
@@ -622,6 +628,7 @@ If incomplete phases remain: proceed to next phase, loop back to execute_phase.
 If no runnable phases remain but deferred phases were skipped, display `Autonomous run stopped with deferred verification phases still pending. Resume them with the commands listed in Deferred Verification.` Proceed to lifecycle only if every non-deferred phase is complete; otherwise go to handle_blocker.
 
 **Interactive mode overlap:** When `INTERACTIVE` is set, Codex can overlap discuss for Phase N+1 with background plan+execute for Phase N. Other runtimes keep plan/execute inline, so phases stay sequential:
+
 1. After discuss completes for Phase N, dispatch plan+execute as background agents
 2. Immediately start discuss for Phase N+1 (the next incomplete phase) while Phase N builds
 3. Before starting plan for Phase N+1, wait for Phase N's execute agent to complete and handle its post-execution routing (verification, gap closure, etc.)
@@ -681,6 +688,7 @@ Go to handle_blocker: "Audit did not produce results — audit file missing or m
 **If `passed`:**
 
 Display:
+
 ```
 Audit ✅ passed — proceeding to complete milestone
 ```
@@ -690,11 +698,13 @@ Proceed to 5b (no user pause — per CTRL-01).
 **If `gaps_found`:**
 
 Read the gaps summary from the audit file. Display:
+
 ```
 ⚠ Audit: Gaps Found
 ```
 
 Ask user via question:
+
 - **question:** "Milestone audit found gaps. How to proceed?"
 - **options:** "Continue anyway — accept gaps" / "Stop — fix gaps manually"
 
@@ -705,11 +715,13 @@ On **"Stop"**: Go to handle_blocker with "User stopped — audit gaps remain. Ru
 **If `tech_debt`:**
 
 Read the tech debt summary from the audit file. Display:
+
 ```
 ⚠ Audit: Tech Debt Identified
 ```
 
 Show the summary, then ask user via question:
+
 - **question:** "Milestone audit found tech debt. How to proceed?"
 - **options:** "Continue with tech debt" / "Stop — address debt first"
 
@@ -768,6 +780,7 @@ When any phase operation fails or a blocker is detected, present 3 options via q
 **Prompt:** "Phase {N} ({Name}) encountered an issue: {description}"
 
 **Options:**
+
 1. **"Fix and retry"** — Re-run the failed step (discuss, plan, or execute) for this phase
 2. **"Skip this phase"** — Mark phase as skipped, continue to the next incomplete phase
 3. **"Stop autonomous mode"** — Display summary of progress so far and exit cleanly
@@ -793,6 +806,7 @@ When any phase operation fails or a blocker is detected, present 3 options via q
 </process>
 
 <success_criteria>
+
 - [ ] All incomplete phases executed in order (smart discuss → ui-phase → plan → execute → ui-review each)
 - [ ] Smart discuss proposes grey area answers in tables, user accepts or overrides per area
 - [ ] Progress banners displayed between phases
@@ -844,4 +858,4 @@ When any phase operation fails or a blocker is detected, present 3 options via q
 - [ ] `--converge` overrides `workflow.plan_review_convergence=false` for the run — the dispatch carries `--override-gate`, which the convergence workflow's §1.5 gate honors (#4600)
 - [ ] `--converge` forwards reviewer selector flags and `--max-cycles N`
 - [ ] Default autonomous planning remains `gsd-plan-phase` when convergence is not requested
-</success_criteria>
+      </success_criteria>

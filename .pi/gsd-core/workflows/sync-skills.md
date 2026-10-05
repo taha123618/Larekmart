@@ -10,12 +10,12 @@ Sync managed `gsd-*` skill directories from one canonical runtime's skills root 
 
 ## Arguments
 
-| Flag | Required | Default | Description |
-|------|----------|---------|-------------|
-| `--from <runtime>` | Yes | *(none)* | Source runtime — the canonical runtime to copy from |
-| `--to <runtime\|all>` | Yes | *(none)* | Destination runtime or `all` supported runtimes. **Must equal `--from`** — cross-runtime sync is refused (#3025: skill content/layout is runtime-specific and produced by the installer's per-runtime converters; use the installer for a different runtime). |
-| `--dry-run` | No | *on by default* | Preview changes without writing anything |
-| `--apply` | No | *off* | Execute the diff (overrides dry-run) |
+| Flag                  | Required | Default         | Description                                                                                                                                                                                                                                                   |
+| --------------------- | -------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--from <runtime>`    | Yes      | _(none)_        | Source runtime — the canonical runtime to copy from                                                                                                                                                                                                           |
+| `--to <runtime\|all>` | Yes      | _(none)_        | Destination runtime or `all` supported runtimes. **Must equal `--from`** — cross-runtime sync is refused (#3025: skill content/layout is runtime-specific and produced by the installer's per-runtime converters; use the installer for a different runtime). |
+| `--dry-run`           | No       | _on by default_ | Preview changes without writing anything                                                                                                                                                                                                                      |
+| `--apply`             | No       | _off_           | Execute the diff (overrides dry-run)                                                                                                                                                                                                                          |
 
 If neither `--dry-run` nor `--apply` is specified, dry-run is the default.
 
@@ -49,6 +49,7 @@ fi
 ```
 
 **Validation:**
+
 - If `--from` is missing or unrecognized: print error and exit
 - If `--to` is missing or unrecognized: print error and exit
 - If `--from` == `--to` (single destination): print `[no-op: source and destination are the same runtime]` and exit
@@ -134,19 +135,23 @@ done
 This loop validates every destination in `TO_RUNTIMES` up front — a bad runtime id anywhere in a multi-destination `--to` aborts here, before Step 3 or Step 5 touch anything. The resolved value itself is not retained: each of Steps 3 and 5 re-resolves `DEST_ROOT` for the specific `$DEST_RUNTIME` it is currently processing (see those steps), so `$DEST_ROOT` is always unambiguously scoped to one destination and never threaded through a shared array.
 
 **Guard:** If the source skills root does not exist, print:
+
 ```
 error: source skills root not found: <path>
        Is GSD installed globally for the '<runtime>' runtime?
        Run: npx -y @opengsd/gsd-core@latest --global --<runtime>
 ```
+
 Then exit.
 
 **Guard:** If resolving the skills root for the source OR any destination runtime fails (`gsd_run query skills-root <runtime> --raw` exits non-zero or prints nothing — see Step 2's bash), print:
+
 ```
 error: failed to resolve skills root for runtime '<runtime>'
        command: gsd_run query skills-root <runtime> --raw
        Is '<runtime>' a registered runtime id? See supported runtime names above.
 ```
+
 Then exit. Never proceed to Step 3 or Step 5 with an empty or unresolved root — an empty `$DEST_ROOT` turns `rm -rf "$DEST_ROOT/$SKILL"` into `rm -rf "/$SKILL"`.
 
 **Guard:** If `--to` contains the same runtime as `--from`, skip that destination silently.
@@ -210,6 +215,7 @@ dry-run only. use --apply to execute.    ← omit this line if --apply
 If a destination root does not exist and `--apply` is true, print `CREATE DIR: <path>` before its entries.
 
 If all destinations are already up to date:
+
 ```
 All destinations are up to date. No changes needed.
 ```

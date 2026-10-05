@@ -12,6 +12,7 @@ allowed-tools:
   - conversational prompting
 requires: [phase]
 ---
+
 <objective>
 Conduct a retroactive evaluation coverage audit of a completed AI phase.
 Checks whether the evaluation strategy from AI-SPEC.md was implemented.

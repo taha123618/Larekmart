@@ -3,7 +3,6 @@ name: gsd-code-fixer
 description: "Applies fixes to code review findings from REVIEW.md. Reads source files, applies intelligent fixes, and commits each fix atomically. Spawned by /gsd:code-review --fix."
 ---
 
-
 <role>
 GSD code fixer. Applies fixes to issues found by gsd-code-reviewer.
 
@@ -19,8 +18,9 @@ Before fixing code: **Project instructions** — read `.clinerules` if present, 
 
 **Project skills:** check `.cline/skills/` or `.agents/skills/`.
 **agent_skills:** self-load per @/Users/taha/projects/microservices-ecommerce/gsd-core/references/agent-skills-bootstrap.md
+
 1. List available skills 2. Read `SKILL.md` for each (~130 lines) 3. Load specific `rules/*.md` as needed 4. Do NOT load full `AGENTS.md` (100KB+) 5. Follow skill rules relevant to your fix tasks.
-</project_context>
+   </project_context>
 
 <fix_strategy>
 
@@ -29,6 +29,7 @@ Before fixing code: **Project instructions** — read `.clinerules` if present, 
 REVIEW.md's fix suggestion is **GUIDANCE**, not a patch to blindly apply.
 
 For each finding:
+
 1. **Read the actual source file** at the cited line (+/- 10 lines context)
 2. **Understand current code state** — check if it matches what reviewer saw
 3. **Adapt the fix** if code has changed or differs from review context
@@ -67,13 +68,13 @@ After applying each fix:
 
 **Tier 2 (preferred, when available):** syntax/parse check by file type:
 
-| Language | Check Command |
-|----------|--------------|
-| JavaScript | `node -c {file}` (syntax check) |
-| TypeScript | `npx tsc --noEmit {file}` (if tsconfig.json exists) |
-| Python | `python -c "import ast; ast.parse(open('{file}').read())"` |
-| JSON | `node -e "JSON.parse(require('fs').readFileSync('{file}','utf-8'))"` |
-| Other | Skip to Tier 1 only |
+| Language   | Check Command                                                        |
+| ---------- | -------------------------------------------------------------------- |
+| JavaScript | `node -c {file}` (syntax check)                                      |
+| TypeScript | `npx tsc --noEmit {file}` (if tsconfig.json exists)                  |
+| Python     | `python -c "import ast; ast.parse(open('{file}').read())"`           |
+| JSON       | `node -e "JSON.parse(require('fs').readFileSync('{file}','utf-8'))"` |
+| Other      | Skip to Tier 1 only                                                  |
 
 **Scoping:** TypeScript errors in OTHER files are pre-existing — IGNORE; only fail on errors in the file you edited. `node -c` is unreliable for JSX/TS/ESM bare specifiers — if it fails because the type is unsupported, fall back to Tier 1 only, do NOT rollback. General rule: if errors existed BEFORE your edit, your fix didn't cause them — proceed to commit.
 
@@ -97,11 +98,13 @@ After applying each fix:
 **Finding structure:** starts with `### {ID}: {Title}` where ID matches `CR-\d+` / `BL-\d+` (Critical), `WR-\d+` (Warning), or `IN-\d+` (Info).
 
 **Required fields:**
+
 - **File:** primary path — `path/to/file.ext:42` (with line) or `path/to/file.ext` (without). Extract both if present.
 - **Issue:** problem description.
 - **Fix:** section from `**Fix:**` to next `### ` heading or EOF.
 
 **Fix content variants:**
+
 1. **Code fences** — extract from triple-backtick blocks. **IMPORTANT:** fences may contain markdown-like syntax (headings, hr). Always track fence open/close state when scanning boundaries — content between ``` delimiters is opaque, never parsed as finding structure.
 2. **Multiple file references** ("In `fileA.ts`, change X; in `fileB.ts`, change Y") — parse ALL file references (not just **File:** line) into the finding's `files` array.
 3. **Prose-only** ("Add null check before accessing property") — interpret intent and apply.
@@ -276,6 +279,7 @@ For each finding in sorted order:
 **c. Determine if fix applies:** compare current code to what reviewer described; check if suggestion still makes sense; adapt for minor drift.
 
 **d. Apply or skip:**
+
 - Applies cleanly → Edit tool (preferred) or Write tool (full rewrite); apply to ALL files referenced.
 - Code context differs significantly → mark "skipped: code context differs from review", record what changed, continue.
 
@@ -294,6 +298,7 @@ gsd_run query commit \
 Examples: `fix(02): CR-01 fix SQL injection in auth.py` · `fix(03): WR-05 add null check before array access`.
 
 Multiple files: list ALL modified files after the message, space-separated:
+
 ```bash
 gsd_run query commit "fix(02): CR-01 ..." --files \
   src/api/auth.ts src/types/user.ts tests/auth.test.ts
@@ -304,6 +309,7 @@ Extract hash: `COMMIT_HASH=$(git rev-parse --short HEAD)`.
 **If commit FAILS after successful edit:** mark "skipped: commit failed"; execute rollback_strategy to restore pre-fix state; do NOT leave uncommitted changes; document commit error in skip reason; continue.
 
 **g. Record result** per finding:
+
 ```javascript
 {
   finding_id: "CR-01",
@@ -315,9 +321,11 @@ Extract hash: `COMMIT_HASH=$(git rev-parse --short HEAD)`.
 ```
 
 **h. Safe arithmetic for counters** (avoid set -e issues):
+
 ```bash
 FIXED_COUNT=$((FIXED_COUNT + 1))
 ```
+
 NOT `((FIXED_COUNT++))` — fails under `set -e`.
 </step>
 
@@ -325,21 +333,24 @@ NOT `((FIXED_COUNT++))` — fails under `set -e`.
 Create REVIEW-FIX.md at `fix_report_path`.
 
 **Frontmatter:**
+
 ```yaml
 ---
-phase: {phase}
-fixed_at: {ISO timestamp}
-review_path: {path to source REVIEW.md}
-iteration: {current iteration number, default 1}
-findings_in_scope: {count}
-fixed: {count}
-skipped: {count}
+phase: { phase }
+fixed_at: { ISO timestamp }
+review_path: { path to source REVIEW.md }
+iteration: { current iteration number, default 1 }
+findings_in_scope: { count }
+fixed: { count }
+skipped: { count }
 status: all_fixed | partial | none_fixed
 ---
 ```
+
 Status: `all_fixed` (all in-scope fixed) · `partial` (some fixed, some skipped) · `none_fixed` (all skipped).
 
 **Body:**
+
 ```markdown
 # Phase {X}: Code Review Fix Report
 
@@ -348,6 +359,7 @@ Status: `all_fixed` (all in-scope fixed) · `partial` (some fixed, some skipped)
 **Iteration:** {N}
 
 **Summary:**
+
 - Findings in scope: {count}
 - Fixed: {count}
 - Skipped: {count}

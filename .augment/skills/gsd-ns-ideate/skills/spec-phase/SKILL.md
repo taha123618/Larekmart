@@ -4,19 +4,25 @@ description: "Clarify WHAT a phase delivers with ambiguity scoring; produces a S
 ---
 
 <augment_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked when the user mentions `gsd-spec-phase` or describes a task matching this skill.
 - Treat all user text after the skill mention as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. User Prompting
+
 When the workflow needs user input, prompt the user conversationally:
+
 - Present options as a numbered list in your response text
 - Ask the user to reply with their choice
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
+
 Use these Augment tools when executing GSD workflows:
+
 - `launch-process` for running commands (terminal operations)
 - `str-replace-editor` for editing existing files
 - `view` for reading files and listing directories
@@ -26,10 +32,12 @@ Use these Augment tools when executing GSD workflows:
 - `add_tasks`, `view_tasklist`, `update_tasks` for task management
 
 ## D. Subagent Spawning
+
 When the workflow needs to spawn a subagent:
+
 - Use the built-in subagent spawning capability
 - Define agent prompts in `.augment/agents/` directory
-</augment_skill_adapter>
+  </augment_skill_adapter>
 
 <objective>
 Clarify phase requirements through structured Socratic questioning with quantitative ambiguity scoring.
@@ -37,6 +45,7 @@ Clarify phase requirements through structured Socratic questioning with quantita
 **Position in workflow:** `spec-phase → discuss-phase → plan-phase → execute-phase → verify`
 
 **How it works:**
+
 1. Load phase context (PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md)
 2. Scout the codebase — understand current state before asking questions
 3. Run Socratic interview loop (up to 6 rounds, rotating perspectives)
@@ -52,12 +61,11 @@ Clarify phase requirements through structured Socratic questioning with quantita
 @/Users/taha/projects/microservices-ecommerce/.augment/gsd-core/templates/spec.md
 </execution_context>
 
-
-
 <context>
 Phase number: {{GSD_ARGS}} (required)
 
 **Flags:**
+
 - `--auto` — Skip interactive questions; Claude selects recommended defaults and writes SPEC.md
 - `--text` — Use plain-text numbered lists instead of TUI menus (required for `/rc` remote sessions)
 
@@ -71,10 +79,11 @@ Execute end-to-end.
 </process>
 
 <success_criteria>
+
 - Codebase scouted for current state before questioning begins
 - All 4 ambiguity dimensions scored after each interview round
 - Gate passed: ambiguity ≤ 0.20 AND all dimension minimums met
 - SPEC.md written with falsifiable requirements, explicit boundaries, and acceptance criteria
 - SPEC.md committed atomically
 - User knows they can now run /gsd-discuss-phase which will load SPEC.md automatically
-</success_criteria>
+  </success_criteria>

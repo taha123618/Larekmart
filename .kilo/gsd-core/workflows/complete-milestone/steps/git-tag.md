@@ -22,6 +22,7 @@ Confirm: "Tagged: v[X.Y]"
 Ask: "Push tag to remote? (y/n)"
 
 If yes:
+
 ```bash
 git push origin v[X.Y]
 ```

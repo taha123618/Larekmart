@@ -8,7 +8,9 @@ export interface AuthenticatedUser {
   claims?: CustomJwtSessionClaims;
 }
 
-export function extractAuthClaims(request: FastifyRequest): AuthenticatedUser | null {
+export function extractAuthClaims(
+  request: FastifyRequest,
+): AuthenticatedUser | null {
   try {
     const auth = getAuth(request);
     if (!auth?.userId) {
@@ -16,7 +18,8 @@ export function extractAuthClaims(request: FastifyRequest): AuthenticatedUser | 
     }
 
     const claims = auth.sessionClaims as CustomJwtSessionClaims | undefined;
-    const role = (claims?.metadata?.role as "admin" | "seller" | "customer") || "customer";
+    const role =
+      (claims?.metadata?.role as "admin" | "seller" | "customer") || "customer";
 
     return {
       userId: auth.userId,

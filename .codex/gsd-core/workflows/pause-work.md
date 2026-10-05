@@ -55,16 +55,19 @@ If phase is detected, proceed with phase handoff path. Otherwise use the first m
 8. **Files modified**: What's changed but not committed
 9. **Outstanding async external jobs**: any `.planning/async-jobs/*.json` manifests for non-terminal jobs — record job id, backend, status, expected artifacts, verification + resume commands, and any watcher/daemon state. Do NOT cancel the external job; it keeps running across the pause.
 10. **Blocking constraints**: Anti-patterns or methodological failures encountered during this session that a resuming agent MUST be aware of before proceeding. Only include items discovered through actual failure — not warnings or predictions. Assign each constraint a `severity`:
-   - `blocking` — The resuming agent MUST demonstrate understanding before proceeding. The discuss-phase and execute-phase workflows will enforce a mandatory understanding check.
-   - `advisory` — Important context but does not gate resumption.
+
+- `blocking` — The resuming agent MUST demonstrate understanding before proceeding. The discuss-phase and execute-phase workflows will enforce a mandatory understanding check.
+- `advisory` — Important context but does not gate resumption.
 
 Ask user for clarifications if needed via conversational questions.
 
 **Also inspect SUMMARY.md files for false completions:**
+
 ```bash
 # Check for placeholder content in existing summaries
 grep -l "To be filled\|placeholder\|TBD" .planning/phases/*/*.md 2>/dev/null || true
 ```
+
 Report any summaries with placeholder content as incomplete items.
 </step>
 
@@ -119,12 +122,14 @@ Any recorded `async_jobs` entries are the primary resume context on the next ses
 **`uncommitted_files` is measured, never asserted (#3968).** Populate it from an actual call,
 not from memory — a narrated `[]` over a dirty tree is how 14 plans' worth of uncommitted
 code went invisible in the wild:
+
 ```bash
 UNCOMMITTED=$(git status --porcelain)
 # One array entry per line ("XY path"); truncate the list at 50 entries and note the
 # elided count, but NEVER round it to empty — a non-empty porcelain output is the single
 # most load-bearing fact a resume session needs.
 ```
+
 </step>
 
 <step name="write">
@@ -153,10 +158,10 @@ _If no constraints have been identified yet, remove this section._
 
 ## Critical Anti-Patterns
 
-| Pattern | Description | Severity | Prevention Mechanism |
-|---------|-------------|----------|---------------------|
+| Pattern        | Description                        | Severity | Prevention Mechanism                                            |
+| -------------- | ---------------------------------- | -------- | --------------------------------------------------------------- |
 | [pattern name] | [what it is and how it manifested] | blocking | [structural step that prevents recurrence — not acknowledgment] |
-| [pattern name] | [what it is and how it manifested] | advisory | [guidance for avoiding it] |
+| [pattern name] | [what it is and how it manifested] | advisory | [guidance for avoiding it]                                      |
 
 **Severity values:** `blocking` — resuming agent must pass understanding check before proceeding. `advisory` — important context, does not gate resumption.
 
@@ -169,43 +174,52 @@ _Remove rows that do not apply. The discuss-phase and execute-phase workflows pa
 <completed_work>
 
 Completed Tasks:
+
 - Task 1: [name] - Done
 - Task 2: [name] - Done
 - Task 3: [name] - In progress, [what's done]
-</completed_work>
+  </completed_work>
 
 <remaining_work>
 
 - Task 3: [what's left]
 - Task 4: Not started
 - Task 5: Not started
-</remaining_work>
+  </remaining_work>
 
 <decisions_made>
 
 - Decided to use [X] because [reason]
 - Chose [approach] over [alternative] because [reason]
-</decisions_made>
+  </decisions_made>
 
 <blockers>
 - [Blocker 1]: [status/workaround]
 </blockers>
 
 ## Required Reading (in order)
+
 <!-- List documents the resuming agent must read before acting -->
+
 1. [document] — [why it matters]
 1. `.planning/METHODOLOGY.md` (if it exists) — project analytical lenses; apply before any assumption analysis
 
 ## Critical Anti-Patterns (do NOT repeat these)
+
 <!-- Mistakes discovered this session that must be structurally avoided -->
+
 - [ANTI-PATTERN]: [what it is] → [structural mitigation]
 
 ## Infrastructure State
+
 <!-- Running services, external state, environment specifics -->
+
 - [service/env]: [current state]
 
 ## Pre-Execution Critique Required
+
 <!-- Fill in ONLY if pausing between design and execution (e.g. spike design done, not yet run) -->
+
 - Design artifact: [path]
 - Critique focus: [key questions the critic should probe]
 - Gate: Do NOT begin execution until critique is complete and design is revised
@@ -222,9 +236,11 @@ Start with: [specific first action when resuming]
 Be specific enough for a fresh the agent to understand immediately.
 
 Use `current-timestamp` for last_updated field. You can use init todos (which provides timestamps) or call directly:
+
 ```bash
 timestamp=$(gsd_run query current-timestamp full --raw)
 ```
+
 </step>
 
 <step name="commit">
@@ -263,3 +279,4 @@ To resume: $gsd-resume-work
 - [ ] Committed as WIP
 - [ ] User knows location and how to resume
 </success_criteria>
+```

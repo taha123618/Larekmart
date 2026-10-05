@@ -8,12 +8,12 @@ This workflow handles "what" and "why" — discuss-phase handles "how".
 <ambiguity_model>
 Score each dimension 0.0 (completely unclear) to 1.0 (crystal clear):
 
-| Dimension         | Weight | Minimum | What it measures                                  |
-|-------------------|--------|---------|---------------------------------------------------|
-| Goal Clarity      | 35%    | 0.75    | Is the outcome specific and measurable?           |
-| Boundary Clarity  | 25%    | 0.70    | What's in scope vs out of scope?                  |
-| Constraint Clarity| 20%    | 0.65    | Performance, compatibility, data requirements?    |
-| Acceptance Criteria| 20%   | 0.70    | How do we know it's done?                         |
+| Dimension           | Weight | Minimum | What it measures                               |
+| ------------------- | ------ | ------- | ---------------------------------------------- |
+| Goal Clarity        | 35%    | 0.75    | Is the outcome specific and measurable?        |
+| Boundary Clarity    | 25%    | 0.70    | What's in scope vs out of scope?               |
+| Constraint Clarity  | 20%    | 0.65    | Performance, compatibility, data requirements? |
+| Acceptance Criteria | 20%    | 0.70    | How do we know it's done?                      |
 
 **Ambiguity score** = 1.0 − (0.35×goal + 0.25×boundary + 0.20×constraint + 0.20×acceptance)
 
@@ -26,30 +26,35 @@ A score of 0.20 means 80% weighted clarity — enough precision that the planner
 Rotate through these perspectives — each naturally surfaces different blindspots:
 
 **Researcher (rounds 1–2):** Ground the discussion in current reality.
+
 - "What exists in the codebase today related to this phase?"
 - "What's the delta between today and the target state?"
 - "What triggers this work — what's broken or missing?"
 
 **Simplifier (round 2):** Surface minimum viable scope.
+
 - "What's the simplest version that solves the core problem?"
 - "If you had to cut 50%, what's the irreducible core?"
 - "What would make this phase a success even without the nice-to-haves?"
 
 **Boundary Keeper (round 3):** Lock the perimeter.
+
 - "What explicitly will NOT be done in this phase?"
 - "What adjacent problems is it tempting to solve but shouldn't?"
 - "What does 'done' look like — what's the final deliverable?"
 
 **Failure Analyst (round 4):** Find the edge cases that invalidate requirements.
+
 - "What's the worst thing that could go wrong if we get the requirements wrong?"
 - "What does a broken version of this look like?"
 - "What would cause a verifier to reject the output?"
 
 **Seed Closer (rounds 5–6):** Lock remaining undecided territory.
+
 - "We have [dimension] at [score] — what would make it completely clear?"
 - "The remaining ambiguity is in [area] — can we make a decision now?"
 - "Is there anything you'd regret not specifying before planning starts?"
-</interview_perspectives>
+  </interview_perspectives>
 
 <process>
 
@@ -66,13 +71,16 @@ Parse JSON for: `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase
 **If `response_language` is set:** All user-facing text in this workflow — narration between tool calls, status updates, progress notes, findings, questions, and report prose — MUST be in `{response_language}`. Technical terms, code, and file paths stay in English.
 
 **If `phase_found` is false:**
+
 ```
 Phase [X] not found in roadmap.
 Use /gsd-progress to see available phases.
 ```
+
 Exit.
 
 **Check for existing SPEC.md:**
+
 ```bash
 ls ${phase_dir}/*-SPEC.md 2>/dev/null | grep -v AI-SPEC | head -1 || true
 ```
@@ -86,6 +94,7 @@ rewrites the spec, discarding answers a person already recorded in it, and nobod
 notice.
 
 **Otherwise:** Use conversational prompting:
+
 - header: "Spec"
 - question: "Phase [X] already has a SPEC.md. What do you want to do?"
 - options:
@@ -100,17 +109,20 @@ If "Update": Load existing SPEC.md, continue to Step 3.
 ## Step 2: Scout Codebase
 
 **Read these files before any questions:**
+
 - `{requirements_path}` — Project requirements
 - `{state_path}` — Decisions already made, current phase, blockers
 - ROADMAP.md phase entry — Phase description, goals, canonical refs
 
 **Grep the codebase** for code/files relevant to this phase goal. Look for:
+
 - Existing implementations of similar functionality
 - Integration points where new code will connect
 - Test coverage gaps relevant to the phase
 - Prior phase artifacts (SUMMARY.md, VERIFICATION.md) that inform current state
 
 **Synthesize current state** — the grounded baseline for the interview:
+
 - What exists today related to this phase
 - The gap between current state and the phase goal
 - The primary deliverable: what file/behavior/capability does NOT exist yet?
@@ -139,6 +151,7 @@ Ambiguity: [score] ([calculate])
 **Max 6 rounds.** Each round: 2–3 questions max. End round after user responds.
 
 **Round selection by perspective:**
+
 - Round 1: Researcher
 - Round 2: Researcher + Simplifier
 - Round 3: Boundary Keeper
@@ -146,6 +159,7 @@ Ambiguity: [score] ([calculate])
 - Rounds 5–6: Seed Closer (focus on lowest-scoring dimensions)
 
 **After each round:**
+
 1. Update all 4 dimension scores from the user's answers
 2. Calculate new ambiguity score
 3. Display the updated scoring:
@@ -166,6 +180,7 @@ If gate passes (ambiguity ≤ 0.20 AND all minimums met):
 **If `--auto`:** Jump to Step 5.5.
 
 **Otherwise:** conversational prompting:
+
 - header: "Spec Gate Passed"
 - question: "Ambiguity is [score] — requirements are clear enough to write SPEC.md. Proceed?"
 - options:
@@ -178,6 +193,7 @@ If gate passes (ambiguity ≤ 0.20 AND all minimums met):
 **If `--auto`:** Write SPEC.md anyway — flag unresolved dimensions. Log: `[auto] Max rounds reached. Writing SPEC.md with [N] dimensions below minimum. Planner will need to treat these as assumptions.`
 
 **Otherwise:** conversational prompting:
+
 - header: "Max Rounds"
 - question: "After 6 rounds, ambiguity is [score]. [List dimensions still below minimum.] What would you like to do?"
 - options:
@@ -209,7 +225,7 @@ The SPEC keeps the original language — only `text_en` is translated, and requi
 `id`s are never translated or renumbered (coverage rows join back on `id`, and any Acceptance
 Criteria you write from the resolved edges go into the SPEC in `response_language`). Populate
 `text_en` for **every** requirement, not only the ones that look edge-relevant: the
-`$APPLICABLE = 0` warning below fires only when *all* requirements are unclassified, so a
+`$APPLICABLE = 0` warning below fires only when _all_ requirements are unclassified, so a
 partly-classified spec slips through with no signal at all. (#4656) The warning now ALSO
 fires on the all-unclassified case itself: `coverage.unclassified` counts the soft-signal
 rows, and the guard below fires when `$UNCLASSIFIED = $APPLICABLE` — the case where the
@@ -336,6 +352,7 @@ edge-free spec, or should we revisit the requirement wording / authored shapes?"
 an empty `## Edge Coverage` section after explicit confirmation.
 
 For each Requirement gathered so far:
+
 1. Start from the edge-probe rows RENDERED above — the deterministic `items[]` are the FLOOR:
    every proposed `(requirement_id, category)` MUST be resolved below (Specify / Dismiss-with-
    reason / Backstop / Defer), none silently dropped. Then raise any applicable category the
@@ -358,6 +375,7 @@ For each Requirement gathered so far:
      **Dismiss (reason)**, or **Defer**). A manual-review nudge, not a hard block.
 
 **Soft gate (after resolving):**
+
 - All applicable edges resolved → proceed to Step 5.6.
 - Any `unresolved` → conversational prompting:
   - header: "Edge Coverage"
@@ -365,7 +383,7 @@ For each Requirement gathered so far:
   - options: "Resolve now" (loop back) / "Write SPEC.md anyway — flag unresolved" /
     "Keep probing"
   - On "anyway": write SPEC.md with those rows marked `⚠ Edge unresolved — planner must
-    treat as assumption`.
+treat as assumption`.
 
 **`--auto` mode:** resolve over the **same rendered floor** (#3102) — every engine-proposed row
 from Step 5.5's report (step 1) plus any category the classifier missed, never a narrower set.
@@ -400,8 +418,8 @@ Only the schema/projection layer is real code; the recall is prose.
 For each Requirement gathered so far, run the two-stage recall→precision pass:
 
 1. **Stage 1 — Recall (adversarial prose probe).** Ask the single adversarial question of the
-   requirement: *"What could this feature silently become that the author would NOT want, but
-   the spec does not forbid?"* Over-produce (~10 raw must-NOT candidates) — recall first.
+   requirement: _"What could this feature silently become that the author would NOT want, but
+   the spec does not forbid?"_ Over-produce (~10 raw must-NOT candidates) — recall first.
 2. **Stage 2 — Precision (one-pass classifier).** Filter the raw list in a single pass:
    **DROP routine-engineering** items (normal correctness/hygiene — "must not mutate input",
    "must not throw on empty" — owned by the edge probe or code review); **KEEP
@@ -409,8 +427,8 @@ For each Requirement gathered so far, run the two-stage recall→precision pass:
    PII in plaintext). This collapses ~10 → ~2–3 genuine prohibitions.
 3. **Canon-referral (ADR-550 D6, PROB-13).** A kept candidate that is canon security/compliance
    (OWASP / prototype-pollution / path-traversal / injection / GDPR / generic fairness) is
-   NOT minted here — emit a one-line breadcrumb (*"prototype-pollution is canon — owned by
-   /gsd-secure-phase + eslint; not minted here"*) and DROP it. Minting canon items duplicates
+   NOT minted here — emit a one-line breadcrumb (_"prototype-pollution is canon — owned by
+   /gsd-secure-phase + eslint; not minted here"_) and DROP it. Minting canon items duplicates
    /gsd-secure-phase and drowns the bespoke signal.
 4. **Resolve each surfaced (non-canon) prohibition** (conversational prompting; text mode → numbered list):
    - **Keep it** → write a NEGATIVE acceptance criterion (a must-NOT line) into Acceptance
@@ -432,23 +450,24 @@ For each Requirement gathered so far, run the two-stage recall→precision pass:
          read its subject from the `GSD_PROHIB_SUBJECT` env var so the prover can inject this fixture.
        - `check_clean_fixture` (#1346; **REQUIRED for `node-test` as of #1906**) — path to a
          KNOWN-CLEAN control subject. The `node-test` prover runs the check against it and requires
-         GREEN — proving the violation's RED is caused by the subject's *content*, not by
+         GREEN — proving the violation's RED is caused by the subject's _content_, not by
          `GSD_PROHIB_SUBJECT` merely being set. For a `node-test` this is **mandatory**: omit it and
          the check is un-provable (fail-closed), never proven on the violation alone — so a deceptive
          content-independent test cannot pass. (`lint-rule` needs no clean fixture: its subject IS the
          linted file, no `GSD_PROHIB_SUBJECT` indirection.)
-       This is a **SOFT capture (CHK-04): a `test`-tier prohibition WITHOUT a descriptor is still
-       allowed** — if the author cannot yet name the wired check, leave the descriptor empty and
-       proceed. It is NOT a hard authoring block; the item simply stays fail-closed/flagged
-       downstream (an absent/partial descriptor — or one with no `check_violation_fixture` —
-       → `descriptorFromProjection` null/under-specified/fixture-less → producer fail-closed
-       locate-or-unprovable, never green). Do NOT capture `failFirst` here — it is a
-       verify-time caller attestation, not a spec-authored field (#1279).
+         This is a **SOFT capture (CHK-04): a `test`-tier prohibition WITHOUT a descriptor is still
+         allowed** — if the author cannot yet name the wired check, leave the descriptor empty and
+         proceed. It is NOT a hard authoring block; the item simply stays fail-closed/flagged
+         downstream (an absent/partial descriptor — or one with no `check_violation_fixture` —
+         → `descriptorFromProjection` null/under-specified/fixture-less → producer fail-closed
+         locate-or-unprovable, never green). Do NOT capture `failFirst` here — it is a
+         verify-time caller attestation, not a spec-authored field (#1279).
    - **Dismiss (reason)** → mark `dismissed` with a REQUIRED non-empty reason (PROB-05). The
      reason string is the audit trail; silence is not a valid dismissal.
    - **Defer** → leave `unresolved`.
 
 **Soft gate (after resolving) — PROB-06:**
+
 - All applicable prohibitions resolved → proceed to Step 6.
 - Any `unresolved` → conversational prompting:
   - header: "Prohibitions"
@@ -456,7 +475,7 @@ For each Requirement gathered so far, run the two-stage recall→precision pass:
   - options: "Resolve now" (loop back) / "Write SPEC.md anyway — flag unresolved" /
     "Keep probing"
   - On "anyway": write SPEC.md with those rows marked `⚠ Prohibition unresolved — planner
-    must treat as assumption`. This is a soft gate (write-anyway-with-flags), never a silent
+must treat as assumption`. This is a soft gate (write-anyway-with-flags), never a silent
     skip — the soft gate IS the control.
 
 **`--auto` mode:** auto-`resolved` where a defensible negative acceptance criterion can be
@@ -488,12 +507,14 @@ Use the SPEC.md template from @/Users/taha/projects/microservices-ecommerce/.cur
 - Populate the **Prohibitions** section from Step 5.6 (resolved/dismissed/unresolved rows with the test|judgment tier).
 
 **Requirements for every requirement entry:**
+
 - One specific, testable statement
 - Current state (what exists now)
 - Target state (what it should become)
 - Acceptance criterion (how to verify it was met)
 
 **Vague requirements are rejected:**
+
 - ✗ "The system should be fast"
 - ✗ "Improve user experience"
 - ✓ "API endpoint responds in < 200ms at p95 under 100 concurrent requests"
@@ -502,6 +523,7 @@ Use the SPEC.md template from @/Users/taha/projects/microservices-ecommerce/.cur
 **Count requirements.** The display in discuss-phase reads: "Found SPEC.md — {N} requirements locked."
 
 **Boundaries must be explicit lists:**
+
 - "In scope" — what this phase produces
 - "Out of scope" — what it explicitly does NOT do (with brief reasoning)
 
@@ -536,6 +558,7 @@ Next: /gsd-discuss-phase {X}
 </process>
 
 <critical_rules>
+
 - Every requirement MUST have current state, target state, and acceptance criterion
 - Boundaries section is MANDATORY — cannot be empty
 - "In scope" and "Out of scope" must be explicit lists, not narrative prose
@@ -546,9 +569,10 @@ Next: /gsd-discuss-phase {X}
 - Max 2–3 questions per round — do not frontload all questions at once
 - Step 5.5 edge probe runs after the ambiguity gate; dismissals require a reason; --auto never auto-dismisses
 - Step 5.6 prohibition probe runs after the edge probe; dismissals require a reason; --auto never auto-dismisses a prohibition
-</critical_rules>
+  </critical_rules>
 
 <success_criteria>
+
 - Codebase scouted and current state understood before questioning
 - All 4 dimensions scored after every round
 - Gate passed OR user explicitly chose to write despite gaps
@@ -559,4 +583,4 @@ Next: /gsd-discuss-phase {X}
 - User directed to /gsd-discuss-phase as next step
 - Edge-completeness probe run; Edge Coverage section populated; unresolved edges flagged as assumptions
 - Prohibition-completeness probe run; Prohibitions section populated; unresolved prohibitions flagged as assumptions
-</success_criteria>
+  </success_criteria>

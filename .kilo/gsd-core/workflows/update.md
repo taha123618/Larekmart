@@ -13,6 +13,7 @@ Read all files referenced by the invoking prompt's execution_context before star
 Detect the installed GSD version, scope, runtime, and config dir.
 
 First, derive `PREFERRED_CONFIG_DIR` and `PREFERRED_RUNTIME` from the invoking prompt's `execution_context` path — this is the one input only the workflow knows:
+
 - If the path contains `/gsd-core/workflows/update.md`, strip that suffix and store the remainder as `PREFERRED_CONFIG_DIR`.
 - Infer `PREFERRED_RUNTIME` from the path: `/.claude/` -> `claude`; `/.codex/` -> `codex`; `/.gemini/antigravity-ide/`, `/.gemini/antigravity-cli/`, `/.gemini/antigravity/`, `/.agents/` or `/.agent/` -> `antigravity` (`.agents` is the canonical local Antigravity install dir (#791); `.agent` is the legacy form (#503); see bin/install.js `getDirName('antigravity')`); `/.windsurf/`, `/.devin/` -> `windsurf`; `/.config/kilo/` or `/.kilo/` -> `kilo`; `/.config/opencode/` or `/.opencode/` -> `opencode`; otherwise leave it empty.
 
@@ -71,6 +72,7 @@ echo "$GSD_DIR"
 ```
 
 Parse output:
+
 - Line 1 = installed version (`0.0.0` means unknown version)
 - Line 2 = install scope (`LOCAL`, `GLOBAL`, or `UNKNOWN`)
 - Line 3 = target runtime (`claude`, `opencode`, `kilo`, `codex`, `antigravity`, `windsurf`); empty when no installed target is resolved
@@ -177,6 +179,7 @@ Compare installed vs latest:
 If `section_manifest` (from `INIT_UPDATE`) is `null` or `"channel-banner"` is in its `included` list: read and execute `gsd-core/workflows/update/steps/channel-banner.md`. Otherwise (default stable channel) skip — do not read the file; the output must match the prior stable behavior exactly, with no channel line.
 
 **If installed == latest:**
+
 ```
 ## GSD Update
 
@@ -189,6 +192,7 @@ You're already on the latest version.
 Exit.
 
 **If installed > latest:**
+
 ```
 ## GSD Update
 
@@ -285,6 +289,7 @@ If you've modified any GSD files directly, they'll be automatically backed up to
 
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `$ARGUMENTS` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `question` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-the agent runtimes (OpenAI Codex, Antigravity, etc.) where `question` is not available.
 Use question:
+
 - Question: "Proceed with update?"
 - Options:
   - "Yes, update now"
@@ -379,16 +384,19 @@ Then inform the user:
 Run the update using the install type detected in step 1:
 
 Build runtime flag from step 1:
+
 ```bash
 RUNTIME_FLAG="--$TARGET_RUNTIME"
 ```
 
 **If LOCAL install:**
+
 ```bash
 npx -y --package=@opengsd/gsd-core@"$TAG" -- gsd-core "$RUNTIME_FLAG" --local
 ```
 
 **If GLOBAL install:**
+
 ```bash
 npx -y --package=@opengsd/gsd-core@"$TAG" -- gsd-core "$RUNTIME_FLAG" --global
 ```
@@ -486,6 +494,7 @@ Format completion message (changelog was already shown in confirmation step):
 
 [View full changelog](https://github.com/open-gsd/gsd-core/blob/main/CHANGELOG.md)
 ```
+
 </step>
 
 <step name="restore_custom_files">
@@ -516,7 +525,7 @@ RESTORE_DIR=$(json_field backup_dir)
 
 `RESTORE_TOTAL` and `RESTORE_ELIGIBLE` differ whenever an entry is blocked —
 the new release now ships that path, or a different file already sits there.
-Drive the *question* off `RESTORE_ELIGIBLE`, never off `RESTORE_TOTAL`, or the
+Drive the _question_ off `RESTORE_ELIGIBLE`, never off `RESTORE_TOTAL`, or the
 prompt offers to restore files that accepting cannot restore.
 
 **If `RESTORE_TOTAL` == 0:** nothing was ever backed up (or the backup is
@@ -578,6 +587,7 @@ Restore them later with:
   node <config-dir>/gsd-core/bin/gsd-tools.cjs restore-custom-files \
     --config-dir <config-dir> --apply
 ```
+
 </step>
 
 <step name="check_local_patches">
@@ -597,6 +607,7 @@ Run `/gsd-update --reapply` to merge your modifications into the new version.
 </process>
 
 <success_criteria>
+
 - [ ] Installed version read correctly
 - [ ] Latest version checked via npm
 - [ ] Update skipped if already current
@@ -606,4 +617,4 @@ Run `/gsd-update --reapply` to merge your modifications into the new version.
 - [ ] Update executed successfully
 - [ ] Restart reminder shown
 - [ ] Backed-up user-added files offered for restore (or step skipped when the backup is empty)
-</success_criteria>
+      </success_criteria>

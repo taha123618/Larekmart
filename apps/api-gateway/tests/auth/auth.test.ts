@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
-import { requireAuth, requireAdmin, requireSeller } from "../../src/auth/authorization.js";
+import {
+  requireAuth,
+  requireAdmin,
+  requireSeller,
+} from "../../src/auth/authorization.js";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
 function createMockContext(user?: { authUserId?: string; userRole?: string }) {
@@ -43,31 +47,61 @@ export async function runAuthTests() {
   assert.equal(unauthCtx.getPayload().error, "Unauthorized");
 
   // Test 2: requireAuth allows authenticated user
-  const authCtx = createMockContext({ authUserId: "user_123", userRole: "customer" });
+  const authCtx = createMockContext({
+    authUserId: "user_123",
+    userRole: "customer",
+  });
   await requireAuth(authCtx.req, authCtx.reply);
-  assert.equal(authCtx.getStatus(), undefined, "Authenticated user should not be rejected");
+  assert.equal(
+    authCtx.getStatus(),
+    undefined,
+    "Authenticated user should not be rejected",
+  );
 
   // Test 3: requireAdmin rejects customer user with 403 Forbidden
-  const customerCtx = createMockContext({ authUserId: "user_123", userRole: "customer" });
+  const customerCtx = createMockContext({
+    authUserId: "user_123",
+    userRole: "customer",
+  });
   await requireAdmin(customerCtx.req, customerCtx.reply);
   assert.equal(customerCtx.getStatus(), 403);
   assert.equal(customerCtx.getPayload().error, "Forbidden");
 
   // Test 4: requireAdmin allows admin user
-  const adminCtx = createMockContext({ authUserId: "admin_123", userRole: "admin" });
+  const adminCtx = createMockContext({
+    authUserId: "admin_123",
+    userRole: "admin",
+  });
   await requireAdmin(adminCtx.req, adminCtx.reply);
   assert.equal(adminCtx.getStatus(), undefined, "Admin should not be rejected");
 
   // Test 5: requireSeller allows seller and admin, rejects customer
-  const sellerCtx = createMockContext({ authUserId: "seller_123", userRole: "seller" });
+  const sellerCtx = createMockContext({
+    authUserId: "seller_123",
+    userRole: "seller",
+  });
   await requireSeller(sellerCtx.req, sellerCtx.reply);
-  assert.equal(sellerCtx.getStatus(), undefined, "Seller should not be rejected");
+  assert.equal(
+    sellerCtx.getStatus(),
+    undefined,
+    "Seller should not be rejected",
+  );
 
-  const sellerAdminCtx = createMockContext({ authUserId: "admin_123", userRole: "admin" });
+  const sellerAdminCtx = createMockContext({
+    authUserId: "admin_123",
+    userRole: "admin",
+  });
   await requireSeller(sellerAdminCtx.req, sellerAdminCtx.reply);
-  assert.equal(sellerAdminCtx.getStatus(), undefined, "Admin should be allowed on seller route");
+  assert.equal(
+    sellerAdminCtx.getStatus(),
+    undefined,
+    "Admin should be allowed on seller route",
+  );
 
-  const nonSellerCtx = createMockContext({ authUserId: "user_123", userRole: "customer" });
+  const nonSellerCtx = createMockContext({
+    authUserId: "user_123",
+    userRole: "customer",
+  });
   await requireSeller(nonSellerCtx.req, nonSellerCtx.reply);
   assert.equal(nonSellerCtx.getStatus(), 403);
 

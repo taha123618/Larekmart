@@ -35,11 +35,13 @@ The two paths return **different shapes**: the CLI emits prose, the built-in emi
 Use the keyword that best captures the phase goal. Prefer the full domain word over a
 prefix of it — on the fallback path a prefix is matched as a substring, so "auth" also
 seeds on `author` and `authoring`. Examples:
+
 - Phase "User Authentication" -> query term "authentication"
 - Phase "Payment Integration" -> query term "payment"
 - Phase "Database Migration" -> query term "migration"
 
 If the query returns related nodes, incorporate as dependency context for planning:
+
 - Which modules/files are semantically related to this phase's domain
 - Which subsystems may be affected by changes in this phase
 - Cross-document relationships that inform task ordering and wave structure

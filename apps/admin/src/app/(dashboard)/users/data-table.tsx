@@ -68,15 +68,12 @@ export function DataTable<TData, TValue>({
             process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
             process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
             "http://localhost:8080";
-          await fetch(
-            `${authUrl}/users/${userId}`,
-            {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+          await fetch(`${authUrl}/users/${userId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
             },
-          );
+          });
         }),
       );
     },

@@ -11,6 +11,7 @@ instead of once for the whole batch.
 For each item in the current layer:
 
 Display banner:
+
 ```
 ### GSD ► CHECKING PLAN ${quick_id}
 ◆ Spawning plan checker... (runs in a subagent — no output until it returns, ~1–5 min)
@@ -77,6 +78,7 @@ enter the revision loop):
 - **Any BLOCKER/WARNING:** revision loop, max 2 iterations total for this item.
 
 **Revision (iteration < 2):**
+
 ```
 Agent(
   prompt="

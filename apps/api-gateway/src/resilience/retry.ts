@@ -2,7 +2,12 @@ import { logger } from "../observability/logger.js";
 import { gatewayProxyRetriesTotal } from "../observability/metrics.js";
 
 const SAFE_HTTP_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
-const TRANSIENT_ERROR_CODES = new Set(["ECONNRESET", "ETIMEDOUT", "ECONNREFUSED", "EAI_AGAIN"]);
+const TRANSIENT_ERROR_CODES = new Set([
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ECONNREFUSED",
+  "EAI_AGAIN",
+]);
 
 export interface RetryOptions {
   maxRetries?: number;
@@ -33,7 +38,8 @@ export async function executeWithRetry<T>(
   serviceName: string,
   options: RetryOptions = {},
 ): Promise<T> {
-  const maxRetries = options.maxRetries ?? (SAFE_HTTP_METHODS.has(method.toUpperCase()) ? 2 : 0);
+  const maxRetries =
+    options.maxRetries ?? (SAFE_HTTP_METHODS.has(method.toUpperCase()) ? 2 : 0);
   const backoffMs = options.backoffMs ?? 150;
 
   let lastError: unknown;
@@ -45,16 +51,24 @@ export async function executeWithRetry<T>(
       lastError = err;
       const errorObj = err instanceof Error ? err : new Error(String(err));
 
-      if (attempt < maxRetries && isRetryable(method, errorObj as Error & { code?: string }, options)) {
+      if (
+        attempt < maxRetries &&
+        isRetryable(method, errorObj as Error & { code?: string }, options)
+      ) {
         gatewayProxyRetriesTotal.inc({ service: serviceName, method });
-        logger.warn(`Retrying transient error for ${serviceName} (attempt ${attempt + 1}/${maxRetries})`, {
-          service: serviceName,
-          method,
-          attempt: attempt + 1,
-          error: errorObj.message,
-        });
+        logger.warn(
+          `Retrying transient error for ${serviceName} (attempt ${attempt + 1}/${maxRetries})`,
+          {
+            service: serviceName,
+            method,
+            attempt: attempt + 1,
+            error: errorObj.message,
+          },
+        );
 
-        await new Promise((resolve) => setTimeout(resolve, backoffMs * (attempt + 1)));
+        await new Promise((resolve) =>
+          setTimeout(resolve, backoffMs * (attempt + 1)),
+        );
         continue;
       }
 

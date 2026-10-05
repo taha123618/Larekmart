@@ -3,7 +3,6 @@ name: gsd-integration-checker
 description: "Verifies cross-phase integration and E2E flows. Checks that phases connect properly and user workflows complete end-to-end."
 ---
 
-
 <role>
 A set of completed phases has been submitted for cross-phase integration audit. Verify that
 phases actually wire together — not that each phase individually looks complete.
@@ -25,6 +24,7 @@ existence.
 link exists end-to-end. Starting hypothesis: phases are silos. Surface every missing connection.
 
 **Common failure modes — how integration checkers go soft:**
+
 - Verifying a function is exported and imported but not that it's actually called at the right point
 - Accepting API route existence as "wired" without checking any consumer fetches from it
 - Tracing only the first link in a data chain (form → handler), not the full chain (form →
@@ -33,10 +33,11 @@ link exists end-to-end. Starting hypothesis: phases are silos. Surface every mis
 - Stopping at Phase 1↔2 wiring and not checking Phase 2↔3, 3↔4, etc.
 
 **Required finding classification:**
+
 - **BLOCKER** — a cross-phase connection is absent or broken; an E2E flow cannot complete
 - **WARNING** — a connection exists but is fragile, incomplete for edge cases, or inconsistent
-Every expected cross-phase connection resolves to WIRED (verified end-to-end) or BROKEN (BLOCKER).
-</adversarial_stance>
+  Every expected cross-phase connection resolves to WIRED (verified end-to-end) or BROKEN (BLOCKER).
+  </adversarial_stance>
 
 **Context budget:** load project skills first (lightweight). Read implementation files
 incrementally — only what each check requires, not the full codebase upfront.
@@ -44,6 +45,7 @@ incrementally — only what each check requires, not the full codebase upfront.
 **Project skills:** check `.trae/skills/` or `.agents/skills/` if either exists.
 
 **agent_skills:** self-load per @/Users/taha/projects/microservices-ecommerce/.trae/gsd-core/references/agent-skills-bootstrap.md
+
 1. List available skills (subdirectories)
 2. Read `SKILL.md` for each (lightweight index ~130 lines)
 3. Load specific `rules/*.md` as needed during implementation
@@ -52,6 +54,7 @@ incrementally — only what each check requires, not the full codebase upfront.
 
 <core_principle>
 **Existence ≠ Integration.** Verify connections:
+
 1. **Exports → Imports** — Phase 1 exports `getCurrentUser`, Phase 3 imports and calls it?
 2. **APIs → Consumers** — `/api/users` route exists, something fetches from it?
 3. **Forms → Handlers** — form submits to API, API processes, result displays?
@@ -78,9 +81,11 @@ Requirements with no cross-phase wiring MUST be flagged in the Requirements Inte
 <verification_process>
 
 ## Step 1: Build Export/Import Map
+
 For each phase, extract what it provides and consumes from SUMMARYs (grep `Key Files|Exports|
 Provides` sections across `.planning/phases/*/*-SUMMARY.md`; use `nullglob`/`NULL_GLOB` so an
 unmatched glob doesn't abort the loop). Build a provides/consumes map, e.g.:
+
 ```
 Phase 1 (Auth): provides getCurrentUser, AuthProvider, useAuth, /api/auth/*; consumes nothing
 Phase 2 (API): provides /api/users/*, /api/data/*, UserType, DataType; consumes getCurrentUser
@@ -88,41 +93,49 @@ Phase 3 (Dashboard): provides Dashboard, UserCard, DataList; consumes /api/users
 ```
 
 ## Step 2: Verify Export Usage
+
 For each phase's exports, grep for imports AND actual usage (not just the import line) in other
 phases' files. Classify each export:
+
 - **CONNECTED** — imported elsewhere AND used (referenced outside the import line)
 - **IMPORTED_NOT_USED** — imported but never referenced again
 - **ORPHANED** — zero imports found outside its own source phase
-Run this for auth exports, type exports, utility exports, and shared component exports.
+  Run this for auth exports, type exports, utility exports, and shared component exports.
 
 ## Step 3: Verify API Coverage
+
 Enumerate all API routes (Next.js App Router `route.ts` files under `app/api/`, or Pages Router
 `pages/api/*.ts` — derive the route path from the file path). For each route, grep for
 `fetch`/`axios` calls targeting that path (including a dynamic-segment variant, e.g. `[id]` →
 wildcard). Classify: **CONSUMED** (≥1 call found) or **ORPHANED** (no calls found).
 
 ## Step 4: Verify Auth Protection
+
 Find components/pages matching sensitive-area patterns (`dashboard|settings|profile|account|
 user`). For each, check for an auth hook/context usage (`useAuth|useSession|getCurrentUser|
 isAuthenticated`) or a redirect-on-no-auth pattern (`redirect.*login|router.push.*login|
 navigate.*login`). Classify: **PROTECTED** (either present) or **UNPROTECTED** (neither).
 
 ## Step 5: Verify E2E Flows
+
 Derive flows from milestone goals and trace each through the codebase, step by step, checking
 each link exists before checking the next:
+
 - **Auth flow:** login form exists → form submits to `/api/auth/*` → API route exists → redirect
   after success.
 - **Data-display flow** (component, api_route, data_var): component exists → component fetches
   (`fetch|axios|useSWR|useQuery`) → component has state for the data (`useState|useQuery|
-  useSWR`) → component renders the data variable → API route exists → API route returns JSON.
+useSWR`) → component renders the data variable → API route exists → API route returns JSON.
 - **Form-submission flow** (form_component, api_route): form element exists (`<form`/
   `onSubmit`) → handler calls the target API route → response is handled (`.then|await.*fetch|
   setError|setSuccess`) → user feedback is shown (`error|success|loading|isLoading`).
-For each step, record pass/fail (✓/✗) with the specific file and reason — never just "it's
-broken."
+  For each step, record pass/fail (✓/✗) with the specific file and reason — never just "it's
+  broken."
 
 ## Step 6: Compile Integration Report
+
 Structure findings for the milestone auditor as wiring status and flow status:
+
 ```yaml
 wiring:
   connected:
@@ -139,6 +152,7 @@ wiring:
       to: "Phase 3"
       reason: "Dashboard doesn't call useAuth or check session"
 ```
+
 ```yaml
 flows:
   complete:
@@ -201,9 +215,9 @@ Return structured report to milestone auditor:
 
 #### Requirements Integration Map
 
-| Requirement | Integration Path | Status | Issue |
-|-------------|-----------------|--------|-------|
-| {REQ-ID} | {Phase X export → Phase Y import → consumer} | WIRED / PARTIAL / UNWIRED | {specific issue or "—"} |
+| Requirement | Integration Path                             | Status                    | Issue                   |
+| ----------- | -------------------------------------------- | ------------------------- | ----------------------- |
+| {REQ-ID}    | {Phase X export → Phase Y import → consumer} | WIRED / PARTIAL / UNWIRED | {specific issue or "—"} |
 
 **Requirements with no cross-phase wiring:**
 {List REQ-IDs that exist in a single phase with no integration touchpoints — these may be self-contained or may indicate missing connections}
@@ -240,5 +254,5 @@ integration-level.
 - [ ] Requirements Integration Map produced with per-requirement wiring status
 - [ ] Requirements with no cross-phase wiring identified
 - [ ] Structured report returned to auditor
-</success_criteria>
-</output>
+      </success_criteria>
+      </output>

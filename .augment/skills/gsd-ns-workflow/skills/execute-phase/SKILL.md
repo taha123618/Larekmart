@@ -4,19 +4,25 @@ description: "SDD phase execution — execute all plans in a phase with dependen
 ---
 
 <augment_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked when the user mentions `gsd-execute-phase` or describes a task matching this skill.
 - Treat all user text after the skill mention as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. User Prompting
+
 When the workflow needs user input, prompt the user conversationally:
+
 - Present options as a numbered list in your response text
 - Ask the user to reply with their choice
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
+
 Use these Augment tools when executing GSD workflows:
+
 - `launch-process` for running commands (terminal operations)
 - `str-replace-editor` for editing existing files
 - `view` for reading files and listing directories
@@ -26,10 +32,12 @@ Use these Augment tools when executing GSD workflows:
 - `add_tasks`, `view_tasklist`, `update_tasks` for task management
 
 ## D. Subagent Spawning
+
 When the workflow needs to spawn a subagent:
+
 - Use the built-in subagent spawning capability
 - Define agent prompts in `.augment/agents/` directory
-</augment_skill_adapter>
+  </augment_skill_adapter>
 
 <objective>
 Execute all plans in a phase using wave-based parallel execution.
@@ -37,10 +45,12 @@ Execute all plans in a phase using wave-based parallel execution.
 Orchestrator stays lean: discover plans, analyze dependencies, group into waves, spawn subagents, collect results. Each subagent loads the full execute-plan context and handles its own plan.
 
 Optional wave filter:
+
 - `--wave N` executes only Wave `N` for pacing, quota management, or staged rollout
 - phase verification/completion still only happens when no incomplete plans remain after the selected wave finishes
 
 Flag handling rule:
+
 - The optional flags documented below are available behaviors, not implied active behaviors
 - A flag is active only when its literal token appears in `{{GSD_ARGS}}`
 - If a documented flag is absent from `{{GSD_ARGS}}`, treat it as inactive
@@ -53,17 +63,17 @@ Context budget: ~15% orchestrator, 100% fresh per subagent.
 @/Users/taha/projects/microservices-ecommerce/.augment/gsd-core/references/ui-brand.md
 </execution_context>
 
-
-
 <context>
 Phase: {{GSD_ARGS}}
 
 **Available optional flags (documentation only — not automatically active):**
+
 - `--wave N` — Execute only Wave `N` in the phase. Use when you want to pace execution or stay inside usage limits.
 - `--gaps-only` — Execute only gap closure plans (plans with `gap_closure: true` in frontmatter). Use after verify-work creates fix plans.
 - `--interactive` — Execute plans sequentially inline (no subagents) with user checkpoints between tasks. Lower token usage, pair-programming style. Best for small phases, bug fixes, and verification gaps.
 
 **Active flags must be derived from `{{GSD_ARGS}}`:**
+
 - `--wave N` is active only if the literal `--wave` token is present in `{{GSD_ARGS}}`
 - `--gaps-only` is active only if the literal `--gaps-only` token is present in `{{GSD_ARGS}}`
 - `--interactive` is active only if the literal `--interactive` token is present in `{{GSD_ARGS}}`

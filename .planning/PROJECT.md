@@ -55,12 +55,13 @@ Reliable, zero-downtime product discovery and checkout powered by strictly async
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Asynchronous Kafka Integration | Prevents cascading failures and distributed transaction deadlocks (ADR-0001) | ✓ Good |
-| Polyglot Persistence | Tailors data engine (PostgreSQL vs MongoDB) to specific service domain needs (ADR-0002) | ✓ Good |
-| Centralized Clerk Auth | Eliminates security risks and maintenance of custom password/session storage (ADR-0003) | ✓ Good |
-| Docker Hardened Images (DHI) | Minimizes CVE attack surface and enforces reproducible zero-remediable-vulnerability SLA | ✓ Good |
+| Decision                       | Rationale                                                                                | Outcome |
+| ------------------------------ | ---------------------------------------------------------------------------------------- | ------- |
+| Asynchronous Kafka Integration | Prevents cascading failures and distributed transaction deadlocks (ADR-0001)             | ✓ Good  |
+| Polyglot Persistence           | Tailors data engine (PostgreSQL vs MongoDB) to specific service domain needs (ADR-0002)  | ✓ Good  |
+| Centralized Clerk Auth         | Eliminates security risks and maintenance of custom password/session storage (ADR-0003)  | ✓ Good  |
+| Docker Hardened Images (DHI)   | Minimizes CVE attack surface and enforces reproducible zero-remediable-vulnerability SLA | ✓ Good  |
 
 ---
-*Last updated: 2026-10-02 after /gsd-onboard doc ingest*
+
+_Last updated: 2026-10-02 after /gsd-onboard doc ingest_

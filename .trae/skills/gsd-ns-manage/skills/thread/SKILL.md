@@ -4,7 +4,6 @@ description: "Manage persistent context threads for cross-session work"
 stage: workflow
 ---
 
-
 <objective>
 Create, list, close, or resume persistent context threads. Threads are lightweight
 cross-session knowledge stores for work that spans multiple sessions but

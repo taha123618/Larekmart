@@ -22,6 +22,7 @@ Extract from init JSON: `todo_count`, `todos`, `pending_dir`, `response_language
 **If `response_language` is set:** All user-facing output of this workflow — narration between tool calls, status updates, progress notes, findings, questions, prompts, and explanations — MUST be presented in `{response_language}`. Technical terms, code, file paths, and subagent prompts stay in English — only user-facing output is translated.
 
 If `todo_count` is 0:
+
 ```
 No pending todos.
 
@@ -97,17 +98,18 @@ If `files` field has entries, read and briefly summarize each.
 Check for roadmap (can use init progress or directly check file existence):
 
 If `.planning/ROADMAP.md` exists:
+
 1. Check if todo's area matches an upcoming phase
 2. Check if todo's files overlap with a phase's scope
 3. Note any match for action options
-</step>
+   </step>
 
 <step name="offer_actions">
 **If todo maps to a roadmap phase:**
 
-
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `{{GSD_ARGS}}` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `conversational prompting` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-Claude runtimes (OpenAI Codex, Antigravity, etc.) where `conversational prompting` is not available.
 Use conversational prompting:
+
 - header: "Action"
 - question: "This todo relates to Phase [N]: [name]. What would you like to do?"
 - options:
@@ -119,6 +121,7 @@ Use conversational prompting:
 **If no roadmap match:**
 
 Use conversational prompting:
+
 - header: "Action"
 - question: "What would you like to do with this todo?"
 - options:
@@ -126,7 +129,7 @@ Use conversational prompting:
   - "Create a phase" — /gsd-add-phase with this scope
   - "Brainstorm approach" — think through before deciding
   - "Put it back" — return to list
-</step>
+    </step>
 
 <step name="execute_action">
 **Work on it now:**
@@ -155,7 +158,7 @@ If `.planning/STATE.md` exists:
 1. Re-run `gsd_run query init.todos` to get a fresh, post-write JSON snapshot (the count and rendering must reflect the change just made).
 2. **Fail-safe check (#2618):** if the JSON failed to parse, or `pending_read_ok` is not `true`, or `pending_todos_markdown` is not a string, do NOT touch the "### Pending Todos" section — leave it exactly as-is and continue to the next step. A partial or malformed `init.todos` result must never overwrite a good existing section.
 3. Otherwise, replace the entire body of "### Pending Todos" (under "## Accumulated Context") with the literal value of `pending_todos_markdown` — verbatim, one bullet per pending todo already rendered and length-capped by `init.todos`. Do not reformat, re-wrap, re-order, or hand-edit the bullets; do not append to the old body — replace it wholesale (this is what makes an old run-on-sentence section get superseded cleanly with no migration step).
-</step>
+   </step>
 
 <step name="git_commit">
 If todo was moved to completed/, commit the change:
@@ -173,6 +176,7 @@ Confirm: "Committed: docs: start work on todo - [title]"
 </process>
 
 <success_criteria>
+
 - [ ] All pending todos listed with title, area, age
 - [ ] Area filter applied if specified
 - [ ] Selected todo's full context loaded
@@ -181,4 +185,4 @@ Confirm: "Committed: docs: start work on todo - [title]"
 - [ ] Selected action executed
 - [ ] STATE.md updated if todo count changed
 - [ ] Changes committed to git (if todo moved to completed/)
-</success_criteria>
+      </success_criteria>

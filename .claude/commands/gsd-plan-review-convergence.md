@@ -32,12 +32,11 @@ Replaces gsd-plan-phase's internal gsd-plan-checker with external AI reviewers (
 @/Users/taha/projects/microservices-ecommerce/.claude/gsd-core/references/agent-contracts.md
 </execution_context>
 
-
-
 <context>
 Phase number: extracted from $ARGUMENTS (required)
 
 **Flags:**
+
 - `--codex` — Use Codex CLI as reviewer (default if no reviewer flag given AND `review.default_reviewers` is unset; otherwise `review.default_reviewers` wins per ADR-0011 — #2315)
 - `--agy` / `--antigravity` — Use Antigravity CLI as reviewer
 - `--claude` — Use Claude CLI as reviewer (separate session)

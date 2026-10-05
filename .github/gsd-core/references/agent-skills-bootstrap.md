@@ -40,10 +40,10 @@ In your mandatory init step — right after `mandatory-initial-read.md` / the
 
 ## What self-load does and does not cover
 
-| Skill form | Self-loads? | Notes |
-|---|---|---|
-| Project-relative path (`skills/my-skill`) | ✅ everywhere | `Read` the `@`-include |
-| Global personal (`global:<name>`) | ✅ everywhere | resolves to the runtime global skills dir, then `Read` |
+| Skill form                                  | Self-loads?    | Notes                                                                                                                                                                                               |
+| ------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Project-relative path (`skills/my-skill`)   | ✅ everywhere  | `Read` the `@`-include                                                                                                                                                                              |
+| Global personal (`global:<name>`)           | ✅ everywhere  | resolves to the runtime global skills dir, then `Read`                                                                                                                                              |
 | Plugin-provided (`global:<plugin>:<skill>`) | the agent only | emitted as a Skill-tool directive on the agent; **skipped with a warning on all other runtimes** — the plugin/Skill-tool model has no equivalent elsewhere (#1601, #1258). Not closeable on Cursor. |
 
 ## Notes

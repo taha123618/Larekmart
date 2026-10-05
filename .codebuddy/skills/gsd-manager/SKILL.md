@@ -10,6 +10,7 @@ Single-terminal command center for managing a milestone. Shows a dashboard of al
 Designed for power users who want to parallelize work across phases from one terminal: discuss a phase while another plans or executes in the background.
 
 **Creates/Updates:**
+
 - No files created directly — dispatches to existing GSD commands via Skill() and background Task agents.
 - Reads `.planning/STATE.md`, `.planning/ROADMAP.md`, phase directories for status.
 

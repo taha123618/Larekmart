@@ -74,6 +74,7 @@ gsd_run query validate.health $REPAIR_FLAG $BACKFILL_FLAG
 ```
 
 Parse JSON output:
+
 - `status`: "healthy" | "degraded" | "broken"
 - `errors[]`: Critical issues (code, message, fix, repairable)
 - `warnings[]`: Non-critical issues
@@ -142,6 +143,7 @@ Errors: N | Warnings: N | Info: N
 ```
 
 **If repairs were performed:**
+
 ```
 ## Repairs Performed
 
@@ -150,6 +152,7 @@ Errors: N | Warnings: N | Info: N
 ```
 
 **If errors exist:**
+
 ```
 ## Errors
 
@@ -161,6 +164,7 @@ Errors: N | Warnings: N | Info: N
 ```
 
 **If warnings exist:**
+
 ```
 ## Warnings
 
@@ -172,6 +176,7 @@ Errors: N | Warnings: N | Info: N
 ```
 
 **If info exists:**
+
 ```
 ## Info
 
@@ -180,10 +185,12 @@ Errors: N | Warnings: N | Info: N
 ```
 
 **Footer (if repairable issues exist and --repair was NOT used):**
+
 ```
 ---
 N issues can be auto-repaired. Run: /gsd-health --repair
 ```
+
 </step>
 
 <step name="offer_repair">
@@ -267,6 +274,7 @@ Note: this table is **generated** — do not hand-edit it. It is produced by `no
 | backfillMilestones | Synthesize missing MILESTONES.md entries from `.planning/milestones/vX.Y-ROADMAP.md` snapshots | None — additive only; triggered by `--backfill` flag |
 
 **Not repairable (too risky):**
+
 - PROJECT.md, ROADMAP.md content
 - Phase directory renaming
 - Orphaned plan cleanup

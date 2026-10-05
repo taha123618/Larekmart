@@ -51,12 +51,12 @@ A plan should not interleave multiple checkpoint types with implementation tasks
 
 ## Specificity Examples
 
-| TOO VAGUE | JUST RIGHT |
-|-----------|------------|
-| "Add authentication" | "Add JWT auth with refresh rotation using jose library, store in httpOnly cookie, 15min access / 7day refresh" |
-| "Create the API" | "Create POST /api/projects endpoint accepting {name, description}, validates name length 3-50 chars, returns 201 with project object" |
-| "Style the dashboard" | "Add Tailwind classes to Dashboard.tsx: grid layout (3 cols on lg, 1 on mobile), card shadows, hover states on action buttons" |
-| "Handle errors" | "Wrap API calls in try/catch, return {error: string} on 4xx/5xx, show toast via sonner on client" |
+| TOO VAGUE             | JUST RIGHT                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| "Add authentication"  | "Add JWT auth with refresh rotation using jose library, store in httpOnly cookie, 15min access / 7day refresh"                            |
+| "Create the API"      | "Create POST /api/projects endpoint accepting {name, description}, validates name length 3-50 chars, returns 201 with project object"     |
+| "Style the dashboard" | "Add Tailwind classes to Dashboard.tsx: grid layout (3 cols on lg, 1 on mobile), card shadows, hover states on action buttons"            |
+| "Handle errors"       | "Wrap API calls in try/catch, return {error: string} on 4xx/5xx, show toast via sonner on client"                                         |
 | "Set up the database" | "Add User and Project models to schema.prisma with UUID ids, email unique constraint, createdAt/updatedAt timestamps, run prisma db push" |
 
 **Specificity test:** Could a different Claude instance execute the task without asking clarifying questions? If not, add more detail.
@@ -88,6 +88,7 @@ A plan should not interleave multiple checkpoint types with implementation tasks
 ## Scope Reduction Anti-Patterns
 
 **Prohibited language in task actions:**
+
 - "v1", "v2", "simplified version", "static for now", "hardcoded for now"
 - "future enhancement", "placeholder", "basic version", "minimal implementation"
 - "will be wired later", "dynamic in future phase", "skip for now"
@@ -98,7 +99,7 @@ If a decision from CONTEXT.md says "display cost calculated from billing table i
 
 > Enforced at plan-write time by `verify.plan-structure` (the `validate_plan` step). Issue #429.
 
-When an `<acceptance_criteria>` or `<verify>` block uses a **negative grep** — `grep -c 'LITERAL' file == 0`, meaning "this literal must NOT appear in the file" — that same `LITERAL` must not appear verbatim anywhere in an `<action>` body. Verbatim code blocks, JSDoc samples, head-comment references, and "what NOT to do" illustrations get echoed into the file the executor writes, so the executor's commit-time gate fails on the *comment text*, not on a real code regression. The work is correct; the gate output is semantically wrong; the executor wastes cycles and learns to distrust the gate.
+When an `<acceptance_criteria>` or `<verify>` block uses a **negative grep** — `grep -c 'LITERAL' file == 0`, meaning "this literal must NOT appear in the file" — that same `LITERAL` must not appear verbatim anywhere in an `<action>` body. Verbatim code blocks, JSDoc samples, head-comment references, and "what NOT to do" illustrations get echoed into the file the executor writes, so the executor's commit-time gate fails on the _comment text_, not on a real code regression. The work is correct; the gate output is semantically wrong; the executor wastes cycles and learns to distrust the gate.
 
 **The gate:** plan creation FAILS (error, `valid: false`) when a confidently-extracted (quoted) negative-grep literal also appears in an `<action>` block. When the grep literal is unquoted and cannot be extracted unambiguously, the gate WARNS instead of failing (so you still get the plan, with the risk surfaced).
 
@@ -184,10 +185,12 @@ One marker per pattern. The marker exempts only the exact pattern it names. Pref
 ## CLI Output Format Anchor Mismatch (#1478)
 
 `pnpm ls vite | grep -E '^vite@7\.'` looks correct but silently fails. `pnpm ls` uses tree characters as line prefixes:
+
 ```
 my-project@1.0.0
 └── vite@7.3.5
 ```
+
 Lines begin with `└──`, not `vite`. The `^` anchor matches line start, which is a tree character — the grep finds nothing.
 
 **Bad:** `pnpm ls vite | grep -E '^vite@7\.'`
@@ -208,14 +211,17 @@ Never emit `grep '714 tests'` or `grep '52 test files'` unless you ran the count
 `2>/dev/null || echo "0"` in an assignment that feeds a comparison converts any failure into a passing gate that measures nothing.
 
 **Bad — both sides default to "0" when files are missing:**
+
 ```bash
 EN_KEYS=$(jq 'keys | length' i18n/en.json 2>/dev/null || echo "0")
 DE_KEYS=$(jq 'keys | length' i18n/de.json 2>/dev/null || echo "0")
 [ "$EN_KEYS" = "$DE_KEYS" ] && echo "ok"
 ```
+
 If files don't exist (wrong path, etc.), both sides become `"0"`. Comparison passes. Gate certifies parity while measuring nothing.
 
 **Good — let failure propagate:**
+
 ```bash
 EN_KEYS=$(jq 'keys | length' src/i18n/en.json)
 DE_KEYS=$(jq 'keys | length' src/i18n/de.json)
@@ -223,6 +229,7 @@ DE_KEYS=$(jq 'keys | length' src/i18n/de.json)
 ```
 
 **Good — explicit guard:**
+
 ```bash
 test -f src/i18n/en.json && test -f src/i18n/de.json || { echo "missing input files"; exit 1; }
 ```

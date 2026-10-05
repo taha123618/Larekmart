@@ -19,14 +19,11 @@ const fetchOrders = async () => {
     process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
     "http://localhost:8080";
-  const res = await fetch(
-    `${orderServiceUrl}/user-orders`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  const res = await fetch(`${orderServiceUrl}/user-orders`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-  );
+  });
 
   if (!res.ok) {
     return [];

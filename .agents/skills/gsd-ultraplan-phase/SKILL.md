@@ -3,7 +3,6 @@ name: gsd-ultraplan-phase
 description: "[BETA] Offload plan phase to Claude Code's ultraplan cloud; review in browser and import back."
 ---
 
-
 <objective>
 Offload GSD's plan phase to Claude Code's ultraplan cloud infrastructure.
 

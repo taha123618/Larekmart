@@ -73,9 +73,9 @@
 // No-op: other tools, new files, non-curated paths, sub-floor files, override set,
 //        hook errors (silent fail)
 
-const fs = require('fs');
-const path = require('path');
-const { HOOK_ON_CRASH, allow, deny, crash } = require('./lib/hook-exit.js');
+const fs = require("fs");
+const path = require("path");
+const { HOOK_ON_CRASH, allow, deny, crash } = require("./lib/hook-exit.js");
 
 // This guard's outer catch has always exited 0 (fail open — a hook error
 // must never block a legitimate tool call; see the emitBlock/consumeSentinelFor
@@ -142,21 +142,26 @@ const CURATED_PATTERNS = [
 // "a\nb\n" and "a\nb" both count as 2.
 function countLines(text) {
   if (!text) return 0;
-  const lines = text.split('\n');
-  if (lines[lines.length - 1] === '') lines.pop();
+  const lines = text.split("\n");
+  if (lines[lines.length - 1] === "") lines.pop();
   return lines.length;
 }
 
 function isOverrideSet() {
   const v = process.env.GSD_ALLOW_PLANNING_SHRINK;
-  return typeof v === 'string' && v !== '' && v !== '0' && v.toLowerCase() !== 'false';
+  return (
+    typeof v === "string" &&
+    v !== "" &&
+    v !== "0" &&
+    v.toLowerCase() !== "false"
+  );
 }
 
 // Single-use sentinel (see header). Consulted ONLY at the shrink-block point —
 // a write that would pass anyway never burns the token, so first-shrink-wins
 // for the write the workflow armed it for.
-const SENTINEL_NAME = '.gsd-allow-shrink';
-const SENTINEL_REL = '.planning/' + SENTINEL_NAME;
+const SENTINEL_NAME = ".gsd-allow-shrink";
+const SENTINEL_REL = ".planning/" + SENTINEL_NAME;
 const SENTINEL_TTL_MS = 15 * 60 * 1000;
 
 function consumeSentinelFor(filePath, normalized) {
@@ -175,15 +180,19 @@ function consumeSentinelFor(filePath, normalized) {
     }
     if (Date.now() - st.mtimeMs > SENTINEL_TTL_MS) {
       // A stale token is a leftover, not an authorization — housekeep it.
-      try { fs.unlinkSync(sentinelPath); } catch { /* best-effort */ }
+      try {
+        fs.unlinkSync(sentinelPath);
+      } catch {
+        /* best-effort */
+      }
       return false;
     }
-    const token = fs.readFileSync(sentinelPath, 'utf8').split('\n')[0].trim();
+    const token = fs.readFileSync(sentinelPath, "utf8").split("\n")[0].trim();
     if (!token) return false;
     // Path-bound: the token names exactly one file, resolved against the
     // .planning/ dir's parent (repo root) — same case-insensitive stance as
     // the curated match itself.
-    let namedPath = path.resolve(path.join(planningDir, '..'), token);
+    let namedPath = path.resolve(path.join(planningDir, ".."), token);
     // Symmetry with the caller's own resolution (#4455 CI finding, macOS
     // full-test shard): `filePath`/`normalized` were already realpath-resolved
     // before this function was called (round 9 Minor 1's symlink-before-match
@@ -200,8 +209,10 @@ function consumeSentinelFor(filePath, normalized) {
     // keep the lexical path on failure, matching the caller's own fallback.
     try {
       namedPath = fs.realpathSync(namedPath);
-    } catch { /* keep the lexical path */ }
-    const namedNorm = namedPath.replace(/\\/g, '/').toLowerCase();
+    } catch {
+      /* keep the lexical path */
+    }
+    const namedNorm = namedPath.replace(/\\/g, "/").toLowerCase();
     if (namedNorm !== normalized.toLowerCase()) {
       return false; // armed for a different file — leave it for that write
     }
@@ -245,20 +256,20 @@ function emitBlock(output) {
 // ('constructor', '__proto__', 'toString') to truthy functions/objects, so the
 // !mapped fall-through never fires for them; Map.get returns undefined (same
 // shape as canonicalizeRuntimeName in src/runtime-name-policy.cts).
-const KIMI_TOOL_NAMES = new Map([['WriteFile', 'Write']]);
+const KIMI_TOOL_NAMES = new Map([["WriteFile", "Write"]]);
 function normalizeKimiPayload(data) {
   // #2595: total over everything JSON can express — JSON.parse('null') is
   // null, and reading .tool_name off a primitive would throw into the outer
   // fail-open catch. A null payload has nothing to guard; pass it through
   // deliberately rather than by crash.
-  if (data === null || typeof data !== 'object') return data;
+  if (data === null || typeof data !== "object") return data;
   const raw = data.tool_name;
-  if (typeof raw !== 'string') return data;
-  const mapped = KIMI_TOOL_NAMES.get(raw.slice(raw.lastIndexOf(':') + 1));
+  if (typeof raw !== "string") return data;
+  const mapped = KIMI_TOOL_NAMES.get(raw.slice(raw.lastIndexOf(":") + 1));
   if (!mapped) return data;
   data.tool_name = mapped;
   const input = data.tool_input;
-  if (input && typeof input === 'object') {
+  if (input && typeof input === "object") {
     // #2595 (review): Kimi's `path` is AUTHORITATIVE — it must win outright,
     // not merely fill in when `file_path` happens to be absent. kimi-cli's
     // WriteFile schema carries no `file_path` at all (src/kimi_cli/tools/
@@ -268,31 +279,31 @@ function normalizeKimiPayload(data) {
     // guard reading '' and exiting 0 while kimi-cli wrote to `path` — a
     // one-key bypass needing no crash. Overwriting can only narrow what the
     // guard inspects to the path that will actually be written.
-    if (typeof input.path === 'string') {
+    if (typeof input.path === "string") {
       input.file_path = input.path;
     }
   }
   return data;
 }
 
-let input = '';
+let input = "";
 const stdinTimeout = setTimeout(() => allow(undefined), 3000);
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => input += chunk);
-process.stdin.on('end', () => {
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => (input += chunk));
+process.stdin.on("end", () => {
   clearTimeout(stdinTimeout);
   try {
     const data = normalizeKimiPayload(JSON.parse(input));
 
     // A null/primitive payload has nothing to guard — exit deliberately
     // rather than throwing into the fail-open catch below (#2595 class).
-    if (data === null || typeof data !== 'object') {
+    if (data === null || typeof data !== "object") {
       allow(undefined);
     }
 
     // Only whole-file Write is catastrophic-by-construction; Edit/MultiEdit
     // replace bounded spans and are out of scope by design (#2255).
-    if (data.tool_name !== 'Write') {
+    if (data.tool_name !== "Write") {
       allow(undefined);
     }
 
@@ -304,9 +315,10 @@ process.stdin.on('end', () => {
     // early-out, then throw inside path.resolve() — crash-to-allow via the
     // outer catch. A non-string path field degrades to '' and exits here.
     const rawInput = data.tool_input;
-    const rawFilePath = typeof rawInput?.file_path === 'string' ? rawInput.file_path : '';
+    const rawFilePath =
+      typeof rawInput?.file_path === "string" ? rawInput.file_path : "";
     const content = rawInput?.content;
-    if (!rawFilePath || typeof content !== 'string') {
+    if (!rawFilePath || typeof content !== "string") {
       allow(undefined);
     }
 
@@ -321,10 +333,12 @@ process.stdin.on('end', () => {
     // realpath error also keeps it, and the read below then fails closed.
     try {
       filePath = fs.realpathSync(filePath);
-    } catch { /* keep the lexical path */ }
-    const normalized = filePath.replace(/\\/g, '/');
+    } catch {
+      /* keep the lexical path */
+    }
+    const normalized = filePath.replace(/\\/g, "/");
 
-    if (!CURATED_PATTERNS.some(re => re.test(normalized))) {
+    if (!CURATED_PATTERNS.some((re) => re.test(normalized))) {
       allow(undefined); // not a curated planning artifact
     }
 
@@ -335,19 +349,19 @@ process.stdin.on('end', () => {
     // enforced by code at all, it is a race away from #973.
     let onDisk;
     try {
-      onDisk = fs.readFileSync(filePath, 'utf8');
+      onDisk = fs.readFileSync(filePath, "utf8");
     } catch (err) {
-      if (err && err.code === 'ENOENT') {
+      if (err && err.code === "ENOENT") {
         allow(undefined); // does not exist — new-file Write, nothing to clobber
       }
       emitBlock({
-        decision: 'block',
-        readError: err && err.code ? String(err.code) : 'UNKNOWN',
-        overrideEnvVar: 'GSD_ALLOW_PLANNING_SHRINK',
+        decision: "block",
+        readError: err && err.code ? String(err.code) : "UNKNOWN",
+        overrideEnvVar: "GSD_ALLOW_PLANNING_SHRINK",
         overrideSentinel: SENTINEL_REL,
         reason:
           `Write guard: could not read '${filePath}' to compare against the pending ` +
-          `Write (${err && err.code ? err.code : 'unknown read error'}). ` +
+          `Write (${err && err.code ? err.code : "unknown read error"}). ` +
           `'${path.basename(filePath)}' is a curated planning artifact, so this guard ` +
           `fails closed rather than risk a blind overwrite. Retry once the file is ` +
           `readable, or — if this overwrite is intentional — re-run with the ` +
@@ -378,10 +392,10 @@ process.stdin.on('end', () => {
     // tests — never have to regex the prose (CONTRIBUTING.md: no raw text
     // matching).
     emitBlock({
-      decision: 'block',
+      decision: "block",
       oldLines,
       newLines,
-      overrideEnvVar: 'GSD_ALLOW_PLANNING_SHRINK',
+      overrideEnvVar: "GSD_ALLOW_PLANNING_SHRINK",
       overrideSentinel: SENTINEL_REL,
       // Round 9 Major 2: the denial deliberately does NOT explain how to arm
       // the sentinel — #973 was an agent reasoning past an advisory, and a

@@ -15,6 +15,7 @@ allowed-tools:
   - mcp__context7__*
 requires: [phase]
 ---
+
 <objective>
 Create an AI design contract (AI-SPEC.md) for a phase involving AI system development.
 Orchestrates gsd-framework-selector → gsd-ai-researcher → gsd-domain-researcher → gsd-eval-planner.

@@ -27,7 +27,8 @@ Resolve it one of three ways, in order of preference:
    either plan's frontmatter, one `"plan-id: reason"` entry per coupled peer:
 
    ```yaml
-   coupling_justified: ["03-02: both plans append independent keys to config; order irrelevant"]
+   coupling_justified:
+     ["03-02: both plans append independent keys to config; order irrelevant"]
    ```
 
    The plan-checker's Dimension 3b recognizes the declaration and does not

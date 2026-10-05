@@ -4,19 +4,25 @@ description: "Request cross-AI peer review of phase plans from external AI CLIs"
 ---
 
 <augment_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked when the user mentions `gsd-review` or describes a task matching this skill.
 - Treat all user text after the skill mention as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. User Prompting
+
 When the workflow needs user input, prompt the user conversationally:
+
 - Present options as a numbered list in your response text
 - Ask the user to reply with their choice
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
+
 Use these Augment tools when executing GSD workflows:
+
 - `launch-process` for running commands (terminal operations)
 - `str-replace-editor` for editing existing files
 - `view` for reading files and listing directories
@@ -26,10 +32,12 @@ Use these Augment tools when executing GSD workflows:
 - `add_tasks`, `view_tasklist`, `update_tasks` for task management
 
 ## D. Subagent Spawning
+
 When the workflow needs to spawn a subagent:
+
 - Use the built-in subagent spawning capability
 - Define agent prompts in `.augment/agents/` directory
-</augment_skill_adapter>
+  </augment_skill_adapter>
 
 <objective>
 Invoke external AI CLIs (Claude, Codex, OpenCode, Qwen Code, Cursor, Antigravity) to independently review phase plans.
@@ -47,6 +55,7 @@ planning via /gsd-plan-phase --reviews.
 Phase number: extracted from {{GSD_ARGS}} (required)
 
 **Flags:**
+
 - `--claude` — Include Claude CLI review (uses separate session)
 - `--codex` — Include Codex CLI review
 - `--opencode` — Include OpenCode review (uses model from user's OpenCode config)

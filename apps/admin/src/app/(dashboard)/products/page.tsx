@@ -9,9 +9,7 @@ const getData = async (): Promise<ProductsType> => {
       process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
       process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
       "http://localhost:8080";
-    const res = await fetch(
-      `${productUrl}/products`,
-    );
+    const res = await fetch(`${productUrl}/products`);
     const data = await res.json();
     return data;
   } catch (error) {

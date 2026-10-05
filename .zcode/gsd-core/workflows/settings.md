@@ -40,6 +40,7 @@ cat "$GSD_CONFIG_PATH"
 ```
 
 Parse current values (default to `true` if not present):
+
 - `workflow.research` — spawn researcher during plan-phase
 - `workflow.plan_check` — spawn plan checker during plan-phase
 - `workflow.verifier` — spawn verifier during execute-phase
@@ -66,7 +67,7 @@ Parse current values (default to `true` if not present):
 - `model_policy.high` — model ID for high-cost tier (default: `null`; set via /gsd:config --advanced)
 - `model_policy.medium` — model ID for medium-cost tier (default: `null`; set via /gsd:config --advanced)
 - `model_policy.low` — model ID for low-cost tier (default: `null`; set via /gsd:config --advanced)
-</step>
+  </step>
 
 <step name="present_settings">
 
@@ -117,21 +118,27 @@ Use AskUserQuestion with current values pre-selected. Questions are grouped into
 Section layout:
 
 ### Planning
+
 Research, Plan Checker, Drift Guard, Pattern Mapper, Nyquist, UI Phase, UI Gate, AI Phase
 
 ### Execution
+
 Verifier, TDD Mode, Code Review, Code Review Depth _(conditional — only when code_review=on)_, UI Review
 
 ### Docs & Output
+
 Commit Docs, Skip Discuss, Worktrees
 
 ### Features
+
 Intel, Graphify, Graph auto-update _(conditional — only when graphify=on)_
 
 ### Model & Pipeline
+
 Model Profile, Auto-Advance, Branching
 
 ### Misc
+
 Context Warnings, Compact Content, Research Qs
 
 **Conditional visibility — code_review_depth:** This question is shown only when the user's chosen `code_review` value (after they answer that question, or the pre-selected value if unchanged) is on. If `code_review` is off, omit the `code_review_depth` question from the AskUserQuestion block and preserve the existing `workflow.code_review_depth` value in config (do not overwrite). Implementation: ask the Model + Planning + Execution-up-to-Code-Review questions first; if `code_review=on`, include `code_review_depth` in the same batch; otherwise skip it. Conceptually this is a one-branch split on the `code_review` answer.
@@ -157,19 +164,19 @@ Context Warnings, Compact Content, Research Qs
 
 **The three placeholders** carry the only difference between a capability GSD resolved and one it could not, so no text in this branch ever asserts a verdict that was not reached. Substitute them everywhere they appear — the two `description`s above, the pre-selection rationale, and the notice — from whichever column applies:
 
-| | `INSPECTED_RESOLVED=true` | `INSPECTED_RESOLVED=false` |
-|---|---|---|
-| `{FINDING}` | this runtime has no usable executor-isolation primitive | GSD could not resolve this runtime's executor-isolation capability |
-| `{CONSEQUENCE}` | execution fails closed on an explicit true | GSD cannot tell whether execution will accept an explicit true |
-| `{ABSENCE}` | absent, it resolves to false wherever this emit stamped that default | absent, it is the safe state until the capability resolves |
+|                 | `INSPECTED_RESOLVED=true`                                            | `INSPECTED_RESOLVED=false`                                         |
+| --------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `{FINDING}`     | this runtime has no usable executor-isolation primitive              | GSD could not resolve this runtime's executor-isolation capability |
+| `{CONSEQUENCE}` | execution fails closed on an explicit true                           | GSD cannot tell whether execution will accept an explicit true     |
+| `{ABSENCE}`     | absent, it resolves to false wherever this emit stamped that default | absent, it is the safe state until the capability resolves         |
 
 Failing closed is right in both columns — never write `workflow.use_worktrees: true` from this branch either way. Only the explanation changes.
 
-  Persistence: "No (Recommended)" → write `workflow.use_worktrees: false`; "Leave unchanged" → do not write `workflow.use_worktrees` at all (preserve the existing value or absence).
+Persistence: "No (Recommended)" → write `workflow.use_worktrees: false`; "Leave unchanged" → do not write `workflow.use_worktrees` at all (preserve the existing value or absence).
 
-  Pre-selection: the generic "current values pre-selected" rule does not apply when `INSPECTED_ISOLATION` is `none` — an explicit `true` has no matching option by design. Pre-select "No (Recommended)" in every case, including an absent key (`$USE_WORKTREES_CURRENT` empty, the no-`--default` read's absent signal): absence resolves to `false` only where this emit stamped that default and to `true` otherwise, so leaving it absent can preserve the very state this branch prevents, while an explicit `false` is correct under either emit (#2486 review). The same applies when it is an explicit non-false value — the broken-inheritance case the notice below covers. "Leave unchanged" remains available for the deliberate shared-config case, but is never the default here. The default must be the repair the "(Recommended)" label points to, so accepting it never keeps a value this branch could not justify. In TEXT_MODE, mark that option as the default in the numbered list.
+Pre-selection: the generic "current values pre-selected" rule does not apply when `INSPECTED_ISOLATION` is `none` — an explicit `true` has no matching option by design. Pre-select "No (Recommended)" in every case, including an absent key (`$USE_WORKTREES_CURRENT` empty, the no-`--default` read's absent signal): absence resolves to `false` only where this emit stamped that default and to `true` otherwise, so leaving it absent can preserve the very state this branch prevents, while an explicit `false` is correct under either emit (#2486 review). The same applies when it is an explicit non-false value — the broken-inheritance case the notice below covers. "Leave unchanged" remains available for the deliberate shared-config case, but is never the default here. The default must be the repair the "(Recommended)" label points to, so accepting it never keeps a value this branch could not justify. In TEXT_MODE, mark that option as the default in the numbered list.
 
-  Additionally, if `$USE_WORKTREES_CURRENT` is non-empty and not `false` (the config carries an explicit `true` — e.g. inherited from a worktree-capable install sharing the repo; empty means the key is absent, which needs no notice), prepend this notice before the question:
+Additionally, if `$USE_WORKTREES_CURRENT` is non-empty and not `false` (the config carries an explicit `true` — e.g. inherited from a worktree-capable install sharing the repo; empty means the key is absent, which needs no notice), prepend this notice before the question:
 
 ```
 Note: the project config currently sets workflow.use_worktrees: true.
@@ -457,6 +464,7 @@ AskUserQuestion([
   }
 ])
 ```
+
 </step>
 
 <step name="update_config">
@@ -522,9 +530,11 @@ Merge new settings into existing config.json:
 **Safe merge:** Apply each chosen value so unrelated keys are never clobbered. Use the appropriate write path per key:
 
 - **Capability hook-gate keys** (owned by a capability in the registry — see `registry.configSchema`): write via the capability writer:
+
   ```bash
   gsd_run capability set <owner> --gate <key>=<value> [--config-dir "$RUNTIME_CONFIG_DIR"]
   ```
+
   The capability-owned keys written by this workflow and their owners are:
   | Key | Owner capability |
   |---|---|
@@ -574,6 +584,7 @@ mkdir -p ~/.gsd
 ```
 
 Write `~/.gsd/defaults.json` with:
+
 ```json
 {
   "mode": <current>,
@@ -612,6 +623,7 @@ Write `~/.gsd/defaults.json` with:
   }
 }
 ```
+
 </step>
 
 <step name="confirm">
@@ -657,14 +669,16 @@ Quick commands:
 - /gsd:plan-phase --skip-verify — skip plan check
 - /gsd:config --advanced — power-user tuning (plan bounce, timeouts, branch templates, cross-AI, context window, model policy)
 ```
+
 </step>
 
 </process>
 
 <success_criteria>
+
 - [ ] Current config read
 - [ ] User presented with 25 settings (profile + workflow toggles + features + git branching + git tagging + ctx warnings + compact content), grouped into six sections: Planning, Execution, Docs & Output, Features, Model & Pipeline, Misc. `code_review_depth` is conditional on `code_review=on`. Model profile uses a two-question split (Q1: Adaptive / Standard tier / Inherit; Q2: Quality / Balanced / Budget — only when Standard tier chosen) to stay within the 4-option AskUserQuestion cap while exposing all 5 valid profiles (#3784). Drift Guard (`plan_review.source_grounding`) is in the Planning section.
 - [ ] Config updated with model_profile, workflow, and git sections
 - [ ] User offered to save as global defaults (~/.gsd/defaults.json)
 - [ ] Changes confirmed to user
-</success_criteria>
+      </success_criteria>

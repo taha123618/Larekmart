@@ -10,9 +10,10 @@ UI-SPEC.md locks spacing, typography, color, copywriting, and design system deci
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-ui-researcher — Researches UI/UX approaches
 - gsd-ui-checker — Reviews UI implementation quality
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
@@ -33,6 +34,7 @@ Parse JSON for: `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `padded
 **File paths:** `state_path`, `roadmap_path`, `requirements_path`, `context_path`, `research_path`.
 
 Detect sketch findings:
+
 ```bash
 SKETCH_FINDINGS_PATH=$(ls ./.claude/skills/sketch-findings-*/SKILL.md 2>/dev/null | head -1 || true)
 ```
@@ -51,9 +53,11 @@ UI_ENABLED=$(gsd_run query config-get workflow.ui_phase --raw 2>/dev/null || ech
 ```
 
 **If `UI_ENABLED` is `false`:**
+
 ```
 UI phase is disabled in config. Enable via /gsd-settings.
 ```
+
 Exit workflow.
 
 **If `planning_exists` is false:** Error — run `/gsd-new-project` first.
@@ -71,21 +75,26 @@ PHASE_INFO=$(gsd_run query roadmap.get-phase "${PHASE}")
 ## 3. Check Prerequisites
 
 **If `has_context` is false:**
+
 ```
 No CONTEXT.md found for Phase {N}.
 Recommended: run /gsd-discuss-phase {N} first to capture design preferences.
 Continuing without user decisions — UI researcher will ask all questions.
 ```
+
 Continue (non-blocking).
 
 **If `has_research` is false:**
+
 ```
 No RESEARCH.md found for Phase {N}.
 Note: stack decisions (component library, styling approach) will be asked during UI research.
 ```
+
 Continue (non-blocking).
 
 **If `SKETCH_FINDINGS_PATH` is not empty:**
+
 ```
 ⚡ Sketch findings detected: {SKETCH_FINDINGS_PATH}
    Validated design decisions from /gsd-sketch will be loaded into the UI researcher.
@@ -109,6 +118,7 @@ without verifying anything. A `--auto` run most often meets this file as an unve
 a run that ended before its checker ran, which is exactly the state the checker should now see.
 
 **Otherwise:** Use AskUserQuestion:
+
 - header: "Existing UI-SPEC"
 - question: "UI-SPEC.md already exists for Phase {N}. What would you like to do?"
 - options:
@@ -123,6 +133,7 @@ If "Update": continue to step 5.
 ## 5. Spawn gsd-ui-researcher
 
 Display:
+
 ```
 ### GSD ► UI DESIGN CONTRACT — PHASE {N}
 
@@ -140,13 +151,14 @@ Answer: "What visual and interaction contracts does this phase need?"
 </objective>
 
 <required_reading>
+
 - {state_path} (Project State)
 - {roadmap_path} (Roadmap)
 - {requirements_path} (Requirements)
 - {context_path} (USER DECISIONS from /gsd-discuss-phase)
 - {research_path} (Technical Research — stack decisions)
 - {SKETCH_FINDINGS_PATH} (Sketch Findings — validated design decisions, CSS patterns, visual direction from /gsd-sketch, if exists)
-</required_reading>
+  </required_reading>
 
 ${AGENT_SKILLS_UI}
 
@@ -194,6 +206,7 @@ Display blocker details and options. Exit workflow.
 ## 7. Spawn gsd-ui-checker
 
 Display:
+
 ```
 ### GSD ► VERIFYING UI-SPEC
 
@@ -211,10 +224,11 @@ Check all 7 dimensions. Return APPROVED or BLOCKED.
 </objective>
 
 <required_reading>
+
 - {phase_dir}/{padded_phase}-UI-SPEC.md (UI Design Contract — PRIMARY INPUT)
 - {context_path} (USER DECISIONS — check compliance)
 - {research_path} (Technical Research — check stack alignment)
-</required_reading>
+  </required_reading>
 
 ${AGENT_SKILLS_UI_CHECKER}
 
@@ -247,6 +261,7 @@ Display blocking issues. Proceed to step 9.
 Track `revision_count` (starts at 0).
 
 **If `revision_count` < 2:**
+
 - Re-spawn gsd-ui-researcher with revision context. `revision_count` is incremented on the
   researcher's RETURN, not here — a return of `## REVISION_CONFLICT` must not spend an
   iteration, and an increment made before dispatch cannot be withheld afterwards:
@@ -256,6 +271,7 @@ Track `revision_count` (starts at 0).
 The UI checker found issues with the current UI-SPEC.md.
 
 ### Issues to Fix
+
 {paste blocking issues from checker return}
 
 `required_property` + evidence + severity BIND. `fix_hint` is ONE non-binding example route: a
@@ -283,9 +299,11 @@ Do NOT re-ask the user questions that are already answered.
   the THIRD conflict return of this loop whatever property it names — alternating property names
   would otherwise never trip the repeat rule. Stop re-spawning and route it to the same cap
   escalation below, so declining to spend an iteration cannot make this path unbounded.
+
 - **On any other return:** increment `revision_count`, then re-spawn checker (step 7)
 
 **If `revision_count` >= 2:**
+
 ```
 Max revision iterations reached. Remaining issues:
 
@@ -450,7 +468,7 @@ under `--auto` it follows the spec-phase 5.5 convention (replace AskUserQuestion
 recommended choice): Claude re-reads each element's prose and authors the `elements` override (the
 union of the detected kinds + any kind it identifies as missed) instead of prompting — so `--auto`
 recall rests on Claude's kind-identification, not the heuristic cue-match alone. This matters because
-`autoResolve` (below) is a RESOLUTION floor only: it resolves the *detected* categories and cannot
+`autoResolve` (below) is a RESOLUTION floor only: it resolves the _detected_ categories and cannot
 recover a kind that was never surfaced, so recall is fixed HERE, at kind-confirmation, before
 resolution runs.
 
@@ -475,6 +493,7 @@ STATE coverage and REFERENCES those rows rather than restating the copy (de-dup)
 ## 10. Present Final Status
 
 Display:
+
 ```
 ### GSD ► UI-SPEC READY ✓
 
@@ -519,6 +538,7 @@ gsd_run query state.record-session \
 </process>
 
 <success_criteria>
+
 - [ ] Config checked (exit if ui_phase disabled)
 - [ ] Phase validated against roadmap
 - [ ] Prerequisites checked (CONTEXT.md, RESEARCH.md — non-blocking warnings)
@@ -531,4 +551,4 @@ gsd_run query state.record-session \
 - [ ] Final status displayed with next steps
 - [ ] UI-SPEC.md committed (if commit_docs enabled)
 - [ ] State updated
-</success_criteria>
+      </success_criteria>

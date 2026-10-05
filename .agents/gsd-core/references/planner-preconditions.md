@@ -2,7 +2,7 @@
 
 > Progressive-disclosure reference for `agents/gsd-planner.md`. The planner agent
 > reads this file when it needs the full emission rules for the `<precondition>`
-> task element (issue #1949, *The Pragmatic Programmer* Topic 23 — Design by
+> task element (issue #1949, _The Pragmatic Programmer_ Topic 23 — Design by
 > Contract). The slim pointer in `agents/gsd-planner.md` → `<task_breakdown>`
 > routes here; the canonical schema row lives in `docs/reference/plan-md.md`.
 
@@ -10,21 +10,21 @@
 
 Every task in a PLAN.md participates in a three-sided contract:
 
-| Contract side | GSD element | When it binds |
-|---|---|---|
-| **Precondition** | `<precondition>` (optional element on `<task>`) | Before the task begins. What must already be true for the task to run safely. |
-| **Postcondition** | `<verify>` + `<done>` + `<acceptance_criteria>` | After the task ends. What the task guarantees on return. |
-| **Invariant** | `must_haves.truths` (plan frontmatter) | Across the whole plan/phase. What always holds. |
+| Contract side     | GSD element                                     | When it binds                                                                 |
+| ----------------- | ----------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Precondition**  | `<precondition>` (optional element on `<task>`) | Before the task begins. What must already be true for the task to run safely. |
+| **Postcondition** | `<verify>` + `<done>` + `<acceptance_criteria>` | After the task ends. What the task guarantees on return.                      |
+| **Invariant**     | `must_haves.truths` (plan frontmatter)          | Across the whole plan/phase. What always holds.                               |
 
 GSD already models postconditions and invariants well. `<precondition>` closes
 the missing side: it states, in runnable/checkable terms, what must be true
-*before* a task begins — so an autonomous executor stops the instant an
+_before_ a task begins — so an autonomous executor stops the instant an
 assumption is false, instead of building ten atomic commits on top of a
 migration that never ran.
 
 This is the front-of-task companion to the tracer-bullet proposal (#1945):
-tracers prove the *architecture* end-to-end before expansion; preconditions prove
-each expansion task's *assumptions* before it runs. Together they close both ends
+tracers prove the _architecture_ end-to-end before expansion; preconditions prove
+each expansion task's _assumptions_ before it runs. Together they close both ends
 of the "outrunning your headlights" failure mode.
 
 ## When to emit `<precondition>`
@@ -73,7 +73,7 @@ cross phase boundaries, so a `<precondition>` is the explicit pointer.
 ### Case 3 — Environment variable / runtime configuration
 
 The task shells out to a tool, hits an API, or runs a script that requires an
-environment variable or runtime config that exists *now* (not at plan time).
+environment variable or runtime config that exists _now_ (not at plan time).
 
 ```xml
 <task type="auto">
@@ -111,17 +111,17 @@ environment variable or runtime config that exists *now* (not at plan time).
 - **Implementation choices.** "We have chosen library X" — that belongs in the
   `<action>` body or a `## Decisions` row, not a runtime fact.
 - **Things the task itself creates.** A precondition names a fact the task
-  *assumes*; if the task produces it, it is a postcondition (`<done>`).
+  _assumes_; if the task produces it, it is a postcondition (`<done>`).
 
 ## Executor behavior (assertion contract)
 
 The executor agent reads `<precondition>` before any other task work:
 
-| State | Executor behavior |
-|---|---|
-| **Absent** | No visible change — execute the task exactly as today. Back-compat for every existing plan. |
-| **Met** | No visible change — proceed with the task. The precondition is logged in the SUMMARY only if it was non-trivial to verify. |
-| **Unmet** | STOP — return a `checkpoint:human-verify` reporting `**Gate:** blocking-human` (use `checkpoint_return_format`) with `**Blocked by:** Precondition not met: <precondition text>`. Do NOT partial-commit the task. Unmet preconditions are NEVER auto-approved — a missing prerequisite is not a verification step a human can rubber-stamp, it is a fact the executor cannot establish on its own. |
+| State      | Executor behavior                                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Absent** | No visible change — execute the task exactly as today. Back-compat for every existing plan.                                                                                                                                                                                                                                                                                                        |
+| **Met**    | No visible change — proceed with the task. The precondition is logged in the SUMMARY only if it was non-trivial to verify.                                                                                                                                                                                                                                                                         |
+| **Unmet**  | STOP — return a `checkpoint:human-verify` reporting `**Gate:** blocking-human` (use `checkpoint_return_format`) with `**Blocked by:** Precondition not met: <precondition text>`. Do NOT partial-commit the task. Unmet preconditions are NEVER auto-approved — a missing prerequisite is not a verification step a human can rubber-stamp, it is a fact the executor cannot establish on its own. |
 
 ## Plan-structure validation
 
@@ -147,7 +147,7 @@ The following are explicitly NOT part of v1:
 
 ## See also
 
-- *The Pragmatic Programmer*, Topic 23 — "Design by Contract" (Hunt & Thomas).
+- _The Pragmatic Programmer_, Topic 23 — "Design by Contract" (Hunt & Thomas).
 - `docs/reference/plan-md.md` — canonical PLAN.md schema reference (where
   `<precondition>` appears in the task-element table).
 - Tracer-bullet proposal (#1945) — the architectural-end companion to this

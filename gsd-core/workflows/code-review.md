@@ -9,9 +9,10 @@ Read all files referenced by the invoking prompt's execution_context before star
 </required_reading>
 
 <available_agent_types>
+
 - gsd-code-reviewer: Reviews source files for bugs and quality issues
 - gsd-code-fixer: Applies fixes to code review findings (used via dispatch_fix → code-review-fix.md when --fix is passed)
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
@@ -58,6 +59,7 @@ REVIEWER_MODEL=$(gsd_run query resolve-model gsd-code-reviewer --raw)
 Parse from init JSON: `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `padded_phase`, `commit_docs`, `fallow_enabled`, `fallow_scope`, `fallow_profile`, `fallow_mcp`, `fallow_max_crap`.
 
 **Input sanitization (defense-in-depth):**
+
 ```bash
 # Validate PADDED_PHASE matches the canonical phase-number grammar (src/phase-id.cts): digits,
 # an optional single uppercase letter, then dotted segments (e.g., "02", "03.1", "23.1.2", "12A")
@@ -69,6 +71,7 @@ fi
 
 **Phase validation (before config gate):**
 If `phase_found` is false, report error and exit:
+
 ```
 Error: Phase ${PHASE_ARG} not found. Run /gsd:progress to see available phases.
 ```
@@ -76,11 +79,13 @@ Error: Phase ${PHASE_ARG} not found. Run /gsd:progress to see available phases.
 This runs BEFORE config gate check so user errors are surfaced immediately regardless of config state.
 
 If FILES_OVERRIDE is set, split by comma into array:
+
 ```bash
 if [ -n "$FILES_OVERRIDE" ]; then
   IFS=',' read -ra FILES_ARRAY <<< "$FILES_OVERRIDE"
 fi
 ```
+
 </step>
 
 <step name="check_config_gate">
@@ -91,9 +96,11 @@ CODE_REVIEW_ENABLED=$(gsd_run query config-get workflow.code_review --raw 2>/dev
 ```
 
 If `CODE_REVIEW_ENABLED` is not `"true"`:
+
 ```
 Code review skipped (code-review capability inactive)
 ```
+
 Exit workflow.
 
 Default is active (`workflow.code_review` schema default is `true`) — only skip when explicitly disabled. This check runs AFTER phase validation so invalid phase errors are shown first.
@@ -117,11 +124,12 @@ LAST_REVIEW_COMMIT=$(git log --format=%H -1 -- "${PHASE_DIR}/${PADDED_PHASE}-REV
 **Tier 1 — --files override (highest precedence per D-08):**
 
 If FILES_OVERRIDE is set (from --files flag):
+
 ```bash
 if [ -n "$FILES_OVERRIDE" ]; then
   REVIEW_FILES=()
   REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-  
+
   for file_path in "${FILES_ARRAY[@]}"; do
     # Security: validate path is within repository (prevent path traversal)
     ABS_PATH=$(realpath -m "${file_path}" 2>/dev/null || echo "${file_path}")
@@ -129,7 +137,7 @@ if [ -n "$FILES_OVERRIDE" ]; then
       echo "Error: File path outside repository, skipping: ${file_path}"
       continue
     fi
-    
+
     # Validate path exists (relative to repo root)
     if [ -f "${REPO_ROOT}/${file_path}" ] || [ -f "${file_path}" ]; then
       REVIEW_FILES+=("$file_path")
@@ -137,7 +145,7 @@ if [ -n "$FILES_OVERRIDE" ]; then
       echo "Warning: File not found, skipping: ${file_path}"
     fi
   done
-  
+
   echo "File scope: ${#REVIEW_FILES[@]} files from --files override"
 fi
 ```
@@ -147,6 +155,7 @@ Skip SUMMARY/git scoping entirely when --files is provided.
 **Tier 2 — SUMMARY.md extraction (primary per D-01):**
 
 If --files NOT provided:
+
 ```bash
 if [ -z "$FILES_OVERRIDE" ]; then
   SUMMARIES=$(ls "${PHASE_DIR}"/*-SUMMARY.md 2>/dev/null)
@@ -194,7 +203,7 @@ if [ -z "$FILES_OVERRIDE" ]; then
     if (files.length) console.log(files.join('\n'));
 NODE
   }
-  
+
   if [ -n "$SUMMARIES" ]; then
     # Rewrapped through unquoted command substitution (gsd-core#4109): a bare
     # `$VAR` word-splits under bash but not zsh, collapsing every element onto
@@ -211,7 +220,7 @@ NODE
       # Extract key_files.created and key_files.modified using node for reliable YAML parsing
       # This avoids fragile awk parsing that breaks on indentation differences
       EXTRACTED=$(extract_summary_files "$summary")
-      
+
       # Add extracted files to REVIEW_FILES array
       if [ -n "$EXTRACTED" ]; then
         while IFS= read -r file; do
@@ -221,7 +230,7 @@ NODE
         done <<< "$EXTRACTED"
       fi
     done
-    
+
     if [ ${#REVIEW_FILES[@]} -eq 0 ]; then
       echo "Warning: SUMMARY artifacts found but contained no file paths. Falling back to git diff."
     fi
@@ -235,6 +244,7 @@ If no SUMMARY.md files found OR no files extracted from them, fall back to the g
 Additionally, whenever a reliable diff base is available, cross-check the SUMMARY scope
 against the diff and warn about (then add) any changed files the SUMMARY extractor did not
 surface — so a partial SUMMARY result can no longer silently mask the rest of the phase.
+
 ```bash
 # Compute diff base from phase commits — fail closed if no reliable base found.
 # #3503: anchor the grep to GSD's own conventional-commit phase scopes — the
@@ -341,6 +351,7 @@ fi
 **Post-processing (all tiers):**
 
 1. **Expand tilde paths:** SUMMARY.md `key-files` entries may record a `~/...`-prefixed path (e.g. `/Users/taha/projects/microservices-ecommerce/gsd-core/workflows/verify-work.md`). Bash only tilde-expands a literal `~` written in source text, never one arriving as the value of an already-expanded variable, so every later `[ -f "$file" ]` check must see a real, expanded path or it misclassifies the file as deleted.
+
 ```bash
 EXPANDED_FILES=()
 for file in "${REVIEW_FILES[@]}"; do
@@ -353,6 +364,7 @@ REVIEW_FILES=("${EXPANDED_FILES[@]}")
 ```
 
 2. **Apply exclusions (per D-03):** Remove paths matching planning artifacts
+
 ```bash
 FILTERED_FILES=()
 for file in "${REVIEW_FILES[@]}"; do
@@ -371,6 +383,7 @@ REVIEW_FILES=("${FILTERED_FILES[@]}")
 ```
 
 3. **Filter deleted files:** Remove paths that don't exist on disk
+
 ```bash
 EXISTING_FILES=()
 DELETED_COUNT=0
@@ -389,6 +402,7 @@ fi
 ```
 
 4. **Deduplicate:** Remove duplicate paths (portable — bash 3.2+ compatible, handles spaces in paths)
+
 ```bash
 DEDUPED=()
 while IFS= read -r line; do
@@ -400,6 +414,7 @@ REVIEW_FILES=("${DEDUPED[@]}")
 5. **Sort:** Alphabetical sort for reproducible agent input (already sorted by sort -u above)
 
 **Log final scope and warn if large:**
+
 ```bash
 if [ -n "$FILES_OVERRIDE" ]; then
   TIER="--files override"
@@ -416,6 +431,7 @@ if [ ${#REVIEW_FILES[@]} -gt 50 ]; then
   echo "Consider using --files to narrow scope, or --depth=quick for a faster pass."
 fi
 ```
+
 </step>
 
 <step name="resolve_depth">
@@ -529,6 +545,7 @@ else
   exit 1
 fi
 ```
+
 This `if`/`else`/`fi` is the entire guard: when `DEPTH_OK` is not the literal string `true`, execution never reaches the `DEPTH_FIELDS`/`REVIEW_DEPTH` extraction — the `else` branch prints the errors, prints the final `Error:` line above, and `exit 1`s out of the fenced block, so `REVIEW_DEPTH` is never set. Exit workflow. Do NOT spawn agent or create REVIEW.md.
 </step>
 
@@ -556,6 +573,7 @@ Optional structural cross-module pass powered by fallow.
 Parse `fallow_enabled`, `fallow_scope`, `fallow_profile`, `fallow_mcp`, `fallow_max_crap` from the init JSON as `FALLOW_ENABLED`, `FALLOW_SCOPE`, `FALLOW_PROFILE`, `FALLOW_MCP`, `FALLOW_MAX_CRAP`. These are resolved once by `init.code-review` at init time — consuming the pre-resolved values here (instead of a `config-get` call inside this step) avoids gating this section's own inclusion on a fact its own body would otherwise compute (see `state:fallow-enabled` in docs/reference/workflow-fragments.md).
 
 Defaults are fail-closed and opt-in:
+
 - `enabled=false` (skip entirely)
 - `scope=phase`
 - `profile=standard` (maps to `--max-crap 30`; minimal=50, standard=30, strict=15 — fallow has no native profile concept)
@@ -564,9 +582,11 @@ Defaults are fail-closed and opt-in:
 If `section_manifest` is `null` or `"structural-pre-pass"` is in its `included` list: read and execute `gsd-core/workflows/code-review/steps/structural-pre-pass.md`. Otherwise skip — do not read the file.
 
 When disabled, set:
+
 ```bash
 FALLOW_JSON_PATH=""
 ```
+
 </step>
 
 <step name="dispatch_reviewer_lanes">
@@ -587,6 +607,7 @@ and base SHA — SAFE-01; canonical file paths travel on stdin, never argv, per
 fence boundary (a prose sentence between two fences is not a guard — see the depth-resolution
 guard's own rule earlier in this file), so every value this step computes and everything that
 reads it must run as a single shell control-flow decision, start to finish:
+
 ```bash
 CODE_REVIEW_POINT_STDERR=$(mktemp)
 CODE_REVIEW_POINT=$(gsd_run query config-get workflow.code_review_point --raw 2>"$CODE_REVIEW_POINT_STDERR") || {
@@ -714,6 +735,7 @@ mis-scoping one tier down AND make the external lane review a different diff tha
 reviewer (a previously-latent bug #4209 made observable — see B3 in `.wolf/buglog.json`).
 
 Build required_reading block for agent:
+
 ```bash
 FILES_TO_READ=""
 for file in "${REVIEW_FILES[@]}"; do
@@ -722,6 +744,7 @@ done
 ```
 
 Build config block for agent:
+
 ```bash
 CONFIG_FILES=""
 for file in "${REVIEW_FILES[@]}"; do
@@ -730,6 +753,7 @@ done
 ```
 
 Build structural findings block for agent:
+
 ```bash
 STRUCTURAL_FINDINGS_BLOCK=""
 MAX_FINDINGS_SIZE=50000
@@ -795,6 +819,7 @@ ${AGENT_SKILLS_REVIEWER}")
 **Agent failure handling:**
 
 If the Agent() call fails (agent error, timeout, or exception):
+
 ```
 Error: Code review agent failed: ${error_message}
 
@@ -823,10 +848,10 @@ if [ -f "${REVIEW_PATH}" ]; then
     const match = content.replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---/);
     if (match && /status:/.test(match[1])) { console.log('valid'); } else { console.log('invalid'); }
   " 2>/dev/null)
-  
+
   if [ "$HAS_STATUS" = "valid" ]; then
     echo "REVIEW.md created at ${REVIEW_PATH}"
-    
+
     if [ "$COMMIT_DOCS" = "true" ]; then
       gsd_run query commit \
         "docs(${PADDED_PHASE}): add code review report" \
@@ -841,6 +866,7 @@ else
   echo "No REVIEW.md to commit. Please retry with /gsd:code-review ${PHASE_ARG}"
 fi
 ```
+
 </step>
 
 If `section_manifest` is `null` or `"dispatch-fix"` is in its `included` list: read and execute `gsd-core/workflows/code-review/steps/dispatch-fix.md`. Otherwise skip — do not read the file; proceed to `present_results`.
@@ -879,7 +905,7 @@ Display inline summary to user:
 
   Depth:           ${REVIEW_DEPTH} (${DEPTH_PROVENANCE})
   Files Reviewed:  ${FILES_REVIEWED}
-  
+
   Findings:
     Critical:  ${CRITICAL}
     Warning:   ${WARNING}
@@ -892,6 +918,7 @@ Display inline summary to user:
 ```
 
 If status is "clean":
+
 ```
 ✓ No issues found. All ${FILES_REVIEWED} files pass review at ${REVIEW_DEPTH} depth.
 
@@ -899,6 +926,7 @@ Full report: ${REVIEW_PATH}
 ```
 
 If total findings > 0:
+
 ```
 ⚠ Issues found. Review the report for details.
 
@@ -910,6 +938,7 @@ Next steps:
 ```
 
 If critical > 0 or warning > 0, list top 3 issues inline:
+
 ```bash
 echo "Top issues:"
 grep -A 3 "^### CR-\|^### BL-\|^### WR-" "${REVIEW_PATH}" | head -n 12
@@ -918,6 +947,7 @@ grep -A 3 "^### CR-\|^### BL-\|^### WR-" "${REVIEW_PATH}" | head -n 12
 **Note on tests:** Automated tests for this command and workflow are planned for Phase 4 (Pipeline Integration & Testing, requirement INFR-03). Phase 2 focuses on correct implementation; Phase 4 adds regression coverage across platforms.
 
 ---
+
 </step>
 
 </process>
@@ -936,6 +966,7 @@ If `--files` validation fails unexpectedly on macOS, install coreutils or use ab
 </platform_notes>
 
 <success_criteria>
+
 - [ ] Phase validated before config gate check
 - [ ] Capability gate checked (`workflow.code_review` config key)
 - [ ] --fix/--all/--auto flags parsed via code-review-flags.cjs typed IR (not ad-hoc bash)
@@ -950,4 +981,4 @@ If `--files` validation fails unexpectedly on macOS, install coreutils or use ab
 - [ ] REVIEW.md committed if created
 - [ ] When --fix: dispatch_fix step delegates to code-review-fix.md with --all/--auto forwarded
 - [ ] Results presented inline with next step suggestion (review-only path)
-</success_criteria>
+      </success_criteria>

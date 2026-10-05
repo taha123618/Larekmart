@@ -17,12 +17,12 @@
 // Enable via config: hooks.workflow_guard: true (default: false)
 // Only triggers on Write/Edit tool calls to non-.planning/ files.
 
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
-const { tokenize, skipToSubcommand } = require('./lib/git-cmd.js');
-const { HOOK_ON_CRASH, allow, deny, crash } = require('./lib/hook-exit.js');
-const { reportIfUndetermined } = require('./lib/git-probe.js');
+const fs = require("fs");
+const path = require("path");
+const { spawnSync } = require("child_process");
+const { tokenize, skipToSubcommand } = require("./lib/git-cmd.js");
+const { HOOK_ON_CRASH, allow, deny, crash } = require("./lib/hook-exit.js");
+const { reportIfUndetermined } = require("./lib/git-probe.js");
 
 // This guard is almost entirely advisory (fail open — a broken advisory must
 // never wedge every tool call), with ONE hard block (#3504 force-add-on-
@@ -35,8 +35,8 @@ const { reportIfUndetermined } = require('./lib/git-probe.js');
 const ON_CRASH = HOOK_ON_CRASH.ALLOW;
 
 function forceGitAddCwds(command, defaultCwd) {
-  const tokens = tokenize(command || '');
-  const separators = new Set(['&&', '||', ';', '|']);
+  const tokens = tokenize(command || "");
+  const separators = new Set(["&&", "||", ";", "|"]);
   const cwdList = [];
   // #3504: per-segment walk driven by git-cmd.js's canonical skipToSubcommand.
   // The previous inline walk knew six global flags and silently missed the
@@ -55,13 +55,14 @@ function forceGitAddCwds(command, defaultCwd) {
   }
   for (const seg of segments) {
     const subIdx = skipToSubcommand(seg);
-    if (subIdx === -1 || subIdx >= seg.length || seg[subIdx] !== 'add') continue;
+    if (subIdx === -1 || subIdx >= seg.length || seg[subIdx] !== "add")
+      continue;
 
     // Resolve a `-C <dir>` (separate-arg form) preceding the subcommand so
     // the branch is probed at the repository the add targets.
     let gitCwd = defaultCwd;
     for (let k = 0; k < subIdx; ) {
-      if (seg[k] === '-C' && k + 1 < subIdx) {
+      if (seg[k] === "-C" && k + 1 < subIdx) {
         gitCwd = path.resolve(gitCwd, seg[k + 1]);
         k += 2;
         continue;
@@ -70,8 +71,12 @@ function forceGitAddCwds(command, defaultCwd) {
     }
 
     for (let k = subIdx + 1; k < seg.length; k++) {
-      if (seg[k] === '--') break;
-      if (seg[k] === '--force' || seg[k] === '-f' || /^-[A-Za-z]*f[A-Za-z]*$/.test(seg[k])) {
+      if (seg[k] === "--") break;
+      if (
+        seg[k] === "--force" ||
+        seg[k] === "-f" ||
+        /^-[A-Za-z]*f[A-Za-z]*$/.test(seg[k])
+      ) {
         cwdList.push(gitCwd);
         break;
       }
@@ -81,10 +86,10 @@ function forceGitAddCwds(command, defaultCwd) {
 }
 
 function currentBranch(cwd) {
-  const result = spawnSync('git', ['branch', '--show-current'], {
+  const result = spawnSync("git", ["branch", "--show-current"], {
     cwd,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
     windowsHide: true,
     // #3504: bounded — this ran unbounded before, an indefinite hang under a
     // wedged git would hang every PreToolUse call. Host wiring allows a 5s
@@ -92,15 +97,19 @@ function currentBranch(cwd) {
     // returns '' (branch unknown), which both the block decision and the
     // fail-closed re-check treat as "cannot establish agent branch".
     timeout: 2000,
-    killSignal: 'SIGTERM',
+    killSignal: "SIGTERM",
   });
   // #3911: a timeout/spawn-failure here previously degraded to '' exactly
   // like a clean "not on a branch" answer — indistinguishable from the
   // caller's point of view. reportIfUndetermined is a no-op on a genuine
   // negative and only emits a diagnostic when the probe itself could not
   // run; the '' fallback (and therefore this hook's exit code) is unchanged.
-  reportIfUndetermined('gsd-workflow-guard', 'git branch --show-current', result);
-  if (result.status !== 0) return '';
+  reportIfUndetermined(
+    "gsd-workflow-guard",
+    "git branch --show-current",
+    result,
+  );
+  if (result.status !== 0) return "";
   return result.stdout.trim();
 }
 
@@ -113,7 +122,7 @@ function isAgentBranch(branch) {
 // Typed cwd read, shared by both paths for the same reason: a non-string cwd
 // degrades to process.cwd() instead of throwing inside path.join().
 function payloadCwd(data) {
-  return typeof data?.cwd === 'string' && data.cwd ? data.cwd : process.cwd();
+  return typeof data?.cwd === "string" && data.cwd ? data.cwd : process.cwd();
 }
 
 // The force-add block payload, emitted by the happy-path detector and the
@@ -122,14 +131,14 @@ function payloadCwd(data) {
 // consumer — or the model reading Kimi's stderr feedback — is never told a
 // force-add was detected when the call was in fact blocked unanalyzed.
 function emitForceAddBlock(origin) {
-  const failClosed = origin === 'fail-closed';
+  const failClosed = origin === "fail-closed";
   const reason = failClosed
-    ? 'workflow guard internal error on an agent branch - failing closed. The command was NOT analyzed and was NOT confirmed to be a force-add. Retry the call or inspect the guard.'
-    : 'agent/worktree-agent branches must not run git add -f or git add --force. Respect the SDK skipped_gitignored/skipped_commit_docs_false contract and leave gitignored files untracked.';
+    ? "workflow guard internal error on an agent branch - failing closed. The command was NOT analyzed and was NOT confirmed to be a force-add. Retry the call or inspect the guard."
+    : "agent/worktree-agent branches must not run git add -f or git add --force. Respect the SDK skipped_gitignored/skipped_commit_docs_false contract and leave gitignored files untracked.";
   const output = {
-    decision: 'block',
-    code: 'WORKTREE_AGENT_FORCE_ADD_FORBIDDEN',
-    origin: failClosed ? 'fail-closed' : 'force-add-detected',
+    decision: "block",
+    code: "WORKTREE_AGENT_FORCE_ADD_FORBIDDEN",
+    origin: failClosed ? "fail-closed" : "force-add-detected",
     reason,
   };
   // Kimi CLI's exit-2 protocol feeds stderr back to the model (#2304) — deny's
@@ -155,7 +164,8 @@ function failClosedBlockContext(rawInput) {
   } catch {
     return false;
   }
-  if (data === null || typeof data !== 'object' || data.tool_name !== 'Bash') return false;
+  if (data === null || typeof data !== "object" || data.tool_name !== "Bash")
+    return false;
   const cwd = payloadCwd(data);
   let enabled;
   try {
@@ -174,10 +184,10 @@ function failClosedBlockContext(rawInput) {
 }
 
 function workflowGuardEnabled(cwd) {
-  const configPath = path.join(cwd, '.planning', 'config.json');
+  const configPath = path.join(cwd, ".planning", "config.json");
   if (!fs.existsSync(configPath)) return false;
   try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
     return Boolean(config.hooks?.workflow_guard);
   } catch (e) {
     return false;
@@ -201,7 +211,12 @@ function workflowGuardEnabled(cwd) {
 // ('constructor', '__proto__', 'toString') to truthy functions/objects, so the
 // !mapped fall-through never fires for them; Map.get returns undefined (same
 // shape as canonicalizeRuntimeName in src/runtime-name-policy.cts).
-const KIMI_TOOL_NAMES = new Map([['WriteFile', 'Write'], ['StrReplaceFile', 'Edit'], ['ReadFile', 'Read'], ['Shell', 'Bash']]);
+const KIMI_TOOL_NAMES = new Map([
+  ["WriteFile", "Write"],
+  ["StrReplaceFile", "Edit"],
+  ["ReadFile", "Read"],
+  ["Shell", "Bash"],
+]);
 function normalizeKimiPayload(data) {
   // #2595 (review nit): `JSON.parse('null')` is null, and null/primitive
   // payloads reached the `data.tool_name` read below and threw — falsifying
@@ -209,17 +224,17 @@ function normalizeKimiPayload(data) {
   // property (e) now tests directly. Harmless in practice (a null payload has
   // nothing to guard, and the throw landed in the same fail-open catch as the
   // exit-0 it now takes deliberately) but the claim should be true as stated.
-  if (data === null || typeof data !== 'object') return data;
+  if (data === null || typeof data !== "object") return data;
   const raw = data.tool_name;
-  if (typeof raw !== 'string') return data;
-  const mapped = KIMI_TOOL_NAMES.get(raw.slice(raw.lastIndexOf(':') + 1));
+  if (typeof raw !== "string") return data;
+  const mapped = KIMI_TOOL_NAMES.get(raw.slice(raw.lastIndexOf(":") + 1));
   if (!mapped) return data;
   data.tool_name = mapped;
   if (data.tool_response === undefined && data.tool_output !== undefined) {
     data.tool_response = data.tool_output;
   }
   const input = data.tool_input;
-  if (input && typeof input === 'object') {
+  if (input && typeof input === "object") {
     // #2547 (review): Kimi's `path` is AUTHORITATIVE — it must win outright,
     // not merely fill in when `file_path` happens to be absent. kimi-cli's file
     // tools carry no `file_path` field at all (src/kimi_cli/tools/file/write.py,
@@ -238,11 +253,14 @@ function normalizeKimiPayload(data) {
     // elsewhere, reached through the guard's own read rather than through
     // normalization. Overwriting can only ever narrow what a guard inspects to
     // the path that will actually be written, so it cannot under-block.
-    if (typeof input.path === 'string') {
+    if (typeof input.path === "string") {
       input.file_path = input.path;
     }
-    const edits = Array.isArray(input.edit) ? input.edit
-      : (input.edit && typeof input.edit === 'object') ? [input.edit] : [];
+    const edits = Array.isArray(input.edit)
+      ? input.edit
+      : input.edit && typeof input.edit === "object"
+        ? [input.edit]
+        : [];
     if (edits.length) {
       // #2547: `e?.old`, not `e.old` — `??` guards the value, not the
       // dereference, so a NULLISH entry (`edit: [null]`) threw a TypeError
@@ -258,7 +276,13 @@ function normalizeKimiPayload(data) {
       // stringification intact for every value that CAN coerce (numbers,
       // arrays, plain objects), so nothing downstream — including
       // gsd-prompt-guard's scan of new_string — loses content it saw before.
-      const editText = (v) => { try { return String(v ?? ''); } catch { return ''; } };
+      const editText = (v) => {
+        try {
+          return String(v ?? "");
+        } catch {
+          return "";
+        }
+      };
       // #2595 (review Major 2): reconstruct UNCONDITIONALLY, mirroring the
       // `path` decision above rather than merely filling in when the field
       // happens to be absent. kimi-cli's StrReplaceFile schema is `path` +
@@ -271,18 +295,18 @@ function normalizeKimiPayload(data) {
       // real `edit[].new` — a one-key bypass of the very scan this fix's
       // guarded coercion exists to keep fed. A `typeof` test would NOT close
       // it: a benign non-empty string shadows just as effectively as ''.
-      input.old_string = edits.map((e) => editText(e?.old)).join('\n');
-      input.new_string = edits.map((e) => editText(e?.new)).join('\n');
+      input.old_string = edits.map((e) => editText(e?.old)).join("\n");
+      input.new_string = edits.map((e) => editText(e?.new)).join("\n");
     }
   }
   return data;
 }
 
-let input = '';
+let input = "";
 const stdinTimeout = setTimeout(() => allow(undefined), 3000);
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => input += chunk);
-process.stdin.on('end', () => {
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => (input += chunk));
+process.stdin.on("end", () => {
   clearTimeout(stdinTimeout);
   try {
     const data = normalizeKimiPayload(JSON.parse(input));
@@ -292,18 +316,21 @@ process.stdin.on('end', () => {
     // GSD_TEST_MODE as well so a leaked GSD_TEST_WORKFLOW_GUARD_FAULT in a real
     // shell cannot wedge a production session. The fault's failure direction
     // is CLOSED: the catch below may block, never bypass a block.
-    if (process.env.GSD_TEST_MODE === '1' && process.env.GSD_TEST_WORKFLOW_GUARD_FAULT === '1') {
-      throw new Error('GSD_TEST_WORKFLOW_GUARD_FAULT: injected fault');
+    if (
+      process.env.GSD_TEST_MODE === "1" &&
+      process.env.GSD_TEST_WORKFLOW_GUARD_FAULT === "1"
+    ) {
+      throw new Error("GSD_TEST_WORKFLOW_GUARD_FAULT: injected fault");
     }
     const toolName = data.tool_name;
     const cwd = data.cwd || process.cwd();
     const isWorkflowGuardEnabled = workflowGuardEnabled(cwd);
 
-    if (toolName === 'Bash') {
+    if (toolName === "Bash") {
       if (!isWorkflowGuardEnabled) {
         allow(undefined);
       }
-      const command = data.tool_input?.command || '';
+      const command = data.tool_input?.command || "";
       for (const gitCwd of forceGitAddCwds(command, cwd)) {
         const branch = currentBranch(gitCwd);
         if (/^(worktree-)?agent-/.test(branch)) {
@@ -314,14 +341,14 @@ process.stdin.on('end', () => {
     }
 
     // Only guard Write, Edit, and MultiEdit tool calls
-    if (!['Write', 'Edit', 'MultiEdit'].includes(toolName)) {
+    if (!["Write", "Edit", "MultiEdit"].includes(toolName)) {
       allow(undefined);
     }
 
     // Check if we're inside a GSD workflow (Task subagent or /gsd- skill)
     // Subagents have a session_id that differs from the parent
     // and typically have a description field set by the orchestrator
-    if (data.tool_input?.is_subagent || data.session_type === 'task') {
+    if (data.tool_input?.is_subagent || data.session_type === "task") {
       allow(undefined);
     }
 
@@ -331,12 +358,13 @@ process.stdin.on('end', () => {
     // file_path must still fall through to `path`, which a bare typeof test
     // would have broken.
     const filePath =
-      (typeof data.tool_input?.file_path === 'string' && data.tool_input.file_path) ||
-      (typeof data.tool_input?.path === 'string' && data.tool_input.path) ||
-      '';
+      (typeof data.tool_input?.file_path === "string" &&
+        data.tool_input.file_path) ||
+      (typeof data.tool_input?.path === "string" && data.tool_input.path) ||
+      "";
 
     // Allow edits to .planning/ files (GSD state management)
-    if (filePath.includes('.planning/') || filePath.includes('.planning\\')) {
+    if (filePath.includes(".planning/") || filePath.includes(".planning\\")) {
       allow(undefined);
     }
 
@@ -349,7 +377,7 @@ process.stdin.on('end', () => {
       /GEMINI\.md$/,
       /settings\.json$/,
     ];
-    if (allowedPatterns.some(p => p.test(filePath))) {
+    if (allowedPatterns.some((p) => p.test(filePath))) {
       allow(undefined);
     }
 
@@ -362,13 +390,14 @@ process.stdin.on('end', () => {
     const output = {
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
-        additionalContext: `⚠️ WORKFLOW ADVISORY: You're editing ${path.basename(filePath)} directly without a GSD command. ` +
-          'This edit will not be tracked in STATE.md or produce a SUMMARY.md. ' +
-          'Consider using /gsd:fast for trivial fixes or /gsd:quick for larger changes ' +
-          'to maintain project state tracking. ' +
-          'If this is intentional (e.g., user explicitly asked for a direct edit), proceed normally.',
-        code: 'WORKFLOW_ADVISORY'
-      }
+        additionalContext:
+          `⚠️ WORKFLOW ADVISORY: You're editing ${path.basename(filePath)} directly without a GSD command. ` +
+          "This edit will not be tracked in STATE.md or produce a SUMMARY.md. " +
+          "Consider using /gsd:fast for trivial fixes or /gsd:quick for larger changes " +
+          "to maintain project state tracking. " +
+          "If this is intentional (e.g., user explicitly asked for a direct edit), proceed normally.",
+        code: "WORKFLOW_ADVISORY",
+      },
     };
 
     process.stdout.write(JSON.stringify(output));
@@ -381,7 +410,7 @@ process.stdin.on('end', () => {
     // never wedge the session's tool calls. ON_CRASH is declared ALLOW at
     // module top for exactly that unconditional fallback (#3911).
     if (failClosedBlockContext(input)) {
-      emitForceAddBlock('fail-closed');
+      emitForceAddBlock("fail-closed");
     }
     crash(ON_CRASH, undefined);
   }

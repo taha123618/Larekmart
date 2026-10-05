@@ -13,6 +13,7 @@ tools:
   question: true
   mcp__context7__*: true
 ---
+
 <objective>
 Create a UI design contract (UI-SPEC.md) for a frontend phase.
 Orchestrates gsd-ui-researcher and gsd-ui-checker.

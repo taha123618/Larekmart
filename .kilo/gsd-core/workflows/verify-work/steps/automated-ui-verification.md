@@ -25,6 +25,7 @@ For each UI checkpoint listed in the phase's UI-SPEC.md (or inferred from SUMMAR
    and present only those as manual UAT questions.
 
 <!-- gsd:live-dom-families -->
+
 **If `workflow.live_dom_uat` is enabled AND a Chrome-family browser MCP responds
 (`mcp__chrome-devtools__*` or `mcp__claude-in-chrome__*`):**
 
@@ -45,6 +46,7 @@ If the browser profile is already locked (`The browser is already running for �
 those checkpoints as **could not look**, not as **needs review**, and name `--isolated` in
 the summary — that flag lives on the operator's own MCP-server registration, not on anything
 this workflow passes.
+
 <!-- /gsd-live-dom-families -->
 
 If automated verification is not available, fall back to the standard manual
@@ -53,6 +55,7 @@ conditional: if no browser MCP is configured — or `workflow.live_dom_uat` is o
 Chrome-family server is present — behavior is unchanged from today.
 
 **Display summary line before proceeding:**
+
 ```
 UI checkpoints: {N} auto-verified, {M} queued for manual review
 ```

@@ -51,19 +51,28 @@
 //
 // Cursor docs: https://cursor.com/docs/hooks
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { allow } = require('./lib/hook-exit.js');
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const { allow } = require("./lib/hook-exit.js");
 
 // Workspace resolution is shared across the Cursor hooks (#2587) — see
 // hooks/lib/cursor-workspace.js. Staged next to these scripts by
 // writeCursorHooksJson so the require always resolves post-install.
-const { resolveStatePath } = require('./lib/cursor-workspace.js');
-const { readSentinel, VALID_ISOLATION, extractDispatchIdentifiers, sentinelAppliesToDispatch, buildSentinelDiscard } = require('./lib/isolation-sentinel.js');
-const { REASON_CODE, describeSentinelDiscard } = require('./lib/isolation-deny-reason.js');
+const { resolveStatePath } = require("./lib/cursor-workspace.js");
+const {
+  readSentinel,
+  VALID_ISOLATION,
+  extractDispatchIdentifiers,
+  sentinelAppliesToDispatch,
+  buildSentinelDiscard,
+} = require("./lib/isolation-sentinel.js");
+const {
+  REASON_CODE,
+  describeSentinelDiscard,
+} = require("./lib/isolation-deny-reason.js");
 // #3582: gsd-core/bin/lib/*.cjs (runtime-homes.cjs, worktree-safety.cjs,
 // runtime-name-policy.cjs, capability-registry.cjs — required below, inside
 // resolveIsolationEvidence and resolveFallbackIsolation) are tsc build
@@ -71,12 +80,15 @@ const { REASON_CODE, describeSentinelDiscard } = require('./lib/isolation-deny-r
 // git-clone install that never ran `npm run build:lib`. Self-heal once, in
 // evaluateRootIsolation, before any of those four requires run — see the
 // call site below. This module itself depends on nothing under ./lib.
-const { ensureRuntimeBuild, RuntimeBuildError } = require('../gsd-core/bin/ensure-runtime-build.cjs');
+const {
+  ensureRuntimeBuild,
+  RuntimeBuildError,
+} = require("../gsd-core/bin/ensure-runtime-build.cjs");
 
 const MSG_PRESENT =
-  'GSD: Subagent session started — review .planning/STATE.md for the current phase and any blockers before acting.';
+  "GSD: Subagent session started — review .planning/STATE.md for the current phase and any blockers before acting.";
 const MSG_ABSENT =
-  'GSD: Subagent session started — no .planning/ workflow found.';
+  "GSD: Subagent session started — no .planning/ workflow found.";
 
 // GSD's Cursor agent artifacts install with `destSubpath: "agents"`,
 // `prefix: "gsd-"`, flat nesting, via the `convertClaudeAgentToCursorAgent`
@@ -87,7 +99,7 @@ const MSG_ABSENT =
 // Cursor too, the same identifier hooks/gsd-agent-isolation-guard.js checks
 // for on Claude. A Set, not a bare string compare, so a future sibling
 // executor role can be added here without touching the matching logic below.
-const EXECUTOR_SUBAGENT_TYPES = new Set(['gsd-executor']);
+const EXECUTOR_SUBAGENT_TYPES = new Set(["gsd-executor"]);
 
 /**
  * Runs `realpathFn`, never throwing. A path that cannot be resolved (does not
@@ -166,19 +178,24 @@ function resolveIsolationEvidence(root, { realpath = fs.realpathSync } = {}) {
   try {
     // Sibling data/policy module, staged alongside this hook at install time
     // (same pattern as hooks/gsd-statusline.js's requires of gsd-core/bin/lib/*).
-    const { getGlobalConfigDir } = require('../gsd-core/bin/lib/runtime-homes.cjs');
-    managedRoot = path.join(getGlobalConfigDir('cursor'), 'worktrees');
+    const {
+      getGlobalConfigDir,
+    } = require("../gsd-core/bin/lib/runtime-homes.cjs");
+    managedRoot = path.join(getGlobalConfigDir("cursor"), "worktrees");
   } catch {
     managedRoot = null;
   }
 
   const realRoot = realpathOrNull(root, realpath);
-  const realManagedRoot = managedRoot === null ? null : realpathOrNull(managedRoot, realpath);
+  const realManagedRoot =
+    managedRoot === null ? null : realpathOrNull(managedRoot, realpath);
 
   if (realRoot !== null && realManagedRoot !== null) {
     const rel = path.relative(realManagedRoot, realRoot);
-    const underManagedRoot = rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
-    if (underManagedRoot) return { isolated: true, cannotDetermine: false, notApplicable: false };
+    const underManagedRoot =
+      rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+    if (underManagedRoot)
+      return { isolated: true, cannotDetermine: false, notApplicable: false };
   }
 
   // Not proven isolated by the only signal that counts. Resolve the
@@ -187,7 +204,9 @@ function resolveIsolationEvidence(root, { realpath = fs.realpathSync } = {}) {
   let linkageReason = null;
   try {
     // Sibling data/policy module, staged alongside this hook at install time.
-    const { resolveWorktreeLinkage } = require('../gsd-core/bin/lib/worktree-safety.cjs');
+    const {
+      resolveWorktreeLinkage,
+    } = require("../gsd-core/bin/lib/worktree-safety.cjs");
     linkageReason = resolveWorktreeLinkage(root).reason;
   } catch {
     linkageReason = null;
@@ -204,10 +223,10 @@ function resolveIsolationEvidence(root, { realpath = fs.realpathSync } = {}) {
     // silently read as "isolated".
     return { isolated: false, cannotDetermine: true, notApplicable: false };
   }
-  if (linkageReason === 'git_timed_out') {
+  if (linkageReason === "git_timed_out") {
     return { isolated: false, cannotDetermine: true, notApplicable: false };
   }
-  if (linkageReason === 'not_git_repo') {
+  if (linkageReason === "not_git_repo") {
     // #3045 MAJOR 3: a confidently-non-git `root` has no primary git
     // checkout to protect from an isolated-worktree bypass — Cursor's
     // `--worktree` / `/worktree` (the deny message's own remediation) create
@@ -255,7 +274,9 @@ function resolveIsolationEvidence(root, { realpath = fs.realpathSync } = {}) {
  */
 function getWorkspaceRoots(data) {
   const roots = Array.isArray(data.workspace_roots) ? data.workspace_roots : [];
-  return roots.filter((r) => typeof r === 'string' && r.length > 0 && path.isAbsolute(r));
+  return roots.filter(
+    (r) => typeof r === "string" && r.length > 0 && path.isAbsolute(r),
+  );
 }
 
 /**
@@ -319,15 +340,19 @@ function getWorkspaceRoots(data) {
  * stays a single check, not per-root — an unreadable config on one root must
  * never even be attempted for a confirmed non-executor dispatch).
  */
-function resolveIsolationDecision(data, { clock = Date, realpath = fs.realpathSync } = {}) {
+function resolveIsolationDecision(
+  data,
+  { clock = Date, realpath = fs.realpathSync } = {},
+) {
   const subagentType = data.subagent_type;
-  const isConfirmedNonExecutor = typeof subagentType === 'string'
-    && subagentType.length > 0
-    && !EXECUTOR_SUBAGENT_TYPES.has(subagentType);
-  if (isConfirmedNonExecutor) return { action: 'allow' };
+  const isConfirmedNonExecutor =
+    typeof subagentType === "string" &&
+    subagentType.length > 0 &&
+    !EXECUTOR_SUBAGENT_TYPES.has(subagentType);
+  if (isConfirmedNonExecutor) return { action: "allow" };
 
   const roots = getWorkspaceRoots(data);
-  if (roots.length === 0) return { action: 'allow' };
+  if (roots.length === 0) return { action: "allow" };
 
   // #3045 SECURITY F2: best-effort plan/phase extraction from this
   // dispatch's own `task` text (Cursor carries the same prompt content the
@@ -337,10 +362,14 @@ function resolveIsolationDecision(data, { clock = Date, realpath = fs.realpathSy
   const dispatchIds = extractDispatchIdentifiers(data.task);
 
   for (const root of roots) {
-    const verdict = evaluateRootIsolation(root, subagentType, { clock, dispatchIds, realpath });
-    if (verdict.action === 'deny') return verdict;
+    const verdict = evaluateRootIsolation(root, subagentType, {
+      clock,
+      dispatchIds,
+      realpath,
+    });
+    if (verdict.action === "deny") return verdict;
   }
-  return { action: 'allow' };
+  return { action: "allow" };
 }
 
 // ─── #3897 rung 2: per-install runtime marker, single canonical owner ────────
@@ -355,7 +384,7 @@ function resolveIsolationDecision(data, { clock = Date, realpath = fs.realpathSy
 function readInstallRuntimeMarker() {
   try {
     ensureRuntimeBuild();
-    const runtimeSlash = require('../gsd-core/bin/lib/runtime-slash.cjs');
+    const runtimeSlash = require("../gsd-core/bin/lib/runtime-slash.cjs");
     return runtimeSlash.readInstallRuntimeMarker();
   } catch {
     // Unbuilt runtime library, or any other failure reaching the canonical
@@ -370,7 +399,7 @@ function readInstallRuntimeMarker() {
 function _setInstallRuntimeMarkerForTests(value) {
   try {
     ensureRuntimeBuild();
-    const runtimeSlash = require('../gsd-core/bin/lib/runtime-slash.cjs');
+    const runtimeSlash = require("../gsd-core/bin/lib/runtime-slash.cjs");
     runtimeSlash._setInstallRuntimeMarkerForTests(value);
   } catch {
     // Test-only seam; an unbuilt library here means the test itself will fail
@@ -409,13 +438,20 @@ function _setInstallRuntimeMarkerForTests(value) {
  * runtime signal at all).
  */
 function resolveFallbackIsolation(root, configPath) {
-  const { resolveRuntimeNameFromCandidates } = require('../gsd-core/bin/lib/runtime-name-policy.cjs');
-  const { runtimes } = require('../gsd-core/bin/lib/capability-registry.cjs');
+  const {
+    resolveRuntimeNameFromCandidates,
+  } = require("../gsd-core/bin/lib/runtime-name-policy.cjs");
+  const { runtimes } = require("../gsd-core/bin/lib/capability-registry.cjs");
 
   let runtimeId = resolveRuntimeNameFromCandidates(process.env.GSD_RUNTIME);
-  const rawConfig = fs.readFileSync(configPath, 'utf-8');
+  const rawConfig = fs.readFileSync(configPath, "utf-8");
   const parsedConfig = JSON.parse(rawConfig);
-  if (!runtimeId && parsedConfig && typeof parsedConfig === 'object' && 'runtime' in parsedConfig) {
+  if (
+    !runtimeId &&
+    parsedConfig &&
+    typeof parsedConfig === "object" &&
+    "runtime" in parsedConfig
+  ) {
     runtimeId = resolveRuntimeNameFromCandidates(parsedConfig.runtime) || null;
   }
   if (!runtimeId) {
@@ -423,14 +459,20 @@ function resolveFallbackIsolation(root, configPath) {
     // hooks/gsd-agent-isolation-guard.js's resolveRuntimeIdentity. defaults.json
     // is host-wide and names whichever runtime installed LAST (#2840's poison);
     // the marker describes THIS install (written for every runtime since #2297).
-    runtimeId = resolveRuntimeNameFromCandidates(readInstallRuntimeMarker()) || null;
+    runtimeId =
+      resolveRuntimeNameFromCandidates(readInstallRuntimeMarker()) || null;
   }
   if (!runtimeId) {
     try {
-      const defaultsPath = path.join(os.homedir(), '.gsd', 'defaults.json');
-      const defaultsParsed = JSON.parse(fs.readFileSync(defaultsPath, 'utf-8'));
-      if (defaultsParsed && typeof defaultsParsed === 'object' && 'runtime' in defaultsParsed) {
-        runtimeId = resolveRuntimeNameFromCandidates(defaultsParsed.runtime) || null;
+      const defaultsPath = path.join(os.homedir(), ".gsd", "defaults.json");
+      const defaultsParsed = JSON.parse(fs.readFileSync(defaultsPath, "utf-8"));
+      if (
+        defaultsParsed &&
+        typeof defaultsParsed === "object" &&
+        "runtime" in defaultsParsed
+      ) {
+        runtimeId =
+          resolveRuntimeNameFromCandidates(defaultsParsed.runtime) || null;
       }
     } catch {
       // Absent/unreadable ~/.gsd/defaults.json — no signal, fall through.
@@ -439,17 +481,26 @@ function resolveFallbackIsolation(root, configPath) {
   if (!runtimeId) {
     // No explicit signal anywhere confirms this project resolved
     // harness-worktree — degrade to inert rather than guess 'cursor'.
-    return 'none';
+    return "none";
   }
 
   const runtimeEntry = runtimes != null ? runtimes[runtimeId] : null;
-  const declared = runtimeEntry?.runtime?.hostIntegration?.dispatch?.isolation ?? null;
-  let declaredIsolation = (typeof declared === 'string' && VALID_ISOLATION.has(declared)) ? declared : 'none';
+  const declared =
+    runtimeEntry?.runtime?.hostIntegration?.dispatch?.isolation ?? null;
+  let declaredIsolation =
+    typeof declared === "string" && VALID_ISOLATION.has(declared)
+      ? declared
+      : "none";
 
-  if (declaredIsolation === 'harness-worktree' &&
-      parsedConfig && typeof parsedConfig === 'object' && parsedConfig.workflow &&
-      typeof parsedConfig.workflow === 'object' && parsedConfig.workflow.use_worktrees === false) {
-    declaredIsolation = 'none';
+  if (
+    declaredIsolation === "harness-worktree" &&
+    parsedConfig &&
+    typeof parsedConfig === "object" &&
+    parsedConfig.workflow &&
+    typeof parsedConfig.workflow === "object" &&
+    parsedConfig.workflow.use_worktrees === false
+  ) {
+    declaredIsolation = "none";
   }
 
   return declaredIsolation;
@@ -461,8 +512,12 @@ function resolveFallbackIsolation(root, configPath) {
  * resolveIsolationDecision (#3045 finding 1) so every root in a multi-root
  * workspace runs the identical check.
  */
-function evaluateRootIsolation(root, subagentType, { clock = Date, dispatchIds = null, realpath = fs.realpathSync } = {}) {
-  const configPath = path.join(root, '.planning', 'config.json');
+function evaluateRootIsolation(
+  root,
+  subagentType,
+  { clock = Date, dispatchIds = null, realpath = fs.realpathSync } = {},
+) {
+  const configPath = path.join(root, ".planning", "config.json");
   let isGsdProject;
   try {
     fs.accessSync(configPath, fs.constants.F_OK);
@@ -470,7 +525,7 @@ function evaluateRootIsolation(root, subagentType, { clock = Date, dispatchIds =
   } catch {
     isGsdProject = false;
   }
-  if (!isGsdProject) return { action: 'allow' };
+  if (!isGsdProject) return { action: "allow" };
 
   // #3582: self-heal the compiled runtime library BEFORE any of its four
   // downstream requires (resolveFallbackIsolation's two, resolveIsolationEvidence's
@@ -483,11 +538,11 @@ function evaluateRootIsolation(root, subagentType, { clock = Date, dispatchIds =
     ensureRuntimeBuild();
   } catch (err) {
     return {
-      action: 'deny',
+      action: "deny",
       reason:
         `GSD subagent isolation guard: cannot resolve this project's dispatch-isolation ` +
         `configuration because the GSD runtime library failed to self-build. ` +
-        `${err instanceof RuntimeBuildError ? err.message : String(err && err.message || err)} ` +
+        `${err instanceof RuntimeBuildError ? err.message : String((err && err.message) || err)} ` +
         `Refusing to allow this subagent to spawn until the runtime library is built — a guard ` +
         `that cannot verify must not answer "safe" (#3050).`,
       reasonCode: REASON_CODE.RUNTIME_BUILD_FAILED,
@@ -509,64 +564,65 @@ function evaluateRootIsolation(root, subagentType, { clock = Date, dispatchIds =
 
   let declaredIsolation;
   try {
-    declaredIsolation = (sentinel.present && !sentinel.stale && applies)
-      ? sentinel.isolation
-      : resolveFallbackIsolation(root, configPath);
+    declaredIsolation =
+      sentinel.present && !sentinel.stale && applies
+        ? sentinel.isolation
+        : resolveFallbackIsolation(root, configPath);
   } catch {
     return {
-      action: 'deny',
+      action: "deny",
       reason:
         `GSD subagent isolation guard: could not read or resolve this project's ` +
         `dispatch-isolation configuration ('.planning/config.json' exists under "${root}"). ` +
         `Refusing to allow this subagent to spawn without being able to verify whether ` +
         `isolation is required — a guard that cannot verify must not answer "safe" (#3050). ` +
         `Retry once the project configuration is readable.` +
-        (sentinelDiscarded ? describeSentinelDiscard(sentinelDiscarded) : ''),
+        (sentinelDiscarded ? describeSentinelDiscard(sentinelDiscarded) : ""),
       reasonCode: REASON_CODE.CONFIG_UNREADABLE,
       sentinelDiscarded,
     };
   }
 
-  if (declaredIsolation !== 'harness-worktree') return { action: 'allow' };
+  if (declaredIsolation !== "harness-worktree") return { action: "allow" };
 
   // isConfirmedNonExecutor already excluded "present, non-empty, unrecognized
   // string" above — reaching here means subagentType is either the confirmed
   // executor or missing/malformed (cannot rule it out).
-  if (typeof subagentType !== 'string' || subagentType.length === 0) {
+  if (typeof subagentType !== "string" || subagentType.length === 0) {
     return {
-      action: 'deny',
+      action: "deny",
       reason:
         `GSD subagent isolation guard: this project's dispatch isolation resolves to ` +
         `"harness-worktree", but the subagentStart payload for this dispatch carries no usable ` +
         `subagent_type. Refusing to allow it to spawn without being able to confirm whether it ` +
         `is a GSD executor — a guard that cannot verify must not answer "safe" (#3050).` +
-        (sentinelDiscarded ? describeSentinelDiscard(sentinelDiscarded) : ''),
+        (sentinelDiscarded ? describeSentinelDiscard(sentinelDiscarded) : ""),
       reasonCode: REASON_CODE.NO_SUBAGENT_TYPE,
       sentinelDiscarded,
     };
   }
 
   const evidence = resolveIsolationEvidence(root, { realpath });
-  if (evidence.isolated) return { action: 'allow' };
-  if (evidence.notApplicable) return { action: 'allow' };
+  if (evidence.isolated) return { action: "allow" };
+  if (evidence.notApplicable) return { action: "allow" };
 
   if (evidence.cannotDetermine) {
     return {
-      action: 'deny',
+      action: "deny",
       reason:
         `GSD subagent isolation guard: this project's dispatch isolation resolves to ` +
         `"harness-worktree", but whether "${root}" is running in an isolated Cursor worktree ` +
         `could not be determined (git did not respond). Refusing to allow subagent_type=` +
         `"${subagentType}" to spawn without being able to verify isolation — a guard that ` +
         `cannot verify must not answer "safe" (#3050). Retry once git is responsive.` +
-        (sentinelDiscarded ? describeSentinelDiscard(sentinelDiscarded) : ''),
+        (sentinelDiscarded ? describeSentinelDiscard(sentinelDiscarded) : ""),
       reasonCode: REASON_CODE.CANNOT_DETERMINE_ISOLATION,
       sentinelDiscarded,
     };
   }
 
   return {
-    action: 'deny',
+    action: "deny",
     reason:
       `GSD subagent isolation guard: this project's dispatch isolation resolves to ` +
       `"harness-worktree", but subagent_type="${subagentType}" is about to spawn in "${root}", ` +
@@ -574,7 +630,7 @@ function evaluateRootIsolation(root, subagentType, { clock = Date, dispatchIds =
       `directly, with no consent and no warning. Start an isolated session first (the ` +
       `"--worktree" CLI flag or the "/worktree" chat command; Cursor manages these worktrees ` +
       `under "~/.cursor/worktrees/") and retry.` +
-      (sentinelDiscarded ? describeSentinelDiscard(sentinelDiscarded) : ''),
+      (sentinelDiscarded ? describeSentinelDiscard(sentinelDiscarded) : ""),
     reasonCode: REASON_CODE.NOT_ISOLATED_WORKTREE,
     sentinelDiscarded,
   };
@@ -582,14 +638,16 @@ function evaluateRootIsolation(root, subagentType, { clock = Date, dispatchIds =
 
 /* istanbul ignore next -- stdin adapter, exercised via spawnSync in tests */
 function main() {
-  let raw = '';
+  let raw = "";
   const stdinTimeout = setTimeout(() => {
     allow(undefined);
   }, 10000);
 
-  process.stdin.setEncoding('utf8');
-  process.stdin.on('data', (chunk) => { raw += chunk; });
-  process.stdin.on('end', () => {
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (chunk) => {
+    raw += chunk;
+  });
+  process.stdin.on("end", () => {
     clearTimeout(stdinTimeout);
 
     let data = null;
@@ -614,8 +672,8 @@ function main() {
       additionalContext = null;
     }
 
-    if (data && typeof data === 'object') {
-      let decision = { action: 'allow' };
+    if (data && typeof data === "object") {
+      let decision = { action: "allow" };
       try {
         decision = resolveIsolationDecision(data);
       } catch {
@@ -623,22 +681,29 @@ function main() {
         // explicit try/catch that resolves to a deny with a distinct reason.
         // Anything reaching here is an unexpected failure outside those paths
         // (e.g. malformed workspace_roots entries) — never crash the hook.
-        decision = { action: 'allow' };
+        decision = { action: "allow" };
       }
-      if (decision.action === 'deny') {
+      if (decision.action === "deny") {
         const out = {
-          permission: 'deny',
+          permission: "deny",
           user_message: decision.reason,
           reason_code: decision.reasonCode,
           sentinel_discarded: decision.sentinelDiscarded ?? null,
         };
-        if (additionalContext !== null) out.additional_context = additionalContext;
+        if (additionalContext !== null)
+          out.additional_context = additionalContext;
         process.stdout.write(JSON.stringify(out));
         return;
       }
     }
 
-    process.stdout.write(JSON.stringify(additionalContext !== null ? { additional_context: additionalContext } : {}));
+    process.stdout.write(
+      JSON.stringify(
+        additionalContext !== null
+          ? { additional_context: additionalContext }
+          : {},
+      ),
+    );
   });
 }
 

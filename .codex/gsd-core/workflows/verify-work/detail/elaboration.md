@@ -12,17 +12,19 @@ names.
 When verify-work resumes after `$gsd-execute-phase --gaps-only`, the UAT `## Gaps` entries still read `status: failed` even though their fix plans have executed. Without reconciliation verify-work re-diagnoses them as fresh blockers and spawns new gap plans — losing the verification state. This step closes the loop.
 
 Read the UAT `## Gaps` section and the phase dir `*-PLAN.md` frontmatter. For each gap with `status: failed`:
+
 1. Find a `*-PLAN.md` whose frontmatter `gap_ids` includes the gap's `gap_id` (`G-{phase}-{N}`).
 2. If such a plan exists AND has a matching `*-SUMMARY.md` in the phase dir (the plan was executed by `--gaps-only`), the gap is **resolved** — update its YAML in place:
    ```yaml
    - gap_id: G-{phase}-{N}
-     status: resolved        # was: failed
-     resolved_by: {plan basename}
-     resolved_at: {today}
+     status: resolved # was: failed
+     resolved_by: { plan basename }
+     resolved_at: { today }
    ```
 3. If no plan references the `gap_id`, or the plan has no SUMMARY, leave the gap `status: failed` (still open).
 
 Read plan frontmatter directly in-context — do not pipe it through a shell parser. After reconciliation, announce:
+
 ```
 Reconciled gap-closure state: {resolved_count} gap(s) resolved by executed plans, {open_count} still open.
 ```
@@ -42,6 +44,7 @@ drift guard, `tests/verify-work-auto-transition.test.cjs` bug #1716, requires th
 adjacent with nothing between them.)
 
 Announce:
+
 ```
 Resuming: Phase {phase} UAT
 Progress: {passed + issues + skipped}/{total}
@@ -84,6 +87,7 @@ Diagnosis runs automatically - no user prompt. Parallel agents investigate simul
 **Auto-plan fixes from diagnosed gaps:**
 
 Display:
+
 ```
 ### GSD ► PLANNING FIXES
 
@@ -141,6 +145,7 @@ This lets `$gsd-verify-work` reconcile resolved gaps on resume (a gap whose plan
 (The "stop working, wait for the subagent" orchestrator rule is stated in the spine, not repeated here.)
 
 On return:
+
 - **PLANNING COMPLETE:** Proceed to `verify_gap_plans`
 - **PLANNING INCONCLUSIVE:** Report and offer manual intervention
 
@@ -149,6 +154,7 @@ On return:
 **Verify fix plans with checker:**
 
 Display:
+
 ```
 ### GSD ► VERIFYING FIX PLANS
 

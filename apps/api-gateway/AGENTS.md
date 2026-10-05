@@ -5,6 +5,7 @@
 `apps/api-gateway` is the authoritative single public HTTP entry point for all storefront (client), admin, and seller applications in Larekmart.
 
 It handles cross-cutting concerns:
+
 - Reverse proxying to 14 backend microservices via `@fastify/http-proxy`
 - Centralized CORS and defensive security headers (`@fastify/cors`, `@fastify/helmet`)
 - Request correlation and client untrusted header stripping (`x-request-id`)
@@ -20,24 +21,24 @@ It intentionally contains **no business domain logic**, database queries, or Kaf
 
 Port: **8080**
 
-| Public Route Prefix | Upstream Service | Port | Rewrite Prefix |
-| :--- | :--- | :--- | :--- |
-| `/api/v1/auth` | `auth-service` | 8003 | `""` |
-| `/api/v1/users` | `user-service` | 8012 | `/api/v1/users` |
-| `/api/v1/catalog` | `catalog-service` | 8010 | `/api/v1/catalog` |
-| `/api/v1/products` | `product-service` | 8000 | `/products` |
-| `/api/v1/categories` | `product-service` | 8000 | `/categories` |
-| `/api/v1/inventory` | `inventory-service` | 8007 | `""` |
-| `/api/v1/cart` | `cart-service` | 8009 | `/api/v1/cart` |
-| `/api/v1/orders` | `order-service` | 8001 | `/orders` |
-| `/api/v1/user-orders` | `order-service` | 8001 | `/user-orders` |
-| `/api/v1/payments` | `payment-service` | 8002 | `""` |
-| `/api/v1/shipping` | `shipping-service` | 8011 | `""` |
-| `/api/v1/analytics` | `analytic-service` | 8004 | `""` |
-| `/api/v1/notifications`| `notification-service`| 8005 | `""` |
-| `/api/v1/search` | `search-service` | 8006 | `""` |
-| `/api/v1/recommendations` | `recommendation-service` | 8008 | `""` |
-| `/api/v1/media` | `media-service` | 8013 | `""` |
+| Public Route Prefix       | Upstream Service         | Port | Rewrite Prefix    |
+| :------------------------ | :----------------------- | :--- | :---------------- |
+| `/api/v1/auth`            | `auth-service`           | 8003 | `""`              |
+| `/api/v1/users`           | `user-service`           | 8012 | `/api/v1/users`   |
+| `/api/v1/catalog`         | `catalog-service`        | 8010 | `/api/v1/catalog` |
+| `/api/v1/products`        | `product-service`        | 8000 | `/products`       |
+| `/api/v1/categories`      | `product-service`        | 8000 | `/categories`     |
+| `/api/v1/inventory`       | `inventory-service`      | 8007 | `""`              |
+| `/api/v1/cart`            | `cart-service`           | 8009 | `/api/v1/cart`    |
+| `/api/v1/orders`          | `order-service`          | 8001 | `/orders`         |
+| `/api/v1/user-orders`     | `order-service`          | 8001 | `/user-orders`    |
+| `/api/v1/payments`        | `payment-service`        | 8002 | `""`              |
+| `/api/v1/shipping`        | `shipping-service`       | 8011 | `""`              |
+| `/api/v1/analytics`       | `analytic-service`       | 8004 | `""`              |
+| `/api/v1/notifications`   | `notification-service`   | 8005 | `""`              |
+| `/api/v1/search`          | `search-service`         | 8006 | `""`              |
+| `/api/v1/recommendations` | `recommendation-service` | 8008 | `""`              |
+| `/api/v1/media`           | `media-service`          | 8013 | `""`              |
 
 ## 3. Running & Verifying
 

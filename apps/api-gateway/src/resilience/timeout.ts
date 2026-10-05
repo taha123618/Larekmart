@@ -1,11 +1,14 @@
 export const SERVICE_TIMEOUTS = {
-  FAST: 3000,       // search-service
-  DEFAULT: 5000,    // user, auth, catalog, product, inventory, cart, analytic, notification
-  EXTENDED: 10000,  // order, shipping
-  CRITICAL: 15000,  // payment, media
+  FAST: 3000, // search-service
+  DEFAULT: 5000, // user, auth, catalog, product, inventory, cart, analytic, notification
+  EXTENDED: 10000, // order, shipping
+  CRITICAL: 15000, // payment, media
 } as const;
 
-export function getTimeoutForService(serviceName: string, overrideMs?: number): number {
+export function getTimeoutForService(
+  serviceName: string,
+  overrideMs?: number,
+): number {
   if (overrideMs && overrideMs > 0) {
     return overrideMs;
   }

@@ -8,10 +8,11 @@ Read all files referenced by the invoking prompt's execution_context before star
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-project-researcher — Researches project-level technical decisions
 - gsd-research-synthesizer — Synthesizes findings from parallel research agents
 - gsd-roadmapper — Creates phased execution roadmaps
-</available_agent_types>
+  </available_agent_types>
 
 <auto_mode>
 
@@ -42,6 +43,7 @@ Parse JSON for: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `co
 **If `response_language` is set:** All user-facing output of this workflow — narration between tool calls, status updates, progress notes, findings, questions, prompts, and explanations — MUST be presented in `{response_language}`. Technical terms, code, file paths, and subagent prompts stay in English — only user-facing output is translated.
 
 **If `agents_installed` is false:** Display a warning before proceeding:
+
 ```text
 ⚠ GSD agents not installed. The following agents are missing from your agents directory:
   {missing_agents joined with newline}
@@ -65,11 +67,13 @@ with "agent type not found" if `required_agents_installed` is false. Run the ins
 
 Proceeding without research subagents — roadmap will be generated inline.
 ```
+
 Skip Steps 6–7 (parallel research and synthesis) and proceed directly to roadmap creation in Step 8.
 
 **Detect runtime and set instruction file name:**
 
 Derive `RUNTIME` from the invoking prompt's `execution_context` path:
+
 - Path contains `/.codex/` → `RUNTIME=codex`
 - Path contains `/.gemini/antigravity/`, `/.gemini/antigravity-ide/` or `/.gemini/antigravity-cli/` → `RUNTIME=antigravity`
 - Path contains `/.config/opencode/` or `/.opencode/` → `RUNTIME=opencode`
@@ -77,6 +81,7 @@ Derive `RUNTIME` from the invoking prompt's `execution_context` path:
 - Otherwise → `RUNTIME=claude`
 
 If `execution_context` path is not available, fall back to env vars:
+
 ```bash
 if [ -n "$CODEX_HOME" ]; then RUNTIME="codex"
 elif [ -n "$ANTIGRAVITY_CONFIG_DIR" ]; then RUNTIME="antigravity"
@@ -86,6 +91,7 @@ else RUNTIME="claude"; fi
 ```
 
 Set the instruction file variable via the shared runtime-name policy adapter (`gsd_run query project-instruction-file`, backed by `getProjectInstructionFile` in `runtime-name-policy.cjs` — the single source of truth shared with `profile-output.cjs`):
+
 ```bash
 INSTRUCTION_FILE=$(gsd_run query project-instruction-file --runtime "$RUNTIME")
 ```
@@ -247,16 +253,17 @@ Initialize with any decisions made during questioning:
 ```markdown
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| [Choice from questioning] | [Why] | — Pending |
+| Decision                  | Rationale | Outcome   |
+| ------------------------- | --------- | --------- |
+| [Choice from questioning] | [Why]     | — Pending |
 ```
 
 **Last updated footer:**
 
 ```markdown
 ---
-*Last updated: [date] after initialization*
+
+_Last updated: [date] after initialization_
 ```
 
 **Evolution section** (include at the end of PROJECT.md, before the footer):
@@ -267,6 +274,7 @@ Initialize with any decisions made during questioning:
 This document evolves at phase transitions and milestone boundaries.
 
 **After each phase transition** (via `/gsd-transition`):
+
 1. Requirements invalidated? → Move to Out of Scope with reason
 2. Requirements validated? → Move to Validated with phase reference
 3. New requirements emerged? → Add to Active
@@ -274,6 +282,7 @@ This document evolves at phase transitions and milestone boundaries.
 5. "What This Is" still accurate? → Update if drifted
 
 **After each milestone** (via `/gsd-complete-milestone`):
+
 1. Full review of all sections
 2. Core Value check — still the right priority?
 3. Audit Out of Scope — reasons still valid?
@@ -300,6 +309,7 @@ DEFAULTS_RAW=$(cat ~/.gsd/defaults.json 2>/dev/null)
 ```
 
 Format the JSON into human-readable bullets using these label mappings:
+
 - `mode` → "Mode"
 - `granularity` → "Granularity"
 - `parallelization` → "Execution" (`true` → "Parallel", `false` → "Sequential")
@@ -502,11 +512,11 @@ questions: [
 
 These spawn additional agents during planning/execution. They add tokens and time but improve quality.
 
-| Agent | When it runs | What it does |
-|-------|--------------|--------------|
-| **Researcher** | Before planning each phase | Investigates domain, finds patterns, surfaces gotchas |
-| **Plan Checker** | After plan is created | Verifies plan actually achieves the phase goal |
-| **Verifier** | After phase execution | Confirms must-haves were delivered |
+| Agent            | When it runs               | What it does                                          |
+| ---------------- | -------------------------- | ----------------------------------------------------- |
+| **Researcher**   | Before planning each phase | Investigates domain, finds patterns, surfaces gotchas |
+| **Plan Checker** | After plan is created      | Verifies plan actually achieves the phase goal        |
+| **Verifier**     | After phase execution      | Confirms must-haves were delivered                    |
 
 All recommended for important projects. Skip for quick experiments.
 
@@ -719,6 +729,7 @@ Display spawning indicator:
 Spawn 4 parallel gsd-project-researcher agents — one per dimension (Stack, Features, Architecture, Pitfalls) — each given the domain and greenfield/subsequent milestone context, a dimension-specific question, a downstream-consumer note (what the next stage needs from this file), and a quality gate; each writes its own file (STACK.md / FEATURES.md / ARCHITECTURE.md / PITFALLS.md) under `{research_dir}/` from its template.
 
 <!-- gsd-protected -->
+
 > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling all 4 researcher Agent() calls above, do NOT read research files or synthesize content independently while the subagents are active. Wait for all 4 researchers to complete before spawning the synthesizer. This prevents duplicate work and wasted context.
 
 **Model omission (#2517) applies to every one of these 5 spawns** (4 researchers + synthesizer): omit the `model=` parameter entirely when the value it would carry (`researcher_model`, `synthesizer_model`) is `"inherit"` or empty — passing it literally 404s on runtimes without native tier aliases (the default on non-the agent runtimes). Omitting `model=` inherits the orchestrator's model.
@@ -749,6 +760,7 @@ Commit after writing.
 ```
 
 <!-- gsd-protected -->
+
 > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Agent() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
 **Synthesizer output self-heal (#222) — verify SUMMARY.md materialized:** The synthesizer's canonical output is `.planning/research/SUMMARY.md` on disk; its brief structured return (`## SYNTHESIS COMPLETE` plus a few `###` confirmation lines) is NOT the file content. A known LLM false-refusal (issue #222) sometimes makes the agent return the full SUMMARY.md document inline — fabricating a write restriction (e.g. "the runtime is blocking file writes") — instead of writing the file. Prompt hardening alone does not fully eliminate it, so the orchestrator MUST absorb the failure deterministically before spawning `gsd-roadmapper`:
@@ -937,8 +949,8 @@ gsd_run query commit "docs: define v1 requirements" --files .planning/REQUIREMEN
 
 Ask the user how they want to structure the project. Use `AskUserQuestion` with two options:
 
-- **Vertical MVP** — get a working app fast, add features slice by slice. Each phase delivers an end-to-end user capability. *(Recommended for new products and rapid-iteration MVPs.)*
-- **Horizontal Layers** — build complete technical layers (DB → API → UI → wiring) and assemble at the end. *(Better for infrastructure-heavy projects with multiple developers.)*
+- **Vertical MVP** — get a working app fast, add features slice by slice. Each phase delivers an end-to-end user capability. _(Recommended for new products and rapid-iteration MVPs.)_
+- **Horizontal Layers** — build complete technical layers (DB → API → UI → wiring) and assemble at the end. _(Better for infrastructure-heavy projects with multiple developers.)_
 
 Set `PROJECT_MODE=mvp` if the user picks Vertical MVP, otherwise `PROJECT_MODE=standard`.
 
@@ -963,9 +975,11 @@ Example MVP-mode emit for Phase 1:
 
 ```markdown
 ### Phase 1: [Name]
+
 **Goal:** [Goal]
 **Mode:** mvp
 **Success Criteria**:
+
 1. [Criterion]
 ```
 

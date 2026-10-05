@@ -2,6 +2,7 @@
 description: "Generate UI design contract (UI-SPEC.md) for frontend phases"
 argument-hint: "[phase]"
 ---
+
 <objective>
 Create a UI design contract (UI-SPEC.md) for a frontend phase.
 Orchestrates gsd-ui-researcher and gsd-ui-checker.

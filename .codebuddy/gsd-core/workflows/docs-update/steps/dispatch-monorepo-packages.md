@@ -15,6 +15,7 @@ done
 **For each resolved directory that contains a `package.json`:**
 
 Determine mode:
+
 - If `{package_dir}/README.md` exists: mode = `update`, read existing content
 - Else: mode = `create`
 

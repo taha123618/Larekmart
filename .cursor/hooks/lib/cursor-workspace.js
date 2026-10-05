@@ -22,10 +22,10 @@
 // that require it, and registered in the installer's GSD_HOOK_LIB_FILES so
 // uninstall and the manifest manage it.
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 /**
  * Resolve the workspace root a Cursor hook should report on.
@@ -51,12 +51,16 @@ const path = require('path');
  */
 function resolveWorkspaceRoot(rawInput) {
   let input = {};
-  try { input = JSON.parse(rawInput || '{}'); } catch { /* fall back to cwd */ }
+  try {
+    input = JSON.parse(rawInput || "{}");
+  } catch {
+    /* fall back to cwd */
+  }
   const roots = Array.isArray(input.workspace_roots)
-    ? input.workspace_roots.filter((r) => typeof r === 'string' && r.length > 0)
+    ? input.workspace_roots.filter((r) => typeof r === "string" && r.length > 0)
     : [];
   for (const root of [...roots, process.cwd()]) {
-    if (fs.existsSync(path.join(root, '.planning', 'STATE.md'))) return root;
+    if (fs.existsSync(path.join(root, ".planning", "STATE.md"))) return root;
   }
   return roots[0] || process.cwd();
 }
@@ -68,7 +72,7 @@ function resolveWorkspaceRoot(rawInput) {
  * @returns {string}
  */
 function resolveStatePath(rawInput) {
-  return path.join(resolveWorkspaceRoot(rawInput), '.planning', 'STATE.md');
+  return path.join(resolveWorkspaceRoot(rawInput), ".planning", "STATE.md");
 }
 
 module.exports = { resolveWorkspaceRoot, resolveStatePath };

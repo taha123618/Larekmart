@@ -16,6 +16,7 @@ Use /gsd-quick for anything that needs multi-step planning or research.
 Parse `{{GSD_ARGS}}` for the task description.
 
 If empty, ask:
+
 ```
 What's the quick fix? (one sentence)
 ```
@@ -27,6 +28,7 @@ Store as `$TASK`.
 **Before doing anything, verify this is actually trivial.**
 
 A task is trivial if it can be completed in:
+
 - ≤ 3 file edits
 - ≤ 1 minute of work
 - No new dependencies or architecture changes
@@ -92,6 +94,7 @@ if grep -q "Quick Tasks Completed" .planning/STATE.md 2>/dev/null; then
   gsd_run quick-tasks-append --task "$TASK" || echo "⚠ fast.md log_to_state: could not append Quick Tasks row (see message above); continuing."
 fi
 ```
+
 </step>
 
 <step name="done">
@@ -117,8 +120,9 @@ No next-step suggestions. No workflow routing. Just done.
 </guardrails>
 
 <success_criteria>
+
 - [ ] Task completed in current context (no subagents)
 - [ ] Atomic git commit with conventional message
 - [ ] STATE.md updated if it exists
 - [ ] Total operation under 2 minutes wall time
-</success_criteria>
+      </success_criteria>

@@ -7,10 +7,10 @@
 // Using a separate file (rather than node -e '<inline code>') avoids the
 // template-literal regex-escaping problem: regex source is plain JS here.
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 // #3582: gsd-core/bin/lib/semver-compare.cjs and package-identity.cjs (and,
 // transitively, check-latest-version.cjs's own gsd-core/bin/lib/cli-exit.cjs
@@ -47,9 +47,11 @@ let isSemverNewer = () => false;
 let checkLatestVersion = () => ({ ok: false });
 let PACKAGE_NAME = null;
 try {
-  const { ensureRuntimeBuild } = require('../gsd-core/bin/ensure-runtime-build.cjs');
+  const {
+    ensureRuntimeBuild,
+  } = require("../gsd-core/bin/ensure-runtime-build.cjs");
   ensureRuntimeBuild();
-  ({ isSemverNewer } = require('../gsd-core/bin/lib/semver-compare.cjs'));
+  ({ isSemverNewer } = require("../gsd-core/bin/lib/semver-compare.cjs"));
   // Latest-version lookup is delegated to the single deterministic adapter
   // (#498). checkLatestVersion() owns the npm-view call, the timeout/semver
   // policy, and the package name — sourced from the baked Package Identity seam.
@@ -59,8 +61,10 @@ try {
   // so the background check never reported updates. Since #2544 GSD writes no
   // marker there at all, so that require would now fail to resolve outright.
   // Either way the name must come from the baked seam, never a walk-up.
-  ({ checkLatestVersion } = require('../gsd-core/bin/check-latest-version.cjs'));
-  ({ PACKAGE_NAME } = require('../gsd-core/bin/lib/package-identity.cjs'));
+  ({
+    checkLatestVersion,
+  } = require("../gsd-core/bin/check-latest-version.cjs"));
+  ({ PACKAGE_NAME } = require("../gsd-core/bin/lib/package-identity.cjs"));
 } catch (e) {
   // Runtime library missing/broken and could not self-build — degrade to the
   // no-signal fallbacks declared above; the worker still writes a result
@@ -74,7 +78,7 @@ try {
 // so the worker always proceeds to compute and write the result cache record.
 let MANAGED_HOOKS = [];
 try {
-  ({ MANAGED_HOOKS } = require('./managed-hooks-registry.cjs'));
+  ({ MANAGED_HOOKS } = require("./managed-hooks-registry.cjs"));
 } catch (e) {
   // Module not found in installed runtime — stale-hook detection degrades to
   // no-op (empty list means no hooks are checked for staleness). The worker
@@ -86,14 +90,14 @@ const projectVersionFile = process.env.GSD_PROJECT_VERSION_FILE;
 const globalVersionFile = process.env.GSD_GLOBAL_VERSION_FILE;
 
 // Check project directory first (local install), then global
-let installed = '0.0.0';
-let configDir = '';
+let installed = "0.0.0";
+let configDir = "";
 try {
   if (fs.existsSync(projectVersionFile)) {
-    installed = fs.readFileSync(projectVersionFile, 'utf8').trim();
+    installed = fs.readFileSync(projectVersionFile, "utf8").trim();
     configDir = path.dirname(path.dirname(projectVersionFile));
   } else if (fs.existsSync(globalVersionFile)) {
-    installed = fs.readFileSync(globalVersionFile, 'utf8').trim();
+    installed = fs.readFileSync(globalVersionFile, "utf8").trim();
     configDir = path.dirname(path.dirname(globalVersionFile));
   }
 } catch (e) {}
@@ -115,20 +119,38 @@ if (configDir) {
   const hooksDir = __dirname;
   try {
     if (fs.existsSync(hooksDir)) {
-      const hookFiles = fs.readdirSync(hooksDir).filter(f => MANAGED_HOOKS.includes(f));
+      const hookFiles = fs
+        .readdirSync(hooksDir)
+        .filter((f) => MANAGED_HOOKS.includes(f));
       for (const hookFile of hookFiles) {
         try {
-          const content = fs.readFileSync(path.join(hooksDir, hookFile), 'utf8');
+          const content = fs.readFileSync(
+            path.join(hooksDir, hookFile),
+            "utf8",
+          );
           // Match both JS (//) and bash (#) comment styles
-          const versionMatch = content.match(/(?:\/\/|#) gsd-hook-version:\s*(.+)/);
+          const versionMatch = content.match(
+            /(?:\/\/|#) gsd-hook-version:\s*(.+)/,
+          );
           if (versionMatch) {
             const hookVersion = versionMatch[1].trim();
-            if (isSemverNewer(installed, hookVersion) && !hookVersion.includes('{{')) {
-              staleHooks.push({ file: hookFile, hookVersion, installedVersion: installed });
+            if (
+              isSemverNewer(installed, hookVersion) &&
+              !hookVersion.includes("{{")
+            ) {
+              staleHooks.push({
+                file: hookFile,
+                hookVersion,
+                installedVersion: installed,
+              });
             }
           } else {
             // No version header at all — definitely stale (pre-version-tracking)
-            staleHooks.push({ file: hookFile, hookVersion: 'unknown', installedVersion: installed });
+            staleHooks.push({
+              file: hookFile,
+              hookVersion: "unknown",
+              installedVersion: installed,
+            });
           }
         } catch (e) {}
       }
@@ -149,7 +171,7 @@ try {
 const result = {
   update_available: latest && isSemverNewer(latest, installed),
   installed,
-  latest: latest || 'unknown',
+  latest: latest || "unknown",
   checked: Math.floor(Date.now() / 1000),
   stale_hooks: staleHooks.length > 0 ? staleHooks : undefined,
   package_name: PACKAGE_NAME,
@@ -166,7 +188,7 @@ if (cacheFile) {
   // record, never a partial one), then renameSync into place. Failure policy
   // is unchanged (#3582 degrade): any error is swallowed and the temp, if
   // left behind, is best-effort removed.
-  const tmp = cacheFile + '.tmp-' + process.pid;
+  const tmp = cacheFile + ".tmp-" + process.pid;
   try {
     fs.writeFileSync(tmp, JSON.stringify(result));
     fs.renameSync(tmp, cacheFile);
@@ -174,4 +196,5 @@ if (cacheFile) {
     try {
       fs.rmSync(tmp, { force: true });
     } catch (e2) {}
-  }}
+  }
+}

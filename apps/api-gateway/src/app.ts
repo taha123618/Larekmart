@@ -45,9 +45,15 @@ export async function buildApp(): Promise<FastifyInstance> {
     );
 
     if (reply.statusCode >= 400 && reply.statusCode < 500) {
-      gateway4xxTotal.inc({ method: request.method, status: String(reply.statusCode) });
+      gateway4xxTotal.inc({
+        method: request.method,
+        status: String(reply.statusCode),
+      });
     } else if (reply.statusCode >= 500) {
-      gateway5xxTotal.inc({ method: request.method, status: String(reply.statusCode) });
+      gateway5xxTotal.inc({
+        method: request.method,
+        status: String(reply.statusCode),
+      });
     }
   });
 

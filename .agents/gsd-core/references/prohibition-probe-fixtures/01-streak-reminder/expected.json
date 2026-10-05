@@ -10,5 +10,10 @@
       "statement": "MUST NOT use shaming, guilt, or loss-aversion streak framing (e.g. \"Don't lose your streak!\") — the reminder must encourage without penalty framing"
     }
   ],
-  "coverage": { "applicable": 1, "resolved": 1, "unresolved": 0, "byVerification": { "test": 0, "judgment": 1 } }
+  "coverage": {
+    "applicable": 1,
+    "resolved": 1,
+    "unresolved": 0,
+    "byVerification": { "test": 0, "judgment": 1 }
+  }
 }

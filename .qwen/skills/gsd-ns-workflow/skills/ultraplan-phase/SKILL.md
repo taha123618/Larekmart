@@ -9,7 +9,6 @@ allowed-tools:
   - Grep
 ---
 
-
 <objective>
 Offload GSD's plan phase to Qwen Code's ultraplan cloud infrastructure.
 

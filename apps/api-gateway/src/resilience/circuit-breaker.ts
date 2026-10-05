@@ -51,7 +51,9 @@ export class CircuitBreaker {
     if (record.state === "OPEN" && now >= record.nextAttemptTime) {
       record.state = "HALF_OPEN";
       record.successes = 0;
-      logger.info(`Circuit breaker transitioned to HALF_OPEN for service: ${service}`);
+      logger.info(
+        `Circuit breaker transitioned to HALF_OPEN for service: ${service}`,
+      );
     }
 
     return record.state;
@@ -85,7 +87,9 @@ export class CircuitBreaker {
       record.state = "OPEN";
       record.nextAttemptTime = now + this.cooldownPeriodMs;
       gatewayCircuitBreakerOpenTotal.inc({ service });
-      logger.warn(`Circuit breaker tripped to OPEN from HALF_OPEN for service: ${service}`);
+      logger.warn(
+        `Circuit breaker tripped to OPEN from HALF_OPEN for service: ${service}`,
+      );
       return;
     }
 
@@ -94,10 +98,13 @@ export class CircuitBreaker {
       record.state = "OPEN";
       record.nextAttemptTime = now + this.cooldownPeriodMs;
       gatewayCircuitBreakerOpenTotal.inc({ service });
-      logger.warn(`Circuit breaker tripped to OPEN for service: ${service} (${record.failures} failures)`, {
-        service,
-        cooldownPeriodMs: this.cooldownPeriodMs,
-      });
+      logger.warn(
+        `Circuit breaker tripped to OPEN for service: ${service} (${record.failures} failures)`,
+        {
+          service,
+          cooldownPeriodMs: this.cooldownPeriodMs,
+        },
+      );
     }
   }
 

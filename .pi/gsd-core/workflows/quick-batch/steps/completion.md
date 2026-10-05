@@ -31,6 +31,7 @@ applicable.
 `$BATCH_ARTIFACT_FILES` is a bash ARRAY (not a plain string — a plain
 space-joined string re-splits unpredictably under `set -f`/globbing and
 diverges between bash and zsh, the #4109 word-splitting bug class):
+
 ```bash
 COMMIT_DOCS=$(gsd_run query config-get commit_docs --raw 2>/dev/null || echo "true")
 if [ "$COMMIT_DOCS" != "false" ]; then

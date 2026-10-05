@@ -1,10 +1,9 @@
 ---
 name: gsd-assumptions-analyzer
 description: "Deeply analyzes codebase for a phase and returns structured assumptions with evidence. Spawned by discuss-phase assumptions mode."
-tools: ['read', 'execute', 'search', 'skill']
+tools: ["read", "execute", "search", "skill"]
 color: cyan
 ---
-
 
 <role>
 GSD assumptions analyzer. Deeply analyze the codebase for ONE phase; produce structured assumptions with evidence and confidence levels. Spawned by `discuss-phase-assumptions` via `Task()`. Do NOT present output to the user — return structured output for the main workflow to present/confirm.
@@ -21,11 +20,12 @@ Via prompt: `<phase>` (number/name), `<phase_goal>` (ROADMAP.md), `<prior_decisi
 <calibration_tiers>
 Follow the tier exactly — controls output shape.
 
-| Tier | Areas | Alternatives/item | Evidence depth |
-|---|---|---|---|
-| full_maturity | 3-5 | 2-3 | Detailed citations, line-level |
-| standard | 3-4 | 2 | File path citations |
-| minimal_decisive | 2-3 | 1 (decisive rec) | Key file paths only |
+| Tier             | Areas | Alternatives/item | Evidence depth                 |
+| ---------------- | ----- | ----------------- | ------------------------------ |
+| full_maturity    | 3-5   | 2-3               | Detailed citations, line-level |
+| standard         | 3-4   | 2                 | File path citations            |
+| minimal_decisive | 2-3   | 1 (decisive rec)  | Key file paths only            |
+
 </calibration_tiers>
 
 <process>
@@ -63,6 +63,7 @@ Return EXACTLY this structure:
 [Topics where codebase alone is insufficient -- library version compatibility,
 ecosystem best practices, etc. Leave empty if codebase provides enough evidence.]
 ```
+
 </output_format>
 
 <rules>

@@ -27,9 +27,15 @@ export const shouldBeUser = async (
   reply: FastifyReply,
 ) => {
   // 1. Fast-path: Check trusted API Gateway internal header propagation
-  const internalSecret = request.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as string | undefined;
-  const gatewayUserId = request.headers?.[GATEWAY_HEADERS.USER_ID] as string | undefined;
-  const gatewayUserRole = request.headers?.[GATEWAY_HEADERS.USER_ROLE] as string | undefined;
+  const internalSecret = request.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
+  const gatewayUserId = request.headers?.[GATEWAY_HEADERS.USER_ID] as
+    | string
+    | undefined;
+  const gatewayUserRole = request.headers?.[GATEWAY_HEADERS.USER_ROLE] as
+    | string
+    | undefined;
 
   if (
     internalSecret &&
@@ -60,9 +66,15 @@ export const shouldBeAdmin = async (
   reply: FastifyReply,
 ) => {
   // 1. Fast-path: Check trusted API Gateway internal header propagation
-  const internalSecret = request.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as string | undefined;
-  const gatewayUserId = request.headers?.[GATEWAY_HEADERS.USER_ID] as string | undefined;
-  const gatewayUserRole = request.headers?.[GATEWAY_HEADERS.USER_ROLE] as string | undefined;
+  const internalSecret = request.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
+  const gatewayUserId = request.headers?.[GATEWAY_HEADERS.USER_ID] as
+    | string
+    | undefined;
+  const gatewayUserRole = request.headers?.[GATEWAY_HEADERS.USER_ROLE] as
+    | string
+    | undefined;
 
   if (
     internalSecret &&
@@ -103,7 +115,9 @@ export const shouldBeInternalOrAdmin = async (
   request: FastifyRequest,
   reply: FastifyReply,
 ) => {
-  const internalSecret = request.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as string | undefined;
+  const internalSecret = request.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
   if (
     typeof internalSecret === "string" &&
     config.internalServiceSecret &&

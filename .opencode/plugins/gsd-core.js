@@ -261,8 +261,8 @@ function runHook(hookFile, payload, opts = {}) {
  */
 function contextWarningsDisabled(cwd) {
   try {
-    const configPath = path.join(cwd, '.planning', 'config.json');
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const configPath = path.join(cwd, ".planning", "config.json");
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
     return config.hooks?.context_warnings === false;
   } catch {
     // Missing or unparseable config → proceed with defaults (context warnings enabled).
@@ -735,7 +735,10 @@ const GsdCorePlugin = async ({ directory } = {}) => {
       // gate can attach without a plugin change (the engine owns phase
       // sequencing; this host bus is session/tool/permission-scoped, never
       // phase-scoped — ADR-1239 §OpenCode).
-      if (event.type === "permission.asked" || event.type === "permission.replied") {
+      if (
+        event.type === "permission.asked" ||
+        event.type === "permission.replied"
+      ) {
         return;
       }
 

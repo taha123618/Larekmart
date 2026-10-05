@@ -58,14 +58,23 @@
 //        malformed payloads, or a dispatch that already carries the correct
 //        isolation parameter.
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { readSentinel, VALID_ISOLATION, extractDispatchIdentifiers, sentinelAppliesToDispatch, buildSentinelDiscard } = require('./lib/isolation-sentinel.js');
-const { REASON_CODE, describeSentinelDiscard } = require('./lib/isolation-deny-reason.js');
-const { HOOK_ON_CRASH, allow, deny, crash } = require('./lib/hook-exit.js');
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const {
+  readSentinel,
+  VALID_ISOLATION,
+  extractDispatchIdentifiers,
+  sentinelAppliesToDispatch,
+  buildSentinelDiscard,
+} = require("./lib/isolation-sentinel.js");
+const {
+  REASON_CODE,
+  describeSentinelDiscard,
+} = require("./lib/isolation-deny-reason.js");
+const { HOOK_ON_CRASH, allow, deny, crash } = require("./lib/hook-exit.js");
 
 // Required at module top, alongside the other ./lib requires — NOT behind
 // ensureRuntimeBuild() below. Terminating on a parse/timeout failure must
@@ -89,13 +98,16 @@ const ON_CRASH = HOOK_ON_CRASH.ALLOW;
 // see ensureRuntimeBuild's own header for the full rationale. This module
 // itself (gsd-core/bin/ensure-runtime-build.cjs) depends on nothing under
 // ./lib, so requiring it here is always safe.
-const { ensureRuntimeBuild, RuntimeBuildError } = require('../gsd-core/bin/ensure-runtime-build.cjs');
+const {
+  ensureRuntimeBuild,
+  RuntimeBuildError,
+} = require("../gsd-core/bin/ensure-runtime-build.cjs");
 
 // No other executor-shaped subagent_type exists in agents/ today
 // (verified: only agents/gsd-executor.md). A Set, not a bare string compare,
 // so a future sibling executor role can be added here without touching the
 // matching logic below.
-const EXECUTOR_SUBAGENT_TYPES = new Set(['gsd-executor']);
+const EXECUTOR_SUBAGENT_TYPES = new Set(["gsd-executor"]);
 
 /**
  * Parse a registry `harnessIsolationFlag` of the shape `key="value"` (the
@@ -106,7 +118,7 @@ const EXECUTOR_SUBAGENT_TYPES = new Set(['gsd-executor']);
  * dispatch surface.
  */
 function parseHarnessFlag(flag) {
-  if (typeof flag !== 'string') return null;
+  if (typeof flag !== "string") return null;
   const m = /^([A-Za-z_][\w-]*)="([^"]*)"$/.exec(flag);
   if (!m) return null;
   return { param: m[1], value: m[2] };
@@ -126,7 +138,7 @@ function parseHarnessFlag(flag) {
 function readInstallRuntimeMarker() {
   try {
     ensureRuntimeBuild();
-    const runtimeSlash = require('../gsd-core/bin/lib/runtime-slash.cjs');
+    const runtimeSlash = require("../gsd-core/bin/lib/runtime-slash.cjs");
     return runtimeSlash.readInstallRuntimeMarker();
   } catch {
     // Unbuilt runtime library, or any other failure reaching the canonical
@@ -140,7 +152,7 @@ function readInstallRuntimeMarker() {
 function _setInstallRuntimeMarkerForTests(value) {
   try {
     ensureRuntimeBuild();
-    const runtimeSlash = require('../gsd-core/bin/lib/runtime-slash.cjs');
+    const runtimeSlash = require("../gsd-core/bin/lib/runtime-slash.cjs");
     runtimeSlash._setInstallRuntimeMarkerForTests(value);
   } catch {
     // Test-only seam; an unbuilt library here means the test itself will fail
@@ -193,16 +205,20 @@ function _setInstallRuntimeMarkerForTests(value) {
  * installs and pre-#2297 installs (no marker on disk) keep the #3045
  * BLOCKER 2 behavior.
  */
-function resolveRuntimeIdentity(cwd, configPath, resolveRuntimeNameFromCandidates) {
+function resolveRuntimeIdentity(
+  cwd,
+  configPath,
+  resolveRuntimeNameFromCandidates,
+) {
   const envRuntime = resolveRuntimeNameFromCandidates(process.env.GSD_RUNTIME);
   if (envRuntime) return { runtimeId: envRuntime, confident: true };
 
   // A throw here (corrupt JSON, EISDIR, permission error) propagates to the
   // caller's catch as a resolution failure — this function only decides
   // "confident vs not", never resolution failure.
-  const raw = fs.readFileSync(configPath, 'utf-8');
+  const raw = fs.readFileSync(configPath, "utf-8");
   const parsed = JSON.parse(raw);
-  if (parsed && typeof parsed === 'object' && 'runtime' in parsed) {
+  if (parsed && typeof parsed === "object" && "runtime" in parsed) {
     const configRuntime = resolveRuntimeNameFromCandidates(parsed.runtime);
     if (configRuntime) return { runtimeId: configRuntime, confident: true };
   }
@@ -211,7 +227,9 @@ function resolveRuntimeIdentity(cwd, configPath, resolveRuntimeNameFromCandidate
   // block comment on readInstallRuntimeMarker. An empty/whitespace-only file
   // or an unknown value degrades exactly like the other rungs (no signal /
   // future-runtime tolerance via resolveRuntimeNameFromCandidates).
-  const markerRuntime = resolveRuntimeNameFromCandidates(readInstallRuntimeMarker());
+  const markerRuntime = resolveRuntimeNameFromCandidates(
+    readInstallRuntimeMarker(),
+  );
   if (markerRuntime) return { runtimeId: markerRuntime, confident: true };
 
   // #3045 BLOCKER 2: fall back to the installer-persisted default. Read
@@ -219,12 +237,19 @@ function resolveRuntimeIdentity(cwd, configPath, resolveRuntimeNameFromCandidate
   // never a resolution failure (this function only ever throws for the
   // config.json read above, which the caller's catch already handles).
   try {
-    const defaultsPath = path.join(os.homedir(), '.gsd', 'defaults.json');
-    const defaultsRaw = fs.readFileSync(defaultsPath, 'utf-8');
+    const defaultsPath = path.join(os.homedir(), ".gsd", "defaults.json");
+    const defaultsRaw = fs.readFileSync(defaultsPath, "utf-8");
     const defaultsParsed = JSON.parse(defaultsRaw);
-    if (defaultsParsed && typeof defaultsParsed === 'object' && 'runtime' in defaultsParsed) {
-      const defaultsRuntime = resolveRuntimeNameFromCandidates(defaultsParsed.runtime);
-      if (defaultsRuntime) return { runtimeId: defaultsRuntime, confident: true };
+    if (
+      defaultsParsed &&
+      typeof defaultsParsed === "object" &&
+      "runtime" in defaultsParsed
+    ) {
+      const defaultsRuntime = resolveRuntimeNameFromCandidates(
+        defaultsParsed.runtime,
+      );
+      if (defaultsRuntime)
+        return { runtimeId: defaultsRuntime, confident: true };
     }
   } catch {
     // Absent or unreadable ~/.gsd/defaults.json — no signal, fall through.
@@ -242,7 +267,9 @@ function resolveRuntimeIdentity(cwd, configPath, resolveRuntimeNameFromCandidate
 function resolveHarnessFlag(runtimeId, runtimes) {
   const runtimeEntry = runtimes != null ? runtimes[runtimeId] : null;
   const declaredFlag = runtimeEntry?.runtime?.harnessIsolationFlag ?? null;
-  return (typeof declaredFlag === 'string' && declaredFlag.length > 0) ? declaredFlag : null;
+  return typeof declaredFlag === "string" && declaredFlag.length > 0
+    ? declaredFlag
+    : null;
 }
 
 /**
@@ -274,30 +301,40 @@ function resolveRegistryIsolation(cwd, configPath) {
   // RuntimeBuildError there so it surfaces this seam's actionable message
   // instead of being misreported as an unreadable config.json (#3050 lesson).
   ensureRuntimeBuild();
-  const { resolveRuntimeNameFromCandidates } = require('../gsd-core/bin/lib/runtime-name-policy.cjs');
-  const { runtimes } = require('../gsd-core/bin/lib/capability-registry.cjs');
+  const {
+    resolveRuntimeNameFromCandidates,
+  } = require("../gsd-core/bin/lib/runtime-name-policy.cjs");
+  const { runtimes } = require("../gsd-core/bin/lib/capability-registry.cjs");
 
-  const { runtimeId, confident } = resolveRuntimeIdentity(cwd, configPath, resolveRuntimeNameFromCandidates);
+  const { runtimeId, confident } = resolveRuntimeIdentity(
+    cwd,
+    configPath,
+    resolveRuntimeNameFromCandidates,
+  );
   if (!confident) {
-    return { isolation: 'none', harnessFlag: null };
+    return { isolation: "none", harnessFlag: null };
   }
 
   const runtimeEntry = runtimes != null ? runtimes[runtimeId] : null;
-  const declared = runtimeEntry?.runtime?.hostIntegration?.dispatch?.isolation ?? null;
-  let isolation = (typeof declared === 'string' && VALID_ISOLATION.has(declared)) ? declared : 'none';
+  const declared =
+    runtimeEntry?.runtime?.hostIntegration?.dispatch?.isolation ?? null;
+  let isolation =
+    typeof declared === "string" && VALID_ISOLATION.has(declared)
+      ? declared
+      : "none";
 
   let harnessFlag = null;
-  if (isolation === 'harness-worktree') {
+  if (isolation === "harness-worktree") {
     harnessFlag = resolveHarnessFlag(runtimeId, runtimes);
     if (harnessFlag === null) {
       // A host claiming harness isolation with no declared flag gives this
       // guard nothing to check for — degrade to 'none' rather than block on
       // an unspecifiable requirement.
-      isolation = 'none';
+      isolation = "none";
     }
   }
 
-  if (isolation === 'harness-worktree') {
+  if (isolation === "harness-worktree") {
     let useWorktrees = true;
     // #3972: the opt-out read shares the ONE owner every other
     // isolation-deciding surface uses — planning-workspace's
@@ -312,7 +349,9 @@ function resolveRegistryIsolation(cwd, configPath) {
     let ladderAnswered = false;
     try {
       ensureRuntimeBuild();
-      const { worktreesOptedOut } = require('../gsd-core/bin/lib/planning-workspace.cjs');
+      const {
+        worktreesOptedOut,
+      } = require("../gsd-core/bin/lib/planning-workspace.cjs");
       useWorktrees = !worktreesOptedOut(cwd);
       ladderAnswered = true;
     } catch {
@@ -321,10 +360,15 @@ function resolveRegistryIsolation(cwd, configPath) {
     }
     if (!ladderAnswered) {
       try {
-        const raw = fs.readFileSync(configPath, 'utf-8');
+        const raw = fs.readFileSync(configPath, "utf-8");
         const parsedCfg = JSON.parse(raw);
-        if (parsedCfg && typeof parsedCfg === 'object' && parsedCfg.workflow &&
-            typeof parsedCfg.workflow === 'object' && parsedCfg.workflow.use_worktrees === false) {
+        if (
+          parsedCfg &&
+          typeof parsedCfg === "object" &&
+          parsedCfg.workflow &&
+          typeof parsedCfg.workflow === "object" &&
+          parsedCfg.workflow.use_worktrees === false
+        ) {
           useWorktrees = false;
         }
       } catch {
@@ -334,7 +378,7 @@ function resolveRegistryIsolation(cwd, configPath) {
         // default rather than silently disabling the guard.
       }
     }
-    if (!useWorktrees) isolation = 'none';
+    if (!useWorktrees) isolation = "none";
   }
 
   // #4734: a harness worktree can never be created in a directory that is not
@@ -347,12 +391,14 @@ function resolveRegistryIsolation(cwd, configPath) {
   // base-check's degrade decision uses — and ambiguous or failed resolutions
   // keep the conservative (enforce) default, matching that check's own
   // fail-closed treatment of the same classes.
-  if (isolation === 'harness-worktree') {
+  if (isolation === "harness-worktree") {
     try {
       ensureRuntimeBuild();
-      const { classifyGitHead } = require('../gsd-core/bin/lib/worktree-base-ref.cjs');
-      if (classifyGitHead({ cwd }).status === 'definitive-absence') {
-        isolation = 'none';
+      const {
+        classifyGitHead,
+      } = require("../gsd-core/bin/lib/worktree-base-ref.cjs");
+      if (classifyGitHead({ cwd }).status === "definitive-absence") {
+        isolation = "none";
       }
     } catch {
       // Unbuilt or unreadable runtime library — keep the conservative
@@ -400,7 +446,7 @@ function resolveRegistryIsolation(cwd, configPath) {
  * "a mismatch is 'no applicable sentinel', not an allow" (#3045 review).
  */
 function resolveIsolationState(cwd, { clock = Date, dispatchIds = null } = {}) {
-  const configPath = path.join(cwd, '.planning', 'config.json');
+  const configPath = path.join(cwd, ".planning", "config.json");
   let projectExists;
   try {
     fs.accessSync(configPath, fs.constants.F_OK);
@@ -409,7 +455,13 @@ function resolveIsolationState(cwd, { clock = Date, dispatchIds = null } = {}) {
     projectExists = false;
   }
   if (!projectExists) {
-    return { gsdProject: false, isolation: null, harnessFlag: null, error: null, sentinelDiscarded: null };
+    return {
+      gsdProject: false,
+      isolation: null,
+      harnessFlag: null,
+      error: null,
+      sentinelDiscarded: null,
+    };
   }
 
   const sentinel = readSentinel(cwd, { clock });
@@ -418,11 +470,23 @@ function resolveIsolationState(cwd, { clock = Date, dispatchIds = null } = {}) {
   // "absent"/"stale" without re-deriving applicability.
   const applies = sentinelAppliesToDispatch(sentinel, dispatchIds);
   if (sentinel.present && !sentinel.stale && applies) {
-    if (sentinel.isolation !== 'harness-worktree') {
-      return { gsdProject: true, isolation: sentinel.isolation, harnessFlag: null, error: null, sentinelDiscarded: null };
+    if (sentinel.isolation !== "harness-worktree") {
+      return {
+        gsdProject: true,
+        isolation: sentinel.isolation,
+        harnessFlag: null,
+        error: null,
+        sentinelDiscarded: null,
+      };
     }
     if (sentinel.harnessFlag) {
-      return { gsdProject: true, isolation: 'harness-worktree', harnessFlag: sentinel.harnessFlag, error: null, sentinelDiscarded: null };
+      return {
+        gsdProject: true,
+        isolation: "harness-worktree",
+        harnessFlag: sentinel.harnessFlag,
+        error: null,
+        sentinelDiscarded: null,
+      };
     }
     // #3045 BLOCKER 2 fix: the sentinel already PROVED this dispatch requires
     // isolation (it resolved harness-worktree) but carries no usable flag —
@@ -449,7 +513,7 @@ function resolveIsolationState(cwd, { clock = Date, dispatchIds = null } = {}) {
       harnessFlag: null,
       error: new Error(
         'dispatch-isolation sentinel resolved "harness-worktree" but recorded no harness_flag — ' +
-        'cannot verify what parameter the dispatch must carry.'
+          "cannot verify what parameter the dispatch must carry.",
       ),
       sentinelDiscarded: null,
     };
@@ -468,10 +532,25 @@ function resolveIsolationState(cwd, { clock = Date, dispatchIds = null } = {}) {
   const sentinelDiscarded = buildSentinelDiscard(sentinel, dispatchIds);
 
   try {
-    const { isolation, harnessFlag } = resolveRegistryIsolation(cwd, configPath);
-    return { gsdProject: true, isolation, harnessFlag, error: null, sentinelDiscarded };
+    const { isolation, harnessFlag } = resolveRegistryIsolation(
+      cwd,
+      configPath,
+    );
+    return {
+      gsdProject: true,
+      isolation,
+      harnessFlag,
+      error: null,
+      sentinelDiscarded,
+    };
   } catch (err) {
-    return { gsdProject: true, isolation: null, harnessFlag: null, error: err, sentinelDiscarded };
+    return {
+      gsdProject: true,
+      isolation: null,
+      harnessFlag: null,
+      error: err,
+      sentinelDiscarded,
+    };
   }
 }
 
@@ -487,17 +566,24 @@ function resolveIsolationState(cwd, { clock = Date, dispatchIds = null } = {}) {
  * Returns `{ action: 'allow' } | { action: 'block', reason: string }`.
  */
 function evaluateDispatch(data, { clock = Date } = {}) {
-  if (!data || typeof data !== 'object') return { action: 'allow' };
+  if (!data || typeof data !== "object") return { action: "allow" };
   // #3045 MAJOR 1: accept both subagent-dispatch tool names. hooks.json's
   // matcher is "Agent|Task" (mirroring the repo's own PostToolUse
   // precedent) so this must match both, or it is silently inert on any
   // host/version whose subagent tool is named "Task".
-  if (data.tool_name !== 'Agent' && data.tool_name !== 'Task') return { action: 'allow' };
+  if (data.tool_name !== "Agent" && data.tool_name !== "Task")
+    return { action: "allow" };
 
-  const toolInput = (data.tool_input && typeof data.tool_input === 'object') ? data.tool_input : {};
+  const toolInput =
+    data.tool_input && typeof data.tool_input === "object"
+      ? data.tool_input
+      : {};
   const subagentType = toolInput.subagent_type;
-  if (typeof subagentType !== 'string' || !EXECUTOR_SUBAGENT_TYPES.has(subagentType)) {
-    return { action: 'allow' };
+  if (
+    typeof subagentType !== "string" ||
+    !EXECUTOR_SUBAGENT_TYPES.has(subagentType)
+  ) {
+    return { action: "allow" };
   }
 
   const cwd = data.cwd || process.cwd();
@@ -510,10 +596,13 @@ function evaluateDispatch(data, { clock = Date } = {}) {
   // (or, failing that, the prose fallback) lives in the prompt body itself —
   // `description` is kept only as a fallback for a marker/prose match that
   // exists solely in it.
-  const dispatchIds = extractDispatchIdentifiers(toolInput.prompt, toolInput.description);
+  const dispatchIds = extractDispatchIdentifiers(
+    toolInput.prompt,
+    toolInput.description,
+  );
   const state = resolveIsolationState(cwd, { clock, dispatchIds });
 
-  if (!state.gsdProject) return { action: 'allow' };
+  if (!state.gsdProject) return { action: "allow" };
 
   if (state.error) {
     // #3582: a missing/unbuildable compiled runtime library (RuntimeBuildError,
@@ -535,17 +624,26 @@ function evaluateDispatch(data, { clock = Date } = {}) {
         `subagent_type="${subagentType}" without being able to verify whether isolation is ` +
         `required — a guard that cannot verify must not answer "safe" (#3050). Retry once the ` +
         `project configuration is readable.`;
-    const reasonCode = isBuildFailure ? REASON_CODE.RUNTIME_BUILD_FAILED : REASON_CODE.CONFIG_UNREADABLE;
-    const fullReason = state.sentinelDiscarded ? reason + describeSentinelDiscard(state.sentinelDiscarded) : reason;
-    return { action: 'block', reason: fullReason, reasonCode, sentinelDiscarded: state.sentinelDiscarded };
+    const reasonCode = isBuildFailure
+      ? REASON_CODE.RUNTIME_BUILD_FAILED
+      : REASON_CODE.CONFIG_UNREADABLE;
+    const fullReason = state.sentinelDiscarded
+      ? reason + describeSentinelDiscard(state.sentinelDiscarded)
+      : reason;
+    return {
+      action: "block",
+      reason: fullReason,
+      reasonCode,
+      sentinelDiscarded: state.sentinelDiscarded,
+    };
   }
 
-  if (state.isolation !== 'harness-worktree') return { action: 'allow' };
+  if (state.isolation !== "harness-worktree") return { action: "allow" };
 
   const parsed = parseHarnessFlag(state.harnessFlag);
-  if (!parsed) return { action: 'allow' };
+  if (!parsed) return { action: "allow" };
 
-  if (toolInput[parsed.param] === parsed.value) return { action: 'allow' };
+  if (toolInput[parsed.param] === parsed.value) return { action: "allow" };
 
   let reason =
     `Agent isolation guard: this project's dispatch isolation resolves to "harness-worktree", ` +
@@ -553,24 +651,32 @@ function evaluateDispatch(data, { clock = Date } = {}) {
     `${parsed.param}="${parsed.value}". Add ${parsed.param}="${parsed.value}" to the Agent() ` +
     `call so the executor runs in an isolated worktree instead of the primary checkout ` +
     `(gsd-core/workflows/execute-phase/steps/executor-isolation-dispatch.md).`;
-  if (state.sentinelDiscarded) reason += describeSentinelDiscard(state.sentinelDiscarded);
-  return { action: 'block', reason, reasonCode: REASON_CODE.HARNESS_FLAG_MISSING, sentinelDiscarded: state.sentinelDiscarded };
+  if (state.sentinelDiscarded)
+    reason += describeSentinelDiscard(state.sentinelDiscarded);
+  return {
+    action: "block",
+    reason,
+    reasonCode: REASON_CODE.HARNESS_FLAG_MISSING,
+    sentinelDiscarded: state.sentinelDiscarded,
+  };
 }
 
 /* istanbul ignore next -- stdin adapter, exercised via spawnSync in tests */
 function main() {
-  let input = '';
+  let input = "";
   const stdinTimeout = setTimeout(() => allow(undefined), 3000);
-  process.stdin.setEncoding('utf8');
-  process.stdin.on('data', (chunk) => { input += chunk; });
-  process.stdin.on('end', () => {
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (chunk) => {
+    input += chunk;
+  });
+  process.stdin.on("end", () => {
     clearTimeout(stdinTimeout);
     try {
       const data = JSON.parse(input);
       const decision = evaluateDispatch(data);
-      if (decision.action === 'block') {
+      if (decision.action === "block") {
         const out = {
-          decision: 'block',
+          decision: "block",
           reason: decision.reason,
           reason_code: decision.reasonCode,
           sentinel_discarded: decision.sentinelDiscarded ?? null,

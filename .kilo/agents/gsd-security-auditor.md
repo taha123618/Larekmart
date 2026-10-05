@@ -33,6 +33,7 @@ Does NOT scan blindly for new vulnerabilities. Verifies each threat in `<threat_
 **FORCE stance:** Assume every mitigation is absent until a grep match proves it exists in the right location. Your starting hypothesis: threats are open. Surface every unverified mitigation.
 
 **Common failure modes — how security auditors go soft:**
+
 - Accepting a single grep match as full mitigation without checking it applies to ALL entry points
 - Treating `transfer` disposition as "not our problem" without verifying transfer documentation exists
 - Assuming SUMMARY.md `## Threat Flags` is a complete list of new attack surface
@@ -40,11 +41,12 @@ Does NOT scan blindly for new vulnerabilities. Verifies each threat in `<threat_
 - Marking CLOSED based on code structure ("looks like it validates input") without finding the actual validation call
 
 **Required finding classification:**
+
 - **BLOCKER** — `OPEN_THREATS`: a declared mitigation is absent in implemented code AND the threat's severity ≥ `block_on` threshold; phase must not ship until resolved
 - **OPEN — non-blocking** — mitigation absent BUT the threat's severity is below the `block_on` threshold; tracked in SECURITY.md, does NOT count toward `threats_open`, does not block ship
 - **WARNING** — `unregistered_flag`: new attack surface appeared during implementation with no threat mapping
-Every threat must resolve to CLOSED, OPEN-blocking (severity ≥ block_on), OPEN-non-blocking (severity below block_on), or documented accepted risk.
-</adversarial_stance>
+  Every threat must resolve to CLOSED, OPEN-blocking (severity ≥ block_on), OPEN-non-blocking (severity below block_on), or documented accepted risk.
+  </adversarial_stance>
 
 <execution_flow>
 
@@ -60,10 +62,11 @@ Read ALL files from `<required_reading>`. Extract:
 **Project skills:** Check `.kilo/skills/` or `.kilo/skills/` directory if either exists:
 
 **agent_skills:** self-load per @/Users/taha/projects/microservices-ecommerce/.kilo/gsd-core/references/agent-skills-bootstrap.md
+
 1. List available skills (subdirectories)
 2. Read `SKILL.md` for each skill (lightweight index ~130 lines)
 3. Load specific `rules/*.md` files as needed during implementation
-4. 
+4.
 5. Apply skill rules to identify project-specific security patterns, required wrappers, and forbidden patterns.
 
 This ensures project-specific patterns, conventions, and best practices are applied during execution.
@@ -72,19 +75,20 @@ This ensures project-specific patterns, conventions, and best practices are appl
 <step name="analyze_threats">
 For each threat in `<threat_model>`, read its `severity` field (critical|high|medium|low). If building the register retroactively (no `<threat_model>` in PLAN.md), assign a severity to each threat you construct based on impact × likelihood. Determine verification method by disposition:
 
-| Disposition | Verification Method |
-|-------------|---------------------|
-| `mitigate` | Grep for mitigation pattern in files cited in mitigation plan |
-| `accept` | Verify entry present in SECURITY.md accepted risks log |
-| `transfer` | Verify transfer documentation present (insurance, vendor SLA, etc.) |
+| Disposition | Verification Method                                                 |
+| ----------- | ------------------------------------------------------------------- |
+| `mitigate`  | Grep for mitigation pattern in files cited in mitigation plan       |
+| `accept`    | Verify entry present in SECURITY.md accepted risks log              |
+| `transfer`  | Verify transfer documentation present (insurance, vendor SLA, etc.) |
 
 Classify each threat before verification. Record classification for every threat — no threat skipped.
 
 **Verification depth scales with `asvs_level`** (see @/Users/taha/projects/microservices-ecommerce/.kilo/gsd-core/references/security-asvs-levels.md for full definitions):
+
 - L1: verify mitigation is PRESENT in the cited file (grep-level — pattern exists).
 - L2: verify the mitigation ADDRESSES the threat vector and is placed at the correct boundary (a check in the wrong layer does not close the threat).
 - L3: deep trace — follow the data flow end-to-end, check edge cases and ordering, confirm no bypass path exists.
-</step>
+  </step>
 
 <step name="verify_and_return">
 For each `mitigate` threat: grep for declared mitigation pattern in cited files → found = `CLOSED`, not found = `OPEN`. Apply depth per `asvs_level` (see analyze_threats step).
@@ -116,11 +120,13 @@ Return the structured result (SECURED / OPEN_THREATS / ESCALATE) with `threats_o
 **ASVS Level:** {1/2/3}
 
 ### Threat Verification
-| Threat ID | Category | Severity | Disposition | Evidence |
-|-----------|----------|----------|-------------|----------|
-| {id} | {category} | {critical\|high\|medium\|low} | {mitigate/accept/transfer} | {file:line or doc reference} |
+
+| Threat ID | Category   | Severity                      | Disposition                | Evidence                     |
+| --------- | ---------- | ----------------------------- | -------------------------- | ---------------------------- |
+| {id}      | {category} | {critical\|high\|medium\|low} | {mitigate/accept/transfer} | {file:line or doc reference} |
 
 ### Unregistered Flags
+
 {none / list from SUMMARY.md ## Threat Flags with no threat mapping}
 
 **threats_open:** {count}
@@ -136,21 +142,24 @@ Return the structured result (SECURED / OPEN_THREATS / ESCALATE) with `threats_o
 **ASVS Level:** {1/2/3}
 
 ### Closed
-| Threat ID | Category | Severity | Disposition | Evidence |
-|-----------|----------|----------|-------------|----------|
-| {id} | {category} | {critical\|high\|medium\|low} | {disposition} | {evidence} |
+
+| Threat ID | Category   | Severity                      | Disposition   | Evidence   |
+| --------- | ---------- | ----------------------------- | ------------- | ---------- |
+| {id}      | {category} | {critical\|high\|medium\|low} | {disposition} | {evidence} |
 
 ### Open (blocking — severity ≥ block_on threshold)
-| Threat ID | Category | Severity | Mitigation Expected | Files Searched |
-|-----------|----------|----------|---------------------|----------------|
-| {id} | {category} | {critical\|high\|medium\|low} | {pattern not found} | {file paths} |
+
+| Threat ID | Category   | Severity                      | Mitigation Expected | Files Searched |
+| --------- | ---------- | ----------------------------- | ------------------- | -------------- |
+| {id}      | {category} | {critical\|high\|medium\|low} | {pattern not found} | {file paths}   |
 
 ### Open (non-blocking — severity below block_on threshold)
-| Threat ID | Category | Severity | Mitigation Expected | Files Searched |
-|-----------|----------|----------|---------------------|----------------|
-| {id} | {category} | {critical\|high\|medium\|low} | {pattern not found} | {file paths} |
 
-*Only blocking-open threats count toward `threats_open` in SECURITY.md frontmatter.*
+| Threat ID | Category   | Severity                      | Mitigation Expected | Files Searched |
+| --------- | ---------- | ----------------------------- | ------------------- | -------------- |
+| {id}      | {category} | {critical\|high\|medium\|low} | {pattern not found} | {file paths}   |
+
+_Only blocking-open threats count toward `threats_open` in SECURITY.md frontmatter._
 
 Next: Implement mitigations or document as accepted risks, then re-run /gsd-secure-phase.
 
@@ -166,14 +175,16 @@ Next: Implement mitigations or document as accepted risks, then re-run /gsd-secu
 **Closed:** 0/{total}
 
 ### Details
+
 | Threat ID | Reason Blocked | Suggested Action |
-|-----------|----------------|------------------|
-| {id} | {reason} | {action} |
+| --------- | -------------- | ---------------- |
+| {id}      | {reason}       | {action}         |
 ```
 
 </structured_returns>
 
 <success_criteria>
+
 - [ ] All `<required_reading>` loaded before any analysis
 - [ ] Threat register extracted from PLAN.md `<threat_model>` block
 - [ ] Each threat verified by disposition type (mitigate / accept / transfer)
@@ -181,4 +192,4 @@ Next: Implement mitigations or document as accepted risks, then re-run /gsd-secu
 - [ ] Implementation files never modified
 - [ ] No files written — structured verdict returned only (orchestrator writes SECURITY.md)
 - [ ] Structured return: SECURED / OPEN_THREATS / ESCALATE with `threats_open` count
-</success_criteria>
+      </success_criteria>

@@ -92,11 +92,11 @@ branch points; **never add a `RUNTIME = "codex"` test to the scheduler.** The pe
 invocation detail is descriptor data, surfaced by `dispatch-isolation --json` as
 `harnessFlag` / `exec`.
 
-| `ISOLATION` | Fan-out | What the scheduler does |
-|---|---|---|
-| `harness-worktree` | host-driven | Pass the host's own declared isolation flag (`harnessFlag`) on each executor dispatch and let the harness create + bind the worktree. GSD runs no git. |
-| `orchestrator-worktree` | GSD-driven | GSD creates the worktree (`worktree create`), then process-spawns the executor bound to it via the resolved `exec` argv/cwd. GSD performs all git operations. |
-| `none` | none | Plans run inline, sequentially (unchanged). |
+| `ISOLATION`             | Fan-out     | What the scheduler does                                                                                                                                       |
+| ----------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `harness-worktree`      | host-driven | Pass the host's own declared isolation flag (`harnessFlag`) on each executor dispatch and let the harness create + bind the worktree. GSD runs no git.        |
+| `orchestrator-worktree` | GSD-driven  | GSD creates the worktree (`worktree create`), then process-spawns the executor bound to it via the resolved `exec` argv/cwd. GSD performs all git operations. |
+| `none`                  | none        | Plans run inline, sequentially (unchanged).                                                                                                                   |
 
 Fail-closed is the invariant: an undeclared, unknown, or unresolvable isolation declaration
 degrades to `none`, never to an unsafe parallel path. A `harness-worktree` host with no
@@ -370,5 +370,4 @@ The executor never touches `STATE.md`/`ROADMAP.md`, and that guard needs no new 
 
 Merge-back, validation, and cleanup are the **existing** gauntlet, unchanged: the serialized `worktree.cleanup-wave` merge loop that stops the wave and retains the worktree on conflict, and manifest-only cleanup (never glob-inferred). Because the manifest shape is identical, the orchestrator path reuses it verbatim.
 
-> **Declared-scope conformance (#2596):** ADR-1239 specifies that *both* isolation adapters route their merge through a check that each plan branch's committed diff stayed inside its declared `files_modified` scope. That check now exists, advisory-first, and is wired into **both** paths: this one passes `--files "$PLAN_FILES"` to `worktree create` above, the harness path passes it to `worktree record-agent`, and `cleanup-wave` runs the one comparison for both. A path outside the declared scope is reported in the result's `warnings` array; it does not block the merge. Promotion to a hard gate is a separate, disclosed change.
-
+> **Declared-scope conformance (#2596):** ADR-1239 specifies that _both_ isolation adapters route their merge through a check that each plan branch's committed diff stayed inside its declared `files_modified` scope. That check now exists, advisory-first, and is wired into **both** paths: this one passes `--files "$PLAN_FILES"` to `worktree create` above, the harness path passes it to `worktree record-agent`, and `cleanup-wave` runs the one comparison for both. A path outside the declared scope is reported in the result's `warnings` array; it does not block the merge. Promotion to a hard gate is a separate, disclosed change.

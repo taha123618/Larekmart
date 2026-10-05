@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 // hooks/lib/dispatch-identity.js — the ONE canonical owner of the
 // `[gsd:dispatch phase="…" plan="…"]` marker format and its prose fallback
 // (#4594, epic #4630 Phase 1). See
@@ -32,7 +32,7 @@
 // matches the case-flexible phase-id grammar" test pins this string equal to
 // the compiled source at test time specifically to turn that silent drift
 // into a loud, in-CI failure.
-const DISPATCH_PHASE_TOKEN_SOURCE = '\\d+[A-Za-z]?(?:\\.\\d+)*';
+const DISPATCH_PHASE_TOKEN_SOURCE = "\\d+[A-Za-z]?(?:\\.\\d+)*";
 
 // Bounded marker grammar: `[gsd:dispatch key="value" key2="value2"]`.
 // - Key names bounded to {1,31} — no key we emit or expect is anywhere near
@@ -42,7 +42,8 @@ const DISPATCH_PHASE_TOKEN_SOURCE = '\\d+[A-Za-z]?(?:\\.\\d+)*';
 //   sibling key — enforced structurally by the negated character class, not
 //   by a separate validation pass.
 // Global flag so `findMarker` can scan forward through a large prompt.
-const MARKER_RE = /\[gsd:dispatch((?:\s+[A-Za-z][A-Za-z0-9_-]{0,31}="[^"\]\r\n]{0,200}")*)\s*\]/g;
+const MARKER_RE =
+  /\[gsd:dispatch((?:\s+[A-Za-z][A-Za-z0-9_-]{0,31}="[^"\]\r\n]{0,200}")*)\s*\]/g;
 const MARKER_KV_RE = /([A-Za-z][A-Za-z0-9_-]{0,31})="([^"\]\r\n]{0,200})"/g;
 
 // Prose fallback frame: `execute plan <token> of phase <PHASE TOKEN>`.
@@ -56,7 +57,7 @@ const MARKER_KV_RE = /([A-Za-z][A-Za-z0-9_-]{0,31})="([^"\]\r\n]{0,200})"/g;
 //   sentence-terminating period is never swept into the token.
 const PROSE_RE = new RegExp(
   `execute\\s+plan\\s+(\\S{1,80})\\s+of\\s+phase\\s+(${DISPATCH_PHASE_TOKEN_SOURCE})`,
-  'i',
+  "i",
 );
 
 /**
@@ -70,16 +71,16 @@ const PROSE_RE = new RegExp(
  * Returns `''` when neither key is usable (nothing worth emitting).
  */
 function renderDispatchIdentityMarker(input) {
-  const value = input && typeof input === 'object' ? input : {};
+  const value = input && typeof input === "object" ? input : {};
   const parts = [];
-  for (const key of ['phase', 'plan']) {
+  for (const key of ["phase", "plan"]) {
     const v = value[key];
-    if (typeof v === 'string' && v.length > 0 && !/["\]\r\n]/.test(v)) {
+    if (typeof v === "string" && v.length > 0 && !/["\]\r\n]/.test(v)) {
       parts.push(`${key}="${v}"`);
     }
   }
-  if (parts.length === 0) return '';
-  return `[gsd:dispatch ${parts.join(' ')}]`;
+  if (parts.length === 0) return "";
+  return `[gsd:dispatch ${parts.join(" ")}]`;
 }
 
 function emptyResult() {
@@ -106,19 +107,19 @@ function emptyResult() {
  */
 function findMarker(texts) {
   for (const text of texts) {
-    if (typeof text !== 'string' || text.length === 0) continue;
+    if (typeof text !== "string" || text.length === 0) continue;
     MARKER_RE.lastIndex = 0;
     let match;
     while ((match = MARKER_RE.exec(text)) !== null) {
-      const kvBlock = match[1] || '';
+      const kvBlock = match[1] || "";
       let phase = null;
       let plan = null;
       MARKER_KV_RE.lastIndex = 0;
       let kv;
       while ((kv = MARKER_KV_RE.exec(kvBlock)) !== null) {
         const [, key, val] = kv;
-        if (key === 'phase' && phase === null) phase = val;
-        else if (key === 'plan' && plan === null) plan = val;
+        if (key === "phase" && phase === null) phase = val;
+        else if (key === "plan" && plan === null) plan = val;
       }
       if (phase === null && plan === null) continue;
       return { phase, plan };
@@ -142,7 +143,7 @@ function findMarker(texts) {
  */
 function findProse(texts) {
   for (const text of texts) {
-    if (typeof text !== 'string' || text.length === 0) continue;
+    if (typeof text !== "string" || text.length === 0) continue;
     const match = PROSE_RE.exec(text);
     if (match) {
       return { phase: match[2] };
@@ -169,12 +170,12 @@ function findProse(texts) {
 function parseDispatchIdentity(...texts) {
   const marker = findMarker(texts);
   if (marker) {
-    return { phase: marker.phase, plan: marker.plan, source: 'marker' };
+    return { phase: marker.phase, plan: marker.plan, source: "marker" };
   }
 
   const prose = findProse(texts);
   if (prose) {
-    return { phase: prose.phase, plan: null, source: 'prose' };
+    return { phase: prose.phase, plan: null, source: "prose" };
   }
 
   return emptyResult();

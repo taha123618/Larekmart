@@ -21,7 +21,6 @@ RESPONSE_LANGUAGE=$(gsd_run query config-get response_language --raw --default "
 
 **If `response_language` is set:** All user-facing output of this workflow — narration between tool calls, status updates, progress notes, findings, questions, prompts, and explanations — MUST be presented in `{response_language}`. Technical terms, code, file paths, and subagent prompts stay in English — only user-facing output is translated.
 
-
 <step name="identify_completed_milestones">
 
 Read `.planning/MILESTONES.md` to identify completed milestones and their versions.
@@ -156,7 +155,6 @@ No quick tasks to archive either.
 
 Stop here.
 
-
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `{{GSD_ARGS}}` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `AskUserQuestion` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-Claude runtimes (OpenAI Codex, Antigravity, etc.) where `AskUserQuestion` is not available.
 AskUserQuestion: "Proceed with archiving and pruning?" with options: "Yes — archive phases and prune stale branches" | "Cancel"
 
@@ -211,6 +209,7 @@ git branch -vv | awk '/: gone\]/ { if ($1 !~ /^\*$|^main$|^next$|^trunk$|^develo
 ```
 
 Notes:
+
 - `git fetch --prune` already ran in `show_dry_run` — the tracking refs are current and this step enumerates from the same state the user confirmed.
 - `!~ /^\*$/` skips the currently checked-out branch (prefixed with `* ` in `git branch -vv` output, so `$1` yields `*`).
 - `!~ /^main$|^next$|^trunk$|^develop$/` excludes protected branch names even if their upstream is gone — matches the dry-run exclusion exactly.

@@ -16,8 +16,12 @@ instance name to `{ cli, model?, agent? }`:
 {
   "review": {
     "reviewer_instances": {
-      "opencode-deepseek": { "cli": "opencode", "model": "deepseek/deepseek-v4-pro", "agent": "review" },
-      "opencode-mimo":     { "cli": "opencode", "model": "xiaomi/mimo-v2.5-pro" }
+      "opencode-deepseek": {
+        "cli": "opencode",
+        "model": "deepseek/deepseek-v4-pro",
+        "agent": "review"
+      },
+      "opencode-mimo": { "cli": "opencode", "model": "xiaomi/mimo-v2.5-pro" }
     },
     "default_reviewers": ["opencode-deepseek", "opencode-mimo", "codex"]
   }

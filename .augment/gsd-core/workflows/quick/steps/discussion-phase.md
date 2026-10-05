@@ -3,6 +3,7 @@
 Skip this step entirely if NOT `$DISCUSS_MODE`.
 
 Display banner:
+
 ```
 ### GSD ► DISCUSSING QUICK TASK
 
@@ -14,6 +15,7 @@ Display banner:
 Analyze `$DESCRIPTION` to identify 2-4 gray areas — implementation decisions that would change the outcome and that the user should weigh in on.
 
 Use the domain-aware heuristic to generate phase-specific (not generic) gray areas:
+
 - Something users **SEE** → layout, density, interactions, states
 - Something users **CALL** → responses, errors, auth, versioning
 - Something users **RUN** → output format, flags, modes, error handling
@@ -59,6 +61,7 @@ AskUserQuestion(
 ```
 
 Rules:
+
 - Options must be concrete choices, not abstract categories
 - Highlight recommended choice where you have a clear opinion
 - If user selects "Other" with freeform text, switch to plain text follow-up (per questioning.md freeform rule)
@@ -88,12 +91,15 @@ ${DESCRIPTION}
 ## Implementation Decisions
 
 ### ${area_1_name}
+
 - ${decision_from_discussion}
 
 ### ${area_2_name}
+
 - ${decision_from_discussion}
 
 ### Claude's Discretion
+
 ${areas_where_user_said_you_decide_or_areas_not_discussed}
 
 </decisions>
@@ -108,6 +114,7 @@ ${any_specific_references_or_examples_from_discussion}
 </specifics>
 
 <canonical_refs>
+
 ## Canonical References
 
 ${any_specs_adrs_or_docs_referenced_during_discussion}

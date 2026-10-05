@@ -27,6 +27,7 @@ planning via /gsd-plan-phase --reviews.
 Phase number: extracted from {{GSD_ARGS}} (required)
 
 **Flags:**
+
 - `--claude` — Include Claude CLI review (uses separate session)
 - `--codex` — Include Codex CLI review
 - `--opencode` — Include OpenCode review (uses model from user's OpenCode config)

@@ -28,7 +28,10 @@ export class BadRequestError extends GatewayError {
 }
 
 export class UnauthorizedError extends GatewayError {
-  constructor(message = "Authentication required to access this resource", requestId?: string) {
+  constructor(
+    message = "Authentication required to access this resource",
+    requestId?: string,
+  ) {
     super(message, 401, "UNAUTHORIZED", requestId);
     this.name = "UnauthorizedError";
   }
@@ -49,7 +52,10 @@ export class NotFoundError extends GatewayError {
 }
 
 export class RateLimitError extends GatewayError {
-  constructor(message = "Rate limit exceeded. Please try again later.", requestId?: string) {
+  constructor(
+    message = "Rate limit exceeded. Please try again later.",
+    requestId?: string,
+  ) {
     super(message, 429, "RATE_LIMITED", requestId);
     this.name = "RateLimitError";
   }
@@ -63,21 +69,30 @@ export class TimeoutError extends GatewayError {
 }
 
 export class BadGatewayError extends GatewayError {
-  constructor(message = "Bad Gateway: Invalid response from upstream microservice", requestId?: string) {
+  constructor(
+    message = "Bad Gateway: Invalid response from upstream microservice",
+    requestId?: string,
+  ) {
     super(message, 502, "BAD_GATEWAY", requestId);
     this.name = "BadGatewayError";
   }
 }
 
 export class ServiceUnavailableError extends GatewayError {
-  constructor(message = "The requested microservice is temporarily unavailable", requestId?: string) {
+  constructor(
+    message = "The requested microservice is temporarily unavailable",
+    requestId?: string,
+  ) {
     super(message, 503, "SERVICE_UNAVAILABLE", requestId);
     this.name = "ServiceUnavailableError";
   }
 }
 
 export class GatewayTimeoutError extends GatewayError {
-  constructor(message = "The upstream microservice did not respond in time", requestId?: string) {
+  constructor(
+    message = "The upstream microservice did not respond in time",
+    requestId?: string,
+  ) {
     super(message, 504, "GATEWAY_TIMEOUT", requestId);
     this.name = "GatewayTimeoutError";
   }

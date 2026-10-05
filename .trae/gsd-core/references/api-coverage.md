@@ -8,12 +8,12 @@
 "We integrated the API" too often silently means "we integrated whatever the
 first use case exercised." Every un-built capability is then an invisible hole,
 discovered later by a user who reasonably expected it to work. The phase sealed
-green because its tasks completed — nobody *decided* the gaps were acceptable,
-because nobody *enumerated* them.
+green because its tasks completed — nobody _decided_ the gaps were acceptable,
+because nobody _enumerated_ them.
 
 This gate makes the API surface **visible and decided** before the phase can
 seal. Full coverage is the default starting position; the coverage matrix is the
-*subtraction record*. Every gap is an explicit, reasoned opt-out rather than a
+_subtraction record_. Every gap is an explicit, reasoned opt-out rather than a
 surprise.
 
 ## When it fires
@@ -30,7 +30,7 @@ treated as an external-API integration when **either**:
 
 The detector is deliberately **fail-closed**: it leans toward firing, because a
 false positive is dismissed by a one-line `COVERAGE.md` "no external API
-integration" declaration, whereas a false *negative* silently lets a real
+integration" declaration, whereas a false _negative_ silently lets a real
 external-API phase past this blocking gate — strictly worse. So it suppresses
 only prose that is unambiguously not external integration. A bare word like
 "api" in "the public API of UserController" is ignored (no integration verb +
@@ -58,17 +58,17 @@ compound modifiers ("Resolver-only API"), and first-party-qualified services
 
 ### Seal-time outcomes
 
-| Condition | Verdict |
-|---|---|
-| Valid `COVERAGE.md` matrix | pass |
-| `No external API integration: <reason>` declaration | pass (the reasoned human overrule) |
-| Malformed / partial matrix | **block** |
-| No matrix, integration signal found | **block** |
-| No matrix, no signal, scope was read | pass |
-| No matrix, **scope could not be established** | **block** — `scope_unavailable: true` (#3909) |
-| Phase token unresolvable | **block** |
-| Plan file exists but unreadable | **block** |
-| No `.planning/phases` tree at all | pass — not a GSD project layout |
+| Condition                                           | Verdict                                       |
+| --------------------------------------------------- | --------------------------------------------- |
+| Valid `COVERAGE.md` matrix                          | pass                                          |
+| `No external API integration: <reason>` declaration | pass (the reasoned human overrule)            |
+| Malformed / partial matrix                          | **block**                                     |
+| No matrix, integration signal found                 | **block**                                     |
+| No matrix, no signal, scope was read                | pass                                          |
+| No matrix, **scope could not be established**       | **block** — `scope_unavailable: true` (#3909) |
+| Phase token unresolvable                            | **block**                                     |
+| Plan file exists but unreadable                     | **block**                                     |
+| No `.planning/phases` tree at all                   | pass — not a GSD project layout               |
 
 The last four are the fail-closed arms: the gate refuses to certify "no
 external-API integration" from scope it did not read. A phase with real plans
@@ -83,16 +83,16 @@ Canonical form — a markdown table (human-editable, diff-friendly):
 
 > Full coverage by default. Opt-outs are explicit, reasoned decisions.
 
-| capability | decision | reason |
-|---|---|---|
-| search | INTEGRATE | |
-| playlists | INTEGRATE | |
-| skip | OPT-OUT | not needed yet — tracked for follow-up phase |
+| capability | decision  | reason                                       |
+| ---------- | --------- | -------------------------------------------- |
+| search     | INTEGRATE |                                              |
+| playlists  | INTEGRATE |                                              |
+| skip       | OPT-OUT   | not needed yet — tracked for follow-up phase |
 ```
 
 - **`INTEGRATE` is the default.** Every capability starts as INTEGRATE.
 - **Every `OPT-OUT` MUST carry a one-line reason** (`not needed`, `not needed
-  yet`, `explicitly out of scope`, …). An opt-out without a reason is an
+yet`, `explicitly out of scope`, …). An opt-out without a reason is an
   un-decided hole — the exact failure mode this gate exists to close.
 - A fenced ` ```coverage ` JSON block (`[{"capability":…,"decision":…,"reason":…}]`)
   is also accepted for machine-generated matrices.

@@ -1,12 +1,12 @@
 <purpose>
 Carry the untrusted-input boundary (@gsd-core/references/untrusted-input-boundary.md) when the idea text derives from fetched pages: fence quoted page content, never crystallize an unresolved claim as settled (#2543 B3).
 
-
 Capture a forward-looking idea as a structured seed file with trigger conditions.
 Seeds auto-surface during /gsd-new-milestone when trigger conditions match the
 new milestone's scope.
 
 Seeds beat deferred items because they:
+
 - Preserve WHY the idea matters (not just WHAT)
 - Define WHEN to surface (trigger conditions, not manual scanning)
 - Track breadcrumbs (code references, related decisions)
@@ -112,10 +112,14 @@ Write `.planning/seeds/{SEED_ID}-{slug}.md` immediately with sensible defaults:
 
 ```markdown
 ---
-id: {SEED_ID}
+id: { SEED_ID }
 status: dormant
-planted: {ISO date}
-planted_during: {current milestone/phase from STATE.md, or "unknown" if not in a GSD project}
+planted: { ISO date }
+planted_during:
+  {
+    current milestone/phase from STATE.md,
+    or "unknown" if not in a GSD project,
+  }
 trigger_when: when relevant
 scope: unknown
 ---
@@ -144,6 +148,7 @@ _No breadcrumbs collected yet._
 
 _Captured via one-shot seed capture. Enrich with trigger, why, and scope at your convenience._
 ```
+
 </step>
 
 <step name="collect-breadcrumbs">
@@ -167,6 +172,7 @@ grep -rl "$KEYWORD" --include="*.ts" --include="*.js" --include="*.md" . 2>/dev/
 ```
 
 Also check:
+
 - Current STATE.md for related decisions
 - ROADMAP.md for related phases
 - todos/ for related captured ideas
@@ -196,7 +202,8 @@ Trigger and scope are set to defaults. Run `/gsd-capture --seed --enrich {SEED_I
 to add trigger conditions, rationale, and scope estimate at your convenience.
 
 This seed will surface automatically when you run /gsd-new-milestone.
-```
+
+````
 </step>
 
 <step name="enrich-seed">
@@ -215,7 +222,7 @@ conversational prompting(
   question: "When should this idea surface? (e.g., 'when we add user accounts', 'next major version', 'when performance becomes a priority')",
   options: []  // freeform
 )
-```
+````
 
 Store as `$TRIGGER`.
 
@@ -244,6 +251,7 @@ conversational prompting(
 Store as `$SCOPE`.
 
 Update the seed file's frontmatter and sections with the gathered values:
+
 - Set `trigger_when: {$TRIGGER}`
 - Set `scope: {$SCOPE}`
 - Fill in `## Why This Matters` with `{$WHY}`
@@ -251,25 +259,29 @@ Update the seed file's frontmatter and sections with the gathered values:
 - Fill in `## Scope Estimate` elaboration
 
 Commit the update:
+
 ```bash
 gsd_run query commit "docs: enrich seed ${SEED_ID} — trigger + why + scope" --files "$SEED_FILE"
 ```
 
 Confirm:
+
 ```text
 ✅ Seed enriched: ${SEED_ID}
 Trigger: {$TRIGGER}
 Scope: {$SCOPE}
 ```
+
 </step>
 
 </process>
 
 <success_criteria>
+
 - [ ] Seed file created in .planning/seeds/ in one step, no questions required
 - [ ] Frontmatter includes status, trigger_when (default: "when relevant"), scope (default: "unknown")
 - [ ] File is written BEFORE any optional enrichment questions are asked
 - [ ] Committed to git
 - [ ] User shown confirmation with file path
 - [ ] Optional --enrich path available for adding trigger, why, scope post-capture
-</success_criteria>
+      </success_criteria>

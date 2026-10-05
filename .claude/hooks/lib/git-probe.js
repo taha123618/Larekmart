@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 // hooks/lib/git-probe.js — classify a bounded spawnSync(git, ...) result,
 // distinguishing a GENUINE negative answer (git ran and said "no") from
 // "could not determine" (timeout / spawn failure / signal kill) — #3911.
@@ -46,12 +46,12 @@ function classifyGitProbe(result) {
 
   const code = error ? (error.code ?? null) : null;
   let reason;
-  if (code === 'ETIMEDOUT' || signal !== null) {
-    reason = signal ? `timed out (signal ${signal})` : 'timed out';
+  if (code === "ETIMEDOUT" || signal !== null) {
+    reason = signal ? `timed out (signal ${signal})` : "timed out";
   } else if (code) {
     reason = `spawn failed (${code})`;
   } else {
-    reason = 'could not run (unknown reason)';
+    reason = "could not run (unknown reason)";
   }
   return { determined: false, reason };
 }
@@ -72,8 +72,8 @@ function reportIfUndetermined(hookName, probeLabel, result) {
   try {
     process.stderr.write(
       `${hookName}: git probe '${probeLabel}' ${classification.reason} — ` +
-      `allowing this call because the probe's answer is unknown, not because ` +
-      `git answered "no" (#3911).\n`
+        `allowing this call because the probe's answer is unknown, not because ` +
+        `git answered "no" (#3911).\n`,
     );
   } catch {
     // A stderr write failing (EPIPE, closed fd) must never itself change the

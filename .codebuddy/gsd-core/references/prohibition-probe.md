@@ -3,8 +3,8 @@
 Shared reference for the spec/requirements phase. Companion to
 `@/Users/taha/projects/microservices-ecommerce/.codebuddy/gsd-core/references/edge-probe.md`: `edge-probe` reaches the
 **data/behavior-shape axis** (boundaries, adjacency, encoding, ordering) — the things a
-feature must *do*. This reference reaches the orthogonal **must-NOT axis** (product, values,
-safety, ethics) — the things a feature must *never silently become*. The edge-probe caught
+feature must _do_. This reference reaches the orthogonal **must-NOT axis** (product, values,
+safety, ethics) — the things a feature must _never silently become_. The edge-probe caught
 0/8 of these in controlled testing because it is the wrong instrument: a shape taxonomy
 cannot surface "the reminder must not shame the user." Walk each requirement through the
 two-stage recall→precision protocol below and resolve each surfaced prohibition to exactly
@@ -18,13 +18,13 @@ A short mapping table at the end binds it to common host structures.
 
 A goal-backward verifier only checks assertions that exist; an assertion only exists for a
 requirement that was written down. The class of constraint this probe targets — the
-*"must-NOT"* the author assumed but never wrote — is invisible to the verifier in exactly
+_"must-NOT"_ the author assumed but never wrote — is invisible to the verifier in exactly
 the same way an omitted edge is, but with a sharper failure mode: a `✅ done` that means
 "the code matches the words in the spec" can still ship a feature that does what the author
-explicitly would *not* want. The manipulative-streak reminder, the loan model that proxies
+explicitly would _not_ want. The manipulative-streak reminder, the loan model that proxies
 on zip code, the audit log that stores raw SSN — each one passes a literal spec while
 violating the intent. The fix is not a better verifier; it is **spec completeness**: surface
-the omitted prohibition into an explicit, checkable acceptance criterion *before* any code
+the omitted prohibition into an explicit, checkable acceptance criterion _before_ any code
 exists, after which the verifier reliably enforces it.
 
 The technique is adversarial elicitation, not deterministic computation. Unlike the edge
@@ -50,8 +50,8 @@ is what keeps the surfaced list both complete and short.
 **Stage 1 — Recall (adversarial probe).** Ask the single adversarial question of each
 requirement:
 
-> *What could this feature silently become that the author would NOT want, but the spec
-> does not forbid?*
+> _What could this feature silently become that the author would NOT want, but the spec
+> does not forbid?_
 
 This question is model-robust (17/17 holistic surfacing including smaller models in the N18
 experiment). It deliberately over-produces: ~10 raw candidates per requirement, including
@@ -84,8 +84,8 @@ emit a one-line breadcrumb and stop:
 - GDPR / data-retention / consent → breadcrumb to `/gsd:secure-phase`.
 - Generic fairness/bias canon → breadcrumb to `/gsd:secure-phase`.
 
-The breadcrumb reads like: *"prototype-pollution is canon — covered by /gsd:secure-phase +
-eslint; not minted here."* This keeps the surfaced list to the ~2–3 **bespoke** items that
+The breadcrumb reads like: _"prototype-pollution is canon — covered by /gsd:secure-phase +
+eslint; not minted here."_ This keeps the surfaced list to the ~2–3 **bespoke** items that
 no other tool would catch — the manipulative-framing prohibition, the product-specific
 fairness constraint — which is the whole value of the probe. Minting canon items both
 duplicates other tooling and drowns the bespoke signal (ADR-550 Decision 6).
@@ -97,7 +97,7 @@ resolved, a **verification** tier (ADR-550 Decision 7, the shared probe-core mod
 lifecycle is identical to the edge-probe, the verification tiers differ):
 
 - **status** — `resolved | dismissed | unresolved` (IDENTICAL to the edge-probe):
-  - **resolved** — the prohibition is addressed; *how* it is addressed is the verification tier.
+  - **resolved** — the prohibition is addressed; _how_ it is addressed is the verification tier.
   - **dismissed** — not a genuine prohibition for this feature, accompanied by a required,
     non-empty reason string. "N/A — this utility has no user-facing surface, no values
     constraint applies" is valid; silence is not. The reason string is the audit trail.
@@ -144,6 +144,7 @@ lifecycle is identical to the edge-probe, the verification tiers differ):
     > temp fixtures in the tests, and the real dogfood remains the LINT-rule `local/no-source-grep`.
     > They are therefore **open to maintainer adjustment (rename, or replacing the env var with an
     > argv) at PR review with zero migration cost.** See the ADR-550 2026-06-15 addendum (#1279).
+
   - A **judgment**-tier prohibition routes to a never-silent / never-hard-halt soft gate
     (autonomous emits an `unverified-prohibition — human review recommended` flag).
 
@@ -167,7 +168,7 @@ object:
   machine-prove fail-first (rides BOTH kinds; for `node-test` it is injected via `GSD_PROHIB_SUBJECT`).
 - `check_clean_fixture` — **optional** path to a KNOWN-CLEAN control subject (#1346). When present the
   node-test prover also runs the check against it and requires GREEN, proving the violation's RED is
-  caused by the subject's *content* (not merely by `GSD_PROHIB_SUBJECT` being set). Absent → no control.
+  caused by the subject's _content_ (not merely by `GSD_PROHIB_SUBJECT` being set). Absent → no control.
 
 The flat-scalar shape is load-bearing: the shared `parseMustHavesBlock` is a flat parser and a
 nested object would flatten/mangle the round-trip (ADR-550 2026-06-15 addendum; #644 "no parser
@@ -186,7 +187,7 @@ never a silent green. A prohibition with no descriptor parses and disposes byte-
 `failFirst` is **not** sourced from the descriptor and is **demoted** (machine-proven fail-first
 DELIVERED in #1279 — no path greens on attestation alone, FF-08); the `dispositionForProhibition`
 policy is unchanged. Causation (**#1346**): the node-test proof confirms the fixture exists and the
-check goes RED; supplying `check_clean_fixture` adds an opt-in control that *also* requires GREEN on a
+check goes RED; supplying `check_clean_fixture` adds an opt-in control that _also_ requires GREEN on a
 known-clean subject, proving the red is content-caused. With no clean fixture the control cannot run,
 so that one residual case (a deceptive test reding merely because the env var is set) stays a
 documented constraint — an author opts into the stronger proof by wiring a clean control subject.
@@ -220,12 +221,12 @@ both the reference implementation and any third-party port emit.
 
 ## Generic mapping (requirements → checks → verifier)
 
-| Host structure | "requirement" | a `resolved`/`test` prohibition becomes | a `resolved`/`judgment` prohibition becomes |
-|----------------|---------------|------------------------------------------|----------------------------------------------|
-| GSD SPEC | a SPEC Requirement | a SPEC acceptance criterion (marked prohibition) that `plan-phase` lifts into `must_haves.prohibitions` | a `must_haves.prohibitions` item routed to judgment review |
-| Gherkin feature | a Scenario | a negative `Then` assertion / tagged negative scenario | a tagged scenario routed to manual review |
-| OpenAPI operation | an operation | a contract test asserting the forbidden behavior never occurs | a documented constraint flagged for review |
-| Docstring contract | a documented behavior | a negative assertion in the contract test | a documented must-NOT for reviewers |
+| Host structure     | "requirement"         | a `resolved`/`test` prohibition becomes                                                                 | a `resolved`/`judgment` prohibition becomes                |
+| ------------------ | --------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| GSD SPEC           | a SPEC Requirement    | a SPEC acceptance criterion (marked prohibition) that `plan-phase` lifts into `must_haves.prohibitions` | a `must_haves.prohibitions` item routed to judgment review |
+| Gherkin feature    | a Scenario            | a negative `Then` assertion / tagged negative scenario                                                  | a tagged scenario routed to manual review                  |
+| OpenAPI operation  | an operation          | a contract test asserting the forbidden behavior never occurs                                           | a documented constraint flagged for review                 |
+| Docstring contract | a documented behavior | a negative assertion in the contract test                                                               | a documented must-NOT for reviewers                        |
 
 The portable invariant: a `resolved`/`test` prohibition produces **a checkable negative the
 verifier iterates over** (GSD: a `must_haves.prohibitions` item with a test); a
@@ -237,7 +238,7 @@ silently drop.
 
 A single requirement to send a daily habit reminder. The edge-probe sees a `stateful`
 requirement and asks about idempotency; the prohibition-probe asks the adversarial question
-and surfaces what the reminder must never *become*. Stage 1 over-produces ("must not spam",
+and surfaces what the reminder must never _become_. Stage 1 over-produces ("must not spam",
 "must not throw on a deleted habit", "must not use shaming framing"); Stage 2 drops the
 routine-engineering items and keeps the one genuine values prohibition:
 
@@ -254,7 +255,12 @@ routine-engineering items and keeps the one genuine values prohibition:
       "statement": "MUST NOT use shaming, guilt, or loss-aversion streak framing (e.g. \"Don't lose your streak!\") — the reminder must encourage without penalty framing"
     }
   ],
-  "coverage": { "applicable": 1, "resolved": 1, "unresolved": 0, "byVerification": { "test": 0, "judgment": 1 } }
+  "coverage": {
+    "applicable": 1,
+    "resolved": 1,
+    "unresolved": 0,
+    "byVerification": { "test": 0, "judgment": 1 }
+  }
 }
 ```
 
@@ -273,7 +279,12 @@ zero, not a false positive:
 ```json prohibition-probe:02-clean-utility/expected.json
 {
   "items": [],
-  "coverage": { "applicable": 0, "resolved": 0, "unresolved": 0, "byVerification": { "test": 0, "judgment": 0 } }
+  "coverage": {
+    "applicable": 0,
+    "resolved": 0,
+    "unresolved": 0,
+    "byVerification": { "test": 0, "judgment": 0 }
+  }
 }
 ```
 
@@ -319,7 +330,12 @@ keeps the three bespoke values/safety items — a `fairness` constraint, a `priv
       "statement": "MUST NOT mislead or omit the true rate/APR/terms in the explanation; an adverse decision must state the real principal reason (adverse-action)"
     }
   ],
-  "coverage": { "applicable": 3, "resolved": 3, "unresolved": 0, "byVerification": { "test": 1, "judgment": 2 } }
+  "coverage": {
+    "applicable": 3,
+    "resolved": 3,
+    "unresolved": 0,
+    "byVerification": { "test": 1, "judgment": 2 }
+  }
 }
 ```
 

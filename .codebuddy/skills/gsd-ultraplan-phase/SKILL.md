@@ -4,7 +4,6 @@ description: "[BETA] Offload plan phase to CodeBuddy's ultraplan cloud; review i
 user-invocable: false
 ---
 
-
 <objective>
 Offload GSD's plan phase to CodeBuddy's ultraplan cloud infrastructure.
 

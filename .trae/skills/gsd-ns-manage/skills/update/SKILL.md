@@ -4,18 +4,18 @@ description: "Update GSD to latest version with changelog display"
 stage: workflow
 ---
 
-
 <objective>
 Check for GSD updates, install if available, and display what changed.
 
 Routes to the update workflow which handles:
+
 - Version detection (local vs global installation)
 - npm version checking
 - Changelog fetching and display
 - User confirmation with clean install warning
 - Update execution and cache clearing
 - Restart reminder
-</objective>
+  </objective>
 
 <execution_context>
 @/Users/taha/projects/microservices-ecommerce/.trae/gsd-core/workflows/update.md

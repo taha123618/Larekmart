@@ -4,7 +4,6 @@ description: "[BETA] Offload plan phase to Trae's ultraplan cloud; review in bro
 stage: workflow
 ---
 
-
 <objective>
 Offload GSD's plan phase to Trae's ultraplan cloud infrastructure.
 

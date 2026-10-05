@@ -402,7 +402,7 @@ _walk "$AUTOMATED_CMD" 0
 
 A halt here is a plan defect, not an executor deviation: report it via the checkpoint return
 format naming the task and the offending command verbatim, and stop. The plan-checker's path
-probe (`check verify-command-paths`) warns on the *outside-orchestrator-root* case before
+probe (`check verify-command-paths`) warns on the _outside-orchestrator-root_ case before
 execution; this guard is the one that sees the executor's actual root.
 
 ### What this guard does NOT see — step 0c's stated boundary
@@ -443,7 +443,7 @@ The rest, in descending order of how likely a planner is to reach them:
   `env` `timeout` `nohup` `stdbuf` `nice` `ionice` `setsid` are recognized, named by bare word or
   absolute path, with options that take a separate operand (`env -u FOO`, `timeout --signal TERM`).
   The set is named rather than a catch-all deliberately: a catch-all also unwrapped interpreter text
-  that was merely an *argument* (`echo bash -c '…'`), and halting on a command that executes nothing
+  that was merely an _argument_ (`echo bash -c '…'`), and halting on a command that executes nothing
   is the false-positive direction. `command` and `exec` are excluded for that same reason —
   `command -v bash` is a name probe.
 - **An interpreter outside `$_EXEC`'s set.** The set is stated because the entries above name only the
@@ -481,15 +481,15 @@ The rest, in descending order of how likely a planner is to reach them:
 - **`_DIR`'s tool-to-flag run is still a catch-all**, so a pass-through argument that happens to spell
   a directory flag can over-halt: `npm run package -- --prefix=../main/` halts although the flag goes
   to the script, not to npm. Pre-existing, and again in the loud direction.
-- **A non-shell payload whose path is computed.** `python3 -c` / `node -e` payloads are scanned *as
-  shell text*, which catches a path written as a literal word (`os.chdir('/main')`) and not one the
+- **A non-shell payload whose path is computed.** `python3 -c` / `node -e` payloads are scanned _as
+  shell text_, which catches a path written as a literal word (`os.chdir('/main')`) and not one the
   program assembles (`os.path.join(root, '..')`).
 - **Wrapping nested more than four deep.** `_walk` bounds its own recursion.
 - **A directory flag on a tool outside the recognized set.** `--prefix`/`--cwd`/`--dir`/`-C` on `npm`
   `npx` `pnpm` `yarn`, `-C`/`--directory` on `make` `git`, and `--chdir`/`-C` on `env` itself — the
   last because `env` is not only a launcher, it relocates — including behind a launcher. The
   scoping is per-tool because the same spelling is not the same flag everywhere: `git archive
-  --prefix=` names archive members and changes no directory. For an unrecognized tool the **absolute**
+--prefix=` names archive members and changes no directory. For an unrecognized tool the **absolute**
   form of its flag is still caught by the catch-all; what is uncovered is the **relative** form.
 
 The enumerations are the parts that rot: they mirror a toolchain this file does not own. Adding a tool

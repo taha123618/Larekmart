@@ -6,6 +6,7 @@ unlike planning/research above.
 
 **Auto-degrade on stale fork base (row 38, mirrors `/gsd:quick`'s own #1941
 guard):**
+
 ```bash
 _GSD_SHIM_NAME="gsd-tools.cjs"; _GSD_RUNTIME_ROOT="${RUNTIME_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"; GSD_TOOLS="${_GSD_RUNTIME_ROOT}/gsd-core/bin/${_GSD_SHIM_NAME}"; _gsd_at() { for _p; do if [ -f "$_p" ]; then GSD_TOOLS="$_p"; return 0; fi; done; return 1; }; _gsd_id_ok() { case "$("$1" runtime-identity --raw 2>/dev/null || true)" in '{"packageName":"@opengsd/gsd-core"'*'}') return 0;; *) return 1;; esac; }; _gsd_homes() { _gsd_at "${CLAUDE_CONFIG_DIR:-/Users/taha/projects/microservices-ecommerce/.zcode}/gsd-core/bin/${_GSD_SHIM_NAME}" "${HERMES_HOME:-$HOME/.hermes}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CURSOR_CONFIG_DIR:-$HOME/.cursor}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CODEX_HOME:-$HOME/.codex}/gsd-core/bin/${_GSD_SHIM_NAME}" "${GEMINI_CONFIG_DIR:-$HOME/.gemini}/gsd-core/bin/${_GSD_SHIM_NAME}" "${COPILOT_CONFIG_DIR:-$HOME/.copilot}/gsd-core/bin/${_GSD_SHIM_NAME}" "${WINDSURF_CONFIG_DIR:-$HOME/.codeium/windsurf}/gsd-core/bin/${_GSD_SHIM_NAME}" "${AUGMENT_CONFIG_DIR:-$HOME/.augment}/gsd-core/bin/${_GSD_SHIM_NAME}" "${TRAE_CONFIG_DIR:-$HOME/.trae}/gsd-core/bin/${_GSD_SHIM_NAME}" "${QWEN_CONFIG_DIR:-$HOME/.qwen}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CODEBUDDY_CONFIG_DIR:-$HOME/.codebuddy}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CLINE_CONFIG_DIR:-$HOME/.cline}/gsd-core/bin/${_GSD_SHIM_NAME}" "${GROK_AGENTS_HOME:-$HOME/.agents}/gsd-core/bin/${_GSD_SHIM_NAME}" "${ANTIGRAVITY_CONFIG_DIR:-$HOME/.gemini/antigravity}/gsd-core/bin/${_GSD_SHIM_NAME}" "${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}/gsd-core/bin/${_GSD_SHIM_NAME}" "${KILO_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/kilo}/gsd-core/bin/${_GSD_SHIM_NAME}"; }; if _gsd_at "${_GSD_RUNTIME_ROOT}/gsd-core/bin/${_GSD_SHIM_NAME}" "${_GSD_RUNTIME_ROOT}/.claude/gsd-core/bin/${_GSD_SHIM_NAME}" "${_GSD_RUNTIME_ROOT}/.codex/gsd-core/bin/${_GSD_SHIM_NAME}"; then gsd_run() { node "$GSD_TOOLS" "$@"; }; elif _gsd_homes; then gsd_run() { node "$GSD_TOOLS" "$@"; }; elif unset -f gsd_run; _G="$(command -v gsd_run)"; [ -n "$_G" ] && _gsd_id_ok "$_G"; then GSD_TOOLS="$_G"; gsd_run() { "$GSD_TOOLS" "$@"; }; else echo "ERROR: gsd-tools.cjs not found at $GSD_TOOLS and no identity-proving gsd_run is on PATH. Run: npx -y @opengsd/gsd-core@latest --claude --local" >&2; exit 1; fi; GSD_IDENTITY_STATUS=unverified; _gsd_id_ok gsd_run && GSD_IDENTITY_STATUS=ok; export GSD_IDENTITY_STATUS; [ "$GSD_IDENTITY_STATUS" = ok ] || echo "WARNING: \"$GSD_TOOLS\" did not prove it is @opengsd/gsd-core - it is either a different package or an @opengsd/gsd-core older than the runtime-identity verb. See docs/how-to/diagnose-a-foreign-gsd-tools.md" >&2; if [ -n "${CLAUDE_ENV_FILE:-}" ] && [ -n "${GSD_TOOLS:-}" ]; then printf "export PATH='%s':\"\$PATH\"\n" "${GSD_TOOLS%/*}" >> "$CLAUDE_ENV_FILE" 2>/dev/null || true; fi
 if [ "$ISOLATION" = "harness-worktree" ] && [ "${USE_WORKTREES:-true}" != "false" ]; then
@@ -21,6 +22,7 @@ gsd_run query dispatch-isolation --raw --force-isolation "$ISOLATION" >/dev/null
 
 **Effective concurrency for this MUTATING wave** (`mutating` forces
 `isolation == none` to 1 regardless of `--jobs`/capacity — row 6):
+
 ```bash
 QB_EXEC_CONC_JSON=$(gsd_run quick-batch effective-concurrency --jobs "$JOBS" --task-count "$ITEM_COUNT" --capacity "$CAPACITY" --isolation "$ISOLATION" --mutating --raw)
 EXEC_CONCURRENCY=$(printf '%s' "$QB_EXEC_CONC_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(String(j.concurrency))}catch{process.stdout.write("1")}})')
@@ -31,9 +33,11 @@ EXEC_CONCURRENCY=$(printf '%s' "$QB_EXEC_CONC_JSON" | node -e 'let s="";process.
 
 1. Re-derive eligibility (also reconciles crash-window/blocked-propagation —
    safe to call repeatedly, idempotent when nothing changed):
+
    ```bash
    QB_ELIG_JSON=$(gsd_run quick-batch resume --batch "$BATCH_ID" --raw)
    ```
+
    Parse `eligible` (quick ids ready to execute — every dependency already
    `complete`) and refresh `$BATCH_MANIFEST_JSON` from its `manifest`.
 
@@ -50,10 +54,12 @@ EXEC_CONCURRENCY=$(printf '%s' "$QB_EXEC_CONC_JSON" | node -e 'let s="";process.
    let the PURE `quick-batch filter-executed` verb
    (`filterAlreadyExecuted`, `src/quick-batch-dispatch.cts`) decide which
    ids are actually safe to spawn — never re-derive that split inline:
+
    ```bash
    EXECUTED_IDS_JSON="[]" # JSON array of quick_ids whose SUMMARY.md already exists on disk this round
    QB_FILTER_JSON=$(gsd_run quick-batch filter-executed --eligible "$ELIGIBLE_IDS_JSON" --executed "$EXECUTED_IDS_JSON" --raw)
    ```
+
    Parse `spawnEligible` (safe to spawn this round) and `alreadyExecuted`
    (diagnostic only — report these as "already executed, routing to merge"
    rather than dispatching them). Replace `$ELIGIBLE_IDS_JSON` with
@@ -70,9 +76,11 @@ EXEC_CONCURRENCY=$(printf '%s' "$QB_EXEC_CONC_JSON" | node -e 'let s="";process.
 2. **Backpressure.** Not every eligible item necessarily spawns this round —
    cap fan-out at `$EXEC_CONCURRENCY` minus current in-flight count (row
    27/39):
+
    ```bash
    QB_SPAWN_JSON=$(gsd_run quick-batch spawn-plan --eligible "$ELIGIBLE_IDS_JSON" --capacity "$EXEC_CONCURRENCY" --in-flight "$IN_FLIGHT_COUNT" --raw)
    ```
+
    Parse `spawn` (dispatch these now) and `pending` (leave `pending` in
    `BATCH.json` — already the case, no write needed; NEVER mark these
    `failed`, NEVER increase fan-out to compensate).
@@ -93,6 +101,7 @@ EXEC_CONCURRENCY=$(printf '%s' "$QB_EXEC_CONC_JSON" | node -e 'let s="";process.
    executor dispatch (Step 6 of `quick.md`) — required_reading, agent skills,
    `<submodule_commit_guard>` using this project's `$SUBMODULE_PATHS`
    (identical block, verbatim) — with these differences:
+
    ```
    Agent(
      prompt="
@@ -125,6 +134,7 @@ EXEC_CONCURRENCY=$(printf '%s' "$QB_EXEC_CONC_JSON" | node -e 'let s="";process.
      description="Execute ${quick_id}: ${description}"
    )
    ```
+
    Record `{agent_id, worktree_path, branch, expected_base, allowed_bases}`
    from the executor's return into `$QUICK_BATCH_WORKTREE_MANIFEST` (a JSON
    file, initialized `{"worktrees":[]}` before the first round — same shape
@@ -133,7 +143,7 @@ EXEC_CONCURRENCY=$(printf '%s' "$QB_EXEC_CONC_JSON" | node -e 'let s="";process.
    **`isolation == "orchestrator-worktree"`:** GSD creates the worktree
    (`gsd_run query worktree.create --manifest "$QUICK_BATCH_WORKTREE_MANIFEST" --agent-id ... --path ... --branch ... --base ... --files "$PLAN_FILES" --deletions "$PLAN_DELETIONS"`) then
    process-spawns the executor via `dispatch-isolation --json --cwd-target
-   --prompt`, exactly as `gsd-core/workflows/execute-phase/steps/executor-isolation-dispatch.md`'s
+--prompt`, exactly as `gsd-core/workflows/execute-phase/steps/executor-isolation-dispatch.md`'s
    "orchestrator-worktree" section
    describes — reuse that mechanism verbatim, substituting this item's
    `${quick_id}`/`${ITEM_DIR}`/`${quick_id}-PLAN.md` for its
@@ -148,9 +158,11 @@ EXEC_CONCURRENCY=$(printf '%s' "$QB_EXEC_CONC_JSON" | node -e 'let s="";process.
    recording `{agent_id, worktree_path, branch, expected_base}` into the
    EPHEMERAL `$QUICK_BATCH_WORKTREE_MANIFEST` above, ALSO persist the same
    triple durably onto this item in `BATCH.json`:
+
    ```bash
    gsd_run quick-batch update --batch "$BATCH_ID" --updates '[{"quickId":"'"$quick_id"'","dispatchedWorktree":"'"$worktree_path"'","dispatchedBranch":"'"$branch"'","dispatchedBase":"'"$expected_base"'"}]'
    ```
+
    The ephemeral manifest is a per-process `mktemp` file (same shape
    `/gsd:quick`'s own `QUICK_WORKTREE_MANIFEST` uses) — it does NOT survive
    a coordinator crash/restart. A RESUMED coordinator's Step 7

@@ -18,6 +18,7 @@ stdio deadlocks with MCP servers — see Claude Code issue anthropics/claude-cod
 5. **Retry:** Restart Claude Code and run `$gsd-plan-phase` again
 
 If freezes persist, try `--skip-research` to reduce the agent chain from 3 to 2 agents:
+
 ```
 $gsd-plan-phase N --skip-research
 ```

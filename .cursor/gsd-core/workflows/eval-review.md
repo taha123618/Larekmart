@@ -30,6 +30,7 @@ AGENT_SKILLS_AUDITOR=$(gsd_run query agent-skills gsd-eval-auditor)
 ```
 
 Display banner:
+
 ```
 ### GSD ► EVAL AUDIT — PHASE {N}: {name}
 ```
@@ -54,6 +55,7 @@ re-auditing. Log: `[auto] EVAL-REVIEW.md exists — reusing as-is.` "Re-audit" i
 choice; an unattended run reuses an existing artifact instead (#4776).
 
 **Otherwise:** Use conversational prompting:
+
 - header: "Existing Eval Review"
 - question: "EVAL-REVIEW.md already exists for Phase {N}."
 - options:
@@ -64,16 +66,19 @@ If "View": display file, exit.
 If "Re-audit": continue.
 
 **If State B (no AI-SPEC.md):** Warn:
+
 ```
 No AI-SPEC.md found for Phase {N}.
 Audit will evaluate against general AI eval best practices rather than a phase-specific plan.
 Consider running /gsd-ai-integration-phase {N} before implementation next time.
 ```
+
 Continue (non-blocking).
 
 ## 2. Gather Context Paths
 
 Build file list for auditor:
+
 - AI-SPEC.md (if exists — the planned eval strategy)
 - All SUMMARY.md files in phase dir
 - All PLAN.md files in phase dir
@@ -96,10 +101,11 @@ Conduct evaluation coverage audit of Phase {phase_number}: {phase_name}
 </objective>
 
 <required_reading>
+
 - {summary_paths}
 - {plan_paths}
 - {ai_spec_path if exists}
-</required_reading>
+  </required_reading>
 
 <input>
 ai_spec_path: {ai_spec_path or "none"}
@@ -118,6 +124,7 @@ Spawn as Task with model `AUDITOR_MODEL`.
 ## 4. Parse Auditor Result
 
 Read the written EVAL-REVIEW.md. Extract:
+
 - `overall_score`
 - `verdict` (PRODUCTION READY | NEEDS WORK | SIGNIFICANT GAPS | NOT IMPLEMENTED)
 - `critical_gap_count`
@@ -152,6 +159,7 @@ gsd_run query commit "docs({phase_slug}): add EVAL-REVIEW.md — score {overall_
 </process>
 
 <success_criteria>
+
 - [ ] Phase execution state detected correctly
 - [ ] AI-SPEC.md presence handled (with or without)
 - [ ] gsd-eval-auditor spawned with correct context
@@ -159,4 +167,4 @@ gsd_run query commit "docs({phase_slug}): add EVAL-REVIEW.md — score {overall_
 - [ ] Score and verdict displayed to user
 - [ ] Appropriate next steps surfaced based on verdict
 - [ ] Committed if commit_docs enabled
-</success_criteria>
+      </success_criteria>

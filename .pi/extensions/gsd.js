@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * GSD extension for pi (pi.dev) — ADR-1239 Phase D / #1944, upgraded #2102 Stage 2.
@@ -43,25 +43,25 @@
  * @param {object} pi  pi ExtensionAPI (registerTool/registerCommand/on/…)
  */
 
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const { spawnSync } = require("child_process");
 
 // Resolve the GSD engine tree (the dir holding gsd-core/ + hooks/).
 // Works across dev (<root>/pi/gsd.cjs → <root>) and installed layouts.
 function resolveEngineRoot(startDir) {
   let dir = startDir;
   for (let i = 0; i < 6; i++) {
-    if (fs.existsSync(path.join(dir, 'gsd-core'))) return dir;
+    if (fs.existsSync(path.join(dir, "gsd-core"))) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  return path.resolve(startDir, '..');
+  return path.resolve(startDir, "..");
 }
 
 const ENGINE_ROOT = resolveEngineRoot(__dirname);
-const GSD_CORE = path.join(ENGINE_ROOT, 'gsd-core');
+const GSD_CORE = path.join(ENGINE_ROOT, "gsd-core");
 
 // #3023: pi reserves `hooks/` as its (now deprecated) extension directory and
 // warns on every startup when one exists, so the installer stages GSD's shared
@@ -69,7 +69,7 @@ const GSD_CORE = path.join(ENGINE_ROOT, 'gsd-core');
 // hardcoding either name: an installed pi tree has `gsd-hooks/`, a dev checkout
 // has the repo-root `hooks/`, and a half-upgraded tree can transiently have both
 // — in which case the renamed bundle is the current one and wins.
-const SHARED_HOOKS_DIR_CANDIDATES = ['gsd-hooks', 'hooks'];
+const SHARED_HOOKS_DIR_CANDIDATES = ["gsd-hooks", "hooks"];
 
 /**
  * Absolute path to the staged shared-hook bundle, or null when none is present.
@@ -93,7 +93,9 @@ function resolveSharedHooksDir(engineRoot) {
       if (!fs.statSync(candidate).isDirectory()) continue;
       if (fs.readdirSync(candidate).length === 0) continue;
       return candidate;
-    } catch { /* absent or unreadable — try the next candidate */ }
+    } catch {
+      /* absent or unreadable — try the next candidate */
+    }
   }
   return null;
 }
@@ -108,12 +110,41 @@ const SHARED_HOOKS_DIR = resolveSharedHooksDir(ENGINE_ROOT);
 // `node gsd-core/bin/gsd-tools.cjs --help` (gsd-tools.cjs:689-705). Named +
 // exported (via _internals) so a test can assert against it directly.
 const PI_COMMAND_FAMILIES = Object.freeze([
-  'agent', 'capability', 'check', 'commit', 'config-get', 'config-path',
-  'config-set', 'effort', 'git', 'graphify', 'init', 'intel', 'learnings',
-  'list-todos', 'loop', 'milestone', 'phase', 'phases', 'progress',
-  'requirements', 'research-plan', 'research-store', 'resolve-granularity',
-  'resolve-model', 'roadmap', 'scaffold', 'smart-entry', 'state', 'task',
-  'template', 'user-story', 'validate', 'verify', 'workstream', 'worktree',
+  "agent",
+  "capability",
+  "check",
+  "commit",
+  "config-get",
+  "config-path",
+  "config-set",
+  "effort",
+  "git",
+  "graphify",
+  "init",
+  "intel",
+  "learnings",
+  "list-todos",
+  "loop",
+  "milestone",
+  "phase",
+  "phases",
+  "progress",
+  "requirements",
+  "research-plan",
+  "research-store",
+  "resolve-granularity",
+  "resolve-model",
+  "roadmap",
+  "scaffold",
+  "smart-entry",
+  "state",
+  "task",
+  "template",
+  "user-story",
+  "validate",
+  "verify",
+  "workstream",
+  "worktree",
 ]);
 
 /**
@@ -123,7 +154,7 @@ const PI_COMMAND_FAMILIES = Object.freeze([
  * @returns {{value: string, label: string}[] | null}
  */
 function getArgumentCompletions(prefix) {
-  const p = typeof prefix === 'string' ? prefix : '';
+  const p = typeof prefix === "string" ? prefix : "";
   const matches = PI_COMMAND_FAMILIES.filter((name) => name.startsWith(p));
   if (matches.length === 0) return null;
   return matches.map((value) => ({ value, label: value }));
@@ -149,17 +180,20 @@ function getArgumentCompletions(prefix) {
 function parseGsdCommandArgs(rawArgs) {
   let tokenize;
   try {
-    if (!SHARED_HOOKS_DIR) throw new Error('no staged hook bundle');
-    ({ tokenize } = require(path.join(SHARED_HOOKS_DIR, 'lib', 'git-cmd.js')));
+    if (!SHARED_HOOKS_DIR) throw new Error("no staged hook bundle");
+    ({ tokenize } = require(path.join(SHARED_HOOKS_DIR, "lib", "git-cmd.js")));
   } catch {
-    tokenize = (s) => String(s || '').split(/\s+/).filter(Boolean);
+    tokenize = (s) =>
+      String(s || "")
+        .split(/\s+/)
+        .filter(Boolean);
   }
-  const tokens = tokenize(typeof rawArgs === 'string' ? rawArgs : '');
+  const tokens = tokenize(typeof rawArgs === "string" ? rawArgs : "");
   return {
     // Empty args → dispatch gsd-tools.cjs's own --help surface (a real,
     // working, ok:true default — NOT the 'query'/'help' pairing the original
     // #1944 cut used, which is not a valid gsd-tools.cjs command).
-    family: tokens[0] || '--help',
+    family: tokens[0] || "--help",
     subcommand: tokens[1],
     args: tokens.slice(2),
   };
@@ -176,7 +210,7 @@ function parseGsdCommandArgs(rawArgs) {
  */
 function buildGsdInvokeParameters() {
   try {
-    const typebox = require('typebox');
+    const typebox = require("typebox");
     const Type = typebox && typebox.Type;
     if (Type) {
       return Type.Object({
@@ -191,13 +225,13 @@ function buildGsdInvokeParameters() {
     // NOT a gsd-core dependency), so no warning is emitted (#3022).
   }
   return {
-    type: 'object',
+    type: "object",
     properties: {
-      family: { type: 'string' },
-      subcommand: { type: 'string' },
-      args: { type: 'array', items: { type: 'string' } },
+      family: { type: "string" },
+      subcommand: { type: "string" },
+      args: { type: "array", items: { type: "string" } },
     },
-    required: ['family'],
+    required: ["family"],
   };
 }
 
@@ -230,11 +264,13 @@ function buildGsdInvokeParameters() {
  * @param {{ tier?: string }} [opts]
  * @returns {(event: object, ctx: object) => Promise<object|undefined>}
  */
-function buildBeforeProviderRequestHandler({ tier = 'sonnet' } = {}) {
+function buildBeforeProviderRequestHandler({ tier = "sonnet" } = {}) {
   return async function onBeforeProviderRequest(event, ctx) {
     try {
       const effectiveCwd = (ctx && ctx.cwd) || process.cwd();
-      const { loadConfig } = require(path.join(GSD_CORE, 'bin', 'lib', 'config-loader.cjs'));
+      const { loadConfig } = require(
+        path.join(GSD_CORE, "bin", "lib", "config-loader.cjs"),
+      );
       const config = loadConfig(effectiveCwd);
       const overrides = (config && config.model_profile_overrides) || undefined;
 
@@ -251,24 +287,34 @@ function buildBeforeProviderRequestHandler({ tier = 'sonnet' } = {}) {
       // inspect the override map directly. Only when the user has explicitly
       // set model_profile_overrides[runtime][tier] do we steer; otherwise we
       // return undefined and pi's chosen model flows through untouched.
-      const userRaw = overrides && overrides.pi ? overrides.pi[tier] : undefined;
+      const userRaw =
+        overrides && overrides.pi ? overrides.pi[tier] : undefined;
       // `''` is treated the same as null/undefined: an explicit empty-string
       // override is the user clearing a previously-set value, NOT opting in to
       // steering. Without this guard, `resolveTierEntry`'s falsy `if (userRaw)`
       // check would silently fall back to the built-in catalog and rewrite
       // payload.model to claude-sonnet-5 — re-introducing the exact bug this
       // handler exists to prevent.
-      if (userRaw === undefined || userRaw === null || userRaw === '') {
+      if (userRaw === undefined || userRaw === null || userRaw === "") {
         return undefined; // fail-open — leave pi's model untouched
       }
 
-      const { resolveTierEntry } = require(path.join(GSD_CORE, 'bin', 'lib', 'model-resolver.cjs'));
-      const entry = resolveTierEntry({ runtime: 'pi', tier, overrides });
-      const modelId = entry && typeof entry.model === 'string' && entry.model.length > 0 ? entry.model : null;
+      const { resolveTierEntry } = require(
+        path.join(GSD_CORE, "bin", "lib", "model-resolver.cjs"),
+      );
+      const entry = resolveTierEntry({ runtime: "pi", tier, overrides });
+      const modelId =
+        entry && typeof entry.model === "string" && entry.model.length > 0
+          ? entry.model
+          : null;
       if (!modelId) return undefined; // fail-open — leave pi's model untouched
-      const basePayload = (event && typeof event === 'object' && event.payload && typeof event.payload === 'object')
-        ? event.payload
-        : {};
+      const basePayload =
+        event &&
+        typeof event === "object" &&
+        event.payload &&
+        typeof event.payload === "object"
+          ? event.payload
+          : {};
       return { ...basePayload, model: modelId };
     } catch {
       return undefined; // fail-open on any resolution error
@@ -288,35 +334,42 @@ function buildBeforeProviderRequestHandler({ tier = 'sonnet' } = {}) {
  * @returns {{ stdout: string, exitCode: number, timedOut: boolean }}
  */
 function runHook(hookFile, payload, opts = {}) {
-  if (!SHARED_HOOKS_DIR) return { stdout: '', exitCode: 0, timedOut: false };
+  if (!SHARED_HOOKS_DIR) return { stdout: "", exitCode: 0, timedOut: false };
   const hookPath = path.join(SHARED_HOOKS_DIR, hookFile);
-  if (!fs.existsSync(hookPath)) return { stdout: '', exitCode: 0, timedOut: false };
+  if (!fs.existsSync(hookPath))
+    return { stdout: "", exitCode: 0, timedOut: false };
   const timeout = opts.timeout || 8000;
   let result;
   try {
     result = spawnSync(process.execPath, [hookPath], {
       input: JSON.stringify(payload || {}),
-      encoding: 'utf8',
+      encoding: "utf8",
       timeout,
       cwd: opts.cwd || process.cwd(),
       windowsHide: true,
     });
   } catch {
-    return { stdout: '', exitCode: 0, timedOut: false };
+    return { stdout: "", exitCode: 0, timedOut: false };
   }
-  const stdout = (result && typeof result.stdout === 'string') ? result.stdout.trim() : '';
-  const exitCode = (result && result.status != null) ? result.status : 0;
-  return { stdout, exitCode, timedOut: !!(result && result.signal === 'SIGTERM') };
+  const stdout =
+    result && typeof result.stdout === "string" ? result.stdout.trim() : "";
+  const exitCode = result && result.status != null ? result.status : 0;
+  return {
+    stdout,
+    exitCode,
+    timedOut: !!(result && result.signal === "SIGTERM"),
+  };
 }
 
 module.exports = function gsdPiExtension(pi) {
-  if (!pi || typeof pi !== 'object') {
-    throw new TypeError('gsdPiExtension: pi ExtensionAPI is required');
+  if (!pi || typeof pi !== "object") {
+    throw new TypeError("gsdPiExtension: pi ExtensionAPI is required");
   }
 
   // ── /gsd command: dispatch through gsd-tools.cjs (subprocess-reuse) ──────
-  pi.registerCommand('gsd', {
-    description: 'Invoke a GSD command via the embedded engine (subprocess-reuse adapter).',
+  pi.registerCommand("gsd", {
+    description:
+      "Invoke a GSD command via the embedded engine (subprocess-reuse adapter).",
     getArgumentCompletions,
     handler: async (args, ctx) => {
       const cwd = (ctx && ctx.cwd) || process.cwd();
@@ -329,53 +382,90 @@ module.exports = function gsdPiExtension(pi) {
       // is pushed as a side effect on both the success and error paths.
       // Guarded so a host ctx without `ui` degrades silently instead of
       // crashing the command.
-      const notify = (ctx && ctx.ui && typeof ctx.ui.notify === 'function')
-        ? (message, type) => ctx.ui.notify(message, type)
-        : null;
+      const notify =
+        ctx && ctx.ui && typeof ctx.ui.notify === "function"
+          ? (message, type) => ctx.ui.notify(message, type)
+          : null;
       const { family, subcommand, args: rest } = parseGsdCommandArgs(args);
       let dispatchGsdCommand;
       try {
-        ({ dispatchGsdCommand } = require(path.join(GSD_CORE, 'bin', 'lib', 'shell-command-projection.cjs')));
+        ({ dispatchGsdCommand } = require(
+          path.join(GSD_CORE, "bin", "lib", "shell-command-projection.cjs"),
+        ));
       } catch (e) {
         if (notify) {
-          notify(`GSD engine unavailable: ${e && e.message ? e.message : String(e)}`, 'error');
+          notify(
+            `GSD engine unavailable: ${e && e.message ? e.message : String(e)}`,
+            "error",
+          );
         }
         return;
       }
-      const result = dispatchGsdCommand({ family, subcommand, args: rest, cwd });
+      const result = dispatchGsdCommand({
+        family,
+        subcommand,
+        args: rest,
+        cwd,
+      });
       const text = result.ok
         ? result.stdout
         : `GSD error: ${result.stderr || result.stdout || `dispatch failed (exit ${result.code})`}`;
       if (notify) {
-        notify(text, result.ok ? 'info' : 'error');
+        notify(text, result.ok ? "info" : "error");
       }
     },
   });
 
   // ── gsd_invoke tool: programmatic command invocation ────────────────────
   pi.registerTool({
-    name: 'gsd_invoke',
-    label: 'GSD Invoke',
-    description: 'Invoke a GSD command family/subcommand through the engine.',
+    name: "gsd_invoke",
+    label: "GSD Invoke",
+    description: "Invoke a GSD command family/subcommand through the engine.",
     parameters: buildGsdInvokeParameters(),
     execute: async (toolCallId, params, signal, onUpdate, ctx) => {
-      const p = (params && typeof params === 'object') ? params : {};
-      const family = typeof p.family === 'string' ? p.family : '';
+      const p = params && typeof params === "object" ? params : {};
+      const family = typeof p.family === "string" ? p.family : "";
       if (!family) {
-        return { content: [{ type: 'text', text: 'gsd_invoke requires a non-empty string "family".' }] };
+        return {
+          content: [
+            {
+              type: "text",
+              text: 'gsd_invoke requires a non-empty string "family".',
+            },
+          ],
+        };
       }
-      const subcommand = typeof p.subcommand === 'string' ? p.subcommand : undefined;
+      const subcommand =
+        typeof p.subcommand === "string" ? p.subcommand : undefined;
       const invokeArgs = Array.isArray(p.args) ? p.args : [];
       const cwd = (ctx && ctx.cwd) || process.cwd();
       let dispatchGsdCommand;
       try {
-        ({ dispatchGsdCommand } = require(path.join(GSD_CORE, 'bin', 'lib', 'shell-command-projection.cjs')));
+        ({ dispatchGsdCommand } = require(
+          path.join(GSD_CORE, "bin", "lib", "shell-command-projection.cjs"),
+        ));
       } catch (e) {
-        return { content: [{ type: 'text', text: `GSD engine unavailable: ${e && e.message ? e.message : String(e)}` }] };
+        return {
+          content: [
+            {
+              type: "text",
+              text: `GSD engine unavailable: ${e && e.message ? e.message : String(e)}`,
+            },
+          ],
+        };
       }
-      const result = dispatchGsdCommand({ family, subcommand, args: invokeArgs, cwd });
-      const text = result.ok ? result.stdout : (result.stderr || result.stdout || `dispatch failed (exit ${result.code})`);
-      return { content: [{ type: 'text', text }] };
+      const result = dispatchGsdCommand({
+        family,
+        subcommand,
+        args: invokeArgs,
+        cwd,
+      });
+      const text = result.ok
+        ? result.stdout
+        : result.stderr ||
+          result.stdout ||
+          `dispatch failed (exit ${result.code})`;
+      return { content: [{ type: "text", text }] };
     },
   });
 
@@ -383,7 +473,7 @@ module.exports = function gsdPiExtension(pi) {
   // GSD steers pi's EXISTING built-in anthropic models; it does NOT call
   // pi.registerProvider (that would wrongly register a NEW fake provider —
   // see buildBeforeProviderRequestHandler's doc comment).
-  pi.on('before_provider_request', buildBeforeProviderRequestHandler());
+  pi.on("before_provider_request", buildBeforeProviderRequestHandler());
 
   // ── Event bindings: bounded subprocess bridge to GSD's hook scripts ──────
   // Each binding fails open — a hook error/timeout/missing-file never blocks
@@ -391,11 +481,17 @@ module.exports = function gsdPiExtension(pi) {
   // pattern, applied to pi's ExtensionAPI event names).
 
   // session_start → SessionStart-equivalent bootstrap.
-  pi.on('session_start', async (event, ctx) => {
+  pi.on("session_start", async (event, ctx) => {
     try {
       const cwd = (ctx && ctx.cwd) || process.cwd();
-      runHook('gsd-ensure-canonical-path.js', { hook_event_name: 'SessionStart', cwd }, { cwd });
-    } catch { /* fail-open */ }
+      runHook(
+        "gsd-ensure-canonical-path.js",
+        { hook_event_name: "SessionStart", cwd },
+        { cwd },
+      );
+    } catch {
+      /* fail-open */
+    }
   });
 
   // before_agent_start → workflow-guard bridge. Forward-compatible binding:
@@ -404,26 +500,38 @@ module.exports = function gsdPiExtension(pi) {
   // fires as a safe no-op today — wired so a future agent-start-scoped check
   // can attach without a plugin change (mirrors the OpenCode session.idle
   // recognized-but-unused sentinel pattern).
-  pi.on('before_agent_start', async (event, ctx) => {
+  pi.on("before_agent_start", async (event, ctx) => {
     try {
       const cwd = (ctx && ctx.cwd) || process.cwd();
-      runHook('gsd-workflow-guard.js', { hook_event_name: 'before_agent_start', cwd }, { cwd });
-    } catch { /* fail-open */ }
+      runHook(
+        "gsd-workflow-guard.js",
+        { hook_event_name: "before_agent_start", cwd },
+        { cwd },
+      );
+    } catch {
+      /* fail-open */
+    }
   });
 
   // session_before_compact → PreCompact-equivalent (context-usage bridge).
-  pi.on('session_before_compact', async (event, ctx) => {
+  pi.on("session_before_compact", async (event, ctx) => {
     try {
       const cwd = (ctx && ctx.cwd) || process.cwd();
-      runHook('gsd-context-monitor.js', { hook_event_name: 'PreCompact', cwd }, { cwd });
-    } catch { /* fail-open */ }
+      runHook(
+        "gsd-context-monitor.js",
+        { hook_event_name: "PreCompact", cwd },
+        { cwd },
+      );
+    } catch {
+      /* fail-open */
+    }
   });
 
   // tool_call event: lifecycle hook bridge attachment point (kept from the
   // original cut — the PreToolUse/PostToolUse tool_name/tool_input mapping
   // is a follow-up once pi's tool_call payload shape is verified against a
   // live host).
-  pi.on('tool_call', async function () {
+  pi.on("tool_call", async function () {
     /* GSD hook bridge attachment point (PreToolUse/PostToolUse mapping). */
   });
 };

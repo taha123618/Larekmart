@@ -3,13 +3,12 @@ name: gsd-import
 description: "Ingest external plans with conflict detection against project decisions before writing anything."
 ---
 
-
 <objective>
 Import external plan files into the GSD planning system with conflict detection against PROJECT.md decisions.
 
 - **--from**: Import an external plan file, detect conflicts, write as GSD PLAN.md, validate via gsd-plan-checker.
 - **--from-gsd2**: Reverse-migrate a GSD-2 project (`.gsd/` directory) back to GSD v1 (`.planning/`) format. Runs `gsd_run from-gsd2`. Pass `--path <dir>` to migrate a project at a different path.
-</objective>
+  </objective>
 
 <execution_context>
 @.agents/gsd-core/workflows/import.md

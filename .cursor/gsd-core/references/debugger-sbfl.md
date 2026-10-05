@@ -17,6 +17,7 @@ fault-localization step at all.
 ## When to run it (Phase 1.25 — after initial evidence, before hypothesis formation)
 
 Run only when ALL hold:
+
 - A runnable test suite exists for the failing area.
 - At least one failing test AND at least one passing test exist (a spectrum
   requires both).
@@ -35,6 +36,7 @@ ochiai(s) = failed(s) / sqrt(totalFailed × (failed(s) + passed(s)))
 ```
 
 where:
+
 - `failed(s)` = number of **failing** tests that executed `s`
 - `passed(s)` = number of **passing** tests that executed `s`
 - `totalFailed` = total number of failing tests in the suite
@@ -73,13 +75,13 @@ This step is **purely additive**. Every miss degrades to today's behavior; a
 skipped step is logged, never a silent pass (Kernighan — the debugger stays
 auditable).
 
-| Condition | Behavior |
-|---|---|
-| No test suite for the failing area | **skip** with a logged note in Evidence ("SBFL skipped: no test suite"); Phase 1 proceeds unchanged |
-| Test suite but no failing tests | **skip** with a logged note ("SBFL skipped: no failing tests — no spectrum"); Phase 1 proceeds unchanged |
-| Test suite but no passing tests | **skip** with a logged note ("SBFL skipped: no spectrum — no passing tests"); Phase 1 proceeds unchanged (Tarantula would divide by `totalPassed=0`; do not run it) |
-| Test suite but no per-test coverage | **skip** with a logged note ("SBFL skipped: no per-test coverage available"); Phase 1 proceeds unchanged |
-| Coverage exists but is coarse (file-level, not line/function) | run anyway, rank at the available granularity, and note the granularity in Evidence |
+| Condition                                                     | Behavior                                                                                                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No test suite for the failing area                            | **skip** with a logged note in Evidence ("SBFL skipped: no test suite"); Phase 1 proceeds unchanged                                                                 |
+| Test suite but no failing tests                               | **skip** with a logged note ("SBFL skipped: no failing tests — no spectrum"); Phase 1 proceeds unchanged                                                            |
+| Test suite but no passing tests                               | **skip** with a logged note ("SBFL skipped: no spectrum — no passing tests"); Phase 1 proceeds unchanged (Tarantula would divide by `totalPassed=0`; do not run it) |
+| Test suite but no per-test coverage                           | **skip** with a logged note ("SBFL skipped: no per-test coverage available"); Phase 1 proceeds unchanged                                                            |
+| Coverage exists but is coarse (file-level, not line/function) | run anyway, rank at the available granularity, and note the granularity in Evidence                                                                                 |
 
 ## Bug-class gating (pairs with Phase 2B bug-taxonomy routing)
 

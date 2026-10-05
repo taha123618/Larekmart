@@ -22,6 +22,7 @@ Extract from init JSON: `commit_docs`, `date`, `timestamp`, `todo_count`, `todos
 **If `response_language` is set:** All user-facing output of this workflow — narration between tool calls, status updates, progress notes, findings, questions, prompts, and explanations — MUST be presented in `{response_language}`. Technical terms, code, file paths, and subagent prompts stay in English — only user-facing output is translated.
 
 Ensure directories exist:
+
 ```bash
 mkdir -p .planning/todos/pending .planning/todos/completed
 ```
@@ -34,31 +35,33 @@ Note existing areas from the todos array for consistency in infer_area step.
 - `/gsd-add-todo Add auth token refresh` → title = "Add auth token refresh"
 
 **Without arguments:** Analyze recent conversation to extract:
+
 - The specific problem, idea, or task discussed
 - Relevant file paths mentioned
 - Technical details (error messages, line numbers, constraints)
 
 Formulate:
+
 - `title`: 3-10 word descriptive title (action verb preferred)
 - `problem`: What's wrong or why this is needed
 - `solution`: Approach hints or "TBD" if just an idea
 - `files`: Relevant paths with line numbers from conversation
-</step>
+  </step>
 
 <step name="infer_area">
 Infer area from file paths:
 
-| Path pattern | Area |
-|--------------|------|
-| `src/api/*`, `api/*` | `api` |
-| `src/components/*`, `src/ui/*` | `ui` |
-| `src/auth/*`, `auth/*` | `auth` |
-| `src/db/*`, `database/*` | `database` |
-| `tests/*`, `__tests__/*` | `testing` |
-| `docs/*` | `docs` |
-| `.planning/*` | `planning` |
-| `scripts/*`, `bin/*` | `tooling` |
-| No files or unclear | `general` |
+| Path pattern                   | Area       |
+| ------------------------------ | ---------- |
+| `src/api/*`, `api/*`           | `api`      |
+| `src/components/*`, `src/ui/*` | `ui`       |
+| `src/auth/*`, `auth/*`         | `auth`     |
+| `src/db/*`, `database/*`       | `database` |
+| `tests/*`, `__tests__/*`       | `testing`  |
+| `docs/*`                       | `docs`     |
+| `.planning/*`                  | `planning` |
+| `scripts/*`, `bin/*`           | `tooling`  |
+| No files or unclear            | `general`  |
 
 Use existing area from step 2 if similar match exists.
 </step>
@@ -68,18 +71,19 @@ Infer a **suggested** severity from the same blocker/major/minor/cosmetic taxono
 
 Suggest from the user's natural-language description:
 
-| User says | Suggest |
-|-----------|---------|
-| "crashes", "error", "exception", "fails completely", "data loss" | blocker |
-| "doesn't work", "nothing happens", "wrong behavior" | major |
-| "works but...", "slow", "weird", "minor issue" | minor |
-| "color", "spacing", "alignment", "looks off" | cosmetic |
+| User says                                                        | Suggest  |
+| ---------------------------------------------------------------- | -------- |
+| "crashes", "error", "exception", "fails completely", "data loss" | blocker  |
+| "doesn't work", "nothing happens", "wrong behavior"              | major    |
+| "works but...", "slow", "weird", "minor issue"                   | minor    |
+| "color", "spacing", "alignment", "looks off"                     | cosmetic |
 
 Default the suggestion to **major** if unclear.
 
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `$ARGUMENTS` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace the `AskUserQuestion` below with a plain-text numbered list of the four options and ask the user to type their choice number. Required for non-Claude runtimes (OpenAI Codex, Antigravity, etc.) where `AskUserQuestion` is unavailable.
 
 Confirm with AskUserQuestion (present the suggested value first):
+
 - header: "Severity?"
 - question: "Suggested severity: [suggested]. Confirm or change:"
 - options:
@@ -98,24 +102,26 @@ grep -l -i "[key words from title]" .planning/todos/pending/*.md 2>/dev/null || 
 ```
 
 If potential duplicate found:
+
 1. Read the existing todo
 2. Compare scope
 
-
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `$ARGUMENTS` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `AskUserQuestion` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-Claude runtimes (OpenAI Codex, Antigravity, etc.) where `AskUserQuestion` is not available.
 If overlapping, use AskUserQuestion:
+
 - header: "Duplicate?"
 - question: "Similar todo exists: [title]. What would you like to do?"
 - options:
   - "Skip" — keep existing todo
   - "Replace" — update existing with new context
   - "Add anyway" — create as separate todo
-</step>
+    </step>
 
 <step name="create_file">
 Use values from init context: `timestamp` and `date` are already available.
 
 Generate slug for the title:
+
 ```bash
 slug=$(gsd_run query generate-slug "$title" --raw)
 ```
@@ -140,6 +146,7 @@ files:
 
 [approach hints or "TBD"]
 ```
+
 </step>
 
 <step name="update_state">
@@ -148,7 +155,7 @@ If `.planning/STATE.md` exists:
 1. Re-run `gsd_run query init.todos` to get a fresh, post-write JSON snapshot (the count and rendering must reflect the change just made).
 2. **Fail-safe check (#2618):** if the JSON failed to parse, or `pending_read_ok` is not `true`, or `pending_todos_markdown` is not a string, do NOT touch the "### Pending Todos" section — leave it exactly as-is and continue to the next step. A partial or malformed `init.todos` result must never overwrite a good existing section.
 3. Otherwise, replace the entire body of "### Pending Todos" (under "## Accumulated Context") with the literal value of `pending_todos_markdown` — verbatim, one bullet per pending todo already rendered and length-capped by `init.todos`. Do not reformat, re-wrap, re-order, or hand-edit the bullets; do not append to the old body — replace it wholesale (this is what makes an old run-on-sentence section get superseded cleanly with no migration step).
-</step>
+   </step>
 
 <step name="git_commit">
 Commit the todo and any updated state:
@@ -166,9 +173,9 @@ Confirm: "Committed: docs: capture todo - [title]"
 ```
 Todo saved: .planning/todos/pending/[filename]
 
-  [title]
-  Area: [area]
-  Files: [count] referenced
+[title]
+Area: [area]
+Files: [count] referenced
 
 ---
 
@@ -177,6 +184,7 @@ Would you like to:
 1. Continue with current work
 2. Add another todo
 3. View all todos (/gsd-capture --list)
+
 ```
 </step>
 
@@ -191,3 +199,4 @@ Would you like to:
 - [ ] STATE.md updated if exists
 - [ ] Todo and state committed to git
 </success_criteria>
+```

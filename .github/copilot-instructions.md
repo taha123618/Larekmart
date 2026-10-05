@@ -48,6 +48,7 @@ Next.js apps (`client` :3002, `admin` :3003), ten backend services (`product-ser
 - Claim tests pass — no test runner exists in this repo yet (see `docs/TESTING.md`).
 
 <!-- GSD Configuration — managed by gsd-core installer -->
+
 # Instructions for GSD
 
 - Use the gsd-core skill when the user asks for GSD or uses a `gsd-*` command.

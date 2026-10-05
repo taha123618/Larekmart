@@ -18,27 +18,27 @@
 // Enabled for all Hermes Agent installs. This hook is always-on — it is a
 // no-op when .planning/config.json is absent (ENOENT → exit 0).
 
-const fs = require('fs');
-const path = require('path');
-const { HOOK_ON_CRASH, allow, crash } = require('./lib/hook-exit.js');
+const fs = require("fs");
+const path = require("path");
+const { HOOK_ON_CRASH, allow, crash } = require("./lib/hook-exit.js");
 
 // This hook only injects an advisory config-reload summary; a crash mid-parse
 // must not block the session or the FileChanged event that triggered it — the
 // agent simply keeps using the config context it already had (#3911).
 const ON_CRASH = HOOK_ON_CRASH.ALLOW;
 
-let input = '';
+let input = "";
 // Timeout guard: if stdin does not close within 8s exit silently rather than
 // hanging until Hermes Agent kills the process and reports "hook error".
 const stdinTimeout = setTimeout(() => allow(undefined), 8000);
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => (input += chunk));
-process.stdin.on('end', () => {
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => (input += chunk));
+process.stdin.on("end", () => {
   clearTimeout(stdinTimeout);
   try {
     const data = JSON.parse(input);
     const event = data.event; // "change" | "add" | "unlink"
-    const filePath = data.file_path || '';
+    const filePath = data.file_path || "";
     const cwd = data.cwd || process.cwd();
 
     // Only handle the GSD planning config — verify both basename and that the
@@ -47,22 +47,22 @@ process.stdin.on('end', () => {
     // ensures an unrelated config.json in node_modules/ or elsewhere does not
     // inject spurious additionalContext.
     const basename = path.basename(filePath);
-    if (basename !== 'config.json') {
+    if (basename !== "config.json") {
       allow(undefined);
     }
-    const expectedPath = path.resolve(cwd, '.planning', 'config.json');
+    const expectedPath = path.resolve(cwd, ".planning", "config.json");
     if (path.resolve(filePath) !== expectedPath) {
       allow(undefined);
     }
 
     // On unlink (deletion) emit a brief notice and exit
-    if (event === 'unlink') {
+    if (event === "unlink") {
       allow({
         hookSpecificOutput: {
-          hookEventName: 'FileChanged',
+          hookEventName: "FileChanged",
           additionalContext:
-            'GSD config (.planning/config.json) was deleted. ' +
-            'Falling back to built-in defaults for this session.',
+            "GSD config (.planning/config.json) was deleted. " +
+            "Falling back to built-in defaults for this session.",
         },
       });
     }
@@ -70,66 +70,68 @@ process.stdin.on('end', () => {
     // Read the updated config file
     let config;
     try {
-      const raw = fs.readFileSync(filePath, 'utf8');
+      const raw = fs.readFileSync(filePath, "utf8");
       config = JSON.parse(raw);
     } catch (e) {
-      if (e && e.code === 'ENOENT') allow(undefined);
+      if (e && e.code === "ENOENT") allow(undefined);
       // Malformed JSON — inform the agent without crashing
       allow({
         hookSpecificOutput: {
-          hookEventName: 'FileChanged',
+          hookEventName: "FileChanged",
           additionalContext:
-            'GSD config (.planning/config.json) was modified but could not be parsed. ' +
-            'Check the file for JSON syntax errors.',
+            "GSD config (.planning/config.json) was modified but could not be parsed. " +
+            "Check the file for JSON syntax errors.",
         },
       });
     }
 
     // Build a concise summary of key config fields the agent cares about
-    const lines = ['GSD config reloaded (.planning/config.json updated):'];
+    const lines = ["GSD config reloaded (.planning/config.json updated):"];
 
     if (config.runtime) lines.push(`  runtime: ${config.runtime}`);
     if (config.mode) lines.push(`  mode: ${config.mode}`);
 
     // hooks section (opt-in toggles agents act on)
-    if (config.hooks && typeof config.hooks === 'object') {
+    if (config.hooks && typeof config.hooks === "object") {
       const hookKeys = Object.entries(config.hooks)
         .filter(([, v]) => v !== undefined)
         .map(([k, v]) => `${k}=${v}`)
-        .join(', ');
+        .join(", ");
       if (hookKeys) lines.push(`  hooks: { ${hookKeys} }`);
     }
 
     // workflow section (key toggles)
-    if (config.workflow && typeof config.workflow === 'object') {
+    if (config.workflow && typeof config.workflow === "object") {
       const wfKeys = Object.entries(config.workflow)
         .filter(([, v]) => v !== undefined)
         .map(([k, v]) => `${k}=${v}`)
-        .join(', ');
+        .join(", ");
       if (wfKeys) lines.push(`  workflow: { ${wfKeys} }`);
     }
 
     // model overrides (agents use these)
-    if (config.models && typeof config.models === 'object') {
+    if (config.models && typeof config.models === "object") {
       const modelKeys = Object.entries(config.models)
         .filter(([, v]) => v !== undefined)
         .map(([k, v]) => `${k}=${v}`)
-        .join(', ');
+        .join(", ");
       if (modelKeys) lines.push(`  models: { ${modelKeys} }`);
     }
 
     if (lines.length === 1) {
       // No notable fields — still confirm the reload happened
-      lines.push('  (no notable keys changed)');
+      lines.push("  (no notable keys changed)");
     }
 
-    const additionalContext = lines.join('\n');
-    process.stdout.write(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: 'FileChanged',
-        additionalContext,
-      },
-    }));
+    const additionalContext = lines.join("\n");
+    process.stdout.write(
+      JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: "FileChanged",
+          additionalContext,
+        },
+      }),
+    );
   } catch (e) {
     // Silent fail — never block the session on a config reload error.
     // ON_CRASH is declared ALLOW at module top: this preserves today's

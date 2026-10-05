@@ -2,6 +2,7 @@
 description: "Generate an AI-SPEC.md design contract for phases that involve building AI systems."
 argument-hint: "[phase number]"
 ---
+
 <objective>
 Create an AI design contract (AI-SPEC.md) for a phase involving AI system development.
 Orchestrates gsd-framework-selector → gsd-ai-researcher → gsd-domain-researcher → gsd-eval-planner.

@@ -29,7 +29,8 @@ export async function registerAuthMiddleware(
       // Attach internal trusted headers for downstream proxy propagation
       request.headers[GATEWAY_HEADERS.USER_ID] = auth.userId;
       request.headers[GATEWAY_HEADERS.USER_ROLE] = auth.role;
-      request.headers[GATEWAY_HEADERS.INTERNAL_SECRET] = env.INTERNAL_SERVICE_SECRET;
+      request.headers[GATEWAY_HEADERS.INTERNAL_SECRET] =
+        env.INTERNAL_SERVICE_SECRET;
     }
   });
 }

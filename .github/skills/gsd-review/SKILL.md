@@ -3,7 +3,6 @@ name: gsd-review
 description: "Request cross-AI peer review of phase plans from external AI CLIs"
 ---
 
-
 <objective>
 Invoke external AI CLIs (the agent, Codex, OpenCode, Qwen Code, Cursor, Antigravity) to independently review phase plans.
 Produces a structured REVIEWS.md with per-reviewer feedback that can be fed back into
@@ -20,6 +19,7 @@ planning via /gsd-plan-phase --reviews.
 Phase number: extracted from $ARGUMENTS (required)
 
 **Flags:**
+
 - `--claude` — Include the agent CLI review (uses separate session)
 - `--codex` — Include Codex CLI review
 - `--opencode` — Include OpenCode review (uses model from user's OpenCode config)

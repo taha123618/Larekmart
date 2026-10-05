@@ -8,9 +8,7 @@ import { CartItemsType, ShippingFormInputs } from "@repo/types";
 import CheckoutForm from "./CheckoutForm";
 import useCartStore from "@/stores/cartStore";
 
-const stripe = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
-);
+const stripe = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const fetchClientSecret = async (
   cart: CartItemsType,
@@ -21,20 +19,17 @@ const fetchClientSecret = async (
     process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
     "http://localhost:8080";
-  return fetch(
-    `${paymentServiceUrl}/sessions/create-checkout-session`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        cart,
-        cartId,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+  return fetch(`${paymentServiceUrl}/sessions/create-checkout-session`, {
+    method: "POST",
+    body: JSON.stringify({
+      cart,
+      cartId,
+    }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
-  )
+  })
     .then((response) => response.json())
     .then((json) => json.checkoutSessionClientSecret);
 };

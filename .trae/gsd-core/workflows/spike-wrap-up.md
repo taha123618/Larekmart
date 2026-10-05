@@ -33,17 +33,21 @@ Read all files referenced by the invoking prompt's execution_context before star
    - If no: all spikes are candidates
 
 If no unprocessed spikes exist:
+
 ```
 No unprocessed spikes found in `.planning/spikes/`.
 Run `/gsd-spike` first to create experiments.
 ```
+
 Exit.
 
 Check `commit_docs` config:
+
 ```bash
 _GSD_SHIM_NAME="gsd-tools.cjs"; _GSD_RUNTIME_ROOT="${RUNTIME_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"; GSD_TOOLS="${_GSD_RUNTIME_ROOT}/gsd-core/bin/${_GSD_SHIM_NAME}"; _gsd_at() { for _p; do if [ -f "$_p" ]; then GSD_TOOLS="$_p"; return 0; fi; done; return 1; }; _gsd_id_ok() { case "$("$1" runtime-identity --raw 2>/dev/null || true)" in '{"packageName":"@opengsd/gsd-core"'*'}') return 0;; *) return 1;; esac; }; _gsd_homes() { _gsd_at "${TRAE_CONFIG_DIR:-/Users/taha/projects/microservices-ecommerce/.trae}/gsd-core/bin/${_GSD_SHIM_NAME}" "${HERMES_HOME:-$HOME/.hermes}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CURSOR_CONFIG_DIR:-$HOME/.cursor}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CODEX_HOME:-$HOME/.codex}/gsd-core/bin/${_GSD_SHIM_NAME}" "${GEMINI_CONFIG_DIR:-$HOME/.gemini}/gsd-core/bin/${_GSD_SHIM_NAME}" "${COPILOT_CONFIG_DIR:-$HOME/.copilot}/gsd-core/bin/${_GSD_SHIM_NAME}" "${WINDSURF_CONFIG_DIR:-$HOME/.codeium/windsurf}/gsd-core/bin/${_GSD_SHIM_NAME}" "${AUGMENT_CONFIG_DIR:-$HOME/.augment}/gsd-core/bin/${_GSD_SHIM_NAME}" "${TRAE_CONFIG_DIR:-$HOME/.trae}/gsd-core/bin/${_GSD_SHIM_NAME}" "${QWEN_CONFIG_DIR:-$HOME/.qwen}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CODEBUDDY_CONFIG_DIR:-$HOME/.codebuddy}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CLINE_CONFIG_DIR:-$HOME/.cline}/gsd-core/bin/${_GSD_SHIM_NAME}" "${GROK_AGENTS_HOME:-$HOME/.agents}/gsd-core/bin/${_GSD_SHIM_NAME}" "${ANTIGRAVITY_CONFIG_DIR:-$HOME/.gemini/antigravity}/gsd-core/bin/${_GSD_SHIM_NAME}" "${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}/gsd-core/bin/${_GSD_SHIM_NAME}" "${KILO_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/kilo}/gsd-core/bin/${_GSD_SHIM_NAME}"; }; if _gsd_at "${_GSD_RUNTIME_ROOT}/gsd-core/bin/${_GSD_SHIM_NAME}" "${_GSD_RUNTIME_ROOT}/.trae/gsd-core/bin/${_GSD_SHIM_NAME}" "${_GSD_RUNTIME_ROOT}/.codex/gsd-core/bin/${_GSD_SHIM_NAME}"; then gsd_run() { node "$GSD_TOOLS" "$@"; }; elif _gsd_homes; then gsd_run() { node "$GSD_TOOLS" "$@"; }; elif unset -f gsd_run; _G="$(command -v gsd_run)"; [ -n "$_G" ] && _gsd_id_ok "$_G"; then GSD_TOOLS="$_G"; gsd_run() { "$GSD_TOOLS" "$@"; }; else echo "ERROR: gsd-tools.cjs not found at $GSD_TOOLS and no identity-proving gsd_run is on PATH. Run: npx -y @opengsd/gsd-core@latest --claude --local" >&2; exit 1; fi; GSD_IDENTITY_STATUS=unverified; _gsd_id_ok gsd_run && GSD_IDENTITY_STATUS=ok; export GSD_IDENTITY_STATUS; [ "$GSD_IDENTITY_STATUS" = ok ] || echo "WARNING: \"$GSD_TOOLS\" did not prove it is @opengsd/gsd-core - it is either a different package or an @opengsd/gsd-core older than the runtime-identity verb. See docs/how-to/diagnose-a-foreign-gsd-tools.md" >&2; if [ -n "${CLAUDE_ENV_FILE:-}" ] && [ -n "${GSD_TOOLS:-}" ]; then printf "export PATH='%s':\"\$PATH\"\n" "${GSD_TOOLS%/*}" >> "$CLAUDE_ENV_FILE" 2>/dev/null || true; fi
 COMMIT_DOCS=$(gsd_run query config-get commit_docs --raw 2>/dev/null || echo "true")
 ```
+
 </step>
 
 <step name="auto_include">
@@ -59,10 +63,11 @@ Processing N spikes:
 ```
 
 Every spike carries forward:
+
 - **VALIDATED** spikes provide proven patterns
 - **PARTIAL** spikes provide constrained patterns
 - **INVALIDATED** spikes provide landmines and dead ends
-</step>
+  </step>
 
 <step name="group">
 ## Auto-Group by Feature Area
@@ -93,7 +98,7 @@ For each included spike:
    - Lock files (`package-lock.json`, `yarn.lock`, etc.)
    - `.git/`, `.DS_Store`
 2. Copy the README.md and core source files into `sources/NNN-spike-name/` inside the generated skill directory
-</step>
+   </step>
 
 <step name="synthesize">
 ## Synthesize Reference Files
@@ -129,6 +134,7 @@ Never include a requirement from an idea key that has no spike in this group.]
 Synthesized from spikes: NNN, NNN, NNN
 Source files available in: sources/NNN-spike-name/, sources/NNN-spike-name/
 ```
+
 </step>
 
 <step name="write_skill">
@@ -162,13 +168,14 @@ idea key so a future reader can tell which requirement belongs to which idea.]
 
 - [requirement 1]
 - [requirement 2]
-</requirements>
+  </requirements>
 
 <findings_index>
+
 ## Feature Areas
 
-| Area | Reference | Key Finding |
-|------|-----------|-------------|
+| Area   | Reference            | Key Finding        |
+| ------ | -------------------- | ------------------ |
 | [Name] | references/[name].md | [One-line summary] |
 
 ## Source Files
@@ -183,8 +190,9 @@ Original spike source files are preserved in `sources/` for complete reference.
 
 - 001-spike-name
 - 002-spike-name
-</metadata>
+  </metadata>
 ```
+
 </step>
 
 <step name="write_summary">
@@ -201,12 +209,15 @@ Write `.planning/spikes/WRAP-UP-SUMMARY.md` for project history:
 **Skill output:** `./.trae/skills/spike-findings-[project]/`
 
 ## Processed Spikes
-| # | Name | Type | Verdict | Feature Area |
-|---|------|------|---------|--------------|
+
+| #   | Name | Type | Verdict | Feature Area |
+| --- | ---- | ---- | ------- | ------------ |
 
 ## Key Findings
+
 [consolidated findings summary]
 ```
+
 </step>
 
 <step name="update_claude_md">
@@ -224,7 +235,7 @@ If this routing line already exists (append mode), leave it as-is.
 <step name="generate_conventions">
 ## Generate or Update CONVENTIONS.md
 
-Analyze all processed spikes for recurring patterns and write `.planning/spikes/CONVENTIONS.md`. This file tells future spike sessions *how we spike* — the stack, structure, and patterns that have been established.
+Analyze all processed spikes for recurring patterns and write `.planning/spikes/CONVENTIONS.md`. This file tells future spike sessions _how we spike_ — the stack, structure, and patterns that have been established.
 
 1. Read all spike source code and READMEs looking for:
    - **Stack choices** — What language/framework/runtime appears across multiple spikes?
@@ -240,22 +251,26 @@ Analyze all processed spikes for recurring patterns and write `.planning/spikes/
 Patterns and stack choices established across spike sessions. New spikes follow these unless the question requires otherwise.
 
 ## Stack
+
 [What we use for frontend, backend, scripts, and why — derived from what repeated across spikes]
 
 ## Structure
+
 [Common file layouts, port assignments, naming patterns]
 
 ## Patterns
+
 [Recurring approaches: how we handle auth, how we style, how we serve, etc.]
 
 ## Tools & Libraries
+
 [Preferred packages with versions that worked, and any to avoid]
 ```
 
 3. Only include patterns that appeared in 2+ spikes or were explicitly chosen by the user.
 
 4. If `CONVENTIONS.md` already exists (append mode), update sections with new patterns. Remove entries contradicted by newer spikes.
-</step>
+   </step>
 
 <step name="commit">
 Commit all artifacts (if `COMMIT_DOCS` is true):
@@ -263,6 +278,7 @@ Commit all artifacts (if `COMMIT_DOCS` is true):
 ```bash
 gsd_run query commit "docs(spike-wrap-up): package [N] spike findings into project skill" --files .planning/spikes/WRAP-UP-SUMMARY.md .planning/spikes/CONVENTIONS.md
 ```
+
 </step>
 
 <step name="report">
@@ -277,6 +293,7 @@ gsd_run query commit "docs(spike-wrap-up): package [N] spike findings into proje
 **.trae/rules/rules.md:** routing line added
 
 The spike-findings skill will auto-load in future build conversations.
+
 ```
 </step>
 
@@ -318,3 +335,4 @@ After the summary, present next-step options:
 - [ ] Summary presented
 - [ ] Next-step options presented (including frontier spike exploration via `/gsd-spike`)
 </success_criteria>
+```

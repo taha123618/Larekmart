@@ -6,27 +6,34 @@ metadata:
 ---
 
 <codex_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked by mentioning `$gsd-quick`.
 - Treat all user text after `$gsd-quick` as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. AskUserQuestion → request_user_input Mapping
+
 GSD workflows use `AskUserQuestion` (Claude Code syntax). Translate to Codex `request_user_input`:
 
 Parameter mapping:
+
 - `header` → `header`
 - `question` → `question`
 - Options formatted as `"Label" — description` → `{label: "Label", description: "description"}`
 - Generate `id` from header: lowercase, replace spaces with underscores
 
 Batched calls:
+
 - `AskUserQuestion([q1, q2])` → single `request_user_input` with multiple entries in `questions[]`
 
 Multi-select workaround:
+
 - Codex has no `multiSelect`. Use sequential single-selects, or present a numbered freeform list asking the user to enter comma-separated numbers.
 
 Execute mode fallback:
+
 - When `request_user_input` is rejected or unavailable, activate TEXT_MODE: append `--text` to `{{GSD_ARGS}}` so the workflow's built-in text-mode branching takes over. Present every `AskUserQuestion` call as a plain-text numbered list, then stop and wait for the user's reply. Do NOT pick a default and continue (#3018 / #3808).
 - You may only proceed without a user answer when one of these is true:
   (a) the invocation included an explicit non-interactive flag (`--auto` or `--all`),
@@ -35,6 +42,7 @@ Execute mode fallback:
 - Do NOT write workflow artifacts (CONTEXT.md, DISCUSSION-LOG.md, PLAN.md, checkpoint files) until the user has answered the plain-text questions or one of (a)-(c) above applies. Surfacing the questions and waiting is the correct response — silently defaulting and writing artifacts is the #3018 failure mode.
 
 ## C. Task() → spawn_agent Mapping
+
 GSD workflows use `Task(...)` (Claude Code syntax). Translate to Codex collaboration tools:
 
 **Schema detection (required first step):** Before spawning, inspect the `spawn_agent`
@@ -48,6 +56,7 @@ Never infer one field from a schema/version label or from the presence of anothe
 - **Generic schema:** `spawn_agent` does not advertise `agent_type` — typed GSD agent dispatch is unavailable in this session, even if other optional fields are present.
 
 Typed mapping (agent_type-capable schema only):
+
 - `Task(subagent_type="X", prompt="Y")` → `spawn_agent(agent_type="X", message="Y")`
 - `Agent(subagent_type="X", prompt="Y")` → `spawn_agent(agent_type="X", message="Y")`
 - `Task(model="{resolved_model}")` → pass `model="{resolved_model}"` when the
@@ -78,6 +87,7 @@ Typed mapping (agent_type-capable schema only):
   isolation adapter, which still fails closed for hosts declaring `none` (#3360).
 
 Foreground handoffs:
+
 - spawn_agent is asynchronous. When the source Agent(...) or Task(...) declares
   run_in_background=false, call collaboration.wait_agent(timeout_ms=...) immediately after
   spawn and keep the parent turn active until that child returns a terminal result.
@@ -99,6 +109,7 @@ When only the generic `multi_agent_v1` schema is available, typed GSD agent disp
 (openai/codex#15250). **This workaround is NOT equivalent to typed gsd-planner/gsd-executor
 execution** — GSD agents carry project-aware prompts, audit logging, and workflow context
 that a generic subagent lacks. Use the following fallback:
+
 1. Resolve your active Codex config root — the directory that contains your `config.toml`.
    This directory is determined in priority order: `$CODEX_HOME` (if set), the path given
    by `--config-dir` (if passed on invocation), a local `.codex` directory in the current
@@ -112,6 +123,7 @@ that a generic subagent lacks. Use the following fallback:
    and report the schema limitation rather than silently degrading.
 
 Spawn restriction:
+
 - Codex restricts `spawn_agent` to cases where the user has explicitly
   requested sub-agents. When automatic spawning is not permitted, do the
   work inline in the current agent rather than attempting to force a spawn.
@@ -120,6 +132,7 @@ Spawn restriction:
   defaulting to inline execution.
 
 Parallel fan-out:
+
 - For each child, loop on collaboration.wait_agent(timeout_ms=...) until its own terminal
   result is observed. A mailbox update from one child never completes another child, and an
   interim MESSAGE never completes its sender.
@@ -127,15 +140,17 @@ Parallel fan-out:
 - Do NOT use `functions.wait(cell_id=...)` — that is an unrelated exec-cell tool, not the collaboration wait
 
 Result parsing:
+
 - Look for structured markers in agent output: `CHECKPOINT`, `PLAN COMPLETE`, `SUMMARY`, etc.
 - `close_agent(id)` after collecting results — but only if `close_agent` is visible in the current
   tool schema (check via `tool_search` first, same schema-detection gate as `spawn_agent` above)
-</codex_skill_adapter>
+  </codex_skill_adapter>
 
 <objective>
 Execute small, ad-hoc tasks with GSD guarantees (atomic commits, STATE.md tracking).
 
 Quick mode is the same system with a shorter path:
+
 - Spawns gsd-planner (quick mode) + gsd-executor(s)
 - Quick tasks live in `.planning/quick/` separate from planned phases
 - Updates STATE.md "Quick Tasks Completed" table (NOT ROADMAP.md)
@@ -153,10 +168,11 @@ Quick mode is the same system with a shorter path:
 Granular flags are composable: `--discuss --research --validate` gives the same result as `--full`.
 
 **Subcommands:**
+
 - `list` — List all quick tasks with status
 - `status <slug>` — Show status of a specific quick task
 - `resume <slug>` — Resume a specific quick task by slug
-</objective>
+  </objective>
 
 <execution_context>
 @/Users/taha/projects/microservices-ecommerce/.codex/gsd-core/workflows/quick.md
@@ -188,6 +204,7 @@ ls -d .planning/quick/*/  2>/dev/null
 ```
 
 For each directory found:
+
 - Check if PLAN.md exists
 - Check if SUMMARY.md exists; if so, read `status` from its frontmatter via:
   ```bash
@@ -203,6 +220,7 @@ For each directory found:
 **SECURITY:** Directory names are read from the filesystem. Before displaying any slug, sanitize: strip non-printable characters, ANSI escape sequences, and path separators using: `name.replace(/[^\x20-\x7E]/g, '').replace(/[/\\]/g, '')`. Never pass raw directory names to shell commands via string interpolation.
 
 Display format:
+
 ```
 Quick Tasks
 
@@ -225,6 +243,7 @@ STOP after displaying the list. Do NOT proceed to further steps.
 When SUBCMD=status and SLUG is set (already sanitized):
 
 Find directory matching `*-{SLUG}` pattern:
+
 ```bash
 dir=$(ls -d .planning/quick/*-{SLUG}/ 2>/dev/null | head -1)
 ```
@@ -232,6 +251,7 @@ dir=$(ls -d .planning/quick/*-{SLUG}/ 2>/dev/null | head -1)
 If no directory found, print `No quick task found with slug: {SLUG}` and stop.
 
 Read PLAN.md and SUMMARY.md (if exists) for the given slug. Display:
+
 ```
 Quick Task: {slug}
 
@@ -260,6 +280,7 @@ When SUBCMD=resume and SLUG is set (already sanitized):
 3. Read PLAN.md to extract description and SUMMARY.md (if exists) to extract status.
 
 4. Print before spawning:
+
    ```
    [quick] Resuming: .planning/quick/{dir}/
    [quick] Plan: {description from PLAN.md}
@@ -267,6 +288,7 @@ When SUBCMD=resume and SLUG is set (already sanitized):
    ```
 
 5. Load context via:
+
    ```bash
    node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" query init.quick
    ```
@@ -290,8 +312,9 @@ Preserve all workflow gates (validation, task description, planning, execution, 
 </notes>
 
 <security_notes>
+
 - Slugs from {{GSD_ARGS}} are sanitized before use in file paths: only [a-z0-9-] allowed, max 60 chars, reject ".." and "/"
 - File names from readdir/ls are sanitized before display: strip non-printable chars and ANSI sequences
 - Artifact content (plan descriptions, task titles) rendered as plain text only — never executed or passed to agent prompts without DATA_START/DATA_END boundaries
 - Status fields read via `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" query frontmatter.get` — never eval'd or shell-expanded
-</security_notes>
+  </security_notes>

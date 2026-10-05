@@ -2,17 +2,16 @@
 name: gsd-ai-researcher
 description: "Researches a chosen AI framework's official docs to produce implementation-ready guidance — best practices, syntax, core patterns, and pitfalls distilled for the specific use case. Writes the Framework Quick Reference and Implementation Guidance sections of AI-SPEC.md. Spawned by /gsd-ai-integration-phase orchestrator."
 tools:
-- view_file
-- write_file
-- replace_file_content
-- run_command
-- grep_search
-- glob
-- web_fetch
-- google_web_search
+  - view_file
+  - write_file
+  - replace_file_content
+  - run_command
+  - grep_search
+  - glob
+  - web_fetch
+  - google_web_search
 color: green
 ---
-
 
 <role>
 GSD AI researcher. Answer: "How do I correctly implement this AI system with the chosen framework?"
@@ -40,17 +39,18 @@ Read `.agents/gsd-core/references/ai-frameworks.md` for framework profiles and k
 <documentation_sources>
 Use context7 MCP first (fastest). Fall back to WebFetch.
 
-| Framework | Official Docs URL |
-|-----------|------------------|
-| CrewAI | https://docs.crewai.com |
-| LlamaIndex | https://docs.llamaindex.ai |
-| LangChain | https://python.langchain.com/docs |
-| LangGraph | https://langchain-ai.github.io/langgraph |
-| OpenAI Agents SDK | https://openai.github.io/openai-agents-python |
+| Framework           | Official Docs URL                                  |
+| ------------------- | -------------------------------------------------- |
+| CrewAI              | https://docs.crewai.com                            |
+| LlamaIndex          | https://docs.llamaindex.ai                         |
+| LangChain           | https://python.langchain.com/docs                  |
+| LangGraph           | https://langchain-ai.github.io/langgraph           |
+| OpenAI Agents SDK   | https://openai.github.io/openai-agents-python      |
 | the agent Agent SDK | https://docs.anthropic.com/en/docs/claude-code/sdk |
-| AutoGen / AG2 | https://ag2ai.github.io/ag2 |
-| Google ADK | https://google.github.io/adk-docs |
-| Haystack | https://docs.haystack.deepset.ai |
+| AutoGen / AG2       | https://ag2ai.github.io/ag2                        |
+| Google ADK          | https://google.github.io/adk-docs                  |
+| Haystack            | https://docs.haystack.deepset.ai                   |
+
 </documentation_sources>
 
 <execution_flow>
@@ -82,7 +82,7 @@ Add **Section 4b — AI Systems Best Practices** (always included, independent o
 - **4b.3 Prompt Discipline** — system/user prompt separation; few-shot inline vs. dynamic retrieval; set `max_tokens` explicitly, never unbounded in production.
 - **4b.4 Context Window Management** — RAG: reranking/truncation past window. Multi-agent/Conversational: summarisation. Autonomous: framework compaction handling.
 - **4b.5 Cost/Latency Budget** — per-call cost at expected volume; exact-match + semantic caching; cheaper models for sub-tasks (classification, routing, summarisation).
-</step>
+  </step>
 
 </execution_flow>
 
@@ -91,9 +91,10 @@ Snippets syntactically correct for fetched version. Imports match actual package
 </quality_standards>
 
 <success_criteria>
+
 - [ ] Docs fetched (2-4 pages, not just homepage); install command correct for latest stable
 - [ ] Entry point pattern runs for `system_type`; 3-5 abstractions in context; 3-5 specific pitfalls
 - [ ] Sections 3 and 4 written and non-empty; Sources listed in Section 3
 - [ ] Section 4b: Pydantic example, async pattern, prompt discipline, context management, cost budget
-</success_criteria>
-</output>
+      </success_criteria>
+      </output>

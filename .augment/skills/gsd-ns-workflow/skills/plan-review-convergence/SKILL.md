@@ -4,19 +4,25 @@ description: "Cross-AI plan convergence - replan until review concerns are resol
 ---
 
 <augment_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked when the user mentions `gsd-plan-review-convergence` or describes a task matching this skill.
 - Treat all user text after the skill mention as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. User Prompting
+
 When the workflow needs user input, prompt the user conversationally:
+
 - Present options as a numbered list in your response text
 - Ask the user to reply with their choice
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
+
 Use these Augment tools when executing GSD workflows:
+
 - `launch-process` for running commands (terminal operations)
 - `str-replace-editor` for editing existing files
 - `view` for reading files and listing directories
@@ -26,10 +32,12 @@ Use these Augment tools when executing GSD workflows:
 - `add_tasks`, `view_tasklist`, `update_tasks` for task management
 
 ## D. Subagent Spawning
+
 When the workflow needs to spawn a subagent:
+
 - Use the built-in subagent spawning capability
 - Define agent prompts in `.augment/agents/` directory
-</augment_skill_adapter>
+  </augment_skill_adapter>
 
 <objective>
 Cross-AI plan convergence loop — an outer revision gate around gsd-review and gsd-planner.
@@ -49,12 +57,11 @@ Replaces gsd-plan-phase's internal gsd-plan-checker with external AI reviewers (
 @/Users/taha/projects/microservices-ecommerce/.augment/gsd-core/references/agent-contracts.md
 </execution_context>
 
-
-
 <context>
 Phase number: extracted from {{GSD_ARGS}} (required)
 
 **Flags:**
+
 - `--codex` — Use Codex CLI as reviewer (default if no reviewer flag given AND `review.default_reviewers` is unset; otherwise `review.default_reviewers` wins per ADR-0011 — #2315)
 - `--agy` / `--antigravity` — Use Antigravity CLI as reviewer
 - `--claude` — Use Claude CLI as reviewer (separate session)

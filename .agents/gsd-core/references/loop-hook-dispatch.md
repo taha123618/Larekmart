@@ -11,9 +11,18 @@ execute:wave:post, execute:post, verify:pre, verify:post, ship:pre, ship:post).
 {
   "point": "discuss:pre",
   "activeHooks": [
-    { "kind": "contribution", "into": "orchestrator", "fragment": { "inline": "..." } },
+    {
+      "kind": "contribution",
+      "into": "orchestrator",
+      "fragment": { "inline": "..." }
+    },
     { "kind": "step", "ref": { "skill": "my-skill" } },
-    { "kind": "gate", "check": { "query": "..." }, "blocking": true, "onError": "skip" }
+    {
+      "kind": "gate",
+      "check": { "query": "..." },
+      "blocking": true,
+      "onError": "skip"
+    }
   ],
   "rendered": "..."
 }

@@ -4,19 +4,25 @@ description: "Guide existing codebase onboarding through mapping, doc ingest, an
 ---
 
 <augment_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked when the user mentions `gsd-onboard` or describes a task matching this skill.
 - Treat all user text after the skill mention as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. User Prompting
+
 When the workflow needs user input, prompt the user conversationally:
+
 - Present options as a numbered list in your response text
 - Ask the user to reply with their choice
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
+
 Use these Augment tools when executing GSD workflows:
+
 - `launch-process` for running commands (terminal operations)
 - `str-replace-editor` for editing existing files
 - `view` for reading files and listing directories
@@ -26,15 +32,18 @@ Use these Augment tools when executing GSD workflows:
 - `add_tasks`, `view_tasklist`, `update_tasks` for task management
 
 ## D. Subagent Spawning
+
 When the workflow needs to spawn a subagent:
+
 - Use the built-in subagent spawning capability
 - Define agent prompts in `.augment/agents/` directory
-</augment_skill_adapter>
+  </augment_skill_adapter>
 
 <objective>
 Guide brownfield onboarding for an existing codebase by routing through the existing GSD primitives in the safe order: codebase map → docs ingest → project initialization → onboarding summary.
 
 **Creates or confirms:**
+
 - `.planning/codebase/` — evidence-backed codebase map from `/gsd-map-codebase`
 - `.planning/PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md` — project setup from `/gsd-new-project` or `/gsd-ingest-docs`
 - `.planning/onboarding/SUMMARY.md` — lightweight index of what was learned and the next command
@@ -52,9 +61,10 @@ Guide brownfield onboarding for an existing codebase by routing through the exis
 Arguments: {{GSD_ARGS}}
 
 Flags:
+
 - `--fast` — prefer `/gsd-map-codebase --fast` for the mapping handoff; the complete map is still required before `/gsd-new-project`.
 - `--text` — use plain-text numbered lists instead of TUI menus.
-</context>
+  </context>
 
 <process>
 Execute the onboard workflow end-to-end. Preserve all safety gates, text-mode fallbacks, idempotency checks, and top-level handoff rules for nested interactive commands.

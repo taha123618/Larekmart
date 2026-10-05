@@ -52,9 +52,7 @@ const fetchCategories = async () => {
     process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
     "http://localhost:8080";
-  const res = await fetch(
-    `${productServiceUrl}/categories`,
-  );
+  const res = await fetch(`${productServiceUrl}/categories`);
 
   if (!res.ok) {
     throw new Error("Failed to fetch categories!");
@@ -103,17 +101,14 @@ const AddProduct = () => {
         process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
         "http://localhost:8080";
       const token = await getToken();
-      const res = await fetch(
-        `${productServiceUrl}/products`,
-        {
-          method: "POST",
-          body: JSON.stringify(data),
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+      const res = await fetch(`${productServiceUrl}/products`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
       if (!res.ok) {
         throw new Error("Failed to create product!");
       }

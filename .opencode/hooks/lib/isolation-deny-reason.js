@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 // hooks/lib/isolation-deny-reason.js — shared, frozen reason-code enum for
 // the #3045 dispatch-isolation guards' block/deny decisions
 // (hooks/gsd-agent-isolation-guard.js, hooks/gsd-cursor-subagent-start.js).
@@ -17,23 +17,23 @@
 const REASON_CODE = Object.freeze({
   // The compiled runtime library (gsd-core/bin/lib/*.cjs) is missing and
   // could not be self-built (ensure-runtime-build.cjs's RuntimeBuildError).
-  RUNTIME_BUILD_FAILED: 'runtime_build_failed',
+  RUNTIME_BUILD_FAILED: "runtime_build_failed",
   // The project's dispatch-isolation configuration ('.planning/config.json')
   // could not be read or resolved for a reason OTHER than a runtime-build
   // failure (unreadable/malformed config, unexpected resolver error).
-  CONFIG_UNREADABLE: 'config_unreadable',
+  CONFIG_UNREADABLE: "config_unreadable",
   // Isolation resolves to "harness-worktree" but the Agent()/Task() dispatch
   // is missing the harness's isolation flag/kwarg.
-  HARNESS_FLAG_MISSING: 'harness_flag_missing',
+  HARNESS_FLAG_MISSING: "harness_flag_missing",
   // Isolation resolves to "harness-worktree" but the dispatch payload carries
   // no usable subagent_type, so the guard cannot confirm it is a GSD executor.
-  NO_SUBAGENT_TYPE: 'no_subagent_type',
+  NO_SUBAGENT_TYPE: "no_subagent_type",
   // Isolation resolves to "harness-worktree" but whether the workspace root
   // is an isolated worktree could not be determined (e.g. git unresponsive).
-  CANNOT_DETERMINE_ISOLATION: 'cannot_determine_isolation',
+  CANNOT_DETERMINE_ISOLATION: "cannot_determine_isolation",
   // Isolation resolves to "harness-worktree" and the workspace root is
   // confirmed NOT an isolated worktree.
-  NOT_ISOLATED_WORKTREE: 'not_isolated_worktree',
+  NOT_ISOLATED_WORKTREE: "not_isolated_worktree",
 });
 
 // #4594 row 15 / F2: values interpolated into a deny reason (sentinel/dispatch
@@ -59,13 +59,13 @@ const REASON_INTERPOLATION_MAX_LEN = 64;
 // new line or reverse/hide part of it despite the ASCII control-char strip.
 const REASON_UNSAFE_CHARS_RE = new RegExp(
   // eslint-disable-next-line no-control-regex -- deliberately stripping control chars/newlines
-  '[\\x00-\\x1f\\x7f\\u2028\\u2029\\u202a-\\u202e\\u2066-\\u2069]',
-  'g',
+  "[\\x00-\\x1f\\x7f\\u2028\\u2029\\u202a-\\u202e\\u2066-\\u2069]",
+  "g",
 );
 
 function sanitizeForReason(value) {
-  if (typeof value !== 'string' || value.length === 0) return '(none)';
-  const stripped = value.replace(REASON_UNSAFE_CHARS_RE, '');
+  if (typeof value !== "string" || value.length === 0) return "(none)";
+  const stripped = value.replace(REASON_UNSAFE_CHARS_RE, "");
   return stripped.length > REASON_INTERPOLATION_MAX_LEN
     ? `${stripped.slice(0, REASON_INTERPOLATION_MAX_LEN)}…`
     : stripped;

@@ -12,16 +12,16 @@ does not.
 
 Three forms, and nothing else:
 
-| Need | Emit |
-|---|---|
-| A titled section — stage, phase, checkpoint, completion, error | `### {TITLE}` (ATX heading) |
-| A break between two sections | `---` on its own line, **with a blank line above it** |
-| A framed panel of rows | `### {TITLE}` followed by the rows as plain lines |
+| Need                                                           | Emit                                                  |
+| -------------------------------------------------------------- | ----------------------------------------------------- |
+| A titled section — stage, phase, checkpoint, completion, error | `### {TITLE}` (ATX heading)                           |
+| A break between two sections                                   | `---` on its own line, **with a blank line above it** |
+| A framed panel of rows                                         | `### {TITLE}` followed by the rows as plain lines     |
 
 **The blank line above `---` is load-bearing, not cosmetic.** A `---` placed
 directly under a line of text is parsed as a setext heading underline for that
 line, not as a thematic break — the rule silently swallows the line above it. A
-blank line is what makes it a thematic break. (A blank line *after* `---` is
+blank line is what makes it a thematic break. (A blank line _after_ `---` is
 optional: a thematic break is a leaf block, so whatever follows starts a new
 block either way. Add one where it reads better.)
 
@@ -50,6 +50,7 @@ Use for major workflow transitions.
 ```
 
 **Stage names (uppercase):**
+
 - `QUESTIONING`
 - `RESEARCHING`
 - `DEFINING REQUIREMENTS`
@@ -77,6 +78,7 @@ User action required.
 ```
 
 **Types:**
+
 - `CHECKPOINT: Verification Required` → `→ Type "approved" or describe issues`
 - `CHECKPOINT: Decision Required` → `→ Select: option-a / option-b`
 - `CHECKPOINT: Action Required` → `→ Type "done" when complete`
@@ -103,16 +105,19 @@ unaffected by the separator rule above.
 ## Progress Display
 
 **Phase/milestone level:**
+
 ```
 Progress: ████████░░ 80%
 ```
 
 **Task level:**
+
 ```
 Tasks: 2/4 complete
 ```
 
 **Plan level:**
+
 ```
 Plans: 3/5 complete
 ```

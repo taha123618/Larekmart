@@ -46,7 +46,9 @@ export async function registerProxyRoutes(
 
           run()
             .then(() => done())
-            .catch((err) => done(err instanceof Error ? err : new Error(String(err))));
+            .catch((err) =>
+              done(err instanceof Error ? err : new Error(String(err))),
+            );
         }
       : undefined;
 

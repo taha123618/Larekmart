@@ -12,11 +12,16 @@ export interface TraceContext {
  * Parses or synthesizes a W3C traceparent header:
  * version-trace_id-parent_id-trace_flags (e.g. 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01)
  */
-export function extractOrCreateTraceContext(request: FastifyRequest): TraceContext {
+export function extractOrCreateTraceContext(
+  request: FastifyRequest,
+): TraceContext {
   const incomingTraceparent = request.headers["traceparent"];
   const incomingBaggage = request.headers["baggage"];
 
-  if (typeof incomingTraceparent === "string" && incomingTraceparent.startsWith("00-")) {
+  if (
+    typeof incomingTraceparent === "string" &&
+    incomingTraceparent.startsWith("00-")
+  ) {
     const parts = incomingTraceparent.split("-");
     if (parts.length === 4) {
       const traceId = parts[1] || uuidv4().replace(/-/g, "");
@@ -25,7 +30,8 @@ export function extractOrCreateTraceContext(request: FastifyRequest): TraceConte
         traceId,
         spanId,
         traceparent: incomingTraceparent,
-        baggage: typeof incomingBaggage === "string" ? incomingBaggage : undefined,
+        baggage:
+          typeof incomingBaggage === "string" ? incomingBaggage : undefined,
       };
     }
   }

@@ -17,9 +17,7 @@ const ReturnPage = async ({
     process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
     "http://localhost:8080";
-  const res = await fetch(
-    `${paymentServiceUrl}/sessions/${session_id}`,
-  );
+  const res = await fetch(`${paymentServiceUrl}/sessions/${session_id}`);
   const data = await res.json();
 
   return (

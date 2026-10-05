@@ -19,7 +19,9 @@ export async function startServer() {
       port: env.PORT,
       host: env.HOST,
     });
-    logger.info(`Larekmart API Gateway listening on http://${env.HOST}:${env.PORT}`);
+    logger.info(
+      `Larekmart API Gateway listening on http://${env.HOST}:${env.PORT}`,
+    );
   } catch (err) {
     logger.fatal("Failed to bind API Gateway port", { error: String(err) });
     process.exit(1);
@@ -33,7 +35,9 @@ export async function startServer() {
       logger.info("API Gateway server closed successfully");
       process.exit(0);
     } catch (error) {
-      logger.error("Error during API Gateway shutdown", { error: String(error) });
+      logger.error("Error during API Gateway shutdown", {
+        error: String(error),
+      });
       process.exit(1);
     }
   };

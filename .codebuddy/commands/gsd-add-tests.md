@@ -2,6 +2,7 @@
 description: "Generate tests for a completed phase based on UAT criteria and implementation"
 argument-hint: "<phase> [additional instructions]"
 ---
+
 <objective>
 Generate unit and E2E tests for a completed phase, using its SUMMARY.md, CONTEXT.md, and VERIFICATION.md as specifications.
 
