@@ -204,25 +204,29 @@ export class CartService {
    * Revalidates prices against catalog and recalculates cart
    */
   async refreshPricing(cart: CartDocType): Promise<CartResponseType> {
-    for (const item of cart.items) {
-      const validated = await validationService.validateProduct(item.productId);
-      if (
-        validated &&
-        validated.price > 0 &&
-        validated.price !== item.unitPrice
-      ) {
-        cart.adjustments.push({
-          itemId: item._id ? item._id.toString() : item.productId,
-          productId: item.productId,
-          reason: `Price updated from PKR ${item.unitPrice} to PKR ${validated.price}`,
-          oldQuantity: item.quantity,
-          newQuantity: item.quantity,
-          createdAt: new Date(),
-        } as any);
-        item.unitPrice = validated.price;
-        item.subtotal = validated.price * item.quantity;
-      }
-    }
+    await Promise.all(
+      cart.items.map(async (item) => {
+        const validated = await validationService.validateProduct(
+          item.productId,
+        );
+        if (
+          validated &&
+          validated.price > 0 &&
+          validated.price !== item.unitPrice
+        ) {
+          cart.adjustments.push({
+            itemId: item._id ? item._id.toString() : item.productId,
+            productId: item.productId,
+            reason: `Price updated from PKR ${item.unitPrice} to PKR ${validated.price}`,
+            oldQuantity: item.quantity,
+            newQuantity: item.quantity,
+            createdAt: new Date(),
+          } as any);
+          item.unitPrice = validated.price;
+          item.subtotal = validated.price * item.quantity;
+        }
+      }),
+    );
 
     pricingService.recalculateCart(cart);
     cart.version = (cart.version || 1) + 1;
