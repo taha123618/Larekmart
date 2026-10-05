@@ -9,7 +9,7 @@ services:
       - cluster.initial_cluster_manager_nodes=opensearch-node1,opensearch-node2
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=$${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-admin123} # Sets the demo admin user password when using demo configuration, required for OpenSearch 2.12 and higher
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=R3dPine!L0g1n_2026 # Strong default admin password; avoids similarity to the admin username and satisfies OpenSearch complexity checks
     ulimits:
       memlock:
         soft: -1
@@ -22,6 +22,12 @@ services:
     ports:
       - 9200:9200
       - 9600:9600 # required for Performance Analyzer
+    healthcheck:
+      test: ["CMD-SHELL", "curl -kfsS -u \"admin:$$OPENSEARCH_INITIAL_ADMIN_PASSWORD\" https://localhost:9200/_cluster/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
     networks:
       - opensearch-net
   opensearch-node2:
@@ -34,7 +40,7 @@ services:
       - cluster.initial_cluster_manager_nodes=opensearch-node1,opensearch-node2
       - bootstrap.memory_lock=true
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=$${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-admin123}
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=R3dPine!L0g1n_2026
     ulimits:
       memlock:
         soft: -1
@@ -44,17 +50,33 @@ services:
         hard: 65536
     volumes:
       - opensearch-data2:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -kfsS -u \"admin:$$OPENSEARCH_INITIAL_ADMIN_PASSWORD\" https://localhost:9200/_cluster/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
     networks:
       - opensearch-net
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:latest
     container_name: opensearch-dashboards
+    depends_on:
+      opensearch-node1:
+        condition: service_healthy
+      opensearch-node2:
+        condition: service_healthy
     ports:
       - 5601:5601
     expose:
       - "5601"
     environment:
       OPENSEARCH_HOSTS: '["https://opensearch-node1:9200","https://opensearch-node2:9200"]'
+      OPENSEARCH_USERNAME: admin
+      OPENSEARCH_PASSWORD: R3dPine!L0g1n_2026
+      OPENSEARCH_SSL_VERIFICATIONMODE: none
+    volumes:
+      - ./opensearch_dashboards.yml:/usr/share/opensearch-dashboards/config/opensearch_dashboards.yml:ro
     networks:
       - opensearch-net
 
