@@ -15,7 +15,7 @@ const envSchema = z.object({
   REDIS_KEY_PREFIX: z.string().default("catalog:v1:"),
   KAFKA_BROKERS: z
     .string()
-    .default("localhost:9092,localhost:9093,localhost:9094"),
+    .default("localhost:9094,localhost:9095,localhost:9096"),
   KAFKA_CLIENT_ID: z.string().default("catalog-service"),
   KAFKA_GROUP_ID: z.string().default("catalog-service-group"),
   CATALOG_CACHE_TTL_SECONDS: z.coerce.number().default(3600), // 1 hour default

@@ -4,7 +4,7 @@ KafkaJS client wrapper and local Docker Compose infrastructure for Larekmart.
 
 ## Public API
 
-- `createKafkaClient(serviceName)`: Creates a KafkaJS instance configured with brokers `:9094`, `:9095`, `:9096`.
+- `createKafkaClient(serviceName, brokers?)`: Creates a KafkaJS instance configured with custom brokers or default `:9094`, `:9095`, `:9096`.
 - `createProducer(client)`: Helper wrapping producer connection and publishing.
 - `createConsumer(client, groupId)`: Helper wrapping consumer coordination and subscriptions.
 

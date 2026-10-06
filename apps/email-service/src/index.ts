@@ -3,7 +3,12 @@ import { createConsumer, createKafkaClient } from "@repo/kafka";
 import { createLogger } from "@repo/monitoring";
 
 const logger = createLogger("email-service");
-const kafka = createKafkaClient("email-service");
+const kafkaBrokers = (
+  process.env.KAFKA_BROKERS || "localhost:9094,localhost:9095,localhost:9096"
+)
+  .split(",")
+  .map((b) => b.trim());
+const kafka = createKafkaClient("email-service", kafkaBrokers);
 const consumer = createConsumer(kafka, "email-service");
 
 const start = async () => {

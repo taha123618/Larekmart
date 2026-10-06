@@ -10,7 +10,7 @@ const envSchema = z.object({
   REDIS_KEY_PREFIX: z.string().default("cart:v1:"),
   KAFKA_BROKERS: z
     .string()
-    .default("localhost:9092,localhost:9093,localhost:9094"),
+    .default("localhost:9094,localhost:9095,localhost:9096"),
   KAFKA_CLIENT_ID: z.string().default("cart-service"),
   KAFKA_GROUP_ID: z.string().default("cart-service-group"),
   CLERK_SECRET_KEY: z.string().optional(),

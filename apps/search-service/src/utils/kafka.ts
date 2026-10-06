@@ -1,6 +1,10 @@
 import { createConsumer, createKafkaClient, createProducer } from "@repo/kafka";
+import { env } from "../config/env.js";
 
-const kafkaClient = createKafkaClient("search-service");
+const kafkaClient = createKafkaClient(
+  env.KAFKA_CLIENT_ID,
+  env.KAFKA_BROKERS.split(","),
+);
 
 export const producer = createProducer(kafkaClient);
-export const consumer = createConsumer(kafkaClient, "search-service-group");
+export const consumer = createConsumer(kafkaClient, env.KAFKA_GROUP_ID);

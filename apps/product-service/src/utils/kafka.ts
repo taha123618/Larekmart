@@ -3,7 +3,12 @@ import { createLogger } from "@repo/monitoring";
 
 const logger = createLogger("product-service:kafka");
 
-const kafkaClient = createKafkaClient("product-service");
+const kafkaBrokers = (
+  process.env.KAFKA_BROKERS || "localhost:9094,localhost:9095,localhost:9096"
+)
+  .split(",")
+  .map((b) => b.trim());
+const kafkaClient = createKafkaClient("product-service", kafkaBrokers);
 
 export const producer = createProducer(kafkaClient);
 export const consumer = createConsumer(kafkaClient, "product-group");

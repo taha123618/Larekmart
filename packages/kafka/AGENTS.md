@@ -11,8 +11,8 @@ Consumers: all backend services. Do not import app code into this package.
 
 ## Public API
 
-- `createKafkaClient(serviceName)` — creates a KafkaJS client with `clientId` set and the
-  three local broker addresses.
+- `createKafkaClient(serviceName, brokers?)` — creates a KafkaJS client with `clientId` set and
+  explicit broker addresses (or falls back to environment / default local brokers).
 - `createProducer(client)` — wraps `kafkajs` producer usage.
 - `createConsumer(client, config)` — wraps consumer setup.
 

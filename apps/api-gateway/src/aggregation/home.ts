@@ -75,18 +75,24 @@ export const homeAggregationRoutes: FastifyPluginAsync = async (fastify) => {
     const featured =
       featuredProductsResult.status === "fulfilled" &&
       featuredProductsResult.value
-        ? featuredProductsResult.value
+        ? Array.isArray(featuredProductsResult.value)
+          ? featuredProductsResult.value
+          : featuredProductsResult.value.items || []
         : [];
 
     const categories =
       categoriesResult.status === "fulfilled" && categoriesResult.value
-        ? categoriesResult.value
+        ? Array.isArray(categoriesResult.value)
+          ? categoriesResult.value
+          : categoriesResult.value.items || []
         : [];
 
     const recommendations =
       recommendationsResult.status === "fulfilled" &&
       recommendationsResult.value
-        ? recommendationsResult.value
+        ? Array.isArray(recommendationsResult.value)
+          ? recommendationsResult.value
+          : recommendationsResult.value.items || []
         : [];
 
     logger.info("Home aggregation served", {

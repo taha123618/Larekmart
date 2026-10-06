@@ -14,23 +14,28 @@ export function globalErrorHandler(
   const requestId =
     (request.headers["x-request-id"] as string) || String(request.id);
   const statusCode = error.statusCode || 500;
+  const cause = (
+    error as { cause?: { code?: string; cause?: { code?: string } } }
+  ).cause;
+  const errorCode = error.code || cause?.code || cause?.cause?.code;
 
   // Track upstream connection / timeout errors specifically
   if (
-    error.code === "ECONNREFUSED" ||
-    error.code === "ENOTFOUND" ||
-    error.code === "EHOSTUNREACH"
+    errorCode === "ECONNREFUSED" ||
+    errorCode === "ENOTFOUND" ||
+    errorCode === "EHOSTUNREACH" ||
+    errorCode === "UND_ERR_SOCKET"
   ) {
     gatewayUpstreamErrorsTotal.inc({
       route: request.url,
-      code: error.code,
+      code: errorCode,
     });
 
     logger.error("Upstream service connection failed", {
       requestId,
       method: request.method,
       url: request.url,
-      code: error.code,
+      code: errorCode,
       message: error.message,
     });
 
@@ -43,7 +48,12 @@ export function globalErrorHandler(
     return;
   }
 
-  if (error.code === "ETIMEDOUT" || error.code === "ECONNRESET") {
+  if (
+    errorCode === "ETIMEDOUT" ||
+    errorCode === "ECONNRESET" ||
+    errorCode === "UND_ERR_CONNECT_TIMEOUT" ||
+    errorCode === "UND_ERR_HEADERS_TIMEOUT"
+  ) {
     gatewayUpstreamTimeoutTotal.inc({
       route: request.url,
     });
@@ -52,7 +62,7 @@ export function globalErrorHandler(
       requestId,
       method: request.method,
       url: request.url,
-      code: error.code,
+      code: errorCode,
       message: error.message,
     });
 
