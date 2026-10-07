@@ -105,8 +105,10 @@ docker/
 | **`traefik`**            | `80`, `443`, `8088`               | `80:80`, `443:443`, `127.0.0.1:8088` | **Public**          | Edge router, automated Let's Encrypt TLS, dynamic container discovery          |
 | **`client`**             | `3002`                            | `127.0.0.1:3002`                     | Traefik Ingress     | Next.js 15 Storefront UI (`shop.localhost`)                                    |
 | **`admin`**              | `3003`                            | `127.0.0.1:3003`                     | Traefik Ingress     | Next.js 15 Admin Dashboard UI (`admin.localhost`)                              |
-| **`api-gateway`**        | `8090`                            | `127.0.0.1:8090`                     | Traefik Ingress     | Centralized Fastify 5 API Gateway, Clerk auth, WS proxy (`api.localhost`)      |
-| **`dozzle`**             | `8888`                            | `127.0.0.1:8888`                     | Traefik Ingress     | Real-time container log streaming (`logs.localhost`)                           |
+| **`dozzle`** (Nginx)     | `80` (proxy) / `8888` (dozzle)    | `127.0.0.1:8085`                     | Traefik Ingress     | Real-time container log streaming (`logs.localhost` / `:8085`)                 |
+| **`rootprint`**          | `8282`                            | `127.0.0.1:8282`                     | Traefik Ingress     | Distributed log analytics & search UI (`rootprint.localhost` / `:8282`)        |
+| **`minio`** (Rootprint)  | `9000` (API), `9001` (Console)    | `127.0.0.1:9000`, `127.0.0.1:9001`   | **Internal Only**   | S3-compatible index storage & web console for Quickwit/Rootprint               |
+| **`quickwit`**           | `7280`                            | `127.0.0.1:7280`                     | **Internal Only**   | Fast distributed search & indexing engine for Rootprint logs                   |
 | **`caddy`** (profile)    | `80`, `443`                       | `127.0.0.1:8086`, `127.0.0.1:8443`   | Optional Ingress    | Standalone HTTP/2 & HTTP/3 reverse proxy (run via `--profile caddy`)           |
 | **`kafka-ui`**           | `8080`                            | `127.0.0.1:8080`                     | Traefik Ingress     | Topic & consumer monitoring UI (`kafka.localhost`)                             |
 | `postgres`               | `5432`                            | `127.0.0.1:5432`                     | **Internal Only**   | PostgreSQL + pgvector databases                                                |
@@ -314,6 +316,21 @@ Production alert rules are defined in `infrastructure/observability/prometheus/r
 - `DiskSpaceCritical` — < 5% disk remaining
 - `KafkaBrokerDown` — no Kafka brokers available
 - `RedisDown` / `MongoDBDown` / `PostgresDown`
+
+### 8.4 Logging Architecture & Operational Verdict
+
+The repository provides three distinct logging and observability tools tailored for specific operational environments:
+
+| Tool | Compose File | Primary Role | Memory Footprint | Recommended Environment |
+| :--- | :--- | :--- | :--- | :--- |
+| **Dozzle** | `docker-compose.dozzle.yml` | **Live Ephemeral Stream Tailer** | ~20 MB (zero DB) | **Local Development (Inner Loop)** |
+| **Rootprint** | `docker-compose.rootprint.yml` | **Distributed Log Search & Indexing** | Medium (MinIO + Quickwit + Postgres) | **Staging & Cloud Post-Mortems** |
+| **Prometheus / Grafana / Loki** | `docker-compose.observability.yml` | **Full Telemetry, Metrics & Alerting** | Medium (Prometheus TSDB + Loki + Exporters) | **Production SRE & SLA Monitoring** |
+
+#### The Verdict:
+1. **Inner Dev Loop (Local Development):** Use **Dozzle** (`http://localhost:8085` / `http://logs.localhost`). It streams `docker.sock` live without loading heavy search databases onto your laptop while running 15 services.
+2. **Post-Mortem & Kafka Event Tracing:** Use **Rootprint** (`http://localhost:8282` / `http://rootprint.localhost`). Indexes logs into MinIO via Quickwit for sub-second correlation across services by `traceId` or `correlationId`. Survives container restarts.
+3. **Production Reliability & Metrics:** Use **Grafana / Prometheus** (`http://localhost:3001` / `http://monitoring.localhost`) for alerting thresholds, p95/p99 latency tracking, and SLI/SLO dashboards.
 
 ---
 

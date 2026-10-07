@@ -2,11 +2,26 @@ name: larekmart-dozzle-logs
 
 # ============================================================================
 # Larekmart Live Container Logs Stack (Dozzle + Nginx Reverse Proxy)
+#
+# THE VERDICT:
+#   - ENVIRONMENT: Best for LOCAL DEVELOPMENT (Inner Dev Loop).
+#   - WHY: Ultra-lightweight (~20MB RAM, zero DB overhead), starts in 1 second,
+#     and provides instant browser-based live tailing across all 15 microservices.
+#     Avoids overloading the developer workstation while running heavy backing
+#     infra (Kafka, Postgres, Mongo, Redis, OpenSearch).
+#   - LIMITATION: Ephemeral logs (vanish on container restart); unsafe for
+#     production due to /var/run/docker.sock mounting. For persistent history,
+#     cross-service correlation, or staging/production, use Rootprint.
+#
 # Provides:
 #   - Dozzle: Lightweight real-time streaming Docker container log viewer (port 8888)
 #   - Nginx: Dedicated reverse proxy with 100M payload buffer & SSE/WebSocket streaming (port 80)
 #   - Traefik Integration: Auto-routed via labels on larekmart-network
 #   - (Port 8080 is reserved exclusively for Kafka UI)
+#
+# Access:
+#   - Direct / Nginx Proxy: http://localhost:8085
+#   - Traefik Hostname:     http://logs.localhost
 # ============================================================================
 
 services:

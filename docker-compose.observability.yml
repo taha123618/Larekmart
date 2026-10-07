@@ -2,8 +2,29 @@ name: larekmart-observability
 
 # ============================================================================
 # Larekmart Observability Stack — Docker Compose
-# Provides: Prometheus + Grafana + Alertmanager + Loki + Promtail + Node Exporter
-# + Redis/Postgres/MongoDB/Kafka Exporters
+#
+# THE VERDICT:
+#   - ENVIRONMENT: Best for STAGING & PRODUCTION TELEMETRY (Metrics & Alerting).
+#   - WHY: Industry-standard CNCF observability stack (Prometheus + Grafana +
+#     Loki + Alertmanager). Provides real-time CPU/RAM/DB metrics, latency percentiles
+#     (p95/p99), SLA/SLO dashboards, and proactive alerting triggers (PagerDuty/Slack).
+#   - HOW IT COMPARES:
+#       * Dozzle: Ephemeral live container log viewer (Local dev inner loop).
+#       * Rootprint: Deep log analytics & search via Quickwit on MinIO S3 (Forensics/traces).
+#       * Observability Stack: Full-spectrum metrics, health dashboards, and alert triggers.
+#
+# Provides:
+#   - Prometheus: Metrics scraper & TSDB storage (port 9090)
+#   - Grafana: Unified dashboards & visualization (port 3001)
+#   - Alertmanager: Alert routing & deduplication (port 9093)
+#   - Loki + Promtail: LogQL stream aggregation (port 3100)
+#   - Exporters: Node (9100), Redis (9121), Postgres (9187), Mongo (9216)
+#
+# Access:
+#   - Grafana UI:           http://localhost:3001 (admin / grafana_admin_secret)
+#   - Prometheus UI:        http://localhost:9090
+#   - Alertmanager UI:      http://localhost:9093
+#   - Traefik Domain:       http://monitoring.localhost
 #
 # Usage:
 #   docker compose -f docker-compose.observability.yml up -d

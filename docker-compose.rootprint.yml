@@ -2,12 +2,30 @@ name: larekmart-rootprint
 
 # ============================================================================
 # Larekmart - MinIO Object Storage & Rootprint Log Analytics Stack
+#
+# THE VERDICT:
+#   - ENVIRONMENT: Best for STAGING & PRODUCTION (Outer Observability Loop).
+#   - WHY: Cloud-native distributed log analytics with persistent storage in
+#     MinIO (S3 object storage) and sub-second full-text search via Quickwit.
+#     Survives container crashes, autoscaling, and CI/CD redeployments. Essential
+#     for cross-service Kafka event tracing (by correlationId/traceId) and post-mortem
+#     root-cause analysis across all 15 microservices.
+#   - SECURITY: Ingests logs over standard network protocols without exposing
+#     /var/run/docker.sock to the network.
+#   - TRADE-OFF: Heavier resource footprint (MinIO + Postgres + Quickwit). For
+#     quick, zero-overhead live debugging during local dev, use Dozzle instead.
+#
 # Provides:
 #   - MinIO (S3 API: 9000, Console UI: 9001)
 #   - MinIO Bucket Init (Auto-provisions S3 buckets for Quickwit)
 #   - PostgreSQL 17 (Rootprint metadata store)
 #   - Quickwit v0.9.0 (Distributed log & search indexing on MinIO)
 #   - Rootprint (Full-featured UI and log analytics server on port 8282)
+#
+# Access:
+#   - Rootprint UI:         http://localhost:8282
+#   - MinIO Console:        http://localhost:9001
+#   - Quickwit API:         http://localhost:7280
 #
 # Usage:
 #   docker compose -f docker-compose.rootprint.yml up -d

@@ -347,6 +347,9 @@ Workspace Skills (<workspace>/.agents/skills/*)
 | [`docs/TESTING.md`](docs/TESTING.md)                                     | Testing strategy, verification commands, and automated test setup                    |
 | [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)                           | Contribution standards, git workflow, and definition of done                         |
 | [`docs/adr/README.md`](docs/adr/README.md)                               | Architecture Decision Records (ADRs)                                                 |
+| [`docs/DOCKER.md`](docs/DOCKER.md)                                       | Complete Docker operations manual, reverse-proxy ingress & network topology          |
+| [`docs/ROOTPRINT.md`](docs/ROOTPRINT.md)                                 | Rootprint, MinIO S3, and Quickwit distributed log analytics guide                    |
+| [`docs/comparison/OBSERVABILITY-STACK-COMPARISON.md`](docs/comparison/OBSERVABILITY-STACK-COMPARISON.md) | Observability evaluation: Dozzle vs. Rootprint vs. CNCF Prometheus/Grafana/Loki |
 
 ---
 
