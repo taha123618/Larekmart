@@ -1,0 +1,23 @@
+---
+# ==============================================================================
+# Larekmart Infrastructure Master Playbook
+# ==============================================================================
+
+- name: 1. Apply Base Configuration to All Servers
+  hosts: all_servers
+  gather_facts: yes
+  roles:
+    - common
+    - security
+
+- name: 2. Prepare Kubernetes Nodes
+  hosts: k8s_nodes
+  gather_facts: yes
+  roles:
+    - container_runtime
+
+- name: 3. Setup Automated Database Backups
+  hosts: databases
+  gather_facts: yes
+  roles:
+    - db_backup

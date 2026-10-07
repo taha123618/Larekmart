@@ -2,7 +2,7 @@
 gsd_state_version: "1.0"
 status: ready_to_plan
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 0
   total_plans: 10
   completed_plans: 0
@@ -20,7 +20,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-02)
 
 ## Current Position
 
-Phase: 1 of 4 (Storefront Customer Journey)
+Phase: 1 of 5 (Storefront Customer Journey)
 Plan: 0 of 3 in current phase
 Status: Ready to plan
 Last activity: 2026-10-02 — Codebase mapped and planning documents ingested via `/gsd-onboard`
@@ -50,6 +50,10 @@ Progress: [░░░░░░░░░░] 0%
 - Kubernetes Kustomize base, dev, staging, and production overlays are valid.
 - Observability and Prometheus metrics instrumentation are fully wired.
 - Asynchronous Kafka integration is enforced; no service-to-service direct HTTP is permitted.
+
+### Roadmap Evolution
+
+- Phase 5 added: GitOps, Infrastructure as Code & Configuration Management.
 
 ---
 

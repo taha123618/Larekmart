@@ -31,7 +31,7 @@ WORKDIR /app
 
 # Core runtime environment configurations
 ENV NODE_ENV=production \
-    PORT=8080 \
+    PORT=8090 \
     HOST=0.0.0.0
 
 # Security: Run as unprivileged system user
@@ -46,7 +46,7 @@ COPY --from=installer --chown=fastifyjs:nodejs /app/apps/api-gateway ./apps/api-
 
 WORKDIR /app/apps/api-gateway
 
-EXPOSE 8080
+EXPOSE 8090
 
 # Production optimization: Run pure compiled javascript with node
 CMD ["node", "dist/index.js"]

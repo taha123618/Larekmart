@@ -2,7 +2,7 @@
 
 ## Overview
 
-The platform development is structured into distinct executable phases: Storefront Customer Journey, Order Fulfillment & Payment Event Pipeline, Admin Operations & Live Dashboards, and End-to-End Reliability & Load Validation.
+The platform development is structured into distinct executable phases: Storefront Customer Journey, Order Fulfillment & Payment Event Pipeline, Admin Operations & Live Dashboards, End-to-End Reliability & Load Validation, and GitOps, Infrastructure as Code & Configuration Management.
 
 ## Phases
 
@@ -10,6 +10,7 @@ The platform development is structured into distinct executable phases: Storefro
 - [ ] **Phase 2: Order Fulfillment & Payment Event Pipeline** - Deliver Stripe Checkout integration, webhook verification, Kafka event orchestration, and email dispatch.
 - [ ] **Phase 3: Admin Operations & Real-Time Monitoring** - Deliver Clerk-gated admin portal with catalog management, order processing, and WebSocket notifications.
 - [ ] **Phase 4: End-to-End Verification & High-Concurrency Reliability** - Validate end-to-end user journeys, synthetic traffic tests, and disaster recovery failover.
+- [ ] **Phase 5: GitOps, Infrastructure as Code & Configuration Management** - Add Terraform-provisioned infrastructure, Ansible-based host/cluster configuration, and Argo CD GitOps delivery integrated with the existing Kubernetes overlays.
 
 ## Phase Details
 
@@ -84,3 +85,13 @@ Plans:
 
 - [ ] 04-01: Run automated staging traffic and route verification suite.
 - [ ] 04-02: Validate KEDA autoscaling and disaster recovery procedures.
+
+### Phase 5: GitOps, Infrastructure as Code & Configuration Management
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 4
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 5 to break down)

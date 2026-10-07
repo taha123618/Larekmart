@@ -1,0 +1,60 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: larekmart-environments
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - env: development
+            namespace: larekmart-dev
+            autoPrune: true
+            selfHeal: true
+          - env: staging
+            namespace: larekmart-staging
+            autoPrune: true
+            selfHeal: true
+          - env: production
+            namespace: larekmart-prod
+            autoPrune: false
+            selfHeal: true
+  template:
+    metadata:
+      name: "larekmart-{{.env}}"
+      namespace: argocd
+      labels:
+        app.kubernetes.io/part-of: larekmart
+        env: "{{.env}}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: larekmart
+      source:
+        repoURL: "https://github.com/taha123618/Larekmart.git"
+        targetRevision: HEAD
+        path: "infrastructure/kubernetes/overlays/{{.env}}"
+      destination:
+        server: "https://kubernetes.default.svc"
+        namespace: "{{.namespace}}"
+      syncPolicy:
+        automated:
+          prune: "{{.autoPrune}}"
+          selfHeal: "{{.selfHeal}}"
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/replicas

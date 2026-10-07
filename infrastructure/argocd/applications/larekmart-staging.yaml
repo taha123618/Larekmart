@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: larekmart-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/part-of: larekmart
+    env: staging
+spec:
+  project: larekmart
+  source:
+    repoURL: "https://github.com/taha123618/Larekmart.git"
+    targetRevision: HEAD
+    path: infrastructure/kubernetes/overlays/staging
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: larekmart-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 2m
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

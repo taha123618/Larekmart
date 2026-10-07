@@ -1,0 +1,12 @@
+---
+- name: Run Manual Database Backup Routine
+  hosts: databases
+  gather_facts: no
+  tasks:
+    - name: Trigger backup script
+      command: /opt/larekmart/backups/backup.sh
+      register: backup_result
+
+    - name: Display backup output
+      debug:
+        var: backup_result.stdout_lines

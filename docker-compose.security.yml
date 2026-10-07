@@ -1,0 +1,47 @@
+# ============================================================================
+# Larekmart Security & Vulnerability Scanning Stack — Docker Compose
+# Provides: Trivy Server (Server/Client Scanning, SBOM, Secret & CVE Detection)
+#
+# Usage:
+#   docker compose -f docker-compose.security.yml up -d
+#   pnpm trivy:up
+#   when you have alredy compose.yml : docker run --rm -v $(pwd):/apps aquasec/trivy fs /apps
+# ============================================================================
+
+services:
+  trivy:
+    image: aquasec/trivy:0.53.0
+    container_name: larekmart-trivy
+    command:
+      - server
+      - --listen
+      - 0.0.0.0:4954
+      - --token
+      - "${TRIVY_TOKEN:-MySecureToken123}"
+    environment:
+      - TRIVY_CACHE_DIR=/root/.cache/trivy
+      - TRIVY_DEBUG=${TRIVY_DEBUG:-false}
+    volumes:
+      - trivy-cache:/root/.cache/trivy
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      # Port 4954 avoids collision with api-gateway and kafka-ui (port 8080)
+      - "${TRIVY_PORT:-4954}:4954"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "trivy", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - larekmart-network
+
+volumes:
+  trivy-cache:
+    name: larekmart_trivy_cache
+
+networks:
+  larekmart-network:
+    external: true
+    name: larekmart-network

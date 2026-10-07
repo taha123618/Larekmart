@@ -1,0 +1,58 @@
+---
+- name: Install security packages (fail2ban, ufw, unattended-upgrades)
+  apt:
+    name:
+      - fail2ban
+      - ufw
+      - unattended-upgrades
+      - auditd
+    state: present
+
+- name: Configure SSH daemon security hardening
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    mode: "0600"
+    validate: "/usr/sbin/sshd -t -f %s"
+  notify: restart sshd
+
+- name: Configure fail2ban jail
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    mode: "0644"
+  notify: restart fail2ban
+
+- name: Configure UFW default deny incoming
+  ufw:
+    direction: incoming
+    default: deny
+
+- name: Configure UFW default allow outgoing
+  ufw:
+    direction: outgoing
+    default: allow
+
+- name: Allow SSH port through UFW
+  ufw:
+    rule: allow
+    port: "{{ ssh_port }}"
+    proto: tcp
+
+- name: Allow Kubernetes node communication within VPC
+  ufw:
+    rule: allow
+    src: "10.0.0.0/16"
+  when: "'k8s_nodes' in group_names"
+
+- name: Enable UFW firewall
+  ufw:
+    state: enabled
+
+- name: Enable automatic security updates
+  copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    mode: "0644"
