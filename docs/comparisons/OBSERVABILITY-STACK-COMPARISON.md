@@ -1,4 +1,5 @@
 # Observability & Logging Architecture Evaluation
+
 ## Dozzle vs. Rootprint vs. CNCF Prometheus / Grafana / Loki / Alertmanager
 
 This document provides the definitive architectural comparison and operational guide for the three logging and observability stacks available in the **Larekmart** microservices repository.
@@ -10,9 +11,11 @@ This document provides the definitive architectural comparison and operational g
 For **Larekmart**—a production-grade distributed e-commerce platform designed to operate at Amazon/AliExpress scale with 15 microservices, asynchronous Kafka messaging, and multi-database persistence—the clear winner for the core production standard is:
 
 ### 🏆 The Winner: **CNCF Prometheus + Grafana + Alertmanager + Loki + Promtail Stack**
-*(Configured in `docker-compose.observability.yml`)*
+
+_(Configured in `docker-compose.observability.yml`)_
 
 ### Why?
+
 1. **Full-Spectrum Telemetry (Metrics + Logs + Traces + Alerts):** Neither Dozzle nor Rootprint can collect infrastructure, application, or database metrics (CPU, RAM, latency percentiles p95/p99, database connection pool exhaustion, Kafka consumer lag). Prometheus provides this out-of-the-box.
 2. **Unified Single Pane of Glass:** Grafana correlates metrics spikes directly with Loki container logs in the same UI window at the exact second an anomaly occurs.
 3. **Proactive Alerting:** Alertmanager dispatches notifications to Slack, PagerDuty, or Webhooks when error rates spike or brokers fail. Neither Dozzle nor Rootprint has automated alerting.
@@ -22,25 +25,26 @@ For **Larekmart**—a production-grade distributed e-commerce platform designed 
 
 ## 2. Feature & Capability Matrix
 
-| Feature / Requirement | **Dozzle** (`:8085` / `:8888`) | **Rootprint** (`:8282`) | **Prometheus + Grafana + Loki** (`:3001` / `:9090`) |
-| :--- | :---: | :---: | :---: |
-| **Primary Architectural Role** | Ephemeral Live Log Streamer | Distributed Log Search Indexer | Full Telemetry, Metrics, Logs & Alerting |
-| **System & Host Metrics** (CPU, RAM, Disk, Net) | ❌ No | ❌ No | **✅ Yes (Node Exporter)** |
-| **Database & Broker Metrics** (Kafka lag, PG, Mongo, Redis) | ❌ No | ❌ No | **✅ Yes (4 Specialized Exporters)** |
-| **HTTP Error Rates & p95/p99 Latency** | ❌ No | ❌ No | **✅ Yes (Prometheus TSDB)** |
-| **Log Ingestion & Aggregation** | ⚠️ Live stream only | ✅ Yes (Quickwit) | **✅ Yes (Promtail + Loki)** |
-| **Historical Log Retention** | ❌ None (lost on restart) | ✅ Persistent (MinIO S3) | **✅ Persistent (Loki TSDB chunks)** |
-| **Metrics-to-Logs Correlation** | ❌ No | ❌ No | **✅ Yes (Direct in Grafana)** |
-| **Proactive Alerting Rules** | ❌ No | ❌ No | **✅ Yes (Alertmanager)** |
-| **Memory / Footprint** | **~20 MB RAM** (ultra-light) | ~500 MB – 1 GB RAM | ~600 MB – 1.2 GB RAM |
-| **Security Risk (`/var/run/docker.sock`)** | ⚠️ Direct mount required | 🛡️ Ingests over network | 🛡️ Promtail reads log paths |
-| **Best Operational Fit** | **Local Dev Inner Loop** | **Deep S3 Log Forensics** | **Staging & Production SRE** |
+| Feature / Requirement                                       | **Dozzle** (`:8085` / `:8888`) |    **Rootprint** (`:8282`)     | **Prometheus + Grafana + Loki** (`:3001` / `:9090`) |
+| :---------------------------------------------------------- | :----------------------------: | :----------------------------: | :-------------------------------------------------: |
+| **Primary Architectural Role**                              |  Ephemeral Live Log Streamer   | Distributed Log Search Indexer |      Full Telemetry, Metrics, Logs & Alerting       |
+| **System & Host Metrics** (CPU, RAM, Disk, Net)             |             ❌ No              |             ❌ No              |             **✅ Yes (Node Exporter)**              |
+| **Database & Broker Metrics** (Kafka lag, PG, Mongo, Redis) |             ❌ No              |             ❌ No              |        **✅ Yes (4 Specialized Exporters)**         |
+| **HTTP Error Rates & p95/p99 Latency**                      |             ❌ No              |             ❌ No              |            **✅ Yes (Prometheus TSDB)**             |
+| **Log Ingestion & Aggregation**                             |      ⚠️ Live stream only       |       ✅ Yes (Quickwit)        |            **✅ Yes (Promtail + Loki)**             |
+| **Historical Log Retention**                                |   ❌ None (lost on restart)    |    ✅ Persistent (MinIO S3)    |        **✅ Persistent (Loki TSDB chunks)**         |
+| **Metrics-to-Logs Correlation**                             |             ❌ No              |             ❌ No              |           **✅ Yes (Direct in Grafana)**            |
+| **Proactive Alerting Rules**                                |             ❌ No              |             ❌ No              |              **✅ Yes (Alertmanager)**              |
+| **Memory / Footprint**                                      |  **~20 MB RAM** (ultra-light)  |       ~500 MB – 1 GB RAM       |                ~600 MB – 1.2 GB RAM                 |
+| **Security Risk (`/var/run/docker.sock`)**                  |    ⚠️ Direct mount required    |    🛡️ Ingests over network     |             🛡️ Promtail reads log paths             |
+| **Best Operational Fit**                                    |    **Local Dev Inner Loop**    |   **Deep S3 Log Forensics**    |            **Staging & Production SRE**             |
 
 ---
 
 ## 3. Deep-Dive: The Three Stacks Explained
 
 ### Stack A: Dozzle (`docker-compose.dozzle.yml`)
+
 - **How it works:** Mounts `/var/run/docker.sock:ro` and tails standard output (`stdout`) and standard error (`stderr`) streams directly from active Docker containers using Server-Sent Events (SSE).
 - **Fronted by:** Nginx on port `8085` (`docker/nginx/nginx.conf`) with a 100M payload buffer.
 - **Strengths:**
@@ -53,6 +57,7 @@ For **Larekmart**—a production-grade distributed e-commerce platform designed 
 - **When to use:** Daily local development on your workstation to view real-time logs without opening 15 terminal windows.
 
 ### Stack B: Rootprint (`docker-compose.rootprint.yml`)
+
 - **How it works:** Full-featured log search platform backed by **Quickwit v0.9.0** (a cloud-native distributed search engine written in Rust), **MinIO** (S3-compatible object storage), and **PostgreSQL 17** (metadata).
 - **Strengths:**
   - Extremely cheap long-term storage: Indexes logs directly to MinIO (or AWS S3) instead of memory-heavy Elasticsearch JVM heaps.
@@ -64,6 +69,7 @@ For **Larekmart**—a production-grade distributed e-commerce platform designed 
 - **When to use:** Incident post-mortems, compliance audit trails, and deep log forensics on staging/cloud clusters.
 
 ### Stack C: CNCF Observability Stack (`docker-compose.observability.yml`)
+
 - **How it works:**
   - **Prometheus (v2.53.0):** Pulls metrics from all 15 microservices and infrastructure exporters every 15 seconds.
   - **Node Exporter & DB Exporters:** Scrapes Redis (9121), PostgreSQL (9187), MongoDB (9216), Kafka, and host OS (9100).
@@ -106,12 +112,14 @@ The three stacks are designed to complement each other across the software devel
 ## 5. Operations & Quick Commands
 
 ### Running Dozzle (Local Dev)
+
 ```bash
 docker compose -f docker-compose.dozzle.yml up -d
 # UI: http://localhost:8085 (or http://logs.localhost via Traefik)
 ```
 
 ### Running Rootprint (Log Analytics)
+
 ```bash
 pnpm rootprint:up
 # or: docker compose -f docker-compose.rootprint.yml up -d
@@ -119,6 +127,7 @@ pnpm rootprint:up
 ```
 
 ### Running Observability (Production SRE)
+
 ```bash
 pnpm monitoring:up
 # or: docker compose -f docker-compose.observability.yml up -d
