@@ -34,7 +34,13 @@
     "terraform:plan:prod": "terraform -chdir=infrastructure/terraform plan -var-file=environments/prod/terraform.tfvars",
     "ansible:syntax-check": "ansible-playbook -i infrastructure/ansible/inventories/production/hosts.ini infrastructure/ansible/playbooks/site.yml --syntax-check",
     "docker:scout": "bash scripts/docker-scout-audit.sh",
-    "test:staging:traffic": "bash scripts/verify-staging-traffic.sh"
+    "test:staging:traffic": "bash scripts/verify-staging-traffic.sh",
+    "traefik:up": "docker compose -f docker-compose.traefik.yml up -d",
+    "traefik:down": "docker compose -f docker-compose.traefik.yml down",
+    "dozzle:up": "docker compose -f docker-compose.dozzle.yml up -d",
+    "dozzle:down": "docker compose -f docker-compose.dozzle.yml down",
+    "caddy:up": "docker compose -f docker-compose.caddy.yml up -d",
+    "caddy:down": "docker compose -f docker-compose.caddy.yml down"
   },
   "devDependencies": {
     "prettier": "^3.6.2",

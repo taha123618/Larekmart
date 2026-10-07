@@ -40,3 +40,6 @@ yarn.lock*
 # Misc
 .DS_Store
 *.pem
+
+# Certificates & Let's Encrypt ACME
+certificates/letsencrypt/*.json

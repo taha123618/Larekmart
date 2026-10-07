@@ -1,0 +1,44 @@
+name: larekmart-caddy
+
+# ============================================================================
+# Larekmart Caddy Reverse Proxy & Edge Handler
+# Provides:
+#   - High-performance HTTP/2 & HTTP/3 reverse proxy
+#   - Automatic gzip / zstd compression
+#   - Reverse proxy to api-gateway on larekmart-network
+#   - Traefik integration via labels
+# ============================================================================
+
+services:
+  caddy:
+    image: caddy:alpine
+    container_name: larekmart-caddy
+    restart: unless-stopped
+    ports:
+      - "${CADDY_HTTP_PORT:-8086}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.caddy.rule=Host(`${CADDY_DOMAIN:-app.localhost}`)"
+      - "traefik.http.services.caddy.loadbalancer.server.port=80"
+      - "traefik.http.routers.caddy.entrypoints=websecure"
+      - "traefik.docker.network=larekmart-network"
+      - "traefik.http.routers.caddy.tls=true"
+      - "traefik.http.routers.caddy.tls.certresolver=cert-resolver"
+    networks:
+      - larekmart-network
+
+volumes:
+  caddy_data:
+    name: larekmart_caddy_data
+  caddy_config:
+    name: larekmart_caddy_config
+
+networks:
+  larekmart-network:
+    name: larekmart-network
+    driver: bridge
+    attachable: true

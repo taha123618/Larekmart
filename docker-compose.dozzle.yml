@@ -1,0 +1,68 @@
+name: larekmart-dozzle-logs
+
+# ============================================================================
+# Larekmart Live Container Logs Stack (Dozzle + Nginx Reverse Proxy)
+# Provides:
+#   - Dozzle: Lightweight real-time streaming Docker container log viewer (port 8888)
+#   - Nginx: High-performance reverse proxy with 100M upload & WebSocket stream (port 8085)
+#   - Traefik Integration: Auto-routed via traefik labels on larekmart-network
+#   - (Port 8080 is reserved exclusively for Kafka UI)
+# ============================================================================
+
+services:
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: larekmart-dozzle
+    restart: unless-stopped
+    environment:
+      DOZZLE_ADDR: ":8888"
+      DOZZLE_LEVEL: info
+      DOZZLE_TAILSIZE: 300
+    expose:
+      - 8888
+    ports:
+      - "${DOZZLE_PORT:-8888}:8888"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - larekmart-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN:-dozzle.localhost}`)"
+      - "traefik.http.services.dozzle.loadbalancer.server.port=8888"
+      - "traefik.http.routers.dozzle.entrypoints=websecure"
+      - "traefik.docker.network=larekmart-network"
+      - "traefik.http.routers.dozzle.tls=true"
+      - "traefik.http.routers.dozzle.tls.certresolver=cert-resolver"
+
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    image: larekmart-logs-nginx:latest
+    container_name: larekmart-logs-nginx
+    restart: unless-stopped
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - dozzle
+    expose:
+      - 80
+    ports:
+      - "${LOGS_PORT:-8085}:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.logs-svc.rule=Host(`${LOGS_DOMAIN:-logs.localhost}`)"
+      - "traefik.http.services.logs-svc.loadbalancer.server.port=80"
+      - "traefik.http.routers.logs-svc.entrypoints=websecure"
+      - "traefik.docker.network=larekmart-network"
+      - "traefik.http.routers.logs-svc.tls=true"
+      - "traefik.http.routers.logs-svc.tls.certresolver=cert-resolver"
+    networks:
+      - larekmart-network
+
+networks:
+  larekmart-network:
+    name: larekmart-network
+    driver: bridge
+    attachable: true
