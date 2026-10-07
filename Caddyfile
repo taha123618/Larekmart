@@ -1,18 +1,20 @@
 # ==============================================================================
 # Larekmart Production Caddy Reverse Proxy Configuration
 # ==============================================================================
+# Role: Dedicated reverse proxy for application services (Storefront, Admin, API Gateway)
+# Traefik acts as the top-level Edge Ingress router terminating TLS and forwarding
+# application domains to this Caddy instance.
+# ==============================================================================
 
 {
-    # Global options
     admin off
-    auto_https off
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Main Gateway Block (Port 80)
+# Main Application Gateway Block (Port 80)
 # ──────────────────────────────────────────────────────────────────────────────
 :80 {
-    # Modern compression for all responses
+    # Response compression
     encode zstd gzip
 
     # Defensive Security Headers
@@ -24,15 +26,15 @@
         -Server
     }
 
-    # Health Check Endpoint
+    # Edge Healthcheck
     respond /healthz "healthy" 200
 
-    # 1. Larekmart API Gateway (/api/*)
+    # 1. API Gateway REST endpoints (/api/*)
     handle /api/* {
         reverse_proxy api-gateway:8090 {
             header_up Host {host}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
             header_up X-Forwarded-Proto {scheme}
             header_up X-Forwarded-Host {host}
             transport http {
@@ -42,64 +44,33 @@
         }
     }
 
-    # 2. Next.js Admin Dashboard (/admin/*)
-    handle /admin/* {
-        reverse_proxy admin:3003 {
+    # 2. Real-Time WebSockets (/ws)
+    handle /ws* {
+        reverse_proxy api-gateway:8090 {
             header_up Host {host}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
             header_up X-Forwarded-Proto {scheme}
-        }
-    }
-
-    # 3. Next.js Storefront Client (/shop/*)
-    handle /shop/* {
-        reverse_proxy client:3002 {
-            header_up Host {host}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-
-    # 4. Container Logs - Dozzle (/logs/*)
-    handle_path /logs/* {
-        reverse_proxy dozzle:8888 {
-            header_up Host {host}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-            # Flush immediately for real-time Server-Sent Events (SSE) streaming logs
             flush_interval -1
         }
     }
 
-    # 5. Observability - Grafana (/grafana/*)
-    handle_path /grafana/* {
-        reverse_proxy grafana:3000 {
+    # 3. Next.js Admin Dashboard (/admin/*)
+    handle /admin/* {
+        reverse_proxy admin:3003 {
             header_up Host {host}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
             header_up X-Forwarded-Proto {scheme}
         }
     }
 
-    # 6. Log Analytics - Rootprint (/rootprint/*)
-    handle_path /rootprint/* {
-        reverse_proxy rootprint:8282 {
-            header_up Host {host}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-
-    # 7. Default Fallback -> Larekmart API Gateway
+    # 4. Default Fallback -> Next.js Client Storefront
     handle {
-        reverse_proxy api-gateway:8090 {
+        reverse_proxy client:3002 {
             header_up Host {host}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
             header_up X-Forwarded-Proto {scheme}
         }
     }

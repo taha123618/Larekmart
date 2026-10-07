@@ -1,50 +1,89 @@
 name: larekmart-traefik
 
 # ============================================================================
-# Larekmart Traefik Edge Router & Ingress Proxy
+# Larekmart Production Traefik Edge Router & Ingress Controller
 # Provides:
-#   - Automatic HTTPS with Let's Encrypt ACME resolver
-#   - Dynamic Docker container discovery over larekmart-network
-#   - Traefik Dashboard (port 8088 / websecure: api@internal)
+#   - Automated TLS Termination via Let's Encrypt (ACME HTTP-01 challenge)
+#   - Dynamic Docker Container Discovery & Auto-Configuration via labels
+#   - Zero-Downtime Dynamic Upstream Pool Updates on Container Scaling
+#   - Production Middlewares: Security Headers, Gzip Compression, Rate Limiting, Retries
+#   - WebSocket Session Affinity (Sticky Cookies) for Real-Time Scaling
+#   - Embedded Ping & Healthcheck on port 8088 (entrypoint: traefik)
 #   - (Port 8080 is reserved exclusively for Kafka UI)
 # ============================================================================
 
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:v3.2
     container_name: larekmart-traefik
     restart: unless-stopped
     command:
+      # API & Dashboard
       - "--api=true"
       - "--api.dashboard=true"
+      - "--ping=true"
+      - "--ping.entrypoint=traefik"
+      # Logging & Telemetry
       - "--log.level=${TRAEFIK_LOG_LEVEL:-INFO}"
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+      # Dynamic Docker Provider
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=larekmart-network"
-      - "--entrypoints.traefik.address=:8088"
+      # Entrypoints
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.traefik.address=:8088"
+      # Let's Encrypt Automated Certificate Resolver
       - "--certificatesresolvers.cert-resolver.acme.httpchallenge=true"
       - "--certificatesresolvers.cert-resolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.cert-resolver.acme.email=${ACME_EMAIL:-support@larekmart.com}"
+      - "--certificatesresolvers.cert-resolver.acme.email=${ACME_EMAIL:-admin@larekmart.com}"
       - "--certificatesresolvers.cert-resolver.acme.storage=/letsencrypt/acme.json"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./certificates/letsencrypt:/letsencrypt"
-    labels:
-      traefik.enable: "true"
-      traefik.port: 8088
-      traefik.http.routers.api.entrypoints: "websecure"
-      traefik.http.routers.api.rule: "Host(`${TRAEFIK_DASHBOARD_DOMAIN:-traefik.localhost}`)"
-      traefik.http.routers.api.service: "api@internal"
-      traefik.http.routers.api.tls: "true"
-      traefik.http.routers.api.tls.certresolver: "cert-resolver"
     ports:
+      # Public Ingress Ports
       - "${TRAEFIK_HTTP_PORT:-80}:80"
       - "${TRAEFIK_HTTPS_PORT:-443}:443"
-      - "${TRAEFIK_DASHBOARD_PORT:-8088}:8088"
+      # Traefik Internal Dashboard & Health Ping (local binding for security)
+      - "${TRAEFIK_DASHBOARD_BIND_IP:-127.0.0.1}:${TRAEFIK_DASHBOARD_PORT:-8088}:8088"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=larekmart-network"
+
+      # --- Traefik Dashboard & Health API ---
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN:-traefik.localhost}`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=web,websecure,traefik"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+
+      # --- Shared Reusable Middlewares ---
+      # 1. Security Headers Middleware
+      - "traefik.http.middlewares.sec-headers.headers.browserxssfilter=true"
+      - "traefik.http.middlewares.sec-headers.headers.contenttypenosniff=true"
+      - "traefik.http.middlewares.sec-headers.headers.framedeny=true"
+      - "traefik.http.middlewares.sec-headers.headers.referrerspolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.sec-headers.headers.stsseconds=31536000"
+      - "traefik.http.middlewares.sec-headers.headers.stsincludesubdomains=true"
+      - "traefik.http.middlewares.sec-headers.headers.stspreload=true"
+
+      # 2. Gzip / Brotli Compression Middleware
+      - "traefik.http.middlewares.compress.compress=true"
+
+      # 3. Defensive Rate Limiting Middleware
+      - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
+      - "traefik.http.middlewares.rate-limit.ratelimit.burst=200"
+
+      # 4. Upstream Network Retry Middleware
+      - "traefik.http.middlewares.retry.retry.attempts=3"
+      - "traefik.http.middlewares.retry.retry.initialinterval=100ms"
+    healthcheck:
+      test: ["CMD-SHELL", "traefik healthcheck --ping || wget --no-verbose --tries=1 --spider http://localhost:8088/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     networks:
       - larekmart-network
 

@@ -31,7 +31,7 @@ services:
     container_name: larekmart-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${DB_BIND_IP:-127.0.0.1}:5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
@@ -55,7 +55,7 @@ services:
     container_name: larekmart-mongo
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "${DB_BIND_IP:-127.0.0.1}:27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-example}
@@ -79,7 +79,7 @@ services:
     container_name: larekmart-mongo-express
     restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "${DEV_TOOLS_BIND_IP:-127.0.0.1}:8081:8081"
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:-root}:${MONGO_INITDB_ROOT_PASSWORD:-example}@mongo:27017/
       ME_CONFIG_BASICAUTH_ENABLED: "true"
@@ -98,7 +98,7 @@ services:
     container_name: larekmart-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${DB_BIND_IP:-127.0.0.1}:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -117,8 +117,8 @@ services:
     container_name: larekmart-kafka
     restart: unless-stopped
     ports:
-      - "9092:9092"
-      - "9094:9094"
+      - "${KAFKA_BIND_IP:-127.0.0.1}:9092:9092"
+      - "${KAFKA_BIND_IP:-127.0.0.1}:9094:9094"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -156,8 +156,8 @@ services:
     container_name: larekmart-opensearch
     restart: unless-stopped
     ports:
-      - "9200:9200"
-      - "9600:9600"
+      - "${DB_BIND_IP:-127.0.0.1}:9200:9200"
+      - "${DB_BIND_IP:-127.0.0.1}:9600:9600"
     environment:
       - cluster.name=opensearch-cluster
       - node.name=opensearch
@@ -199,6 +199,12 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=larekmart-network"
+      - "traefik.http.routers.kafka-ui.rule=Host(`${KAFKA_UI_DOMAIN:-kafka.localhost}`)"
+      - "traefik.http.routers.kafka-ui.entrypoints=web,websecure"
+      - "traefik.http.services.kafka-ui.loadbalancer.server.port=8080"
     networks:
       - larekmart-network
 
@@ -226,8 +232,10 @@ services:
       dockerfile: apps/product-service/Dockerfile
     container_name: larekmart-product-service
     restart: unless-stopped
+    expose:
+      - "8000"
     ports:
-      - "8000:8000"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8000:8000"
     env_file:
       - ./apps/product-service/.env
     healthcheck:
@@ -258,8 +266,10 @@ services:
       dockerfile: apps/order-service/Dockerfile
     container_name: larekmart-order-service
     restart: unless-stopped
+    expose:
+      - "8001"
     ports:
-      - "8001:8001"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8001:8001"
     env_file:
       - ./apps/order-service/.env
     healthcheck:
@@ -288,8 +298,10 @@ services:
       dockerfile: apps/payment-service/Dockerfile
     container_name: larekmart-payment-service
     restart: unless-stopped
+    expose:
+      - "8002"
     ports:
-      - "8002:8002"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8002:8002"
     env_file:
       - ./apps/payment-service/.env
     healthcheck:
@@ -314,8 +326,10 @@ services:
       dockerfile: apps/auth-service/Dockerfile
     container_name: larekmart-auth-service
     restart: unless-stopped
+    expose:
+      - "8003"
     ports:
-      - "8003:8003"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8003:8003"
     env_file:
       - ./apps/auth-service/.env
     healthcheck:
@@ -340,8 +354,10 @@ services:
       dockerfile: apps/analytic-service/Dockerfile
     container_name: larekmart-analytic-service
     restart: unless-stopped
+    expose:
+      - "8004"
     ports:
-      - "8004:8004"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8004:8004"
     env_file:
       - ./apps/analytic-service/.env
     healthcheck:
@@ -370,8 +386,10 @@ services:
       dockerfile: Dockerfile
     container_name: larekmart-notification-service
     restart: unless-stopped
+    expose:
+      - "8005"
     ports:
-      - "8005:8005"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8005:8005"
     env_file:
       - ./apps/notification-service/.env
     healthcheck:
@@ -400,8 +418,10 @@ services:
       dockerfile: apps/search-service/Dockerfile
     container_name: larekmart-search-service
     restart: unless-stopped
+    expose:
+      - "8006"
     ports:
-      - "8006:8006"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8006:8006"
     env_file:
       - ./apps/search-service/.env
     healthcheck:
@@ -430,8 +450,10 @@ services:
       dockerfile: apps/inventory-service/Dockerfile
     container_name: larekmart-inventory-service
     restart: unless-stopped
+    expose:
+      - "8007"
     ports:
-      - "8007:8007"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8007:8007"
     env_file:
       - ./apps/inventory-service/.env
     healthcheck:
@@ -460,8 +482,10 @@ services:
       dockerfile: Dockerfile
     container_name: larekmart-recommendation-service
     restart: unless-stopped
+    expose:
+      - "8008"
     ports:
-      - "8008:8008"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8008:8008"
     env_file:
       - ./apps/recommendation-service/.env
     healthcheck:
@@ -490,8 +514,10 @@ services:
       dockerfile: apps/cart-service/Dockerfile
     container_name: larekmart-cart-service
     restart: unless-stopped
+    expose:
+      - "8009"
     ports:
-      - "8009:8009"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8009:8009"
     env_file:
       - ./apps/cart-service/.env
     healthcheck:
@@ -520,8 +546,10 @@ services:
       dockerfile: apps/catalog-service/Dockerfile
     container_name: larekmart-catalog-service
     restart: unless-stopped
+    expose:
+      - "8010"
     ports:
-      - "8010:8010"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8010:8010"
     env_file:
       - ./apps/catalog-service/.env
     healthcheck:
@@ -550,8 +578,10 @@ services:
       dockerfile: apps/shipping-service/Dockerfile
     container_name: larekmart-shipping-service
     restart: unless-stopped
+    expose:
+      - "8011"
     ports:
-      - "8011:8011"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8011:8011"
     env_file:
       - ./apps/shipping-service/.env
     healthcheck:
@@ -580,8 +610,10 @@ services:
       dockerfile: apps/user-service/Dockerfile
     container_name: larekmart-user-service
     restart: unless-stopped
+    expose:
+      - "8012"
     ports:
-      - "8012:8012"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8012:8012"
     env_file:
       - ./apps/user-service/.env
     healthcheck:
@@ -624,8 +656,10 @@ services:
       dockerfile: apps/media-service/Dockerfile
     container_name: larekmart-media-service
     restart: unless-stopped
+    expose:
+      - "8013"
     ports:
-      - "8013:8013"
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8013:8013"
     env_file:
       - ./apps/media-service/.env
     healthcheck:
@@ -692,8 +726,10 @@ services:
       dockerfile: apps/api-gateway/Dockerfile
     container_name: larekmart-api-gateway
     restart: unless-stopped
+    expose:
+      - "8090"
     ports:
-      - "8090:8090"
+      - "${API_GATEWAY_BIND_IP:-127.0.0.1}:${API_GATEWAY_PORT:-8090}:8090"
     env_file:
       - ./apps/api-gateway/.env
     healthcheck:
@@ -737,6 +773,26 @@ services:
         condition: service_healthy
     networks:
       - larekmart-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=larekmart-network"
+      # REST API Router
+      - "traefik.http.routers.api-gateway.rule=Host(`${API_DOMAIN:-api.localhost}`) || (Host(`${DOMAIN:-localhost}`) && PathPrefix(`/api`))"
+      - "traefik.http.routers.api-gateway.entrypoints=web,websecure"
+      - "traefik.http.routers.api-gateway.middlewares=sec-headers,compress,rate-limit,retry"
+      - "traefik.http.services.api-gateway.loadbalancer.server.port=8090"
+      - "traefik.http.services.api-gateway.loadbalancer.healthcheck.path=/health/ready"
+      - "traefik.http.services.api-gateway.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.api-gateway.loadbalancer.healthcheck.timeout=3s"
+      # Real-Time WebSocket Router with Session Affinity for Horizontal Scaling
+      - "traefik.http.routers.api-gateway-ws.rule=(Host(`${API_DOMAIN:-api.localhost}`) || Host(`${DOMAIN:-localhost}`)) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.api-gateway-ws.entrypoints=web,websecure"
+      - "traefik.http.routers.api-gateway-ws.service=api-gateway-ws-svc"
+      - "traefik.http.services.api-gateway-ws-svc.loadbalancer.server.port=8090"
+      - "traefik.http.services.api-gateway-ws-svc.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.api-gateway-ws-svc.loadbalancer.sticky.cookie.name=lm_ws_affinity"
+      - "traefik.http.services.api-gateway-ws-svc.loadbalancer.sticky.cookie.httpOnly=true"
+      - "traefik.http.services.api-gateway-ws-svc.loadbalancer.sticky.cookie.sameSite=lax"
 
   # ============================================================================
   # Frontends (Storefront & Admin)
@@ -765,7 +821,7 @@ services:
     container_name: larekmart-client
     restart: unless-stopped
     ports:
-      - "3002:3002"
+      - "${CLIENT_BIND_IP:-127.0.0.1}:${CLIENT_PORT:-3002}:3002"
     env_file:
       - ./apps/client/.env
     healthcheck:
@@ -783,6 +839,15 @@ services:
         condition: service_healthy
     networks:
       - larekmart-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=larekmart-network"
+      - "traefik.http.routers.client.rule=Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`) || Host(`localhost`)"
+      - "traefik.http.routers.client.entrypoints=web,websecure"
+      - "traefik.http.routers.client.middlewares=sec-headers,compress"
+      - "traefik.http.services.client.loadbalancer.server.port=3002"
+      - "traefik.http.services.client.loadbalancer.healthcheck.path=/"
+      - "traefik.http.services.client.loadbalancer.healthcheck.interval=15s"
 
   admin:
     build:
@@ -807,7 +872,7 @@ services:
     container_name: larekmart-admin
     restart: unless-stopped
     ports:
-      - "3003:3003"
+      - "${ADMIN_BIND_IP:-127.0.0.1}:${ADMIN_PORT:-3003}:3003"
     env_file:
       - ./apps/admin/.env
     healthcheck:
@@ -825,6 +890,15 @@ services:
         condition: service_healthy
     networks:
       - larekmart-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=larekmart-network"
+      - "traefik.http.routers.admin.rule=Host(`${ADMIN_DOMAIN:-admin.localhost}`)"
+      - "traefik.http.routers.admin.entrypoints=web,websecure"
+      - "traefik.http.routers.admin.middlewares=sec-headers,compress"
+      - "traefik.http.services.admin.loadbalancer.server.port=3003"
+      - "traefik.http.services.admin.loadbalancer.healthcheck.path=/"
+      - "traefik.http.services.admin.loadbalancer.healthcheck.interval=15s"
 
 # ============================================================================
 # Persistent Storage Volumes

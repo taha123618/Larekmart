@@ -1,12 +1,10 @@
 name: larekmart-caddy
 
 # ============================================================================
-# Larekmart Caddy Reverse Proxy & Edge Handler
+# Larekmart Caddy Application Reverse Proxy Stack
 # Provides:
-#   - High-performance HTTP/2 & HTTP/3 reverse proxy
-#   - Automatic gzip / zstd compression
-#   - Reverse proxy to api-gateway on larekmart-network
-#   - Traefik integration via labels
+#   - Caddy reverse proxy for Larekmart application services (API Gateway, Client, Admin)
+#   - Traefik Integration: Auto-routed via labels on larekmart-network
 # ============================================================================
 
 services:
@@ -14,20 +12,22 @@ services:
     image: caddy:alpine
     container_name: larekmart-caddy
     restart: unless-stopped
-    ports:
-      - "${CADDY_HTTP_PORT:-8086}:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    expose:
+      - 80
+    ports:
+      - "${CADDY_BIND_IP:-127.0.0.1}:${CADDY_HTTP_PORT:-8086}:80"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.caddy.rule=Host(`${CADDY_DOMAIN:-app.localhost}`)"
-      - "traefik.http.services.caddy.loadbalancer.server.port=80"
-      - "traefik.http.routers.caddy.entrypoints=websecure"
+      - "traefik.http.routers.caddy-app.rule=Host(`${APP_DOMAIN:-app.localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`)"
+      - "traefik.http.services.caddy-app.loadbalancer.server.port=80"
+      - "traefik.http.routers.caddy-app.entrypoints=web,websecure"
       - "traefik.docker.network=larekmart-network"
-      - "traefik.http.routers.caddy.tls=true"
-      - "traefik.http.routers.caddy.tls.certresolver=cert-resolver"
+      - "traefik.http.routers.caddy-app.tls=true"
+      - "traefik.http.routers.caddy-app.tls.certresolver=cert-resolver"
     networks:
       - larekmart-network
 

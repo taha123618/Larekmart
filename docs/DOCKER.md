@@ -9,59 +9,63 @@ This document is the comprehensive operations manual for building, running, moni
 1. [Ecosystem Architecture](#1-ecosystem-architecture)
 2. [Infrastructure Directory Layout](#2-infrastructure-directory-layout)
 3. [Network & Port Allocations](#3-network--port-allocations)
-4. [Quick Start Commands](#4-quick-start-commands)
-5. [Development & Maintenance Operations](#5-development--maintenance-operations)
-6. [Database Migrations & Initial Setup](#6-database-migrations--initial-setup)
-7. [Troubleshooting](#7-troubleshooting)
-8. [Observability Stack](#8-observability-stack)
-9. [Kubernetes Deployment](#9-kubernetes-deployment)
-10. [Container Security, Hardening & Docker Scout Workflow](#10-container-security-hardening--docker-scout-workflow)
-    - [10.1 Image Hardening Philosophy & Standards](#101-image-hardening-philosophy--standards)
-    - [10.2 Complete Project Image Inventory & Hardening Matrix](#102-complete-project-image-inventory--hardening-matrix)
-    - [10.3 Docker Scout Verification Workflow](#103-docker-scout-verification-workflow)
-    - [10.4 Production Readiness Gate & Vulnerability SLA](#104-production-readiness-gate--vulnerability-sla)
-    - [10.5 Repeatable Automated Verification & CI/CD](#105-repeatable-automated-verification--cicd)
-    - [10.6 Known Vulnerabilities, Exceptions & Mitigation Register (VEX)](#106-known-vulnerabilities-exceptions--mitigation-register-vex)
-    - [10.7 Developer Runbook: Introducing or Updating an Image](#107-developer-runbook-introducing-or-updating-an-image)
+4. [Edge Ingress & Reverse-Proxy Architecture](#4-edge-ingress--reverse-proxy-architecture)
+5. [Quick Start Commands](#5-quick-start-commands)
+6. [Horizontal Autoscaling & WebSocket Scaling](#6-horizontal-autoscaling--websocket-scaling)
+7. [Development & Maintenance Operations](#7-development--maintenance-operations)
+8. [Database Migrations & Initial Setup](#8-database-migrations--initial-setup)
+9. [Troubleshooting](#9-troubleshooting)
+10. [Observability Stack](#10-observability-stack)
+11. [Kubernetes Deployment](#11-kubernetes-deployment)
+12. [Container Security, Hardening & Docker Scout Workflow](#12-container-security-hardening--docker-scout-workflow)
+    - [12.1 Image Hardening Philosophy & Standards](#121-image-hardening-philosophy--standards)
+    - [12.2 Complete Project Image Inventory & Hardening Matrix](#122-complete-project-image-inventory--hardening-matrix)
+    - [12.3 Docker Scout Verification Workflow](#123-docker-scout-verification-workflow)
+    - [12.4 Production Readiness Gate & Vulnerability SLA](#124-production-readiness-gate--vulnerability-sla)
+    - [12.5 Repeatable Automated Verification & CI/CD](#125-repeatable-automated-verification--cicd)
+    - [12.6 Known Vulnerabilities, Exceptions & Mitigation Register (VEX)](#126-known-vulnerabilities-exceptions--mitigation-register-vex)
+    - [12.7 Developer Runbook: Introducing or Updating an Image](#127-developer-runbook-introducing-or-updating-an-image)
 
 ---
 
 ## 1. Ecosystem Architecture
 
-Larekmart's container topology is organized into an isolated Docker bridge network (`larekmart-network`) with internal service discovery. Microservices communicate with backing infrastructure and event buses via Docker DNS hostnames rather than `localhost`.
+Larekmart's production container topology is organized into an isolated Docker bridge network (`larekmart-network`) with dynamic service discovery and edge traffic segregation. All external internet traffic enters through **Traefik v3** on ports `80` and `443`, terminating TLS and routing to public application tiers. Backend microservices communicate with backing infrastructure and event buses via Docker DNS hostnames rather than public IPs.
 
 ```
-                    ┌────────────────────────┐
-                    │  Storefront (:3002)    │
-                    │  Admin Portal (:3003)  │
-                    └───────────┬────────────┘
-                                │ HTTP / REST / WebSocket
-    ┌───────────────────────────┴────────────────────────────┐
-    ▼                                                        ▼
-┌──────────────────────────────────────────────────────────────┐
-│                    Microservices Tier                        │
-│  product-service (8000)        cart-service (8009)           │
-│  order-service (8001)          catalog-service (8010)        │
-│  payment-service (8002)        shipping-service (8011)       │
-│  auth-service (8003)           media-service (8013)          │
-│  analytic-service (8004)       media-worker / media-cleanup  │
-│  search-service (8006)         email-service (worker)        │
-│  inventory-service (8007)                                    │
-│  notification-service (8005)   recommendation-service (8008) │
-└──────────────┬──────────────────┬─────────────────┬──────────┘
-               │                  │                 │
-               ▼                  ▼                 ▼
-     ┌──────────────────┐  ┌─────────────┐  ┌──────────────┐
-     │  Apache Kafka    │  │ PostgreSQL  │  │   MongoDB    │
-     │  (KRaft Broker)  │  │ (pgvector)  │  │ (ReplicaSet) │
-     │   :9092 / :9094  │  │    :5432    │  │    :27017    │
-     └─────────┬────────┘  └─────────────┘  └──────────────┘
-               │                  ▲
-               ▼                  │
-     ┌──────────────────┐  ┌──────┴──────┐
-     │  OpenSearch Node │  │    Redis    │
-     │      :9200       │  │    :6379    │
-     └──────────────────┘  └─────────────┘
+                              Internet / External Traffic
+                                           │
+                                           ▼
+                    ┌──────────────────────────────────────────────┐
+                    │         Traefik v3 Edge Ingress              │
+                    │       Ports: 80 (HTTP) / 443 (HTTPS)         │
+                    │       ACME TLS (Let's Encrypt HTTP-01)       │
+                    │     Rate-Limiting, Gzip, Security Headers    │
+                    └──────────────────────┬───────────────────────┘
+                                           │
+         ┌─────────────────────────────────┼─────────────────────────────────┐
+         │                                 │                                 │
+         ▼ Host: shop.localhost            ▼ Host: admin.localhost          ▼ Host: api.localhost
+┌───────────────────────────┐     ┌───────────────────────────┐     ┌───────────────────────────┐
+│     Client Storefront     │     │     Admin Dashboard       │     │        API Gateway        │
+│   Next.js 15 (Port 3002)  │     │   Next.js 15 (Port 3003)  │     │     Fastify 5 (Port 8090) │
+└───────────────────────────┘     └───────────────────────────┘     └─────────────┬─────────────┘
+                                                                                  │
+                                              ┌───────────────────────────────────┤
+                                              │ (/ws WebSocket proxy)             │ (/api/* REST routes)
+                                              ▼                                   ▼
+                                 ┌──────────────────────────┐        ┌──────────────────────────┐
+                                 │   Notification Service   │        │ 13 Domain Microservices  │
+                                 │   Go Chi WS Hub (:8005)  │        │ (Product, Order, Cart,   │
+                                 └──────────────────────────┘        │  Catalog, Inventory,     │
+                                                                     │  Payment, Search, etc.)  │
+                                                                     └─────────────┬────────────┘
+                                                                                   │
+                                                                    ┌──────────────┴────────────┐
+                                                                    │ Shared Backing Platform   │
+                                                                    │ (Kafka, Postgres, Mongo,  │
+                                                                    │  Redis, OpenSearch, S3)   │
+                                                                    └───────────────────────────┘
 ```
 
 ---
@@ -82,6 +86,9 @@ docker/
 │   └── Dockerfile                  # Apache Kafka KRaft single-node broker
 ├── opensearch/
 │   └── Dockerfile                  # OpenSearch cluster node with REST API
+├── nginx/
+│   ├── Dockerfile                  # Dozzle logs reverse proxy (100M upload & SSE)
+│   └── nginx.conf                  # Nginx configuration for Dozzle log viewer
 └── mongodb/
     ├── Dockerfile                  # Official MongoDB engine
     └── init-db.js                  # Automated database & collection initializer
@@ -91,34 +98,40 @@ docker/
 
 ## 3. Network & Port Allocations
 
-| Service / Container      | Container Port                    | Host Port    | Protocol / Purpose                                                             |
-| ------------------------ | --------------------------------- | ------------ | ------------------------------------------------------------------------------ |
-| `postgres`               | `5432`                            | `5432`       | PostgreSQL + pgvector databases                                                |
-| `mongo`                  | `27017`                           | `27017`      | MongoDB Database                                                               |
-| `mongo-express`          | `8081`                            | `8081`       | Mongo-Express Web Admin UI                                                     |
-| `redis`                  | `6379`                            | `6379`       | In-memory cache & pub/sub                                                      |
-| `kafka`                  | `9092` (internal) / `9094` (host) | `9092, 9094` | Apache Kafka event bus                                                         |
-| `opensearch`             | `9200`                            | `9200`       | Product search & autocomplete                                                  |
-| `kafka-ui`               | `8080`                            | `8080`       | Web UI for topics & consumers                                                  |
-| `product-service`        | `8000`                            | `8000`       | Product catalog CRUD & sync                                                    |
-| `order-service`          | `8001`                            | `8001`       | Order lifecycle & MongoDB storage                                              |
-| `payment-service`        | `8002`                            | `8002`       | Stripe payments & webhook processing                                           |
-| `auth-service`           | `8003`                            | `8003`       | Clerk user & admin gateway                                                     |
-| `analytic-service`       | `8004`                            | `8004`       | Event stream metrics aggregator                                                |
-| `notification-service`   | `8005`                            | `8005`       | Multi-channel alerts & WebSockets                                              |
-| `search-service`         | `8006`                            | `8006`       | OpenSearch query engine                                                        |
-| `inventory-service`      | `8007`                            | `8007`       | Stock ledgers & reservations                                                   |
-| `recommendation-service` | `8008`                            | `8008`       | Hybrid pgvector recommendations                                                |
-| `cart-service`           | `8009`                            | `8009`       | Authoritative shopping carts                                                   |
-| `catalog-service`        | `8010`                            | `8010`       | Read-optimized storefront catalog                                              |
-| `shipping-service`       | `8011`                            | `8011`       | Carrier rate quote & dispatch                                                  |
-| `user-service`           | `8012`                            | `8012`       | Customer profiles, addresses & preferences                                     |
-| `media-service`          | `8013`                            | `8013`       | Media uploads, variants & lifecycle                                            |
-| `media-worker`           | None                              | None         | Sharp image-processing job claimer                                             |
-| `media-cleanup`          | None                              | None         | Session expiry, stale-job requeue (`MEDIA_WORKER_STALE_JOB_SECONDS`), purge GC |
-| `email-service`          | None (worker)                     | None         | Consumes Kafka events, sends email notifications                               |
-| `client`                 | `3002`                            | `3002`       | Next.js 15 Storefront UI                                                       |
-| `admin`                  | `3003`                            | `3003`       | Next.js 15 Admin Dashboard UI                                                  |
+> **Security Hardening Standard:** Only Traefik publishes ports to `0.0.0.0` (public network). All internal microservices, datastores, and development admin tools bind to `127.0.0.1` (loopback) via environment variables (`INTERNAL_SERVICE_BIND_IP`, `DB_BIND_IP`, `API_GATEWAY_BIND_IP`) to prevent perimeter scanning.
+
+| Service / Container      | Container Port                    | Host Port (Dev / Local)              | Production Exposure | Protocol / Purpose                                                             |
+| ------------------------ | --------------------------------- | ------------------------------------ | ------------------- | ------------------------------------------------------------------------------ |
+| **`traefik`**            | `80`, `443`, `8088`               | `80:80`, `443:443`, `127.0.0.1:8088` | **Public**          | Edge router, automated Let's Encrypt TLS, dynamic container discovery          |
+| **`client`**             | `3002`                            | `127.0.0.1:3002`                     | Traefik Ingress     | Next.js 15 Storefront UI (`shop.localhost`)                                    |
+| **`admin`**              | `3003`                            | `127.0.0.1:3003`                     | Traefik Ingress     | Next.js 15 Admin Dashboard UI (`admin.localhost`)                              |
+| **`api-gateway`**        | `8090`                            | `127.0.0.1:8090`                     | Traefik Ingress     | Centralized Fastify 5 API Gateway, Clerk auth, WS proxy (`api.localhost`)      |
+| **`dozzle`**             | `8888`                            | `127.0.0.1:8888`                     | Traefik Ingress     | Real-time container log streaming (`logs.localhost`)                           |
+| **`caddy`** (profile)    | `80`, `443`                       | `127.0.0.1:8086`, `127.0.0.1:8443`   | Optional Ingress    | Standalone HTTP/2 & HTTP/3 reverse proxy (run via `--profile caddy`)           |
+| **`kafka-ui`**           | `8080`                            | `127.0.0.1:8080`                     | Traefik Ingress     | Topic & consumer monitoring UI (`kafka.localhost`)                             |
+| `postgres`               | `5432`                            | `127.0.0.1:5432`                     | **Internal Only**   | PostgreSQL + pgvector databases                                                |
+| `mongo`                  | `27017`                           | `127.0.0.1:27017`                    | **Internal Only**   | MongoDB Database                                                               |
+| `mongo-express`          | `8081`                            | `127.0.0.1:8081`                     | **Internal Only**   | Mongo-Express Web Admin UI                                                     |
+| `redis`                  | `6379`                            | `127.0.0.1:6379`                     | **Internal Only**   | In-memory cache & pub/sub                                                      |
+| `kafka`                  | `9092` (internal) / `9094` (host) | `127.0.0.1:9092, 127.0.0.1:9094`     | **Internal Only**   | Apache Kafka KRaft event broker                                                |
+| `opensearch`             | `9200`, `9600`                    | `127.0.0.1:9200, 127.0.0.1:9600`     | **Internal Only**   | Product search & autocomplete engine                                           |
+| `product-service`        | `8000`                            | `127.0.0.1:8000`                     | **Internal Only**   | Product catalog CRUD & sync                                                    |
+| `order-service`          | `8001`                            | `127.0.0.1:8001`                     | **Internal Only**   | Order lifecycle & MongoDB storage                                              |
+| `payment-service`        | `8002`                            | `127.0.0.1:8002`                     | **Internal Only**   | Stripe payments & webhook processing                                           |
+| `auth-service`           | `8003`                            | `127.0.0.1:8003`                     | **Internal Only**   | Clerk user & admin gateway                                                     |
+| `analytic-service`       | `8004`                            | `127.0.0.1:8004`                     | **Internal Only**   | Event stream metrics aggregator                                                |
+| `notification-service`   | `8005`                            | `127.0.0.1:8005`                     | **Internal Only**   | Multi-channel alerts & Go Chi WebSocket hub                                    |
+| `search-service`         | `8006`                            | `127.0.0.1:8006`                     | **Internal Only**   | OpenSearch query engine                                                        |
+| `inventory-service`      | `8007`                            | `127.0.0.1:8007`                     | **Internal Only**   | Stock ledgers & reservations                                                   |
+| `recommendation-service` | `8008`                            | `127.0.0.1:8008`                     | **Internal Only**   | Hybrid pgvector recommendations                                                |
+| `cart-service`           | `8009`                            | `127.0.0.1:8009`                     | **Internal Only**   | Authoritative shopping carts                                                   |
+| `catalog-service`        | `8010`                            | `127.0.0.1:8010`                     | **Internal Only**   | Read-optimized storefront catalog                                              |
+| `shipping-service`       | `8011`                            | `127.0.0.1:8011`                     | **Internal Only**   | Carrier rate quote & dispatch                                                  |
+| `user-service`           | `8012`                            | `127.0.0.1:8012`                     | **Internal Only**   | Customer profiles, addresses & preferences                                     |
+| `media-service`          | `8013`                            | `127.0.0.1:8013`                     | **Internal Only**   | Media uploads, variants & lifecycle                                            |
+| `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                             |
+| `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                                     |
+| `email-service`          | None (worker)                     | None                                 | **Internal Only**   | Consumes Kafka events, sends email notifications                               |
 
 ---
 

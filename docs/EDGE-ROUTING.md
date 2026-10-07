@@ -1,90 +1,138 @@
-# Traefik, Dozzle, Caddy & Nginx Edge Routing Guide
+# Larekmart Production Edge Routing & Ingress Architecture
 
-This guide describes how **Traefik**, **Dozzle**, **Nginx**, and **Caddy** are configured and integrated into the Larekmart monorepo using the unified `larekmart-network` bridge.
+This document describes the production reverse-proxy, ingress routing, WebSocket scaling, and network security architecture for the **Larekmart Marketplace Platform**.
 
 ---
 
-## 1. Architecture Overview
+## 1. Production Architecture Overview
+
+Larekmart uses **Traefik v3** as the single unified Edge Ingress Router for dynamic container discovery, automatic Let's Encrypt TLS termination, security headers, compression, and WebSocket session affinity.
 
 ```
-                                      Internet / Client Request
-                                                  │
-                                                  ▼
-                                 ┌─────────────────────────────────┐
-                                 │       Traefik Edge Router       │
-                                 │   Ports: 80 (HTTP) / 443 (HTTPS)│
-                                 │   Dashboard: http://localhost:8088│
-                                 └────────────────┬────────────────┘
-                                                  │
-                 ┌────────────────────────────────┼────────────────────────────────┐
-                 │                                │                                │
-                 ▼                                ▼                                ▼
-  ┌──────────────────────────────┐ ┌──────────────────────────────┐ ┌──────────────────────────────┐
-  │   Nginx Reverse Proxy &      │ │      Caddy HTTP/3 Proxy      │ │   Larekmart API Gateway &    │
-  │   Dozzle Live Log Viewer     │ │     (Port 8086 / app.*)      │ │   Microservices              │
-  │   (Port 8085 / logs.*)       │ │                              │ │   (Port 8080 / api.*)        │
-  └──────────────┬───────────────┘ └──────────────┬───────────────┘ └──────────────┬───────────────┘
-                 │                                │                                │
-                 └────────────────────────────────┴────────────────────────────────┘
-                                                  │
-                                                  ▼
-                                     ┌─────────────────────────┐
-                                     │    larekmart-network    │
-                                     │ (Unified Docker Bridge) │
-                                     └─────────────────────────┘
+                                  Internet / External Clients
+                                                │
+                                                ▼
+                         ┌─────────────────────────────────────────────┐
+                         │         Traefik Ingress Controller          │
+                         │       Ports: 80 (HTTP) / 443 (HTTPS)        │
+                         │    Internal Dashboard: 127.0.0.1:8088       │
+                         └──────────────────────┬──────────────────────┘
+                                                │
+             ┌──────────────────────────────────┼──────────────────────────────────┐
+             │                                  │                                  │
+             ▼ (shop.localhost)                 ▼ (admin.localhost)                ▼ (api.localhost)
+┌───────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
+│     Client Storefront     │      │     Admin Dashboard       │      │        API Gateway        │
+│   Next.js 15 (Port 3002)  │      │   Next.js 15 (Port 3003)  │      │     Fastify 5 (Port 8090) │
+└───────────────────────────┘      └───────────────────────────┘      └─────────────┬─────────────┘
+                                                                                    │
+                                               ┌────────────────────────────────────┤
+                                               │ (REST & WS Reverse Proxy)          │
+                                               ▼                                    ▼
+                                  ┌──────────────────────────┐         ┌──────────────────────────┐
+                                  │   Notification Service   │         │ 13 Domain Microservices  │
+                                  │   Go Chi WS Hub (:8005)  │         │ (Product, Order, Cart,   │
+                                  └──────────────────────────┘         │  Catalog, Inventory,     │
+                                                                       │  Payment, Search, etc.)  │
+                                                                       └──────────────────────────┘
 ```
 
 ---
 
-## 2. Service Summary & Endpoints
+## 2. Ingress & Proxy Responsibilities Matrix
 
-| Service | File | Host Port | Routing Rule | Purpose |
-| :--- | :--- | :--- | :--- | :--- |
-| **Traefik** | `docker-compose.traefik.yml` | `80`, `443`, `8088` | `Host("traefik.localhost")` | Edge router, automatic Let's Encrypt TLS, dynamic container discovery |
-| **Dozzle** | `docker-compose.dozzle.yml` | `8888` (direct) | `Host("dozzle.localhost")` | Real-time lightweight Docker container log viewer via `/var/run/docker.sock` |
-| **Nginx** | `docker-compose.dozzle.yml` | `8085` | `Host("logs.localhost")` | Reverse proxy fronting Dozzle with 100M upload limit and WebSocket streaming |
-| **Caddy** | `docker-compose.caddy.yml` | `8086` | `Host("app.localhost")` | Modern HTTP/2 & HTTP/3 reverse proxy routing to `api-gateway` |
+| Tool | Role | Status | Architectural Justification |
+| :--- | :--- | :--- | :--- |
+| **Traefik v3** | **Primary Edge Ingress** | **Active Default** | Native Docker daemon provider (`/var/run/docker.sock`). Dynamically discovers scaled container replicas via labels (`traefik.*`) with zero config reloads. Automatically manages Let's Encrypt TLS (ACME HTTP-01), security headers, gzip/brotli compression, and WebSocket sticky sessions (`lm_ws_affinity`). |
+| **Caddy** | **Alternative Edge Ingress** | **Optional Profile** | High-performance standalone HTTP/2 & HTTP/3 reverse proxy. Activated via `docker compose --profile caddy up -d` for environments preferring Caddy over Traefik. Kept profile-gated to avoid multi-proxy layering overhead. |
+| **Nginx** | **Removed from Docker** | **Decommissioned** | Completely removed from Docker infrastructure to eliminate triple-proxy redundancy. Caddy (`Caddyfile`) handles standalone reverse proxying, while Traefik handles dynamic ingress. Ingress-Nginx is retained exclusively for Kubernetes deployments. |
+| **Dozzle** | **Container Log Streaming** | **Active Service** | Lightweight Go daemon streaming real-time container stdout/stderr. Routed directly via Traefik (`Host("logs.localhost")`) without intermediate proxy overhead. |
 
 ---
 
-## 3. Quick Start Commands
+## 3. Public vs. Private Infrastructure Boundaries
 
-### Start All Stacks (via root compose)
+### Publicly Accessible Services (Via Ingress on Ports 80 & 443)
+- **Client Storefront**: `shop.localhost` / `larekmart.localhost` -> `client:3002`
+- **Admin Dashboard**: `admin.localhost` -> `admin:3003`
+- **API Gateway & WebSockets**: `api.localhost` -> `api-gateway:8090` (handles `/api/*` and `/ws`)
+- **Operations & Observability (Local/Admin)**:
+  - Traefik Dashboard: `traefik.localhost` / `http://127.0.0.1:8088`
+  - Container Logs (Dozzle): `logs.localhost` / `http://127.0.0.1:8888`
+  - Grafana Metrics: `monitoring.localhost` / `http://127.0.0.1:3001`
+  - Kafka UI: `kafka.localhost` / `http://127.0.0.1:8080`
+
+### Strictly Private Internal Services (Unreachable from Internet)
+- **14 Backend Microservices**: `product-service:8000`, `order-service:8001`, `payment-service:8002`, `auth-service:8003`, `analytic-service:8004`, `notification-service:8005`, `search-service:8006`, `inventory-service:8007`, `recommendation-service:8008`, `cart-service:8009`, `catalog-service:8010`, `shipping-service:8011`, `user-service:8012`, `media-service:8013`.
+- **Background Workers**: `email-service`, `media-worker`, `media-cleanup`.
+- **Datastores & Brokers**: `postgres:5432`, `mongo:27017`, `redis:6379`, `kafka:9092`, `opensearch:9200`.
+
+> **Security Note:** In `docker-compose.yml`, internal services and datastores bind exclusively to loopback (`127.0.0.1`) via `${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}` and `${DB_BIND_IP:-127.0.0.1}`. They are never published to `0.0.0.0`.
+
+---
+
+## 4. WebSocket & Real-Time Connection Scaling
+
+Real-time notifications and live updates use **WebSockets** flowing through:
+```
+Browser / Client (useWebSocket hook)
+         │
+         ▼
+Traefik Ingress (:80 / :443)
+  [Sticky Cookie: lm_ws_affinity]
+         │
+         ▼
+API Gateway (:8090)
+  [@fastify/http-proxy on /ws with websocket: true]
+         │
+         ▼
+Notification Service (:8005)
+  [Go Chi + gorilla/websocket Hub]
+```
+
+### Key Scaling Mechanisms:
+1. **Session Affinity (Sticky Cookies)**:
+   Traefik pins client WebSocket handshakes using `traefik.http.services.api-gateway-ws-svc.loadbalancer.sticky.cookie=true`. Reconnecting clients stay pinned to the same gateway instance to avoid thrashing.
+2. **Buffer Bypass**:
+   Proxy buffering and response caching are disabled (`proxy_buffering off` in Nginx, `flush_interval -1` in Caddy, raw duplex stream in Traefik) to guarantee immediate frame delivery.
+3. **Cross-Instance Event Distribution**:
+   Notification events are published asynchronously across Kafka topics (`notification.events`). Each `notification-service` consumer receives messages from Kafka and broadcasts to connected WebSocket clients.
+
+---
+
+## 5. Horizontal Autoscaling Guide
+
+Stateless services can scale horizontally using Docker Compose without container name collisions:
+
 ```bash
-docker compose -f docker-compose.yml up -d
+# Scale API Gateway to 3 replicas and Client Storefront to 2 replicas:
+docker compose up -d --scale api-gateway=3 --scale client=2
+
+# Scale high-traffic microservices:
+docker compose up -d --scale product-service=3 --scale catalog-service=3 --scale order-service=2
 ```
-*(Automatically includes core microservices, databases, observability, security, rootprint, traefik, dozzle/nginx, and caddy).*
 
-### Start Stacks Individually
-
-```bash
-# Traefik Edge Router
-pnpm traefik:up     # or: docker compose -f docker-compose.traefik.yml up -d
-pnpm traefik:down
-
-# Dozzle & Nginx Live Log Viewer
-pnpm dozzle:up      # or: docker compose -f docker-compose.dozzle.yml up -d
-pnpm dozzle:down
-
-# Caddy Reverse Proxy
-pnpm caddy:up       # or: docker compose -f docker-compose.caddy.yml up -d
-pnpm caddy:down
-```
+- **Dynamic Upstream Discovery**: Traefik automatically discovers all replica IPs from the Docker socket and registers them in the load balancing pool.
+- **Active Health Probing**: Traefik continuously probes `/health/ready` (API Gateway) or `/health` (microservices). If a container fails, traffic drains instantly without downtime.
+- **Internal Service Discovery**: Microservices communicating across `larekmart-network` resolve service names (e.g., `http://product-service:8000`) through Docker's internal DNS, which round-robins across all healthy replicas.
 
 ---
 
-## 4. How Services Join `larekmart-network`
+## 6. Operational Commands
 
-Every stack declares the same network configuration:
-```yaml
-networks:
-  larekmart-network:
-    name: larekmart-network
-    driver: bridge
-    attachable: true
+```bash
+# Start full production stack (Traefik + Apps + Backing Infra + Observability)
+docker compose up -d
+
+# Start only Traefik Edge Router
+docker compose -f docker-compose.traefik.yml up -d
+
+# Start live container log viewer (Dozzle)
+docker compose -f docker-compose.dozzle.yml up -d
+
+# Start with alternative Caddy Edge Router (instead of Traefik)
+docker compose --profile caddy up -d
+
+# Verify full compose syntax & configuration
+docker compose config --quiet
 ```
-
-* **Traefik** uses `--providers.docker.network=larekmart-network` to automatically route incoming traffic to any container on the network that defines `traefik.enable=true` labels.
-* **Dozzle** streams container logs directly from Docker engine via `/var/run/docker.sock:ro`.
-* **Nginx** forwards traffic to `http://dozzle:8888` with WebSockets enabled (`proxy_set_header Upgrade $http_upgrade`).
-* **Caddy** forwards `/api/*` and general traffic to `api-gateway:8080`.
