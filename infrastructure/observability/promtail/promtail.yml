@@ -10,6 +10,21 @@ clients:
 
 scrape_configs:
   # ──────────────────────────────────────────
+  # Dynamic Docker daemon container log discovery (Production)
+  # Queries /var/run/docker.sock to auto-discover and label all container logs
+  # ──────────────────────────────────────────
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: "container"
+      - source_labels: ["__meta_docker_container_log_stream"]
+        target_label: "stream"
+
+  # ──────────────────────────────────────────
   # Docker container log collection
   # ──────────────────────────────────────────
   - job_name: containers
@@ -35,12 +50,11 @@ scrape_configs:
       - regex:
           source: tag
           expression: "^(?P<image_name>(?:[^|]*[^|]))?(?:|)(?P<container_name>(?:[^|]*[^|]))?(?:|)(?P<image_id>(?:[^|]*[^|]))?(?:|)(?P<container_id>[^|]*)$"
-
       - labels:
           stream:
           image_name:
           container_name:
-
+          
       - output:
           source: output
 

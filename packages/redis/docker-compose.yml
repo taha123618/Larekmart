@@ -1,3 +1,5 @@
+name: larekmart-redis
+
 # Local Redis for every service that uses @repo/redis.
 #
 #   docker compose -f packages/redis/docker-compose.yml up -d

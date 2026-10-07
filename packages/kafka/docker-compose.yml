@@ -1,3 +1,5 @@
+name: larekmart-kafka
+
 services:
   kafka-broker-1:
     image: apache/kafka:latest

@@ -16,3 +16,12 @@ datasources:
     editable: false
     jsonData:
       maxLines: 5000
+  - name: Quickwit
+    type: elasticsearch
+    access: proxy
+    url: http://quickwit:7280/api/v1
+    isDefault: false
+    editable: false
+    jsonData:
+      esVersion: "7.10.0"
+      timeField: "timestamp"

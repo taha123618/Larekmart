@@ -152,3 +152,42 @@ scrape_configs:
         labels:
           service: shipping-service
           runtime: nodejs
+  - job_name: user-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["user-service:8012"]
+        labels:
+          service: user-service
+          runtime: nodejs
+
+  - job_name: media-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["media-service:8013"]
+        labels:
+          service: media-service
+          runtime: nodejs
+
+  - job_name: api-gateway
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api-gateway:8080"]
+        labels:
+          service: api-gateway
+          runtime: nodejs
+
+  - job_name: quickwit
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["quickwit:7280"]
+        labels:
+          service: quickwit
+          component: log-search
+
+  - job_name: minio
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets: ["minio:9000"]
+        labels:
+          service: minio
+          component: object-storage

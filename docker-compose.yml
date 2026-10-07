@@ -1,3 +1,15 @@
+name: larekmart
+
+# ============================================================================
+# Modular Compose Includes (Observability, Security, Rootprint Log Analytics)
+# Binds observability, security scanning, and Rootprint log analytics into
+# the primary Larekmart runtime via the unified `larekmart-network`.
+# ============================================================================
+include:
+  - path: docker-compose.observability.yml
+  - path: docker-compose.security.yml
+  - path: docker-compose.rootprint.yml
+
 services:
   # ============================================================================
   # Core Infrastructure
@@ -186,7 +198,10 @@ services:
   # ============================================================================
 
   minio:
-    image: quay.io/minio/minio:latest
+    build:
+      context: ./docker/minio
+      dockerfile: Dockerfile
+    image: larekmart-minio:latest
     container_name: larekmart-minio
     restart: unless-stopped
     ports:
@@ -849,6 +864,8 @@ volumes:
     name: larekmart_kafka_data
   opensearch_data:
     name: larekmart_opensearch_data
+  data-minio:
+    name: larekmart_minio_data
 
 # ============================================================================
 # Networks
@@ -857,3 +874,4 @@ networks:
   larekmart-network:
     name: larekmart-network
     driver: bridge
+    attachable: true

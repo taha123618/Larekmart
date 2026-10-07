@@ -1,0 +1,155 @@
+name: rootprint
+
+# ============================================================================
+# Larekmart - MinIO Object Storage & Rootprint Log Analytics Stack
+# Provides:
+#   - MinIO (S3 API: 9000, Console UI: 9001)
+#   - MinIO Bucket Init (Auto-provisions S3 buckets for Quickwit)
+#   - PostgreSQL 17 (Rootprint metadata store)
+#   - Quickwit v0.9.0 (Distributed log & search indexing on MinIO)
+#   - Rootprint (Full-featured UI and log analytics server on port 8282)
+#
+# Usage:
+#   docker compose -f docker-compose.rootprint.yml up -d
+#   pnpm rootprint:up
+# ============================================================================
+
+services:
+  minio:
+    build:
+      context: ./docker/minio
+      dockerfile: Dockerfile
+    image: larekmart-minio:latest
+    container_name: larekmart-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: ["server", "--console-address", ":9001", "/data"]
+    volumes:
+      - data-minio:/data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-changemeuser}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changemepass}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sf http://localhost:9000/minio/health/live || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - larekmart-network
+
+  minio-init-buckets:
+    image: minio/mc:latest
+    container_name: minio-init-buckets
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO...';
+      until /usr/bin/mc alias set localminio http://minio:9000 ${MINIO_ROOT_USER:-changemeuser} ${MINIO_ROOT_PASSWORD:-changemepass}; do
+        sleep 1;
+      done;
+      /usr/bin/mc mb localminio/quickwit-indexes --ignore-existing;
+      /usr/bin/mc mb localminio/quickwit-metastore --ignore-existing;
+      /usr/bin/mc mb localminio/media --ignore-existing;
+      echo 'MinIO buckets verified: quickwit-indexes, quickwit-metastore, media';
+      exit 0;
+      "
+    networks:
+      - larekmart-network
+
+  db:
+    image: postgres:17
+    container_name: rootprint-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${ROOTPRINT_DB_USER:-rootprint}
+      POSTGRES_PASSWORD: ${ROOTPRINT_DB_PASSWORD:-rootprint}
+      POSTGRES_DB: ${ROOTPRINT_DB_NAME:-rootprint}
+    volumes:
+      - rootprint-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ROOTPRINT_DB_USER:-rootprint}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - larekmart-network
+
+  quickwit:
+    image: quickwit/quickwit:v0.9.0
+    container_name: rootprint-quickwit
+    restart: unless-stopped
+    depends_on:
+      minio:
+        condition: service_healthy
+      minio-init-buckets:
+        condition: service_completed_successfully
+    volumes:
+      - rootprint-quickwit:/quickwit/qwdata
+    command: ["run"]
+    ports:
+      - "7280:7280"
+    healthcheck:
+      test: ["CMD-SHELL", 'bash -c "echo > /dev/tcp/localhost/7280"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    environment:
+      QW_S3_FLAVOR: minio
+      QW_S3_ENDPOINT: ${QW_S3_ENDPOINT:-http://minio:9000}
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-changemeuser}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-changemepass}
+      AWS_REGION: us-east-1
+      QW_DEFAULT_INDEX_ROOT_URI: s3://quickwit-indexes
+      QW_METASTORE_URI: s3://quickwit-metastore
+    networks:
+      - larekmart-network
+
+  rootprint:
+    image: ghcr.io/rootprint/rootprint:latest
+    container_name: rootprint
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      quickwit:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${ROOTPRINT_DB_USER:-rootprint}:${ROOTPRINT_DB_PASSWORD:-rootprint}@db:5432/${ROOTPRINT_DB_NAME:-rootprint}
+      QUICKWIT_URL: http://quickwit:7280
+      ORIGIN: ${ROOTPRINT_ORIGIN:-http://localhost:8282}
+    ports:
+      - "8282:8282"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:8282/api/health || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - larekmart-network
+
+volumes:
+  data-minio:
+    name: larekmart_minio_data
+  rootprint-db:
+    name: larekmart_rootprint_db
+  rootprint-quickwit:
+    name: larekmart_rootprint_quickwit
+
+networks:
+  larekmart-network:
+    name: larekmart-network
+    driver: bridge
+    attachable: true

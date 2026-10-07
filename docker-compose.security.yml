@@ -1,3 +1,5 @@
+name: larekmart-security
+
 # ============================================================================
 # Larekmart Security & Vulnerability Scanning Stack — Docker Compose
 # Provides: Trivy Server (Server/Client Scanning, SBOM, Secret & CVE Detection)
@@ -43,5 +45,6 @@ volumes:
 
 networks:
   larekmart-network:
-    external: true
     name: larekmart-network
+    driver: bridge
+    attachable: true
