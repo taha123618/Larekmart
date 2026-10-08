@@ -14,6 +14,31 @@ const MEDIA_BASE =
 
 const cache = new Map<string, string | null>();
 
+let pendingQueue: string[] = [];
+let batchPromise: Promise<void> | null = null;
+
+const flushBatch = async () => {
+  if (pendingQueue.length === 0) return;
+  const missing = [...new Set(pendingQueue)];
+  pendingQueue = [];
+
+  try {
+    const res = await fetch(`${MEDIA_BASE}/api/v1/media/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: missing }),
+    });
+    if (res.ok) {
+      const data: { items: Record<string, string | null> } = await res.json();
+      for (const [ref, url] of Object.entries(data.items ?? {})) {
+        cache.set(ref, url);
+      }
+    }
+  } catch {
+    // media-service unavailable → fall through to cached/legacy values.
+  }
+};
+
 /** Batch-resolves media references; results are memoized for the session. */
 export async function resolveMediaUrls(
   refs: string[],
@@ -25,21 +50,17 @@ export async function resolveMediaUrls(
   );
 
   if (missing.length > 0) {
-    try {
-      const res = await fetch(`${MEDIA_BASE}/api/v1/media/resolve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: missing }),
+    pendingQueue.push(...missing);
+    if (!batchPromise) {
+      batchPromise = new Promise((resolve) => {
+        setTimeout(async () => {
+          batchPromise = null;
+          await flushBatch();
+          resolve();
+        }, 0);
       });
-      if (res.ok) {
-        const data: { items: Record<string, string | null> } = await res.json();
-        for (const [ref, url] of Object.entries(data.items ?? {})) {
-          cache.set(ref, url);
-        }
-      }
-    } catch {
-      // media-service unavailable → fall through to cached/legacy values.
     }
+    await batchPromise;
   }
 
   const result: Record<string, string | null> = {};
