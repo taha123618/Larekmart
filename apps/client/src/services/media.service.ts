@@ -14,22 +14,27 @@ const MEDIA_BASE =
 
 const cache = new Map<string, string | null>();
 
-/** Batch-resolves media references; results are memoized for the session. */
-export async function resolveMediaUrls(
-  refs: string[],
-): Promise<Record<string, string | null>> {
-  const missing = [...new Set(refs.filter(Boolean))].filter(
-    (ref) =>
-      !cache.has(ref) &&
-      (ref.startsWith("media:") || /^[0-9a-f-]{36}$/i.test(ref)),
-  );
+// Batching mechanism to prevent N+1 requests when resolving media images
+// (e.g., when a grid of 24 products mounts and each resolves its own image independently).
+let batchQueue: Array<{
+  id: string;
+  resolve: (url: string | null) => void;
+}> = [];
+let batchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  if (missing.length > 0) {
+async function flushBatch() {
+  const currentBatch = batchQueue;
+  batchQueue = [];
+  batchTimeout = null;
+
+  const idsToFetch = [...new Set(currentBatch.map((item) => item.id))];
+
+  if (idsToFetch.length > 0) {
     try {
       const res = await fetch(`${MEDIA_BASE}/api/v1/media/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: missing }),
+        body: JSON.stringify({ ids: idsToFetch }),
       });
       if (res.ok) {
         const data: { items: Record<string, string | null> } = await res.json();
@@ -42,14 +47,44 @@ export async function resolveMediaUrls(
     }
   }
 
-  const result: Record<string, string | null> = {};
-  for (const ref of refs.filter(Boolean)) {
-    if (cache.has(ref)) {
-      result[ref] = cache.get(ref) ?? null;
-    } else {
-      // Not a media reference (legacy URL / local path) → passthrough.
-      result[ref] = ref;
+  // Resolve all promises in the batch
+  for (const { id, resolve } of currentBatch) {
+    resolve(cache.get(id) ?? null);
+  }
+}
+
+/** Resolves a single media reference, batching concurrent requests. */
+async function resolveMediaUrl(ref: string): Promise<string | null> {
+  if (cache.has(ref)) {
+    return cache.get(ref) ?? null;
+  }
+
+  const isMediaRef = ref.startsWith("media:") || /^[0-9a-f-]{36}$/i.test(ref);
+  if (!isMediaRef) {
+    return ref; // Legacy URL or local path
+  }
+
+  return new Promise<string | null>((resolve) => {
+    batchQueue.push({ id: ref, resolve });
+
+    if (!batchTimeout) {
+      batchTimeout = setTimeout(flushBatch, 50); // 50ms accumulation window
     }
+  });
+}
+
+/** Batch-resolves media references; results are memoized for the session. */
+export async function resolveMediaUrls(
+  refs: string[],
+): Promise<Record<string, string | null>> {
+  const uniqueRefs = [...new Set(refs.filter(Boolean))];
+  const results = await Promise.all(
+    uniqueRefs.map((ref) => resolveMediaUrl(ref).then((url) => ({ ref, url }))),
+  );
+
+  const result: Record<string, string | null> = {};
+  for (const { ref, url } of results) {
+    result[ref] = url;
   }
   return result;
 }
