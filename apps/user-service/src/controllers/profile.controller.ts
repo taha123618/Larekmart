@@ -6,10 +6,10 @@ import { UpdateProfileSchema } from "@repo/types";
 export class ProfileController {
   async getMyProfile(request: FastifyRequest, reply: FastifyReply) {
     const authUserId = request.authUserId!;
-    const user = await userService.getCurrentUser(authUserId);
+    let user = await userService.getCurrentUser(authUserId);
 
     if (!user) {
-      return reply.status(404).send({ message: "User not found" });
+      user = await userService.getOrCreateUser(authUserId);
     }
 
     const profile = await profileService.getProfile(user.id);
@@ -18,10 +18,10 @@ export class ProfileController {
 
   async updateMyProfile(request: FastifyRequest, reply: FastifyReply) {
     const authUserId = request.authUserId!;
-    const user = await userService.getCurrentUser(authUserId);
+    let user = await userService.getCurrentUser(authUserId);
 
     if (!user) {
-      return reply.status(404).send({ message: "User not found" });
+      user = await userService.getOrCreateUser(authUserId);
     }
 
     const body = UpdateProfileSchema.parse(request.body);

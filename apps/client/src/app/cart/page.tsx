@@ -25,7 +25,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import RecommendationSection from "@/components/RecommendationSection";
 import { useAuth } from "@clerk/nextjs";
 
@@ -72,10 +72,14 @@ const CartContent = () => {
 
   const activeServerCart = serverCartQueryData;
 
+  const hasMergedRef = useRef(false);
+
   useEffect(() => {
+    if (hasMergedRef.current || !userId) return;
     const init = async () => {
       const token = await getToken();
-      if (userId && token) {
+      if (userId && token && !hasMergedRef.current) {
+        hasMergedRef.current = true;
         await mergeGuestCart(token);
       }
     };
@@ -355,7 +359,14 @@ const CartContent = () => {
                 taxTotal={taxTotal}
               />
             ) : (
-              <StripePaymentForm shippingForm={shippingForm} />
+              <StripePaymentForm
+                shippingForm={shippingForm}
+                onSwitchToCod={() =>
+                  setShippingForm((prev) =>
+                    prev ? { ...prev, isCod: true } : undefined,
+                  )
+                }
+              />
             )
           ) : (
             <p className="text-sm text-gray-500">

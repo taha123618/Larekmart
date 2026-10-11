@@ -7,7 +7,11 @@ import {
 } from "@repo/types";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { cartClient, getOrCreateGuestToken } from "../services/cart.service";
+import {
+  cartClient,
+  getOrCreateGuestToken,
+  clearGuestToken,
+} from "../services/cart.service";
 
 export interface ExtendedCartState extends CartStoreStateType {
   serverCart: CartResponseType | null;
@@ -297,6 +301,7 @@ const useCartStore = create<ExtendedCartState & ExtendedCartActions>()(
         try {
           const merged = await cartClient.mergeCart(guestToken, authToken);
           if (merged) {
+            clearGuestToken();
             set({
               serverCart: merged,
               cart: mapServerItemsToCart(merged.items),

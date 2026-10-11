@@ -41,7 +41,11 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <QueryProvider>
-        <html lang="en" className="scroll-smooth">
+        <html
+          lang="en"
+          className="scroll-smooth"
+          data-scroll-behavior="smooth"
+        >
           <body
             className={`${geistSans.variable} ${geistMono.variable} font-sans bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col`}
             suppressHydrationWarning

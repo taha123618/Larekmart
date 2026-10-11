@@ -56,7 +56,7 @@ export const createCartApiClient = (authToken?: string): AxiosInstance => {
   return axios.create({
     baseURL: `${getCartServiceUrl()}/api/v1/cart`,
     headers,
-    timeout: 4000,
+    timeout: 12000,
   });
 };
 
