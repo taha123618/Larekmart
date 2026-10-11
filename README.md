@@ -1,8 +1,26 @@
 # Larekmart
 
-**Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **fifteen backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, and notifications; MongoDB for orders and carts).
+<div align="center">
 
-The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node and Go services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict%205.x-blue.svg)](packages/typescript-config)
+[![Turborepo](https://img.shields.io/badge/Turborepo-v2.x-ef4444.svg)](https://turbo.build)
+[![Next.js](<https://img.shields.io/badge/Next.js-15%20(App%20Router)-black.svg>)](https://nextjs.org)
+[![Docker](https://img.shields.io/badge/Docker-Orchestration-2496ED.svg)](docs/DOCKER.md)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Production%20Ready-326CE5.svg)](infrastructure/kubernetes)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+**A production-grade, distributed microservices e-commerce platform built for high-throughput marketplace scale (like Amazon, AliExpress, and Daraz).**
+
+[Features](#system-architecture) • [Quick Start](#quick-start) • [Architecture](#system-architecture) • [Documentation](#documentation-index) • [Contributing](CONTRIBUTING.md)
+
+</div>
+
+---
+
+**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **fifteen backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, and notifications; MongoDB for orders and carts).
+
+The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node, Go, and Python services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 
 ---
 
@@ -328,31 +346,42 @@ Workspace Skills (<workspace>/.agents/skills/*)
 
 ## Documentation Index
 
-| Document                                                                 | Purpose & Scope                                                                      |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| [`docs/BRD.md`](docs/BRD.md)                                             | Business Requirement Document: goals, ROI, conversion KPIs, financial compliance     |
-| [`docs/PRD.md`](docs/PRD.md)                                             | Product Requirement Document: user personas, journeys, accessibility, MVP roadmap    |
-| [`docs/FRD.md`](docs/FRD.md)                                             | Functional Requirement Document: API specs, state machines, Kafka event contracts    |
-| [`docs/TRD.md`](docs/TRD.md)                                             | Technical Requirement Document: topology, port matrix, SLAs, strict TS standards     |
-| [`docs/MRD.md`](docs/MRD.md)                                             | Model Requirement Document: DB schemas (Postgres, Mongo), @repo/types, ML models     |
-| [`docs/DATA-STRATEGY.md`](docs/DATA-STRATEGY.md)                         | Data Strategy Document: polyglot governance, event consistency, PII protection       |
-| [`docs/AI-EVALUATION-FRAMEWORK.md`](docs/AI-EVALUATION-FRAMEWORK.md)     | AI Evaluation Framework: agent scoring rubrics, benchmark suites, verification steps |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                           | High-level system architecture, service responsibilities, and request flows          |
-| [`docs/API.md`](docs/API.md)                                             | Comprehensive API endpoint registry across all backend services                      |
-| [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) | Kafka topic registry, payload contracts, and event schemas                           |
-| [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md)                           | Dependency graph, boundaries, and import constraints                                 |
-| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)                             | Local development setup, port registry, and environment variables matrix             |
-| [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)                             | Coding style, naming patterns, and design principles                                 |
-| [`docs/SECURITY.md`](docs/SECURITY.md)                                   | Security policies, Clerk authorization, and Stripe webhook verification              |
-| [`docs/TESTING.md`](docs/TESTING.md)                                     | Testing strategy, verification commands, and automated test setup                    |
-| [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)                           | Contribution standards, git workflow, and definition of done                         |
-| [`docs/adr/README.md`](docs/adr/README.md)                               | Architecture Decision Records (ADRs)                                                 |
-| [`docs/DOCKER.md`](docs/DOCKER.md)                                       | Complete Docker operations manual, reverse-proxy ingress & network topology          |
-| [`docs/ROOTPRINT.md`](docs/ROOTPRINT.md)                                 | Rootprint, MinIO S3, and Quickwit distributed log analytics guide                    |
-| [`docs/comparison/OBSERVABILITY-STACK-COMPARISON.md`](docs/comparison/OBSERVABILITY-STACK-COMPARISON.md) | Observability evaluation: Dozzle vs. Rootprint vs. CNCF Prometheus/Grafana/Loki |
+| Document                                                                                                                   | Purpose & Scope                                                                      |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [`docs/BRD.md`](docs/BRD.md)                                                                                               | Business Requirement Document: goals, ROI, conversion KPIs, financial compliance     |
+| [`docs/PRD.md`](docs/PRD.md)                                                                                               | Product Requirement Document: user personas, journeys, accessibility, MVP roadmap    |
+| [`docs/FRD.md`](docs/FRD.md)                                                                                               | Functional Requirement Document: API specs, state machines, Kafka event contracts    |
+| [`docs/TRD.md`](docs/TRD.md)                                                                                               | Technical Requirement Document: topology, port matrix, SLAs, strict TS standards     |
+| [`docs/MRD.md`](docs/MRD.md)                                                                                               | Model Requirement Document: DB schemas (Postgres, Mongo), @repo/types, ML models     |
+| [`docs/DATA-STRATEGY.md`](docs/DATA-STRATEGY.md)                                                                           | Data Strategy Document: polyglot governance, event consistency, PII protection       |
+| [`docs/AI-EVALUATION-FRAMEWORK.md`](docs/AI-EVALUATION-FRAMEWORK.md)                                                       | AI Evaluation Framework: agent scoring rubrics, benchmark suites, verification steps |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                                                                             | High-level system architecture, service responsibilities, and request flows          |
+| [`docs/API.md`](docs/API.md)                                                                                               | Comprehensive API endpoint registry across all backend services                      |
+| [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md)                                                   | Kafka topic registry, payload contracts, and event schemas                           |
+| [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md)                                                                             | Dependency graph, boundaries, and import constraints                                 |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)                                                                               | Local development setup, port registry, and environment variables matrix             |
+| [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)                                                                               | Coding style, naming patterns, and design principles                                 |
+| [`docs/SECURITY.md`](docs/SECURITY.md)                                                                                     | Security policies, Clerk authorization, and Stripe webhook verification              |
+| [`docs/TESTING.md`](docs/TESTING.md)                                                                                       | Testing strategy, verification commands, and automated test setup                    |
+| [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)                                                                             | Contribution standards, git workflow, and definition of done                         |
+| [`docs/adr/README.md`](docs/adr/README.md)                                                                                 | Architecture Decision Records (ADRs)                                                 |
+| [`docs/DOCKER.md`](docs/DOCKER.md)                                                                                         | Complete Docker operations manual, reverse-proxy ingress & network topology          |
+| [`docs/ROOTPRINT.md`](docs/ROOTPRINT.md)                                                                                   | Rootprint, MinIO S3, and Quickwit distributed log analytics guide                    |
+| [`docs/comparisons/README.md`](docs/comparisons/README.md)                                                                 | Infrastructure decisions: DevOps stack, Ingress routers, and Observability           |
+| [`docs/comparisons/DEVOPS-INFRASTRUCTURE-STACK-COMPARISON.md`](docs/comparisons/DEVOPS-INFRASTRUCTURE-STACK-COMPARISON.md) | Full-stack evaluation: Docker vs. K8s vs. GitHub Actions vs. Ingress                 |
+| [`docs/comparisons/REVERSE-PROXY-INGRESS-COMPARISON.md`](docs/comparisons/REVERSE-PROXY-INGRESS-COMPARISON.md)             | Reverse proxy evaluation: Caddy vs. NGINX vs. Traefik                                |
+| [`docs/comparisons/OBSERVABILITY-STACK-COMPARISON.md`](docs/comparisons/OBSERVABILITY-STACK-COMPARISON.md)                 | Observability evaluation: Dozzle vs. Rootprint vs. CNCF Prometheus/Grafana/Loki      |
+
+---
+
+## Contributing
+
+We welcome community contributions, bug reports, and feature proposals! Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) for local development setup, coding standards, and PR workflows.
+
+All participants must abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ---
 
 ## License
 
-Private and proprietary.
+This project is licensed under the **[MIT License](LICENSE)**. Free for personal, academic, and commercial use.

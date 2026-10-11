@@ -1,0 +1,40 @@
+name: 💡 Feature Request
+description: Propose a new feature, service capability, or architectural enhancement
+labels: ["enhancement", "proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We love new ideas! Please describe the proposed feature and why it would benefit the Larekmart platform.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Motivation
+      description: Is your feature request related to a problem or limitation? (e.g., "I'm always frustrated when...")
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see implemented.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or workarounds you considered.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Target Layer or Workspace
+      options:
+        - Storefront / UI (`client`)
+        - Admin Dashboard (`admin`)
+        - API Gateway & Ingress
+        - Backend Microservices
+        - Event Architecture & Kafka
+        - Database & Storage
+        - DevOps / Docker / Kubernetes
+        - Documentation
