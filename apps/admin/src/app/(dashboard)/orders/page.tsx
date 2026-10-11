@@ -12,7 +12,7 @@ const getData = async (): Promise<OrderType[]> => {
     const orderUrl =
       process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
       process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8080";
+      "http://localhost:8090";
     const res = await fetch(`${orderUrl}/orders`, {
       headers: {
         Authorization: `Bearer ${token}`,

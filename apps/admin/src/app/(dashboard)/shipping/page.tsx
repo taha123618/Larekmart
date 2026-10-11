@@ -26,7 +26,7 @@ async function getShippingHealth(): Promise<{ ok: boolean; status?: string }> {
     const base =
       process.env.NEXT_PUBLIC_SHIPPING_SERVICE_URL ||
       process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8080";
+      "http://localhost:8090";
     const res = await fetch(`${base}/api/v1/health/ready`, {
       cache: "no-store",
     });
@@ -199,9 +199,9 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
     shipmentsResult.status === "fulfilled"
       ? shipmentsResult.value
       : {
-          shipments: [],
-          pagination: { page: 1, limit: 100, total: 0, totalPages: 0 },
-        };
+        shipments: [],
+        pagination: { page: 1, limit: 100, total: 0, totalPages: 0 },
+      };
   const methodsData: ShippingMethod[] =
     methodsResult.status === "fulfilled" ? methodsResult.value : [];
 
@@ -297,31 +297,28 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
           </span>
           <Link
             href="/shipping"
-            className={`px-3 py-1.5 rounded-lg font-medium transition ${
-              !activeCodFilter
+            className={`px-3 py-1.5 rounded-lg font-medium transition ${!activeCodFilter
                 ? "bg-primary text-primary-foreground font-semibold"
                 : "bg-secondary text-secondary-foreground hover:bg-muted"
-            }`}
+              }`}
           >
             All Shipments
           </Link>
           <Link
             href="/shipping?isCod=true"
-            className={`px-3 py-1.5 rounded-lg font-medium transition ${
-              activeCodFilter === "true"
+            className={`px-3 py-1.5 rounded-lg font-medium transition ${activeCodFilter === "true"
                 ? "bg-primary text-primary-foreground font-semibold"
                 : "bg-secondary text-secondary-foreground hover:bg-muted"
-            }`}
+              }`}
           >
             Cash on Delivery (COD)
           </Link>
           <Link
             href="/shipping?isCod=false"
-            className={`px-3 py-1.5 rounded-lg font-medium transition ${
-              activeCodFilter === "false"
+            className={`px-3 py-1.5 rounded-lg font-medium transition ${activeCodFilter === "false"
                 ? "bg-primary text-primary-foreground font-semibold"
                 : "bg-secondary text-secondary-foreground hover:bg-muted"
-            }`}
+              }`}
           >
             Prepaid Card
           </Link>
@@ -333,11 +330,10 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
             <Link
               key={c}
               href={`/shipping?carrier=${c}${activeCodFilter ? `&isCod=${activeCodFilter}` : ""}`}
-              className={`px-2.5 py-1 rounded font-medium uppercase text-[11px] transition ${
-                activeCarrier === c
+              className={`px-2.5 py-1 rounded font-medium uppercase text-[11px] transition ${activeCarrier === c
                   ? "bg-primary text-primary-foreground font-bold"
                   : "bg-secondary text-secondary-foreground hover:bg-muted"
-              }`}
+                }`}
             >
               {c}
             </Link>
@@ -444,13 +440,12 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
                               : s.shippingRateAmount}
                           </span>
                           <span
-                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded w-fit ${
-                              s.codStatus === "COLLECTED"
+                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded w-fit ${s.codStatus === "COLLECTED"
                                 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                                 : s.codStatus === "REFUSED"
                                   ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
                                   : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                            }`}
+                              }`}
                           >
                             {s.codStatus || "Pending Collection"}
                           </span>

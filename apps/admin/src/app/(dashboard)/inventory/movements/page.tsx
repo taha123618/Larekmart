@@ -18,14 +18,14 @@ interface MovementRecord {
   id: string;
   inventoryItemId: string;
   type:
-    | "PURCHASE"
-    | "RESTOCK"
-    | "RESERVE"
-    | "RELEASE"
-    | "SALE"
-    | "RETURN"
-    | "ADJUSTMENT"
-    | "DAMAGE";
+  | "PURCHASE"
+  | "RESTOCK"
+  | "RESERVE"
+  | "RELEASE"
+  | "SALE"
+  | "RETURN"
+  | "ADJUSTMENT"
+  | "DAMAGE";
   quantity: number;
   referenceType?: string | null;
   referenceId?: string | null;
@@ -41,7 +41,7 @@ interface MovementRecord {
 async function fetchMovements(token: string | null): Promise<MovementRecord[]> {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080"}/api/v1/inventory/movements?limit=100`,
+      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/inventory/movements?limit=100`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

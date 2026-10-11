@@ -25,7 +25,7 @@ export default function NotificationBell() {
   const serviceUrl =
     process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080";
+    "http://localhost:8090";
   const wsUrl =
     process.env.NEXT_PUBLIC_NOTIFICATION_WS_URL || "ws://localhost:8080/ws";
 
@@ -292,9 +292,8 @@ export default function NotificationBell() {
               notifications.map((n) => (
                 <div
                   key={n.id}
-                  className={`py-3 px-2 flex items-start justify-between gap-3 rounded-lg transition-colors ${
-                    !n.read_at ? "bg-muted/60" : "hover:bg-muted/30"
-                  }`}
+                  className={`py-3 px-2 flex items-start justify-between gap-3 rounded-lg transition-colors ${!n.read_at ? "bg-muted/60" : "hover:bg-muted/30"
+                    }`}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold truncate">{n.title}</p>

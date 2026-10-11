@@ -3,7 +3,7 @@ import type { UserDetailResponse } from "@repo/types";
 const USER_BASE =
   process.env.NEXT_PUBLIC_USER_SERVICE_URL ||
   process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8080";
+  "http://localhost:8090";
 
 const BASE = `${USER_BASE}/api/v1/users/admin/users`;
 

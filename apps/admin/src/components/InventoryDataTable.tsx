@@ -67,7 +67,7 @@ export default function InventoryDataTable({
     try {
       const token = await getToken();
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080"}/api/v1/inventory/reservations/expire-stale`,
+        `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/inventory/reservations/expire-stale`,
         {
           method: "POST",
           headers: {

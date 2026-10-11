@@ -35,7 +35,7 @@ async function fetchStrategyMetrics(
   const serviceUrl =
     process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080";
+    "http://localhost:8090";
 
   try {
     const res = await fetch(`${serviceUrl}/api/v1/analytics/metrics`, {
@@ -54,7 +54,7 @@ async function checkEngineHealth(): Promise<boolean> {
   const serviceUrl =
     process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080";
+    "http://localhost:8090";
   try {
     const res = await fetch(`${serviceUrl}/health/live`, {
       cache: "no-store",

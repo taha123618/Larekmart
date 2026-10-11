@@ -51,7 +51,7 @@ const fetchCategories = async () => {
   const productServiceUrl =
     process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080";
+    "http://localhost:8090";
   const res = await fetch(`${productServiceUrl}/categories`);
 
   if (!res.ok) {
@@ -99,7 +99,7 @@ const AddProduct = () => {
       const productServiceUrl =
         process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
         process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-        "http://localhost:8080";
+        "http://localhost:8090";
       const token = await getToken();
       const res = await fetch(`${productServiceUrl}/products`, {
         method: "POST",

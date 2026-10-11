@@ -1,3 +1,4 @@
+import type React from "react";
 import ProductList from "@/components/ProductList";
 import RecommendationSection from "@/components/RecommendationSection";
 
@@ -15,7 +16,7 @@ const ProductsPage = async ({
   searchParams,
 }: {
   searchParams: Promise<ProductsSearchParams>;
-}) => {
+}): Promise<React.JSX.Element> => {
   const { category, sort, search, color, size, min_price, max_price } =
     await searchParams;
 

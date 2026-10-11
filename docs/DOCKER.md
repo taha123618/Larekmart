@@ -217,7 +217,7 @@ docker compose ps
 ### Inspecting Kafka Topics via Web UI
 
 Open your browser to:
-[http://localhost:8080](http://localhost:8080)
+[http://localhost:8090](http://localhost:8090)
 
 ---
 

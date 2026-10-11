@@ -18,7 +18,7 @@ const fetchClientSecret = async (
   const paymentServiceUrl =
     process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080";
+    "http://localhost:8090";
   return fetch(`${paymentServiceUrl}/sessions/create-checkout-session`, {
     method: "POST",
     body: JSON.stringify({

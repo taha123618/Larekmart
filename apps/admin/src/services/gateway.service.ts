@@ -7,7 +7,7 @@
 import type { GatewayHealthResponse } from "@repo/types";
 
 export const getApiGatewayUrl = (): string => {
-  return process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080";
+  return process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090";
 };
 
 /**
@@ -71,7 +71,7 @@ export async function fetchViaGateway<T>(
     }
     throw new Error(
       errorPayload.message ||
-        `Gateway request failed with status ${res.status}`,
+      `Gateway request failed with status ${res.status}`,
     );
   }
 

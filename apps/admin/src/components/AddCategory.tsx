@@ -42,7 +42,7 @@ const AddCategory = () => {
       const productServiceUrl =
         process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
         process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-        "http://localhost:8080";
+        "http://localhost:8090";
       const res = await fetch(`${productServiceUrl}/categories`, {
         method: "POST",
         body: JSON.stringify(data),

@@ -11,7 +11,7 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
 
 ### Issue: Event not being processed by consumer
 
-1. Check Kafka UI at `http://localhost:8080`.
+1. Check Kafka UI at `http://localhost:8090`.
 2. Inspect topic messages:
    - Does the message match the `{ value: <payload> }` envelope?
    - Is the consumer group active and assigned partitions?

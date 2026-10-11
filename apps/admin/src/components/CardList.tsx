@@ -17,7 +17,7 @@ const CardList = async ({ title }: { title: string }) => {
       const prodUrl =
         process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
         process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-        "http://localhost:8080";
+        "http://localhost:8090";
       products = await fetch(`${prodUrl}/products?limit=5&popular=true`).then(
         (res) => (res.ok ? res.json() : []),
       );
@@ -30,11 +30,11 @@ const CardList = async ({ title }: { title: string }) => {
         const recUrl =
           process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
           process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-          "http://localhost:8080";
+          "http://localhost:8090";
         const prodUrl =
           process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
           process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-          "http://localhost:8080";
+          "http://localhost:8090";
         const recRes = await fetch(
           `${recUrl}/api/v1/recommendations/popular?limit=5`,
         );
@@ -66,7 +66,7 @@ const CardList = async ({ title }: { title: string }) => {
       const analyticUrl =
         process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL ||
         process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-        "http://localhost:8080";
+        "http://localhost:8090";
       events = await fetch(`${analyticUrl}/analytics/events?limit=5`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -81,7 +81,7 @@ const CardList = async ({ title }: { title: string }) => {
         const orderUrl =
           process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
           process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-          "http://localhost:8080";
+          "http://localhost:8090";
         orders = await fetch(`${orderUrl}/orders?limit=5`, {
           headers: {
             Authorization: `Bearer ${token}`,

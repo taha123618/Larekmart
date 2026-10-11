@@ -12,7 +12,7 @@ const getData = async (): Promise<{
     const authUrl =
       process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
       process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8080";
+      "http://localhost:8090";
     const token = await getToken();
     const [authRes, userSvcRes] = await Promise.all([
       fetch(`${authUrl}/users`, {
@@ -27,8 +27,8 @@ const getData = async (): Promise<{
 
     const clerkUsers = (authRes.data ||
       (Array.isArray(authRes) ? authRes : [])) as Array<
-      Record<string, unknown> & { id: string }
-    >;
+        Record<string, unknown> & { id: string }
+      >;
     const userSvcMap = new Map(
       userSvcRes?.users?.map((u) => [u.authUserId, u]) || [],
     );

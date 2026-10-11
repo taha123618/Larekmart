@@ -11,7 +11,7 @@ export const getCartServiceUrl = (): string => {
   return (
     process.env.NEXT_PUBLIC_CART_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080"
+    "http://localhost:8090"
   );
 };
 
@@ -56,7 +56,7 @@ export const createCartApiClient = (authToken?: string): AxiosInstance => {
   return axios.create({
     baseURL: `${getCartServiceUrl()}/api/v1/cart`,
     headers,
-    timeout: 10000,
+    timeout: 4000,
   });
 };
 
@@ -70,10 +70,17 @@ export const cartClient = {
       const response = await client.get<CartResponseType>("/");
       return response.data;
     } catch (err) {
-      if (err instanceof AxiosError && err.response?.status === 404) {
+      if (err instanceof AxiosError) {
+        if (err.response?.status === 404) {
+          return null;
+        }
+        // Graceful fallback to client cart when service is offline or unreachable
+        console.warn(
+          `[CartService] Server cart unavailable (${err.response?.status || err.code || "offline"}). Using local cart fallback.`,
+        );
         return null;
       }
-      console.warn("Cart service Axios error on getCart:", err);
+      console.warn("Cart service error on getCart:", err);
       return null;
     }
   },
@@ -87,7 +94,10 @@ export const cartClient = {
       const response = await client.get<CartSummaryType>("/summary");
       return response.data;
     } catch (err) {
-      console.warn("Cart service Axios error on getSummary:", err);
+      if (err instanceof AxiosError) {
+        return null;
+      }
+      console.warn("Cart service error on getSummary:", err);
       return null;
     }
   },

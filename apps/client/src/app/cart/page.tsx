@@ -184,33 +184,36 @@ const CartContent = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-8 items-center justify-center mt-12 px-4 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-8 items-center justify-center py-8 px-4 max-w-7xl mx-auto">
       {/* TITLE */}
-      <h1 className="text-2xl font-medium">Your Shopping Cart</h1>
+      <div className="text-center">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          Marketplace Checkout
+        </h1>
+        <p className="text-xs text-slate-500 mt-1">
+          Review your items, apply vouchers, and complete your secure order.
+        </p>
+      </div>
 
       {/* STEPS */}
-      <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
+      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 bg-white p-2 sm:p-3 rounded-2xl border border-slate-200/80 shadow-xs">
         {steps.map((step) => (
           <div
-            className={`flex items-center gap-2 border-b-2 pb-4 ${
-              step.id === activeStep ? "border-gray-800" : "border-gray-200"
+            className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition ${
+              step.id === activeStep
+                ? "bg-indigo-50 text-indigo-700 font-bold"
+                : "text-slate-500"
             }`}
             key={step.id}
           >
             <div
-              className={`w-6 h-6 rounded-full text-white p-4 flex items-center justify-center text-sm font-semibold ${
-                step.id === activeStep ? "bg-gray-800" : "bg-gray-400"
+              className={`w-6 h-6 rounded-full text-white flex items-center justify-center text-xs font-bold ${
+                step.id === activeStep ? "bg-indigo-600" : "bg-slate-300"
               }`}
             >
               {step.id}
             </div>
-            <p
-              className={`text-sm font-medium ${
-                step.id === activeStep ? "text-gray-800" : "text-gray-400"
-              }`}
-            >
-              {step.title}
-            </p>
+            <span className="text-xs sm:text-sm">{step.title}</span>
           </div>
         ))}
       </div>
@@ -234,9 +237,9 @@ const CartContent = () => {
         )}
 
       {/* MAIN CONTAINER */}
-      <div className="w-full flex flex-col lg:flex-row gap-12">
+      <div className="w-full flex flex-col lg:flex-row gap-8">
         {/* LEFT COLUMN: ITEMS OR CHECKOUT STEPS */}
-        <div className="w-full lg:w-7/12 shadow-md border border-gray-100 p-6 md:p-8 rounded-lg flex flex-col gap-6">
+        <div className="w-full lg:w-7/12 bg-white shadow-xs border border-slate-200/80 p-6 md:p-8 rounded-3xl flex flex-col gap-6">
           {activeStep === 1 ? (
             isCartLoading && cart.length === 0 ? (
               <div className="flex items-center justify-center py-16 gap-2 text-gray-500">
@@ -272,7 +275,7 @@ const CartContent = () => {
                                 item.images as Record<string, string>,
                               )[0] || ""
                             : "") ||
-                          (item as any).image ||
+                          (item as { image?: string }).image ||
                           ""
                         }
                         alt={item.name}
@@ -362,8 +365,8 @@ const CartContent = () => {
         </div>
 
         {/* RIGHT COLUMN: PRICING BREAKDOWN & COUPONS */}
-        <div className="w-full lg:w-5/12 shadow-md border border-gray-100 p-6 md:p-8 rounded-lg flex flex-col gap-6 h-max">
-          <h2 className="font-semibold text-lg text-gray-900">Order Summary</h2>
+        <div className="w-full lg:w-5/12 bg-white shadow-xs border border-slate-200/80 p-6 md:p-8 rounded-3xl flex flex-col gap-6 h-max">
+          <h2 className="font-bold text-lg text-slate-900">Order Summary</h2>
 
           {/* COUPON CODE FORM */}
           {activeStep === 1 && (

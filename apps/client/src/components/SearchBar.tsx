@@ -11,7 +11,7 @@ import MediaImage from "@/components/MediaImage";
 const SEARCH_SERVICE_URL =
   process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL ||
   process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8080";
+  "http://localhost:8090";
 const SUGGESTION_LIMIT = 6;
 const DEBOUNCE_MS = 250;
 const RECENT_SEARCHES_KEY = "larekmart:recent-searches";
@@ -259,9 +259,8 @@ const SearchBar = () => {
                 id={`${listboxId}-${index}`}
                 role="option"
                 aria-selected={index === activeIndex}
-                className={`cursor-pointer px-3 py-1.5 ${
-                  index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
-                }`}
+                className={`cursor-pointer px-3 py-1.5 ${index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
+                  }`}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => activateOption(option)}
               >

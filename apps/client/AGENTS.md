@@ -4,20 +4,42 @@ Scope: `apps/client` only. Root rules still apply — start there.
 
 ## What this app is
 
-Next.js 15 (App Router, Turbopack) storefront on `:3002`. It owns all customer-facing
-interaction: browse, cart, Stripe checkout, and order history. It calls backend services
-over HTTP via the unified API Gateway (`NEXT_PUBLIC_API_GATEWAY_URL`, port `8080`) with a Clerk token; it does not touch Postgres, Mongo, or Kafka directly.
+Next.js 16 (App Router, Turbopack) marketplace storefront on `:3002`. It owns all customer-facing
+interaction: marketplace browsing, search & discovery, AI recommendations, wishlists, cart,
+Stripe checkout, COD placement, and order tracking. It calls backend services over HTTP via the
+unified API Gateway (`NEXT_PUBLIC_API_GATEWAY_URL`, port `8080`) with a Clerk token; it does not touch
+Postgres, Mongo, or Kafka directly.
+
+### Technology Stack
+- **Next.js 16** (`next@16.4.0`) with App Router and Turbopack
+- **React 19**
+- **Tailwind CSS v4** with custom marketplace theme tokens and glassmorphism utilities
+- **GSAP & `@gsap/react` (`useGSAP`)** for hero entrances, promotional banner carousels, and complex timelines
+- **Framer Motion (`framer-motion`)** for interactive micro-interactions, layout transitions, drawers, and modal animations
+- **Zustand** for shared client-side application state:
+  - `cartStore.ts`: local cart & synchronization with server cart
+  - `wishlistStore.ts`: persistent client wishlist with localStorage
+  - `uiStore.ts`: modal, cart drawer, quick-view, and search overlay state
+- **Clerk Authentication** (`@clerk/nextjs`)
+- **Stripe** (`@stripe/react-stripe-js`, `@stripe/stripe-js`) for secure card checkout
+- **TanStack React Query** for server-state caching
 
 ## Where things live
 
-- `src/app/` — Next App Router routes. Route groups: `(auth)` for sign-in/up, `(main)`
-  or similar layout groups for the storefront, `(checkout)` for cart/checkout/order pages
-  depending on the current tree.
-- `src/components/` — UI components. `StripePaymentForm`, `Navbar`, `ProductCard`,
-  `ProductList`, `SearchBar`, `Filter`, `Cart`, profile buttons, etc.
-- `src/stores/cartStore.ts` — Zustand cart store with `persist` to `localStorage`.
-- `src/middleware.ts` — Clerk frontend middleware (sign-in/up catch-alls, protected
-  routes).
+- `src/app/` — Next App Router routes (`/`, `/products`, `/products/[id]`, `/cart`, `/orders`, `/account`, `/track`, `/return`, `/sign-in`, `/sign-up`).
+- `src/components/` — UI components:
+  - `Navbar.tsx` — Multi-tier marketplace header with announcement bar, omnibar search, category ribbon.
+  - `HeroBanner.tsx` — GSAP-animated promotional banner carousel with side bonus cards.
+  - `FlashDeals.tsx` — Limited-time deals with live countdown ticker and stock progress indicators.
+  - `MarketplaceCategories.tsx` — Visual category cards with micro-hover interactions.
+  - `TrustBadges.tsx` — Buyer protection, shipping, and payment confidence indicators.
+  - `ProductCard.tsx` — High-performance card with discount badges, color swatches, rating stars, wishlist toggle, and quick add.
+  - `CartDrawer.tsx` — Slide-over cart drawer with live subtotal and direct checkout links.
+  - `WishlistDrawer.tsx` — Slide-over drawer for customer saved items with move-to-cart.
+  - `QuickViewModal.tsx` — Full product quick-view modal with variant selection and image zoom.
+  - `Footer.tsx` — Multi-column marketplace directory with newsletter signup and payment badges.
+- `src/stores/` — Zustand stores (`cartStore.ts`, `wishlistStore.ts`, `uiStore.ts`).
+- `src/lib/utils.ts` — `cn(...)` utility helper (`clsx` + `tailwind-merge`).
 
 ## Remix-style rules for this app
 

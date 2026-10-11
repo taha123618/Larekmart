@@ -44,7 +44,7 @@ interface CartAdminStats {
 const getCartServiceUrl = () =>
   process.env.NEXT_PUBLIC_CART_SERVICE_URL ||
   process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8080";
+  "http://localhost:8090";
 
 const CartsAdminPage = () => {
   const { getToken } = useAuth();

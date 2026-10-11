@@ -38,7 +38,7 @@ const getData = async (
     const authUrl =
       process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
       process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8080";
+      "http://localhost:8090";
     const res = await fetch(`${authUrl}/users/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -256,12 +256,11 @@ const SingleUserPage = async ({
               <div className="flex items-center gap-2">
                 <span className="font-bold">Status:</span>
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                    (userDetail?.status ||
+                  className={`px-2 py-0.5 rounded text-xs font-semibold ${(userDetail?.status ||
                       (data?.banned ? "BANNED" : "ACTIVE")) === "ACTIVE"
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
-                  }`}
+                    }`}
                 >
                   {userDetail?.status || (data?.banned ? "BANNED" : "ACTIVE")}
                 </span>

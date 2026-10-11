@@ -103,19 +103,19 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
   );
 
   return (
-    <div className="my-6 flex flex-col gap-3 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+    <div className="my-6 flex flex-col gap-4 rounded-2xl bg-white border border-slate-200/80 p-5 text-sm text-slate-700 shadow-xs">
       {/* SORT */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <span>Sort by:</span>
+          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">Sort by:</span>
           <select
             name="sort"
             id="sort"
             value={searchParams.get("sort") ?? "newest"}
-            className="ring-1 ring-gray-200 shadow-md p-1 rounded-sm"
+            className="border border-slate-200 bg-slate-50 shadow-xs px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800 outline-hidden hover:border-slate-300 transition"
             onChange={(event) => setParam("sort", event.target.value)}
           >
-            <option value="newest">Newest</option>
+            <option value="newest">Newest Arrivals</option>
             <option value="oldest">Oldest</option>
             <option value="asc">Price: Low to High</option>
             <option value="desc">Price: High to Low</option>
@@ -125,9 +125,9 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
           <button
             type="button"
             onClick={clearFilters}
-            className="text-xs text-gray-500 underline"
+            className="text-xs font-bold text-rose-600 hover:text-rose-700 transition px-2.5 py-1 rounded-lg hover:bg-rose-50"
           >
-            Clear filters
+            Clear all filters
           </button>
         )}
       </div>
@@ -148,16 +148,16 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
                 onClick={() => toggleFacet("color", value)}
                 className={`flex items-center gap-1.5 rounded-full border px-2 py-1 capitalize transition-colors ${
                   isActive
-                    ? "border-gray-400 bg-white text-gray-900"
-                    : "border-gray-200 hover:bg-white"
+                    ? "border-indigo-600 bg-indigo-50 text-indigo-900 font-bold shadow-xs"
+                    : "border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white text-slate-700"
                 }`}
               >
                 <span
-                  className="h-3 w-3 rounded-full border border-gray-300"
+                  className="h-3 w-3 rounded-full border border-slate-300 shrink-0"
                   style={{ backgroundColor: value }}
                 />
-                {value}
-                <span className="text-xs text-gray-400">{doc_count}</span>
+                <span className="capitalize">{value}</span>
+                <span className="text-[10px] text-slate-400 font-normal">({doc_count})</span>
               </button>
             );
           })}
@@ -167,7 +167,7 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
       {/* SIZE FACETS */}
       {sizes.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-gray-500">Size:</span>
+          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">Size:</span>
           {sizes.map(({ key, doc_count }) => {
             const value = String(key);
             const isActive = activeSizes.includes(value);
@@ -177,14 +177,14 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
                 type="button"
                 aria-pressed={isActive}
                 onClick={() => toggleFacet("size", value)}
-                className={`rounded-md border px-2 py-1 uppercase transition-colors ${
+                className={`rounded-xl border px-3 py-1 uppercase text-xs transition ${
                   isActive
-                    ? "border-gray-400 bg-white text-gray-900"
-                    : "border-gray-200 hover:bg-white"
+                    ? "border-indigo-600 bg-indigo-50 text-indigo-900 font-bold shadow-xs"
+                    : "border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white text-slate-700"
                 }`}
               >
-                {value}
-                <span className="ml-1 text-xs text-gray-400">{doc_count}</span>
+                <span>{value}</span>
+                <span className="ml-1 text-[10px] text-slate-400 font-normal">({doc_count})</span>
               </button>
             );
           })}
@@ -194,32 +194,36 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
       {/* PRICE FACET */}
       {priceStats && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-gray-500">Price:</span>
-          <input
-            inputMode="numeric"
-            aria-label="Minimum price"
-            value={minPriceInput}
-            placeholder={`Min ${priceStats.min}`}
-            onChange={(event) => setMinPriceInput(event.target.value)}
-            onBlur={() => applyPrice("min_price", minPriceInput)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") applyPrice("min_price", minPriceInput);
-            }}
-            className="w-20 rounded-md border border-gray-200 px-2 py-1"
-          />
-          <span className="text-gray-400">–</span>
-          <input
-            inputMode="numeric"
-            aria-label="Maximum price"
-            value={maxPriceInput}
-            placeholder={`Max ${priceStats.max}`}
-            onChange={(event) => setMaxPriceInput(event.target.value)}
-            onBlur={() => applyPrice("max_price", maxPriceInput)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") applyPrice("max_price", maxPriceInput);
-            }}
-            className="w-20 rounded-md border border-gray-200 px-2 py-1"
-          />
+          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">Price:</span>
+          <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-xl border border-slate-200">
+            <span className="text-xs text-slate-400">$</span>
+            <input
+              inputMode="numeric"
+              aria-label="Minimum price"
+              value={minPriceInput}
+              placeholder={`Min ${priceStats.min}`}
+              onChange={(event) => setMinPriceInput(event.target.value)}
+              onBlur={() => applyPrice("min_price", minPriceInput)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") applyPrice("min_price", minPriceInput);
+              }}
+              className="w-16 bg-transparent text-xs font-semibold outline-hidden"
+            />
+            <span className="text-slate-300">–</span>
+            <span className="text-xs text-slate-400">$</span>
+            <input
+              inputMode="numeric"
+              aria-label="Maximum price"
+              value={maxPriceInput}
+              placeholder={`Max ${priceStats.max}`}
+              onChange={(event) => setMaxPriceInput(event.target.value)}
+              onBlur={() => applyPrice("max_price", maxPriceInput)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") applyPrice("max_price", maxPriceInput);
+              }}
+              className="w-16 bg-transparent text-xs font-semibold outline-hidden"
+            />
+          </div>
         </div>
       )}
     </div>

@@ -20,13 +20,13 @@ interface RecommendationSectionProps {
   title: string;
   subtitle?: string;
   type:
-    | "trending"
-    | "personalized"
-    | "similar"
-    | "frequently_bought_together"
-    | "cart"
-    | "category"
-    | "recently_viewed";
+  | "trending"
+  | "personalized"
+  | "similar"
+  | "frequently_bought_together"
+  | "cart"
+  | "category"
+  | "recently_viewed";
   productId?: number | string;
   productIds?: number[];
   categorySlug?: string;
@@ -95,7 +95,7 @@ export default function RecommendationSection({
         const productUrl =
           process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
           process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-          "http://localhost:8080";
+          "http://localhost:8090";
 
         const fetched = await Promise.all(
           recResponse.items.map(async (item) => {

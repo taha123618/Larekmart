@@ -1,14 +1,17 @@
 "use client";
 
 import useCartStore from "@/stores/cartStore";
+import { useWishlistStore } from "@/stores/wishlistStore";
+import { useUIStore } from "@/stores/uiStore";
 import { ProductType } from "@repo/types";
 import {
   Minus,
   Plus,
-  ShoppingCart,
   CheckCircle2,
   AlertCircle,
   XCircle,
+  Zap,
+  Heart,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -51,6 +54,9 @@ const ProductInteraction = ({
   const [isLoadingInventory, setIsLoadingInventory] = useState(false);
 
   const { addToCart } = useCartStore();
+  const { openCartDrawer } = useUIStore();
+  const { toggleWishlist, isInWishlist } = useWishlistStore();
+  const isFavorited = isInWishlist(product.id);
 
   const variantId = `${selectedSize}-${selectedColor}`;
 
@@ -62,7 +68,7 @@ const ProductInteraction = ({
         const inventoryUrl =
           process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ||
           process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-          "http://localhost:8080";
+          "http://localhost:8090";
         const res = await fetch(
           `${inventoryUrl}/api/v1/inventory/${product.id}/availability?variantId=${encodeURIComponent(
             variantId,
@@ -184,18 +190,16 @@ const ProductInteraction = ({
         <div className="flex items-center gap-2">
           {product.sizes.map((size) => (
             <div
-              className={`cursor-pointer border-1 p-[2px] ${
-                selectedSize === size ? "border-gray-600" : "border-gray-300"
-              }`}
+              className={`cursor-pointer border-1 p-[2px] ${selectedSize === size ? "border-gray-600" : "border-gray-300"
+                }`}
               key={size}
               onClick={() => handleTypeChange("size", size)}
             >
               <div
-                className={`w-6 h-6 text-center flex items-center justify-center ${
-                  selectedSize === size
+                className={`w-6 h-6 text-center flex items-center justify-center ${selectedSize === size
                     ? "bg-black text-white"
                     : "bg-white text-black"
-                }`}
+                  }`}
               >
                 {size.toUpperCase()}
               </div>
@@ -210,9 +214,8 @@ const ProductInteraction = ({
         <div className="flex items-center gap-2">
           {product.colors.map((color) => (
             <div
-              className={`cursor-pointer border-1 p-[2px] ${
-                selectedColor === color ? "border-gray-300" : "border-white"
-              }`}
+              className={`cursor-pointer border-1 p-[2px] ${selectedColor === color ? "border-gray-300" : "border-white"
+                }`}
               key={color}
               onClick={() => handleTypeChange("color", color)}
             >
@@ -247,30 +250,51 @@ const ProductInteraction = ({
       </div>
 
       {/* BUTTONS */}
-      <button
-        onClick={handleAddToCart}
-        disabled={isOutOfStock}
-        className={`px-4 py-2.5 rounded-md shadow-lg flex items-center justify-center gap-2 text-sm font-medium transition-all ${
-          isOutOfStock
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-gray-800 hover:bg-gray-900 text-white cursor-pointer"
-        }`}
-      >
-        <Plus className="w-4 h-4" />
-        {isOutOfStock ? "Out of Stock" : "Add to Cart"}
-      </button>
+      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        <button
+          onClick={handleAddToCart}
+          disabled={isOutOfStock}
+          className={`flex-1 px-5 py-3 rounded-xl shadow-md flex items-center justify-center gap-2 text-sm font-bold transition-all ${isOutOfStock
+              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-indigo-100"
+            }`}
+        >
+          <Plus className="w-4 h-4" />
+          {isOutOfStock ? "Out of Stock" : "Add to Cart"}
+        </button>
 
-      <button
-        disabled={isOutOfStock}
-        className={`px-4 py-2.5 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-all ${
-          isOutOfStock
-            ? "border border-gray-200 text-gray-400 cursor-not-allowed"
-            : "ring-1 ring-gray-400 shadow-sm text-gray-800 hover:bg-gray-50 cursor-pointer"
-        }`}
-      >
-        <ShoppingCart className="w-4 h-4" />
-        {isOutOfStock ? "Unavailable" : "Buy this Item"}
-      </button>
+        <button
+          onClick={() => {
+            handleAddToCart();
+            openCartDrawer();
+          }}
+          disabled={isOutOfStock}
+          className={`flex-1 px-5 py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all ${isOutOfStock
+              ? "border border-slate-200 text-slate-400 cursor-not-allowed"
+              : "bg-slate-900 hover:bg-slate-800 text-white cursor-pointer shadow-md"
+            }`}
+        >
+          <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
+          {isOutOfStock ? "Unavailable" : "Buy Now"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            const added = toggleWishlist(product);
+            if (added) toast.success("Saved to wishlist!");
+            else toast.info("Removed from wishlist");
+          }}
+          className={`p-3 rounded-xl border transition flex items-center justify-center cursor-pointer ${isFavorited
+              ? "bg-rose-50 border-rose-200 text-rose-600 shadow-xs"
+              : "bg-white border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-200"
+            }`}
+          title={isFavorited ? "Saved to Wishlist" : "Save to Wishlist"}
+          aria-label="Toggle Wishlist"
+        >
+          <Heart className={`w-5 h-5 ${isFavorited ? "fill-rose-500 text-rose-500" : ""}`} />
+        </button>
+      </div>
     </div>
   );
 };

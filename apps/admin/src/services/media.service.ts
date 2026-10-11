@@ -11,7 +11,7 @@
 const MEDIA_BASE =
   process.env.NEXT_PUBLIC_MEDIA_SERVICE_URL ||
   process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8080";
+  "http://localhost:8090";
 
 export interface MediaUploadResponse {
   mediaId: string;
@@ -32,14 +32,14 @@ export interface MediaResolveResponse {
 
 export interface UploadMediaOptions {
   ownerType:
-    | "product"
-    | "category"
-    | "brand"
-    | "collection"
-    | "user"
-    | "review"
-    | "seller"
-    | "marketing";
+  | "product"
+  | "category"
+  | "brand"
+  | "collection"
+  | "user"
+  | "review"
+  | "seller"
+  | "marketing";
   ownerId: string;
   category?: string;
   visibility?: "PUBLIC" | "PRIVATE" | "PROTECTED";
