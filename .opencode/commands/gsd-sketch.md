@@ -15,6 +15,7 @@ tools:
   mcp__context7__resolve-library-id: true
   mcp__context7__query-docs: true
 ---
+
 <objective>
 Explore design directions through throwaway HTML mockups before committing to implementation.
 Each sketch produces 2-3 variants for comparison. Sketches live in `.planning/sketches/` and
@@ -22,6 +23,7 @@ integrate with GSD commit patterns, state tracking, and handoff workflows. Loads
 findings to ground mockups in real data shapes and validated interaction patterns.
 
 Two modes:
+
 - **Idea mode** (default) — describe a design idea to sketch
 - **Frontier mode** (no argument or "frontier") — analyzes existing sketch landscape and proposes consistency and frontier sketches
 
@@ -38,15 +40,14 @@ Does not require prior new-project setup — auto-creates `.planning/sketches/` 
 @/Users/taha/projects/microservices-ecommerce/.opencode/gsd-core/references/sketch-variant-patterns.md
 </execution_context>
 
-
-
 <context>
 Design idea: $ARGUMENTS
 
 **Available flags:**
+
 - `--quick` — Skip mood/direction intake, jump straight to decomposition and building. Use when the design direction is already clear.
 - `--wrap-up` — Package sketch design findings into a persistent project skill for future build conversations. Runs the sketch-wrap-up workflow.
-</context>
+  </context>
 
 <process>
 Parse the first token of $ARGUMENTS:

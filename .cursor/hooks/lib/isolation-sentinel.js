@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 // hooks/lib/isolation-sentinel.js — shared sentinel reader for the #3045
 // agent-dispatch isolation guards (hooks/gsd-agent-isolation-guard.js,
 // hooks/gsd-cursor-subagent-start.js).
@@ -54,15 +54,22 @@
 // config dir, keyed by a session/run id neither the executor nor a forged
 // file can predict) rather than a path derivable from `cwd`.
 
-const fs = require('fs');
-const path = require('path');
-const { parseDispatchIdentity } = require('./dispatch-identity.js');
+const fs = require("fs");
+const path = require("path");
+const { parseDispatchIdentity } = require("./dispatch-identity.js");
 
 // Isolation modes ADR-1239 declares (mirrors gsd-tools.cjs
 // routeDispatchIsolation / routeRecordDispatchIsolation).
-const VALID_ISOLATION = new Set(['harness-worktree', 'orchestrator-worktree', 'none']);
+const VALID_ISOLATION = new Set([
+  "harness-worktree",
+  "orchestrator-worktree",
+  "none",
+]);
 
-const SENTINEL_RELATIVE_PATH = path.join('.gsd', 'dispatch-isolation-sentinel.json');
+const SENTINEL_RELATIVE_PATH = path.join(
+  ".gsd",
+  "dispatch-isolation-sentinel.json",
+);
 
 // #3045 SECURITY F2 fix: how long a written sentinel is trusted as "this
 // dispatch's decision" before a reader falls back to the conservative
@@ -128,7 +135,7 @@ function sentinelPath(cwd) {
  */
 function resolveSentinelRoot(cwd) {
   try {
-    if (fs.existsSync(path.join(cwd, '.planning'))) {
+    if (fs.existsSync(path.join(cwd, ".planning"))) {
       return cwd;
     }
     // #3582: worktree-safety.cjs / project-root.cjs are tsc build artifacts
@@ -138,11 +145,17 @@ function resolveSentinelRoot(cwd) {
     // to the existing catch's degrade-to-raw-`cwd` — unchanged behavior, just
     // now attempted-healed-first rather than silently degrading on the first
     // cold-tree encounter.
-    const { ensureRuntimeBuild } = require('../../gsd-core/bin/ensure-runtime-build.cjs');
+    const {
+      ensureRuntimeBuild,
+    } = require("../../gsd-core/bin/ensure-runtime-build.cjs");
     ensureRuntimeBuild();
-    const { resolveWorktreeRoot } = require('../../gsd-core/bin/lib/worktree-safety.cjs');
+    const {
+      resolveWorktreeRoot,
+    } = require("../../gsd-core/bin/lib/worktree-safety.cjs");
     const { root } = resolveWorktreeRoot(cwd);
-    const { findProjectRoot } = require('../../gsd-core/bin/lib/project-root.cjs');
+    const {
+      findProjectRoot,
+    } = require("../../gsd-core/bin/lib/project-root.cjs");
     return findProjectRoot(root);
   } catch {
     return cwd;
@@ -173,7 +186,7 @@ function readSentinel(cwd, { clock = Date } = {}) {
   const root = resolveSentinelRoot(cwd);
   let raw;
   try {
-    raw = fs.readFileSync(sentinelPath(root), 'utf-8');
+    raw = fs.readFileSync(sentinelPath(root), "utf-8");
   } catch {
     return { present: false };
   }
@@ -186,23 +199,32 @@ function readSentinel(cwd, { clock = Date } = {}) {
   }
 
   if (
-    !parsed || typeof parsed !== 'object' ||
+    !parsed ||
+    typeof parsed !== "object" ||
     !VALID_ISOLATION.has(parsed.isolation) ||
-    typeof parsed.written_at !== 'number' || !Number.isFinite(parsed.written_at)
+    typeof parsed.written_at !== "number" ||
+    !Number.isFinite(parsed.written_at)
   ) {
     return { present: true, stale: true, malformed: true };
   }
 
-  const harnessFlag = typeof parsed.harness_flag === 'string' && parsed.harness_flag.length > 0
-    ? parsed.harness_flag
-    : null;
-  const phase = typeof parsed.phase === 'string' && parsed.phase.length > 0 ? parsed.phase : null;
+  const harnessFlag =
+    typeof parsed.harness_flag === "string" && parsed.harness_flag.length > 0
+      ? parsed.harness_flag
+      : null;
+  const phase =
+    typeof parsed.phase === "string" && parsed.phase.length > 0
+      ? parsed.phase
+      : null;
   // #3045 SECURITY F2: `plan` was not previously part of the sentinel shape.
   // Recorded so a phase-level-only sentinel (plan: null) is distinguishable
   // from a plan-scoped one — see the guards' dispatch-matching logic, which
   // treats a plan/phase MISMATCH (both sides present and disagreeing) as "no
   // applicable sentinel", not an allow.
-  const plan = typeof parsed.plan === 'string' && parsed.plan.length > 0 ? parsed.plan : null;
+  const plan =
+    typeof parsed.plan === "string" && parsed.plan.length > 0
+      ? parsed.plan
+      : null;
 
   const now = clock.now();
   const age = now - parsed.written_at;
@@ -275,8 +297,14 @@ function extractDispatchIdentifiers(...texts) {
  */
 function sentinelAppliesToDispatch(sentinel, dispatchIds) {
   if (!sentinel || !dispatchIds) return true;
-  if (sentinel.phase && dispatchIds.phase && sentinel.phase !== dispatchIds.phase) return false;
-  if (sentinel.plan && dispatchIds.plan && sentinel.plan !== dispatchIds.plan) return false;
+  if (
+    sentinel.phase &&
+    dispatchIds.phase &&
+    sentinel.phase !== dispatchIds.phase
+  )
+    return false;
+  if (sentinel.plan && dispatchIds.plan && sentinel.plan !== dispatchIds.plan)
+    return false;
   return true;
 }
 

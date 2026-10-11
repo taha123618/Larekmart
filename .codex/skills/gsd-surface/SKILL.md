@@ -6,27 +6,34 @@ metadata:
 ---
 
 <codex_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked by mentioning `$gsd-surface`.
 - Treat all user text after `$gsd-surface` as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. AskUserQuestion → request_user_input Mapping
+
 GSD workflows use `AskUserQuestion` (Claude Code syntax). Translate to Codex `request_user_input`:
 
 Parameter mapping:
+
 - `header` → `header`
 - `question` → `question`
 - Options formatted as `"Label" — description` → `{label: "Label", description: "description"}`
 - Generate `id` from header: lowercase, replace spaces with underscores
 
 Batched calls:
+
 - `AskUserQuestion([q1, q2])` → single `request_user_input` with multiple entries in `questions[]`
 
 Multi-select workaround:
+
 - Codex has no `multiSelect`. Use sequential single-selects, or present a numbered freeform list asking the user to enter comma-separated numbers.
 
 Execute mode fallback:
+
 - When `request_user_input` is rejected or unavailable, activate TEXT_MODE: append `--text` to `{{GSD_ARGS}}` so the workflow's built-in text-mode branching takes over. Present every `AskUserQuestion` call as a plain-text numbered list, then stop and wait for the user's reply. Do NOT pick a default and continue (#3018 / #3808).
 - You may only proceed without a user answer when one of these is true:
   (a) the invocation included an explicit non-interactive flag (`--auto` or `--all`),
@@ -35,6 +42,7 @@ Execute mode fallback:
 - Do NOT write workflow artifacts (CONTEXT.md, DISCUSSION-LOG.md, PLAN.md, checkpoint files) until the user has answered the plain-text questions or one of (a)-(c) above applies. Surfacing the questions and waiting is the correct response — silently defaulting and writing artifacts is the #3018 failure mode.
 
 ## C. Task() → spawn_agent Mapping
+
 GSD workflows use `Task(...)` (Claude Code syntax). Translate to Codex collaboration tools:
 
 **Schema detection (required first step):** Before spawning, inspect the `spawn_agent`
@@ -48,6 +56,7 @@ Never infer one field from a schema/version label or from the presence of anothe
 - **Generic schema:** `spawn_agent` does not advertise `agent_type` — typed GSD agent dispatch is unavailable in this session, even if other optional fields are present.
 
 Typed mapping (agent_type-capable schema only):
+
 - `Task(subagent_type="X", prompt="Y")` → `spawn_agent(agent_type="X", message="Y")`
 - `Agent(subagent_type="X", prompt="Y")` → `spawn_agent(agent_type="X", message="Y")`
 - `Task(model="{resolved_model}")` → pass `model="{resolved_model}"` when the
@@ -78,6 +87,7 @@ Typed mapping (agent_type-capable schema only):
   isolation adapter, which still fails closed for hosts declaring `none` (#3360).
 
 Foreground handoffs:
+
 - spawn_agent is asynchronous. When the source Agent(...) or Task(...) declares
   run_in_background=false, call collaboration.wait_agent(timeout_ms=...) immediately after
   spawn and keep the parent turn active until that child returns a terminal result.
@@ -99,6 +109,7 @@ When only the generic `multi_agent_v1` schema is available, typed GSD agent disp
 (openai/codex#15250). **This workaround is NOT equivalent to typed gsd-planner/gsd-executor
 execution** — GSD agents carry project-aware prompts, audit logging, and workflow context
 that a generic subagent lacks. Use the following fallback:
+
 1. Resolve your active Codex config root — the directory that contains your `config.toml`.
    This directory is determined in priority order: `$CODEX_HOME` (if set), the path given
    by `--config-dir` (if passed on invocation), a local `.codex` directory in the current
@@ -112,6 +123,7 @@ that a generic subagent lacks. Use the following fallback:
    and report the schema limitation rather than silently degrading.
 
 Spawn restriction:
+
 - Codex restricts `spawn_agent` to cases where the user has explicitly
   requested sub-agents. When automatic spawning is not permitted, do the
   work inline in the current agent rather than attempting to force a spawn.
@@ -120,6 +132,7 @@ Spawn restriction:
   defaulting to inline execution.
 
 Parallel fan-out:
+
 - For each child, loop on collaboration.wait_agent(timeout_ms=...) until its own terminal
   result is observed. A mailbox update from one child never completes another child, and an
   interim MESSAGE never completes its sender.
@@ -127,10 +140,11 @@ Parallel fan-out:
 - Do NOT use `functions.wait(cell_id=...)` — that is an unrelated exec-cell tool, not the collaboration wait
 
 Result parsing:
+
 - Look for structured markers in agent output: `CHECKPOINT`, `PLAN COMPLETE`, `SUMMARY`, etc.
 - `close_agent(id)` after collecting results — but only if `close_agent` is visible in the current
   tool schema (check via `tool_search` first, same schema-detection gate as `spawn_agent` above)
-</codex_skill_adapter>
+  </codex_skill_adapter>
 
 <objective>
 Manage the runtime skill surface without reinstall. Reads/writes `/Users/taha/projects/microservices-ecommerce/.codex/.gsd-surface.json`
@@ -144,16 +158,16 @@ Sub-commands: list · status · profile · disable · enable · reset
 
 Parse the first token of {{GSD_ARGS}}:
 
-| Token | Action |
-|---|---|
-| `list` | Show enabled + disabled clusters and skills |
-| `status` | Alias for `list` plus token cost summary |
-| `profile <name>` | Write `baseProfile` and re-stage |
-| `profile <n1>,<n2>` | Composed profiles (comma-separated, no spaces) |
-| `disable <cluster>` | Add cluster to `disabledClusters`, re-stage |
-| `enable <cluster>` | Remove cluster from `disabledClusters`, re-stage |
-| `reset` | Delete `.gsd-surface.json`, return to install-time profile |
-| *(none)* | Treat as `list` |
+| Token               | Action                                                     |
+| ------------------- | ---------------------------------------------------------- |
+| `list`              | Show enabled + disabled clusters and skills                |
+| `status`            | Alias for `list` plus token cost summary                   |
+| `profile <name>`    | Write `baseProfile` and re-stage                           |
+| `profile <n1>,<n2>` | Composed profiles (comma-separated, no spaces)             |
+| `disable <cluster>` | Add cluster to `disabledClusters`, re-stage                |
+| `enable <cluster>`  | Remove cluster from `disabledClusters`, re-stage           |
+| `reset`             | Delete `.gsd-surface.json`, return to install-time profile |
+| _(none)_            | Treat as `list`                                            |
 
 ---
 
@@ -161,9 +175,13 @@ Parse the first token of {{GSD_ARGS}}:
 
 Load the capability registry and call `listSurface(runtimeConfigDir, manifest, CLUSTERS, registry)` from
 the engine module at `${runtimeConfigDir}/gsd-core/bin/lib/surface.cjs`. The registry is loaded via:
+
 ```js
-const registry = require(runtimeConfigDir + '/gsd-core/bin/lib/capability-registry.cjs');
+const registry = require(
+  runtimeConfigDir + "/gsd-core/bin/lib/capability-registry.cjs",
+);
 ```
+
 Display:
 
 ```
@@ -203,9 +221,17 @@ materialization succeeds. Pass `null` to reset to the install-time profile.
 3. Keep the new state in memory; do not write it directly.
 4. Resolve and re-apply:
    ```js
-   const registry = require(runtimeConfigDir + '/gsd-core/bin/lib/capability-registry.cjs');
-   const layout = resolveRuntimeArtifactLayout(runtime, runtimeConfigDir, scope);
-   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, { surfaceState });
+   const registry = require(
+     runtimeConfigDir + "/gsd-core/bin/lib/capability-registry.cjs",
+   );
+   const layout = resolveRuntimeArtifactLayout(
+     runtime,
+     runtimeConfigDir,
+     scope,
+   );
+   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, {
+     surfaceState,
+   });
    ```
 5. Confirm: "Surface updated to profile `<name>`. N skills enabled."
 
@@ -221,9 +247,17 @@ Valid cluster names: `core_loop`, `audit_review`, `milestone`, `research_ideate`
 3. Add cluster to `surfaceState.disabledClusters` (deduplicate).
 4. Resolve layout and apply the in-memory candidate:
    ```js
-   const registry = require(runtimeConfigDir + '/gsd-core/bin/lib/capability-registry.cjs');
-   const layout = resolveRuntimeArtifactLayout(runtime, runtimeConfigDir, scope);
-   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, { surfaceState });
+   const registry = require(
+     runtimeConfigDir + "/gsd-core/bin/lib/capability-registry.cjs",
+   );
+   const layout = resolveRuntimeArtifactLayout(
+     runtime,
+     runtimeConfigDir,
+     scope,
+   );
+   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, {
+     surfaceState,
+   });
    ```
 5. Confirm: "Disabled cluster `<cluster>`. N skills removed from surface."
 
@@ -235,9 +269,17 @@ Valid cluster names: `core_loop`, `audit_review`, `milestone`, `research_ideate`
 2. Remove cluster from `surfaceState.disabledClusters`.
 3. Resolve layout and apply the in-memory candidate:
    ```js
-   const registry = require(runtimeConfigDir + '/gsd-core/bin/lib/capability-registry.cjs');
-   const layout = resolveRuntimeArtifactLayout(runtime, runtimeConfigDir, scope);
-   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, { surfaceState });
+   const registry = require(
+     runtimeConfigDir + "/gsd-core/bin/lib/capability-registry.cjs",
+   );
+   const layout = resolveRuntimeArtifactLayout(
+     runtime,
+     runtimeConfigDir,
+     scope,
+   );
+   applySurface(runtimeConfigDir, layout, manifest, CLUSTERS, registry, {
+     surfaceState,
+   });
    ```
 4. Confirm: "Enabled cluster `<cluster>`. N skills added back to surface."
 

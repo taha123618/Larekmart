@@ -1,0 +1,42 @@
+---
+# Global group variables for all Larekmart servers
+timezone: "UTC"
+ntp_servers:
+  - "time.aws.com"
+  - "0.pool.ntp.org"
+  - "1.pool.ntp.org"
+
+# Common base packages
+base_packages:
+  - curl
+  - wget
+  - vim
+  - git
+  - htop
+  - net-tools
+  - iptables
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - jq
+  - unzip
+  - chrony
+  - sysstat
+
+# System ulimits
+sysctl_settings:
+  fs.file-max: 2097152
+  vm.max_map_count: 262144
+  net.core.somaxconn: 65535
+  net.ipv4.tcp_max_syn_backlog: 65535
+  net.ipv4.ip_local_port_range: "1024 65535"
+  net.ipv4.tcp_tw_reuse: 1
+  net.ipv4.tcp_fin_timeout: 15
+
+# SSH Security Hardening
+ssh_port: 22
+ssh_permit_root_login: "no"
+ssh_password_authentication: "no"
+ssh_max_auth_tries: 3
+ssh_client_alive_interval: 300
+ssh_client_alive_count_max: 2

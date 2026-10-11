@@ -18,9 +18,9 @@
 // Action: Advisory (does not block) — injects read-first guidance
 // Only fires when the target file already exists on disk.
 
-const fs = require('fs');
-const path = require('path');
-const { HOOK_ON_CRASH, allow, crash } = require('./lib/hook-exit.js');
+const fs = require("fs");
+const path = require("path");
+const { HOOK_ON_CRASH, allow, crash } = require("./lib/hook-exit.js");
 
 // This guard is pure advisory UX — a reminder to Read before Write/Edit on
 // non-Claude-Code runtimes. A crash here must not block a legitimate Write/
@@ -45,7 +45,12 @@ const ON_CRASH = HOOK_ON_CRASH.ALLOW;
 // ('constructor', '__proto__', 'toString') to truthy functions/objects, so the
 // !mapped fall-through never fires for them; Map.get returns undefined (same
 // shape as canonicalizeRuntimeName in src/runtime-name-policy.cts).
-const KIMI_TOOL_NAMES = new Map([['WriteFile', 'Write'], ['StrReplaceFile', 'Edit'], ['ReadFile', 'Read'], ['Shell', 'Bash']]);
+const KIMI_TOOL_NAMES = new Map([
+  ["WriteFile", "Write"],
+  ["StrReplaceFile", "Edit"],
+  ["ReadFile", "Read"],
+  ["Shell", "Bash"],
+]);
 function normalizeKimiPayload(data) {
   // #2595 (review nit): `JSON.parse('null')` is null, and null/primitive
   // payloads reached the `data.tool_name` read below and threw — falsifying
@@ -53,17 +58,17 @@ function normalizeKimiPayload(data) {
   // property (e) now tests directly. Harmless in practice (a null payload has
   // nothing to guard, and the throw landed in the same fail-open catch as the
   // exit-0 it now takes deliberately) but the claim should be true as stated.
-  if (data === null || typeof data !== 'object') return data;
+  if (data === null || typeof data !== "object") return data;
   const raw = data.tool_name;
-  if (typeof raw !== 'string') return data;
-  const mapped = KIMI_TOOL_NAMES.get(raw.slice(raw.lastIndexOf(':') + 1));
+  if (typeof raw !== "string") return data;
+  const mapped = KIMI_TOOL_NAMES.get(raw.slice(raw.lastIndexOf(":") + 1));
   if (!mapped) return data;
   data.tool_name = mapped;
   if (data.tool_response === undefined && data.tool_output !== undefined) {
     data.tool_response = data.tool_output;
   }
   const input = data.tool_input;
-  if (input && typeof input === 'object') {
+  if (input && typeof input === "object") {
     // #2547 (review): Kimi's `path` is AUTHORITATIVE — it must win outright,
     // not merely fill in when `file_path` happens to be absent. kimi-cli's file
     // tools carry no `file_path` field at all (src/kimi_cli/tools/file/write.py,
@@ -82,11 +87,14 @@ function normalizeKimiPayload(data) {
     // elsewhere, reached through the guard's own read rather than through
     // normalization. Overwriting can only ever narrow what a guard inspects to
     // the path that will actually be written, so it cannot under-block.
-    if (typeof input.path === 'string') {
+    if (typeof input.path === "string") {
       input.file_path = input.path;
     }
-    const edits = Array.isArray(input.edit) ? input.edit
-      : (input.edit && typeof input.edit === 'object') ? [input.edit] : [];
+    const edits = Array.isArray(input.edit)
+      ? input.edit
+      : input.edit && typeof input.edit === "object"
+        ? [input.edit]
+        : [];
     if (edits.length) {
       // #2547: `e?.old`, not `e.old` — `??` guards the value, not the
       // dereference, so a NULLISH entry (`edit: [null]`) threw a TypeError
@@ -102,7 +110,13 @@ function normalizeKimiPayload(data) {
       // stringification intact for every value that CAN coerce (numbers,
       // arrays, plain objects), so nothing downstream — including
       // gsd-prompt-guard's scan of new_string — loses content it saw before.
-      const editText = (v) => { try { return String(v ?? ''); } catch { return ''; } };
+      const editText = (v) => {
+        try {
+          return String(v ?? "");
+        } catch {
+          return "";
+        }
+      };
       // #2595 (review Major 2): reconstruct UNCONDITIONALLY, mirroring the
       // `path` decision above rather than merely filling in when the field
       // happens to be absent. kimi-cli's StrReplaceFile schema is `path` +
@@ -115,25 +129,25 @@ function normalizeKimiPayload(data) {
       // real `edit[].new` — a one-key bypass of the very scan this fix's
       // guarded coercion exists to keep fed. A `typeof` test would NOT close
       // it: a benign non-empty string shadows just as effectively as ''.
-      input.old_string = edits.map((e) => editText(e?.old)).join('\n');
-      input.new_string = edits.map((e) => editText(e?.new)).join('\n');
+      input.old_string = edits.map((e) => editText(e?.old)).join("\n");
+      input.new_string = edits.map((e) => editText(e?.new)).join("\n");
     }
   }
   return data;
 }
 
-let input = '';
+let input = "";
 const stdinTimeout = setTimeout(() => allow(undefined), 3000);
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => input += chunk);
-process.stdin.on('end', () => {
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => (input += chunk));
+process.stdin.on("end", () => {
   clearTimeout(stdinTimeout);
   try {
     const data = normalizeKimiPayload(JSON.parse(input));
     const toolName = data.tool_name;
 
     // Only intercept Write and Edit tool calls
-    if (toolName !== 'Write' && toolName !== 'Edit') {
+    if (toolName !== "Write" && toolName !== "Edit") {
       allow(undefined);
     }
 
@@ -152,7 +166,7 @@ process.stdin.on('end', () => {
     //      not hook subprocesses, which is why checking them alone is
     //      insufficient (regression of #2344 fixed here as #2520).
     const isClaudeCode =
-      (typeof data.session_id === 'string' && data.session_id.length > 0) ||
+      (typeof data.session_id === "string" && data.session_id.length > 0) ||
       process.env.CLAUDE_CODE_ENTRYPOINT ||
       process.env.CLAUDE_CODE_SSE_PORT ||
       process.env.CLAUDE_SESSION_ID ||
@@ -163,9 +177,10 @@ process.stdin.on('end', () => {
 
     // #2595 (review Major 3, sibling sweep): typed read — same class as the
     // worktree guard's, advisory-only here (no exit(2) path in this hook).
-    const filePath = typeof data.tool_input?.file_path === 'string'
-      ? data.tool_input.file_path
-      : '';
+    const filePath =
+      typeof data.tool_input?.file_path === "string"
+        ? data.tool_input.file_path
+        : "";
     if (!filePath) {
       allow(undefined);
     }
@@ -189,13 +204,13 @@ process.stdin.on('end', () => {
     // Advisory guidance — does not block the operation
     const output = {
       hookSpecificOutput: {
-        hookEventName: 'PreToolUse',
+        hookEventName: "PreToolUse",
         additionalContext:
           `READ-BEFORE-EDIT REMINDER: You are about to modify "${fileName}" which already exists. ` +
-          'If you have not already used the Read tool to read this file in the current session, ' +
-          'you MUST Read it first before editing. The runtime will reject edits to files that ' +
-          'have not been read. Use the Read tool on this file path, then retry your edit.',
-        code: 'READ_BEFORE_EDIT',
+          "If you have not already used the Read tool to read this file in the current session, " +
+          "you MUST Read it first before editing. The runtime will reject edits to files that " +
+          "have not been read. Use the Read tool on this file path, then retry your edit.",
+        code: "READ_BEFORE_EDIT",
         fileName,
       },
     };

@@ -10,13 +10,7 @@
   "mcp": {
     "gsd": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "-p",
-        "@opengsd/gsd-core",
-        "gsd-mcp-server"
-      ],
+      "command": ["npx", "-y", "-p", "@opengsd/gsd-core", "gsd-mcp-server"],
       "enabled": true
     }
   }

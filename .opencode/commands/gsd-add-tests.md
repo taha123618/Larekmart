@@ -16,6 +16,7 @@ tools:
   agent: true
   question: true
 ---
+
 <objective>
 Generate unit and E2E tests for a completed phase, using its SUMMARY.md, CONTEXT.md, and VERIFICATION.md as specifications.
 

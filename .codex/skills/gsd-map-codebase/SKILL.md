@@ -6,27 +6,34 @@ metadata:
 ---
 
 <codex_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked by mentioning `$gsd-map-codebase`.
 - Treat all user text after `$gsd-map-codebase` as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. AskUserQuestion → request_user_input Mapping
+
 GSD workflows use `AskUserQuestion` (Claude Code syntax). Translate to Codex `request_user_input`:
 
 Parameter mapping:
+
 - `header` → `header`
 - `question` → `question`
 - Options formatted as `"Label" — description` → `{label: "Label", description: "description"}`
 - Generate `id` from header: lowercase, replace spaces with underscores
 
 Batched calls:
+
 - `AskUserQuestion([q1, q2])` → single `request_user_input` with multiple entries in `questions[]`
 
 Multi-select workaround:
+
 - Codex has no `multiSelect`. Use sequential single-selects, or present a numbered freeform list asking the user to enter comma-separated numbers.
 
 Execute mode fallback:
+
 - When `request_user_input` is rejected or unavailable, activate TEXT_MODE: append `--text` to `{{GSD_ARGS}}` so the workflow's built-in text-mode branching takes over. Present every `AskUserQuestion` call as a plain-text numbered list, then stop and wait for the user's reply. Do NOT pick a default and continue (#3018 / #3808).
 - You may only proceed without a user answer when one of these is true:
   (a) the invocation included an explicit non-interactive flag (`--auto` or `--all`),
@@ -35,6 +42,7 @@ Execute mode fallback:
 - Do NOT write workflow artifacts (CONTEXT.md, DISCUSSION-LOG.md, PLAN.md, checkpoint files) until the user has answered the plain-text questions or one of (a)-(c) above applies. Surfacing the questions and waiting is the correct response — silently defaulting and writing artifacts is the #3018 failure mode.
 
 ## C. Task() → spawn_agent Mapping
+
 GSD workflows use `Task(...)` (Claude Code syntax). Translate to Codex collaboration tools:
 
 **Schema detection (required first step):** Before spawning, inspect the `spawn_agent`
@@ -48,6 +56,7 @@ Never infer one field from a schema/version label or from the presence of anothe
 - **Generic schema:** `spawn_agent` does not advertise `agent_type` — typed GSD agent dispatch is unavailable in this session, even if other optional fields are present.
 
 Typed mapping (agent_type-capable schema only):
+
 - `Task(subagent_type="X", prompt="Y")` → `spawn_agent(agent_type="X", message="Y")`
 - `Agent(subagent_type="X", prompt="Y")` → `spawn_agent(agent_type="X", message="Y")`
 - `Task(model="{resolved_model}")` → pass `model="{resolved_model}"` when the
@@ -78,6 +87,7 @@ Typed mapping (agent_type-capable schema only):
   isolation adapter, which still fails closed for hosts declaring `none` (#3360).
 
 Foreground handoffs:
+
 - spawn_agent is asynchronous. When the source Agent(...) or Task(...) declares
   run_in_background=false, call collaboration.wait_agent(timeout_ms=...) immediately after
   spawn and keep the parent turn active until that child returns a terminal result.
@@ -99,6 +109,7 @@ When only the generic `multi_agent_v1` schema is available, typed GSD agent disp
 (openai/codex#15250). **This workaround is NOT equivalent to typed gsd-planner/gsd-executor
 execution** — GSD agents carry project-aware prompts, audit logging, and workflow context
 that a generic subagent lacks. Use the following fallback:
+
 1. Resolve your active Codex config root — the directory that contains your `config.toml`.
    This directory is determined in priority order: `$CODEX_HOME` (if set), the path given
    by `--config-dir` (if passed on invocation), a local `.codex` directory in the current
@@ -112,6 +123,7 @@ that a generic subagent lacks. Use the following fallback:
    and report the schema limitation rather than silently degrading.
 
 Spawn restriction:
+
 - Codex restricts `spawn_agent` to cases where the user has explicitly
   requested sub-agents. When automatic spawning is not permitted, do the
   work inline in the current agent rather than attempting to force a spawn.
@@ -120,6 +132,7 @@ Spawn restriction:
   defaulting to inline execution.
 
 Parallel fan-out:
+
 - For each child, loop on collaboration.wait_agent(timeout_ms=...) until its own terminal
   result is observed. A mailbox update from one child never completes another child, and an
   interim MESSAGE never completes its sender.
@@ -127,10 +140,11 @@ Parallel fan-out:
 - Do NOT use `functions.wait(cell_id=...)` — that is an unrelated exec-cell tool, not the collaboration wait
 
 Result parsing:
+
 - Look for structured markers in agent output: `CHECKPOINT`, `PLAN COMPLETE`, `SUMMARY`, etc.
 - `close_agent(id)` after collecting results — but only if `close_agent` is visible in the current
   tool schema (check via `tool_search` first, same schema-detection gate as `spawn_agent` above)
-</codex_skill_adapter>
+  </codex_skill_adapter>
 
 <objective>
 Analyze existing codebase using parallel gsd-codebase-mapper agents to produce structured codebase documents.
@@ -154,6 +168,7 @@ Output: .planning/codebase/ folder with 7 structured documents about the codebas
 Arguments: {{GSD_ARGS}}
 
 Parse the first token of {{GSD_ARGS}}:
+
 - If it is `--fast`: strip the flag, then read and execute `/Users/taha/projects/microservices-ecommerce/.codex/gsd-core/workflows/scan.md` (passing remaining args including optional --focus). Load it on demand here — it is deliberately not in `<execution_context>`, so the common full-map path does not pay for it.
 - If it is `--query`: strip the flag, run the intel workflow (passing remaining args as the subcommand).
 - Otherwise: pass all of {{GSD_ARGS}} as focus area to the map-codebase workflow.
@@ -162,13 +177,15 @@ Parse the first token of {{GSD_ARGS}}:
 Check for .planning/STATE.md - loads context if project already initialized
 
 **This command can run:**
+
 - Via $gsd-onboard for first-time brownfield setup - creates codebase map first
 - After $gsd-new-project (greenfield codebases) - updates codebase map as code evolves
 - Anytime to refresh codebase understanding
-</context>
+  </context>
 
 <when_to_use>
 **Use map-codebase for:**
+
 - Brownfield projects before initialization (understand existing code first)
 - Refreshing codebase map after significant changes
 - Refreshing or deepening an onboarded codebase map
@@ -176,9 +193,10 @@ Check for .planning/STATE.md - loads context if project already initialized
 - When STATE.md references outdated codebase info
 
 **Skip map-codebase for:**
+
 - Greenfield projects with no code yet (nothing to map)
 - Trivial codebases (<5 files)
-</when_to_use>
+  </when_to_use>
 
 <process>
 1. Check if .planning/codebase/ already exists (offer to refresh or skip)
@@ -195,9 +213,10 @@ Check for .planning/STATE.md - loads context if project already initialized
 </process>
 
 <success_criteria>
+
 - [ ] .planning/codebase/ directory created
 - [ ] All 7 codebase documents written by mapper agents
 - [ ] Documents follow template structure
 - [ ] Parallel agents completed without errors
 - [ ] User knows next steps
-</success_criteria>
+      </success_criteria>

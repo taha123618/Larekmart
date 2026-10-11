@@ -24,26 +24,27 @@ checkpoints between tasks. The user can review, modify, or redirect work at any 
 2. For each plan (sequentially, ignoring wave grouping):
 
    a. **Present the plan to the user:**
-      ```
-      ## Plan {plan_id}: {plan_name}
 
-      Objective: {from plan file}
-      Tasks: {task_count}
+   ```
+   ## Plan {plan_id}: {plan_name}
 
-      Options:
-      - Execute (proceed with all tasks)
-      - Review first (show task breakdown before starting)
-      - Skip (move to next plan)
-      - Stop (end execution, save progress)
-      ```
+   Objective: {from plan file}
+   Tasks: {task_count}
+
+   Options:
+   - Execute (proceed with all tasks)
+   - Review first (show task breakdown before starting)
+   - Skip (move to next plan)
+   - Stop (end execution, save progress)
+   ```
 
    b. **If "Review first":** Read and display the full plan file. Ask again: Execute, Modify, Skip.
 
    c. **If "Execute":** Read and follow `/Users/taha/projects/microservices-ecommerce/.trae/gsd-core/workflows/execute-plan.md` **inline**
-      (do NOT spawn a subagent). Execute tasks one at a time.
+   (do NOT spawn a subagent). Execute tasks one at a time.
 
    d. **After each task:** Pause briefly. If the user intervenes (types anything), stop and address
-      their feedback before continuing. Otherwise proceed to next task.
+   their feedback before continuing. Otherwise proceed to next task.
 
    e. **After plan complete:** Show results, commit, create SUMMARY.md, then present next plan.
 
@@ -87,6 +88,7 @@ CROSS_AI_TIMEOUT=$(gsd_run query config-get workflow.cross_ai_timeout --raw 2>/d
    - Format as a self-contained execution prompt
 
 2. **Check for dirty working tree before execution:**
+
    ```bash
    if ! git diff --quiet HEAD 2>/dev/null; then
      echo "WARNING: dirty working tree detected — the external AI command may produce uncommitted changes that conflict with existing modifications"
@@ -95,6 +97,7 @@ CROSS_AI_TIMEOUT=$(gsd_run query config-get workflow.cross_ai_timeout --raw 2>/d
 
 3. **Run the external command** from the project root, writing the prompt to stdin.
    Never shell-interpolate the prompt — always pipe via stdin to prevent injection:
+
    ```bash
    echo "$TASK_PROMPT" | gsd_run run-with-timeout "${CROSS_AI_TIMEOUT}" -- ${CROSS_AI_CMD} > "$CANDIDATE_SUMMARY" 2>"$ERROR_LOG"
    EXIT_CODE=$?

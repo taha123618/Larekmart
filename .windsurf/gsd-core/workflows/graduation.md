@@ -10,11 +10,11 @@ This workflow clusters recurring items across the last N phases' LEARNINGS.md fi
 
 Read from project config (`config.json`):
 
-| Key | Default | Description |
-|-----|---------|-------------|
-| `features.graduation` | `true` | Master on/off switch. `false` skips silently. |
-| `features.graduation_window` | `5` | How many prior phases to scan |
-| `features.graduation_threshold` | `3` | Minimum cluster size to surface |
+| Key                             | Default | Description                                   |
+| ------------------------------- | ------- | --------------------------------------------- |
+| `features.graduation`           | `true`  | Master on/off switch. `false` skips silently. |
+| `features.graduation_window`    | `5`     | How many prior phases to scan                 |
+| `features.graduation_threshold` | `3`     | Minimum cluster size to surface               |
 
 ---
 
@@ -31,6 +31,7 @@ GRADUATION_THRESHOLD=$(gsd_run query config-get features.graduation_threshold --
 **If `response_language` is set:** All user-facing output of this workflow — narration between tool calls, status updates, progress notes, findings, questions, prompts, and explanations — MUST be presented in `{response_language}`. Technical terms, code, file paths, and subagent prompts stay in English — only user-facing output is translated.
 
 **Skip silently (print nothing) if:**
+
 - `features.graduation` is `false`
 - Fewer than `graduation_threshold` completed prior phases exist (not enough data)
 
@@ -47,6 +48,7 @@ find .planning/phases -name "*-LEARNINGS.md" | sort | tail -n "$GRADUATION_WINDO
 ```
 
 For each file found:
+
 1. Parse the four category sections: `## Decisions`, `## Lessons`, `## Patterns`, `## Surprises`
 2. Extract each `### Item Title` + body as a single item record: `{ category, title, body, source_phase, source_file }`
 3. **Skip items that already contain `**Graduated:**`** — they have been promoted and must not re-surface
@@ -74,8 +76,8 @@ Read `.planning/STATE.md` `graduation_backlog` section (if present). Format:
 ```yaml
 graduation_backlog:
   - cluster_id: "{sha256-of-cluster-title}"
-    status: "dismissed"   # or "deferred"
-    deferred_until: "phase-N"  # only for deferred entries
+    status: "dismissed" # or "deferred"
+    deferred_until: "phase-N" # only for deferred entries
     cluster_title: "{representative title}"
 ```
 
@@ -89,11 +91,11 @@ graduation_backlog:
 
 For each qualifying cluster, determine the suggested target file:
 
-| Category | Suggested Target |
-|----------|-----------------|
-| `decisions` | `PROJECT.md` — append under `## Validated Decisions` (create section if absent) |
-| `patterns` | `PATTERNS.md` — append under the appropriate category section (create file if absent) |
-| `lessons` | `PROJECT.md` — append under `## Invariants` (create section if absent) |
+| Category    | Suggested Target                                                                        |
+| ----------- | --------------------------------------------------------------------------------------- |
+| `decisions` | `PROJECT.md` — append under `## Validated Decisions` (create section if absent)         |
+| `patterns`  | `PATTERNS.md` — append under the appropriate category section (create file if absent)   |
+| `lessons`   | `PROJECT.md` — append under `## Invariants` (create section if absent)                  |
 | `surprises` | Flag for human review — if genuinely surprising 3+ times, something structural is wrong |
 
 Print the graduation report:
@@ -130,13 +132,16 @@ Use `conversational prompting` (or equivalent HITL primitive for the current run
 
 1. Read the target file (or create it with a standard header if absent)
 2. Append the cluster entry under the suggested section:
+
    ```markdown
    ### {Cluster representative title}
+
    {Merged body — combine unique sentences across cluster items}
 
    **Sources:** Phase {A}, Phase {B}, Phase {C}
    **Promoted:** {ISO_DATE}
    ```
+
 3. For each source LEARNINGS.md item in the cluster, append `**Graduated:** {target-file}:{ISO_DATE}` after its last existing field
 4. Commit both the target file and all annotated LEARNINGS.md files in a single atomic commit:
    `docs(learnings): graduate "{cluster title}" to {target-file}`
@@ -144,6 +149,7 @@ Use `conversational prompting` (or equivalent HITL primitive for the current run
 **On `D` (Defer):**
 
 Write to `.planning/STATE.md` under `graduation_backlog`:
+
 ```yaml
 - cluster_id: "{sha256}"
   status: "deferred"
@@ -154,6 +160,7 @@ Write to `.planning/STATE.md` under `graduation_backlog`:
 **On `X` (Dismiss):**
 
 Write to `.planning/STATE.md` under `graduation_backlog`:
+
 ```yaml
 - cluster_id: "{sha256}"
   status: "dismissed"
@@ -163,9 +170,11 @@ Write to `.planning/STATE.md` under `graduation_backlog`:
 **On `A` (Defer all):**
 
 Defer the current cluster (same as `D`) and skip all remaining clusters for this run, deferring each to the next transition. Print:
+
 ```text
 [graduation: deferred all remaining clusters to next transition]
 ```
+
 Then proceed directly to Step 7.
 
 ---
@@ -179,6 +188,7 @@ Graduation complete: {promoted} promoted, {deferred} deferred, {dismissed} dismi
 ```
 
 If no clusters qualified (all filtered by backlog or threshold), print:
+
 ```text
 [graduation: no qualifying clusters in phases {M}–{N}]
 ```

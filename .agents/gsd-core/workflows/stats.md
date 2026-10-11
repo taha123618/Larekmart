@@ -76,7 +76,8 @@ If `MVP_COUNT == 0`, the project has no MVP-mode phases — omit the line (no cl
 </process>
 
 <success_criteria>
+
 - [ ] Statistics gathered from project state
 - [ ] Results formatted clearly
 - [ ] Displayed to user
-</success_criteria>
+      </success_criteria>

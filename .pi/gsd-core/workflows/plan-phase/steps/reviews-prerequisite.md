@@ -7,6 +7,7 @@
 **If `--reviews` AND `has_reviews` is false (no REVIEWS.md in phase dir):**
 
 Error:
+
 ```
 No REVIEWS.md found for Phase {N}. Run reviews first:
 
@@ -14,4 +15,5 @@ No REVIEWS.md found for Phase {N}. Run reviews first:
 
 Then re-run /gsd:plan-phase {N} --reviews
 ```
+
 Exit workflow.

@@ -1,0 +1,39 @@
+name: "Ansible Lint & Syntax Check"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "infrastructure/ansible/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "infrastructure/ansible/**"
+
+jobs:
+  ansible-lint:
+    name: "Ansible Syntax Verification"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ansible & Linter
+        run: |
+          pip install ansible-core ansible-lint
+
+      - name: Check Playbooks Syntax
+        working-directory: infrastructure/ansible
+        run: |
+          ansible-playbook -i inventories/production/hosts.ini playbooks/site.yml --syntax-check
+          ansible-playbook -i inventories/production/hosts.ini playbooks/k8s-node-setup.yml --syntax-check
+          ansible-playbook -i inventories/production/hosts.ini playbooks/security-hardening.yml --syntax-check
+          ansible-playbook -i inventories/production/hosts.ini playbooks/backup.yml --syntax-check

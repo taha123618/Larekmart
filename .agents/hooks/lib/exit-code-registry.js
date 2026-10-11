@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 // GENERATED FILE — DO NOT EDIT BY HAND.
 // Source of truth: gsd-core/bin/shared/exit-codes.json. Regenerate with:
@@ -30,14 +30,16 @@ const EXIT_CODES = Object.freeze([
   Object.freeze({
     code: 66,
     name: "NO_INPUT",
-    meaning: "Ran; zero units were in scope, and that emptiness is known to be genuine",
+    meaning:
+      "Ran; zero units were in scope, and that emptiness is known to be genuine",
     owner: "generic",
     authorizedBy: "ADR-3889",
   }),
   Object.freeze({
     code: 69,
     name: "UNAVAILABLE",
-    meaning: "Could not run — prerequisite absent, input unreadable, scope unestablished",
+    meaning:
+      "Could not run — prerequisite absent, input unreadable, scope unestablished",
     owner: "generic",
     authorizedBy: "ADR-3889",
   }),
@@ -51,14 +53,19 @@ const EXIT_CODES = Object.freeze([
   Object.freeze({
     code: 80,
     name: "DEGRADED",
-    meaning: "Ran to completion and is reporting a condition through its result payload rather than as a process failure",
+    meaning:
+      "Ran to completion and is reporting a condition through its result payload rather than as a process failure",
     owner: "gsd-tools",
     authorizedBy: "ADR-3889 + ADR-2980",
-  })
+  }),
 ]);
 
-const NAME_TO_CODE = new Map(EXIT_CODES.map((entry) => [entry.name, entry.code]));
-const CODE_TO_NAME = new Map(EXIT_CODES.map((entry) => [entry.code, entry.name]));
+const NAME_TO_CODE = new Map(
+  EXIT_CODES.map((entry) => [entry.name, entry.code]),
+);
+const CODE_TO_NAME = new Map(
+  EXIT_CODES.map((entry) => [entry.code, entry.name]),
+);
 
 /**
  * Resolve the registered exit code for a symbolic name. Pure, total: throws
@@ -72,11 +79,15 @@ const CODE_TO_NAME = new Map(EXIT_CODES.map((entry) => [entry.code, entry.name])
  * @returns {number}
  */
 function exitCodeFor(name) {
-  if (typeof name !== 'string' || name.length === 0) {
-    throw new Error(`exitCodeFor: name must be a non-empty string, received ${JSON.stringify(name)}`);
+  if (typeof name !== "string" || name.length === 0) {
+    throw new Error(
+      `exitCodeFor: name must be a non-empty string, received ${JSON.stringify(name)}`,
+    );
   }
   if (!NAME_TO_CODE.has(name)) {
-    throw new Error(`exitCodeFor: unregistered exit code name: ${JSON.stringify(name)}`);
+    throw new Error(
+      `exitCodeFor: unregistered exit code name: ${JSON.stringify(name)}`,
+    );
   }
   return NAME_TO_CODE.get(name);
 }
@@ -90,7 +101,9 @@ function exitCodeFor(name) {
  */
 function nameForExitCode(code) {
   if (!CODE_TO_NAME.has(code)) {
-    throw new Error(`nameForExitCode: unregistered exit code: ${JSON.stringify(code)}`);
+    throw new Error(
+      `nameForExitCode: unregistered exit code: ${JSON.stringify(code)}`,
+    );
   }
   return CODE_TO_NAME.get(code);
 }

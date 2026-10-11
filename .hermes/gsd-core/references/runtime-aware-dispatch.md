@@ -25,12 +25,12 @@ the planner's behavior in the coder built-in's process.
 
 ## Suffix → built-in map
 
-| Agent role suffix | Built-in | Rationale |
-|---|---|---|
-| `-planner`, `-roadmapper`, `-selector`, `-spec` | `plan` | Plans/designs; no file writes |
-| `-researcher`, `-mapper`, `-checker`, `-verifier`, `-auditor`, `-analyzer`, `-synthesizer`, `-profiler`, `-curator`, `-classifier`, `-reviewer` | `explore` | Read-only investigation |
-| everything else (`-executor`, `-fixer`, `-writer`, `-debugger`, …) | `coder` | General-purpose with full tool set |
-| `general-purpose`, `general`, `default`, `sonnet`, `opus`, `haiku` | `coder` | Already-generic names |
+| Agent role suffix                                                                                                                               | Built-in  | Rationale                          |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------------------------------- |
+| `-planner`, `-roadmapper`, `-selector`, `-spec`                                                                                                 | `plan`    | Plans/designs; no file writes      |
+| `-researcher`, `-mapper`, `-checker`, `-verifier`, `-auditor`, `-analyzer`, `-synthesizer`, `-profiler`, `-curator`, `-classifier`, `-reviewer` | `explore` | Read-only investigation            |
+| everything else (`-executor`, `-fixer`, `-writer`, `-debugger`, …)                                                                              | `coder`   | General-purpose with full tool set |
+| `general-purpose`, `general`, `default`, `sonnet`, `opus`, `haiku`                                                                              | `coder`   | Already-generic names              |
 
 ## Why not a hook?
 

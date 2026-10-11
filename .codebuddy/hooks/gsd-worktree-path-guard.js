@@ -14,11 +14,11 @@
 // Action: BLOCK (exit 2) if file_path is absolute and outside the worktree root
 // No-op: relative paths, non-worktree CWDs, hook errors (silent fail)
 
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
-const { HOOK_ON_CRASH, allow, deny, crash } = require('./lib/hook-exit.js');
-const { reportIfUndetermined } = require('./lib/git-probe.js');
+const fs = require("fs");
+const path = require("path");
+const { spawnSync } = require("child_process");
+const { HOOK_ON_CRASH, allow, deny, crash } = require("./lib/hook-exit.js");
+const { reportIfUndetermined } = require("./lib/git-probe.js");
 
 // This guard's outer catch has always exited 0 (fail open): a path guard that
 // cannot resolve the worktree must not block the user's edit — its whole job
@@ -28,10 +28,15 @@ const { reportIfUndetermined } = require('./lib/git-probe.js');
 // rather than inheriting a default (#3911).
 const ON_CRASH = HOOK_ON_CRASH.ALLOW;
 
-const SPAWNOPT = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 2000, windowsHide: true };
+const SPAWNOPT = {
+  encoding: "utf8",
+  stdio: ["ignore", "pipe", "ignore"],
+  timeout: 2000,
+  windowsHide: true,
+};
 
 function git(args, cwd) {
-  return spawnSync('git', args, { ...SPAWNOPT, cwd });
+  return spawnSync("git", args, { ...SPAWNOPT, cwd });
 }
 
 // Walk up from `start` to find the nearest existing directory.
@@ -41,7 +46,12 @@ function nearestExistingDir(start) {
   let prev;
   do {
     prev = dir;
-    try { fs.accessSync(dir, fs.constants.F_OK); return dir; } catch { /* keep walking */ }
+    try {
+      fs.accessSync(dir, fs.constants.F_OK);
+      return dir;
+    } catch {
+      /* keep walking */
+    }
     dir = path.dirname(dir);
   } while (dir !== prev);
   return null;
@@ -64,7 +74,12 @@ function nearestExistingDir(start) {
 // ('constructor', '__proto__', 'toString') to truthy functions/objects, so the
 // !mapped fall-through never fires for them; Map.get returns undefined (same
 // shape as canonicalizeRuntimeName in src/runtime-name-policy.cts).
-const KIMI_TOOL_NAMES = new Map([['WriteFile', 'Write'], ['StrReplaceFile', 'Edit'], ['ReadFile', 'Read'], ['Shell', 'Bash']]);
+const KIMI_TOOL_NAMES = new Map([
+  ["WriteFile", "Write"],
+  ["StrReplaceFile", "Edit"],
+  ["ReadFile", "Read"],
+  ["Shell", "Bash"],
+]);
 function normalizeKimiPayload(data) {
   // #2595 (review nit): `JSON.parse('null')` is null, and null/primitive
   // payloads reached the `data.tool_name` read below and threw — falsifying
@@ -72,17 +87,17 @@ function normalizeKimiPayload(data) {
   // property (e) now tests directly. Harmless in practice (a null payload has
   // nothing to guard, and the throw landed in the same fail-open catch as the
   // exit-0 it now takes deliberately) but the claim should be true as stated.
-  if (data === null || typeof data !== 'object') return data;
+  if (data === null || typeof data !== "object") return data;
   const raw = data.tool_name;
-  if (typeof raw !== 'string') return data;
-  const mapped = KIMI_TOOL_NAMES.get(raw.slice(raw.lastIndexOf(':') + 1));
+  if (typeof raw !== "string") return data;
+  const mapped = KIMI_TOOL_NAMES.get(raw.slice(raw.lastIndexOf(":") + 1));
   if (!mapped) return data;
   data.tool_name = mapped;
   if (data.tool_response === undefined && data.tool_output !== undefined) {
     data.tool_response = data.tool_output;
   }
   const input = data.tool_input;
-  if (input && typeof input === 'object') {
+  if (input && typeof input === "object") {
     // #2547 (review): Kimi's `path` is AUTHORITATIVE — it must win outright,
     // not merely fill in when `file_path` happens to be absent. kimi-cli's file
     // tools carry no `file_path` field at all (src/kimi_cli/tools/file/write.py,
@@ -101,11 +116,14 @@ function normalizeKimiPayload(data) {
     // elsewhere, reached through the guard's own read rather than through
     // normalization. Overwriting can only ever narrow what a guard inspects to
     // the path that will actually be written, so it cannot under-block.
-    if (typeof input.path === 'string') {
+    if (typeof input.path === "string") {
       input.file_path = input.path;
     }
-    const edits = Array.isArray(input.edit) ? input.edit
-      : (input.edit && typeof input.edit === 'object') ? [input.edit] : [];
+    const edits = Array.isArray(input.edit)
+      ? input.edit
+      : input.edit && typeof input.edit === "object"
+        ? [input.edit]
+        : [];
     if (edits.length) {
       // #2547: `e?.old`, not `e.old` — `??` guards the value, not the
       // dereference, so a NULLISH entry (`edit: [null]`) threw a TypeError
@@ -121,7 +139,13 @@ function normalizeKimiPayload(data) {
       // stringification intact for every value that CAN coerce (numbers,
       // arrays, plain objects), so nothing downstream — including
       // gsd-prompt-guard's scan of new_string — loses content it saw before.
-      const editText = (v) => { try { return String(v ?? ''); } catch { return ''; } };
+      const editText = (v) => {
+        try {
+          return String(v ?? "");
+        } catch {
+          return "";
+        }
+      };
       // #2595 (review Major 2): reconstruct UNCONDITIONALLY, mirroring the
       // `path` decision above rather than merely filling in when the field
       // happens to be absent. kimi-cli's StrReplaceFile schema is `path` +
@@ -134,25 +158,29 @@ function normalizeKimiPayload(data) {
       // real `edit[].new` — a one-key bypass of the very scan this fix's
       // guarded coercion exists to keep fed. A `typeof` test would NOT close
       // it: a benign non-empty string shadows just as effectively as ''.
-      input.old_string = edits.map((e) => editText(e?.old)).join('\n');
-      input.new_string = edits.map((e) => editText(e?.new)).join('\n');
+      input.old_string = edits.map((e) => editText(e?.old)).join("\n");
+      input.new_string = edits.map((e) => editText(e?.new)).join("\n");
     }
   }
   return data;
 }
 
-let input = '';
+let input = "";
 const stdinTimeout = setTimeout(() => allow(undefined), 3000);
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => input += chunk);
-process.stdin.on('end', () => {
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => (input += chunk));
+process.stdin.on("end", () => {
   clearTimeout(stdinTimeout);
   try {
     const data = normalizeKimiPayload(JSON.parse(input));
     const toolName = data.tool_name;
 
     // Only guard Edit, Write, and MultiEdit tool calls
-    if (toolName !== 'Edit' && toolName !== 'Write' && toolName !== 'MultiEdit') {
+    if (
+      toolName !== "Edit" &&
+      toolName !== "Write" &&
+      toolName !== "MultiEdit"
+    ) {
       allow(undefined);
     }
 
@@ -174,21 +202,27 @@ process.stdin.on('end', () => {
     // regex below also rejects — the same guard outcome as symbolic-ref's
     // exit-128/empty-stdout failure. Do not change any timeout value as part
     // of this change, only the spawn count.
-    const combinedResult = git(['rev-parse', '--git-dir', '--abbrev-ref', 'HEAD', '--show-toplevel'], cwd);
+    const combinedResult = git(
+      ["rev-parse", "--git-dir", "--abbrev-ref", "HEAD", "--show-toplevel"],
+      cwd,
+    );
     // #3911: a timeout/spawn-failure result is indistinguishable from a clean
     // "not a git repo" answer by status/stdout alone — reportIfUndetermined
     // is a no-op on a genuine negative and only fires the diagnostic when the
     // probe itself could not run. The allow() below is UNCHANGED either way.
     reportIfUndetermined(
-      'gsd-worktree-path-guard',
-      'git rev-parse --git-dir --abbrev-ref HEAD --show-toplevel',
-      combinedResult
+      "gsd-worktree-path-guard",
+      "git rev-parse --git-dir --abbrev-ref HEAD --show-toplevel",
+      combinedResult,
     );
     if (combinedResult.status !== 0 || !combinedResult.stdout) {
       allow(undefined); // not a git repo — pass through
     }
 
-    const combinedLines = combinedResult.stdout.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+    const combinedLines = combinedResult.stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
     if (combinedLines.length < 3) {
       allow(undefined); // malformed/short output — can't determine root, fail open
     }
@@ -225,9 +259,10 @@ process.stdin.on('end', () => {
     // payloads (KIMI_TOOL_NAMES has no 'Edit' entry), so `{"tool_name":"Edit",
     // "tool_input":{"file_path":[]}}` reached it untouched — this guard's
     // original #260 surface. Same shape as hooks/gsd-windsurf-pre-write.js:75.
-    const rawFilePath = typeof data.tool_input?.file_path === 'string'
-      ? data.tool_input.file_path
-      : '';
+    const rawFilePath =
+      typeof data.tool_input?.file_path === "string"
+        ? data.tool_input.file_path
+        : "";
     if (!rawFilePath) {
       allow(undefined);
     }
@@ -261,11 +296,13 @@ process.stdin.on('end', () => {
     const checkDir = nearestExistingDir(
       (() => {
         try {
-          return fs.statSync(filePath).isDirectory() ? filePath : path.dirname(filePath);
+          return fs.statSync(filePath).isDirectory()
+            ? filePath
+            : path.dirname(filePath);
         } catch {
           return path.dirname(filePath);
         }
-      })()
+      })(),
     );
 
     if (!checkDir) {
@@ -281,8 +318,12 @@ process.stdin.on('end', () => {
     // case differences between realpathSync and path.resolve, forward- vs
     // back-slash inconsistencies) — both values come from the same git binary
     // in the same format by definition.
-    const fileTopResult = git(['rev-parse', '--show-toplevel'], checkDir);
-    reportIfUndetermined('gsd-worktree-path-guard', 'git rev-parse --show-toplevel (file location)', fileTopResult);
+    const fileTopResult = git(["rev-parse", "--show-toplevel"], checkDir);
+    reportIfUndetermined(
+      "gsd-worktree-path-guard",
+      "git rev-parse --show-toplevel (file location)",
+      fileTopResult,
+    );
 
     if (fileTopResult.status !== 0 || !fileTopResult.stdout) {
       // The target's location is not a git work tree. Two sub-cases:
@@ -291,11 +332,19 @@ process.stdin.on('end', () => {
       //    escape (and dangerous) → BLOCK.
       //  - Truly outside all git repositories (e.g. ~/.codebuddy/plans/) → not the
       //    main-repo vector → fail open. (#1342)
-      const insideGitDir = git(['rev-parse', '--is-inside-git-dir'], checkDir);
-      reportIfUndetermined('gsd-worktree-path-guard', 'git rev-parse --is-inside-git-dir', insideGitDir);
-      if (insideGitDir.status === 0 && insideGitDir.stdout && insideGitDir.stdout.trim() === 'true') {
+      const insideGitDir = git(["rev-parse", "--is-inside-git-dir"], checkDir);
+      reportIfUndetermined(
+        "gsd-worktree-path-guard",
+        "git rev-parse --is-inside-git-dir",
+        insideGitDir,
+      );
+      if (
+        insideGitDir.status === 0 &&
+        insideGitDir.stdout &&
+        insideGitDir.stdout.trim() === "true"
+      ) {
         const output = {
-          decision: 'block',
+          decision: "block",
           reason:
             `Worktree path guard: '${filePath}' is inside a git internal (.git) directory, ` +
             `not the active worktree at '${wtTopRaw}'. Writing to repository internals via an ` +
@@ -316,7 +365,7 @@ process.stdin.on('end', () => {
 
     // BLOCK: file resolves to a different git root than the active worktree
     const output = {
-      decision: 'block',
+      decision: "block",
       reason:
         `Worktree path guard: '${filePath}' resolves to git root '${fileTopRaw}' which ` +
         `differs from the active worktree root '${wtTopRaw}'. This likely means an ` +

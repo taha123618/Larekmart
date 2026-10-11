@@ -8,8 +8,9 @@ Verify threat mitigations for a completed phase. Confirm PLAN.md threat register
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-security-auditor — Verifies threat mitigation coverage
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
@@ -73,14 +74,15 @@ Also set `register_authored_at_plan_time: true` if **at least one** PLAN file co
 
 Classify each threat:
 
-| Status | Criteria |
-|--------|----------|
+| Status | Criteria                                                                           |
+| ------ | ---------------------------------------------------------------------------------- |
 | CLOSED | mitigation found OR accepted risk documented in SECURITY.md OR transfer documented |
-| OPEN | none of the above |
+| OPEN   | none of the above                                                                  |
 
 Build: `{ threat_id, category, component, severity, disposition, status, evidence }`
 
 **Short-circuit rule:**
+
 - If `threats_open: 0 AND register_authored_at_plan_time: true AND asvs_level == 1` → skip to Step 6 directly. No open threats at or above the block threshold remain (threats_open: 0); below-threshold open threats may remain and are non-blocking. L1 grep-depth is sufficient; no deeper verification required.
 - If `threats_open: 0 AND register_authored_at_plan_time: true AND asvs_level >= 2` → **do NOT skip**. The preliminary threat classification is grep-level (L1 depth) and is insufficient for L2/L3. Proceed to Step 5 (spawn the auditor) so that L2 boundary-placement checks and L3 end-to-end trace checks are performed. Skipping the auditor here would defeat ASVS level scaling for "clean" phases.
 - If `threats_open: 0 AND register_authored_at_plan_time: false` → **do NOT skip**. Empty-by-no-planning must not rubber-stamp a clean SECURITY.md. Proceed to Step 5 in **retroactive-STRIDE mode** — the auditor builds a register from implementation files first, then verifies mitigations.
@@ -90,6 +92,7 @@ Build: `{ threat_id, category, component, severity, disposition, status, evidenc
 
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `$ARGUMENTS` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `AskUserQuestion` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-Claude runtimes (OpenAI Codex, Antigravity, etc.) where `AskUserQuestion` is not available.
 Call AskUserQuestion with threat table and options:
+
 1. "Verify all open threats" → Step 5
 2. "Accept all open — document in accepted risks log" → add to SECURITY.md accepted risks, set all CLOSED, Step 6
 3. "Cancel" → exit
@@ -130,6 +133,7 @@ Agent(
 > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Agent() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
 Handle return:
+
 - `## SECURED` → record closures → Step 6
 - `## OPEN_THREATS` → record closed + open, present user with accept/block choice → Step 6
 - `## ESCALATE` → present to user → Step 6
@@ -137,20 +141,23 @@ Handle return:
 ## 6. Write/Update SECURITY.md
 
 **State B (create):**
+
 1. Read template from `/Users/taha/projects/microservices-ecommerce/.qwen/gsd-core/templates/SECURITY.md`
 2. Fill: frontmatter, threat register, accepted risks, audit trail
 3. Write to `${PHASE_DIR}/${PADDED_PHASE}-SECURITY.md`
 
 **State A (update):**
+
 1. Update threat register statuses, append to audit trail:
 
 ```markdown
 ## Security Audit {date}
-| Metric | Count |
-|--------|-------|
-| Threats found | {N} |
-| Closed | {M} |
-| Open | {K} |
+
+| Metric        | Count |
+| ------------- | ----- |
+| Threats found | {N}   |
+| Closed        | {M}   |
+| Open          | {K}   |
 ```
 
 **ENFORCING GATE:** If `threats_open > 0` after all options exhausted (user did not accept, not all verified closed):
@@ -174,6 +181,7 @@ gsd_run query commit "docs(phase-${PHASE}): add/update security threat verificat
 ## 8. Results + Routing
 
 **Secured (threats_open: 0):**
+
 ```
 GSD > PHASE {N} THREAT-SECURE
 threats_open: 0 — no blocking threats remain (threats_open: 0).
@@ -186,6 +194,7 @@ Display `/clear` reminder.
 </process>
 
 <success_criteria>
+
 - [ ] Security enforcement checked — exit if false
 - [ ] Input state detected (A/B/C) — state C exits cleanly
 - [ ] PLAN.md threat model parsed, register built
@@ -199,4 +208,4 @@ Display `/clear` reminder.
 - [ ] SECURITY.md created or updated
 - [ ] threats_open > 0 BLOCKS advancement (no next-phase routing emitted)
 - [ ] Results with routing presented on success
-</success_criteria>
+      </success_criteria>

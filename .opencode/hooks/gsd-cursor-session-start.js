@@ -20,30 +20,32 @@
 //
 // Cursor docs: https://cursor.com/docs/hooks
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const { allow } = require('./lib/hook-exit.js');
+const fs = require("fs");
+const { allow } = require("./lib/hook-exit.js");
 
 const MSG_PRESENT =
-  'GSD: .planning/STATE.md is present — review the current phase and any blockers before acting.';
+  "GSD: .planning/STATE.md is present — review the current phase and any blockers before acting.";
 const MSG_ABSENT =
-  'GSD: no .planning/ workflow found — run /gsd:new-project to start a tracked workflow.';
+  "GSD: no .planning/ workflow found — run /gsd:new-project to start a tracked workflow.";
 
 // Workspace resolution is shared across the Cursor hooks (#2587) — see
 // hooks/lib/cursor-workspace.js. Staged next to these scripts by
 // writeCursorHooksJson so the require always resolves post-install.
-const { resolveStatePath } = require('./lib/cursor-workspace.js');
+const { resolveStatePath } = require("./lib/cursor-workspace.js");
 
-let raw = '';
+let raw = "";
 const stdinTimeout = setTimeout(() => {
   // Timeout guard: exit silently rather than hanging.
   allow(undefined);
 }, 10000);
 
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { raw += chunk; });
-process.stdin.on('end', () => {
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => {
+  raw += chunk;
+});
+process.stdin.on("end", () => {
   clearTimeout(stdinTimeout);
   try {
     const statePath = resolveStatePath(raw);

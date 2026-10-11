@@ -35,14 +35,15 @@ const getData = async (
   let userDetail: UserDetailResponse | null = null;
 
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users/${id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    const authUrl =
+      process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
+      process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+      "http://localhost:8080";
+    const res = await fetch(`${authUrl}/users/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    );
+    });
     if (res.ok) {
       clerkUser = await res.json();
     }

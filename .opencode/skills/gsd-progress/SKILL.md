@@ -7,11 +7,12 @@ description: "Check progress, advance workflow, or dispatch freeform intent — 
 Check project progress, summarize recent work and what's ahead, then intelligently route to the next action.
 
 Three modes:
+
 - **default**: Show progress report + intelligently route to the next action (execute or plan). Provides situational awareness before continuing work.
 - **--next**: Automatically advance to the next logical step without manual route selection. Reads STATE.md, ROADMAP.md, and phase directories. Supports `--force` to bypass safety gates.
 - **--do "task description"**: Analyze freeform natural language and dispatch to the most appropriate GSD command. Never does the work itself — matches intent, confirms, hands off.
 - **--forensic**: Append a 6-check integrity audit after the standard progress report.
-</objective>
+  </objective>
 
 <flags>
 - **--next**: Detect current project state and automatically invoke the next logical GSD workflow step. Scans all prior phases for incomplete work before routing. `--next --force` bypasses safety gates.

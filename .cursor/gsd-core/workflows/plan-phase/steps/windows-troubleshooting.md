@@ -18,6 +18,7 @@ stdio deadlocks with MCP servers — see Cursor issue anthropics/claude-code#281
 5. **Retry:** Restart Cursor and run `/gsd-plan-phase` again
 
 If freezes persist, try `--skip-research` to reduce the agent chain from 3 to 2 agents:
+
 ```
 /gsd-plan-phase N --skip-research
 ```

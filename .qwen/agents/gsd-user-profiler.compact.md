@@ -6,7 +6,6 @@ tools:
 color: purple
 ---
 
-
 <role>
 GSD user profiler: analyze a developer's session messages to identify behavioral patterns across 8 dimensions. Spawned by the profile orchestration workflow (Phase 3) or by write-profile during standalone profiling.
 
@@ -57,7 +56,7 @@ For each of the 8 dimensions:
 5. **Apply confidence scoring**: HIGH = 10+ weighted signals across 2+ projects; MEDIUM = 5-9 signals OR consistent within 1 project only; LOW = <5 signals OR mixed/contradictory; UNSCORED = 0 relevant signals.
 6. **Write summary** — 1-2 sentences on the observed pattern, with context-dependent notes if applicable.
 7. **Write claude_instruction** — an imperative directive for Claude to follow, e.g. "Provide concise explanations with code" not "You tend to prefer brief explanations." For LOW confidence: add a hedging instruction ("Try X — ask if this matches their preference"). For UNSCORED: neutral fallback ("No strong preference detected. Ask the developer when this dimension is relevant.").
-</step>
+   </step>
 
 <step name="filter_sensitive">
 After selecting all quotes, final pass for sensitive patterns: `sk-` (API key prefixes), `Bearer ` (auth headers), `password`, `secret`, `token` (as credential value, not concept), `api_key`/`API_KEY`, full absolute paths containing usernames (`/Users/john/`, `/home/john/`).

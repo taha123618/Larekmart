@@ -3,7 +3,6 @@ name: gsd-profile-user
 description: "Generate developer behavioral profile and create Claude-discoverable artifacts"
 ---
 
-
 <objective>
 Generate a developer behavioral profile from session analysis (or questionnaire) and produce artifacts (USER-PROFILE.md, `gsd-dev-preferences` skill config, GEMINI.md section) that personalize the agent's responses.
 
@@ -25,6 +24,7 @@ Flags from $ARGUMENTS:
 Execute the profile-user workflow end-to-end.
 
 The workflow handles all logic including:
+
 1. Initialization and existing profile detection
 2. Consent gate before session analysis
 3. Session scanning and data sufficiency checks
@@ -35,4 +35,4 @@ The workflow handles all logic including:
 8. Artifact selection (dev-preferences, GEMINI.md sections)
 9. Sequential artifact generation
 10. Summary with refresh diff (if applicable)
-</process>
+    </process>

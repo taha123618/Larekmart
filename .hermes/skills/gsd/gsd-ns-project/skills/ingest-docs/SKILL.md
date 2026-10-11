@@ -14,7 +14,6 @@ allowed-tools:
   - Agent
 ---
 
-
 <objective>
 Build the full `.planning/` setup (or merge into an existing one) from multiple pre-existing planning documents — ADRs, PRDs, SPECs, DOCs — in one pass.
 

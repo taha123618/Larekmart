@@ -21,7 +21,7 @@ This gate is **non-blocking / warning only** by deliberate asymmetry with
 the plan-phase translation gate. The plan-phase gate already blocked at
 translation time, so by the time verification runs every decision has
 either been translated or explicitly deferred. This gate's job is to
-surface decisions that *were* translated but vanished during execution —
+surface decisions that _were_ translated but vanished during execution —
 that's a soft signal because "honors a decision" is a fuzzy substring
 heuristic, and we don't want a paraphrase miss to fail an otherwise good
 phase.
@@ -73,6 +73,7 @@ grep -rn -E "it\.skip|describe\.skip|test\.skip|xit\(|xdescribe\(|xtest\(|@pytes
 ```
 
 **Rule:** A disabled test linked to a requirement = requirement NOT tested.
+
 - 🛑 BLOCKER if the disabled test is the only test proving that requirement
 - ⚠️ WARNING if other active tests also cover the requirement
 
@@ -87,6 +88,7 @@ grep -rn -E "writeFileSync|writeFile|fs\.write|open\(.*w\)" "$TEST_DIRS"
 For each match, check if it also imports the system/service/module being tested. If a script both imports the system-under-test AND writes expected output values → CIRCULAR.
 
 **Circular test indicators:**
+
 - Script imports a service AND writes to fixture files
 - Expected values have comments like "computed from engine", "captured from baseline"
 - Script filename contains "capture", "baseline", "generate", "snapshot" in test context
@@ -103,6 +105,7 @@ When a requirement demands comparison with an external source ("identical to X",
 - Or do all expected values come from the new system itself or from mathematical formulas?
 
 **Provenance classification:**
+
 - VALID: Expected value from external/legacy system output, manual capture, or independent oracle
 - PARTIAL: Expected value from mathematical derivation (proves formula, not system match)
 - CIRCULAR: Expected value from the system being tested
@@ -112,13 +115,13 @@ When a requirement demands comparison with an external source ("identical to X",
 
 For each test linked to a requirement, classify the strongest assertion:
 
-| Level | Examples | Proves |
-|-------|---------|--------|
-| Existence | `toBeDefined()`, `!= null` | Something returned |
-| Type | `typeof x === 'number'` | Correct shape |
-| Status | `code === 200` | No error |
-| Value | `toEqual(expected)`, `toBeCloseTo(x)` | Specific value |
-| Behavioral | Multi-step workflow assertions | End-to-end correctness |
+| Level      | Examples                              | Proves                 |
+| ---------- | ------------------------------------- | ---------------------- |
+| Existence  | `toBeDefined()`, `!= null`            | Something returned     |
+| Type       | `typeof x === 'number'`               | Correct shape          |
+| Status     | `code === 200`                        | No error               |
+| Value      | `toEqual(expected)`, `toBeCloseTo(x)` | Specific value         |
+| Behavioral | Multi-step workflow assertions        | End-to-end correctness |
 
 If a requirement demands value-level or behavioral-level proof and the test only has existence/type/status assertions → INSUFFICIENT.
 
@@ -132,7 +135,7 @@ If a requirement specifies a quantity of test cases (e.g., "30 calculations"), c
 ### Test Quality Audit
 
 | Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
-|-----------|-----------|--------|---------|----------|-----------------|---------|
+| --------- | ---------- | ------ | ------- | -------- | --------------- | ------- |
 
 **Disabled tests on requirements:** {N} → {BLOCKER if any req has ONLY disabled tests}
 **Circular patterns detected:** {N} → {BLOCKER if any}
@@ -155,6 +158,7 @@ Infrastructure and foundation phases — code foundations, database schema, inte
 - **Exception — behavior-unverified truths still count.** A truth marked ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (a state transition or a cancellation/cleanup/ordering invariant with no test exercising it) is a behavioral-evidence gap, not an artificial user-facing step. Record it in `behavior_unverified_items` and emit a human-verification item for it **even on an infrastructure/foundation phase** — these invariants are exactly where infra phases hide runtime state leaks. Such a truth drives `human_needed`; the auto-pass-UAT shortcut applies only to the absence of user-facing UX, never to a behavior-unverified invariant. The same carve-out covers an **abstained non-inferable truth** (⚠️ `insufficient_spec`, § Backstop abstention below) — an insufficient-spec gap is an evidence gap, not a user-facing step, so it too still emits its human-verification item and drives `human_needed` on an infrastructure phase.
 
 **How to determine if a phase is infrastructure/foundation:**
+
 - Phase goal or name contains: "foundation", "infrastructure", "schema", "database", "internal API", "data model", "scaffolding", "pipeline", "tooling", "CI", "migrations", "service layer", "backend", "core library"
 - Phase success criteria describe only technical artifacts (files exist, tests pass, schema is valid) with no user interaction required
 - There is no UI, CLI output visible to end users, or real-time behavior to observe
@@ -174,9 +178,9 @@ All acceptance criteria are verifiable programmatically.
 
 When a non-inferable (`verification: backstop`) truth abstains for lack of explicit evidence:
 
-- **Never silent, never a hard halt.** *Interactive:* the abstained item routes to the end-of-phase
-  human checkpoint. *Autonomous (AFK):* it produces a prominent `unverified — held-out test
-  recommended` flag and the completion line reads "complete with N unverified non-inferable checks";
+- **Never silent, never a hard halt.** _Interactive:_ the abstained item routes to the end-of-phase
+  human checkpoint. _Autonomous (AFK):_ it produces a prominent `unverified — held-out test
+recommended` flag and the completion line reads "complete with N unverified non-inferable checks";
   the run neither silently passes the blind spot nor hard-halts.
 - **Distinguishable reason.** The abstain disposition carries `reason: insufficient_spec` so its
   `human_needed` outcome is never conflated with an ordinary manual-UAT `human_needed`.

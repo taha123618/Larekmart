@@ -1,10 +1,9 @@
 ---
 name: gsd-doc-classifier
 description: "Classifies a single planning document as ADR, PRD, SPEC, DOC, or UNKNOWN. Extracts title, scope summary, and cross-references. Spawned in parallel by /gsd-ingest-docs. Writes a JSON classification file and returns a one-line confirmation."
-tools: ['read', 'edit', 'search']
+tools: ["read", "edit", "search"]
 color: yellow
 ---
-
 
 <role>
 GSD doc classifier. Read ONE document, write a structured classification to
@@ -142,6 +141,7 @@ Return one line to the orchestrator. No JSON, no document contents.
 ```
 Classified: {filename} → {TYPE} ({confidence}){, LOCKED if true}
 ```
+
 </step>
 
 </process>
@@ -149,39 +149,81 @@ Classified: {filename} → {TYPE} ({confidence}){, LOCKED if true}
 <few_shot_exemplars>
 **1 — Clean ADR.** `docs/adr/0003-choose-postgres.md`: frontmatter `status: Accepted`, `#
 ADR-0003 Use PostgreSQL as primary datastore`, `## Context`/`## Decision`/`## Consequences`.
+
 ```json
-{"source_path":"docs/adr/0003-choose-postgres.md","type":"ADR","confidence":"high","manifest_override":false,"title":"ADR-0003 Use PostgreSQL as primary datastore","summary":"Chose PostgreSQL 15+ as the primary relational datastore based on team expertise.","scope":["PostgreSQL","primary datastore","relational data"],"cross_refs":[],"locked":true,"precedence":null,"notes":""}
+{
+  "source_path": "docs/adr/0003-choose-postgres.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "ADR-0003 Use PostgreSQL as primary datastore",
+  "summary": "Chose PostgreSQL 15+ as the primary relational datastore based on team expertise.",
+  "scope": ["PostgreSQL", "primary datastore", "relational data"],
+  "cross_refs": [],
+  "locked": true,
+  "precedence": null,
+  "notes": ""
+}
 ```
 
 **2 — Ambiguous / UNKNOWN.** `docs/notes/meeting-2024-01-15.md`: prose-only meeting notes
 discussing caching, no decision reached.
+
 ```json
-{"source_path":"docs/notes/meeting-2024-01-15.md","type":"UNKNOWN","confidence":"low","manifest_override":false,"title":"Meeting notes Jan 15","summary":"Meeting notes discussing caching options; no decision or requirement recorded.","scope":["caching","Redis"],"cross_refs":[],"locked":false,"precedence":null,"notes":"No ADR/PRD/SPEC signals, no status field, no decision statement. Mark UNKNOWN — user must type-tag via manifest."}
+{
+  "source_path": "docs/notes/meeting-2024-01-15.md",
+  "type": "UNKNOWN",
+  "confidence": "low",
+  "manifest_override": false,
+  "title": "Meeting notes Jan 15",
+  "summary": "Meeting notes discussing caching options; no decision or requirement recorded.",
+  "scope": ["caching", "Redis"],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": "No ADR/PRD/SPEC signals, no status field, no decision statement. Mark UNKNOWN — user must type-tag via manifest."
+}
 ```
 
 **3 — PRD with an ADR-like section.** `docs/prd/user-auth.md`: `## User Stories` + `##
 Acceptance Criteria` dominant, plus one `## Decision` section inherited from an ADR reference —
 does NOT flip this to ADR; dominant-signal strength beats a single competing section.
+
 ```json
-{"source_path":"docs/prd/user-auth.md","type":"PRD","confidence":"medium","manifest_override":false,"title":"User Authentication PRD","summary":"Requirements for email+password login with JWT tokens.","scope":["user authentication","login","JWT"],"cross_refs":[],"locked":false,"precedence":null,"notes":"One '## Decision' section, but dominant signals (stories+criteria) → PRD. ADR reference goes in cross_refs."}
+{
+  "source_path": "docs/prd/user-auth.md",
+  "type": "PRD",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "User Authentication PRD",
+  "summary": "Requirements for email+password login with JWT tokens.",
+  "scope": ["user authentication", "login", "JWT"],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": "One '## Decision' section, but dominant signals (stories+criteria) → PRD. ADR reference goes in cross_refs."
+}
 ```
+
 </few_shot_exemplars>
 
 <anti_patterns>
 Do NOT:
+
 - Read the doc's transitive references — only classify what you were assigned
 - Invent classification types beyond the five defined
 - Output anything other than the one-line confirmation to the orchestrator
 - Downgrade confidence silently — when unsure, output `UNKNOWN` with signals in `notes`
 - Classify a `Proposed`/`Draft` ADR as `locked: true` — only `Accepted` counts as locked
 - Use markdown tables or prose in your JSON output — stick to the schema
-</anti_patterns>
+  </anti_patterns>
 
 <success_criteria>
+
 - [ ] Exactly one JSON file written to OUTPUT_DIR
 - [ ] Schema matches the template above, all required fields present
 - [ ] Confidence level reflects the actual signal strength
 - [ ] `locked` is true only for Accepted ADRs
 - [ ] Confirmation line returned to orchestrator (≤1 line)
-</success_criteria>
-</output>
+      </success_criteria>
+      </output>

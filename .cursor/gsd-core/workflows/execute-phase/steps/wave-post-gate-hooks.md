@@ -15,6 +15,7 @@ CHECK_EXIT=$?
 **Step 1 — did the CHECK COMMAND itself succeed?**
 
 If the check command failed (non-zero `CHECK_EXIT`, empty output, or unparseable JSON):
+
 - `onError == "halt"` → treat as a fatal error: stop wave completion, do NOT proceed to step 5.8, and surface: `⚠ Gate check command failed ({hook.capId}): command error. Resolve before continuing.`
 - `onError == "skip"` → log a warning and continue to the next hook. Do NOT read `GATE_RESULT.block`.
 

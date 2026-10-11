@@ -6,27 +6,34 @@ metadata:
 ---
 
 <codex_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked by mentioning `$gsd-workstreams`.
 - Treat all user text after `$gsd-workstreams` as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. AskUserQuestion → request_user_input Mapping
+
 GSD workflows use `AskUserQuestion` (Claude Code syntax). Translate to Codex `request_user_input`:
 
 Parameter mapping:
+
 - `header` → `header`
 - `question` → `question`
 - Options formatted as `"Label" — description` → `{label: "Label", description: "description"}`
 - Generate `id` from header: lowercase, replace spaces with underscores
 
 Batched calls:
+
 - `AskUserQuestion([q1, q2])` → single `request_user_input` with multiple entries in `questions[]`
 
 Multi-select workaround:
+
 - Codex has no `multiSelect`. Use sequential single-selects, or present a numbered freeform list asking the user to enter comma-separated numbers.
 
 Execute mode fallback:
+
 - When `request_user_input` is rejected or unavailable, activate TEXT_MODE: append `--text` to `{{GSD_ARGS}}` so the workflow's built-in text-mode branching takes over. Present every `AskUserQuestion` call as a plain-text numbered list, then stop and wait for the user's reply. Do NOT pick a default and continue (#3018 / #3808).
 - You may only proceed without a user answer when one of these is true:
   (a) the invocation included an explicit non-interactive flag (`--auto` or `--all`),
@@ -35,6 +42,7 @@ Execute mode fallback:
 - Do NOT write workflow artifacts (CONTEXT.md, DISCUSSION-LOG.md, PLAN.md, checkpoint files) until the user has answered the plain-text questions or one of (a)-(c) above applies. Surfacing the questions and waiting is the correct response — silently defaulting and writing artifacts is the #3018 failure mode.
 
 ## C. Task() → spawn_agent Mapping
+
 GSD workflows use `Task(...)` (Claude Code syntax). Translate to Codex collaboration tools:
 
 **Schema detection (required first step):** Before spawning, inspect the `spawn_agent`
@@ -48,6 +56,7 @@ Never infer one field from a schema/version label or from the presence of anothe
 - **Generic schema:** `spawn_agent` does not advertise `agent_type` — typed GSD agent dispatch is unavailable in this session, even if other optional fields are present.
 
 Typed mapping (agent_type-capable schema only):
+
 - `Task(subagent_type="X", prompt="Y")` → `spawn_agent(agent_type="X", message="Y")`
 - `Agent(subagent_type="X", prompt="Y")` → `spawn_agent(agent_type="X", message="Y")`
 - `Task(model="{resolved_model}")` → pass `model="{resolved_model}"` when the
@@ -78,6 +87,7 @@ Typed mapping (agent_type-capable schema only):
   isolation adapter, which still fails closed for hosts declaring `none` (#3360).
 
 Foreground handoffs:
+
 - spawn_agent is asynchronous. When the source Agent(...) or Task(...) declares
   run_in_background=false, call collaboration.wait_agent(timeout_ms=...) immediately after
   spawn and keep the parent turn active until that child returns a terminal result.
@@ -99,6 +109,7 @@ When only the generic `multi_agent_v1` schema is available, typed GSD agent disp
 (openai/codex#15250). **This workaround is NOT equivalent to typed gsd-planner/gsd-executor
 execution** — GSD agents carry project-aware prompts, audit logging, and workflow context
 that a generic subagent lacks. Use the following fallback:
+
 1. Resolve your active Codex config root — the directory that contains your `config.toml`.
    This directory is determined in priority order: `$CODEX_HOME` (if set), the path given
    by `--config-dir` (if passed on invocation), a local `.codex` directory in the current
@@ -112,6 +123,7 @@ that a generic subagent lacks. Use the following fallback:
    and report the schema limitation rather than silently degrading.
 
 Spawn restriction:
+
 - Codex restricts `spawn_agent` to cases where the user has explicitly
   requested sub-agents. When automatic spawning is not permitted, do the
   work inline in the current agent rather than attempting to force a spawn.
@@ -120,6 +132,7 @@ Spawn restriction:
   defaulting to inline execution.
 
 Parallel fan-out:
+
 - For each child, loop on collaboration.wait_agent(timeout_ms=...) until its own terminal
   result is observed. A mailbox update from one child never completes another child, and an
   interim MESSAGE never completes its sender.
@@ -127,10 +140,11 @@ Parallel fan-out:
 - Do NOT use `functions.wait(cell_id=...)` — that is an unrelated exec-cell tool, not the collaboration wait
 
 Result parsing:
+
 - Look for structured markers in agent output: `CHECKPOINT`, `PLAN COMPLETE`, `SUMMARY`, etc.
 - `close_agent(id)` after collecting results — but only if `close_agent` is visible in the current
   tool schema (check via `tool_search` first, same schema-detection gate as `spawn_agent` above)
-</codex_skill_adapter>
+  </codex_skill_adapter>
 
 # $gsd-workstreams
 
@@ -142,15 +156,15 @@ Manage parallel workstreams for concurrent milestone work.
 
 ### Subcommands
 
-| Command | Description |
-|---------|-------------|
-| `list` | List all workstreams with status |
-| `create <name>` | Create a new workstream |
-| `status <name>` | Detailed status for one workstream |
-| `switch <name>` | Set active workstream |
-| `progress` | Progress summary across all workstreams |
-| `complete <name>` | Archive a completed workstream |
-| `resume <name>` | Resume work in a workstream |
+| Command           | Description                             |
+| ----------------- | --------------------------------------- |
+| `list`            | List all workstreams with status        |
+| `create <name>`   | Create a new workstream                 |
+| `status <name>`   | Detailed status for one workstream      |
+| `switch <name>`   | Set active workstream                   |
+| `progress`        | Progress summary across all workstreams |
+| `complete <name>` | Archive a completed workstream          |
+| `resume <name>`   | Resume work in a workstream             |
 
 ## Step 1: Parse Subcommand
 
@@ -160,33 +174,41 @@ If no subcommand given, default to `list`.
 ## Step 2: Execute Operation
 
 ### list
+
 Run: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" query workstream.list --raw --cwd "$CWD"`
 Display the workstreams in a table format showing name, status, current phase, and progress.
 
 ### create
+
 Run: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" query workstream.create <name> --raw --cwd "$CWD"`
 After creation, display the new workstream path and suggest next steps:
+
 - `$gsd-new-milestone --ws <name>` to set up the milestone
 
 ### status
+
 Run: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" query workstream.status <name> --raw --cwd "$CWD"`
 Display detailed phase breakdown and state information.
 
 ### switch
+
 Run: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" query workstream.set <name> --raw --cwd "$CWD"`
 Also set `GSD_WORKSTREAM` for the current session when the runtime supports it.
 If the runtime exposes a session identifier, GSD also stores the active workstream
 session-locally so concurrent sessions do not overwrite each other.
 
 ### progress
+
 Run: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" query workstream.progress --raw --cwd "$CWD"`
 Display a progress overview across all workstreams.
 
 ### complete
+
 Run: `node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" query workstream.complete <name> --raw --cwd "$CWD"`
 Archive the workstream to milestones/.
 
 ### resume
+
 Set the workstream as active and suggest `$gsd-resume-work --ws <name>`.
 
 ## Step 3: Display Results

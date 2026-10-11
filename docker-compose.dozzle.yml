@@ -1,0 +1,73 @@
+name: larekmart-dozzle-logs
+
+# ============================================================================
+# Larekmart Live Container Logs Stack (Dozzle + Nginx Reverse Proxy)
+#
+# THE VERDICT:
+#   - ENVIRONMENT: Best for LOCAL DEVELOPMENT (Inner Dev Loop).
+#   - WHY: Ultra-lightweight (~20MB RAM, zero DB overhead), starts in 1 second,
+#     and provides instant browser-based live tailing across all 15 microservices.
+#     Avoids overloading the developer workstation while running heavy backing
+#     infra (Kafka, Postgres, Mongo, Redis, OpenSearch).
+#   - LIMITATION: Ephemeral logs (vanish on container restart); unsafe for
+#     production due to /var/run/docker.sock mounting. For persistent history,
+#     cross-service correlation, or staging/production, use Rootprint.
+#
+# Provides:
+#   - Dozzle: Lightweight real-time streaming Docker container log viewer (port 8888)
+#   - Nginx: Dedicated reverse proxy with 100M payload buffer & SSE/WebSocket streaming (port 80)
+#   - Traefik Integration: Auto-routed via labels on larekmart-network
+#   - (Port 8080 is reserved exclusively for Kafka UI)
+#
+# Access:
+#   - Direct / Nginx Proxy: http://localhost:8085
+#   - Traefik Hostname:     http://logs.localhost
+# ============================================================================
+
+services:
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: larekmart-dozzle
+    restart: unless-stopped
+    environment:
+      DOZZLE_ADDR: ":8888"
+      DOZZLE_LEVEL: info
+      DOZZLE_TAILSIZE: 300
+    expose:
+      - 8888
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - larekmart-network
+
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    image: larekmart-logs-nginx:latest
+    container_name: larekmart-logs-nginx
+    restart: unless-stopped
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - dozzle
+    expose:
+      - 80
+    ports:
+      - "${LOGS_BIND_IP:-127.0.0.1}:${LOGS_PORT:-8085}:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.logs-svc.rule=Host(`${LOGS_DOMAIN:-logs.localhost}`)"
+      - "traefik.http.services.logs-svc.loadbalancer.server.port=80"
+      - "traefik.http.routers.logs-svc.entrypoints=web,websecure"
+      - "traefik.docker.network=larekmart-network"
+      - "traefik.http.routers.logs-svc.tls=true"
+      - "traefik.http.routers.logs-svc.tls.certresolver=cert-resolver"
+    networks:
+      - larekmart-network
+
+networks:
+  larekmart-network:
+    name: larekmart-network
+    driver: bridge
+    attachable: true

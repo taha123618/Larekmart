@@ -29,23 +29,26 @@ Read `/Users/taha/projects/microservices-ecommerce/.kilo/gsd-core/references/ai-
 
 <project_context>
 Scan for existing tech signals before interviewing (prevents recommending a framework the team already rejected):
+
 ```bash
 find . -maxdepth 2 \( -name "package.json" -o -name "pyproject.toml" -o -name "requirements*.txt" \) -not -path "*/node_modules/*" 2>/dev/null | head -5
 ```
+
 Extract from found files: existing AI libraries, model providers, language, team-size signals.
 </project_context>
 
 <interview>
 One `question` call, ≤6 questions (each `multiSelect:false` unless noted). Skip any the codebase scan or upstream CONTEXT.md already answers. Build the call from this table — one question per row, options in order, keep any description shown:
 
-| # | question (header) | multiSelect | options |
-|---|---|---|---|
-| 1 | What type of AI system are you building? (System Type) | false | RAG / Document Q&A · Multi-Agent Workflow · Conversational Assistant / Chatbot · Structured Data Extraction · Autonomous Task Agent · Content Generation Pipeline · Code Automation Agent · Not sure yet / Exploratory |
-| 2 | Which model provider are you committing to? (Model Provider) | false | OpenAI (GPT-4o, o3, etc.) · Anthropic (the agent) · Google (Gemini) · Model-agnostic [desc: need to swap models or use local models] · Undecided / Want flexibility |
-| 3 | What is your development stage and team context? (Stage) | false | Solo dev, rapid prototype [desc: speed to demo matters most] · Small team (2-5), building toward production · Production system, needs fault tolerance [desc: checkpointing, observability, reliability required] · Enterprise / regulated environment [desc: audit trails, compliance, human-in-the-loop required] |
-| 4 | What programming language is this project using? (Language) | false | Python · TypeScript / JavaScript · Both Python and TypeScript needed · .NET / C# |
-| 5 | What is the most important requirement? (Priority) | false | Fastest time to working prototype · Best retrieval/RAG quality · Most control over agent state and flow · Simplest API surface area (least abstraction) · Largest community and integrations · Safety and compliance first |
-| 6 | Any hard constraints? (Constraints) | true | No vendor lock-in · Must be open-source licensed · TypeScript required (no Python) · Must support local/self-hosted models · Enterprise SLA / support required · No new infrastructure (use existing DB) · None of the above |
+| #   | question (header)                                            | multiSelect | options                                                                                                                                                                                                                                                                                                             |
+| --- | ------------------------------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | What type of AI system are you building? (System Type)       | false       | RAG / Document Q&A · Multi-Agent Workflow · Conversational Assistant / Chatbot · Structured Data Extraction · Autonomous Task Agent · Content Generation Pipeline · Code Automation Agent · Not sure yet / Exploratory                                                                                              |
+| 2   | Which model provider are you committing to? (Model Provider) | false       | OpenAI (GPT-4o, o3, etc.) · Anthropic (the agent) · Google (Gemini) · Model-agnostic [desc: need to swap models or use local models] · Undecided / Want flexibility                                                                                                                                                 |
+| 3   | What is your development stage and team context? (Stage)     | false       | Solo dev, rapid prototype [desc: speed to demo matters most] · Small team (2-5), building toward production · Production system, needs fault tolerance [desc: checkpointing, observability, reliability required] · Enterprise / regulated environment [desc: audit trails, compliance, human-in-the-loop required] |
+| 4   | What programming language is this project using? (Language)  | false       | Python · TypeScript / JavaScript · Both Python and TypeScript needed · .NET / C#                                                                                                                                                                                                                                    |
+| 5   | What is the most important requirement? (Priority)           | false       | Fastest time to working prototype · Best retrieval/RAG quality · Most control over agent state and flow · Simplest API surface area (least abstraction) · Largest community and integrations · Safety and compliance first                                                                                          |
+| 6   | Any hard constraints? (Constraints)                          | true        | No vendor lock-in · Must be open-source licensed · TypeScript required (no Python) · Must support local/self-hosted models · Enterprise SLA / support required · No new infrastructure (use existing DB) · None of the above                                                                                        |
+
 </interview>
 
 <scoring>
@@ -73,6 +76,7 @@ FRAMEWORK_RECOMMENDATION:
 ```
 
 Also display to the user, same content, formatted as:
+
 ```
 ### FRAMEWORK RECOMMENDATION
 ◆ Primary Pick: {framework}
@@ -82,9 +86,11 @@ Also display to the user, same content, formatted as:
 ◆ System Type Classified: {system_type}
 ◆ Key Eval Dimensions: {eval_concerns}
 ```
+
 </output_format>
 
 <success_criteria>
+
 - [ ] Codebase scanned for existing framework signals
 - [ ] Interview completed (≤ 6 questions, single question call)
 - [ ] Hard constraints applied to eliminate incompatible frameworks
@@ -92,5 +98,5 @@ Also display to the user, same content, formatted as:
 - [ ] Alternative identified
 - [ ] System type classified
 - [ ] Structured result returned to orchestrator
-</success_criteria>
-</output>
+      </success_criteria>
+      </output>

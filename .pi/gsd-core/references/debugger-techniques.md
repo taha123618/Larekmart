@@ -16,6 +16,7 @@ keeps each technique's name and routing entry; the step-by-step detail lives her
 4. Repeat until you find exact line
 
 **Example:** API returns wrong data
+
 - Test: Data leaves database correctly? YES
 - Test: Data reaches frontend correctly? NO
 - Test: Data leaves API route correctly? YES
@@ -29,6 +30,7 @@ keeps each technique's name and routing entry; the step-by-step detail lives her
 **How:** Explain the problem out loud in complete detail.
 
 Write or say:
+
 1. "The system should do X"
 2. "Instead it does Y"
 3. "I think this is because Z"
@@ -48,6 +50,7 @@ Often you'll spot the bug mid-explanation: "Wait, I never verified that B return
 Already covered under Git Bisect. But delta debugging extends it: after finding the breaking commit, delta-debug the commit itself — identify which of its N changed files/lines actually causes the failure.
 
 **Over code (systematic elimination):**
+
 1. Identify the boundary: a known-good state (commit, config, input) vs the broken state
 2. List all differences between good and bad states
 3. Split the differences in half. Apply only half to the good state.
@@ -55,15 +58,18 @@ Already covered under Git Bisect. But delta debugging extends it: after finding 
 5. Repeat until you have the minimal change set that causes the failure.
 
 **Over inputs:**
+
 1. Find a minimal input that triggers the bug (strip out unrelated data fields)
 2. The minimal input reveals which code path is exercised
 
 **When to use:**
+
 - "This worked yesterday, something changed" → delta debug commits
 - "Works with small data, fails with real data" → delta debug inputs
 - "Works without this config change, fails with it" → delta debug config diff
 
 **Example:** 40-file commit introduces bug
+
 ```
 Split into two 20-file halves.
 Apply first 20: still works → bug in second half.
@@ -86,6 +92,7 @@ Apply first 10: broken → bug in first 10.
 6. **Shrinking (input-space bugs)** — when the bug triggers on a class of inputs, wrap it in a property (fast-check for JS/TS, Hypothesis for Python) and let the shrinker auto-minimize the counterexample; store the **minimized** input as the regression seed. See `gsd-core/references/debugger-repro-hardening.md`.
 
 **Example:**
+
 ```jsx
 // Start: 500-line React component with 15 props, 8 hooks, 3 contexts
 // End after stripping:
@@ -116,6 +123,7 @@ function MinimalRepro() {
 5. Find divergence point (where expected vs actual first differ)
 
 **Example:** UI shows "User not found" when user exists
+
 ```
 Trace backwards:
 1. UI displays: user.error → Is this the right value to display? YES
@@ -130,12 +138,14 @@ Trace backwards:
 **When:** Something used to work and now doesn't. Works in one environment but not another.
 
 **Time-based (worked, now doesn't):**
+
 - What changed in code since it worked?
 - What changed in environment? (Node version, OS, dependencies)
 - What changed in data?
 - What changed in configuration?
 
 **Environment-based (works in dev, fails in prod):**
+
 - Configuration values
 - Environment variables
 - Network conditions (latency, reliability)
@@ -145,6 +155,7 @@ Trace backwards:
 **Process:** List differences, test each in isolation, find the difference that causes failure.
 
 **Example:** Works locally, fails in CI
+
 ```
 Differences:
 - Node version: Same ✓
@@ -164,21 +175,21 @@ FOUND: Date comparison logic assumes local timezone
 
 ```javascript
 // Strategic logging (useful):
-console.log('[handleSubmit] Input:', { email, password: '***' });
-console.log('[handleSubmit] Validation result:', validationResult);
-console.log('[handleSubmit] API response:', response);
+console.log("[handleSubmit] Input:", { email, password: "***" });
+console.log("[handleSubmit] Validation result:", validationResult);
+console.log("[handleSubmit] API response:", response);
 
 // Assertion checks:
-console.assert(user !== null, 'User is null!');
-console.assert(user.id !== undefined, 'User ID is undefined!');
+console.assert(user !== null, "User is null!");
+console.assert(user.id !== undefined, "User ID is undefined!");
 
 // Timing measurements:
-console.time('Database query');
+console.time("Database query");
 const result = await db.query(sql);
-console.timeEnd('Database query');
+console.timeEnd("Database query");
 
 // Stack traces at key points:
-console.log('[updateUser] Called from:', new Error().stack);
+console.log("[updateUser] Called from:", new Error().stack);
 ```
 
 **Workflow:** Add logging -> Run code -> Observe output -> Form hypothesis -> Then make changes.
@@ -188,6 +199,7 @@ console.log('[updateUser] Called from:', new Error().stack);
 **When:** Many possible interactions, unclear which code causes issue.
 
 **How:**
+
 1. Comment out everything in function/file
 2. Verify bug is gone
 3. Uncomment one piece at a time
@@ -195,11 +207,12 @@ console.log('[updateUser] Called from:', new Error().stack);
 5. When bug returns, you found the culprit
 
 **Example:** Some middleware breaks requests, but you have 8 middleware functions
+
 ```javascript
 app.use(helmet()); // Uncomment, test → works
 app.use(cors()); // Uncomment, test → works
 app.use(compression()); // Uncomment, test → works
-app.use(bodyParser.json({ limit: '50mb' })); // Uncomment, test → BREAKS
+app.use(bodyParser.json({ limit: "50mb" })); // Uncomment, test → BREAKS
 // FOUND: Body size limit too high causes memory issues
 ```
 
@@ -227,18 +240,21 @@ git bisect bad              # or good, based on testing
 **The trap:** You read code that builds a path like `path.join(configDir, 'hooks')` and assume it's correct because it looks reasonable. But you never verified that the constructed path matches where another part of the system actually writes/reads.
 
 **How:**
+
 1. Find the code that **produces** the value (writer/installer/creator)
 2. Find the code that **consumes** the value (reader/checker/validator)
 3. Trace the actual resolved value in both — do they agree?
 4. Check every variable in the path construction — where does each come from? What's its actual value at runtime?
 
 **Common indirection bugs:**
+
 - Path A writes to `dir/sub/hooks/` but Path B checks `dir/hooks/` (directory mismatch)
 - Config value comes from cache/template that wasn't updated
 - Variable is derived differently in two places (e.g., one adds a subdirectory, the other doesn't)
 - Template placeholder (`{{VERSION}}`) not substituted in all code paths
 
 **Example:** Stale hook warning persists after update
+
 ```
 Check code says:  hooksDir = path.join(configDir, 'hooks')
                   configDir = /Users/taha/projects/microservices-ecommerce/.pi
@@ -252,4 +268,3 @@ MISMATCH: Checker looks in wrong directory → hooks "not found" → reported as
 ```
 
 **The discipline:** Never assume a constructed path is correct. Resolve it to its actual value and verify the other side agrees. When two systems share a resource (file, directory, key), trace the full path in both.
-

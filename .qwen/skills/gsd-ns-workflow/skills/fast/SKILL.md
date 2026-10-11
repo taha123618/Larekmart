@@ -11,7 +11,6 @@ allowed-tools:
   - Glob
 ---
 
-
 <objective>
 Execute a trivial task directly in the current context without spawning subagents
 or generating PLAN.md files. For tasks too small to justify planning overhead:

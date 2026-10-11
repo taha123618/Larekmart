@@ -7,8 +7,8 @@ times out when many users connect" — same root cause, no shared keywords.
 
 ## Why this exists
 
-The knowledge base's self-noted limitation was explicit: *"Matching is keyword
-overlap, not semantic similarity."* Keyword overlap only fires on lexical
+The knowledge base's self-noted limitation was explicit: _"Matching is keyword
+overlap, not semantic similarity."_ Keyword overlap only fires on lexical
 coincidence — the highest-value recalls (same root cause, different wording)
 are exactly the ones it misses, and its value decays as the corpus grows.
 

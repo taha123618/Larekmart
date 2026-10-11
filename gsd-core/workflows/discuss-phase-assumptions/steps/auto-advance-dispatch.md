@@ -1,6 +1,7 @@
 **If `--auto` flag present OR `AUTO_MODE` is true:**
 
 Display banner:
+
 ```text
 ### GSD ► AUTO-ADVANCING TO PLAN
 

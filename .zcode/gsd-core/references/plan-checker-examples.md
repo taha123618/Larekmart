@@ -7,6 +7,7 @@
 ## Scope Exceeded (most common miss)
 
 **Plan 01 analysis:**
+
 ```
 Tasks: 5
 Files modified: 12

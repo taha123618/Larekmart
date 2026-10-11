@@ -3,10 +3,10 @@
 Lazy-loaded by `workflows/plan-phase.md` step 7.95 (the gate) and the `<specless_probe_fallback>`
 planner block. When a phase SPEC did NOT supply `## Edge Coverage` / `## Prohibitions`, plan-phase
 runs the same probe protocol the SPEC path uses and authors the predicates into PLAN.md `must_haves`
-(ADR-857 Phase 6 — the *else branch* of the `<downstream_consumer>` SPEC-conditional lift). This is
+(ADR-857 Phase 6 — the _else branch_ of the `<downstream_consumer>` SPEC-conditional lift). This is
 core workflow-body substrate — NOT the `PLAN_PRE_HOOKS_JSON contribution into planner` capability rail
 (D-03). Section absence is detected by the shared `spec-section` helper in the gate; this file holds the
-*run-the-probe* half so the capped plan-phase.md stays lean (#717/#1074 budget).
+_run-the-probe_ half so the capped plan-phase.md stays lean (#717/#1074 budget).
 
 ## 0. Gate — toggle + per-section absence (run first, in the orchestrator)
 
@@ -139,8 +139,8 @@ There is NO compiled prohibition engine and NO `node` invocation (ADR-550 D7b) �
 this in-prompt. Full two-stage protocol, canon-referral rule, and status×verification schema live in
 `/Users/taha/projects/microservices-ecommerce/.claude/gsd-core/references/prohibition-probe.md` (do not inline it). Summary:
 
-- **Stage 1 — Recall (adversarial).** Per requirement: *"What could this feature silently become that
-  the author would NOT want, but the spec does not forbid?"* Over-produce (~10 raw must-NOT candidates).
+- **Stage 1 — Recall (adversarial).** Per requirement: _"What could this feature silently become that
+  the author would NOT want, but the spec does not forbid?"_ Over-produce (~10 raw must-NOT candidates).
 - **Stage 2 — Precision.** DROP routine-engineering (normal correctness/hygiene — owned by the edge
   probe or code review); KEEP values / safety / ethics (~2–3 survive).
 - **Canon-referral drop (ADR-550 D6).** A kept candidate that is canon security/compliance (OWASP /

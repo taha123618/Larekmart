@@ -26,6 +26,9 @@ export class UploadHandler {
     const { uploadService } = getServiceContainer();
     const actor = c.get("mediaActor");
     const mediaId = c.req.param("mediaId");
+    if (!mediaId) {
+      return c.json({ message: "Media ID is required" }, 400);
+    }
 
     const result = await uploadService.completeUpload(mediaId, actor);
     return c.json(result);
@@ -39,6 +42,9 @@ export class UploadHandler {
     const { uploadService } = getServiceContainer();
     const actor = c.get("mediaActor");
     const mediaId = c.req.param("mediaId");
+    if (!mediaId) {
+      return c.json({ message: "Media ID is required" }, 400);
+    }
 
     await uploadService.abortUpload(mediaId, actor);
     return c.json({ message: "Upload session aborted" });

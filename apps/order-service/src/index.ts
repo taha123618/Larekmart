@@ -1,6 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import Clerk from "@clerk/fastify";
+import { clerkPlugin, getAuth } from "@clerk/fastify";
 import { shouldBeUser } from "./middleware/authMiddleware.js";
 import { connectOrderDB, mongoose } from "@repo/order-db";
 import { orderRoute } from "./routes/order.js";
@@ -79,7 +79,7 @@ fastify.addHook("onSend", async (request, reply) => {
 });
 
 // Global Error Handler
-fastify.setErrorHandler((error, request, reply) => {
+fastify.setErrorHandler((error: any, request, reply) => {
   logger.error("Order service request error", {
     url: request.url,
     method: request.method,
@@ -99,7 +99,7 @@ fastify.setErrorHandler((error, request, reply) => {
   });
 });
 
-fastify.register(Clerk.clerkPlugin);
+fastify.register(clerkPlugin);
 
 // HTTP Monitoring hooks
 const requestHooks = new Map<
@@ -120,7 +120,7 @@ fastify.addHook("onRequest", async (request) => {
   let userId = (request.headers["x-user-id"] as string) || undefined;
   if (!userId) {
     try {
-      const auth = Clerk.getAuth(request);
+      const auth = getAuth(request);
       if (auth?.userId) {
         userId = auth.userId;
       }
@@ -145,7 +145,7 @@ fastify.addHook("onResponse", async (request, reply) => {
       request.userId || (request.headers["x-user-id"] as string) || undefined;
     if (!userId) {
       try {
-        const auth = Clerk.getAuth(request);
+        const auth = getAuth(request);
         if (auth?.userId) {
           userId = auth.userId;
         }

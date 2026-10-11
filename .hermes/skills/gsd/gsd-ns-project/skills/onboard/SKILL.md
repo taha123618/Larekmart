@@ -13,12 +13,11 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-
-
 <objective>
 Guide brownfield onboarding for an existing codebase by routing through the existing GSD primitives in the safe order: codebase map → docs ingest → project initialization → onboarding summary.
 
 **Creates or confirms:**
+
 - `.planning/codebase/` — evidence-backed codebase map from `/gsd-map-codebase`
 - `.planning/PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md` — project setup from `/gsd-new-project` or `/gsd-ingest-docs`
 - `.planning/onboarding/SUMMARY.md` — lightweight index of what was learned and the next command
@@ -36,9 +35,10 @@ Guide brownfield onboarding for an existing codebase by routing through the exis
 Arguments: $ARGUMENTS
 
 Flags:
+
 - `--fast` — prefer `/gsd-map-codebase --fast` for the mapping handoff; the complete map is still required before `/gsd-new-project`.
 - `--text` — use plain-text numbered lists instead of TUI menus.
-</context>
+  </context>
 
 <process>
 Execute the onboard workflow end-to-end. Preserve all safety gates, text-mode fallbacks, idempotency checks, and top-level handoff rules for nested interactive commands.

@@ -28,5 +28,10 @@
       "statement": "MUST NOT mislead or omit the true rate/APR/terms in the explanation; an adverse decision must state the real principal reason (adverse-action)"
     }
   ],
-  "coverage": { "applicable": 3, "resolved": 3, "unresolved": 0, "byVerification": { "test": 1, "judgment": 2 } }
+  "coverage": {
+    "applicable": 3,
+    "resolved": 3,
+    "unresolved": 0,
+    "byVerification": { "test": 1, "judgment": 2 }
+  }
 }

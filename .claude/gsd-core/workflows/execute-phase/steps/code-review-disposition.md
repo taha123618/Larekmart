@@ -9,7 +9,7 @@ pre-phase-6 ceiling in `tests/claude-orchestration.test.cjs` — and both are re
 under, not budgets to spend.
 
 **What it is for.** The counts the gate prints say how many findings there were, not what happened
-to any of them. Without a record, the phase directory carries no answer to *what happened to CR-01*
+to any of them. Without a record, the phase directory carries no answer to _what happened to CR-01_
 and a phase can reach `phase.complete` with a Critical standing and no trace it was ever seen.
 
 **Why a sibling artifact rather than a section inside REVIEW.md.** `--auto`'s re-review loop
@@ -19,6 +19,7 @@ and REVIEW.md has a single writer, `gsd-code-reviewer`, which this step is not.
 **Advisory — it never blocks.** Every failure path reports and steps over.
 
 **Check results using deterministic path (not glob):**
+
 ```bash
 # PADDED must survive a DOTTED phase number, of ANY segment count. This step is dispatched from
 # exactly TWO places: `execute-phase.md` (`code_review_gate`) and `code-review-fix.md`
@@ -305,18 +306,19 @@ the process ends. Same exit status either way.
 
 AN EXISTING LEDGER THAT IS NOT A REGULAR FILE IS NOT A LEDGER. Checked FIRST, before any read
 or write of that path, and the ordering is the fix rather than a tidy-up:
-  * writeFileSync FOLLOWS a symlink, so a planted link replaced the contents of whatever it
-    pointed at -- outside the phase directory, link left intact so nothing looked wrong;
-  * a FIFO at that path made readFileSync BLOCK FOREVER, which is the one behaviour a gate
-    documented as advisory and non-blocking must never have;
-  * and the unchanged-run fast path read the file before the check, so a symlink whose
-    target already matched slipped through reporting 'unchanged'.
-All three driven. lstatSync does not follow the link, which is why it is the right call.
-NAMED RESIDUAL, not silently accepted: this is a check-then-write, so a symlink planted
-between the lstat and the write still wins. Node exposes no portable O_NOFOLLOW write, and
-an attacker who can write into the phase directory mid-run already has what the check would
-protect. It narrows a real accident; it is not a security boundary, and the docs do not
-claim one. A hard link likewise passes isFile() by construction.
+
+- writeFileSync FOLLOWS a symlink, so a planted link replaced the contents of whatever it
+  pointed at -- outside the phase directory, link left intact so nothing looked wrong;
+- a FIFO at that path made readFileSync BLOCK FOREVER, which is the one behaviour a gate
+  documented as advisory and non-blocking must never have;
+- and the unchanged-run fast path read the file before the check, so a symlink whose
+  target already matched slipped through reporting 'unchanged'.
+  All three driven. lstatSync does not follow the link, which is why it is the right call.
+  NAMED RESIDUAL, not silently accepted: this is a check-then-write, so a symlink planted
+  between the lstat and the write still wins. Node exposes no portable O_NOFOLLOW write, and
+  an attacker who can write into the phase directory mid-run already has what the check would
+  protect. It narrows a real accident; it is not a security boundary, and the docs do not
+  claim one. A hard link likewise passes isFile() by construction.
 
 **Before `let fence = null;`**
 
@@ -374,7 +376,7 @@ form either way. The trailing pipe is optional so a hand-mangled row loses no de
 
 SEVERITY, READ BACK. The ledger has always WRITTEN a severity for every row -- in the table's
 Severity cell and in the frontmatter's 'severity:' key -- and until this map existed nothing
-read either back: the row regex discarded the cell as [^|]*, the frontmatter walk collected
+read either back: the row regex discarded the cell as [^|]\*, the frontmatter walk collected
 only titles, and a CARRIED row was rebuilt through sev() from the id prefix, because
 sectionSev holds only findings the CURRENT review reports. So a WR-04 the reviewer filed under
 '## Critical Issues' was recorded 'critical', a human deferred it, and the next run -- the
@@ -402,7 +404,7 @@ to open -- safe. A typo INSIDE [a-z] was unsafe. The parser failed open in the o
 direction that matters. A row that does not match now yields no prior entry, so the row
 falls back to 'open' -- the safe default, by the same path the capital-D case took.
 The Severity cell is CAPTURED, not skipped: it is the value the carry-forward below has to
-preserve, and skipping it (the previous [^|]*) is how a carried row lost its tier.
+preserve, and skipping it (the previous [^|]\*) is how a carried row lost its tier.
 
 **Before `if (m) {`**
 

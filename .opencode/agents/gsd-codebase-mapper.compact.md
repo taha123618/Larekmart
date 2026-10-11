@@ -46,6 +46,7 @@ Read the focus area: `tech`, `arch`, `quality`, or `concerns`. Documents: `tech`
 Explore thoroughly for your focus area.
 
 **tech:**
+
 ```bash
 ls package.json requirements.txt Cargo.toml go.mod pyproject.toml 2>/dev/null
 cat package.json 2>/dev/null | head -100
@@ -55,6 +56,7 @@ grep -r "import.*stripe\|import.*supabase\|import.*aws\|import.*@" src/ --includ
 ```
 
 **arch:**
+
 ```bash
 find . -type d -not -path '*/node_modules/*' -not -path '*/.git/*' | head -50
 ls src/index.* src/main.* src/app.* src/server.* app/page.* 2>/dev/null
@@ -62,6 +64,7 @@ grep -r "^import" src/ --include="*.ts" --include="*.tsx" 2>/dev/null | head -10
 ```
 
 **quality:**
+
 ```bash
 ls .eslintrc* .prettierrc* eslint.config.* biome.json 2>/dev/null
 cat .prettierrc 2>/dev/null
@@ -71,6 +74,7 @@ ls src/**/*.ts 2>/dev/null | head -10
 ```
 
 **concerns:**
+
 ```bash
 grep -rn "TODO\|FIXME\|HACK\|XXX" src/ --include="*.ts" --include="*.tsx" 2>/dev/null | head -50
 find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l 2>/dev/null | sort -rn | head -20
@@ -84,6 +88,7 @@ Read key files identified during exploration. Use Glob and Grep liberally.
 Write document(s) to `.planning/codebase/` using the templates below. UPPERCASE.md naming (STACK.md, ARCHITECTURE.md, etc.).
 
 **Template filling:**
+
 1. Set `**Analysis Date:**`, the `*... analysis: ...*` footer, and any `<!-- refreshed: ... -->` header to the date in your prompt (`Today's date:` line), overwriting whatever is there. NEVER guess or infer the date.
 2. Replace `[Placeholder text]` with findings from exploration
 3. Not found → "Not detected" or "Not applicable"
@@ -105,6 +110,7 @@ Return a brief confirmation. DO NOT include document contents.
 
 Ready for orchestrator summary.
 ```
+
 </step>
 
 </process>
@@ -121,59 +127,72 @@ Ready for orchestrator summary.
 ## Languages
 
 **Primary:**
+
 - [Language] [Version] - [Where used]
 
 **Secondary:**
+
 - [Language] [Version] - [Where used]
 
 ## Runtime
 
 **Environment:**
+
 - [Runtime] [Version]
 
 **Package Manager:**
+
 - [Manager] [Version]
 - Lockfile: [present/missing]
 
 ## Frameworks
 
 **Core:**
+
 - [Framework] [Version] - [Purpose]
 
 **Testing:**
+
 - [Framework] [Version] - [Purpose]
 
 **Build/Dev:**
+
 - [Tool] [Version] - [Purpose]
 
 ## Key Dependencies
 
 **Critical:**
+
 - [Package] [Version] - [Why it matters]
 
 **Infrastructure:**
+
 - [Package] [Version] - [Purpose]
 
 ## Configuration
 
 **Environment:**
+
 - [How configured]
 - [Key configs required]
 
 **Build:**
+
 - [Build config files]
 
 ## Platform Requirements
 
 **Development:**
+
 - [Requirements]
 
 **Production:**
+
 - [Deployment target]
 
 ---
 
-*Stack analysis: [date]*
+_Stack analysis: [date]_
 ```
 
 ## INTEGRATIONS.md Template (tech focus)
@@ -186,6 +205,7 @@ Ready for orchestrator summary.
 ## APIs & External Services
 
 **[Category]:**
+
 - [Service] - [What it's used for]
   - SDK/Client: [package]
   - Auth: [env var name]
@@ -193,63 +213,76 @@ Ready for orchestrator summary.
 ## Data Storage
 
 **Databases:**
+
 - [Type/Provider]
   - Connection: [env var]
   - Client: [ORM/client]
 
 **File Storage:**
+
 - [Service or "Local filesystem only"]
 
 **Caching:**
+
 - [Service or "None"]
 
 ## Authentication & Identity
 
 **Auth Provider:**
+
 - [Service or "Custom"]
   - Implementation: [approach]
 
 ## Monitoring & Observability
 
 **Error Tracking:**
+
 - [Service or "None"]
 
 **Logs:**
+
 - [Approach]
 
 ## CI/CD & Deployment
 
 **Hosting:**
+
 - [Platform]
 
 **CI Pipeline:**
+
 - [Service or "None"]
 
 ## Environment Configuration
 
 **Required env vars:**
+
 - [List critical vars]
 
 **Secrets location:**
+
 - [Where secrets are stored]
 
 ## Webhooks & Callbacks
 
 **Incoming:**
+
 - [Endpoints or "None"]
 
 **Outgoing:**
+
 - [Endpoints or "None"]
 
 ---
 
-*Integration audit: [date]*
+_Integration audit: [date]_
 ```
 
 ## ARCHITECTURE.md Template (arch focus)
 
-```markdown
+````markdown
 <!-- refreshed: [YYYY-MM-DD] -->
+
 # Architecture
 
 **Analysis Date:** [YYYY-MM-DD]
@@ -276,20 +309,22 @@ Ready for orchestrator summary.
 │  `[path/to/store]`                                           │
 └─────────────────────────────────────────────────────────────┘
 ```
+````
 
 ## Component Responsibilities
 
-| Component | Responsibility | File |
-|-----------|----------------|------|
-| [Name] | [What it owns] | `[path]` |
-| [Name] | [What it owns] | `[path]` |
-| [Name] | [What it owns] | `[path]` |
+| Component | Responsibility | File     |
+| --------- | -------------- | -------- |
+| [Name]    | [What it owns] | `[path]` |
+| [Name]    | [What it owns] | `[path]` |
+| [Name]    | [What it owns] | `[path]` |
 
 ## Pattern Overview
 
 **Overall:** [Pattern name]
 
 **Key Characteristics:**
+
 - [Characteristic 1]
 - [Characteristic 2]
 - [Characteristic 3]
@@ -297,6 +332,7 @@ Ready for orchestrator summary.
 ## Layers
 
 **[Layer Name]:**
+
 - Purpose: [What this layer does]
 - Location: `[path]`
 - Contains: [Types of code]
@@ -318,11 +354,13 @@ Ready for orchestrator summary.
 3. [Step 3]
 
 **State Management:**
+
 - [How state is handled]
 
 ## Key Abstractions
 
 **[Abstraction Name]:**
+
 - Purpose: [What it represents]
 - Examples: `[file paths]`
 - Pattern: [Pattern used]
@@ -330,6 +368,7 @@ Ready for orchestrator summary.
 ## Entry Points
 
 **[Entry Point]:**
+
 - Location: `[path]`
 - Triggers: [What invokes it]
 - Responsibilities: [What it does]
@@ -360,6 +399,7 @@ Ready for orchestrator summary.
 **Strategy:** [Approach]
 
 **Patterns:**
+
 - [Pattern 1]
 - [Pattern 2]
 
@@ -371,8 +411,9 @@ Ready for orchestrator summary.
 
 ---
 
-*Architecture analysis: [date]*
-```
+_Architecture analysis: [date]_
+
+````
 
 ## STRUCTURE.md Template (arch focus)
 
@@ -383,11 +424,13 @@ Ready for orchestrator summary.
 
 ## Directory Layout
 
-```
+````
+
 [project-root]/
-├── [dir]/          # [Purpose]
-├── [dir]/          # [Purpose]
-└── [file]          # [Purpose]
+├── [dir]/ # [Purpose]
+├── [dir]/ # [Purpose]
+└── [file] # [Purpose]
+
 ```
 
 ## Directory Purposes
@@ -453,40 +496,49 @@ Ready for orchestrator summary.
 ## Naming Patterns
 
 **Files:**
+
 - [Pattern observed]
 
 **Functions:**
+
 - [Pattern observed]
 
 **Variables:**
+
 - [Pattern observed]
 
 **Types:**
+
 - [Pattern observed]
 
 ## Code Style
 
 **Formatting:**
+
 - [Tool used]
 - [Key settings]
 
 **Linting:**
+
 - [Tool used]
 - [Key rules]
 
 ## Import Organization
 
 **Order:**
+
 1. [First group]
 2. [Second group]
 3. [Third group]
 
 **Path Aliases:**
+
 - [Aliases used]
 
 ## Error Handling
 
 **Patterns:**
+
 - [How errors are handled]
 
 ## Logging
@@ -494,14 +546,17 @@ Ready for orchestrator summary.
 **Framework:** [Tool or "console"]
 
 **Patterns:**
+
 - [When/how to log]
 
 ## Comments
 
 **When to Comment:**
+
 - [Guidelines observed]
 
 **JSDoc/TSDoc:**
+
 - [Usage pattern]
 
 ## Function Design
@@ -520,12 +575,12 @@ Ready for orchestrator summary.
 
 ---
 
-*Convention analysis: [date]*
+_Convention analysis: [date]_
 ```
 
 ## TESTING.md Template (quality focus)
 
-```markdown
+````markdown
 # Testing Patterns
 
 **Analysis Date:** [YYYY-MM-DD]
@@ -533,28 +588,35 @@ Ready for orchestrator summary.
 ## Test Framework
 
 **Runner:**
+
 - [Framework] [Version]
 - Config: `[config file]`
 
 **Assertion Library:**
+
 - [Library]
 
 **Run Commands:**
+
 ```bash
 [command]              # Run all tests
 [command]              # Watch mode
 [command]              # Coverage
 ```
+````
 
 ## Test File Organization
 
 **Location:**
+
 - [Pattern: co-located or separate]
 
 **Naming:**
+
 - [Pattern]
 
 **Structure:**
+
 ```
 [Directory pattern]
 ```
@@ -562,11 +624,13 @@ Ready for orchestrator summary.
 ## Test Structure
 
 **Suite Organization:**
+
 ```typescript
 [Show actual pattern from codebase]
 ```
 
 **Patterns:**
+
 - [Setup pattern]
 - [Teardown pattern]
 - [Assertion pattern]
@@ -576,24 +640,29 @@ Ready for orchestrator summary.
 **Framework:** [Tool]
 
 **Patterns:**
+
 ```typescript
 [Show actual mocking pattern from codebase]
 ```
 
 **What to Mock:**
+
 - [Guidelines]
 
 **What NOT to Mock:**
+
 - [Guidelines]
 
 ## Fixtures and Factories
 
 **Test Data:**
+
 ```typescript
 [Show pattern from codebase]
 ```
 
 **Location:**
+
 - [Where fixtures live]
 
 ## Coverage
@@ -601,6 +670,7 @@ Ready for orchestrator summary.
 **Requirements:** [Target or "None enforced"]
 
 **View Coverage:**
+
 ```bash
 [command]
 ```
@@ -608,30 +678,36 @@ Ready for orchestrator summary.
 ## Test Types
 
 **Unit Tests:**
+
 - [Scope and approach]
 
 **Integration Tests:**
+
 - [Scope and approach]
 
 **E2E Tests:**
+
 - [Framework or "Not used"]
 
 ## Common Patterns
 
 **Async Testing:**
+
 ```typescript
-[Pattern]
+[Pattern];
 ```
 
 **Error Testing:**
+
 ```typescript
-[Pattern]
+[Pattern];
 ```
 
 ---
 
-*Testing analysis: [date]*
-```
+_Testing analysis: [date]_
+
+````
 
 ## CONCERNS.md Template (concerns focus)
 
@@ -711,12 +787,13 @@ Ready for orchestrator summary.
 ---
 
 *Concerns audit: [date]*
-```
+````
 
 </templates>
 
 <forbidden_files>
 **NEVER read or quote contents from these (even if they exist):**
+
 - `.env`, `.env.*`, `*.env` — environment secrets
 - `credentials.*`, `secrets.*`, `*secret*`, `*credential*`
 - `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks` — certs/private keys
@@ -743,11 +820,12 @@ Ready for orchestrator summary.
 </critical_rules>
 
 <success_criteria>
+
 - [ ] Focus area parsed correctly
 - [ ] Codebase explored thoroughly for focus area
 - [ ] All documents for focus area written to `.planning/codebase/`
 - [ ] Documents follow template structure
 - [ ] File paths included throughout documents
 - [ ] Confirmation returned (not document contents)
-</success_criteria>
-</output>
+      </success_criteria>
+      </output>

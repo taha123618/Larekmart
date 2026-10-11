@@ -9,9 +9,10 @@ Read all files referenced by the invoking prompt's execution_context before star
 </required_reading>
 
 <available_agent_types>
+
 - gsd-code-fixer: Applies fixes to code review findings
 - gsd-code-reviewer: Reviews source files for bugs and issues
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
@@ -34,6 +35,7 @@ FIXER_MODEL=$(gsd_run query resolve-model gsd-code-fixer --raw)
 Parse from init JSON: `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `padded_phase`, `commit_docs`.
 
 **Input sanitization (defense-in-depth):**
+
 ```bash
 # Validate PADDED_PHASE matches the canonical phase-number grammar (src/phase-id.cts): digits,
 # an optional single uppercase letter, then dotted segments (e.g., "02", "03.1", "23.1.2", "12A")
@@ -45,6 +47,7 @@ fi
 
 **Phase validation (before config gate):**
 If `phase_found` is false, report error and exit:
+
 ```
 Error: Phase ${PHASE_ARG} not found. Run /gsd-progress to see available phases.
 ```
@@ -78,6 +81,7 @@ Compute review and fix report paths:
 REVIEW_PATH="${PHASE_DIR}/${PADDED_PHASE}-REVIEW.md"
 FIX_REPORT_PATH="${PHASE_DIR}/${PADDED_PHASE}-REVIEW-FIX.md"
 ```
+
 </step>
 
 <step name="check_config_gate">
@@ -90,9 +94,11 @@ EXECUTE_POST_HOOKS_JSON=$(gsd_run loop render-hooks execute:post --raw)
 Resolve active step hooks from `EXECUTE_POST_HOOKS_JSON` where `kind == "step"` and `ref.skill == "code-review"`.
 
 If no active code-review step hook exists:
+
 ```
 Code review fix skipped (code-review capability inactive)
 ```
+
 Exit workflow.
 
 Default is active through the Capability Registry schema — only skip when the registry resolves no active code-review step hook. This check runs AFTER phase validation so invalid phase errors are shown first.
@@ -131,12 +137,15 @@ REVIEW_STATUS=$(REVIEW_PATH="${REVIEW_PATH}" node -e "
 ```
 
 If status is "clean" or "skipped":
+
 ```
 No issues to fix in Phase ${PHASE_ARG} REVIEW.md (status: ${REVIEW_STATUS}).
 ```
+
 Exit workflow.
 
 If status is "unknown":
+
 ```
 Warning: Could not parse REVIEW.md status. Proceeding with fix attempt.
 ```
@@ -232,15 +241,18 @@ ${AGENT_SKILLS_FIXER}")
 **Agent failure handling:**
 
 If Agent() fails:
+
 ```
 Error: Code fix agent failed: ${error_message}
 ```
 
 Check if FIX_REPORT_PATH exists:
+
 - If yes: "Partial success — some fixes may have been committed."
 - If no: "No fixes applied."
 
 Either way:
+
 ```
 Some fix commits may already exist in git history — check git log for fix(${PADDED_PHASE}) commits.
 You can retry with /gsd-code-review ${PHASE_ARG} --fix.
@@ -267,16 +279,16 @@ if [ "$AUTO_MODE" = "true" ]; then
 
   while [ $ITERATION -lt $MAX_ITERATIONS ]; do
     ITERATION=$((ITERATION + 1))
-    
+
     echo ""
     echo "═══════════════════════════════════════════════════════"
     echo "  --auto: Starting iteration ${ITERATION}/${MAX_ITERATIONS}"
     echo "═══════════════════════════════════════════════════════"
     echo ""
-    
+
     # Re-review using same depth and file scope as original review
     echo "Re-reviewing phase ${PHASE_ARG} at ${REVIEW_DEPTH} depth..."
-    
+
     # Backup previous REVIEW.md and REVIEW-FIX.md before overwriting
     if [ -f "${REVIEW_PATH}" ]; then
       cp "${REVIEW_PATH}" "${REVIEW_PATH%.md}.iter${ITERATION}.md" 2>/dev/null || true
@@ -284,7 +296,7 @@ if [ "$AUTO_MODE" = "true" ]; then
     if [ -f "${FIX_REPORT_PATH}" ]; then
       cp "${FIX_REPORT_PATH}" "${FIX_REPORT_PATH%.md}.iter${ITERATION}.md" 2>/dev/null || true
     fi
-    
+
     # If original review had explicit file list, pass it safely to re-review agent
     FILES_CONFIG=""
     if [ ${#REVIEW_FILES_ARRAY[@]} -gt 0 ]; then
@@ -294,7 +306,7 @@ if [ "$AUTO_MODE" = "true" ]; then
   - ${f}"
       done
     fi
-    
+
     # Spawn gsd-code-reviewer agent to re-review (runs in a subagent — no output until it returns, ~1–5 min; expected, not a freeze)
     # (This overwrites REVIEW_PATH with latest review state)
     Agent(subagent_type="gsd-code-reviewer", model="{REVIEWER_MODEL}", prompt="
@@ -309,7 +321,7 @@ Re-review the phase at ${REVIEW_DEPTH} depth. Write findings to ${REVIEW_PATH}.
 Do NOT commit the output — the orchestrator handles that.
 ${AGENT_SKILLS_REVIEWER}")
     # ORCHESTRATOR RULE — CODEX RUNTIME: After calling Agent() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result before proceeding.
-    
+
     # Check new REVIEW.md status
     NEW_STATUS=$(REVIEW_PATH="${REVIEW_PATH}" node -e "
       const fs = require('fs');
@@ -321,7 +333,7 @@ ${AGENT_SKILLS_REVIEWER}")
         console.log('unknown');
       }
     " 2>/dev/null)
-    
+
     if [ "$NEW_STATUS" = "clean" ]; then
       # Convergence: the re-review came back clean. This leaves REVIEW.md at `status: clean`, which
       # is what `cleanup_iteration_backups` re-derives the decision from.
@@ -329,10 +341,10 @@ ${AGENT_SKILLS_REVIEWER}")
       echo "✓ All issues resolved after iteration ${ITERATION}."
       break
     fi
-    
+
     # Still has issues — spawn fixer again (runs in a subagent — no output until it returns, ~1–5 min; expected, not a freeze)
     echo "Issues remain. Applying fixes for iteration ${ITERATION}..."
-    
+
     Agent(subagent_type="gsd-code-fixer", model="{FIXER_MODEL}", prompt="
 <required_reading>
 ${REVIEW_PATH}
@@ -350,14 +362,14 @@ iteration: ${ITERATION}
 Read REVIEW.md findings, apply fixes, commit each atomically, write REVIEW-FIX.md (overwrite previous). Do NOT commit REVIEW-FIX.md.
 ${AGENT_SKILLS_FIXER}")
     # ORCHESTRATOR RULE — CODEX RUNTIME: After calling Agent() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result before proceeding.
-    
+
     # Check if fixer succeeded
     if [ ! -f "${FIX_REPORT_PATH}" ]; then
       echo "Warning: Iteration ${ITERATION} fixer failed to produce fix report. Stopping auto-loop."
       break
     fi
   done
-  
+
   # After loop completes. The iteration COUNTER alone does not distinguish degradation from success:
   # a loop that converges on the final iteration exits with ITERATION == MAX_ITERATIONS and printed
   # "Reached maximum iterations. Remaining issues documented in REVIEW-FIX.md" over a run in which
@@ -393,11 +405,12 @@ fi
 ```
 
 Key design decisions for --auto (addresses ALL review HIGH concerns):
+
 1. **Re-review scope**: Uses REVIEW_FILES_ARRAY from original REVIEW.md frontmatter, falling back to full phase scope. Scope is NOT lost between iterations. Uses portable while-read loop (bash 3.2+ compatible, handles spaces in paths).
 2. **Artifact semantics**: REVIEW.md is overwritten by each re-review (latest review state). REVIEW-FIX.md is overwritten by each fixer iteration (latest fix state with iteration count). There is ONE final version of each artifact, not per-iteration copies.
    Backup files (.iterN.md) preserve history for post-mortem analysis if iterations degrade. On successful convergence (#3190) the backups are spent scratch and removed; on degradation (hit MAX_ITERATIONS / fixer failure) they are retained for post-mortem. The removal happens in `cleanup_iteration_backups`, after `record_disposition` has read them — they are the only surviving record of what an earlier iteration fixed, since this artifact keeps one final version rather than per-iteration copies.
 3. **Commit timing**: Fix commits happen per-finding inside the agent. REVIEW-FIX.md is NOT committed until step 7 (after ALL iterations complete). Only ONE docs commit, not one per iteration. In --auto that single commit also stages the converged REVIEW.md alongside REVIEW-FIX.md (#3190), so the two committed artifacts agree — the initial code-review commit held iteration-1 REVIEW.md content, and the --auto re-review loop overwrote it each iteration.
-</step>
+   </step>
 
 <step name="commit_fix_report">
 After ALL iterations complete (or single pass in non-auto mode), validate and commit REVIEW-FIX.md:
@@ -412,10 +425,10 @@ if [ -f "${FIX_REPORT_PATH}" ]; then
     const match = content.replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---/);
     if (match && /status:/.test(match[1])) { console.log('valid'); } else { console.log('invalid'); }
   " 2>/dev/null)
-  
+
   if [ "$HAS_STATUS" = "valid" ]; then
     echo "REVIEW-FIX.md created at ${FIX_REPORT_PATH}"
-    
+
     if [ "$COMMIT_DOCS" = "true" ]; then
       # #3190: --auto's re-review loop overwrote REVIEW.md each iteration
       # (auto_iteration_loop), but the only prior REVIEW.md commit is the
@@ -510,6 +523,7 @@ if [ "$AUTO_MODE" = "true" ]; then
   fi
 fi
 ```
+
 </step>
 
 <step name="present_results">
@@ -580,6 +594,7 @@ echo ""
 ```
 
 If status is "all_fixed":
+
 ```bash
 if [ "$FIX_STATUS" = "all_fixed" ]; then
   echo "✓ All issues resolved."
@@ -593,6 +608,7 @@ fi
 ```
 
 If status is "partial" or "none_fixed":
+
 ```bash
 if [ "$FIX_STATUS" = "partial" ] || [ "$FIX_STATUS" = "none_fixed" ]; then
   echo "⚠ Some issues could not be fixed automatically."
@@ -610,6 +626,7 @@ fi
 ```bash
 echo "═══════════════════════════════════════════════════════════════"
 ```
+
 </step>
 
 </process>
@@ -619,6 +636,7 @@ echo "════════════════════════�
 </platform_notes>
 
 <success_criteria>
+
 - [ ] Phase validated before config gate check
 - [ ] Capability gate checked (execute:post code-review hook)
 - [ ] REVIEW.md existence verified (error if missing)
@@ -630,4 +648,4 @@ echo "════════════════════════�
 - [ ] REVIEW-FIX.md committed ONCE after all iterations (not per-iteration)
 - [ ] Missing fix report handled with explicit error message in present_results
 - [ ] Results presented inline with next step suggestion
-</success_criteria>
+      </success_criteria>

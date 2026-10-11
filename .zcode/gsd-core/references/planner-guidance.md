@@ -3,6 +3,7 @@
 ## Solo Developer + Claude Workflow
 
 Planning for ONE person (the user) and ONE implementer (Claude).
+
 - No teams, stakeholders, ceremonies, coordination overhead
 - User = visionary/product owner, Claude = builder
 - Estimate effort in context window cost, not time
@@ -10,6 +11,7 @@ Planning for ONE person (the user) and ONE implementer (Claude).
 ## Plans Are Prompts
 
 PLAN.md IS the prompt (not a document that becomes one). Contains:
+
 - Objective (what and why)
 - Context (@file references)
 - Tasks (with verification criteria)
@@ -17,12 +19,12 @@ PLAN.md IS the prompt (not a document that becomes one). Contains:
 
 ## Quality Degradation Curve
 
-| Context Usage | Quality | Claude's State |
-|---------------|---------|----------------|
-| 0-30% | PEAK | Thorough, comprehensive |
-| 30-50% | GOOD | Confident, solid work |
-| 50-70% | DEGRADING | Efficiency mode begins |
-| 70%+ | POOR | Rushed, minimal |
+| Context Usage | Quality   | Claude's State          |
+| ------------- | --------- | ----------------------- |
+| 0-30%         | PEAK      | Thorough, comprehensive |
+| 30-50%        | GOOD      | Confident, solid work   |
+| 50-70%        | DEGRADING | Efficiency mode begins  |
+| 70%+          | POOR      | Rushed, minimal         |
 
 **Rule:** Plans should complete within ~50% context. More plans, smaller scope, consistent quality. Each plan: 2-3 tasks max.
 
@@ -36,12 +38,12 @@ Plan -> Execute -> Ship -> Learn -> Repeat
 
 ## Task Types
 
-| Type | Use For | Autonomy |
-|------|---------|----------|
-| `auto` | Everything Claude can do independently | Fully autonomous |
-| `checkpoint:human-verify` | Visual/functional verification | Pauses for user |
-| `checkpoint:decision` | Implementation choices | Pauses for user |
-| `checkpoint:human-action` | Truly unavoidable manual steps (rare) | Pauses for user |
+| Type                      | Use For                                | Autonomy         |
+| ------------------------- | -------------------------------------- | ---------------- |
+| `auto`                    | Everything Claude can do independently | Fully autonomous |
+| `checkpoint:human-verify` | Visual/functional verification         | Pauses for user  |
+| `checkpoint:decision`     | Implementation choices                 | Pauses for user  |
+| `checkpoint:human-action` | Truly unavoidable manual steps (rare)  | Pauses for user  |
 
 **Automation-first rule:** If Claude CAN do it via CLI/API, Claude MUST do it. Checkpoints verify AFTER automation, not replace it.
 
@@ -49,13 +51,14 @@ Plan -> Execute -> Ship -> Learn -> Repeat
 
 Each task targets **10–30% context consumption**.
 
-| Context Cost | Action |
-|--------------|--------|
-| < 10% context | Too small — combine with a related task |
-| 10-30% context | Right size — proceed |
-| > 30% context | Too large — split into two tasks |
+| Context Cost   | Action                                  |
+| -------------- | --------------------------------------- |
+| < 10% context  | Too small — combine with a related task |
+| 10-30% context | Right size — proceed                    |
+| > 30% context  | Too large — split into two tasks        |
 
 **Context cost signals (use these, not time estimates):**
+
 - Files modified: 0-3 = ~10-15%, 4-6 = ~20-30%, 7+ = ~40%+ (split)
 - New subsystem: ~25-35%
 - Migration + data transform: ~30-40%
@@ -86,6 +89,7 @@ For tasks involving external services, identify human-required configuration:
 External service indicators: New SDK (`stripe`, `@sendgrid/mail`, `twilio`, `openai`), webhook handlers, OAuth integration, `process.env.SERVICE_*` patterns.
 
 For each external service, determine:
+
 1. **Env vars needed** — What secrets from dashboards?
 2. **Account setup** — Does user need to create an account?
 3. **Dashboard config** — What must be configured in external UI?
@@ -97,6 +101,7 @@ Record in `user_setup` frontmatter. Only include what Claude literally cannot do
 ## Building the Dependency Graph
 
 **For each task, record:**
+
 - `needs`: What must exist before this runs
 - `creates`: What this produces
 - `has_checkpoint`: Requires user interaction?
@@ -126,10 +131,10 @@ No overlap → can run parallel. File in multiple plans → later plan depends o
 The resolved granularity is provided in the planning context as `**Granularity:** <value>`. Read that value and apply the corresponding row below. When no explicit value is present, default to Standard.
 
 | Granularity | Typical Plans/Phase | Tasks/Plan |
-|-------------|---------------------|------------|
-| Coarse | 1-3 | 2-3 |
-| Standard | 3-5 | 2-3 |
-| Fine | 5-10 | 2-3 |
+| ----------- | ------------------- | ---------- |
+| Coarse      | 1-3                 | 2-3        |
+| Standard    | 3-5                 | 2-3        |
+| Fine        | 5-10                | 2-3        |
 
 Derive plans from actual work. Granularity determines compression tolerance, not a target.
 
@@ -145,17 +150,17 @@ Derive plans from actual work. Granularity determines compression tolerance, not
 
 ### Wave Structure
 
-| Wave | Plans | Autonomous |
-|------|-------|------------|
-| 1 | {plan-01}, {plan-02} | yes, yes |
-| 2 | {plan-03} | no (has checkpoint) |
+| Wave | Plans                | Autonomous          |
+| ---- | -------------------- | ------------------- |
+| 1    | {plan-01}, {plan-02} | yes, yes            |
+| 2    | {plan-03}            | no (has checkpoint) |
 
 ### Plans Created
 
-| Plan | Objective | Tasks | Files |
-|------|-----------|-------|-------|
-| {phase}-01 | [brief] | 2 | [files] |
-| {phase}-02 | [brief] | 3 | [files] |
+| Plan       | Objective | Tasks | Files   |
+| ---------- | --------- | ----- | ------- |
+| {phase}-01 | [brief]   | 2     | [files] |
+| {phase}-02 | [brief]   | 3     | [files] |
 
 ### Next Steps
 
@@ -169,9 +174,9 @@ Gap-closure completion has **no completion marker**: nothing consumes one. The r
 **Phase:** {phase-name}
 **Closing:** {N} gaps from {VERIFICATION|UAT}.md
 
-| Plan | Gaps Addressed | Files |
-|------|----------------|-------|
-| {phase}-04 | [gap truths] | [files] |
+| Plan       | Gaps Addressed | Files   |
+| ---------- | -------------- | ------- |
+| {phase}-04 | [gap truths]   | [files] |
 
 **Next step for the orchestrator:** `/gsd:execute-phase {phase} --gaps-only`
 
@@ -186,6 +191,7 @@ Follow templates in checkpoints and revision_mode sections respectively.
 ### Step 2: Derive Observable Truths
 
 For "working chat interface":
+
 - User can see existing messages
 - User can type a new message
 - User can send the message
@@ -197,6 +203,7 @@ For "working chat interface":
 ### Step 3: Derive Required Artifacts
 
 "User can see existing messages" requires:
+
 - Message list component (renders Message[])
 - Messages state (loaded from somewhere)
 - API route or data source (provides messages)
@@ -207,6 +214,7 @@ For "working chat interface":
 ### Step 4: Derive Required Wiring
 
 Message list component wiring:
+
 - Imports Message type (not using `any`)
 - Receives messages prop or fetches from API
 - Maps over messages to render (not hardcoded)

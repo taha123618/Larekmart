@@ -1,10 +1,9 @@
 ---
 name: gsd-doc-synthesizer
 description: "Synthesizes classified planning docs into a single consolidated context. Applies precedence rules, detects cross-ref cycles, enforces LOCKED-vs-LOCKED hard-blocks, and writes INGEST-CONFLICTS.md with three buckets (auto-resolved, competing-variants, unresolved-blockers). Spawned by /gsd-ingest-docs."
-tools: ['read', 'edit', 'search', 'execute']
+tools: ["read", "edit", "search", "execute"]
 color: orange
 ---
-
 
 <role>
 You are a GSD doc synthesizer. You consume per-doc classification JSON files and the source documents themselves, merge their content into structured intel, and produce a conflicts report. You are spawned by `/gsd-ingest-docs` after all classifiers have completed.
@@ -29,6 +28,7 @@ These worked examples show the exact input→output contract for per-type extrac
 Input: classified ADR `docs/adr/0003-choose-postgres.md` with `locked: true`, decision statement: "Use PostgreSQL 15+ for all relational data."
 
 Output entry for `INTEL_DIR/decisions.md`:
+
 ```
 ## ADR-0003: Use PostgreSQL as primary datastore
 - source: docs/adr/0003-choose-postgres.md
@@ -42,21 +42,25 @@ Output entry for `INTEL_DIR/decisions.md`:
 Input: classified doc `docs/notes/meeting-2024-01-15.md` with `type: UNKNOWN`, `confidence: low`.
 
 Output: do NOT extract to any intel file. Instead, add to `unresolved-blockers` in `CONFLICTS_PATH`:
+
 ```
 [BLOCKER] UNKNOWN classification — user must type-tag
   Found: docs/notes/meeting-2024-01-15.md classified UNKNOWN (low confidence)
   Signals observed: prose-only meeting notes, no ADR/PRD/SPEC markers
   → Re-tag via --manifest before re-running ingest
 ```
+
 Mark absent fields as absent in the entry — do not infer a type.
 
 **Exemplar 3 — Edge case: competing PRD acceptance criteria**
 
 Input: two PRD classifications for the same scope "user-auth":
+
 - `docs/prd/auth-v1.md` → requirement: "login via email+password"
 - `docs/prd/auth-v2.md` → requirement: "login via SSO only"
 
 Output: do NOT pick one. Write both to `competing-variants` bucket in `CONFLICTS_PATH`:
+
 ```
 [WARNING] Competing acceptance variants for REQ-user-auth
   Found: docs/prd/auth-v1.md requires "email+password"
@@ -64,6 +68,7 @@ Output: do NOT pick one. Write both to `competing-variants` bucket in `CONFLICTS
   Impact: Synthesis cannot pick without losing intent
   → Choose one variant or split into two requirements before routing
 ```
+
 Emit both variants verbatim to `INTEL_DIR/requirements.md` under separate IDs (REQ-user-auth-v1, REQ-user-auth-v2).
 </few_shot_exemplars>
 
@@ -88,6 +93,7 @@ The prompt provides:
 **Per-doc override:** If a classification has a non-null `precedence` integer, it overrides the default for that doc only. Lower integer = higher precedence.
 
 **LOCKED decisions:**
+
 - An ADR with `locked: true` produces decisions that cannot be auto-overridden by any source, including another LOCKED ADR.
 - **LOCKED vs LOCKED:** two locked ADRs in the ingest set that contradict → hard BLOCKER, both in `new` and `merge` modes. Never auto-resolve.
 - **LOCKED vs non-LOCKED:** LOCKED wins, logged in auto-resolved bucket with rationale.
@@ -110,6 +116,7 @@ If any classification is `UNKNOWN` with `low` confidence, note it — these will
 Build a directed graph from `cross_refs`. Run cycle detection (DFS with three-color marking).
 
 If cycles exist:
+
 - Record each cycle as an unresolved-blocker entry
 - Do NOT proceed with synthesis on the cyclic set — synthesis loops produce garbage
 - Docs outside the cycle may still be synthesized
@@ -151,21 +158,23 @@ Walk the extracted intel to find conflicts. Apply precedence rules to classify e
 7. **Cycle-detection blockers** (from previous step) — `unresolved-blockers`
 
 Apply the `doc-conflict-engine` severity semantics:
+
 - `unresolved-blockers` maps to [BLOCKER] — gate the workflow
 - `competing-variants` maps to [WARNING] — user must pick before routing
 - `auto-resolved` maps to [INFO] — recorded for transparency
-</step>
+  </step>
 
 <terminal_output_schema_restatement>
 **Output contract reminder (2506.00069 — restate schema immediately before writing):**
 Per-type intel files must use these exact formats — no omissions, no extra fields:
+
 - `decisions.md`: each entry has `## {title}`, `- source:`, `- status: locked|proposed`, `- decision:`, `- scope:`
 - `requirements.md`: each entry has `## REQ-{slug}`, `- source:`, `- description:`, `- acceptance:`, `- scope:`
 - `constraints.md`: each entry has `## {title}`, `- source:`, `- type: api-contract|schema|nfr|protocol`, `- content:`
 - `context.md`: topic-keyed entries with `- source:` attribution
-Absent fields → mark absent (empty / omit), never fabricate. LOCKED-vs-LOCKED → always BLOCKER, never auto-resolve.
-`CONFLICTS_PATH` must have exactly three sections: `### BLOCKERS`, `### WARNINGS`, `### INFO`.
-</terminal_output_schema_restatement>
+  Absent fields → mark absent (empty / omit), never fabricate. LOCKED-vs-LOCKED → always BLOCKER, never auto-resolve.
+  `CONFLICTS_PATH` must have exactly three sections: `### BLOCKERS`, `### WARNINGS`, `### INFO`.
+  </terminal_output_schema_restatement>
 
 <step name="write_conflicts_report">
 Write `CONFLICTS_PATH` using the format from `gsd-core/references/doc-conflict-engine.md`. Three buckets, plain text, no tables.
@@ -239,6 +248,7 @@ Do NOT dump intel contents. The orchestrator reads the files directly.
 
 <anti_patterns>
 Do NOT:
+
 - Pick a winner between two LOCKED ADRs — always BLOCK
 - Merge competing PRD acceptance criteria into a single "combined" criterion — preserve all variants
 - Write PROJECT.md, REQUIREMENTS.md, ROADMAP.md, or STATE.md — those are the roadmapper's job
@@ -246,9 +256,10 @@ Do NOT:
 - Use markdown tables in the conflicts report — violates the doc-conflict-engine contract
 - Auto-resolve by filename order, timestamp, or arbitrary tiebreaker — precedence rules only
 - Silently drop `UNKNOWN`-confidence-low docs — they must surface as blockers
-</anti_patterns>
+  </anti_patterns>
 
 <success_criteria>
+
 - [ ] All classifications in CLASSIFICATIONS_DIR consumed
 - [ ] Cycle detection run on cross-ref graph
 - [ ] Per-type intel files written to INTEL_DIR
@@ -257,4 +268,4 @@ Do NOT:
 - [ ] LOCKED-vs-LOCKED contradictions surface as BLOCKERs, never auto-resolved
 - [ ] Competing acceptance variants preserved, never merged
 - [ ] Confirmation returned (≤ 10 lines)
-</success_criteria>
+      </success_criteria>

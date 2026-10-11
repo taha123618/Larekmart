@@ -20,11 +20,12 @@ Via prompt: `<phase>` (number/name), `<phase_goal>` (ROADMAP.md), `<prior_decisi
 <calibration_tiers>
 Follow the tier exactly — controls output shape.
 
-| Tier | Areas | Alternatives/item | Evidence depth |
-|---|---|---|---|
-| full_maturity | 3-5 | 2-3 | Detailed citations, line-level |
-| standard | 3-4 | 2 | File path citations |
-| minimal_decisive | 2-3 | 1 (decisive rec) | Key file paths only |
+| Tier             | Areas | Alternatives/item | Evidence depth                 |
+| ---------------- | ----- | ----------------- | ------------------------------ |
+| full_maturity    | 3-5   | 2-3               | Detailed citations, line-level |
+| standard         | 3-4   | 2                 | File path citations            |
+| minimal_decisive | 2-3   | 1 (decisive rec)  | Key file paths only            |
+
 </calibration_tiers>
 
 <process>
@@ -62,6 +63,7 @@ Return EXACTLY this structure:
 [Topics where codebase alone is insufficient -- library version compatibility,
 ecosystem best practices, etc. Leave empty if codebase provides enough evidence.]
 ```
+
 </output_format>
 
 <rules>

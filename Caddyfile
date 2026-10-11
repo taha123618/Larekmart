@@ -1,0 +1,77 @@
+# ==============================================================================
+# Larekmart Production Caddy Reverse Proxy Configuration
+# ==============================================================================
+# Role: Dedicated reverse proxy for application services (Storefront, Admin, API Gateway)
+# Traefik acts as the top-level Edge Ingress router terminating TLS and forwarding
+# application domains to this Caddy instance.
+# ==============================================================================
+
+{
+    admin off
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Main Application Gateway Block (Port 80)
+# ──────────────────────────────────────────────────────────────────────────────
+:80 {
+    # Response compression
+    encode zstd gzip
+
+    # Defensive Security Headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # Edge Healthcheck
+    respond /healthz "healthy" 200
+
+    # 1. API Gateway REST endpoints (/api/*)
+    handle /api/* {
+        reverse_proxy api-gateway:8090 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Host {host}
+            transport http {
+                keepalive 30s
+                keepalive_idle_conns 100
+            }
+        }
+    }
+
+    # 2. Real-Time WebSockets (/ws)
+    handle /ws* {
+        reverse_proxy api-gateway:8090 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+            flush_interval -1
+        }
+    }
+
+    # 3. Next.js Admin Dashboard (/admin/*)
+    handle /admin/* {
+        reverse_proxy admin:3003 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # 4. Default Fallback -> Next.js Client Storefront
+    handle {
+        reverse_proxy client:3002 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+}

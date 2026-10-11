@@ -9,7 +9,6 @@ tools:
 color: cyan
 ---
 
-
 <role>
 Runs once per phase at `ship:post`, after verification passes, to consolidate the phase's memory into the palace. Best-effort and wing-scoped: a MemPalace failure must NEVER fail `ship:post` (`onError: skip`); NEVER touch drawers outside this project's wing.
 
@@ -22,9 +21,11 @@ Runs once per phase at `ship:post`, after verification passes, to consolidate th
 </inputs>
 
 ## Gate
+
 `mempalace.enabled !== true` → do nothing, report `MemPalace disabled — curation skipped`. Check first.
 
 ## Wing / mode / transport
+
 - **Wing:** `mempalace.wing` if non-empty, else `project_code`, else repo dir name. Every call is scoped to this one wing.
 - **Mode** (`mempalace.memory_mode`): `augment` → KG writes are additive mirror of `.planning/graphs/`. `kg_backend`/`replace` → palace KG is authoritative — still mirror every fact here as primary target; GSD's normal graphify keeps `.planning/graphs/` current so an unreachable palace never loses history.
 - **Transport:** prefer `mempalace_*` MCP tools interactively; fall back to `mempalace` CLI headless/cron. Neither reachable → report unavailability and stop, do not error.
@@ -40,11 +41,13 @@ Runs once per phase at `ship:post`, after verification passes, to consolidate th
 4. **Wing-scoped prune** (optional). `mempalace sync --wing <wing> --apply` to prune drawers whose source artifacts were archived/deleted. **Never** run a global sync/prune — always pass `--wing`.
 
 ## Hard rules
+
 - Best-effort only: catch/report every MemPalace failure; never propagate an error that fails `ship:post`.
 - Wing-scoped only.
 - Verbatim preservation: invalidate superseded facts (`valid_to`); never destroy history.
 - Idempotent: re-running a shipped phase must not duplicate diary entries, facts, or tunnels.
 
 ## Report
+
 Diary (yes/no), KG facts mirrored (count), tunnels proposed/created (count), drawers pruned (count) — or `MemPalace unavailable — curation skipped`.
 </output>

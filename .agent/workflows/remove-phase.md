@@ -14,6 +14,7 @@ Remove a phase from the roadmap, with safety checks for in-progress or completed
 ## 1. Validate Phase Exists
 
 **PowerShell:**
+
 ```powershell
 $phase = Select-String -Path ".gsd/ROADMAP.md" -Pattern "### Phase $N:"
 if (-not $phase) {
@@ -22,6 +23,7 @@ if (-not $phase) {
 ```
 
 **Bash:**
+
 ```bash
 if ! grep -q "### Phase $N:" ".gsd/ROADMAP.md"; then
     echo "Error: Phase $N not found in ROADMAP.md" >&2
@@ -33,22 +35,24 @@ fi
 ## 2. Check Phase Status
 
 **PowerShell:**
+
 ```powershell
 $status = Select-String -Path ".gsd/ROADMAP.md" -Pattern "Phase $N:.*\n.*Status: (.*)"
 ```
 
 **Bash:**
+
 ```bash
 status=$(grep -A1 "Phase $N:" ".gsd/ROADMAP.md" | grep "Status:" | cut -d: -f2)
 ```
 
 **Safety checks:**
 
-| Status | Action |
-|--------|--------|
-| ⬜ Not Started | Safe to remove |
-| 🔄 In Progress | Warn and confirm |
-| ✅ Complete | Error — archive instead |
+| Status         | Action                  |
+| -------------- | ----------------------- |
+| ⬜ Not Started | Safe to remove          |
+| 🔄 In Progress | Warn and confirm        |
+| ✅ Complete    | Error — archive instead |
 
 ---
 
@@ -57,16 +61,19 @@ status=$(grep -A1 "Phase $N:" ".gsd/ROADMAP.md" | grep "Status:" | cut -d: -f2)
 Are other phases depending on this one?
 
 **PowerShell:**
+
 ```powershell
 Select-String -Path ".gsd/ROADMAP.md" -Pattern "Depends on.*Phase $N"
 ```
 
 **Bash:**
+
 ```bash
 grep "Depends on.*Phase $N" ".gsd/ROADMAP.md"
 ```
 
 **If dependencies exist:**
+
 ```
 ⚠️ Phase {M} depends on Phase {N}
 

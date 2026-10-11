@@ -3,13 +3,13 @@
 // Claude Code Statusline - GSD Edition
 // Shows: model | current task (or GSD state) | directory | context usage
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
 // Namespace (not destructured) so tests can inject spawn failures by
 // monkeypatching childProcess.execFileSync.
-const childProcess = require('child_process');
-const { HOOK_ON_CRASH, allow, crash } = require('./lib/hook-exit.js');
+const childProcess = require("child_process");
+const { HOOK_ON_CRASH, allow, crash } = require("./lib/hook-exit.js");
 
 // This hook's build-seam outer catch (require.main guard just below) has
 // always exited 0 (fail open — the statusline renders on EVERY prompt, so a
@@ -28,7 +28,9 @@ const ON_CRASH = HOOK_ON_CRASH.ALLOW;
 // its pure helpers assumes a built tree, same as every other hook test.
 if (require.main === module) {
   try {
-    const { ensureRuntimeBuild } = require('../gsd-core/bin/ensure-runtime-build.cjs');
+    const {
+      ensureRuntimeBuild,
+    } = require("../gsd-core/bin/ensure-runtime-build.cjs");
     ensureRuntimeBuild();
   } catch (e) {
     // #3911: crash(ON_CRASH, ...) with an undefined payload preserves the
@@ -39,13 +41,18 @@ if (require.main === module) {
     crash(ON_CRASH, undefined);
   }
 }
-const { isSemverNewer } = require('../gsd-core/bin/lib/semver-compare.cjs');
-const { PACKAGE_NAME, updateCacheFileName } = require('../gsd-core/bin/lib/package-identity.cjs');
-const { normalizeStateStatus } = require('../gsd-core/bin/lib/state-document.cjs');
+const { isSemverNewer } = require("../gsd-core/bin/lib/semver-compare.cjs");
+const {
+  PACKAGE_NAME,
+  updateCacheFileName,
+} = require("../gsd-core/bin/lib/package-identity.cjs");
+const {
+  normalizeStateStatus,
+} = require("../gsd-core/bin/lib/state-document.cjs");
 const {
   renderBracketPhaseDisplay,
   renderBracketMilestoneDisplay,
-} = require('../gsd-core/bin/lib/phase-id-display.cjs');
+} = require("../gsd-core/bin/lib/phase-id-display.cjs");
 // #2850: reuse the existing workstream resolution seams rather than
 // re-implementing CLI>env>store precedence or path construction inline.
 // peekActiveWorkstream is the read-only sibling of the store-tier lookup
@@ -55,8 +62,14 @@ const {
 // resolveActiveWorkstream's own `getStored` override keeps the CLI>env>store
 // precedence itself fully reused (untouched); only the store tier's *write*
 // side effect is removed.
-const { resolveActiveWorkstream, peekActiveWorkstream } = require('../gsd-core/bin/lib/active-workstream-store.cjs');
-const { listAvailableWorkstreams, planningPaths } = require('../gsd-core/bin/lib/planning-workspace.cjs');
+const {
+  resolveActiveWorkstream,
+  peekActiveWorkstream,
+} = require("../gsd-core/bin/lib/active-workstream-store.cjs");
+const {
+  listAvailableWorkstreams,
+  planningPaths,
+} = require("../gsd-core/bin/lib/planning-workspace.cjs");
 
 // --- Config + last-command readers ------------------------------------------
 
@@ -68,10 +81,10 @@ function readGsdConfig(dir) {
   const home = os.homedir();
   let current = dir;
   for (let i = 0; i < 10; i++) {
-    const candidate = path.join(current, '.planning', 'config.json');
+    const candidate = path.join(current, ".planning", "config.json");
     if (fs.existsSync(candidate)) {
       try {
-        return JSON.parse(fs.readFileSync(candidate, 'utf8')) || {};
+        return JSON.parse(fs.readFileSync(candidate, "utf8")) || {};
       } catch (e) {
         return {};
       }
@@ -88,12 +101,12 @@ function readGsdConfig(dir) {
  * object that may use either nested or flat keys.
  */
 function getConfigValue(cfg, keyPath) {
-  if (!cfg || typeof cfg !== 'object') return undefined;
+  if (!cfg || typeof cfg !== "object") return undefined;
   if (keyPath in cfg) return cfg[keyPath];
-  const parts = keyPath.split('.');
+  const parts = keyPath.split(".");
   let cur = cfg;
   for (const p of parts) {
-    if (cur == null || typeof cur !== 'object' || !(p in cur)) return undefined;
+    if (cur == null || typeof cur !== "object" || !(p in cur)) return undefined;
     cur = cur[p];
   }
   return cur;
@@ -108,7 +121,7 @@ function getConfigValue(cfg, keyPath) {
  * We scan lines from the end of the file, stopping at the first match.
  */
 function readLastSlashCommand(transcriptPath) {
-  if (!transcriptPath || typeof transcriptPath !== 'string') return null;
+  if (!transcriptPath || typeof transcriptPath !== "string") return null;
   let content;
   try {
     if (!fs.existsSync(transcriptPath)) return null;
@@ -117,11 +130,11 @@ function readLastSlashCommand(transcriptPath) {
     const stat = fs.statSync(transcriptPath);
     const MAX = 256 * 1024;
     const start = Math.max(0, stat.size - MAX);
-    const fd = fs.openSync(transcriptPath, 'r');
+    const fd = fs.openSync(transcriptPath, "r");
     try {
       const buf = Buffer.alloc(stat.size - start);
       fs.readSync(fd, buf, 0, buf.length, start);
-      content = buf.toString('utf8');
+      content = buf.toString("utf8");
     } finally {
       fs.closeSync(fd);
     }
@@ -129,15 +142,15 @@ function readLastSlashCommand(transcriptPath) {
     return null;
   }
   // Find the LAST occurrence — scan right-to-left via lastIndexOf on the tag.
-  const tagClose = '</command-name>';
+  const tagClose = "</command-name>";
   const idx = content.lastIndexOf(tagClose);
   if (idx < 0) return null;
-  const openTag = '<command-name>';
+  const openTag = "<command-name>";
   const openIdx = content.lastIndexOf(openTag, idx);
   if (openIdx < 0) return null;
   let name = content.slice(openIdx + openTag.length, idx).trim();
   // Strip a leading slash if present, and any trailing arguments-on-same-line noise.
-  if (name.startsWith('/')) name = name.slice(1);
+  if (name.startsWith("/")) name = name.slice(1);
   // Command names in Claude Code transcripts are plain identifiers like "gsd-plan-phase"
   // or namespaced like "plugin:skill". Reject anything with whitespace/newlines/control chars.
   if (!name || /[\s\\"<>]/.test(name) || name.length > 80) return null;
@@ -155,7 +168,7 @@ function readLastSlashCommand(transcriptPath) {
 function readStateFileOrNull(statePath) {
   if (!fs.existsSync(statePath)) return null;
   try {
-    return parseStateMd(fs.readFileSync(statePath, 'utf8'));
+    return parseStateMd(fs.readFileSync(statePath, "utf8"));
   } catch (e) {
     return null;
   }
@@ -199,10 +212,15 @@ function readGsdState(dir, opts = {}) {
   const home = os.homedir();
   let current = dir;
   for (let i = 0; i < 10; i++) {
-    const flatState = readStateFileOrNull(path.join(current, '.planning', 'STATE.md'));
+    const flatState = readStateFileOrNull(
+      path.join(current, ".planning", "STATE.md"),
+    );
     if (flatState !== null) {
       if (stateFreshness && flatState.stateHead) {
-        flatState.freshness = deriveStateFreshness(current, flatState.stateHead);
+        flatState.freshness = deriveStateFreshness(
+          current,
+          flatState.stateHead,
+        );
       }
       return flatState;
     }
@@ -210,14 +228,18 @@ function readGsdState(dir, opts = {}) {
     if (listAvailableWorkstreams(current).length > 0) {
       let resolvedWs = null;
       try {
-        resolvedWs = resolveActiveWorkstream(current, [], process.env, { getStored: peekActiveWorkstream }).ws;
+        resolvedWs = resolveActiveWorkstream(current, [], process.env, {
+          getStored: peekActiveWorkstream,
+        }).ws;
       } catch (e) {
         resolvedWs = null;
       }
 
       if (!resolvedWs) return { noActiveWorkstream: true };
 
-      const wsState = readStateFileOrNull(planningPaths(current, resolvedWs).state);
+      const wsState = readStateFileOrNull(
+        planningPaths(current, resolvedWs).state,
+      );
       if (wsState !== null && stateFreshness && wsState.stateHead) {
         wsState.freshness = deriveStateFreshness(current, wsState.stateHead);
       }
@@ -262,34 +284,43 @@ function parseStateMd(content) {
       const m = line.match(/^(\w+):\s*(.+)/);
       if (!m) continue;
       const [, key, val] = m;
-      const v = val.trim().replace(/^["']|["']$/g, '');
+      const v = val.trim().replace(/^["']|["']$/g, "");
       // status / milestone-level fields (existing — preserved exactly)
-      if (key === 'status') state.status = v === 'null' ? null : v;
-      if (key === 'milestone') state.milestone = v === 'null' ? null : v;
-      if (key === 'milestone_name') state.milestoneName = v === 'null' ? null : v;
+      if (key === "status") state.status = v === "null" ? null : v;
+      if (key === "milestone") state.milestone = v === "null" ? null : v;
+      if (key === "milestone_name")
+        state.milestoneName = v === "null" ? null : v;
       // Phase-lifecycle fields (new in issue #2833)
       // active_phase: phase number when an orchestrator is in-flight, null when idle
-      if (key === 'active_phase') state.activePhase = (v === 'null' || v === '') ? null : v;
+      if (key === "active_phase")
+        state.activePhase = v === "null" || v === "" ? null : v;
       // next_action: recommended command when idle (discuss-phase / plan-phase / execute-phase / verify-phase)
-      if (key === 'next_action') state.nextAction = (v === 'null' || v === '') ? null : v;
+      if (key === "next_action")
+        state.nextAction = v === "null" || v === "" ? null : v;
       // #2734: state_head — the commit STATE.md was written against, consumed
       // by deriveStateFreshness() below. Mirrors active_phase/next_action's
       // null/empty handling exactly.
-      if (key === 'state_head') state.stateHead = (v === 'null' || v === '') ? null : v;
+      if (key === "state_head")
+        state.stateHead = v === "null" || v === "" ? null : v;
     }
     // next_phases supports both flow array and block-list YAML forms.
     const npFlowMatch = fm.match(/^next_phases:\s*\[([^\]]*)\]/m);
     if (npFlowMatch) {
-      const items = npFlowMatch[1].split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+      const items = npFlowMatch[1]
+        .split(",")
+        .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+        .filter(Boolean);
       state.nextPhases = items.length > 0 ? items : null;
     } else {
-      const npBlockMatch = fm.match(/^next_phases:\s*\r?\n((?:[ \t]*-[ \t]*[^\r\n]+\r?\n?)*)/m);
+      const npBlockMatch = fm.match(
+        /^next_phases:\s*\r?\n((?:[ \t]*-[ \t]*[^\r\n]+\r?\n?)*)/m,
+      );
       if (npBlockMatch) {
         const items = npBlockMatch[1]
           .split(/\r?\n/)
-          .map(line => line.match(/^[ \t]*-[ \t]*(.+)$/))
+          .map((line) => line.match(/^[ \t]*-[ \t]*(.+)$/))
           .filter(Boolean)
-          .map(m => m[1].trim().replace(/^["']|["']$/g, ''))
+          .map((m) => m[1].trim().replace(/^["']|["']$/g, ""))
           .filter(Boolean);
         state.nextPhases = items.length > 0 ? items : null;
       }
@@ -307,7 +338,9 @@ function parseStateMd(content) {
   }
 
   // Phase: N of M (name)  or  Phase: none active (...)
-  const phaseMatch = content.match(/^Phase:\s*(\d+)\s+of\s+(\d+)(?:\s+\(([^)]+)\))?/m);
+  const phaseMatch = content.match(
+    /^Phase:\s*(\d+)\s+of\s+(\d+)(?:\s+\(([^)]+)\))?/m,
+  );
   if (phaseMatch) {
     state.phaseNum = phaseMatch[1];
     state.phaseTotal = phaseMatch[2];
@@ -319,9 +352,11 @@ function parseStateMd(content) {
     const bodyStatus = content.match(/^Status:\s*(.+)/m);
     if (bodyStatus) {
       const raw = bodyStatus[1].trim().toLowerCase();
-      if (raw.includes('ready to plan') || raw.includes('planning')) state.status = 'planning';
-      else if (raw.includes('execut')) state.status = 'executing';
-      else if (raw.includes('complet') || raw.includes('archived')) state.status = 'complete';
+      if (raw.includes("ready to plan") || raw.includes("planning"))
+        state.status = "planning";
+      else if (raw.includes("execut")) state.status = "executing";
+      else if (raw.includes("complet") || raw.includes("archived"))
+        state.status = "complete";
     }
   }
 
@@ -330,7 +365,7 @@ function parseStateMd(content) {
 
 // #2850: shared literal for formatGsdState/formatGsdStateCompact's "nothing
 // resolvable" signal — one source of truth so the two renderers can't drift.
-const NO_ACTIVE_WORKSTREAM_LABEL = 'no active workstream';
+const NO_ACTIVE_WORKSTREAM_LABEL = "no active workstream";
 
 /**
  * Render a 10-segment milestone progress bar (matches the context meter style).
@@ -339,10 +374,10 @@ const NO_ACTIVE_WORKSTREAM_LABEL = 'no active workstream';
  * @returns {string} '[█████░░░░░] 50%' or '' (so callers can `[bar].filter(Boolean)`)
  */
 function renderProgressBar(percent) {
-  if (percent == null || isNaN(percent)) return '';
+  if (percent == null || isNaN(percent)) return "";
   const pct = Math.max(0, Math.min(100, parseInt(percent, 10)));
   const filled = Math.floor(pct / 10);
-  const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
+  const bar = "█".repeat(filled) + "░".repeat(10 - filled);
   return `[${bar}] ${pct}%`;
 }
 
@@ -369,7 +404,7 @@ function formatGsdState(s, opts = {}) {
   if (s.noActiveWorkstream) return NO_ACTIVE_WORKSTREAM_LABEL;
 
   const parts = [];
-  const bracket = opts.convention === 'bracket';
+  const bracket = opts.convention === "bracket";
   const bracketMilestone = bracket
     ? renderBracketMilestoneDisplay(s.milestone, opts.projectCode)
     : null;
@@ -382,35 +417,41 @@ function formatGsdState(s, opts = {}) {
 
   // Milestone segment: version + name + (opt-in) progress bar
   if (s.milestone || s.milestoneName) {
-    const ver = bracketMilestone ?? s.milestone ?? '';
-    const name = (s.milestoneName && s.milestoneName !== 'milestone') ? s.milestoneName : '';
+    const ver = bracketMilestone ?? s.milestone ?? "";
+    const name =
+      s.milestoneName && s.milestoneName !== "milestone" ? s.milestoneName : "";
     const bar = renderProgressBar(s.percent);
     const pieces = [ver, name, bar].filter(Boolean);
-    if (pieces.length > 0) parts.push(pieces.join(' '));
+    if (pieces.length > 0) parts.push(pieces.join(" "));
   }
 
   // Phase-lifecycle scenes (issue #2833) — first match wins; falls through to
   // the original "<status> · <phase>" path when none of the new fields apply.
-  const phasesStr = (s.nextPhases && s.nextPhases.length > 0) ? s.nextPhases.join('/') : null;
+  const phasesStr =
+    s.nextPhases && s.nextPhases.length > 0 ? s.nextPhases.join("/") : null;
 
   if (s.activePhase) {
     // Scene 1: an orchestrator is mid-flight on this phase.
     // stage = whichever lifecycle status was written by the orchestrator
     //   (discussing / planning / executing / verifying)
-    const stage = s.status || '';
+    const stage = s.status || "";
     const phase = phaseLabel(s.activePhase);
     parts.push(stage ? `${phase} ${stage}` : phase);
   } else if (s.nextAction && phasesStr) {
     // Scene 2: idle + a recommended next command is visible to the user.
     // Surfaces "what to run next" without the user opening STATE.md.
     parts.push(`next ${s.nextAction} ${phasesStr}`);
-  } else if (Number(s.percent) === 100 || (Number(s.totalPhases) > 0 && Number(s.completedPhases) === Number(s.totalPhases))) {
+  } else if (
+    Number(s.percent) === 100 ||
+    (Number(s.totalPhases) > 0 &&
+      Number(s.completedPhases) === Number(s.totalPhases))
+  ) {
     // Scene 3: milestone complete (every phase done). #3945: the counters are
     // regex-captured STRINGS, so the old `cp && tp && cp === tp` guard fired on
     // the empty set ('0' is truthy, '0' === '0') — "0% · milestone complete".
     // Numeric coercion + a non-empty denominator makes "nothing to measure"
     // stop meaning "everything is done".
-    parts.push('milestone complete');
+    parts.push("milestone complete");
   } else {
     // Backward-compatible default — preserved EXACTLY for STATE.md files that
     // don't carry the new lifecycle fields. Identical output to v1.38.x and
@@ -435,7 +476,7 @@ function formatGsdState(s, opts = {}) {
   const fresh = formatStateFreshness(s.freshness);
   if (fresh) parts.push(fresh);
 
-  return parts.join(' · ');
+  return parts.join(" · ");
 }
 
 // --- Context token count (opt-in) ---------------------------------------------
@@ -447,9 +488,9 @@ function formatTokens(tokens) {
   // Promote to the M branch when k-rounding would reach 1000 (999,500-999,999
   // must render "1.0M", never "1000k").
   if (tokens >= 1000000 || Math.round(tokens / 1000) >= 1000) {
-    return (tokens / 1000000).toFixed(1) + 'M';
+    return (tokens / 1000000).toFixed(1) + "M";
   }
-  if (tokens >= 1000) return Math.round(tokens / 1000) + 'k';
+  if (tokens >= 1000) return Math.round(tokens / 1000) + "k";
   return String(tokens);
 }
 
@@ -460,12 +501,13 @@ function formatTokens(tokens) {
  * Returns ' (156k)' or '' when usage is absent/empty.
  */
 function contextTokenSuffix(currentUsage) {
-  if (!currentUsage || typeof currentUsage !== 'object') return '';
-  const total = (Number(currentUsage.input_tokens) || 0) +
+  if (!currentUsage || typeof currentUsage !== "object") return "";
+  const total =
+    (Number(currentUsage.input_tokens) || 0) +
     (Number(currentUsage.cache_creation_input_tokens) || 0) +
     (Number(currentUsage.cache_read_input_tokens) || 0) +
     (Number(currentUsage.output_tokens) || 0);
-  return total > 0 ? ` (${formatTokens(total)})` : '';
+  return total > 0 ? ` (${formatTokens(total)})` : "";
 }
 
 // --- Compact state format (opt-in) ---------------------------------------------
@@ -485,17 +527,27 @@ function contextTokenSuffix(currentUsage) {
  * capped at 16 chars so a rogue STATE.md can't blow up the line.
  * Returns null for empty input.
  */
-const CANONICAL_STATUSES = ['discussing', 'planning', 'executing', 'verifying', 'completed', 'paused'];
+const CANONICAL_STATUSES = [
+  "discussing",
+  "planning",
+  "executing",
+  "verifying",
+  "completed",
+  "paused",
+];
 
 function shortGsdStatus(status) {
   if (!status) return null;
   const norm = normalizeStateStatus(status, null);
   if (CANONICAL_STATUSES.includes(norm)) {
-    return norm === 'paused' ? 'PAUSED' : norm;
+    return norm === "paused" ? "PAUSED" : norm;
   }
   // Unrecognized free text passes through normalizeStateStatus verbatim —
   // fall back to the first word, capped.
-  const first = String(norm).trim().split(/[\s\u2014\u2013-]+/)[0] || '';
+  const first =
+    String(norm)
+      .trim()
+      .split(/[\s\u2014\u2013-]+/)[0] || "";
   return first ? first.slice(0, 16) : null;
 }
 
@@ -517,7 +569,7 @@ function formatGsdStateCompact(s, opts = {}) {
   if (s.noActiveWorkstream) return NO_ACTIVE_WORKSTREAM_LABEL;
 
   const parts = [];
-  const bracket = opts.convention === 'bracket';
+  const bracket = opts.convention === "bracket";
   const bracketMilestone = bracket
     ? renderBracketMilestoneDisplay(s.milestone, opts.projectCode)
     : null;
@@ -529,25 +581,32 @@ function formatGsdStateCompact(s, opts = {}) {
     const bracketPhase = bracket
       ? renderBracketPhaseDisplay(s.milestone, phaseId, opts.projectCode)
       : null;
-    parts.push(bracketPhase ?? (s.phaseTotal ? `P${phaseId}/${s.phaseTotal}` : `P${phaseId}`));
+    parts.push(
+      bracketPhase ??
+        (s.phaseTotal ? `P${phaseId}/${s.phaseTotal}` : `P${phaseId}`),
+    );
   }
 
   // Scene exclusivity mirrors formatGsdState's if/else chain: an in-flight
   // phase (Scene 1, gated on activePhase ONLY — the legacy phaseNum shape
   // still completes) wins over milestone-complete (Scene 3), even if a
   // non-atomic STATE.md edit leaves percent=100 alongside a lifecycle phase.
-  const done = !s.activePhase && (Number(s.percent) === 100 ||
-    (Number(s.totalPhases) > 0 && Number(s.completedPhases) === Number(s.totalPhases)));
+  const done =
+    !s.activePhase &&
+    (Number(s.percent) === 100 ||
+      (Number(s.totalPhases) > 0 &&
+        Number(s.completedPhases) === Number(s.totalPhases)));
 
   if (done) {
-    parts.push('complete');
+    parts.push("complete");
   } else {
     const st = shortGsdStatus(s.status);
     if (st) {
       parts.push(st);
     } else if (!phaseId && s.nextAction) {
-      const phasesStr = (s.nextPhases && s.nextPhases.length > 0) ? s.nextPhases.join('/') : '';
-      parts.push(`next ${s.nextAction}${phasesStr ? ' ' + phasesStr : ''}`);
+      const phasesStr =
+        s.nextPhases && s.nextPhases.length > 0 ? s.nextPhases.join("/") : "";
+      parts.push(`next ${s.nextAction}${phasesStr ? " " + phasesStr : ""}`);
     }
   }
 
@@ -555,7 +614,7 @@ function formatGsdStateCompact(s, opts = {}) {
   const fresh = formatStateFreshness(s.freshness);
   if (fresh) parts.push(fresh);
 
-  return parts.join(' \u00b7 ');
+  return parts.join(" \u00b7 ");
 }
 
 // --- Model name --------------------------------------------------------------
@@ -570,8 +629,8 @@ function formatGsdStateCompact(s, opts = {}) {
  * Any other display name passes through unchanged.
  */
 function compactModelName(name) {
-  if (typeof name !== 'string') return name;
-  return name.replace(/\s*\(([^)]+?)\s+(?:context|ctx)\)$/i, ' ($1)');
+  if (typeof name !== "string") return name;
+  return name.replace(/\s*\(([^)]+?)\s+(?:context|ctx)\)$/i, " ($1)");
 }
 
 // --- Git segment (opt-in) ------------------------------------------------------
@@ -596,8 +655,17 @@ function readGitStatus(dir) {
     // 8 MiB maxBuffer (default 1 MiB) headroom for repos with very many changed
     // or untracked files; overflow still degrades safely to segment-absent via
     // the catch below.
-    return childProcess.execFileSync('git', ['-C', dir, 'status', '--porcelain=v2', '--branch'],
-      { encoding: 'utf8', timeout: GIT_STATUS_TIMEOUT_MS, maxBuffer: 8 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true });
+    return childProcess.execFileSync(
+      "git",
+      ["-C", dir, "status", "--porcelain=v2", "--branch"],
+      {
+        encoding: "utf8",
+        timeout: GIT_STATUS_TIMEOUT_MS,
+        maxBuffer: 8 * 1024 * 1024,
+        stdio: ["ignore", "pipe", "ignore"],
+        windowsHide: true,
+      },
+    );
   } catch (e) {
     return null;
   }
@@ -612,22 +680,32 @@ function readGitStatus(dir) {
  * Unmerged (conflict) entries count as unstaged: they're pending work either way.
  */
 function parseGitStatus(text) {
-  if (typeof text !== 'string') return null;
-  const info = { branch: null, ahead: 0, behind: 0, staged: 0, unstaged: 0, untracked: 0 };
-  for (const line of text.split('\n')) {
-    if (line.startsWith('# branch.head ')) {
-      info.branch = line.slice('# branch.head '.length).trim() || null;
-    } else if (line.startsWith('# branch.ab ')) {
+  if (typeof text !== "string") return null;
+  const info = {
+    branch: null,
+    ahead: 0,
+    behind: 0,
+    staged: 0,
+    unstaged: 0,
+    untracked: 0,
+  };
+  for (const line of text.split("\n")) {
+    if (line.startsWith("# branch.head ")) {
+      info.branch = line.slice("# branch.head ".length).trim() || null;
+    } else if (line.startsWith("# branch.ab ")) {
       const m = line.match(/\+(\d+) -(\d+)/);
-      if (m) { info.ahead = parseInt(m[1], 10); info.behind = parseInt(m[2], 10); }
-    } else if (line.startsWith('1 ') || line.startsWith('2 ')) {
+      if (m) {
+        info.ahead = parseInt(m[1], 10);
+        info.behind = parseInt(m[2], 10);
+      }
+    } else if (line.startsWith("1 ") || line.startsWith("2 ")) {
       // Changed / renamed entries: XY pair at cols 2-3, '.' = unmodified side
       const xy = line.slice(2, 4);
-      if (xy[0] !== '.') info.staged++;
-      if (xy[1] !== '.') info.unstaged++;
-    } else if (line.startsWith('u ')) {
+      if (xy[0] !== ".") info.staged++;
+      if (xy[1] !== ".") info.unstaged++;
+    } else if (line.startsWith("u ")) {
       info.unstaged++;
-    } else if (line.startsWith('? ')) {
+    } else if (line.startsWith("? ")) {
       info.untracked++;
     }
   }
@@ -640,14 +718,14 @@ function parseGitStatus(text) {
  * segment; markers keep their own colors. Returns '' when info is absent.
  */
 function buildGitSegment(info) {
-  if (!info || !info.branch) return '';
+  if (!info || !info.branch) return "";
   const markers = [];
   if (info.staged) markers.push(`\x1b[32m+${info.staged}\x1b[0m`);
   if (info.unstaged) markers.push(`\x1b[33m~${info.unstaged}\x1b[0m`);
   if (info.untracked) markers.push(`\x1b[31m?${info.untracked}\x1b[0m`);
   if (info.ahead) markers.push(`\x1b[32m↑${info.ahead}\x1b[0m`);
   if (info.behind) markers.push(`\x1b[31m↓${info.behind}\x1b[0m`);
-  const state = markers.length ? markers.join('') : '\x1b[32m✓\x1b[0m';
+  const state = markers.length ? markers.join("") : "\x1b[32m✓\x1b[0m";
   return ` │ \x1b[2m${info.branch}\x1b[0m${state}`;
 }
 
@@ -679,7 +757,7 @@ const STATE_FRESHNESS_GIT_TIMEOUT_MS = 1500;
  * value from STATE.md reaches a git argv slot.
  */
 function isValidStateHeadStamp(raw) {
-  return typeof raw === 'string' && STATE_HEAD_HASH_RE.test(raw.trim());
+  return typeof raw === "string" && STATE_HEAD_HASH_RE.test(raw.trim());
 }
 
 /**
@@ -690,10 +768,16 @@ function isValidStateHeadStamp(raw) {
  */
 function readStateHeadCommits(root, stamp) {
   try {
-    return childProcess.execFileSync('git',
-      ['-C', root, 'rev-list', '--left-right', '--count', `${stamp}...HEAD`],
-      { encoding: 'utf8', timeout: STATE_FRESHNESS_GIT_TIMEOUT_MS,
-        stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true });
+    return childProcess.execFileSync(
+      "git",
+      ["-C", root, "rev-list", "--left-right", "--count", `${stamp}...HEAD`],
+      {
+        encoding: "utf8",
+        timeout: STATE_FRESHNESS_GIT_TIMEOUT_MS,
+        stdio: ["ignore", "pipe", "ignore"],
+        windowsHide: true,
+      },
+    );
   } catch (e) {
     return null;
   }
@@ -706,7 +790,7 @@ function readStateHeadCommits(root, stamp) {
  * 'a\tb', '\t', and any other unparseable shape).
  */
 function parseRevListCounts(text) {
-  if (typeof text !== 'string') return null;
+  if (typeof text !== "string") return null;
   const m = text.match(/^(\d+)\s+(\d+)\s*$/);
   if (!m) return null;
   return { left: parseInt(m[1], 10), right: parseInt(m[2], 10) };
@@ -731,23 +815,29 @@ function parseRevListCounts(text) {
  *      HEAD (reset/rebase/force-push) -> unknown, never "fresh".
  */
 function deriveStateFreshness(root, stamp, deps = {}) {
-  const { existsSync = fs.existsSync, readConfig = readGsdConfig, readCounts = readStateHeadCommits } = deps;
+  const {
+    existsSync = fs.existsSync,
+    readConfig = readGsdConfig,
+    readCounts = readStateHeadCommits,
+  } = deps;
 
-  const raw = typeof stamp === 'string' ? stamp.trim() : '';
+  const raw = typeof stamp === "string" ? stamp.trim() : "";
   const valid = STATE_HEAD_HASH_RE.test(raw);
   const state_head = valid ? raw.slice(0, 7) : null;
   const nullResult = { state_head, commits_behind: null, commit_stale: null };
   if (!valid || !root) return nullResult;
 
   try {
-    if (!existsSync(path.join(root, '.git'))) return nullResult;
+    if (!existsSync(path.join(root, ".git"))) return nullResult;
   } catch (e) {
     return nullResult;
   }
 
   try {
     const cfg = readConfig(root);
-    const sub = getConfigValue(cfg, 'planning.sub_repos') ?? getConfigValue(cfg, 'sub_repos');
+    const sub =
+      getConfigValue(cfg, "planning.sub_repos") ??
+      getConfigValue(cfg, "sub_repos");
     if (Array.isArray(sub) && sub.length > 0) return nullResult;
   } catch (e) {
     return nullResult;
@@ -756,7 +846,11 @@ function deriveStateFreshness(root, stamp, deps = {}) {
   const counts = parseRevListCounts(readCounts(root, raw));
   if (!counts || counts.left > 0) return nullResult;
 
-  return { state_head, commits_behind: counts.right, commit_stale: counts.right > 0 };
+  return {
+    state_head,
+    commits_behind: counts.right,
+    commit_stale: counts.right > 0,
+  };
 }
 
 /**
@@ -765,7 +859,12 @@ function deriveStateFreshness(root, stamp, deps = {}) {
  * the unknown case must never render, never mind alarm on it).
  */
 function formatStateFreshness(fresh) {
-  if (!fresh || typeof fresh.commits_behind !== 'number' || fresh.commits_behind < STATE_HEAD_ADVISORY_COMMITS) return '';
+  if (
+    !fresh ||
+    typeof fresh.commits_behind !== "number" ||
+    fresh.commits_behind < STATE_HEAD_ADVISORY_COMMITS
+  )
+    return "";
   return `state ~${fresh.commits_behind} commits back`;
 }
 
@@ -779,22 +878,27 @@ function formatStateFreshness(fresh) {
  * @returns {{ showLastCommand: boolean, position: 'end'|'front', stateFormat: 'full'|'compact', showGit: boolean, showStateFreshness: boolean, convention: string|null, projectCode: string|null }}
  */
 function resolveStatuslineOptions(cfg) {
-  const showLastCommand = getConfigValue(cfg, 'statusline.show_last_command') === true;
-  const cfgPos = getConfigValue(cfg, 'statusline.context_position');
+  const showLastCommand =
+    getConfigValue(cfg, "statusline.show_last_command") === true;
+  const cfgPos = getConfigValue(cfg, "statusline.context_position");
   // Clamp any non-'front' value (including absent/null) to 'end' — the single
   // source of truth for this default; composeStatusline's own coercion stays
   // as belt-and-suspenders defense for direct callers.
-  const position = cfgPos === 'front' ? 'front' : 'end';
-  const stateFormat = getConfigValue(cfg, 'statusline.state_format') === 'compact' ? 'compact' : 'full';
-  const showGit = getConfigValue(cfg, 'statusline.show_git') === true;
-  const showStateFreshness = getConfigValue(cfg, 'statusline.show_state_freshness') === true;
-  const convention = getConfigValue(cfg, 'phase_id_convention') === 'bracket'
-    ? 'bracket'
-    : null;
-  const projectCodeValue = getConfigValue(cfg, 'project_code');
-  const projectCode = typeof projectCodeValue === 'string' && projectCodeValue !== ''
-    ? projectCodeValue
-    : null;
+  const position = cfgPos === "front" ? "front" : "end";
+  const stateFormat =
+    getConfigValue(cfg, "statusline.state_format") === "compact"
+      ? "compact"
+      : "full";
+  const showGit = getConfigValue(cfg, "statusline.show_git") === true;
+  const showStateFreshness =
+    getConfigValue(cfg, "statusline.show_state_freshness") === true;
+  const convention =
+    getConfigValue(cfg, "phase_id_convention") === "bracket" ? "bracket" : null;
+  const projectCodeValue = getConfigValue(cfg, "project_code");
+  const projectCode =
+    typeof projectCodeValue === "string" && projectCodeValue !== ""
+      ? projectCodeValue
+      : null;
   return {
     showLastCommand,
     position,
@@ -809,193 +913,237 @@ function resolveStatuslineOptions(cfg) {
 // --- stdin ------------------------------------------------------------------
 
 function runStatusline() {
-  let input = '';
+  let input = "";
   // Timeout guard: if stdin doesn't close within 3s (e.g. pipe issues on
   // Windows/Git Bash), exit silently instead of hanging. See #775.
   const stdinTimeout = setTimeout(() => allow(undefined), 3000);
-  process.stdin.setEncoding('utf8');
-  process.stdin.on('data', chunk => input += chunk);
-  process.stdin.on('end', () => {
-  clearTimeout(stdinTimeout);
-  try {
-    const data = JSON.parse(input);
-    const model = compactModelName(data.model?.display_name || 'Claude');
-    const dir = data.workspace?.current_dir || process.cwd();
-    const session = data.session_id || '';
-    const remaining = data.context_window?.remaining_percentage;
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (chunk) => (input += chunk));
+  process.stdin.on("end", () => {
+    clearTimeout(stdinTimeout);
+    try {
+      const data = JSON.parse(input);
+      const model = compactModelName(data.model?.display_name || "Claude");
+      const dir = data.workspace?.current_dir || process.cwd();
+      const session = data.session_id || "";
+      const remaining = data.context_window?.remaining_percentage;
 
-    // Read .planning config once — used by the context meter (token suffix)
-    // and the last-command/position block below. Fail-soft to {}.
-    let cfg = {};
-    try { cfg = readGsdConfig(dir); } catch (e) {}
-
-    // Context window display (shows USED percentage scaled to usable context)
-    // Claude Code reserves a buffer for autocompact. By default this is ~16.5%
-    // of the total window, but users can override it via CLAUDE_CODE_AUTO_COMPACT_WINDOW
-    // (a token count). When the env var is set, compute the buffer % dynamically so
-    // the meter correctly reflects early-compaction configurations (#2219).
-    const totalCtx = data.context_window?.total_tokens || 1_000_000;
-    const acw = parseInt(process.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW || '0', 10);
-    const AUTO_COMPACT_BUFFER_PCT = acw > 0
-      ? Math.min(100, Math.max(0, (1 - acw / totalCtx) * 100))
-      : 16.5;
-    let ctx = '';
-    if (remaining != null) {
-      // Normalize: subtract buffer from remaining, scale to usable range
-      const usableRemaining = Math.max(0, ((remaining - AUTO_COMPACT_BUFFER_PCT) / (100 - AUTO_COMPACT_BUFFER_PCT)) * 100);
-      const used = Math.max(0, Math.min(100, Math.round(100 - usableRemaining)));
-
-      // Write context metrics to bridge file for the context-monitor PostToolUse hook.
-      // The monitor reads this file to inject agent-facing warnings when context is low.
-      // Reject session IDs with path separators or traversal sequences to prevent
-      // a malicious session_id from writing files outside the temp directory.
-      const sessionSafe = session && !/[/\\]|\.\./.test(session);
-      if (sessionSafe) {
-        try {
-          const bridgePath = path.join(os.tmpdir(), `claude-ctx-${session}.json`);
-          // used_pct written to the bridge must match CC's native /context reporting:
-          // raw used = 100 - remaining_percentage (no buffer normalization applied).
-          // The normalized `used` value is correct for the statusline progress bar but
-          // inflates the context monitor warning messages by ~13 points (#2451).
-          const rawUsedPct = Math.round(100 - remaining);
-          const bridgeData = JSON.stringify({
-            session_id: session,
-            remaining_percentage: remaining,
-            used_pct: rawUsedPct,
-            timestamp: Math.floor(Date.now() / 1000)
-          });
-          fs.writeFileSync(bridgePath, bridgeData);
-        } catch (e) {
-          // Silent fail -- bridge is best-effort, don't break statusline
-        }
-      }
-
-      // Build progress bar (10 segments)
-      const filled = Math.floor(used / 10);
-      const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
-
-      // Opt-in absolute token count after the percentage (statusline.show_context_tokens)
-      let tokenSuffix = '';
-      if (getConfigValue(cfg, 'statusline.show_context_tokens') === true) {
-        tokenSuffix = contextTokenSuffix(data.context_window?.current_usage);
-      }
-
-      // Color based on usable context thresholds
-      if (used < 50) {
-        ctx = ` \x1b[32m${bar} ${used}%${tokenSuffix}\x1b[0m`;
-      } else if (used < 65) {
-        ctx = ` \x1b[33m${bar} ${used}%${tokenSuffix}\x1b[0m`;
-      } else if (used < 80) {
-        ctx = ` \x1b[38;5;208m${bar} ${used}%${tokenSuffix}\x1b[0m`;
-      } else {
-        ctx = ` \x1b[5;31m💀 ${bar} ${used}%${tokenSuffix}\x1b[0m`;
-      }
-    }
-
-    // Current task from todos
-    let task = '';
-    const homeDir = os.homedir();
-    // Respect CLAUDE_CONFIG_DIR for custom config directory setups (#870)
-    const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(homeDir, '.augment');
-    const todosDir = path.join(claudeDir, 'todos');
-    if (session && fs.existsSync(todosDir)) {
+      // Read .planning config once — used by the context meter (token suffix)
+      // and the last-command/position block below. Fail-soft to {}.
+      let cfg = {};
       try {
-        // Single-pass max-by-mtime scan: only the newest matching todos file
-        // is needed, so the O(n log n) sort and the intermediate array from the
-        // prior `.filter().map(statSync).sort()` chain are unnecessary. Identical
-        // I/O (one statSync per match) and identical result. (#305)
-        let latest = null;
-        for (const entry of fs.readdirSync(todosDir)) {
-          if (!entry.startsWith(session) || !entry.includes('-agent-') || !entry.endsWith('.json')) continue;
-          const mtime = fs.statSync(path.join(todosDir, entry)).mtime;
-          if (!latest || mtime > latest.mtime) latest = { name: entry, mtime };
+        cfg = readGsdConfig(dir);
+      } catch (e) {}
+
+      // Context window display (shows USED percentage scaled to usable context)
+      // Claude Code reserves a buffer for autocompact. By default this is ~16.5%
+      // of the total window, but users can override it via CLAUDE_CODE_AUTO_COMPACT_WINDOW
+      // (a token count). When the env var is set, compute the buffer % dynamically so
+      // the meter correctly reflects early-compaction configurations (#2219).
+      const totalCtx = data.context_window?.total_tokens || 1_000_000;
+      const acw = parseInt(
+        process.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW || "0",
+        10,
+      );
+      const AUTO_COMPACT_BUFFER_PCT =
+        acw > 0 ? Math.min(100, Math.max(0, (1 - acw / totalCtx) * 100)) : 16.5;
+      let ctx = "";
+      if (remaining != null) {
+        // Normalize: subtract buffer from remaining, scale to usable range
+        const usableRemaining = Math.max(
+          0,
+          ((remaining - AUTO_COMPACT_BUFFER_PCT) /
+            (100 - AUTO_COMPACT_BUFFER_PCT)) *
+            100,
+        );
+        const used = Math.max(
+          0,
+          Math.min(100, Math.round(100 - usableRemaining)),
+        );
+
+        // Write context metrics to bridge file for the context-monitor PostToolUse hook.
+        // The monitor reads this file to inject agent-facing warnings when context is low.
+        // Reject session IDs with path separators or traversal sequences to prevent
+        // a malicious session_id from writing files outside the temp directory.
+        const sessionSafe = session && !/[/\\]|\.\./.test(session);
+        if (sessionSafe) {
+          try {
+            const bridgePath = path.join(
+              os.tmpdir(),
+              `claude-ctx-${session}.json`,
+            );
+            // used_pct written to the bridge must match CC's native /context reporting:
+            // raw used = 100 - remaining_percentage (no buffer normalization applied).
+            // The normalized `used` value is correct for the statusline progress bar but
+            // inflates the context monitor warning messages by ~13 points (#2451).
+            const rawUsedPct = Math.round(100 - remaining);
+            const bridgeData = JSON.stringify({
+              session_id: session,
+              remaining_percentage: remaining,
+              used_pct: rawUsedPct,
+              timestamp: Math.floor(Date.now() / 1000),
+            });
+            fs.writeFileSync(bridgePath, bridgeData);
+          } catch (e) {
+            // Silent fail -- bridge is best-effort, don't break statusline
+          }
         }
 
-        if (latest) {
-          try {
-            const todos = JSON.parse(fs.readFileSync(path.join(todosDir, latest.name), 'utf8'));
-            const inProgress = todos.find(t => t.status === 'in_progress');
-            if (inProgress) task = inProgress.activeForm || '';
-          } catch (e) {}
+        // Build progress bar (10 segments)
+        const filled = Math.floor(used / 10);
+        const bar = "█".repeat(filled) + "░".repeat(10 - filled);
+
+        // Opt-in absolute token count after the percentage (statusline.show_context_tokens)
+        let tokenSuffix = "";
+        if (getConfigValue(cfg, "statusline.show_context_tokens") === true) {
+          tokenSuffix = contextTokenSuffix(data.context_window?.current_usage);
+        }
+
+        // Color based on usable context thresholds
+        if (used < 50) {
+          ctx = ` \x1b[32m${bar} ${used}%${tokenSuffix}\x1b[0m`;
+        } else if (used < 65) {
+          ctx = ` \x1b[33m${bar} ${used}%${tokenSuffix}\x1b[0m`;
+        } else if (used < 80) {
+          ctx = ` \x1b[38;5;208m${bar} ${used}%${tokenSuffix}\x1b[0m`;
+        } else {
+          ctx = ` \x1b[5;31m💀 ${bar} ${used}%${tokenSuffix}\x1b[0m`;
+        }
+      }
+
+      // Current task from todos
+      let task = "";
+      const homeDir = os.homedir();
+      // Respect CLAUDE_CONFIG_DIR for custom config directory setups (#870)
+      const claudeDir =
+        process.env.CLAUDE_CONFIG_DIR || path.join(homeDir, ".augment");
+      const todosDir = path.join(claudeDir, "todos");
+      if (session && fs.existsSync(todosDir)) {
+        try {
+          // Single-pass max-by-mtime scan: only the newest matching todos file
+          // is needed, so the O(n log n) sort and the intermediate array from the
+          // prior `.filter().map(statSync).sort()` chain are unnecessary. Identical
+          // I/O (one statSync per match) and identical result. (#305)
+          let latest = null;
+          for (const entry of fs.readdirSync(todosDir)) {
+            if (
+              !entry.startsWith(session) ||
+              !entry.includes("-agent-") ||
+              !entry.endsWith(".json")
+            )
+              continue;
+            const mtime = fs.statSync(path.join(todosDir, entry)).mtime;
+            if (!latest || mtime > latest.mtime)
+              latest = { name: entry, mtime };
+          }
+
+          if (latest) {
+            try {
+              const todos = JSON.parse(
+                fs.readFileSync(path.join(todosDir, latest.name), "utf8"),
+              );
+              const inProgress = todos.find((t) => t.status === "in_progress");
+              if (inProgress) task = inProgress.activeForm || "";
+            } catch (e) {}
+          }
+        } catch (e) {
+          // Silently fail on file system errors - don't break statusline
+        }
+      }
+
+      // GSD state (milestone · status · phase) — shown when no todo task.
+      // Format resolved below once config is read (statusline.state_format).
+      let gsdStateStr = "";
+
+      // GSD update available?
+      // Read only the per-package shared cache file (#607). The legacy
+      // runtime-specific fallback has been removed — the per-package filename
+      // carries lineage and avoids multi-runtime resolution mismatches (#1421).
+      let gsdUpdate = "";
+      const cacheFile = path.join(
+        homeDir,
+        ".cache",
+        "gsd",
+        updateCacheFileName,
+      );
+      if (fs.existsSync(cacheFile)) {
+        try {
+          const cache = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
+          const { showUpdate, staleWarning } = evaluateUpdateCache(cache);
+          if (showUpdate) {
+            gsdUpdate = "\x1b[33m⬆ /gsd:update\x1b[0m │ ";
+          }
+          if (staleWarning === "dev") {
+            gsdUpdate +=
+              "\x1b[33m⚠ dev install — re-run installer to sync hooks\x1b[0m │ ";
+          } else if (staleWarning === "stale") {
+            gsdUpdate += "\x1b[31m⚠ stale hooks — run /gsd:update\x1b[0m │ ";
+          }
+        } catch (e) {}
+      }
+
+      // Last-slash-command suffix and context_position config (#2538, #2937).
+      // Reads the active session transcript for the most recent <command-name> tag.
+      // Failure here must never break the statusline — wrap the entire lookup.
+      // #2734: config resolution moved to resolveStatuslineOptions() — the single
+      // source of truth shared with renderStatusline() below. The two entry
+      // points duplicated this resolution byte-for-byte; one copy is what keeps
+      // a new key from reaching only one of them.
+      let lastCmdSuffix = "";
+      let gitSuffix = "";
+      const options = resolveStatuslineOptions(cfg);
+      try {
+        if (options.showLastCommand) {
+          const transcriptPath = data.transcript_path;
+          const lastCmd = readLastSlashCommand(transcriptPath);
+          if (lastCmd) {
+            lastCmdSuffix = ` │ \x1b[2mlast: /${lastCmd}\x1b[0m`;
+          }
+        }
+        if (options.showGit) {
+          gitSuffix = buildGitSegment(parseGitStatus(readGitStatus(dir)));
         }
       } catch (e) {
-        // Silently fail on file system errors - don't break statusline
+        // Never break the statusline on config/transcript/git errors
       }
-    }
 
-    // GSD state (milestone · status · phase) — shown when no todo task.
-    // Format resolved below once config is read (statusline.state_format).
-    let gsdStateStr = '';
-
-    // GSD update available?
-    // Read only the per-package shared cache file (#607). The legacy
-    // runtime-specific fallback has been removed — the per-package filename
-    // carries lineage and avoids multi-runtime resolution mismatches (#1421).
-    let gsdUpdate = '';
-    const cacheFile = path.join(homeDir, '.cache', 'gsd', updateCacheFileName);
-    if (fs.existsSync(cacheFile)) {
-      try {
-        const cache = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-        const { showUpdate, staleWarning } = evaluateUpdateCache(cache);
-        if (showUpdate) {
-          gsdUpdate = '\x1b[33m⬆ /gsd:update\x1b[0m │ ';
-        }
-        if (staleWarning === 'dev') {
-          gsdUpdate += '\x1b[33m⚠ dev install — re-run installer to sync hooks\x1b[0m │ ';
-        } else if (staleWarning === 'stale') {
-          gsdUpdate += '\x1b[31m⚠ stale hooks — run /gsd:update\x1b[0m │ ';
-        }
-      } catch (e) {}
-    }
-
-    // Last-slash-command suffix and context_position config (#2538, #2937).
-    // Reads the active session transcript for the most recent <command-name> tag.
-    // Failure here must never break the statusline — wrap the entire lookup.
-    // #2734: config resolution moved to resolveStatuslineOptions() — the single
-    // source of truth shared with renderStatusline() below. The two entry
-    // points duplicated this resolution byte-for-byte; one copy is what keeps
-    // a new key from reaching only one of them.
-    let lastCmdSuffix = '';
-    let gitSuffix = '';
-    const options = resolveStatuslineOptions(cfg);
-    try {
-      if (options.showLastCommand) {
-        const transcriptPath = data.transcript_path;
-        const lastCmd = readLastSlashCommand(transcriptPath);
-        if (lastCmd) {
-          lastCmdSuffix = ` │ \x1b[2mlast: /${lastCmd}\x1b[0m`;
-        }
+      // #2734: readGsdState is inside `if (!task)` deliberately — when a todo
+      // task is in flight the GSD-state segment is not rendered, so spending a
+      // freshness git spawn here would spend a subprocess on discarded output.
+      if (!task) {
+        const state =
+          readGsdState(dir, { stateFreshness: options.showStateFreshness }) ||
+          {};
+        gsdStateStr =
+          options.stateFormat === "compact"
+            ? formatGsdStateCompact(state, options)
+            : formatGsdState(state, options);
       }
-      if (options.showGit) {
-        gitSuffix = buildGitSegment(parseGitStatus(readGitStatus(dir)));
-      }
+
+      // Output
+      const dirname = path.basename(dir);
+      const middle = task
+        ? `\x1b[1m${task}\x1b[0m`
+        : gsdStateStr
+          ? `\x1b[2m${gsdStateStr}\x1b[0m`
+          : null;
+
+      process.stdout.write(
+        composeStatusline({
+          gsdUpdate,
+          model,
+          ctx,
+          middle,
+          dirname,
+          lastCmdSuffix,
+          gitSuffix,
+          position: options.position,
+        }),
+      );
     } catch (e) {
-      // Never break the statusline on config/transcript/git errors
+      // Silent fail - don't break statusline on parse errors
     }
-
-    // #2734: readGsdState is inside `if (!task)` deliberately — when a todo
-    // task is in flight the GSD-state segment is not rendered, so spending a
-    // freshness git spawn here would spend a subprocess on discarded output.
-    if (!task) {
-      const state = readGsdState(dir, { stateFreshness: options.showStateFreshness }) || {};
-      gsdStateStr = options.stateFormat === 'compact'
-        ? formatGsdStateCompact(state, options)
-        : formatGsdState(state, options);
-    }
-
-    // Output
-    const dirname = path.basename(dir);
-    const middle = task
-      ? `\x1b[1m${task}\x1b[0m`
-      : gsdStateStr
-        ? `\x1b[2m${gsdStateStr}\x1b[0m`
-        : null;
-
-    process.stdout.write(composeStatusline({ gsdUpdate, model, ctx, middle, dirname, lastCmdSuffix, gitSuffix, position: options.position }));
-  } catch (e) {
-    // Silent fail - don't break statusline on parse errors
-  }
-});
+  });
 }
 
 // --- Layout composer --------------------------------------------------------
@@ -1020,26 +1168,28 @@ function runStatusline() {
  * without breaking the statusline.
  */
 function composeStatusline({
-  gsdUpdate = '',
+  gsdUpdate = "",
   model,
-  ctx = '',
+  ctx = "",
   middle = null,
   dirname,
-  lastCmdSuffix = '',
-  gitSuffix = '',
-  position = 'end',
+  lastCmdSuffix = "",
+  gitSuffix = "",
+  position = "end",
 } = {}) {
   const modelSeg = `\x1b[2m${model}\x1b[0m`;
   const dirSeg = `\x1b[2m${dirname}\x1b[0m`;
   // Coerce invalid values to 'end' (belt-and-suspenders; see JSDoc above)
-  const pos = position === 'front' ? 'front' : 'end';
+  const pos = position === "front" ? "front" : "end";
 
-  if (pos === 'front') {
-    if (middle) return `${gsdUpdate}${modelSeg}${ctx} │ ${middle} │ ${dirSeg}${gitSuffix}${lastCmdSuffix}`;
+  if (pos === "front") {
+    if (middle)
+      return `${gsdUpdate}${modelSeg}${ctx} │ ${middle} │ ${dirSeg}${gitSuffix}${lastCmdSuffix}`;
     return `${gsdUpdate}${modelSeg}${ctx} │ ${dirSeg}${gitSuffix}${lastCmdSuffix}`;
   }
   // 'end' — preserved byte-for-byte relative to original inline templates
-  if (middle) return `${gsdUpdate}${modelSeg} │ ${middle} │ ${dirSeg}${gitSuffix}${ctx}${lastCmdSuffix}`;
+  if (middle)
+    return `${gsdUpdate}${modelSeg} │ ${middle} │ ${dirSeg}${gitSuffix}${ctx}${lastCmdSuffix}`;
   return `${gsdUpdate}${modelSeg} │ ${dirSeg}${gitSuffix}${ctx}${lastCmdSuffix}`;
 }
 
@@ -1055,40 +1205,51 @@ function isInstalledAheadOfLatest(installed, latest) {
  * @returns {{ showUpdate: boolean, staleWarning: 'none'|'dev'|'stale' }}
  */
 function evaluateUpdateCache(cache) {
-  const none = { showUpdate: false, staleWarning: 'none' };
+  const none = { showUpdate: false, staleWarning: "none" };
   if (!cache) return none;
   // Lineage guard: package_name must be present and match this package.
   if (!cache.package_name || cache.package_name !== PACKAGE_NAME) return none;
   const showUpdate = Boolean(cache.update_available);
-  let staleWarning = 'none';
+  let staleWarning = "none";
   if (cache.stale_hooks && cache.stale_hooks.length > 0) {
-    const isDevInstall = (
+    const isDevInstall =
       cache.installed &&
       cache.latest &&
-      cache.latest !== 'unknown' &&
-      isInstalledAheadOfLatest(cache.installed, cache.latest)
-    );
-    staleWarning = isDevInstall ? 'dev' : 'stale';
+      cache.latest !== "unknown" &&
+      isInstalledAheadOfLatest(cache.installed, cache.latest);
+    staleWarning = isDevInstall ? "dev" : "stale";
   }
   return { showUpdate, staleWarning };
 }
 
 // Export helpers for unit tests. Harmless when run as a script.
 module.exports = {
-  readGsdState, parseStateMd, formatGsdState,
-  readGsdConfig, getConfigValue, readLastSlashCommand,
+  readGsdState,
+  parseStateMd,
+  formatGsdState,
+  readGsdConfig,
+  getConfigValue,
+  readLastSlashCommand,
   composeStatusline,
   isInstalledAheadOfLatest,
   evaluateUpdateCache,
   formatTokens,
   contextTokenSuffix,
-  shortGsdStatus, formatGsdStateCompact,
+  shortGsdStatus,
+  formatGsdStateCompact,
   compactModelName,
-  readGitStatus, parseGitStatus, buildGitSegment,
-  STATE_HEAD_ADVISORY_COMMITS, isValidStateHeadStamp,
-  readStateHeadCommits, parseRevListCounts, deriveStateFreshness,
-  formatStateFreshness, resolveStatuslineOptions,
-  renderBracketPhaseDisplay, renderBracketMilestoneDisplay,
+  readGitStatus,
+  parseGitStatus,
+  buildGitSegment,
+  STATE_HEAD_ADVISORY_COMMITS,
+  isValidStateHeadStamp,
+  readStateHeadCommits,
+  parseRevListCounts,
+  deriveStateFreshness,
+  formatStateFreshness,
+  resolveStatuslineOptions,
+  renderBracketPhaseDisplay,
+  renderBracketMilestoneDisplay,
 };
 
 /**
@@ -1096,7 +1257,7 @@ module.exports = {
  * testing without feeding stdin. Returns the rendered string.
  */
 function renderStatusline(data) {
-  const model = compactModelName(data.model?.display_name || 'Claude');
+  const model = compactModelName(data.model?.display_name || "Claude");
   const dir = data.workspace?.current_dir || process.cwd();
   const dirname = path.basename(dir);
 
@@ -1104,12 +1265,12 @@ function renderStatusline(data) {
   // source of truth shared with runStatusline() above. The two entry points
   // duplicated this resolution byte-for-byte; one copy is what keeps a new
   // key from reaching only one of them.
-  let lastCmdSuffix = '';
-  let gitSuffix = '';
+  let lastCmdSuffix = "";
+  let gitSuffix = "";
   let options = {
     showLastCommand: false,
-    position: 'end',
-    stateFormat: 'full',
+    position: "end",
+    stateFormat: "full",
     showGit: false,
     showStateFreshness: false,
     convention: null,
@@ -1127,14 +1288,26 @@ function renderStatusline(data) {
     if (options.showGit) {
       gitSuffix = buildGitSegment(parseGitStatus(readGitStatus(dir)));
     }
-  } catch (e) { /* swallow */ }
+  } catch (e) {
+    /* swallow */
+  }
 
-  const state = readGsdState(dir, { stateFreshness: options.showStateFreshness }) || {};
-  const gsdStateStr = options.stateFormat === 'compact'
-    ? formatGsdStateCompact(state, options)
-    : formatGsdState(state, options);
+  const state =
+    readGsdState(dir, { stateFreshness: options.showStateFreshness }) || {};
+  const gsdStateStr =
+    options.stateFormat === "compact"
+      ? formatGsdStateCompact(state, options)
+      : formatGsdState(state, options);
   const middle = gsdStateStr ? `\x1b[2m${gsdStateStr}\x1b[0m` : null;
-  return composeStatusline({ model, ctx: '', middle, dirname, lastCmdSuffix, gitSuffix, position: options.position });
+  return composeStatusline({
+    model,
+    ctx: "",
+    middle,
+    dirname,
+    lastCmdSuffix,
+    gitSuffix,
+    position: options.position,
+  });
 }
 
 module.exports.renderStatusline = renderStatusline;

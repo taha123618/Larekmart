@@ -1,0 +1,32 @@
+---
+- name: Install database client tools and AWS CLI for backup
+  apt:
+    name:
+      - postgresql-client
+      - gzip
+      - awscli
+    state: present
+
+- name: Create backup directory
+  file:
+    path: /opt/larekmart/backups
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Deploy automated backup script
+  template:
+    src: backup.sh.j2
+    dest: /opt/larekmart/backups/backup.sh
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Schedule daily cron job for backups at 02:00 AM
+  cron:
+    name: "Larekmart Database S3 Daily Backup"
+    minute: "0"
+    hour: "2"
+    job: "/opt/larekmart/backups/backup.sh > /var/log/larekmart-backup.log 2>&1"
+    user: root

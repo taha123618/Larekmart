@@ -4,7 +4,6 @@ description: "Resume work from previous session with full context restoration"
 stage: workflow
 ---
 
-
 <objective>
 Restore complete project context and resume work seamlessly from previous session.
 

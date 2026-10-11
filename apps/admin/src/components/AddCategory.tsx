@@ -39,17 +39,18 @@ const AddCategory = () => {
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof CategoryFormSchema>) => {
       const token = await getToken();
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/categories`,
-        {
-          method: "POST",
-          body: JSON.stringify(data),
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+      const productServiceUrl =
+        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
+        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+        "http://localhost:8080";
+      const res = await fetch(`${productServiceUrl}/categories`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
       if (!res.ok) {
         throw new Error("Failed to create category!");
       }

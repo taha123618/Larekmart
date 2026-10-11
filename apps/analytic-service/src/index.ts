@@ -128,7 +128,12 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
 });
 
 // Kafka client & consumer setup
-const kafka = createKafkaClient("analytic-service");
+const kafkaBrokers = (
+  process.env.KAFKA_BROKERS || "localhost:9094,localhost:9095,localhost:9096"
+)
+  .split(",")
+  .map((b) => b.trim());
+const kafka = createKafkaClient("analytic-service", kafkaBrokers);
 const consumer = createConsumer(kafka, "analytic-service-group");
 
 const start = async () => {

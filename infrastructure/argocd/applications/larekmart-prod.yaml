@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: larekmart-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/part-of: larekmart
+    env: production
+spec:
+  project: larekmart
+  source:
+    repoURL: "https://github.com/taha123618/Larekmart.git"
+    targetRevision: HEAD
+    path: infrastructure/kubernetes/overlays/production
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: larekmart-prod
+  syncPolicy:
+    automated:
+      prune: false # Prevent automatic deletion of production resources without manual oversight
+      selfHeal: true # Revert manual drift back to Git state
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

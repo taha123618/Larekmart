@@ -2,6 +2,7 @@
 description: "Plan a phase as a vertical MVP slice — user story, SPIDR splitting, then plan-phase"
 argument-hint: "<phase-number>"
 ---
+
 <objective>
 Guide the user through MVP-mode planning for a phase. The command:
 
@@ -18,8 +19,6 @@ Phase 1 of the vertical-mvp-slice PRD shipped the planner-side machinery; this c
 @/Users/taha/projects/microservices-ecommerce/.codebuddy/gsd-core/references/spidr-splitting.md
 @/Users/taha/projects/microservices-ecommerce/.codebuddy/gsd-core/references/user-story-template.md
 </execution_context>
-
-
 
 <context>
 Phase number: {{GSD_ARGS}} (required — integer or decimal like `2.1`)

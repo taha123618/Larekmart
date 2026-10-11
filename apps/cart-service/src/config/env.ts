@@ -10,7 +10,7 @@ const envSchema = z.object({
   REDIS_KEY_PREFIX: z.string().default("cart:v1:"),
   KAFKA_BROKERS: z
     .string()
-    .default("localhost:9092,localhost:9093,localhost:9094"),
+    .default("localhost:9094,localhost:9095,localhost:9096"),
   KAFKA_CLIENT_ID: z.string().default("cart-service"),
   KAFKA_GROUP_ID: z.string().default("cart-service-group"),
   CLERK_SECRET_KEY: z.string().optional(),
@@ -20,6 +20,9 @@ const envSchema = z.object({
   GUEST_CART_TTL_SECONDS: z.coerce.number().default(7 * 24 * 60 * 60), // 7 days
   USER_CART_TTL_SECONDS: z.coerce.number().default(30 * 24 * 60 * 60), // 30 days
   CART_CACHE_TTL_SECONDS: z.coerce.number().default(300), // 5 minutes
+  INTERNAL_SERVICE_SECRET: z
+    .string()
+    .default("dev-shared-internal-secret-larekmart"),
 });
 
 export const env = envSchema.parse(process.env);

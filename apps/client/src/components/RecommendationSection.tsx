@@ -94,7 +94,8 @@ export default function RecommendationSection({
         // Fetch product details for the recommended IDs
         const productUrl =
           process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
-          "http://localhost:8000";
+          process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+          "http://localhost:8080";
 
         const fetched = await Promise.all(
           recResponse.items.map(async (item) => {

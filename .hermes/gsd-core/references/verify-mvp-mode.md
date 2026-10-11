@@ -14,6 +14,7 @@ The user-flow form mirrors what a real user does: open, fill, click, see. No HTT
 ## When this framing applies
 
 The framing fires when:
+
 - The phase under verification has `**Mode:** mvp` in ROADMAP.md (parsed via `gsd_run query roadmap.get-phase --pick mode`).
 - AND the phase has a user-story-formatted goal (set by `/gsd mvp-phase` per Phase 2): "As a [user role], I want to [capability], so that [outcome]."
 
@@ -32,6 +33,7 @@ Derive ordered steps from the phase's user-story goal:
 3. The final step asserts the user-visible outcome from the `[outcome]` clause of the user story.
 
 Format each step as: "**Step N: [action]** — Expected: [what the user should see]". The user responds with one of:
+
 - `yes` / `y` / `next` / empty → step passes
 - Anything else → step is logged as an issue, and the script halts (do not proceed to step N+1 with a broken N).
 
@@ -40,6 +42,7 @@ If ALL user-flow steps pass, advance to section 2. If any step fails, the verdic
 ### 2. Technical checks (only if section 1 passes)
 
 After the user flow passes, run the technical checks that would normally run in non-MVP mode:
+
 - API endpoint schema verification (if the phase shipped APIs)
 - Error state behavior (4xx, 5xx codes; invalid input handling)
 - Edge cases (empty data, large data, concurrent requests if applicable)
@@ -50,6 +53,7 @@ These are the same checks `verify-work` would run without MVP mode — just defe
 ### 3. Coverage check (always last, always required)
 
 Verify that the user-story `[outcome]` clause is observably true in the codebase:
+
 - If the outcome is "I can access my dashboard", verify a dashboard route exists and renders for an authenticated user.
 - If the outcome is "I can bulk-import contacts", verify the import path produces persisted records.
 
@@ -74,12 +78,12 @@ The `gsd-verifier` agent produces `VERIFICATION.md`. Under MVP mode, the report 
 
 User story: «As a new user, I want to register and log in, so that I can access my dashboard.»
 
-| Step | Expected | Evidence | Status |
-|------|----------|----------|--------|
-| Register | Form at /register accepts name/email/password | src/app/register/page.tsx:12 (form component) | ✓ |
-| Submit | Persists user, redirects to /dashboard | src/api/register/route.ts:34 (db.insert + redirect) | ✓ |
-| See dashboard | Dashboard page renders, shows user's name | src/app/dashboard/page.tsx:8 (greeting line) | ✓ |
-| Outcome | "Access my dashboard" — user lands on a populated page | dashboard route + greeting both verified above | ✓ |
+| Step          | Expected                                               | Evidence                                            | Status |
+| ------------- | ------------------------------------------------------ | --------------------------------------------------- | ------ |
+| Register      | Form at /register accepts name/email/password          | src/app/register/page.tsx:12 (form component)       | ✓      |
+| Submit        | Persists user, redirects to /dashboard                 | src/api/register/route.ts:34 (db.insert + redirect) | ✓      |
+| See dashboard | Dashboard page renders, shows user's name              | src/app/dashboard/page.tsx:8 (greeting line)        | ✓      |
+| Outcome       | "Access my dashboard" — user lands on a populated page | dashboard route + greeting both verified above      | ✓      |
 ```
 
 Standard technical-check sections of VERIFICATION.md remain (API verification, error handling, etc.) but are appended below "User Flow Coverage", not above.

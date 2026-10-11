@@ -2,6 +2,7 @@
 description: "Manage persistent context threads for cross-session work"
 argument-hint: "[list [--open | --resolved] | close <slug> | status <slug> | name | description]"
 ---
+
 <objective>
 Create, list, close, or resume persistent context threads. Threads are lightweight
 cross-session knowledge stores for work that spans multiple sessions but

@@ -9,7 +9,6 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-
 <objective>
 Create a clean branch suitable for pull requests by filtering out .planning/ commits
 from the current branch. Reviewers see only code changes, not GSD planning artifacts.

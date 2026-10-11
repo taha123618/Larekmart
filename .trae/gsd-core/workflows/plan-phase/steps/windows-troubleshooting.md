@@ -18,6 +18,7 @@ stdio deadlocks with MCP servers — see Trae issue anthropics/claude-code#28126
 5. **Retry:** Restart Trae and run `/gsd-plan-phase` again
 
 If freezes persist, try `--skip-research` to reduce the agent chain from 3 to 2 agents:
+
 ```
 /gsd-plan-phase N --skip-research
 ```

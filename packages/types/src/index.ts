@@ -12,3 +12,4 @@ export * from "./catalog";
 export * from "./shipping";
 export * from "./user";
 export * from "./media";
+export * from "./gateway";

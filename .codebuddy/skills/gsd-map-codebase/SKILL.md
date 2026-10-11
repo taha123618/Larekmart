@@ -4,7 +4,6 @@ description: "Analyze codebase with parallel mapper agents to produce .planning/
 user-invocable: false
 ---
 
-
 <objective>
 Analyze existing codebase using parallel gsd-codebase-mapper agents to produce structured codebase documents.
 
@@ -27,6 +26,7 @@ Output: .planning/codebase/ folder with 7 structured documents about the codebas
 Arguments: {{GSD_ARGS}}
 
 Parse the first token of {{GSD_ARGS}}:
+
 - If it is `--fast`: strip the flag, then read and execute `/Users/taha/projects/microservices-ecommerce/.codebuddy/gsd-core/workflows/scan.md` (passing remaining args including optional --focus). Load it on demand here — it is deliberately not in `<execution_context>`, so the common full-map path does not pay for it.
 - If it is `--query`: strip the flag, run the intel workflow (passing remaining args as the subcommand).
 - Otherwise: pass all of {{GSD_ARGS}} as focus area to the map-codebase workflow.
@@ -35,13 +35,15 @@ Parse the first token of {{GSD_ARGS}}:
 Check for .planning/STATE.md - loads context if project already initialized
 
 **This command can run:**
+
 - Via /gsd-onboard for first-time brownfield setup - creates codebase map first
 - After /gsd-new-project (greenfield codebases) - updates codebase map as code evolves
 - Anytime to refresh codebase understanding
-</context>
+  </context>
 
 <when_to_use>
 **Use map-codebase for:**
+
 - Brownfield projects before initialization (understand existing code first)
 - Refreshing codebase map after significant changes
 - Refreshing or deepening an onboarded codebase map
@@ -49,9 +51,10 @@ Check for .planning/STATE.md - loads context if project already initialized
 - When STATE.md references outdated codebase info
 
 **Skip map-codebase for:**
+
 - Greenfield projects with no code yet (nothing to map)
 - Trivial codebases (<5 files)
-</when_to_use>
+  </when_to_use>
 
 <process>
 1. Check if .planning/codebase/ already exists (offer to refresh or skip)
@@ -68,9 +71,10 @@ Check for .planning/STATE.md - loads context if project already initialized
 </process>
 
 <success_criteria>
+
 - [ ] .planning/codebase/ directory created
 - [ ] All 7 codebase documents written by mapper agents
 - [ ] Documents follow template structure
 - [ ] Parallel agents completed without errors
 - [ ] User knows next steps
-</success_criteria>
+      </success_criteria>

@@ -4,19 +4,25 @@ description: "Build, query, and inspect the project knowledge graph in .planning
 ---
 
 <augment_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked when the user mentions `gsd-graphify` or describes a task matching this skill.
 - Treat all user text after the skill mention as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. User Prompting
+
 When the workflow needs user input, prompt the user conversationally:
+
 - Present options as a numbered list in your response text
 - Ask the user to reply with their choice
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
+
 Use these Augment tools when executing GSD workflows:
+
 - `launch-process` for running commands (terminal operations)
 - `str-replace-editor` for editing existing files
 - `view` for reading files and listing directories
@@ -26,10 +32,12 @@ Use these Augment tools when executing GSD workflows:
 - `add_tasks`, `view_tasklist`, `update_tasks` for task management
 
 ## D. Subagent Spawning
+
 When the workflow needs to spawn a subagent:
+
 - Use the built-in subagent spawning capability
 - Define agent prompts in `.augment/agents/` directory
-</augment_skill_adapter>
+  </augment_skill_adapter>
 
 **STOP -- DO NOT READ THIS FILE. You are already reading it. This prompt was injected into your context by Augment's command system. Using the Read tool on this file wastes tokens. Begin executing Step 0 immediately.**
 
@@ -75,13 +83,13 @@ Then run /gsd-graphify build to create the initial graph.
 
 Parse `{{GSD_ARGS}}` to determine the operation mode:
 
-| Argument | Action |
-|----------|--------|
-| `build` | Run inline build (Step 3) |
-| `query <term>` | Run inline query (Step 2a) |
-| `status` | Run inline status check (Step 2b) |
-| `diff` | Run inline diff check (Step 2c) |
-| No argument or unknown | Show usage message |
+| Argument               | Action                            |
+| ---------------------- | --------------------------------- |
+| `build`                | Run inline build (Step 3)         |
+| `query <term>`         | Run inline query (Step 2a)        |
+| `status`               | Run inline status check (Step 2b) |
+| `diff`                 | Run inline diff check (Step 2c)   |
+| No argument or unknown | Show usage message                |
 
 **Usage message** (shown when no argument or unrecognized argument):
 
@@ -107,6 +115,7 @@ gsd_run graphify query <term>
 ```
 
 Parse the JSON output and display results:
+
 - If the output contains `"disabled": true`, display the disabled message from Step 1 and **STOP**
 - If the output contains `"error"` field, display the error message and **STOP**
 - If no nodes found, display: `No graph matches for '<term>'. Try /gsd-graphify build to create or rebuild the graph.`
@@ -124,6 +133,7 @@ gsd_run graphify status
 ```
 
 Parse the JSON output and display:
+
 - If `exists: false`, display the message field
 - Otherwise show last build time, node/edge/hyperedge counts, and STALE or FRESH indicator
 - If `built_at_commit` is non-null, also display a `Source commit:` line:
@@ -149,6 +159,7 @@ gsd_run graphify diff
 ```
 
 Parse the JSON output and display:
+
 - If `no_baseline: true`, display the message field
 - Otherwise show node and edge change counts (added/removed/changed)
 
@@ -168,6 +179,7 @@ gsd_run graphify build
 ```
 
 Parse the JSON output:
+
 - If `disabled: true`: display the disabled message from Step 1 and **STOP**
 - If `error`: display the error message and **STOP**
 - If `action: "spawn_agent"`: pre-flight passed -- proceed with the inline build below
@@ -195,11 +207,13 @@ graphify update . \
 Do NOT pass `run_in_background: true`. Typical builds complete in 15-60 seconds and the entire chain must run foreground.
 
 If the chain fails (non-zero exit):
+
 - Display: `## GRAPHIFY BUILD FAILED` followed by the captured stderr
 - Do NOT delete `.planning/graphs/` -- the prior valid graph remains available
 - **STOP**
 
 If the chain succeeds:
+
 - Parse the trailing `graphify status` JSON
 - Display: `## GRAPHIFY BUILD COMPLETE` with the node, edge, and hyperedge counts
 

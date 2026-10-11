@@ -1,9 +1,7 @@
 {
   "schemaVersion": 1,
   "appliedAt": "2026-10-02T12:16:07.547Z",
-  "appliedMigrationIds": [
-    "2026-05-11-first-time-baseline-scan"
-  ],
+  "appliedMigrationIds": ["2026-05-11-first-time-baseline-scan"],
   "actions": [
     {
       "migrationId": "2026-05-11-first-time-baseline-scan",

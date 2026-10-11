@@ -3,6 +3,7 @@
 Skip this step entirely if NOT `$VALIDATE_MODE`.
 
 Display banner:
+
 ```
 ### GSD ► CHECKING PLAN
 
@@ -22,14 +23,15 @@ VERIFY_PATHS=$(gsd_run check verify-command-paths --dir "${QUICK_DIR}" --raw)
 
 Checker prompt:
 
-```markdown
+````markdown
 <verification_context>
 **Mode:** quick-full
 **Task Description:** ${DESCRIPTION}
 
 <required_reading>
+
 - ${QUICK_DIR}/${quick_id}-PLAN.md (Plan to verify)
-</required_reading>
+  </required_reading>
 
 ${AGENT_SKILLS_CHECKER}
 
@@ -44,12 +46,15 @@ replacement path.
 ```json
 {VERIFY_PATHS}
 ```
+````
+
 </verify_command_path_probe>
 
 **Scope:** This is a quick task, not a full phase. Skip checks that require a ROADMAP phase goal.
 </verification_context>
 
 <check_dimensions>
+
 - Requirement coverage: Does the plan address the task description?
 - Task completeness: Do tasks have files, action, verify, done fields?
 - Key links: Are referenced files real?
@@ -62,19 +67,23 @@ ${DISCUSS_MODE ? '- Context compliance: Does the plan honor locked decisions fro
 </check_dimensions>
 
 <expected_output>
+
 - ## VERIFICATION PASSED — all checks pass
 - ## ISSUES FOUND — structured issue list
-</expected_output>
+  </expected_output>
+
 ```
 
 ```
+
 Agent(
-  prompt=checker_prompt,
-  subagent_type="gsd-plan-checker",
-  model="{checker_model}",
-  description="Check quick plan: ${DESCRIPTION}"
+prompt=checker_prompt,
+subagent_type="gsd-plan-checker",
+model="{checker_model}",
+description="Check quick plan: ${DESCRIPTION}"
 )
-```
+
+````
 
 > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Agent() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
@@ -125,7 +134,7 @@ the alternatives rather than applying or working around it. Full contract:
 Do NOT replan from scratch unless issues are fundamental.
 Return what changed.
 </instructions>
-```
+````
 
 ```
 Agent(

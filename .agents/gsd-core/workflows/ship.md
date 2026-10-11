@@ -15,8 +15,9 @@ Read all files referenced by the invoking prompt's execution_context before star
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-mempalace-curator — Ship-time MemPalace curation (diary, KG mirror, cross-project tunnels, wing-scoped prune); dispatched at ship:post when the mempalace capability is enabled.
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
@@ -36,6 +37,7 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 Parse from init JSON: `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `padded_phase`, `commit_docs`.
 
 Also load config for branching strategy:
+
 ```bash
 CONFIG=$(gsd_run query state.load)
 ```
@@ -43,37 +45,46 @@ CONFIG=$(gsd_run query state.load)
 Extract: `branching_strategy`, `branch_name`.
 
 Detect base branch for PRs and merges:
+
 ```bash
 BASE_BRANCH=$(gsd_run query git.base-branch)
 ```
+
 </step>
 
 <step name="preflight_checks">
 Verify the work is ready to ship:
 
 1. **Verification passed?**
+
    ```bash
    # The gate decides on ONE read. --pick takes a single field, so the two
    # human-facing fields are read only on the blocking path below — never on the
    # passing path — rather than issuing three queries up front (#2589).
    STATUS=$(gsd_run query verification.status "${PHASE_DIR}" --pick status 2>/dev/null)
    ```
+
    Only `passed` may ship. If `$STATUS` is `passed`, verification is complete — continue to the next preflight check; do not read any further verification field.
 
    Any other value (including `gaps_found`, `human_needed`, `missing`, and `unknown`) blocks with `PHASE_VERIFICATION_INCOMPLETE`. Only then, read the two message fields:
+
    ```bash
    NEXT_ACTION=$(gsd_run query verification.status "${PHASE_DIR}" --pick next_action 2>/dev/null)
    NEXT_COMMAND=$(gsd_run query verification.status "${PHASE_DIR}" --pick next_command 2>/dev/null)
    ```
+
    Present `$NEXT_ACTION` to the user and, when `$NEXT_COMMAND` is non-empty, show it as the command to run next. These two are message text only — the block/allow decision has already been made from `$STATUS`, so a concurrent write between the reads cannot change the gate's verdict. The query already handles missing files and unexpected values, so no per-status arm is needed.
 
 2. **Clean working tree?**
+
    ```bash
    git status --short
    ```
+
    If uncommitted changes exist: ask user to commit or stash first.
 
 3. **On correct branch?**
+
    ```bash
    CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || true)
    IS_PROTECTED=$(gsd_run query git.base-branch --is-protected "$CURRENT_BRANCH") || IS_PROTECTED=""
@@ -83,19 +94,24 @@ Verify the work is ready to ship:
      echo "⚠ Could not determine whether '$CURRENT_BRANCH' is protected — the query failed. Continuing." >&2
    fi
    ```
+
    If `IS_PROTECTED` is `true`: warn — should be on a feature branch.
    If branching_strategy is `none`: offer to create a branch now.
 
 4. **Remote configured?**
+
    ```bash
    git remote -v | head -2
    ```
+
    Detect `origin` remote. If no remote: error — can't create PR.
 
 5. **`gh` CLI available?**
+
    ```bash
    which gh && gh auth status 2>&1
    ```
+
    If `gh` not found or not authenticated: provide setup instructions and exit.
 
 6. **Capability ship gates (generic dispatch).**
@@ -111,10 +127,9 @@ Verify the work is ready to ship:
 
    **If `activeHooks` is empty or absent:** skip this check silently and continue to the next preflight step. A capability whose `when` is off contributes no entry, and one that failed to load fails OPEN with its own warning from the resolver — neither is a block.
 
-   **For each active entry where `kind == "gate"`** (process in array order), following `gsd-core/references/loop-hook-dispatch.md`. Entries of any other `kind` are not gates and are not enforced here. Every gate is visited exactly once by this loop — the named branches below are specializations *within* it, never a separate pass, so no gate is evaluated twice.
+   **For each active entry where `kind == "gate"`** (process in array order), following `gsd-core/references/loop-hook-dispatch.md`. Entries of any other `kind` are not gates and are not enforced here. Every gate is visited exactly once by this loop — the named branches below are specializations _within_ it, never a separate pass, so no gate is evaluated twice.
 
    **Step 1 — evaluate the gate's `check`.** Dispatch by check shape; read the hook's `check` object in-context to pick the branch (the registry validates exactly one of `query`/`predicate`/`agentVerdict`). Two capability IDs carry a bespoke evaluation whose fail-closed semantics the declared predicate alone does not reproduce — take their branch, then rejoin at step 2:
-
    - **`capId == "security"`** — enforce against `SECURITY_FILE`:
      - **`SECURITY_FILE` is empty** → `block: true`, `SECURITY_SHIP_GATE_NO_REVIEW`:
        ```
@@ -157,6 +172,7 @@ Verify the work is ready to ship:
      ⚠ **Validate `check` before shell use** (third-party manifest input) — `loop-hook-dispatch.md` § `gate`.
 
      For a named-query gate (only a value that has passed validation is run):
+
      ```bash
      GATE_RESULT=$(gsd_run check ${hook.check.query} "${PHASE_DIR}" --raw)
      CHECK_EXIT=$?
@@ -165,10 +181,12 @@ Verify the work is ready to ship:
      (The named-query argument convention — a single `"${PHASE_DIR}"` positional — mirrors `verify-work.md`'s `verify:pre` arm verbatim. No capability declares a `check.query` gate at `ship:pre` today; the arm exists so the documented check contract is complete rather than half-implemented.)
 
      For a `predicate` gate (ADR-2008 / #2008), serialize `hook.check.predicate` to compact JSON and pass it as a **single argv element**:
+
      ```bash
      GATE_RESULT=$(gsd_run check predicate --predicate '<hook.check.predicate as JSON>' --phase-dir "${PHASE_DIR}" --phase-number "${PHASE_NUMBER}" --raw)
      CHECK_EXIT=$?
      ```
+
      A gate carrying neither — including an `agentVerdict` check, which has no runner at `ship:pre` — cannot be evaluated here. Record a warning naming the `capId` and treat it as a check-command failure routed per step 1a, **never** as a silent pass.
 
    **Step 1a — did the CHECK COMMAND itself fail?** (non-zero `CHECK_EXIT`, empty output, or unparseable JSON). The two named branches above cannot reach this state — their failure modes are already folded into a fail-closed `block: true`.
@@ -176,7 +194,6 @@ Verify the work is ready to ship:
    - **`onError == "skip"`** → record a warning naming the `capId`, then continue to the next gate. Do NOT read `GATE_RESULT.block`.
 
    **Step 2 — read the gate's `block` decision.** Only reached when the check produced a verdict.
-
    - **`blocking == true` and `block == true`** → HALT the ship — do NOT push, do NOT create a PR — surfacing that gate's own message:
      ```
      ⚠ Ship blocked by capability gate ({hook.capId}): {message}
@@ -186,7 +203,7 @@ Verify the work is ready to ship:
    - **`blocking == true` and `block == false`** → continue silently.
 
    **When every active gate has been processed without a halt:** continue to the next preflight check.
-</step>
+   </step>
 
 <step name="push_branch">
 Push the current branch to remote:
@@ -196,6 +213,7 @@ git push origin ${CURRENT_BRANCH} 2>&1
 ```
 
 If push fails (e.g., no upstream): set upstream:
+
 ```bash
 git push --set-upstream origin ${CURRENT_BRANCH} 2>&1
 ```
@@ -207,9 +225,11 @@ Report: "Pushed `{branch}` to origin ({commit_count} commits ahead of ${BASE_BRA
 Auto-generate a rich PR body from planning artifacts:
 
 **1. Title:**
+
 ```
 Phase {phase_number}: {phase_name}
 ```
+
 Or for milestone: `Milestone {version}: {name}`
 
 **2. Summary section:**
@@ -227,10 +247,12 @@ Read ROADMAP.md for phase goal. Read VERIFICATION.md for verification status.
 
 **3. Changes section:**
 For each SUMMARY.md in the phase directory:
+
 ```markdown
 ## Changes
 
 ### Plan {plan_id}: {plan_name}
+
 {one_liner from SUMMARY.md frontmatter}
 
 **Key files:**
@@ -238,6 +260,7 @@ For each SUMMARY.md in the phase directory:
 ```
 
 **4. Requirements section:**
+
 ```markdown
 ## Requirements Addressed
 
@@ -245,6 +268,7 @@ For each SUMMARY.md in the phase directory:
 ```
 
 **5. Testing section:**
+
 ```markdown
 ## Verification
 
@@ -253,6 +277,7 @@ For each SUMMARY.md in the phase directory:
 ```
 
 **6. Decisions section:**
+
 ```markdown
 ## Key Decisions
 
@@ -336,11 +361,11 @@ Harden every table cell against injection, not just subjects: escape `|` as `\|`
 ```markdown
 ## TDD Audit
 
-| Test commit | Impl commit | gate-status |
-|---|---|---|
-| `a1b2c3d` test: failing parser test | `e4f5g6h` feat: implement parser | skill |
-| `i7j8k9l` test: failing export test | `m0n1o2p` feat: implement export | fallback |
-| `q3r4s5t` refactor: extract helper | — | exempt |
+| Test commit                         | Impl commit                      | gate-status |
+| ----------------------------------- | -------------------------------- | ----------- |
+| `a1b2c3d` test: failing parser test | `e4f5g6h` feat: implement parser | skill       |
+| `i7j8k9l` test: failing export test | `m0n1o2p` feat: implement export | fallback    |
+| `q3r4s5t` refactor: extract helper  | —                                | exempt      |
 
 Aggregate: 2 skill, 1 fallback, 1 exempt — 0 missing.
 ```
@@ -392,18 +417,21 @@ REVIEW_CMD=$(gsd_run query config-get workflow.code_review_command --raw 2>/dev/
 If `REVIEW_CMD` is non-empty and not `"null"`, run the external review:
 
 1. **Generate diff and stats:**
+
    ```bash
    DIFF=$(git diff ${BASE_BRANCH}...HEAD)
    DIFF_STATS=$(git diff --stat ${BASE_BRANCH}...HEAD)
    ```
 
 2. **Load phase context from STATE.md:**
+
    ```bash
    STATE_STATUS=$(gsd_run query state.load 2>/dev/null | head -20)
    ```
 
 3. **Build review prompt and pipe to command via stdin:**
    Construct a review prompt containing the diff, diff stats, and phase context, then pipe it to the configured command:
+
    ```bash
    REVIEW_PROMPT="You are reviewing a pull request.\n\nDiff stats:\n${DIFF_STATS}\n\nPhase context:\n${STATE_STATUS}\n\nFull diff:\n${DIFF}\n\nRespond with JSON: { \"verdict\": \"APPROVED\" or \"REVISE\", \"confidence\": 0-100, \"summary\": \"...\", \"issues\": [{\"severity\": \"...\", \"file\": \"...\", \"line_range\": \"...\", \"description\": \"...\", \"suggestion\": \"...\"}] }"
    # #2358: a per-run temp file (not a shared, unqualified path) so concurrent
@@ -416,6 +444,7 @@ If `REVIEW_CMD` is non-empty and not `"null"`, run the external review:
 
 4. **Handle timeout (120s) and failure:**
    If `REVIEW_EXIT` is non-zero or the command times out:
+
    ```bash
    if [ $REVIEW_EXIT -ne 0 ]; then
      REVIEW_STDERR=$(cat "${REVIEW_STDERR_FILE}" 2>/dev/null)
@@ -424,10 +453,12 @@ If `REVIEW_CMD` is non-empty and not `"null"`, run the external review:
    fi
    rm -f "${REVIEW_STDERR_FILE}"
    ```
+
    On failure, warn with stderr output and fall through to the manual review flow below.
 
 5. **Parse JSON result:**
    If the command succeeded, parse the JSON output and report the verdict:
+
    ```bash
    # Parse verdict and summary from REVIEW_OUTPUT JSON
    VERDICT=$(echo "${REVIEW_OUTPUT}" | node -e "
@@ -437,6 +468,7 @@ If `REVIEW_CMD` is non-empty and not `"null"`, run the external review:
      });
    ")
    ```
+
    - If `verdict` is `"APPROVED"`: report approval with confidence and summary.
    - If `verdict` is `"REVISE"`: report issues found, list each issue with severity, file, line_range, description, and suggestion.
    - If JSON is invalid (`INVALID_JSON`): warn "External review returned invalid JSON" with stderr and continue.
@@ -464,6 +496,7 @@ AskUserQuestion:
 ```
 
 **If "Request review":**
+
 ```bash
 gh pr edit ${PR_NUMBER} --add-reviewer "${REVIEWER}"
 ```
@@ -524,6 +557,7 @@ elif [ "$STATUS" = "UNKNOWN" ]; then
   echo "⚠ track_shipping: PR mergeStateStatus is UNKNOWN after polling; PR may require manual check re-trigger."
 fi
 ```
+
 </step>
 
 <step name="ship_post_capability_dispatch">
@@ -539,6 +573,7 @@ Read the `activeHooks` array directly from `SHIP_POST_HOOKS_JSON` in-context (do
 **Branch 1 — no active `ship:post` step hooks (`activeHooks` has no entry with `kind == "step"`):** Skip silently to the report.
 
 **Generic step hook dispatch contract:** For each active entry where `kind == "step"`:
+
 - Honor `consumes`: if it lists `UAT.md`, resolve `ls "${PHASE_DIR}"/*-UAT.md 2>/dev/null | head -1` and pass it to the dispatch; if a consumed artifact is absent, skip that hook.
 - If `ref.agent` is set, first show the spawn banner, then dispatch the agent named by `ref.agent` (use the exact `ref.agent` value as the subagent type — e.g. `gsd-mempalace-curator` — never `general-purpose`):
 
@@ -550,27 +585,28 @@ Read the `activeHooks` array directly from `SHIP_POST_HOOKS_JSON` in-context (do
 
 > **Runtime-aware dispatch (#2508 Phase 4).** GSD workflows dispatch specialized subagents by role. Before dispatching on a built-in-only runtime (kimi-code — three built-ins only), resolve the role to a built-in via `gsd_run query resolve-dispatch-type --requested <role> --raw`. On named-dispatch runtimes (the agent/OpenCode/…) the role is returned unchanged; on kimi-code it maps to `coder`/`explore`/`plan` by role-suffix. The persona rides `${AGENT_SKILLS_<ROLE>}` (Phase 3) regardless. See @gsd-core/references/runtime-aware-dispatch.md.
 
-  **#2684 model resolution.** `init.phase-op` emits no model field, and `ref.agent` is only known at runtime, so resolve it per hook before dispatching.
+**#2684 model resolution.** `init.phase-op` emits no model field, and `ref.agent` is only known at runtime, so resolve it per hook before dispatching.
 
-  **Input validation (defense-in-depth) — do this IN-CONTEXT, before any shell use.** `ref.agent` originates in a capability manifest, which may be third-party. Check the value you read from `activeHooks` against `^[A-Za-z0-9][A-Za-z0-9._-]*$` yourself, the same way you read `activeHooks` itself — **never** by pasting it into a shell command to be tested there. A value carrying a quote, `;`, `` ` ``, `$(`, or a newline would terminate the assignment and run as its own statement *before* any shell-side check could execute, so a shell-side check is no protection at all.
+**Input validation (defense-in-depth) — do this IN-CONTEXT, before any shell use.** `ref.agent` originates in a capability manifest, which may be third-party. Check the value you read from `activeHooks` against `^[A-Za-z0-9][A-Za-z0-9._-]*$` yourself, the same way you read `activeHooks` itself — **never** by pasting it into a shell command to be tested there. A value carrying a quote, `;`, `` ` ``, `$(`, or a newline would terminate the assignment and run as its own statement _before_ any shell-side check could execute, so a shell-side check is no protection at all.
 
-  A value that fails the check is a malformed manifest: record a warning, **skip that hook entirely**, and move to the next `activeHooks` entry. Do not dispatch it and do not place it in a command line.
+A value that fails the check is a malformed manifest: record a warning, **skip that hook entirely**, and move to the next `activeHooks` entry. Do not dispatch it and do not place it in a command line.
 
-  Only once the value has passed, resolve its model — substituting the validated value for `<agent>`:
+Only once the value has passed, resolve its model — substituting the validated value for `<agent>`:
 
-  ```bash
-  HOOK_AGENT_MODEL=$(gsd_run query resolve-model "<agent>" --raw 2>/dev/null || true)
-  ```
+```bash
+HOOK_AGENT_MODEL=$(gsd_run query resolve-model "<agent>" --raw 2>/dev/null || true)
+```
 
-  **#2517: omit the `model=` parameter entirely when `HOOK_AGENT_MODEL` is `inherit` or empty** — a capability may name an agent absent from the model-profile table, which resolves to the empty string, and passing an empty model 404s on non-the agent runtimes. Omitting inherits the orchestrator's model.
+**#2517: omit the `model=` parameter entirely when `HOOK_AGENT_MODEL` is `inherit` or empty** — a capability may name an agent absent from the model-profile table, which resolves to the empty string, and passing an empty model 404s on non-the agent runtimes. Omitting inherits the orchestrator's model.
 
-  With a resolved model (`{HOOK_AGENT_MODEL}` is the value the command above printed; `${…}` are bound shell variables):
+With a resolved model (`{HOOK_AGENT_MODEL}` is the value the command above printed; `${…}` are bound shell variables):
 
-  `Agent(subagent_type=ref.agent, prompt="Ship-time capability hook for phase ${PHASE_NUMBER}. Phase dir: ${PHASE_DIR}. Consume: ${consumed_files}. Follow your agent instructions.", model="{HOOK_AGENT_MODEL}")`
+`Agent(subagent_type=ref.agent, prompt="Ship-time capability hook for phase ${PHASE_NUMBER}. Phase dir: ${PHASE_DIR}. Consume: ${consumed_files}. Follow your agent instructions.", model="{HOOK_AGENT_MODEL}")`
 
-  When it resolved to `inherit` or empty, drop the parameter:
+When it resolved to `inherit` or empty, drop the parameter:
 
-  `Agent(subagent_type=ref.agent, prompt="Ship-time capability hook for phase ${PHASE_NUMBER}. Phase dir: ${PHASE_DIR}. Consume: ${consumed_files}. Follow your agent instructions.")`
+`Agent(subagent_type=ref.agent, prompt="Ship-time capability hook for phase ${PHASE_NUMBER}. Phase dir: ${PHASE_DIR}. Consume: ${consumed_files}. Follow your agent instructions.")`
+
 - If `ref.skill` is set, dispatch with `Skill(skill="gsd-${ref.skill}", args="${PHASE_NUMBER} --auto ${GSD_WS}")` (prepend `gsd-` to `ref.skill`).
 
 Each dispatch is best-effort: if it errors, record a warning and continue — never re-raise (`onError: skip`).
@@ -589,12 +625,14 @@ Verification: ✓ Passed
 Requirements: {N} REQ-IDs addressed
 
 Next steps:
+
 - Review/approve PR
 - Merge when CI passes
 - /gsd-complete-milestone (if last phase in milestone)
 - /gsd-progress (to see what's next)
 
 ---
+
 ```
 </step>
 
@@ -615,3 +653,4 @@ After shipping:
 - [ ] STATE.md updated with shipping status
 - [ ] User knows PR number and next steps
 </success_criteria>
+```

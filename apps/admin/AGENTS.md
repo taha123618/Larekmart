@@ -6,7 +6,8 @@ Scope: `apps/admin` only. Root rules still apply — start there.
 
 Next.js 15 (App Router, Turbopack) admin dashboard on `:3003`. It owns product/category
 management, user administration (against Clerk), and an order dashboard with charts. It
-uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-form + Zod.
+calls backend services via the unified API Gateway (`NEXT_PUBLIC_API_GATEWAY_URL`, port `8080`)
+and uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-form + Zod.
 
 ## Where things live
 

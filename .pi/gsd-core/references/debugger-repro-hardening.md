@@ -17,7 +17,7 @@ wrong thing. Three additions, all extending existing steps, close those gaps.
 
 ## 1. Shrinking-based repro minimization (input-space bugs)
 
-**When** the bug triggers on a *class* of inputs (not a single hardcoded
+**When** the bug triggers on a _class_ of inputs (not a single hardcoded
 value), wrap the failing input in a property and let the framework's **shrinker**
 auto-minimize the counterexample:
 
@@ -73,7 +73,7 @@ Record the type under `Resolution.oracle_type`:
   (e.g., compare against a known-good implementation, or a simpler slow-path
   version).
 - **Metamorphic** — no precise oracle exists (renderers, optimizers, ML); check
-  a *relation* between related inputs (e.g., `f(x)` then `f(reverse(x))` should
+  a _relation_ between related inputs (e.g., `f(x)` then `f(reverse(x))` should
   be equal; `process(n)` should equal `process(n-1) + step`). The oracle is the
   relation, not the output.
 - **Implicit (crash)** — the only oracle is "doesn't crash / terminates /
@@ -113,18 +113,18 @@ seed misses.
 
 A minimized seed + a real (non-implicit) oracle is what makes the Phase 1A
 fix-acceptance **mutation guardrail bite**: a mutant seeded at the fix site is
-killed only if the regression test asserts the *root-cause behavior*, not the
+killed only if the regression test asserts the _root-cause behavior_, not the
 symptom. A noisy seed with an implicit oracle survives mutants — which is the
 overfitting failure Phase 1A exists to prevent. **Seed + oracle is necessary
 but not sufficient** — a mutant that preserves correct behavior for the
-minimized input but breaks for an *adjacent* input will survive the seed alone.
+minimized input but breaks for an _adjacent_ input will survive the seed alone.
 **Boundary neighbors (§3) close that escape route**: seed + oracle + neighbors
 is the sufficient triple that turns the regression test into a root-cause check.
 
 ## Scope boundary (Zawinski's Law)
 
 Three extensions to existing techniques. No new subsystem, no new test framework
-mandated (fast-check/Hypothesis are used *when present*; manual minimization
+mandated (fast-check/Hypothesis are used _when present_; manual minimization
 otherwise), no new debug-file section beyond the `oracle_type` field. The
 minimized counterexample and the oracle type are recorded under the existing
 `Resolution` section.

@@ -5,7 +5,9 @@ import type {
 } from "@repo/types";
 
 const RECOMMENDATION_SERVICE_URL =
-  process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL || "http://localhost:8008";
+  process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
+  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+  "http://localhost:8080";
 
 export async function getHomeRecommendations(
   userId?: string,

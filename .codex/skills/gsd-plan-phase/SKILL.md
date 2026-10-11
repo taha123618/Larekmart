@@ -6,27 +6,34 @@ metadata:
 ---
 
 <codex_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked by mentioning `$gsd-plan-phase`.
 - Treat all user text after `$gsd-plan-phase` as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. AskUserQuestion → request_user_input Mapping
+
 GSD workflows use `AskUserQuestion` (Claude Code syntax). Translate to Codex `request_user_input`:
 
 Parameter mapping:
+
 - `header` → `header`
 - `question` → `question`
 - Options formatted as `"Label" — description` → `{label: "Label", description: "description"}`
 - Generate `id` from header: lowercase, replace spaces with underscores
 
 Batched calls:
+
 - `AskUserQuestion([q1, q2])` → single `request_user_input` with multiple entries in `questions[]`
 
 Multi-select workaround:
+
 - Codex has no `multiSelect`. Use sequential single-selects, or present a numbered freeform list asking the user to enter comma-separated numbers.
 
 Execute mode fallback:
+
 - When `request_user_input` is rejected or unavailable, activate TEXT_MODE: append `--text` to `{{GSD_ARGS}}` so the workflow's built-in text-mode branching takes over. Present every `AskUserQuestion` call as a plain-text numbered list, then stop and wait for the user's reply. Do NOT pick a default and continue (#3018 / #3808).
 - You may only proceed without a user answer when one of these is true:
   (a) the invocation included an explicit non-interactive flag (`--auto` or `--all`),
@@ -35,6 +42,7 @@ Execute mode fallback:
 - Do NOT write workflow artifacts (CONTEXT.md, DISCUSSION-LOG.md, PLAN.md, checkpoint files) until the user has answered the plain-text questions or one of (a)-(c) above applies. Surfacing the questions and waiting is the correct response — silently defaulting and writing artifacts is the #3018 failure mode.
 
 ## C. Task() → spawn_agent Mapping
+
 GSD workflows use `Task(...)` (Claude Code syntax). Translate to Codex collaboration tools:
 
 **Schema detection (required first step):** Before spawning, inspect the `spawn_agent`
@@ -48,6 +56,7 @@ Never infer one field from a schema/version label or from the presence of anothe
 - **Generic schema:** `spawn_agent` does not advertise `agent_type` — typed GSD agent dispatch is unavailable in this session, even if other optional fields are present.
 
 Typed mapping (agent_type-capable schema only):
+
 - `Task(subagent_type="X", prompt="Y")` → `spawn_agent(agent_type="X", message="Y")`
 - `Agent(subagent_type="X", prompt="Y")` → `spawn_agent(agent_type="X", message="Y")`
 - `Task(model="{resolved_model}")` → pass `model="{resolved_model}"` when the
@@ -78,6 +87,7 @@ Typed mapping (agent_type-capable schema only):
   isolation adapter, which still fails closed for hosts declaring `none` (#3360).
 
 Foreground handoffs:
+
 - spawn_agent is asynchronous. When the source Agent(...) or Task(...) declares
   run_in_background=false, call collaboration.wait_agent(timeout_ms=...) immediately after
   spawn and keep the parent turn active until that child returns a terminal result.
@@ -99,6 +109,7 @@ When only the generic `multi_agent_v1` schema is available, typed GSD agent disp
 (openai/codex#15250). **This workaround is NOT equivalent to typed gsd-planner/gsd-executor
 execution** — GSD agents carry project-aware prompts, audit logging, and workflow context
 that a generic subagent lacks. Use the following fallback:
+
 1. Resolve your active Codex config root — the directory that contains your `config.toml`.
    This directory is determined in priority order: `$CODEX_HOME` (if set), the path given
    by `--config-dir` (if passed on invocation), a local `.codex` directory in the current
@@ -112,6 +123,7 @@ that a generic subagent lacks. Use the following fallback:
    and report the schema limitation rather than silently degrading.
 
 Spawn restriction:
+
 - Codex restricts `spawn_agent` to cases where the user has explicitly
   requested sub-agents. When automatic spawning is not permitted, do the
   work inline in the current agent rather than attempting to force a spawn.
@@ -120,6 +132,7 @@ Spawn restriction:
   defaulting to inline execution.
 
 Parallel fan-out:
+
 - For each child, loop on collaboration.wait_agent(timeout_ms=...) until its own terminal
   result is observed. A mailbox update from one child never completes another child, and an
   interim MESSAGE never completes its sender.
@@ -127,10 +140,11 @@ Parallel fan-out:
 - Do NOT use `functions.wait(cell_id=...)` — that is an unrelated exec-cell tool, not the collaboration wait
 
 Result parsing:
+
 - Look for structured markers in agent output: `CHECKPOINT`, `PLAN COMPLETE`, `SUMMARY`, etc.
 - `close_agent(id)` after collecting results — but only if `close_agent` is visible in the current
   tool schema (check via `tool_search` first, same schema-detection gate as `spawn_agent` above)
-</codex_skill_adapter>
+  </codex_skill_adapter>
 
 <objective>
 Create executable phase prompts (PLAN.md files) for a roadmap phase with integrated research and verification.
@@ -140,6 +154,7 @@ Create executable phase prompts (PLAN.md files) for a roadmap phase with integra
 **Research-only mode (`--research-phase <N>`):** Spawn `gsd-phase-researcher` for phase `N`, write `RESEARCH.md`, then exit before the planner runs. Useful for cross-phase research, doc review before committing to a planning approach, and correction-without-replanning loops where iterating on research alone is dramatically cheaper than re-spawning the planner. Replaces the deleted research-phase command (#3042).
 
 **Research-only modifiers:**
+
 - **No flag** — when `RESEARCH.md` already exists, auto-uses it: emits a one-line notice and exits cleanly, no prompt.
 - **`--research`** — force-refresh: re-spawn the researcher unconditionally, no prompt. Bypasses the existing-RESEARCH.md auto-use path.
 - **`--view`** — view-only: print existing `RESEARCH.md` to stdout. Does not spawn the researcher. Cheapest mode for the correction-without-replanning loop. If no `RESEARCH.md` exists yet, errors with a hint to drop `--view`.
@@ -152,12 +167,11 @@ Create executable phase prompts (PLAN.md files) for a roadmap phase with integra
 @/Users/taha/projects/microservices-ecommerce/.codex/gsd-core/references/ui-brand.md
 </execution_context>
 
-
-
 <context>
 Phase number: {{GSD_ARGS}} (optional — when omitted, the orchestrating workflow reads ROADMAP.md and selects the next unplanned phase; `gsd-tools.cjs` itself has no auto-detect feature and requires an explicit phase number)
 
 **Flags:**
+
 - `--research` — Force re-research even if RESEARCH.md exists
 - `--skip-research` — Skip research, go straight to planning
 - `--gaps` — Gap closure mode (reads VERIFICATION.md, skips research)
@@ -167,7 +181,7 @@ Phase number: {{GSD_ARGS}} (optional — when omitted, the orchestrating workflo
 - `--ingest-format <auto|nygard|madr|narrative>` — Optional ADR parser format override (`auto` default).
 - `--reviews` — Replan incorporating cross-AI review feedback from REVIEWS.md (produced by `$gsd-review`)
 - `--text` — Use plain-text numbered lists instead of TUI menus (required for `/rc` remote sessions)
-- `--mvp` — MVP enrichment on top of the default tracer-first ordering: frames the phase goal as a user story and, on Phase 1 of a new project, also emits `SKELETON.md` (Walking Skeleton). Vertical slicing itself is now the default (see `--no-tracer`); `--mvp` no longer *turns it on*. Can be persisted on a phase via `**Mode:** mvp` in ROADMAP.md.
+- `--mvp` — MVP enrichment on top of the default tracer-first ordering: frames the phase goal as a user story and, on Phase 1 of a new project, also emits `SKELETON.md` (Walking Skeleton). Vertical slicing itself is now the default (see `--no-tracer`); `--mvp` no longer _turns it on_. Can be persisted on a phase via `**Mode:** mvp` in ROADMAP.md.
 - `--no-tracer` — Opt out of the default **tracer-first** decomposition and plan horizontal layers (the legacy default). By default every plan LEADS with one production-quality end-to-end `tracer` slice that is verified before any expansion task.
 - `--no-reversibility-gates` — Suppress the human checkpoint that a **one-way-door** decision normally earns, for runs you intend to leave unattended. By default a decision rated `one-way` (undo needs a migration, breaks a published contract, or is impossible) gets a `checkpoint:decision` before the task implementing it. Ratings are still recorded on tasks and `costly` items still flagged — the flag changes what stops the run, not what the plan remembers.
 

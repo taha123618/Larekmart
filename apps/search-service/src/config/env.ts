@@ -30,6 +30,9 @@ const envSchema = z.object({
 
   // Auth & Security
   CLERK_SECRET_KEY: z.string().optional(),
+  INTERNAL_SERVICE_SECRET: z
+    .string()
+    .default("dev-shared-internal-secret-larekmart"),
 
   // Observability
   LOG_LEVEL: z.string().default("info"),

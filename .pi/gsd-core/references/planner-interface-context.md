@@ -5,6 +5,7 @@
 When creating plans that depend on existing code or create new interfaces consumed by other plans:
 
 ## For plans that USE existing code:
+
 After determining `files_modified`, extract the key interfaces/types/exports from the codebase that executors will need:
 
 ```bash
@@ -14,7 +15,7 @@ grep -n "export\\|interface\\|type\\|class\\|function" {relevant_source_files} 2
 
 Embed these in the plan's `<context>` section as an `<interfaces>` block:
 
-```xml
+````xml
 <interfaces>
 <!-- Key types and contracts the executor needs. Extracted from codebase. -->
 <!-- Executor should use these directly — no codebase exploration needed. -->
@@ -27,17 +28,20 @@ export interface User {
   name: string;
   createdAt: Date;
 }
-```
+````
 
 From src/api/auth.ts:
+
 ```typescript
 export function validateToken(token: string): Promise<User | null>;
 export function createSession(user: User): Promise<SessionToken>;
 ```
+
 </interfaces>
 ```
 
 ## For plans that CREATE new interfaces:
+
 If this plan creates types/interfaces that later plans depend on, include a "Wave 0" skeleton step:
 
 ```xml
@@ -51,12 +55,14 @@ If this plan creates types/interfaces that later plans depend on, include a "Wav
 ```
 
 ## When to include interfaces:
+
 - Plan touches files that import from other modules → extract those module's exports
 - Plan creates a new API endpoint → extract the request/response types
 - Plan modifies a component → extract its props interface
 - Plan depends on a previous plan's output → extract the types from that plan's files_modified
 
 ## When to skip:
+
 - Plan is self-contained (creates everything from scratch, no imports)
 - Plan is pure configuration (no code interfaces involved)
 - Level 0 discovery (all patterns already established)

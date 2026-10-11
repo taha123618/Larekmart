@@ -97,7 +97,12 @@ export const ALL_LAREKMART_TOPICS = [
 ] as const;
 
 export async function initializeTopics(): Promise<void> {
-  const kafka = createKafkaClient("larekmart-topic-initializer");
+  const kafkaBrokers = (
+    process.env.KAFKA_BROKERS || "localhost:9094,localhost:9095,localhost:9096"
+  )
+    .split(",")
+    .map((b) => b.trim());
+  const kafka = createKafkaClient("larekmart-topic-initializer", kafkaBrokers);
   const admin = kafka.admin();
 
   console.log("[KafkaTopicInit] Connecting to Kafka cluster...");

@@ -69,6 +69,7 @@ If missing both ROADMAP.md and PROJECT.md: suggest `/gsd-new-project`.
 **Use structured extraction from `gsd_run query`:**
 
 Instead of reading full files, use targeted tools to get only the data needed for the report:
+
 - `ROADMAP=$(gsd_run query roadmap.analyze)`
 - `STATE=$(gsd_run query state-snapshot)`
 
@@ -83,6 +84,7 @@ ROADMAP=$(gsd_run query roadmap.analyze)
 ```
 
 This returns structured JSON with:
+
 - All phases with disk status (complete/partial/planned/empty/no_directory)
 - Goal and dependencies per phase
 - Plan and summary counts per phase
@@ -261,6 +263,7 @@ grep -l "status: diagnosed\|status: partial" .planning/phases/[current-phase-dir
 ```
 
 Track:
+
 - `uat_with_gaps`: UAT.md files with status "diagnosed" (gaps need fixing)
 - `uat_partial`: UAT.md files with status "partial" (incomplete testing)
 
@@ -295,12 +298,12 @@ Archived debt stays VISIBLE — an item archived still-open is still open (the a
 ```markdown
 ## Verification Debt ({N} items across current-milestone phases; {M} items still open in archived milestones)
 
-| Phase | File | Issue |
-|-------|------|-------|
+| Phase   | File       | Issue                                                                     |
+| ------- | ---------- | ------------------------------------------------------------------------- |
 | {phase} | {filename} | {pending_count} pending, {skipped_count} skipped, {blocked_count} blocked |
-| {phase} | {filename} | human_needed — {count} items |
-| {phase} | {filename} | {unresolved_count} deferred items |
-| {phase} | {filename} | unparsed — test blocks with no readable `result:` line |
+| {phase} | {filename} | human_needed — {count} items                                              |
+| {phase} | {filename} | {unresolved_count} deferred items                                         |
+| {phase} | {filename} | unparsed — test blocks with no readable `result:` line                    |
 
 Review: `/gsd-audit-uat ${GSD_WS}` — full cross-phase audit
 Resume testing: `/gsd-verify-work {phase} ${GSD_WS}` — retest specific phase
@@ -323,18 +326,18 @@ Track: `verification_status` — the `.status` field (`passed | stale | gaps_fou
 
 **Step 2: Route based on counts**
 
-| Condition | Meaning | Action |
-|-----------|---------|--------|
-| uat_partial > 0 | UAT testing incomplete | Go to **Route E.2** |
-| uat_with_gaps > 0 | UAT gaps need fix plans | Go to **Route E** |
-| summaries < plans | Unexecuted plans exist | Go to **Route A** |
-| summaries = plans AND plans > 0 AND verification_status = missing | Phase executed; verification report missing | Go to **Route V.missing** |
-| summaries = plans AND plans > 0 AND verification_status = unknown | Phase executed; verification status unknown | Go to **Route V.unknown** |
-| summaries = plans AND plans > 0 AND verification_status = stale | Phase executed; verification is stale | Go to **Route V.stale** |
-| summaries = plans AND plans > 0 AND verification_status = gaps_found | Phase executed; verification found gaps | Go to **Route V.gaps** |
-| summaries = plans AND plans > 0 AND verification_status = human_needed | Phase executed; awaiting human verification | Go to **Route V.human** |
-| summaries = plans AND plans > 0 AND verification_status = passed | Phase complete (verification passed) | Go to Step 3 |
-| plans = 0 | Phase not yet planned | Go to **Route B** |
+| Condition                                                              | Meaning                                     | Action                    |
+| ---------------------------------------------------------------------- | ------------------------------------------- | ------------------------- |
+| uat_partial > 0                                                        | UAT testing incomplete                      | Go to **Route E.2**       |
+| uat_with_gaps > 0                                                      | UAT gaps need fix plans                     | Go to **Route E**         |
+| summaries < plans                                                      | Unexecuted plans exist                      | Go to **Route A**         |
+| summaries = plans AND plans > 0 AND verification_status = missing      | Phase executed; verification report missing | Go to **Route V.missing** |
+| summaries = plans AND plans > 0 AND verification_status = unknown      | Phase executed; verification status unknown | Go to **Route V.unknown** |
+| summaries = plans AND plans > 0 AND verification_status = stale        | Phase executed; verification is stale       | Go to **Route V.stale**   |
+| summaries = plans AND plans > 0 AND verification_status = gaps_found   | Phase executed; verification found gaps     | Go to **Route V.gaps**    |
+| summaries = plans AND plans > 0 AND verification_status = human_needed | Phase executed; awaiting human verification | Go to **Route V.human**   |
+| summaries = plans AND plans > 0 AND verification_status = passed       | Phase complete (verification passed)        | Go to Step 3              |
+| plans = 0                                                              | Phase not yet planned                       | Go to **Route B**         |
 
 Rows are evaluated top to bottom; the first matching row wins. The `verification_status` rows must precede the passed row so non-`passed` verification is not reported as complete.
 
@@ -581,6 +584,7 @@ VERIFICATION.md exists with `status: human_needed` — automated checks passed b
 **Step 3: Check milestone status (only when phase complete)**
 
 Read ROADMAP.md and identify:
+
 1. Current phase number
 2. All phase numbers in the current milestone section
 
@@ -590,9 +594,9 @@ State: "Current phase is {X}. Milestone has {N} phases (highest: {Y})."
 
 **Route based on milestone status:**
 
-| Condition | Meaning | Action |
-|-----------|---------|--------|
-| current phase < highest phase | More phases remain | Go to **Route C** |
+| Condition                     | Meaning             | Action            |
+| ----------------------------- | ------------------- | ----------------- |
+| current phase < highest phase | More phases remain  | Go to **Route C** |
 | current phase = highest phase | All phases complete | Go to **Route D** |
 
 ---
@@ -719,7 +723,7 @@ Ready to plan the next milestone.
 - All work complete → offer milestone completion
 - Blockers present → highlight before offering to continue
 - Handoff file exists → mention it, offer `/gsd-resume-work ${GSD_WS}`
-</step>
+  </step>
 
 If `section_manifest` is `null` or `"forensic-audit"` is in its `included` list: read and execute `gsd-core/workflows/progress/steps/forensic-audit.md`. Otherwise skip — do not read the file.
 

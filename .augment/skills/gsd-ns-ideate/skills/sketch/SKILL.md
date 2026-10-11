@@ -4,19 +4,25 @@ description: "Sketch UI/design ideas with throwaway HTML mockups, or propose wha
 ---
 
 <augment_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked when the user mentions `gsd-sketch` or describes a task matching this skill.
 - Treat all user text after the skill mention as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. User Prompting
+
 When the workflow needs user input, prompt the user conversationally:
+
 - Present options as a numbered list in your response text
 - Ask the user to reply with their choice
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
+
 Use these Augment tools when executing GSD workflows:
+
 - `launch-process` for running commands (terminal operations)
 - `str-replace-editor` for editing existing files
 - `view` for reading files and listing directories
@@ -26,10 +32,12 @@ Use these Augment tools when executing GSD workflows:
 - `add_tasks`, `view_tasklist`, `update_tasks` for task management
 
 ## D. Subagent Spawning
+
 When the workflow needs to spawn a subagent:
+
 - Use the built-in subagent spawning capability
 - Define agent prompts in `.augment/agents/` directory
-</augment_skill_adapter>
+  </augment_skill_adapter>
 
 <objective>
 Explore design directions through throwaway HTML mockups before committing to implementation.
@@ -38,6 +46,7 @@ integrate with GSD commit patterns, state tracking, and handoff workflows. Loads
 findings to ground mockups in real data shapes and validated interaction patterns.
 
 Two modes:
+
 - **Idea mode** (default) — describe a design idea to sketch
 - **Frontier mode** (no argument or "frontier") — analyzes existing sketch landscape and proposes consistency and frontier sketches
 
@@ -54,15 +63,14 @@ Does not require prior new-project setup — auto-creates `.planning/sketches/` 
 @/Users/taha/projects/microservices-ecommerce/.augment/gsd-core/references/sketch-variant-patterns.md
 </execution_context>
 
-
-
 <context>
 Design idea: {{GSD_ARGS}}
 
 **Available flags:**
+
 - `--quick` — Skip mood/direction intake, jump straight to decomposition and building. Use when the design direction is already clear.
 - `--wrap-up` — Package sketch design findings into a persistent project skill for future build conversations. Runs the sketch-wrap-up workflow.
-</context>
+  </context>
 
 <process>
 Parse the first token of {{GSD_ARGS}}:

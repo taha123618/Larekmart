@@ -2,6 +2,7 @@
 description: "Audit an executed AI phase's evaluation coverage and produce an EVAL-REVIEW.md remediation plan."
 argument-hint: "[phase number]"
 ---
+
 <objective>
 Conduct a retroactive evaluation coverage audit of a completed AI phase.
 Checks whether the evaluation strategy from AI-SPEC.md was implemented.

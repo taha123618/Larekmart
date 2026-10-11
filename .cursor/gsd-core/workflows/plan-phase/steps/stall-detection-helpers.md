@@ -6,7 +6,7 @@ spawn dispatches with `run_in_background=true`, records `TS=$(date +%s)`, and
 then repeatedly calls `gsd_stall_watch` until it returns something other than
 `waiting`/`active`. This mirrors the already-shipped `executor.stall_*`
 pattern (`execute-phase.md`, bug #3212, commit `e7942c21b`) but — unlike
-that prose-only surveillance, which cannot run during a *blocking* `Agent()`
+that prose-only surveillance, which cannot run during a _blocking_ `Agent()`
 call — each `gsd_stall_watch` call is a real, bounded bash subprocess wait
 issued as its own tool call, so it returns control to the orchestrator on
 its own schedule regardless of whether the backgrounded agent's own
@@ -51,7 +51,7 @@ there.
 for exactly one `PLANNER_STALL_INTERVAL_MINUTES` and returns — it does NOT
 loop internally for the full `PLANNER_STALL_THRESHOLD_MINUTES`. A single Bash
 tool call blocking for `threshold + interval` minutes (up to 15 min at
-defaults) risks the *host tool's own* timeout killing the call before it ever
+defaults) risks the _host tool's own_ timeout killing the call before it ever
 prints a result — silently defeating the fix it exists to ship. Looping at
 the orchestrator-prose level instead means every cycle is a short (default 5
 min), real, bounded call that reliably hands control back — the outer

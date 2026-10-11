@@ -7,10 +7,13 @@ import { notFound } from "next/navigation";
 
 const fetchProduct = async (id: string): Promise<ProductType | null> => {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL}/products/${id}`,
-      { cache: "no-store" },
-    );
+    const productServiceUrl =
+      process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
+      process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+      "http://localhost:8080";
+    const res = await fetch(`${productServiceUrl}/products/${id}`, {
+      cache: "no-store",
+    });
     if (!res.ok) return null;
     const data = await res.json();
     if (!data || typeof data !== "object" || !("id" in data)) return null;

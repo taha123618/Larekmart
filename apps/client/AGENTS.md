@@ -6,7 +6,7 @@ Scope: `apps/client` only. Root rules still apply — start there.
 
 Next.js 15 (App Router, Turbopack) storefront on `:3002`. It owns all customer-facing
 interaction: browse, cart, Stripe checkout, and order history. It calls backend services
-over HTTP with a Clerk token; it does not touch Postgres, Mongo, or Kafka directly.
+over HTTP via the unified API Gateway (`NEXT_PUBLIC_API_GATEWAY_URL`, port `8080`) with a Clerk token; it does not touch Postgres, Mongo, or Kafka directly.
 
 ## Where things live
 

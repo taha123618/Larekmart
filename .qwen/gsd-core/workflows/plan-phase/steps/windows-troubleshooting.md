@@ -18,6 +18,7 @@ stdio deadlocks with MCP servers — see Qwen Code issue anthropics/claude-code#
 5. **Retry:** Restart Qwen Code and run `/gsd-plan-phase` again
 
 If freezes persist, try `--skip-research` to reduce the agent chain from 3 to 2 agents:
+
 ```
 /gsd-plan-phase N --skip-research
 ```

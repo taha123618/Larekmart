@@ -45,9 +45,9 @@
 // Cascade hooks docs (reference): https://docs.windsurf.com/llms-full.txt ,
 //                                  https://docs.devin.ai/desktop/cascade/hooks
 
-'use strict';
+"use strict";
 
-const { allow, deny } = require('./lib/hook-exit.js');
+const { allow, deny } = require("./lib/hook-exit.js");
 
 // #3911 (ADR-3889 Phase 7): the exit(2) call site (block(), below) is
 // migrated to hook-exit.js's deny(undefined, reason) now that
@@ -66,13 +66,21 @@ const FORK_BOMB_RE = /:\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:/;
 // Command-prefix wrappers to look through when locating the "real" command at
 // the head of a segment: `sudo rm -rf /`, `/bin/rm -rf /` (basename strip),
 // `env FOO=1 rm -rf /` (env's leading VAR=val args are skipped too).
-const CMD_PREFIXES = new Set(['sudo', 'env', 'command', 'nice', 'nohup', 'time', 'doas']);
+const CMD_PREFIXES = new Set([
+  "sudo",
+  "env",
+  "command",
+  "nice",
+  "nohup",
+  "time",
+  "doas",
+]);
 
 // Bare filesystem-root-class tokens for `rm`'s target. Ordinary paths like
 // `/tmp/foo` or `/home/user/project` never match this set.
-const ROOT_SENTINELS = new Set(['/', '/*', '~', '~/', '$HOME', '${HOME}']);
+const ROOT_SENTINELS = new Set(["/", "/*", "~", "~/", "$HOME", "${HOME}"]);
 
-const PROTECTED_BRANCHES = new Set(['main', 'master', 'next']);
+const PROTECTED_BRANCHES = new Set(["main", "master", "next"]);
 
 // ---------------------------------------------------------------------------
 // Tokenizing helpers
@@ -92,7 +100,7 @@ function stripBashComment(segment) {
   const m = segment.match(/(^|\s)#/);
   if (!m) return segment;
   const idx = m.index + m[1].length;
-  return segment.slice(0, idx).replace(/\s+$/, '');
+  return segment.slice(0, idx).replace(/\s+$/, "");
 }
 
 function tokenize(segment) {
@@ -112,10 +120,11 @@ function indexOfCommandAfterPrefixes(tokens) {
   while (i < tokens.length) {
     const base = basename(tokens[i]).toLowerCase();
     if (!CMD_PREFIXES.has(base)) return i;
-    const wasEnv = base === 'env';
+    const wasEnv = base === "env";
     i++;
     if (wasEnv) {
-      while (i < tokens.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[i])) i++;
+      while (i < tokens.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[i]))
+        i++;
     }
   }
   return i;
@@ -128,7 +137,12 @@ function indexOfCommandAfterPrefixes(tokens) {
 function hasFlag(tokens, shortChar, longFlag) {
   return tokens.some((t) => {
     if (t === longFlag) return true;
-    if (t.length > 1 && t[0] === '-' && t[1] !== '-' && /^[a-zA-Z]+$/.test(t.slice(1))) {
+    if (
+      t.length > 1 &&
+      t[0] === "-" &&
+      t[1] !== "-" &&
+      /^[a-zA-Z]+$/.test(t.slice(1))
+    ) {
       return t.slice(1).toLowerCase().includes(shortChar);
     }
     return false;
@@ -153,13 +167,14 @@ function isDestructiveRmRf(segment) {
   const tokens = tokenize(segment);
   const cmdIdx = indexOfCommandAfterPrefixes(tokens);
   if (cmdIdx >= tokens.length) return null;
-  if (basename(tokens[cmdIdx]) !== 'rm') return null;
+  if (basename(tokens[cmdIdx]) !== "rm") return null;
   const args = tokens.slice(cmdIdx + 1);
-  const hasRecursive = hasFlag(args, 'r', '--recursive');
-  const hasForce = hasFlag(args, 'f', '--force');
+  const hasRecursive = hasFlag(args, "r", "--recursive");
+  const hasForce = hasFlag(args, "f", "--force");
   if (!hasRecursive || !hasForce) return null;
   const rootTok = args.find(isRootSentinel);
-  if (rootTok) return `rm -rf targeting the filesystem root or home directory ('${rootTok}')`;
+  if (rootTok)
+    return `rm -rf targeting the filesystem root or home directory ('${rootTok}')`;
   return null;
 }
 
@@ -181,17 +196,17 @@ function isDestructiveWindowsRmRf(segment) {
   if (tokens.length === 0) return null;
   const first = basename(tokens[0]).toLowerCase();
   const rest = tokens.slice(1);
-  if (first === 'remove-item') {
-    const hasRecurse = rest.some((t) => t.toLowerCase() === '-recurse');
-    const hasForce = rest.some((t) => t.toLowerCase() === '-force');
+  if (first === "remove-item") {
+    const hasRecurse = rest.some((t) => t.toLowerCase() === "-recurse");
+    const hasForce = rest.some((t) => t.toLowerCase() === "-force");
     if (hasRecurse && hasForce && rest.some(isWindowsRootSentinel)) {
-      return 'Remove-Item -Recurse -Force targeting a drive root or user-profile root';
+      return "Remove-Item -Recurse -Force targeting a drive root or user-profile root";
     }
     return null;
   }
-  if (first === 'rd' || first === 'rmdir') {
-    const hasS = rest.some((t) => t.toLowerCase() === '/s');
-    const hasQ = rest.some((t) => t.toLowerCase() === '/q');
+  if (first === "rd" || first === "rmdir") {
+    const hasS = rest.some((t) => t.toLowerCase() === "/s");
+    const hasQ = rest.some((t) => t.toLowerCase() === "/q");
     if (hasS && hasQ) {
       const rootTok = rest.find(isWindowsDriveRoot);
       if (rootTok) return `rd /s /q targeting drive root '${rootTok}'`;
@@ -202,9 +217,9 @@ function isDestructiveWindowsRmRf(segment) {
 }
 
 function isForceToken(tok) {
-  if (tok === '--force' || tok === '-f') return true;
+  if (tok === "--force" || tok === "-f") return true;
   if (/^--force-with-lease(=.*)?$/i.test(tok)) return true;
-  if (tok.startsWith('+')) return true;
+  if (tok.startsWith("+")) return true;
   return false;
 }
 
@@ -214,10 +229,10 @@ function isForceToken(tok) {
 // only — `feature/main-fix` never matches `main`.
 function protectedTargetFromToken(tok) {
   let t = tok;
-  if (t.startsWith('+')) t = t.slice(1);
-  const colonIdx = t.lastIndexOf(':');
+  if (t.startsWith("+")) t = t.slice(1);
+  const colonIdx = t.lastIndexOf(":");
   const candidate = colonIdx !== -1 ? t.slice(colonIdx + 1) : t;
-  const stripped = candidate.replace(/^refs\/heads\//i, '');
+  const stripped = candidate.replace(/^refs\/heads\//i, "");
   const lower = stripped.toLowerCase();
   return PROTECTED_BRANCHES.has(lower) ? lower : null;
 }
@@ -227,12 +242,16 @@ function protectedTargetFromToken(tok) {
 function isProtectedBranchForcePush(segment) {
   const tokens = tokenize(segment);
   for (let i = 0; i < tokens.length - 1; i++) {
-    if (tokens[i].toLowerCase() === 'git' && tokens[i + 1].toLowerCase() === 'push') {
+    if (
+      tokens[i].toLowerCase() === "git" &&
+      tokens[i + 1].toLowerCase() === "push"
+    ) {
       const rest = tokens.slice(i + 2);
       if (!rest.some(isForceToken)) return null;
       for (const tok of rest) {
         const target = protectedTargetFromToken(tok);
-        if (target) return `git push --force targeting protected branch '${target}'`;
+        if (target)
+          return `git push --force targeting protected branch '${target}'`;
       }
       return null;
     }
@@ -241,13 +260,14 @@ function isProtectedBranchForcePush(segment) {
 }
 
 function destructiveReason(cmd) {
-  if (FORK_BOMB_RE.test(cmd)) return 'fork-bomb pattern';
+  if (FORK_BOMB_RE.test(cmd)) return "fork-bomb pattern";
   for (const rawSegment of splitSegments(cmd)) {
     const segment = stripBashComment(rawSegment).trim();
     if (!segment) continue;
-    const reason = isDestructiveRmRf(segment)
-      || isDestructiveWindowsRmRf(segment)
-      || isProtectedBranchForcePush(segment);
+    const reason =
+      isDestructiveRmRf(segment) ||
+      isDestructiveWindowsRmRf(segment) ||
+      isProtectedBranchForcePush(segment);
     if (reason) return reason;
   }
   return null;
@@ -257,21 +277,34 @@ function block(reason) {
   deny(undefined, `GSD windsurf pre_run_command guard: ${reason}\n`);
 }
 
-let input = '';
+let input = "";
 const stdinTimeout = setTimeout(() => allow(undefined), 10000);
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { input += chunk; });
-process.stdin.on('end', () => {
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => {
+  input += chunk;
+});
+process.stdin.on("end", () => {
   clearTimeout(stdinTimeout);
   try {
-    const data = JSON.parse(input || '{}');
-    const toolInfo = (data && typeof data.tool_info === 'object' && data.tool_info) || {};
-    const commandLine = typeof toolInfo.command_line === 'string' ? toolInfo.command_line : '';
-    if (!commandLine) { allow(undefined); return; }
-    if (commandLine.length > MAX_COMMAND_LENGTH) { allow(undefined); return; }
+    const data = JSON.parse(input || "{}");
+    const toolInfo =
+      (data && typeof data.tool_info === "object" && data.tool_info) || {};
+    const commandLine =
+      typeof toolInfo.command_line === "string" ? toolInfo.command_line : "";
+    if (!commandLine) {
+      allow(undefined);
+      return;
+    }
+    if (commandLine.length > MAX_COMMAND_LENGTH) {
+      allow(undefined);
+      return;
+    }
 
     const reason = destructiveReason(commandLine);
-    if (reason) { block(reason); return; }
+    if (reason) {
+      block(reason);
+      return;
+    }
     allow(undefined);
   } catch {
     // Silent fail-open — never block a valid tool call due to a hook bug.

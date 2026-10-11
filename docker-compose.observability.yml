@@ -1,7 +1,30 @@
+name: larekmart-observability
+
 # ============================================================================
 # Larekmart Observability Stack — Docker Compose
-# Provides: Prometheus + Grafana + Alertmanager + Loki + Promtail + Node Exporter
-# + Redis/Postgres/MongoDB/Kafka Exporters
+#
+# THE VERDICT:
+#   - ENVIRONMENT: Best for STAGING & PRODUCTION TELEMETRY (Metrics & Alerting).
+#   - WHY: Industry-standard CNCF observability stack (Prometheus + Grafana +
+#     Loki + Alertmanager). Provides real-time CPU/RAM/DB metrics, latency percentiles
+#     (p95/p99), SLA/SLO dashboards, and proactive alerting triggers (PagerDuty/Slack).
+#   - HOW IT COMPARES:
+#       * Dozzle: Ephemeral live container log viewer (Local dev inner loop).
+#       * Rootprint: Deep log analytics & search via Quickwit on MinIO S3 (Forensics/traces).
+#       * Observability Stack: Full-spectrum metrics, health dashboards, and alert triggers.
+#
+# Provides:
+#   - Prometheus: Metrics scraper & TSDB storage (port 9090)
+#   - Grafana: Unified dashboards & visualization (port 3001)
+#   - Alertmanager: Alert routing & deduplication (port 9093)
+#   - Loki + Promtail: LogQL stream aggregation (port 3100)
+#   - Exporters: Node (9100), Redis (9121), Postgres (9187), Mongo (9216)
+#
+# Access:
+#   - Grafana UI:           http://localhost:3001 (admin / grafana_admin_secret)
+#   - Prometheus UI:        http://localhost:9090
+#   - Alertmanager UI:      http://localhost:9093
+#   - Traefik Domain:       http://monitoring.localhost
 #
 # Usage:
 #   docker compose -f docker-compose.observability.yml up -d
@@ -31,6 +54,8 @@ services:
       - ./infrastructure/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./infrastructure/observability/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - larekmart-network
     healthcheck:
@@ -80,6 +105,12 @@ services:
       - ./infrastructure/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     networks:
       - larekmart-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=larekmart-network"
+      - "traefik.http.routers.grafana.rule=Host(`${GRAFANA_DOMAIN:-monitoring.localhost}`)"
+      - "traefik.http.routers.grafana.entrypoints=web,websecure"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 15s
@@ -114,6 +145,7 @@ services:
   promtail:
     image: grafana/promtail:3.1.0
     container_name: larekmart-promtail
+    user: root
     restart: unless-stopped
     command: -config.file=/etc/promtail/config.yml
     volumes:
@@ -207,5 +239,6 @@ volumes:
 # ────────────────────────────────────────────────────────────────────────────
 networks:
   larekmart-network:
-    external: true
     name: larekmart-network
+    driver: bridge
+    attachable: true

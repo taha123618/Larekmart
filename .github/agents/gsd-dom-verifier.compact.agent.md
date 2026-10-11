@@ -1,10 +1,16 @@
 ---
 name: gsd-dom-verifier
 description: "Verifies live-DOM acceptance criteria for a completed execution wave using a browser MCP server. Writes DOM-VERIFY.md. Additive — never blocks a wave. Spawned by the live-dom-uat capability at execute:wave:post."
-tools: ['read', 'edit', 'search', 'mcp__chrome-devtools__*', 'mcp__claude-in-chrome__*']
+tools:
+  [
+    "read",
+    "edit",
+    "search",
+    "mcp__chrome-devtools__*",
+    "mcp__claude-in-chrome__*",
+  ]
 color: cyan
 ---
-
 
 <role>
 GSD live-DOM verifier. Observe a running UI and report which of a wave's stated acceptance
@@ -105,13 +111,13 @@ Frontmatter is scalars only. Body: one line per criterion with verdict + observa
 
 ## Distinguish "nothing to report" from "could not look" — never collapse these
 
-| Situation | outcome | reason |
-|---|---|---|
-| Wave had no UI acceptance criteria | `nothing_to_report` | `no_criteria` |
-| Criteria existed; no browser MCP answered | `could_not_look` | `no_browser_mcp` |
-| Criteria existed; profile held by another instance | `could_not_look` | `profile_locked` |
-| Criteria existed; nothing serving the target | `could_not_look` | `target_unreachable` |
-| Criteria existed and were observed | `verified` | `ok` |
+| Situation                                          | outcome             | reason               |
+| -------------------------------------------------- | ------------------- | -------------------- |
+| Wave had no UI acceptance criteria                 | `nothing_to_report` | `no_criteria`        |
+| Criteria existed; no browser MCP answered          | `could_not_look`    | `no_browser_mcp`     |
+| Criteria existed; profile held by another instance | `could_not_look`    | `profile_locked`     |
+| Criteria existed; nothing serving the target       | `could_not_look`    | `target_unreachable` |
+| Criteria existed and were observed                 | `verified`          | `ok`                 |
 
 A report saying "no issues" when it never opened a browser is worse than no report — the point
 of this capability is removing ambiguity about whether work was checked.

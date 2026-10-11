@@ -2,6 +2,7 @@
 description: "Validate built features through conversational UAT"
 argument-hint: "[phase number, e.g., '4'] [--ws <name>]"
 ---
+
 <objective>
 Validate built features through conversational testing with persistent state.
 

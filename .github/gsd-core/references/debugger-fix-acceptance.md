@@ -14,7 +14,7 @@ mode — suppress the symptom, delete the branch, weaken the assertion.
 
 Per **Goodhart's Law**, the defense is not a better single metric — it is several
 **partially-independent** signals that pull in different directions, plus
-separating the test that *drives* the fix from the check that *judges* it. That
+separating the test that _drives_ the fix from the check that _judges_ it. That
 is this gate.
 
 ## The five signals
@@ -44,7 +44,7 @@ fix and returns `## FIX REJECTED BY GUARDRAIL`.
 
 5. **Revert-and-reconfirm** (Agans Rule 9 — "If you didn't fix it, it ain't
    fixed") — revert the fix, confirm the bug returns; reapply, confirm it is
-   gone. Proves *this* change is what fixed it. Must run **before** a fix is
+   gone. Proves _this_ change is what fixed it. Must run **before** a fix is
    accepted. Requires a recorded repro (an automated test OR explicit manual
    steps written in the debug file); if no repro exists this signal cannot pass
    and the case routes to the no-repro degradation row below. Revert uncommitted
@@ -58,12 +58,12 @@ Signals degrade onto whatever the environment provides. Every degradation is
 **logged/recorded** in the debug file (Kernighan — the debugger stays
 auditable); a skipped signal is never silently passed.
 
-| Signal | When unavailable | Behavior |
-|---|---|---|
-| 2. Mutation check | no Stryker configured / Stryker absent / not configured | **skip** with a logged note (`mutation_check: skipped, reason`) — never assume pass |
-| 4. Adjacent tests | no test suite touching the import graph | skip with a logged note |
-| 1, 3, 5 | no test suite at all | guardrail **reduces** to signals 3 + 5 (no-op/deletion detector + revert-and-reconfirm) |
-| 1, 3, 5 | no test suite AND no repro | cannot verify at all → return a `CHECKPOINT REACHED` to the human; do not silently pass |
+| Signal            | When unavailable                                        | Behavior                                                                                |
+| ----------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 2. Mutation check | no Stryker configured / Stryker absent / not configured | **skip** with a logged note (`mutation_check: skipped, reason`) — never assume pass     |
+| 4. Adjacent tests | no test suite touching the import graph                 | skip with a logged note                                                                 |
+| 1, 3, 5           | no test suite at all                                    | guardrail **reduces** to signals 3 + 5 (no-op/deletion detector + revert-and-reconfirm) |
+| 1, 3, 5           | no test suite AND no repro                              | cannot verify at all → return a `CHECKPOINT REACHED` to the human; do not silently pass |
 
 The reduction path matters: with **no test suite**, the guardrail still bites via
 the no-op/deletion detector (signal 3) and revert-and-reconfirm (signal 5).
@@ -75,13 +75,20 @@ per-signal record (see `gsd-core/templates/DEBUG.md`):
 
 ```yaml
 verification:
-  target_test:        { result: pass | fail }
-  mutation_check:     { result: pass | fail | skipped, reason_if_skipped, mutant_killed }
-  no_op_deletion:     { result: pass | flagged, deletion_justified_by_rca: true | false }
-  adjacent_tests:     { result: pass | fail | skipped, suites_run: [...] }
-  revert_and_reconfirm: { result: pass | fail, bug_returned_on_revert: true | false, fixed_on_reapply: true | false }
-  guardrail_verdict:  accepted | rejected
-  rejected_signal:    <signal name, if rejected>
+  target_test: { result: pass | fail }
+  mutation_check:
+    { result: pass | fail | skipped, reason_if_skipped, mutant_killed }
+  no_op_deletion:
+    { result: pass | flagged, deletion_justified_by_rca: true | false }
+  adjacent_tests: { result: pass | fail | skipped, suites_run: [...] }
+  revert_and_reconfirm:
+    {
+      result: pass | fail,
+      bug_returned_on_revert: true | false,
+      fixed_on_reapply: true | false,
+    }
+  guardrail_verdict: accepted | rejected
+  rejected_signal: <signal name, if rejected>
 ```
 
 If the fix is accepted as documented technical debt (escape hatch below), record
@@ -98,7 +105,7 @@ When any applicable signal fails (and no technical-debt escape applies), do
 **Debug Session:** .planning/debug/{slug}.md
 **Failing signal:** {signal 1–5 name}
 **Evidence:** {why the signal failed — e.g. "mutant at fix site survived",
-  "diff is deletion-only with no RCA justification", "bug did not return on revert"}
+"diff is deletion-only with no RCA justification", "bug did not return on revert"}
 
 ### Signals
 

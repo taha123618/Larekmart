@@ -4,19 +4,25 @@ description: "Gather phase context through adaptive questioning before planning.
 ---
 
 <augment_skill_adapter>
+
 ## A. Skill Invocation
+
 - This skill is invoked when the user mentions `gsd-discuss-phase` or describes a task matching this skill.
 - Treat all user text after the skill mention as `{{GSD_ARGS}}`.
 - If no arguments are present, treat `{{GSD_ARGS}}` as empty.
 
 ## B. User Prompting
+
 When the workflow needs user input, prompt the user conversationally:
+
 - Present options as a numbered list in your response text
 - Ask the user to reply with their choice
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
+
 Use these Augment tools when executing GSD workflows:
+
 - `launch-process` for running commands (terminal operations)
 - `str-replace-editor` for editing existing files
 - `view` for reading files and listing directories
@@ -26,15 +32,18 @@ Use these Augment tools when executing GSD workflows:
 - `add_tasks`, `view_tasklist`, `update_tasks` for task management
 
 ## D. Subagent Spawning
+
 When the workflow needs to spawn a subagent:
+
 - Use the built-in subagent spawning capability
 - Define agent prompts in `.augment/agents/` directory
-</augment_skill_adapter>
+  </augment_skill_adapter>
 
 <objective>
 Extract implementation decisions that downstream agents need — researcher and planner will use CONTEXT.md to know what to investigate and what choices are locked.
 
 **How it works:**
+
 1. Load prior context (PROJECT.md, REQUIREMENTS.md, STATE.md, prior CONTEXT.md files)
 2. Scout codebase for reusable assets and patterns
 3. Analyze phase — skip gray areas already decided in prior phases
@@ -49,8 +58,6 @@ Extract implementation decisions that downstream agents need — researcher and 
 Workflow files are loaded on-demand in the <process> section below — not upfront.
 Do not pre-load any workflow files before reading the mode routing instructions.
 </execution_context>
-
-
 
 <context>
 Phase number: {{GSD_ARGS}} (required)
@@ -81,6 +88,7 @@ Read and execute `/Users/taha/projects/microservices-ecommerce/.augment/gsd-core
 </process>
 
 <success_criteria>
+
 - Prior context loaded and applied (no re-asking decided questions)
 - Gray areas identified through intelligent analysis
 - User chose which areas to discuss
@@ -88,4 +96,4 @@ Read and execute `/Users/taha/projects/microservices-ecommerce/.augment/gsd-core
 - Scope creep redirected to deferred ideas
 - CONTEXT.md captures decisions, not vague vision
 - User knows next steps
-</success_criteria>
+  </success_criteria>

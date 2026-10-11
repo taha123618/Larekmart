@@ -48,11 +48,11 @@ The planner and researcher already run `node ... graphify status` inside their `
 
 That rule now fires correctly in three additional cases:
 
-| Trigger | What user sees |
-|---------|----------------|
-| Auto-build status = `failed` | Existing "treat as approximate" note fires (because `stale: true`). The full `last_build_auto_update` object is in the JSON for callers that want exit-code / duration / commit-sha context. |
-| Auto-build status = `running` | Same — the next planner invocation knows the graph is mid-rebuild and treats it as approximate until the detached process completes. |
-| Auto-build status = `ok` AND mtime < 24h | Annotation is silent — the graph is fresh and the most recent auto-build succeeded. |
+| Trigger                                  | What user sees                                                                                                                                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auto-build status = `failed`             | Existing "treat as approximate" note fires (because `stale: true`). The full `last_build_auto_update` object is in the JSON for callers that want exit-code / duration / commit-sha context. |
+| Auto-build status = `running`            | Same — the next planner invocation knows the graph is mid-rebuild and treats it as approximate until the detached process completes.                                                         |
+| Auto-build status = `ok` AND mtime < 24h | Annotation is silent — the graph is fresh and the most recent auto-build succeeded.                                                                                                          |
 
 The file-missing case is silent (the operator either has not opted in or has not yet triggered a HEAD-advancing git op since enabling).
 

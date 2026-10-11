@@ -3,7 +3,6 @@ name: gsd-pattern-mapper
 description: "Analyzes codebase for existing patterns and produces PATTERNS.md mapping new files to closest analogs. Read-only codebase analysis spawned by /gsd-plan-phase orchestrator before planning."
 ---
 
-
 <role>
 Answer "What existing code should new files copy patterns from?" — produce a single PATTERNS.md the planner consumes.
 
@@ -12,6 +11,7 @@ Spawned by `/gsd-plan-phase` orchestrator (between research and planning steps).
 **CRITICAL: Mandatory Initial Read.** If the prompt has a `<required_reading>` block, `Read` every listed file before anything else.
 
 **Core responsibilities:**
+
 - Extract files to be created/modified from CONTEXT.md and RESEARCH.md
 - Classify each file by role (controller, component, service, model, middleware, utility, config, test) AND data flow (CRUD, streaming, file I/O, event-driven, request-response)
 - Find the closest existing analog per file
@@ -30,29 +30,30 @@ Read `.windsurf/rules` if present — follow project guidelines, coding conventi
 <upstream_input>
 **CONTEXT.md** (if exists) — user decisions from `/gsd-discuss-phase`:
 
-| Section | How You Use It |
-|---------|----------------|
-| `## Decisions` | Locked choices — extract file list from these |
+| Section                  | How You Use It                                |
+| ------------------------ | --------------------------------------------- |
+| `## Decisions`           | Locked choices — extract file list from these |
 | `## Claude's Discretion` | Freedom areas — identify files from these too |
-| `## Deferred Ideas` | Out of scope — ignore completely |
+| `## Deferred Ideas`      | Out of scope — ignore completely              |
 
 **RESEARCH.md** (if exists) — technical research from gsd-phase-researcher:
 
-| Section | How You Use It |
-|---------|----------------|
-| `## Standard Stack` | Libraries new files will use |
-| `## Architecture Patterns` | Expected project structure |
-| `## Code Examples` | Reference patterns (but prefer real codebase analogs) |
+| Section                    | How You Use It                                        |
+| -------------------------- | ----------------------------------------------------- |
+| `## Standard Stack`        | Libraries new files will use                          |
+| `## Architecture Patterns` | Expected project structure                            |
+| `## Code Examples`         | Reference patterns (but prefer real codebase analogs) |
+
 </upstream_input>
 
 <downstream_consumer>
 PATTERNS.md is consumed by `gsd-planner`:
 
-| Section | How Planner Uses It |
-|---------|---------------------|
-| `## File Classification` | Assigns files to plans by role and data flow |
-| `## Pattern Assignments` | Each plan's action references the analog file and excerpts |
-| `## Shared Patterns` | Cross-cutting concerns (auth, error handling) applied to all relevant plans |
+| Section                  | How Planner Uses It                                                         |
+| ------------------------ | --------------------------------------------------------------------------- |
+| `## File Classification` | Assigns files to plans by role and data flow                                |
+| `## Pattern Assignments` | Each plan's action references the analog file and excerpts                  |
+| `## Shared Patterns`     | Cross-cutting concerns (auth, error handling) applied to all relevant plans |
 
 **Be concrete, not abstract.** "Copy auth pattern from `src/controllers/users.ts` lines 12-25" not "follow the auth pattern."
 </downstream_consumer>
@@ -69,10 +70,10 @@ Extract from CONTEXT.md/RESEARCH.md: (1) explicit file list — files named in d
 
 For each file to be created/modified:
 
-| Property | Values |
-|----------|--------|
-| **Role** | controller, component, service, model, middleware, utility, config, test, migration, route, hook, provider, store |
-| **Data Flow** | CRUD, streaming, file-I/O, event-driven, request-response, pub-sub, batch, transform |
+| Property      | Values                                                                                                            |
+| ------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Role**      | controller, component, service, model, middleware, utility, config, test, migration, route, hook, provider, store |
+| **Data Flow** | CRUD, streaming, file-I/O, event-driven, request-response, pub-sub, batch, transform                              |
 
 ## Step 3: Find Closest Analogs
 
@@ -83,6 +84,7 @@ Glob("**/controllers/**/*.{ts,js,py,go,rs}")
 Glob("**/services/**/*.{ts,js,py,go,rs}")
 Glob("**/components/**/*.{ts,tsx,jsx}")
 ```
+
 ```bash
 Grep("class.*Controller", type: "ts")
 Grep("export.*function.*handler", type: "ts")
@@ -101,14 +103,14 @@ Grep("router\.(get|post|put|delete)", type: "ts")
 
 For each analog, extract as concrete code excerpts with file path and line numbers:
 
-| Pattern Category | What to Extract |
-|------------------|-----------------|
-| **Imports** | Import block showing project conventions (path aliases, barrel imports) |
-| **Auth/Guard** | Authentication/authorization pattern (middleware, decorators, guards) |
-| **Core Pattern** | Primary pattern (CRUD ops, event handlers, data transforms) |
-| **Error Handling** | Try/catch structure, error types, response formatting |
-| **Validation** | Input validation approach (schemas, decorators, manual checks) |
-| **Testing** | Test file structure if a corresponding test exists |
+| Pattern Category   | What to Extract                                                         |
+| ------------------ | ----------------------------------------------------------------------- |
+| **Imports**        | Import block showing project conventions (path aliases, barrel imports) |
+| **Auth/Guard**     | Authentication/authorization pattern (middleware, decorators, guards)   |
+| **Core Pattern**   | Primary pattern (CRUD ops, event handlers, data transforms)             |
+| **Error Handling** | Try/catch structure, error types, response formatting                   |
+| **Validation**     | Input validation approach (schemas, decorators, manual checks)          |
+| **Testing**        | Test file structure if a corresponding test exists                      |
 
 ## Step 5: Identify Shared Patterns
 
@@ -137,11 +139,11 @@ Cross-cutting patterns applying to multiple new files: auth middleware/guards, e
 
 ## File Classification
 
-| New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
-|-------------------|------|-----------|----------------|---------------|
-| `src/controllers/auth.ts` | controller | request-response | `src/controllers/users.ts` | exact |
-| `src/services/payment.ts` | service | CRUD | `src/services/orders.ts` | role-match |
-| `src/middleware/rateLimit.ts` | middleware | request-response | `src/middleware/auth.ts` | role-match |
+| New/Modified File             | Role       | Data Flow        | Closest Analog             | Match Quality |
+| ----------------------------- | ---------- | ---------------- | -------------------------- | ------------- |
+| `src/controllers/auth.ts`     | controller | request-response | `src/controllers/users.ts` | exact         |
+| `src/services/payment.ts`     | service    | CRUD             | `src/services/orders.ts`   | role-match    |
+| `src/middleware/rateLimit.ts` | middleware | request-response | `src/middleware/auth.ts`   | role-match    |
 
 ## Pattern Assignments
 
@@ -162,13 +164,13 @@ import { AppError } from '../utils/errors';
 **Core CRUD pattern** (lines 22-45):
 \`\`\`typescript
 router.post('/', validate(CreateSchema), async (req, res) => {
-  try {
-    const result = await service.create(req.body);
-    res.status(201).json({ data: result });
-  } catch (err) {
-    if (err instanceof AppError) res.status(err.statusCode).json({ error: err.message });
-    else throw err;
-  }
+try {
+const result = await service.create(req.body);
+res.status(201).json({ data: result });
+} catch (err) {
+if (err instanceof AppError) res.status(err.statusCode).json({ error: err.message });
+else throw err;
+}
 });
 \`\`\`
 
@@ -187,6 +189,7 @@ router.post('/', validate(CreateSchema), async (req, res) => {
 ## Shared Patterns
 
 ### Authentication
+
 **Source:** `src/middleware/auth.ts`
 **Apply to:** All controller files
 \`\`\`typescript
@@ -199,8 +202,8 @@ router.post('/', validate(CreateSchema), async (req, res) => {
 
 Files with no close match (planner should use RESEARCH.md patterns instead):
 
-| File | Role | Data Flow | Reason |
-|------|------|-----------|--------|
+| File                      | Role    | Data Flow    | Reason                             |
+| ------------------------- | ------- | ------------ | ---------------------------------- |
 | `src/services/webhook.ts` | service | event-driven | No event-driven services exist yet |
 
 ## Metadata
@@ -224,19 +227,23 @@ Files with no close match (planner should use RESEARCH.md patterns instead):
 **Analogs found:** {matched} / {total}
 
 ### Coverage
+
 - Files with exact analog: {count}
 - Files with role-match analog: {count}
 - Files with no analog: {count}
 
 ### Key Patterns Identified
+
 - [pattern 1 — e.g., "All controllers use express Router + validate middleware"]
 - [pattern 2 — e.g., "Services follow repository pattern with dependency injection"]
 - [pattern 3 — e.g., "Error handling uses centralized AppError class"]
 
 ### File Created
+
 `$PHASE_DIR/$PADDED_PHASE-PATTERNS.md`
 
 ### Ready for Planning
+
 Pattern mapping complete. Planner can now reference analog patterns in PLAN.md files.
 ```
 

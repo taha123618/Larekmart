@@ -1,0 +1,8 @@
+---
+- name: Standalone Kubernetes Node Preparation
+  hosts: k8s_nodes
+  gather_facts: yes
+  roles:
+    - common
+    - security
+    - container_runtime

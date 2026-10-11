@@ -29,6 +29,7 @@ Parse JSON for: `milestone_version`, `milestone_name`, `phase_count`, `completed
 **If `response_language` is set:** All user-facing output of this workflow — narration between tool calls, status updates, progress notes, findings, questions, prompts, and explanations — MUST be presented in `{response_language}`. Technical terms, code, file paths, and subagent prompts stay in English — only user-facing output is translated. Subagent dispatches (discuss/plan/execute) stay in English at the prompt level; include `response_language` in their spawn args per the workflow being dispatched.
 
 `manager_flags` contains per-step passthrough flags from config:
+
 - `manager_flags.discuss` — appended to `/gsd-discuss-phase` args (e.g. `"--auto --analyze"`)
 - `manager_flags.plan` — appended to plan agent init command
 - `manager_flags.execute` — appended to execute agent init command
@@ -138,11 +139,13 @@ All {phase_count} phases verified complete. Ready for final steps:
 
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `{{GSD_ARGS}}` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `AskUserQuestion` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-Claude runtimes (OpenAI Codex, Antigravity, etc.) where `AskUserQuestion` is not available.
 Ask user via AskUserQuestion:
+
 - **question:** "All phases complete. What next?"
 - **options:** "Verify work" / "Complete milestone" / "Exit manager"
 
 Handle responses:
-- "Verify work": `Skill(skill="gsd-verify-work")`  then loop to dashboard.
+
+- "Verify work": `Skill(skill="gsd-verify-work")` then loop to dashboard.
 - "Complete milestone": `Skill(skill="gsd-complete-milestone")` then exit.
 - "Exit manager": Go to exit step.
 
@@ -173,7 +176,7 @@ Handle responses:
 
    **Important:** The Continue option must include EVERY action from `recommended_actions` — not just 2. If there are 3 actions, list 3. If there are 5, list 5.
 
-4. Always add:
+5. Always add:
    - `"Refresh dashboard"`
    - `"Exit manager"`
 
@@ -191,6 +194,7 @@ Continue:
 **Auto-refresh:** If background agents are running (`is_active` is true for any phase), set a 60-second auto-refresh cycle. After presenting the action menu, if no user input is received within 60 seconds, automatically refresh the dashboard. This interval is configurable via `manager_refresh_interval` in GSD config (default: 60 seconds, set to 0 to disable).
 
 Present via AskUserQuestion:
+
 - **question:** "What would you like to do?"
 - **options:** (compound options as built above + refresh + exit, AskUserQuestion auto-adds "Other")
 
@@ -222,6 +226,7 @@ When the user selects a compound option, behavior depends on whether the runtime
 Inline verification:
 
 For each verification recommendation, dispatch by the recommended action's `command`:
+
 - If `command` contains `execute-phase`, run `Skill(skill="gsd-execute-phase", args="{PHASE_NUM} {manager_flags.execute}")`.
 - If `command` contains `verify-work`, run `Skill(skill="gsd-verify-work", args="{PHASE_NUM}")`.
 - If `command` is missing or unrecognized, stop and show the recommendation row instead of guessing.
@@ -375,6 +380,7 @@ When notified that a background agent completed:
 Classify the error:
 
 **Permission / tool access error** (e.g. tool not allowed, permission denied, sandbox restriction):
+
 - Parse the error to identify which tool or command was blocked.
 - Display the error clearly, then offer to fix it:
   - **question:** "Phase {N} failed — permission denied for `{tool_or_command}`. Want me to add it to settings.local.json so it's allowed?"
@@ -384,6 +390,7 @@ Classify the error:
   - "Skip and continue": Loop to dashboard (phase stays in current state).
 
 **Other errors** (git lock, file conflict, logic error, etc.):
+
 - Display the error, then offer options via AskUserQuestion:
   - **question:** "Background agent for Phase {N} encountered an issue: {error}. What next?"
   - **options:** "Retry" / "Run inline instead" / "Skip and continue" / "View details"
@@ -418,6 +425,7 @@ Display final status with progress bar:
 </process>
 
 <success_criteria>
+
 - [ ] Dashboard displays all phases with correct status indicators (D/P/E/V columns)
 - [ ] Progress bar shows accurate completion percentage
 - [ ] Dependency resolution: blocked phases show which deps are missing
@@ -433,4 +441,4 @@ Display final status with progress bar:
 - [ ] "Other" free-text input parsed for phase number and action
 - [ ] Manager loop continues until user exits or milestone completes
 - [ ] Queued section renders when `queued_phases` is non-empty; skipped when absent or empty
-</success_criteria>
+      </success_criteria>

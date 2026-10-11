@@ -14,14 +14,16 @@ Read all files referenced by the invoking prompt's execution_context before star
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-phase-researcher — Researches specific questions and returns concise findings
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
 ## Step 1: Open the conversation
 
 If a topic was provided, acknowledge it and begin exploring:
+
 ```
 ## Explore: {topic}
 
@@ -30,6 +32,7 @@ before we commit to any artifacts.
 ```
 
 If no topic, ask:
+
 ```
 ## Explore
 
@@ -87,6 +90,7 @@ RESEARCHER_MODEL=$(gsd_run query resolve-model gsd-phase-researcher --pick model
 ```
 
 Print: `◆ Spawning explorer... (runs in a subagent — no output until it returns, ~1–5 min; expected, not a freeze)`
+
 ```
 Agent(
   prompt="Quick research: {specific_question}. Return 3-5 key findings, no more than 200 words. For EACH finding, first try to REFUTE it against a primary source, then label it [admit: <source>] (survives refute AND grounded), [refute: <source>] (a source AUTHORITATIVE FOR THIS CLAIM contradicts it), or [abstain: <why>] (unverifiable, a non-authoritative disagreement, or a source conflicting with a strong prior). Every finding MUST carry exactly one of those three tags.",
@@ -114,13 +118,13 @@ resolves to the literal `inherit`, so omission is the normal case, not an error 
 
 **Refute vs abstain — the deciding question is what the source settles, not how surprising it is.**
 Both can be triggered by the same event (a source disagreeing with the claim), so decide by asking
-whether the source is *authoritative for this claim*:
+whether the source is _authoritative for this claim_:
 
-| Situation | Disposition |
-|---|---|
-| A primary source **for this claim's subject** states the opposite. The claim is simply wrong. | **Refute** — correct it, cite the source. |
-| A source disagrees, but it is not authoritative for this claim (wrong version, adjacent subject, secondary/derivative), **or** two comparable sources disagree with each other. | **Abstain** — ledger it. |
-| A source agrees but you could not reach a primary one at all. | **Abstain** — ledger it. |
+| Situation                                                                                                                                                                       | Disposition                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| A primary source **for this claim's subject** states the opposite. The claim is simply wrong.                                                                                   | **Refute** — correct it, cite the source. |
+| A source disagrees, but it is not authoritative for this claim (wrong version, adjacent subject, secondary/derivative), **or** two comparable sources disagree with each other. | **Abstain** — ledger it.                  |
+| A source agrees but you could not reach a primary one at all.                                                                                                                   | **Abstain** — ledger it.                  |
 
 Worked example: the claim is "Node 20+ required" and a source says "Node 22+ required." If that
 source is the project's own `package.json` `engines` field or its published install docs, it is
@@ -130,6 +134,7 @@ both readings in the ledger. "Strong prior" means your own pre-existing belief, 
 authoritative on its own — it can only ever produce an abstain, never a refute.
 
 Two guards ride with it:
+
 - **Conflict-abstention** — a source-vs-prior conflict routes to the ledger, never a silent pick-a-side.
 - **Tier floor** — present every would-be **admit** as an **abstain** instead when the researcher's
   resolved tier is the budget tier, or when that tier cannot be read at all:
@@ -138,7 +143,7 @@ Two guards ride with it:
     confident "grounded" label from it is not worth what it claims; **or**
   - `RESEARCHER_TIER` is `unknown`, `inherit`, or empty — the tier could not be determined (a
     per-agent `model_overrides` pin naming a raw model id, a session-inherited model, or a failed
-    probe). An *unknown* tier is treated as potentially-cheap and floored, never as
+    probe). An _unknown_ tier is treated as potentially-cheap and floored, never as
     verified-adequate: a resolver failure degrades to a stated default, it does not silently
     disarm the floor.
 
@@ -146,7 +151,7 @@ Two guards ride with it:
   suppress corrections.
 
   **Why the tier and not the model id.** `--pick tier` reports the tier GSD resolved, which is
-  computed *above* the `resolve_model_ids: "omit"` gate in `resolveModelInternal`
+  computed _above_ the `resolve_model_ids: "omit"` gate in `resolveModelInternal`
   (`src/model-resolver.cts`). The model id is not usable as a tier signal: it is blank on every
   runtime the installer configures with `omit`, and where a runtime tier map exists it is a
   substituted name — codex's budget tier is `gpt-5.6-luna`, which no `haiku` match would catch.
@@ -159,9 +164,9 @@ Two guards ride with it:
     direction: a high-tier pin loses its admits rather than a low-tier pin keeping them.
   - A `model_profile_overrides.<runtime>.<tier>` entry that repoints a tier at another tier's
     model — e.g. `model_profile_overrides.codex.opus` set to codex's own `haiku`-tier model id —
-    reports the tier that was *asked for*, not the tier of the model that actually answers, so
+    reports the tier that was _asked for_, not the tier of the model that actually answers, so
     the floor stays silent on a cheap model wearing a high-tier label. This is the one direction
-    that fails *open*: it requires deliberately repointing a tier in config, and the model-id
+    that fails _open_: it requires deliberately repointing a tier in config, and the model-id
     check above does not catch it either, since the repointed id is a real, mappable model id,
     not an unmappable pin.
 
@@ -189,7 +194,7 @@ Suppress any section with no entries — an empty heading reads as a claim that 
 If **every** finding landed in Unresolved, say so in one line rather than presenting an empty
 admitted section: that outcome is itself the useful signal.
 
-This is the claims-side analogue of the **#1154** honest verifier (abstain-and-flag on the non-inferable; ADR-550 D4 — *never a silent pass*). Here it is a **prompt-level** judgment on this ideation surface, reusing the #1154 *pattern* — it does **not** call the verify-time `probe-core` disposition, which sits on the verifier↔predicate rail (ADR-857) and is out of altitude for an ideation flow. It is also distinct from the `gsd_run query classify-confidence` seam the researcher **does** call (ADR-0656): that stamps a provider-**authority** tier (HIGH/MEDIUM/LOW) as a **separate** signal — it informs how much weight a source carries inside the refute pass — but it runs no refute pass and yields no admit/refute/abstain verdict, and it is neither an input to the tier floor above nor a substitute for the disposition.
+This is the claims-side analogue of the **#1154** honest verifier (abstain-and-flag on the non-inferable; ADR-550 D4 — _never a silent pass_). Here it is a **prompt-level** judgment on this ideation surface, reusing the #1154 _pattern_ — it does **not** call the verify-time `probe-core` disposition, which sits on the verifier↔predicate rail (ADR-857) and is out of altitude for an ideation flow. It is also distinct from the `gsd_run query classify-confidence` seam the researcher **does** call (ADR-0656): that stamps a provider-**authority** tier (HIGH/MEDIUM/LOW) as a **separate** signal — it informs how much weight a source carries inside the refute pass — but it runs no refute pass and yields no admit/refute/abstain verdict, and it is neither an input to the tier floor above nor a substitute for the disposition.
 
 If the topic doesn't warrant research, skip this step entirely. **Don't force it.**
 
@@ -197,18 +202,19 @@ If the topic doesn't warrant research, skip this step entirely. **Don't force it
 
 When the conversation reaches natural conclusions or the developer signals readiness, propose outputs. Analyze the conversation to identify what was discussed and suggest **up to 4 outputs** from:
 
-| Type | Destination | When to suggest |
-|------|-------------|-----------------|
-| Note | `.planning/notes/{slug}.md` | Observations, context, decisions worth remembering |
-| Todo | `.planning/todos/pending/{slug}.md` | Concrete actionable tasks identified |
-| Seed | `.planning/seeds/` via the plant-seed workflow (`SEED-…`) | Forward-looking ideas with trigger conditions |
-| Research question | `.planning/research/questions.md` (append) | Open questions that need deeper investigation |
-| Requirement | `REQUIREMENTS.md` (append) | Clear requirements that emerged from discussion |
-| New phase | `ROADMAP.md` (append) | Scope large enough to warrant its own phase |
-| Spike | `/gsd:spike` (invoke) | Feasibility uncertainty surfaced — "will this API work?", "can we do X?" |
-| Sketch | `/gsd:sketch` (invoke) | Design direction unclear — "what should this look like?", "how should this feel?" |
+| Type              | Destination                                               | When to suggest                                                                   |
+| ----------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Note              | `.planning/notes/{slug}.md`                               | Observations, context, decisions worth remembering                                |
+| Todo              | `.planning/todos/pending/{slug}.md`                       | Concrete actionable tasks identified                                              |
+| Seed              | `.planning/seeds/` via the plant-seed workflow (`SEED-…`) | Forward-looking ideas with trigger conditions                                     |
+| Research question | `.planning/research/questions.md` (append)                | Open questions that need deeper investigation                                     |
+| Requirement       | `REQUIREMENTS.md` (append)                                | Clear requirements that emerged from discussion                                   |
+| New phase         | `ROADMAP.md` (append)                                     | Scope large enough to warrant its own phase                                       |
+| Spike             | `/gsd:spike` (invoke)                                     | Feasibility uncertainty surfaced — "will this API work?", "can we do X?"          |
+| Sketch            | `/gsd:sketch` (invoke)                                    | Design direction unclear — "what should this look like?", "how should this feel?" |
 
 Present suggestions:
+
 ```
 Based on our conversation, I'd suggest capturing:
 
@@ -250,6 +256,7 @@ For each selected output, write the file:
 - **Phases:** Use existing `/gsd-add-phase` command via SlashCommand
 
 Commit if `commit_docs` is enabled:
+
 ```bash
 gsd_run query commit "docs: capture exploration — {topic_slug}" --files {file_list}
 ```
@@ -269,6 +276,7 @@ Continue exploring with `/gsd:explore` or start working with `/gsd:progress --ne
 </process>
 
 <success_criteria>
+
 - [ ] Socratic conversation follows questioning.md principles
 - [ ] Questions asked one at a time, not in batches
 - [ ] Research offered contextually (not forced)
@@ -276,4 +284,4 @@ Continue exploring with `/gsd:explore` or start working with `/gsd:progress --ne
 - [ ] User explicitly selects which outputs to create
 - [ ] Files written to correct destinations
 - [ ] Commit respects commit_docs config
-</success_criteria>
+      </success_criteria>

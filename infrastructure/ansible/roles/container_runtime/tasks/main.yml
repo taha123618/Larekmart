@@ -1,0 +1,60 @@
+---
+- name: Disable swap immediately
+  command: swapoff -a
+  when: disable_swap | default(true)
+
+- name: Remove swap from /etc/fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\s+swap\s+.*)$'
+    replace: '# \1'
+  when: disable_swap | default(true)
+
+- name: Load required kernel modules for Kubernetes
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ k8s_kernel_modules }}"
+
+- name: Persist kernel modules across reboots
+  copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+    mode: "0644"
+
+- name: Apply Kubernetes sysctl networking settings
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+    sysctl_set: yes
+  loop: "{{ k8s_sysctl_settings | dict2items }}"
+
+- name: Install containerd prerequisites
+  apt:
+    name:
+      - containerd
+      - runc
+    state: present
+
+- name: Create containerd configuration directory
+  file:
+    path: /etc/containerd
+    state: directory
+    mode: "0755"
+
+- name: Configure containerd with SystemdCgroup enabled
+  template:
+    src: config.toml.j2
+    dest: /etc/containerd/config.toml
+    mode: "0644"
+  notify: restart containerd
+
+- name: Ensure containerd service is running and enabled
+  service:
+    name: containerd
+    state: started
+    enabled: yes

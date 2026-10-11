@@ -5,7 +5,12 @@
   "manifest_override": false,
   "title": "ADR 0001: Asynchronous Kafka Integration for Backend Services",
   "summary": "Mandates that all cross-service communication must be strictly asynchronous via Apache Kafka using @repo/kafka, prohibiting direct inter-service HTTP calls.",
-  "scope": ["Kafka", "asynchronous integration", "service communication", "@repo/kafka"],
+  "scope": [
+    "Kafka",
+    "asynchronous integration",
+    "service communication",
+    "@repo/kafka"
+  ],
   "cross_refs": ["docs/EVENT-DRIVEN-ARCHITECTURE.md", "@repo/types"],
   "locked": true,
   "precedence": 0,

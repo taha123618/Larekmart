@@ -3,7 +3,6 @@ name: gsd-ingest-docs
 description: "Bootstrap or merge a .planning/ setup from existing ADRs, PRDs, SPECs, and docs in a repo."
 ---
 
-
 <objective>
 Build the full `.planning/` setup (or merge into an existing one) from multiple pre-existing planning documents — ADRs, PRDs, SPECs, DOCs — in one pass.
 

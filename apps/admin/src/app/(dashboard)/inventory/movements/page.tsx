@@ -41,7 +41,7 @@ interface MovementRecord {
 async function fetchMovements(token: string | null): Promise<MovementRecord[]> {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || "http://localhost:8007"}/api/v1/inventory/movements?limit=100`,
+      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080"}/api/v1/inventory/movements?limit=100`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

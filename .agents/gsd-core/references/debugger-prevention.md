@@ -1,7 +1,7 @@
 # Prevention / Blameless-Postmortem Output
 
 Loaded by `gsd-debugger` via `@-include` from `archive_session`. Emits the
-forward-looking half of a resolved debug session — not just *what* was wrong and
+forward-looking half of a resolved debug session — not just _what_ was wrong and
 the fix, but **why it happened, why it wasn't caught, and the guard that
 prevents its whole class from returning**.
 
@@ -11,7 +11,7 @@ When a session resolves, the debugger records `root_cause` + `fix` and appends a
 keyword entry to the knowledge base. What it did **not** produce is the
 forward-looking half that industry incident practice (Google SRE Book, AWS COE)
 treats as the whole point: a blameless postmortem / Correction of Error. The
-bug gets fixed; the *class* of bug and the *reason it slipped through* are never
+bug gets fixed; the _class_ of bug and the _reason it slipped through_ are never
 captured — so the same class recurs and no guardrail is added. This block closes
 that gap. It reuses the existing debug file and knowledge base; it does not add a
 new command or workflow.
@@ -35,8 +35,8 @@ categories (**code / config / environment / data** — see
 `debugger-rca-branching.md`); start the postmortem from those branches and the
 AND-gate answer rather than re-deriving a chain from scratch.
 
-**Blame-free:** treat "agent error" / "human error" as a prompt for *"why was
-that error possible?"* — not a terminal cause. A postmortem that stops at "the
+**Blame-free:** treat "agent error" / "human error" as a prompt for _"why was
+that error possible?"_ — not a terminal cause. A postmortem that stops at "the
 engineer made a mistake" prevents nothing; one that asks "why was the mistake
 possible / not caught" produces a guard. Never assign blame to a person.
 
@@ -78,7 +78,7 @@ The KB entry gains two fields (additive — see backward-compat below):
 
 These ride alongside the existing `Error patterns` / `Root cause(s)` / `Fix` /
 `Files changed` fields so a future Phase-0 match surfaces not just the prior fix
-but the prior *prevention*.
+but the prior _prevention_.
 
 ## Backward compatibility (additive — no format break)
 

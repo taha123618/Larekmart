@@ -18,25 +18,27 @@
 //
 // Cursor docs: https://cursor.com/docs/hooks
 
-'use strict';
+"use strict";
 
-const { allow } = require('./lib/hook-exit.js');
+const { allow } = require("./lib/hook-exit.js");
 
 const stdinTimeout = setTimeout(() => {
   allow(undefined);
 }, 10000);
 
-process.stdin.setEncoding('utf8');
+process.stdin.setEncoding("utf8");
 // Drain stdin (puts the stream into flowing mode so 'end' fires); the
 // payload itself is unused — this hook responds unconditionally.
-process.stdin.on('data', () => {});
-process.stdin.on('end', () => {
+process.stdin.on("data", () => {});
+process.stdin.on("end", () => {
   clearTimeout(stdinTimeout);
   try {
-    process.stdout.write(JSON.stringify({
-      additional_context:
-        'GSD: Subagent completed — review its output and update .planning/STATE.md if the phase progressed.',
-    }));
+    process.stdout.write(
+      JSON.stringify({
+        additional_context:
+          "GSD: Subagent completed — review its output and update .planning/STATE.md if the phase progressed.",
+      }),
+    );
   } catch {
     process.stdout.write(JSON.stringify({}));
   }

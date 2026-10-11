@@ -51,7 +51,8 @@ export async function requireAdminOrInternal(
     try {
       const jwtKey = process.env.CLERK_JWT_KEY;
       const clerkSecret = process.env.CLERK_SECRET_KEY;
-      const isProduction = (process.env.NODE_ENV || env.NODE_ENV) === "production";
+      const isProduction =
+        (process.env.NODE_ENV || env.NODE_ENV) === "production";
 
       // If a signing key is configured, verify signature cryptographically
 

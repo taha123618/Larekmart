@@ -18,32 +18,36 @@
 //
 // Cursor docs: https://cursor.com/docs/hooks
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const { allow } = require('./lib/hook-exit.js');
+const fs = require("fs");
+const { allow } = require("./lib/hook-exit.js");
 
 // Workspace resolution is shared across the Cursor hooks (#2587) — see
 // hooks/lib/cursor-workspace.js. Staged next to these scripts by
 // writeCursorHooksJson so the require always resolves post-install.
-const { resolveStatePath } = require('./lib/cursor-workspace.js');
+const { resolveStatePath } = require("./lib/cursor-workspace.js");
 
-let raw = '';
+let raw = "";
 const stdinTimeout = setTimeout(() => {
   allow(undefined);
 }, 10000);
 
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { raw += chunk; });
-process.stdin.on('end', () => {
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => {
+  raw += chunk;
+});
+process.stdin.on("end", () => {
   clearTimeout(stdinTimeout);
   try {
     const statePath = resolveStatePath(raw);
     if (fs.existsSync(statePath)) {
-      process.stdout.write(JSON.stringify({
-        additional_context:
-          'GSD: Agent stopping — run /gsd:verify-work or /gsd:progress to confirm the phase goal is met before ending the session.',
-      }));
+      process.stdout.write(
+        JSON.stringify({
+          additional_context:
+            "GSD: Agent stopping — run /gsd:verify-work or /gsd:progress to confirm the phase goal is met before ending the session.",
+        }),
+      );
     } else {
       process.stdout.write(JSON.stringify({}));
     }

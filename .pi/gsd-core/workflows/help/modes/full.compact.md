@@ -254,7 +254,7 @@ Usage: `/gsd:surface profile standard`
 
 Usage: `/gsd:cleanup`
 
-**`/gsd:help [--brief | --full | <topic> | --brief <topic>]`** — `--brief` = ~10-line refresher; no flag = one-page newcomer tour; `--full` = this complete reference; `<topic>` = matching section only (e.g. `/gsd:help debug`); `--brief <topic>` = compact scoped lookup. Every topic output starts with a `**Topic:** \`<alias>\` → \`<heading>\` *(scope: full | compact)*` preamble. See `gsd-core/workflows/help/modes/topic.md` for the alias table.
+**`/gsd:help [--brief | --full | <topic> | --brief <topic>]`** — `--brief` = ~10-line refresher; no flag = one-page newcomer tour; `--full` = this complete reference; `<topic>` = matching section only (e.g. `/gsd:help debug`); `--brief <topic>` = compact scoped lookup. Every topic output starts with a `**Topic:** \`<alias>\` → \`<heading>\` _(scope: full | compact)_`preamble. See`gsd-core/workflows/help/modes/topic.md` for the alias table.
 
 Usage: `/gsd:help debug`
 Usage: `/gsd:help --brief debug`
@@ -395,4 +395,4 @@ Set during `/gsd:new-project`, changeable anytime in `.planning/config.json`:
 - Read `.planning/STATE.md` for current context
 - Check `.planning/ROADMAP.md` for phase status
 - Run `/gsd:progress` to check where you're up to
-</reference>
+  </reference>

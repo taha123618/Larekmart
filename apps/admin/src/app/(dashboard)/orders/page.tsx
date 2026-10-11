@@ -9,14 +9,15 @@ const getData = async (): Promise<OrderType[]> => {
   try {
     const { getToken } = await auth();
     const token = await getToken();
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_ORDER_SERVICE_URL}/orders`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    const orderUrl =
+      process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
+      process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+      "http://localhost:8080";
+    const res = await fetch(`${orderUrl}/orders`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    );
+    });
     const data = await res.json();
     return data;
   } catch (err) {

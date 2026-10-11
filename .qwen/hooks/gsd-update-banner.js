@@ -10,11 +10,11 @@
 //
 // See issue #2795 for the rationale.
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
 
 // #3582: gsd-core/bin/lib/package-identity.cjs is a tsc build artifact
 // (ADR-457), gitignored and absent on a raw plugin-marketplace / git-clone
@@ -28,11 +28,16 @@ const os = require('os');
 // duplicated (not extracted to hooks/lib/) — see
 // gsd-check-update-worker.js's identical #3582 comment for why.
 let PACKAGE_NAME = null;
-let updateCacheFileName = 'gsd-update-check.json';
+let updateCacheFileName = "gsd-update-check.json";
 try {
-  const { ensureRuntimeBuild } = require('../gsd-core/bin/ensure-runtime-build.cjs');
+  const {
+    ensureRuntimeBuild,
+  } = require("../gsd-core/bin/ensure-runtime-build.cjs");
   ensureRuntimeBuild();
-  ({ PACKAGE_NAME, updateCacheFileName } = require('../gsd-core/bin/lib/package-identity.cjs'));
+  ({
+    PACKAGE_NAME,
+    updateCacheFileName,
+  } = require("../gsd-core/bin/lib/package-identity.cjs"));
 } catch (e) {
   // Runtime library missing/broken and could not self-build — degrade to the
   // fallbacks above rather than crash the SessionStart hook.
@@ -56,15 +61,15 @@ function buildBannerOutput(state) {
   const { cache, parseError, suppressFailureWarning } = state || {};
   if (parseError) {
     if (suppressFailureWarning) return null;
-    return { systemMessage: 'GSD update check failed.' };
+    return { systemMessage: "GSD update check failed." };
   }
   if (!cache) return null;
   // Lineage guard: package_name must be present and match this package.
   // Absent package_name means the cache predates lineage tracking — treat as untrusted.
   if (!cache.package_name || cache.package_name !== PACKAGE_NAME) return null;
   if (!cache.update_available) return null;
-  const installed = cache.installed || 'unknown';
-  const latest = cache.latest || 'unknown';
+  const installed = cache.installed || "unknown";
+  const latest = cache.latest || "unknown";
   return {
     systemMessage: `GSD update available: ${installed} → ${latest}. Run /gsd-update.`,
   };
@@ -81,7 +86,7 @@ function readCache(cacheFile) {
   let parseError = false;
   try {
     if (fs.existsSync(cacheFile)) {
-      const raw = fs.readFileSync(cacheFile, 'utf8');
+      const raw = fs.readFileSync(cacheFile, "utf8");
       cache = JSON.parse(raw);
     }
   } catch (e) {
@@ -102,7 +107,7 @@ function readCache(cacheFile) {
 function shouldSuppressFailureWarning(sentinelFile, nowSeconds) {
   try {
     if (!fs.existsSync(sentinelFile)) return false;
-    const last = parseInt(fs.readFileSync(sentinelFile, 'utf8').trim(), 10);
+    const last = parseInt(fs.readFileSync(sentinelFile, "utf8").trim(), 10);
     if (!Number.isFinite(last)) return false;
     return nowSeconds - last < RATE_LIMIT_SECONDS;
   } catch (e) {
@@ -120,16 +125,20 @@ function recordFailureWarning(sentinelFile, nowSeconds) {
 }
 
 function main() {
-  const cacheDir = path.join(os.homedir(), '.cache', 'gsd');
+  const cacheDir = path.join(os.homedir(), ".cache", "gsd");
   const cacheFile = path.join(cacheDir, updateCacheFileName);
-  const sentinelFile = path.join(cacheDir, 'banner-failure-warned-at');
+  const sentinelFile = path.join(cacheDir, "banner-failure-warned-at");
   const now = Math.floor(Date.now() / 1000);
 
   const { cache, parseError } = readCache(cacheFile);
   const suppressFailureWarning = parseError
     ? shouldSuppressFailureWarning(sentinelFile, now)
     : false;
-  const output = buildBannerOutput({ cache, parseError, suppressFailureWarning });
+  const output = buildBannerOutput({
+    cache,
+    parseError,
+    suppressFailureWarning,
+  });
 
   if (parseError && !suppressFailureWarning) {
     // Ensure cache dir exists before writing the sentinel — first-run case

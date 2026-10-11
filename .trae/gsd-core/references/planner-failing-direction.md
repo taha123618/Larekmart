@@ -24,8 +24,8 @@ so it failed loudly. The identical mistake with a command that exits 0 on a no-o
 filter matching nothing — passes green and silently. Naming the failure signal is what makes the
 difference visible while you are still authoring the plan.
 
-**The authoring test, applied to yourself:** *if this command were silently doing nothing, what
-in its output would tell me?* If you cannot answer, you do not yet have an acceptance command —
+**The authoring test, applied to yourself:** _if this command were silently doing nothing, what
+in its output would tell me?_ If you cannot answer, you do not yet have an acceptance command —
 you have a command. Fix the command, do not invent a statement for it.
 
 ## Rules
@@ -34,8 +34,8 @@ you have a command. Fix the command, do not invent a statement for it.
   `<fails_when>` binds to the nearest preceding `<automated>`, and the first statement after a
   command is the binding one. Two commands need two statements.
 - **Name an observable signal**, not the word "failure". `non-zero exit`, `"0 passed" in the
-  summary`, `the coverage line is absent`, `stderr contains "ECONNREFUSED"` are signals. *"the
-  command fails"*, *"it doesn't work"*, *"an error occurs"* are restatements and will be flagged.
+summary`, `the coverage line is absent`, `stderr contains "ECONNREFUSED"` are signals. _"the
+  command fails"_, _"it doesn't work"_, _"an error occurs"_ are restatements and will be flagged.
 - **Short is fine.** `non-zero exit` is complete. There is no minimum length and no required
   keyword.
 - **`TBD`, `TODO`, `N/A`, `none`, `unknown`, `?`, `-` are rejected outright** as whole values.

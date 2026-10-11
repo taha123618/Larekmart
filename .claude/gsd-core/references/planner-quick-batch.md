@@ -25,7 +25,7 @@ implementation genuinely requires another item's item to land first (shared
 file, prerequisite API, sequencing the user implied), declare it:
 
 ```yaml
-depends_on: ["260101-abc"]   # a quick_id from the task catalog
+depends_on: ["260101-abc"] # a quick_id from the task catalog
 ```
 
 - Reference ONLY `quick_id`s from the task catalog you were given. Never

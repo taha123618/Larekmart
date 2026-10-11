@@ -1,7 +1,7 @@
 <purpose>
 GSD smart entry — the state-aware front door. Detect the current project situation via `gsd_run smart-entry --json`, present a short menu of the right next actions, and dispatch to exactly one existing GSD command. This is a launcher/router only; it never does the work itself.
 
-This is a *menu* front door, not a second router. For in-project forward motion (planning → executing → verify-pending) the recommended action is `/gsd-progress --next`, which delegates to the single gated advancement engine (`workflows/next.md`: Route 0 resume-incomplete-phase + Gates 1-3). smart-entry adds value only where `--next` cannot reach: pre-project, remediation (paused/blocked/verify-failed), and lifecycle exits (idle-stranded/complete). See `docs/adr/1787-gsd-next-smart-entry.md`.
+This is a _menu_ front door, not a second router. For in-project forward motion (planning → executing → verify-pending) the recommended action is `/gsd-progress --next`, which delegates to the single gated advancement engine (`workflows/next.md`: Route 0 resume-incomplete-phase + Gates 1-3). smart-entry adds value only where `--next` cannot reach: pre-project, remediation (paused/blocked/verify-failed), and lifecycle exits (idle-stranded/complete). See `docs/adr/1787-gsd-next-smart-entry.md`.
 </purpose>
 
 <required_reading>
@@ -22,7 +22,9 @@ Set `TEXT_MODE=true` if `--text` is present in `$ARGUMENTS` OR `text_mode` from 
 Run this resolver block exactly. It locates `gsd-tools.cjs` across every supported runtime home and defines a `gsd_run` function. If it cannot find the tool, it prints the standard install hint and exits non-zero.
 
 ```bash
+
 ```
+
 </step>
 
 <step name="detect">
@@ -45,8 +47,18 @@ Parse `SNAPSHOT` as JSON. It has the shape:
   "summary": "Phase 2 of 5 · 60% · executing",
   "signals": { "...": "..." },
   "actions": [
-    { "id": "progress-next", "label": "Advance to the next step", "command": "/gsd-progress --next", "recommended": true },
-    { "id": "execute-phase", "label": "Continue executing phase 2", "command": "/gsd-execute-phase", "recommended": false }
+    {
+      "id": "progress-next",
+      "label": "Advance to the next step",
+      "command": "/gsd-progress --next",
+      "recommended": true
+    },
+    {
+      "id": "execute-phase",
+      "label": "Continue executing phase 2",
+      "command": "/gsd-execute-phase",
+      "recommended": false
+    }
   ]
 }
 ```
@@ -62,7 +74,7 @@ Parse `SNAPSHOT` as JSON. It has the shape:
    - Proceed to the `present` step with this synthesized result.
 
 2. **Only `smart-entry` is unavailable** (e.g. older gsd-core without the subcommand; `state-snapshot` still works). Run `/gsd-progress` and stop. Print one line first: `smart-entry unavailable — showing progress.`
-</step>
+   </step>
 
 <step name="present">
 **Present the menu.**
@@ -70,6 +82,7 @@ Parse `SNAPSHOT` as JSON. It has the shape:
 Show the `summary` line to orient the user, then offer the actions.
 
 **If TEXT_MODE is false:** call `AskUserQuestion` with:
+
 - `header`: a short label derived from `situation` (e.g. `executing` → "Continue work", `blocked` → "Unblock", `no-project` → "Get started", `complete` → "What next?").
 - `question`: the `summary` line, then "What would you like to do?"
 - `options`: the first 4 entries of `actions[]` in order. For each, `label` = the action's `label`, `description` = the action's `command`. The recommended action is already first; surface it as the first option. The user may also type a custom command (handled automatically).
@@ -98,6 +111,7 @@ Wait for the user's response before continuing. Map the chosen number to the cor
 **Situation:** {situation}
 **Routing to:** {chosen command}
 ```
+
 </step>
 
 <step name="dispatch">
@@ -111,6 +125,7 @@ After invoking the command, **stop**. The dispatched command owns everything fro
 </process>
 
 <success_criteria>
+
 - [ ] Situation detected via `gsd_run smart-entry --json`
 - [ ] Summary shown to orient the user
 - [ ] Menu offered (AskUserQuestion, or numbered list under TEXT_MODE)
@@ -118,4 +133,4 @@ After invoking the command, **stop**. The dispatched command owns everything fro
 - [ ] Exactly one command dispatched
 - [ ] Any detection failure falls back to /gsd-progress (never strands the user)
 - [ ] No work done directly — launcher only
-</success_criteria>
+      </success_criteria>

@@ -1,6 +1,6 @@
 # Larekmart
 
-**Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . It pairs a customer storefront and an admin management dashboard with **fifteen backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, and notifications; MongoDB for orders and carts).
+**Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **fifteen backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, and notifications; MongoDB for orders and carts).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node and Go services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 
@@ -13,46 +13,52 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
                          │        Clerk          │  auth + session claims (role: user|admin)
                          └───────────┬───────────┘
                                      │ Bearer JWT
-         ┌───────────────────────────┼────────────────────────────┬─────────────────────────────┐
-         │                           │                            │                             │
-  ┌──────▼───────┐            ┌──────▼───────┐             ┌──────▼───────┐              ┌──────▼───────┐
-  │   client     │            │    admin     │             │ auth-service │              │ notification │
-  │  Next.js 15  │            │  Next.js 15  │             │   Express    │              │   service    │
-  │   :3002      │            │   :3003      │             │   :8003      │              │  Go (Chi)    │
-  └───┬──────┬───┘            └───┬───┬───┬──┘             └──────┬───────┘              │   :8005      │
-      │      │                    │   │   │                       │                      └──────▲───────┘
-      │      │      ┌─────────────┘   │   │                  user.created                       │
-      │      │      │                 │   │                       │                             │ domain
-      │      │      │                 │   │                       ▼                             │ events
-  ┌───▼──────▼──────▼────┐            │   │                ┌──────────────┐                     │
-  │   product-service    │            │   │                │email-service │◄────────────────────┤
-  │  Express :8000       │            │   │                │  (worker)    │ email.dispatch      │
-  │  Prisma → Postgres   │            │   │                └──────▲───────┘                     │
-  └──────────┬───────────┘            │   │                       │                             │
-             │ product.created/deleted│   │                       │ order.created               │
-             ▼                        │   │                       │                             │
-      ┌───────────────┐               │   │                ┌──────┴──────────┐                  │
-      │  Kafka cluster│◄──────────────┼───┼────────────────┤ payment-service │                  │
-      │  (3 brokers)  │               │   │                │   Hono :8002    │                  │
-      └───────┬───────┘               │   │                │   Stripe        │                  │
-              │                       │   │                └─────────────────┘                  │
-              │ all events            │   │                                                     │
-              ▼                       │   │                                                     │
-  ┌───────────────────────┐           │   │                                                     │
-  │   analytic-service    │           │   │                                                     │
-  │   Express :8004       │◄──────────┘   │ GET /analytics (KPIs & daily charts)                │
-  │   pg → PostgreSQL     │               │                                                     │
-  └───────────────────────┘               │                                                     │
-              ▲                           │                                                     │
-              │ payment.successful        ▼                                                     │
-              │                    ┌──────────────┐                                             │
-              └────────────────────┤ order-service│─────────────────────────────────────────────┘
-                                   │ Fastify :8001│
-                                   │ Mongoose     │
-                                   └──────────────┘
+          ┌──────────────────────────┴──────────────────────────┐
+          │                                                     │
+   ┌──────▼───────┐                                      ┌──────▼───────┐
+   │   client     │                                      │    admin     │
+   │  Next.js 15  │                                      │  Next.js 15  │
+   │   :3002      │                                      │   :3003      │
+   └──────┬───────┘                                      └──────┬───────┘
+          │                                                     │
+          │                   HTTPS / REST                      │
+          └──────────────────────────┬──────────────────────────┘
+                                     │
+                                     ▼
+                      ┌─────────────────────────────┐
+                      │         api-gateway         │  Fastify 5 (:8080 / :8090)
+                      │ • Clerk session & headers   │  Reverse proxy, rate limiting,
+                      │ • Internal secret signing   │  circuit breaker, retries,
+                      │ • Home agg (/api/v1/home)   │  and request correlation
+                      └──────────────┬──────────────┘
+                                     │ x-user-id, x-user-role, x-internal-secret
+      ┌──────────────────────────────┼──────────────────────────────┬──────────────────────────────┐
+      │                              │                              │                              │
+┌─────▼──────────┐            ┌──────▼───────┐               ┌──────▼───────┐               ┌──────▼───────┐
+│ product-service│            │ auth-service │               │notification- │               │payment-service│
+│ Express :8000  │            │ Express :8003│               │   service    │               │  Hono :8002  │
+│ Prisma/Postgres│            │ Clerk proxy  │               │ Go (Chi)     │               │  Stripe      │
+└─────┬──────────┘            └──────┬───────┘               │ :8005        │               └──────┬───────┘
+      │ product.*                    │ user.created          └──────▲───────┘                      │ payment.*
+      │                              │                              │                              │
+      ▼                              ▼                              │                              ▼
+┌───────────────┐             ┌──────────────┐                      │                       ┌──────────────┐
+│ Kafka cluster │◄────────────┤email-service │◄─────────────────────┼───────────────────────┤order-service │
+│  (3 brokers)  │             │ (worker)     │                      │                       │Fastify :8001 │
+└───────┬───────┘             └──────────────┘                      │                       │MongoDB       │
+        │                                                           │                       └──────────────┘
+        │ all domain event streams                                  │
+        ▼                                                           │
+┌───────────────────────┐                                           │
+│   analytic-service    │                                           │
+│   Express :8004       │                                           │
+│   PostgreSQL (pg)     │                                           │
+└───────────────────────┘                                           │
+        ▲                                                           │
+        └───────────────────────────────────────────────────────────┘
 ```
 
-> Cross-service communication is strictly asynchronous through Kafka events. Backend services never call each other over HTTP. See [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) for full topic contracts.
+> Cross-service communication is strictly asynchronous through Kafka events. Backend services never call each other over HTTP. Public traffic enters through `api-gateway`, which enforces rate limits, authenticates sessions, strips spoofed headers, and injects verified identity headers signed with `x-internal-secret`. See [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) for full topic contracts and [`docs/SECURITY.md`](docs/SECURITY.md) for security policies.
 
 ---
 
@@ -63,6 +69,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 ├── apps/
 │   ├── admin/                # Next.js 15 admin dashboard (:3003)
 │   ├── client/               # Next.js 15 customer storefront (:3002)
+│   ├── api-gateway/          # Fastify 5 API Gateway reverse proxy & aggregator (:8080 / :8090)
 │   ├── auth-service/         # Express 5 + Clerk user management (:8003)
 │   ├── order-service/        # Fastify 5 + MongoDB orders & analytics (:8001)
 │   ├── payment-service/      # Hono + Stripe custom checkout & webhooks (:8002)
@@ -107,6 +114,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | ---------------------------- | ------------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`client`**                 | Next.js 15, React 19, Tailwind v4, Zustand, Stripe, Clerk                             | `3002` | Customer storefront: catalog search/filter, persistent cart, Stripe custom checkout, customer order history.                                    |
 | **`admin`**                  | Next.js 15, React 19, Tailwind v4, shadcn/ui, TanStack Table & Query, Recharts, Clerk | `3003` | Admin dashboard: catalog management, user administration proxy, order trends, and real-time KPI cards & charts from `analytic-service`.         |
+| **`api-gateway`**            | Fastify 5, `@fastify/http-proxy`, Opossum, Redis, Clerk                               | `8080` | Unified public reverse proxy, header sanitization, Clerk JWT validation, Redis rate limiting, circuit breaker, and `/api/v1/home` aggregation.  |
 | **`product-service`**        | Express 5, Prisma, PostgreSQL, Kafka                                                  | `8000` | Product and category catalog CRUD; publishes `product.created` and `product.deleted`.                                                           |
 | **`order-service`**          | Fastify 5, Mongoose, MongoDB, Kafka                                                   | `8001` | Consumes `payment.successful`, persists orders, serves user orders and 6-month sales analytics; publishes `order.created`.                      |
 | **`payment-service`**        | Hono, Stripe SDK, Kafka                                                               | `8002` | Creates Stripe checkout sessions, verifies Stripe webhooks, mirrors catalog products to Stripe; publishes `payment.successful`.                 |
@@ -153,7 +161,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 - **Frontend Frameworks**: Next.js 15 (App Router, Turbopack, React Server Components), React 19
 - **UI & Design System**: Tailwind CSS v4, shadcn/ui, Radix UI primitives, Lucide React, Recharts
 - **State Management & Forms**: Zustand (persisted), TanStack React Query v5, TanStack Table v8, React Hook Form + Zod
-- **Backend Frameworks**: Express 5, Fastify 5, Hono
+- **Backend & Gateway Frameworks**: Fastify 5 (`@fastify/http-proxy`, `@fastify/helmet`, Opossum circuit breaker), Express 5, Hono 4, Koa, Go 1.22 (Chi), Python 3.12+ (FastAPI)
 - **Databases & Persistence**: PostgreSQL (via Prisma ORM & pg), MongoDB (via Mongoose)
 - **Message Broker**: Apache Kafka (KafkaJS, 3-broker cluster with ZooKeeper and Kafka UI)
 - **Authentication**: Clerk (`@clerk/nextjs`, `@clerk/express`, `@clerk/fastify`, `@hono/clerk-auth`)
@@ -339,6 +347,9 @@ Workspace Skills (<workspace>/.agents/skills/*)
 | [`docs/TESTING.md`](docs/TESTING.md)                                     | Testing strategy, verification commands, and automated test setup                    |
 | [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)                           | Contribution standards, git workflow, and definition of done                         |
 | [`docs/adr/README.md`](docs/adr/README.md)                               | Architecture Decision Records (ADRs)                                                 |
+| [`docs/DOCKER.md`](docs/DOCKER.md)                                       | Complete Docker operations manual, reverse-proxy ingress & network topology          |
+| [`docs/ROOTPRINT.md`](docs/ROOTPRINT.md)                                 | Rootprint, MinIO S3, and Quickwit distributed log analytics guide                    |
+| [`docs/comparison/OBSERVABILITY-STACK-COMPARISON.md`](docs/comparison/OBSERVABILITY-STACK-COMPARISON.md) | Observability evaluation: Dozzle vs. Rootprint vs. CNCF Prometheus/Grafana/Loki |
 
 ---
 

@@ -3,8 +3,8 @@
 > Reference file for gsd-plan-checker agent. Loaded on-demand via `@` reference.
 
 **Question:** Does each `<automated>` command's target directory actually resolve from the
-executor's cwd (the project root)? Format sanity above asks whether the *pattern* can match;
-this asks whether the command can *run at all*.
+executor's cwd (the project root)? Format sanity above asks whether the _pattern_ can match;
+this asks whether the command can _run at all_.
 
 **Do not hand-reason the filesystem.** #2401 is precisely the failure of doing so: this
 checker flagged a bad `cd ../../frontend` (correct), then prescribed two successively-wrong
@@ -24,13 +24,14 @@ guess at anything else.
 
 **Process:** for each row in `.commands`, act on `severity` only:
 
-| `severity` | `reason` | Action |
-|---|---|---|
-| `blocker` | `missing_dir` / `no_manifest` | **BLOCKER** — quote `rawTarget` and `target` verbatim |
-| `warning` | `dynamic_path` / `outside_root` / `script_missing` / `manifest_unreadable` | **WARNING** |
-| `none` | — | silent |
+| `severity` | `reason`                                                                   | Action                                                |
+| ---------- | -------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `blocker`  | `missing_dir` / `no_manifest`                                              | **BLOCKER** — quote `rawTarget` and `target` verbatim |
+| `warning`  | `dynamic_path` / `outside_root` / `script_missing` / `manifest_unreadable` | **WARNING**                                           |
+| `none`     | —                                                                          | silent                                                |
 
 Rules:
+
 - **Report, never prescribe.** State the target that failed to resolve and what was missing.
   Choosing the replacement is the planner's job — it now receives the prior phase's proven
   commands (see `prior_verify_commands` in the planning context).
@@ -42,7 +43,7 @@ Rules:
   outside the project root** (#4767). Both are ambiguous across worktrees; the absolute one is
   pinned to a single checkout, so under worktree isolation it runs against the wrong tree and
   passes. Report it as a WARNING with the target verbatim. Note the probe's root is the
-  *orchestrator's*: an absolute path inside it passes here and still misfires under isolation,
+  _orchestrator's_: an absolute path inside it passes here and still misfires under isolation,
   which is why the planner's path-form rule (root-relative, cwd at the checkout root) is the fix
   and this probe the backstop.
 - A non-empty `readError` means the probe **could not look**. Report that as a WARNING in its

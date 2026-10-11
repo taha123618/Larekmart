@@ -1,0 +1,47 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Upgrade all packages
+  apt:
+    upgrade: dist
+  when: ansible_os_family == "Debian"
+
+- name: Install base packages
+  apt:
+    name: "{{ base_packages }}"
+    state: present
+
+- name: Set timezone to {{ timezone }}
+  timezone:
+    name: "{{ timezone }}"
+
+- name: Configure Chrony NTP service
+  template:
+    src: chrony.conf.j2
+    dest: /etc/chrony/chrony.conf
+    mode: "0644"
+  notify: restart chrony
+
+- name: Apply kernel sysctl performance tuning
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+    sysctl_set: yes
+  loop: "{{ sysctl_settings | dict2items }}"
+
+- name: Configure security limits in limits.conf
+  pam_limits:
+    domain: "*"
+    limit_type: "{{ item.type }}"
+    limit_item: "{{ item.item }}"
+    value: "{{ item.value }}"
+  loop:
+    - { type: "soft", item: "nofile", value: 65536 }
+    - { type: "hard", item: "nofile", value: 65536 }
+    - { type: "soft", item: "nproc", value: 32768 }
+    - { type: "hard", item: "nproc", value: 32768 }

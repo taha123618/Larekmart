@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * injection-patterns.js — the shared prompt-injection pattern list (#3504, epic #1900).
@@ -69,7 +69,10 @@ const INJECTION_PATTERNS = Object.freeze([
 // one finding renders the same way in both hooks. Both hooks already require
 // this module, so this adds no new staging dependency.
 function describePattern(pattern) {
-  return pattern.source.replace(/\\s\+/g, '-').replace(/[()\\]/g, '').substring(0, 50);
+  return pattern.source
+    .replace(/\\s\+/g, "-")
+    .replace(/[()\\]/g, "")
+    .substring(0, 50);
 }
 
 module.exports = { INJECTION_PATTERNS, describePattern };

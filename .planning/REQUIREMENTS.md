@@ -38,27 +38,27 @@
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| Direct Service-to-Service HTTP | Prohibited by ADR-0001; all service communication is via Kafka |
-| Custom Auth Credentials Database | Prohibited by ADR-0003; delegated entirely to Clerk |
-| Monolithic Shared Database | Prohibited by ADR-0002; database-per-service pattern enforced |
+| Feature                          | Reason                                                         |
+| -------------------------------- | -------------------------------------------------------------- |
+| Direct Service-to-Service HTTP   | Prohibited by ADR-0001; all service communication is via Kafka |
+| Custom Auth Credentials Database | Prohibited by ADR-0003; delegated entirely to Clerk            |
+| Monolithic Shared Database       | Prohibited by ADR-0002; database-per-service pattern enforced  |
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| CLI-01 | Phase 1 | Pending |
-| CLI-02 | Phase 1 | Pending |
-| CLI-03 | Phase 1 | Pending |
-| CLI-04 | Phase 2 | Pending |
-| CLI-05 | Phase 2 | Pending |
-| ADM-01 | Phase 3 | Pending |
-| ADM-02 | Phase 3 | Pending |
-| ADM-03 | Phase 3 | Pending |
-| ADM-04 | Phase 3 | Pending |
-| SRV-01 | Phase 2 | Pending |
-| SRV-02 | Phase 2 | Pending |
-| SRV-03 | Phase 2 | Pending |
-| SRV-04 | Phase 2 | Pending |
-| SRV-05 | Phase 3 | Pending |
+| Requirement | Phase   | Status  |
+| ----------- | ------- | ------- |
+| CLI-01      | Phase 1 | Pending |
+| CLI-02      | Phase 1 | Pending |
+| CLI-03      | Phase 1 | Pending |
+| CLI-04      | Phase 2 | Pending |
+| CLI-05      | Phase 2 | Pending |
+| ADM-01      | Phase 3 | Pending |
+| ADM-02      | Phase 3 | Pending |
+| ADM-03      | Phase 3 | Pending |
+| ADM-04      | Phase 3 | Pending |
+| SRV-01      | Phase 2 | Pending |
+| SRV-02      | Phase 2 | Pending |
+| SRV-03      | Phase 2 | Pending |
+| SRV-04      | Phase 2 | Pending |
+| SRV-05      | Phase 3 | Pending |

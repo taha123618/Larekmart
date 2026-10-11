@@ -51,6 +51,7 @@ Wave 2 docs can reference Wave 1 outputs since they are already written. Include
 After all 9 root-level docs are written, generate per-package READMEs sequentially:
 
 For each resolved package directory (from workspace glob expansion) that contains a `package.json`:
+
 - Determine mode: if `{package_dir}/README.md` exists, mode = `update`; else mode = `create`
 - Construct doc_assignment: `type: readme`, `mode: {create|update}`, `scope: per_package`, `package_dir: {absolute path}`, `project_context: {INIT JSON with project_root set to package directory}`, `existing_content:` (if update)
 - Follow gsd-doc-writer instructions for per_package scope
@@ -67,6 +68,7 @@ Correct flagged inaccuracies by re-sending failing docs to the doc-writer in fix
 **Skip condition:** If all docs passed verification (no failures), skip this step.
 
 **Iteration tracking:**
+
 - `MAX_FIX_ITERATIONS = 2`
 - `iteration = 0`
 - `previous_passed_docs` = set of doc_paths where claims_failed === 0 after initial verification
@@ -76,20 +78,22 @@ Correct flagged inaccuracies by re-sending failing docs to the doc-writer in fix
 1. For each doc with `claims_failed > 0` in the latest verification_results:
    a. Read the current file content from disk (the spine's truncation guard captures its line count from this same read).
    b. Spawn `gsd-doc-writer` agent (or invoke sequentially) with a fix assignment:
-      ```xml
-      <doc_assignment>
-      type: {original doc type from the queue, e.g. readme}
-      mode: fix
-      doc_path: {relative path}
-      project_context: {the same INIT JSON object every doc_assignment carries}
-      existing_content: {current file content read from disk}
-      failures:
-        - line: {line}
-          claim: "{claim}"
-          expected: "{expected}"
-          actual: "{actual}"
-      </doc_assignment>
-      ```
+
+   ```xml
+   <doc_assignment>
+   type: {original doc type from the queue, e.g. readme}
+   mode: fix
+   doc_path: {relative path}
+   project_context: {the same INIT JSON object every doc_assignment carries}
+   existing_content: {current file content read from disk}
+   failures:
+     - line: {line}
+       claim: "{claim}"
+       expected: "{expected}"
+       actual: "{actual}"
+   </doc_assignment>
+   ```
+
    c. Never batch multiple docs' failures into a single spawn — one agent call per doc.
    d. Once the agent returns, apply the spine's post-fix truncation guard (line-count comparison, restore-and-mark-corrupted on breach). A corrupted doc stays in this iteration's re-verify pass at step 2 below; it just isn't handed another fix attempt.
 
@@ -101,6 +105,7 @@ Correct flagged inaccuracies by re-sending failing docs to the doc-writer in fix
    For each doc in the new verification_results:
    - If this doc was in `previous_passed_docs` (passed in the prior round) AND now has `claims_failed > 0`, this is a REGRESSION.
    - If regression detected: HALT the loop immediately. Present:
+
      ```
      REGRESSION DETECTED -- halting fix loop.
 
@@ -108,6 +113,7 @@ Correct flagged inaccuracies by re-sending failing docs to the doc-writer in fix
 
      This means the fix introduced new errors. Remaining failures require manual review.
      ```
+
      Continue to scan_for_secrets (do not attempt further fixes).
 
 4. Update `previous_passed_docs` with docs that now pass.
@@ -116,6 +122,7 @@ Correct flagged inaccuracies by re-sending failing docs to the doc-writer in fix
 **After loop exhaustion (iteration === MAX_FIX_ITERATIONS and failures remain):**
 
 Present remaining failures:
+
 ```
 Fix loop completed ({MAX_FIX_ITERATIONS} iterations). Remaining failures:
 
@@ -136,12 +143,14 @@ Invoke the gsd-doc-verifier agent in read-only mode for each file in `existing_d
 
 1. For each doc in `existing_docs`:
    a. Spawn `gsd-doc-verifier` (or invoke sequentially if Task tool is unavailable), passing as the Task/Agent call's `model` parameter — not part of the `<verify_assignment>` prompt — so `dynamic_routing`/`model_profile` tiers apply instead of the caller's session model (#3602). Omit the parameter entirely when the value is `"inherit"` or empty (#2517). Each spawn carries:
-      ```xml
-      <verify_assignment>
-      doc_path: {doc.path}
-      project_root: {the project_root field carried in the init JSON}
-      </verify_assignment>
-      ```
+
+   ```xml
+   <verify_assignment>
+   doc_path: {doc.path}
+   project_root: {the project_root field carried in the init JSON}
+   </verify_assignment>
+   ```
+
    b. Read the result JSON from `.planning/tmp/verify-{doc_filename}.json`.
 
 2. Also count VERIFY markers in each doc: grep for `<!-- VERIFY:` in the file content.
@@ -162,6 +171,7 @@ Total: {total_checked} claims checked, {total_failed} failures, {total_markers} 
 ```
 
 If any failures exist, show details:
+
 ```
 Failed claims:
   README.md:34 - "src/cli/index.ts" (expected: file exists, actual: file not found)
@@ -169,6 +179,7 @@ Failed claims:
 ```
 
 Display note:
+
 ```
 To fix failures automatically: /gsd-docs-update (runs generation + fix loop)
 To regenerate all docs from scratch: /gsd-docs-update --force

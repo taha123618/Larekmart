@@ -8,7 +8,7 @@ cherry-picked history. Two modes, selected by the `planning.pr_strict` config ke
   structural planning state. Reviewers don't see GSD transient artifacts (PLAN.md,
   SUMMARY.md, CONTEXT.md, RESEARCH.md, etc.), but milestone archives, STATE.md,
   ROADMAP.md, and PROJECT.md changes are preserved.
-- **strict** (`planning.pr_strict: true`) — *every* .planning/ path is filtered out,
+- **strict** (`planning.pr_strict: true`) — _every_ .planning/ path is filtered out,
   structural files included. This is what makes `planning.commit_docs: true` safe for a
   project that versions its planning tree locally but publishes none of it: planning state
   keeps real git history (so `$gsd-undo` and revert paths have something to restore) and
@@ -31,6 +31,7 @@ TARGET=${1:-$(gsd_run query git.base-branch)}
 ```
 
 Check preconditions:
+
 - Must be on a feature branch (not main/master)
 - Must have commits ahead of target
 - Working tree must be clean
@@ -64,6 +65,7 @@ if [ "$PR_STRICT" = "true" ]; then PR_MODE="strict"; else PR_MODE="default"; PR_
 ```
 
 Display:
+
 ```
 ### GSD ► PR BRANCH
 
@@ -72,6 +74,7 @@ Target: {TARGET}
 Commits: {AHEAD} ahead
 Mode:    {PR_MODE}  (planning.pr_strict={PR_STRICT})
 ```
+
 </step>
 
 <step name="handle_sub_repos">
@@ -239,8 +242,8 @@ git log --oneline "$TARGET".."$CURRENT_BRANCH" --no-merges
 ```
 
 **Canonical path declarations.** These three lines are the single source of truth for the
-whole command. `create_pr_branch` derives *which paths it removes* from them, and `verify`
-derives *which paths must not appear* from the same three lines — so the two steps cannot
+whole command. `create_pr_branch` derives _which paths it removes_ from them, and `verify`
+derives _which paths must not appear_ from the same three lines — so the two steps cannot
 disagree about what the filter promised. Declare them exactly once; do not restate either
 list anywhere else in this file. Their literal values are drift-guarded (`npm run lint:ci`,
 `scripts/lint-pr-branch-pattern-drift.cjs`) against the canonical `src/pr-branch-patterns.cts`
@@ -322,6 +325,7 @@ PLANNING_COUNT=$(echo "$FILES" | grep -c "^\.planning/" || true)
 
 Classify, using `NON_PLANNING`, `STRUCTURAL`, and `PLANNING_COUNT` computed above — every arm's
 condition is explicit and computable so no reading of it is ambiguous:
+
 - **Code commits**: `NON_PLANNING > 0` and `PLANNING_COUNT == 0` → INCLUDE (both modes)
 - **Mixed code+planning commits**: `NON_PLANNING > 0` and `PLANNING_COUNT > 0` → INCLUDE (both
   modes; the planning paths are filtered out by `create_pr_branch`, not the commit)
@@ -342,6 +346,7 @@ condition is explicit and computable so no reading of it is ambiguous:
 In strict mode this collapses to a single rule: `NON_PLANNING > 0` → INCLUDE, else EXCLUDE.
 
 Display analysis:
+
 ```
 Commits to include: {N} (code changes{, + structural planning — default mode only})
 Commits to exclude: {N} (planning-only)
@@ -349,6 +354,7 @@ Mixed commits: {N} (code + planning — included, planning paths filtered)
 Structural planning commits: {N} ({included|excluded — strict mode})
 Mixed planning commits: {N} ({included — structural + transient/other, planning paths filtered|excluded — strict mode})
 ```
+
 </step>
 
 <step name="create_pr_branch">
@@ -356,8 +362,10 @@ Mixed planning commits: {N} ({included — structural + transient/other, plannin
 PR_BRANCH="${CURRENT_BRANCH}-pr"
 
 # Create PR branch from target
+
 git checkout -b "$PR_BRANCH" "$TARGET"
-```
+
+````
 
 Cherry-pick the included commits, in order, filtering `$FILTER_PATHS` out of each one.
 
@@ -487,12 +495,14 @@ UNMERGED_PATHS_EOF
 
   git commit -q -C "$HASH"
 done
-```
+````
 
 Return to original branch:
+
 ```bash
 git checkout "$CURRENT_BRANCH"
 ```
+
 </step>
 
 <step name="verify">
@@ -532,6 +542,7 @@ them). That is data loss, not filtering — report it, do not tell the user to p
 rebuild the branch.
 
 Display results:
+
 ```
 ✅ PR branch created: {PR_BRANCH}
 
@@ -549,16 +560,19 @@ Or use $gsd-ship to create the PR automatically.
 ```
 
 When `$OTHER` is non-empty (default mode only — strict forbids all of it), append:
+
 ```
 ℹ️  These .planning/ paths are neither transient nor structural, so default mode keeps them:
 {OTHER}
     Set `planning.pr_strict: true` to keep every .planning/ path out of the PR branch.
 ```
+
 </step>
 
 </process>
 
 <success_criteria>
+
 - [ ] Working tree was clean before the PR branch was created
 - [ ] PR branch created from target
 - [ ] Planning-only commits excluded
@@ -568,4 +582,4 @@ When `$OTHER` is non-empty (default mode only — strict forbids all of it), app
 - [ ] Every included commit landed — none dropped by a failed cherry-pick
 - [ ] Commit messages preserved from original
 - [ ] User shown next steps
-</success_criteria>
+      </success_criteria>

@@ -10,6 +10,7 @@ When you need library or framework documentation, check in this order:
    agents), use the CLI fallback via Bash:
 
    Step 1 — Resolve library ID:
+
    ```bash
    if command -v ctx7 &>/dev/null; then
      ctx7 library <name> "<query>"
@@ -17,7 +18,9 @@ When you need library or framework documentation, check in this order:
      echo "ctx7 not found — install with: npm install -g ctx7 (verify at npmjs.com/package/ctx7 first)"
    fi
    ```
+
    Step 2 — Fetch documentation:
+
    ```bash
    if command -v ctx7 &>/dev/null; then
      ctx7 docs <libraryId> "<query>"

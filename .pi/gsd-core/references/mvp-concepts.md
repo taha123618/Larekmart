@@ -6,14 +6,14 @@ Canonical domain terms for the concepts named below live in [CONTEXT.md](../../C
 
 ## File map
 
-| File | Purpose | Loaded by |
-|---|---|---|
-| `gsd-core/references/planner-mvp-mode.md` | **Rules.** Vertical-slice planning rules, slice ordering, Walking Skeleton constraints. | `gsd-planner` agent when `MVP_MODE=true` |
-| `gsd-core/references/skeleton-template.md` | **Template.** Shape of `SKELETON.md` for new-project Phase 1 under `--mvp`. | `gsd-planner` agent when the Walking Skeleton gate fires |
-| `gsd-core/references/user-story-template.md` | **Template.** Format and slot definitions for `As a / I want to / So that`. | `gsd-mvp-phase` workflow during interactive prompting; `gsd-planner` when emitting the `## Phase Goal` header |
-| `gsd-core/references/spidr-splitting.md` | **Splitting discipline.** Five-axis decomposition (Spike, Paths, Interfaces, Data, Rules) for stories too large for one phase. | `gsd-mvp-phase` workflow when the user story exceeds size threshold |
-| `gsd-core/references/execute-mvp-tdd.md` | **Gate.** TDD runtime gate semantics: when it fires, what it checks, halt-and-report protocol, end-of-phase blocking escalation, Behavior-Adding Task definition. | `gsd-executor` agent when `TDD_MODE=true` (#4011) |
-| `gsd-core/references/verify-mvp-mode.md` | **UAT framing.** Three-section UAT structure (user-flow → technical → coverage), anti-patterns, `User Flow Coverage` section in VERIFICATION.md. | `gsd-verifier` agent when the phase under verification has `mode: mvp` |
+| File                                         | Purpose                                                                                                                                                           | Loaded by                                                                                                     |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `gsd-core/references/planner-mvp-mode.md`    | **Rules.** Vertical-slice planning rules, slice ordering, Walking Skeleton constraints.                                                                           | `gsd-planner` agent when `MVP_MODE=true`                                                                      |
+| `gsd-core/references/skeleton-template.md`   | **Template.** Shape of `SKELETON.md` for new-project Phase 1 under `--mvp`.                                                                                       | `gsd-planner` agent when the Walking Skeleton gate fires                                                      |
+| `gsd-core/references/user-story-template.md` | **Template.** Format and slot definitions for `As a / I want to / So that`.                                                                                       | `gsd-mvp-phase` workflow during interactive prompting; `gsd-planner` when emitting the `## Phase Goal` header |
+| `gsd-core/references/spidr-splitting.md`     | **Splitting discipline.** Five-axis decomposition (Spike, Paths, Interfaces, Data, Rules) for stories too large for one phase.                                    | `gsd-mvp-phase` workflow when the user story exceeds size threshold                                           |
+| `gsd-core/references/execute-mvp-tdd.md`     | **Gate.** TDD runtime gate semantics: when it fires, what it checks, halt-and-report protocol, end-of-phase blocking escalation, Behavior-Adding Task definition. | `gsd-executor` agent when `TDD_MODE=true` (#4011)                                                             |
+| `gsd-core/references/verify-mvp-mode.md`     | **UAT framing.** Three-section UAT structure (user-flow → technical → coverage), anti-patterns, `User Flow Coverage` section in VERIFICATION.md.                  | `gsd-verifier` agent when the phase under verification has `mode: mvp`                                        |
 
 ## Concept-to-file map
 

@@ -9,7 +9,7 @@ Trigger SPIDR splitting if **any** of these size signals fire on the user story:
 1. **Compound capabilities.** The story names two or more independent user actions joined by "and" (e.g., "register **and** log in **and** reset their password"). Each "and" is a candidate split point.
 2. **Multi-actor.** The story names more than one `[user role]` (e.g., "As a user or admin..."). Each role is a candidate split.
 3. **Length.** The assembled story exceeds ~120 chars on a single line.
-4. **Vague capability.** The capability is a noun phrase, not a verb-noun pair (e.g., "I want to use the dashboard" — needs to specify *which interaction* with the dashboard).
+4. **Vague capability.** The capability is a noun phrase, not a verb-noun pair (e.g., "I want to use the dashboard" — needs to specify _which interaction_ with the dashboard).
 
 If none of these fire, skip SPIDR entirely and proceed to ROADMAP write.
 

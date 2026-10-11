@@ -2,6 +2,7 @@
 description: "[BETA] Offload plan phase to CodeBuddy's ultraplan cloud; review in browser and import back."
 argument-hint: "[phase-number]"
 ---
+
 <objective>
 Offload GSD's plan phase to CodeBuddy's ultraplan cloud infrastructure.
 

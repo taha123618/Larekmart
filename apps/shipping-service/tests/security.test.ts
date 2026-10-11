@@ -134,8 +134,12 @@ async function runSecurityTests() {
   console.log("3. Testing cryptographic JWT signature verification...");
   process.env.CLERK_SECRET_KEY = "test_clerk_hmac_secret_key_12345";
 
-  const headerB64 = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-  const payloadB64 = Buffer.from(JSON.stringify({ sub: "admin_crypt", metadata: { role: "admin" } })).toString("base64url");
+  const headerB64 = Buffer.from(
+    JSON.stringify({ alg: "HS256", typ: "JWT" }),
+  ).toString("base64url");
+  const payloadB64 = Buffer.from(
+    JSON.stringify({ sub: "admin_crypt", metadata: { role: "admin" } }),
+  ).toString("base64url");
   const validSig = crypto
     .createHmac("sha256", process.env.CLERK_SECRET_KEY)
     .update(`${headerB64}.${payloadB64}`)
@@ -150,13 +154,19 @@ async function runSecurityTests() {
   await requireAdminOrInternal(mockCtxValidSigned, async () => {
     nextCalled = true;
   });
-  assert.equal(nextCalled, true, "Cryptographically signed JWT must be accepted");
+  assert.equal(
+    nextCalled,
+    true,
+    "Cryptographically signed JWT must be accepted",
+  );
   assert.equal(mockCtxValidSigned.state.userId, "admin_crypt");
 
   // Forged signature
   nextCalled = false;
   const mockCtxForged = {
-    headers: { authorization: `Bearer ${headerB64}.${payloadB64}.forged_signature_xyz` },
+    headers: {
+      authorization: `Bearer ${headerB64}.${payloadB64}.forged_signature_xyz`,
+    },
     state: {},
   } as any;
   await requireAdminOrInternal(mockCtxForged, async () => {
@@ -168,17 +178,31 @@ async function runSecurityTests() {
 
   // 4. Test HMAC-SHA256 Webhook Payload Binding
   console.log("4. Testing Webhook HMAC-SHA256 Payload Binding...");
-  const rawPayload = JSON.stringify({ trackingNumber: "TRK123456", status: "DELIVERED" });
+  const rawPayload = JSON.stringify({
+    trackingNumber: "TRK123456",
+    status: "DELIVERED",
+  });
   const validHmac = crypto
     .createHmac("sha256", process.env.WEBHOOK_SECRET!)
     .update(rawPayload)
     .digest("hex");
 
-  const hmacValid = WebhookService.verifySignature("tcs", validHmac, rawPayload);
+  const hmacValid = WebhookService.verifySignature(
+    "tcs",
+    validHmac,
+    rawPayload,
+  );
   assert.equal(hmacValid, true, "Valid HMAC over raw payload must be accepted");
 
-  const tamperedPayload = JSON.stringify({ trackingNumber: "TRK123456", status: "FAILED" });
-  const hmacTampered = WebhookService.verifySignature("tcs", validHmac, tamperedPayload);
+  const tamperedPayload = JSON.stringify({
+    trackingNumber: "TRK123456",
+    status: "FAILED",
+  });
+  const hmacTampered = WebhookService.verifySignature(
+    "tcs",
+    validHmac,
+    tamperedPayload,
+  );
   assert.equal(hmacTampered, false, "Tampered payload must be rejected");
 
   console.log("All shipping-service security tests passed successfully!\n");

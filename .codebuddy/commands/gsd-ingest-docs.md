@@ -2,6 +2,7 @@
 description: "Bootstrap or merge a .planning/ setup from existing ADRs, PRDs, SPECs, and docs in a repo."
 argument-hint: "[path] [--mode new|merge] [--manifest <file>] [--resolve auto|interactive]"
 ---
+
 <objective>
 Build the full `.planning/` setup (or merge into an existing one) from multiple pre-existing planning documents — ADRs, PRDs, SPECs, DOCs — in one pass.
 

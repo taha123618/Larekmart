@@ -1,0 +1,35 @@
+{
+  "name": "api-gateway",
+  "version": "1.0.0",
+  "description": "Production Fastify API Gateway for Larekmart e-commerce platform",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env --watch src/index.ts",
+    "build": "tsc",
+    "start": "tsx --env-file-if-exists=.env src/index.ts",
+    "test": "tsx tests/index.test.ts",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^20.19.13",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@clerk/fastify": "^2.4.30",
+    "@fastify/cors": "^10.0.2",
+    "@fastify/helmet": "^13.1.1",
+    "@fastify/http-proxy": "^11.6.3",
+    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/sensible": "^6.0.3",
+    "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "@repo/types": "workspace:*",
+    "fastify": "^5.5.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.2"
+  }
+}

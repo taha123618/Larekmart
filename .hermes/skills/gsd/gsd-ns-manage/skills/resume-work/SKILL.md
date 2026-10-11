@@ -11,7 +11,6 @@ allowed-tools:
   - SlashCommand
 ---
 
-
 <objective>
 Restore complete project context and resume work seamlessly from previous session.
 

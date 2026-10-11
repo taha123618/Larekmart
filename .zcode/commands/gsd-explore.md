@@ -10,6 +10,7 @@ allowed-tools:
   - Agent
   - AskUserQuestion
 ---
+
 <objective>
 Open-ended Socratic ideation session. Guides the developer through exploring an idea via
 probing questions, optionally spawns research, then routes outputs to the appropriate GSD

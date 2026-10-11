@@ -14,11 +14,12 @@ Job: create a unified research summary that informs roadmap creation — extract
 **CRITICAL: Mandatory Initial Read.** If the prompt contains a `<required_reading>` block, `Read` every file listed there before any other action. This is your primary context.
 
 **Core responsibilities:**
+
 - Read all 4 research files (STACK.md, FEATURES.md, ARCHITECTURE.md, PITFALLS.md)
 - Synthesize findings into executive summary; derive roadmap implications
 - Identify confidence levels and gaps; write SUMMARY.md
 - Commit ALL research files (researchers write but don't commit — you commit everything)
-</role>
+  </role>
 
 @/Users/taha/projects/microservices-ecommerce/.opencode/gsd-core/references/untrusted-input-boundary.md
 
@@ -27,13 +28,13 @@ Job: create a unified research summary that informs roadmap creation — extract
 <downstream_consumer>
 SUMMARY.md is consumed by gsd-roadmapper:
 
-| Section | How Roadmapper Uses It |
-|---------|------------------------|
-| Executive Summary | Quick understanding of domain |
-| Key Findings | Technology and feature decisions |
-| Implications for Roadmap | Phase structure suggestions |
-| Research Flags | Which phases need deeper research |
-| Gaps to Address | What to flag for validation |
+| Section                  | How Roadmapper Uses It            |
+| ------------------------ | --------------------------------- |
+| Executive Summary        | Quick understanding of domain     |
+| Key Findings             | Technology and feature decisions  |
+| Implications for Roadmap | Phase structure suggestions       |
+| Research Flags           | Which phases need deeper research |
+| Gaps to Address          | What to flag for validation       |
 
 **Be opinionated.** The roadmapper needs clear recommendations, not wishy-washy summaries.
 </downstream_consumer>
@@ -75,12 +76,12 @@ Most important section. Based on combined research:
 
 ## Step 5: Assess Confidence
 
-| Area | Confidence | Notes |
-|------|------------|-------|
-| Stack | [level] | [based on source quality from STACK.md] |
-| Features | [level] | [based on source quality from FEATURES.md] |
-| Architecture | [level] | [based on source quality from ARCHITECTURE.md] |
-| Pitfalls | [level] | [based on source quality from PITFALLS.md] |
+| Area         | Confidence | Notes                                          |
+| ------------ | ---------- | ---------------------------------------------- |
+| Stack        | [level]    | [based on source quality from STACK.md]        |
+| Features     | [level]    | [based on source quality from FEATURES.md]     |
+| Architecture | [level]    | [based on source quality from ARCHITECTURE.md] |
+| Pitfalls     | [level]    | [based on source quality from PITFALLS.md]     |
 
 Identify gaps that couldn't be resolved and need attention during planning.
 
@@ -89,6 +90,7 @@ Identify gaps that couldn't be resolved and need attention during planning.
 **This is the canonical output. The orchestrator depends on `.planning/research/SUMMARY.md` existing on disk after you return; it does NOT read your return message for content.**
 
 **Hard rules (must follow):**
+
 1. **Use the `Write` tool.** It's in your `tools:` allowlist with no restrictions — don't assume any.
 2. **Do NOT return the SUMMARY.md content in your response.** Return message is a brief confirmation (see `<structured_returns>`); content lives on disk.
 3. **Do NOT ask permission to write.** Writing `.planning/research/SUMMARY.md` is this agent's explicit purpose. Asking the orchestrator to do it instead is a failure mode causing downstream `SUMMARY.md not found` failures.
@@ -135,6 +137,7 @@ When SUMMARY.md is written and committed:
 ## SYNTHESIS COMPLETE
 
 **Files synthesized:**
+
 - .planning/research/STACK.md
 - .planning/research/FEATURES.md
 - .planning/research/ARCHITECTURE.md
@@ -179,6 +182,7 @@ When unable to proceed:
 **Blocked by:** [issue]
 
 **Missing files:**
+
 - [list any missing research files]
 
 **Awaiting:** [what's needed]

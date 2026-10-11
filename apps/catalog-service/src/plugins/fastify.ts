@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyError, FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import { logger } from "../observability/metrics.js";
 
@@ -30,7 +30,7 @@ export async function configureFastifyPlugins(
   });
 
   // Global Error Handler
-  fastify.setErrorHandler((error, request, reply) => {
+  fastify.setErrorHandler((error: FastifyError, request, reply) => {
     logger.error("Fastify request error", {
       path: request.url,
       method: request.method,

@@ -10,7 +10,7 @@ with that captured SHA. Orchestrators that intentionally create a docs-only pre-
 plan commit may also substitute `{EXPECTED_BASE_ALTERNATE}` with that commit's immediate
 parent so runtimes that fork from either side of the docs-only commit pass the same
 fail-closed guard (#1265). Otherwise substitute `{EXPECTED_BASE_ALTERNATE}` with an empty
-string. The sub-agent only *verifies* and fails closed; the orchestrator (the worktree
+string. The sub-agent only _verifies_ and fails closed; the orchestrator (the worktree
 lifecycle owner) performs any base recovery — the sub-agent never rewrites a worktree it
 did not create (#48).
 
@@ -23,6 +23,7 @@ force-move, index-discard) on a worktree it did not create (#48, #2924). If ANY
 assertion below fails, HALT immediately — print the FATAL line, `exit 42`, and let
 the orchestrator (the lifecycle owner) decide recovery. Do NOT self-recover, do NOT
 commit.
+
 ```bash
 HEAD_REF=$(git symbolic-ref --quiet HEAD || echo "DETACHED")
 ACTUAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -41,4 +42,5 @@ if [ "$ACTUAL_BASE" != "{EXPECTED_BASE}" ] && { [ -z "$EXPECTED_BASE_ALTERNATE" 
   exit 42
 fi
 ```
+
 </worktree_branch_check>

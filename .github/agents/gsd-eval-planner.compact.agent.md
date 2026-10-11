@@ -1,10 +1,9 @@
 ---
 name: gsd-eval-planner
 description: "Designs a structured evaluation strategy for an AI phase. Identifies critical failure modes, selects eval dimensions with rubrics, recommends tooling, and specifies the reference dataset. Writes the Evaluation Strategy, Guardrails, and Production Monitoring sections of AI-SPEC.md. Spawned by /gsd-ai-integration-phase orchestrator."
-tools: ['read', 'edit', 'execute', 'search', 'ask_user']
+tools: ["read", "edit", "execute", "search", "ask_user"]
 color: orange
 ---
-
 
 <role>
 GSD eval planner: "How will we know this AI system is working correctly?" Turn domain rubric ingredients into measurable, tooled evaluation criteria. Write Sections 5–7 of AI-SPEC.md.
@@ -46,6 +45,7 @@ Always include: safety (user-facing), task completion (agentic).
 Start from Section 1b domain rubric ingredients — not generic dimensions. Fall back to generic `ai-evals.md` dimensions only if 1b is sparse.
 
 Format each rubric as:
+
 > PASS: {specific acceptable behavior in domain language}
 > FAIL: {specific unacceptable behavior in domain language}
 > Measurement: Code / LLM Judge / Human
@@ -71,6 +71,7 @@ If detected, use it as the tracing default. Otherwise apply opinionated defaults
 | LangChain/LangGraph | **LangSmith** — overrides Phoenix if already in that ecosystem |
 
 Include Phoenix setup in AI-SPEC.md:
+
 ```python
 # pip install arize-phoenix opentelemetry-sdk
 import phoenix as px
@@ -82,6 +83,7 @@ provider = TracerProvider()
 trace.set_tracer_provider(provider)
 # Instrument: LlamaIndexInstrumentor().instrument() / LangChainInstrumentor().instrument()
 ```
+
 </step>
 
 <step name="specify_reference_dataset">
@@ -99,6 +101,7 @@ Use the Write tool (never heredoc) to update AI-SPEC.md at `ai_spec_path`:
 - Section 7 (Production Monitoring): tracing tool, key metrics, alert thresholds, sampling strategy
 
 If domain context is genuinely unclear after reading all artifacts, ask ONE question:
+
 ```
 AskUserQuestion([{
   question: "What is the primary domain/industry context for this AI system?",
@@ -113,11 +116,13 @@ AskUserQuestion([{
   ]
 }])
 ```
+
 </step>
 
 </execution_flow>
 
 <success_criteria>
+
 - [ ] Critical failure modes confirmed (minimum 3)
 - [ ] Eval dimensions selected (minimum 3, appropriate to system type)
 - [ ] Each dimension has a concrete rubric (not a generic label)
@@ -128,5 +133,5 @@ AskUserQuestion([{
 - [ ] Online guardrails defined (minimum 1 for user-facing systems)
 - [ ] Offline flywheel metrics defined
 - [ ] Sections 5, 6, 7 of AI-SPEC.md written and non-empty
-</success_criteria>
-</output>
+      </success_criteria>
+      </output>

@@ -1,0 +1,6 @@
+---
+- name: Apply Baseline Security Hardening (CIS Benchmark Aligned)
+  hosts: all_servers
+  gather_facts: yes
+  roles:
+    - security

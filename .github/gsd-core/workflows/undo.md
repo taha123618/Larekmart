@@ -21,6 +21,7 @@ Display the stage banner:
 ```
 ### GSD ► UNDO
 ```
+
 </step>
 
 <step name="parse_arguments">
@@ -45,6 +46,7 @@ Examples:
   /gsd-undo --phase 03
   /gsd-undo --plan 03-02
 ```
+
 </step>
 
 <step name="gather_commits">
@@ -53,6 +55,7 @@ Based on MODE, gather candidate commits.
 **MODE=last:**
 
 Run:
+
 ```bash
 git log --oneline --no-merges -${COUNT}
 ```
@@ -60,6 +63,7 @@ git log --oneline --no-merges -${COUNT}
 Filter for GSD conventional commits matching `type(scope): message` pattern (e.g., `feat(04-01):`, `docs(03):`, `fix(02-03):`).
 
 Display a numbered list of matching commits:
+
 ```
 Recent GSD commits:
   1. abc1234 feat(04-01): implement auth endpoint
@@ -69,6 +73,7 @@ Recent GSD commits:
 
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `$ARGUMENTS` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `AskUserQuestion` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-the agent runtimes (OpenAI Codex, Antigravity, etc.) where `AskUserQuestion` is not available.
 Use AskUserQuestion to ask:
+
 - question: "Which commits to revert? Enter numbers (e.g., 1,3) or 'all'"
 - header: "Select"
 
@@ -93,21 +98,23 @@ PROJECT_ROOT=$(gsd_run query planning inspect --pick generated_from.cwd --raw 2>
 ```
 
 If `PHASE_DIR` is empty, the phase does not exist in the active scope:
+
 ```
 Phase ${TARGET_PHASE} not found in the active planning scope. Nothing to revert.
 ```
+
 Exit cleanly — do NOT fall back to an unbounded search.
 
 **Refuse an ARCHIVED resolution — it selects the wrong milestone, not merely too few
 commits.** `find-phase` searches the live `phases/` directory first, then every
 `milestones/v<X.Y>-phases/` directory in ascending version order, and its ambiguity check
-is scoped to a *single* directory — it does not span them (`cmdFindPhase`, `src/phase.cts`:
+is scoped to a _single_ directory — it does not span them (`cmdFindPhase`, `src/phase.cts`:
 the `matches.length > 1` test sits inside the per-`searchDir` loop). A phase number that is
 not live therefore resolves **silently to the oldest archived milestone that has one**,
 with no warning. Anchoring there is wrong in both directions at once: the oldest commit
 adding that path is the archival **move**, so the phase's real work predates the window and
 falls outside it, while the window runs forward from that archival through every later
-milestone — where the subject grep matches *their* same-numbered phase. Driven on a
+milestone — where the subject grep matches _their_ same-numbered phase. Driven on a
 two-archived-milestone fixture, `--phase 03` selected v2.0's `feat(03-01): add search index`
 and excluded v1.0's own `feat(03-01): implement auth endpoint`. Feeding that to
 `git revert` is the cross-milestone contamination this workflow exists to close, so it
@@ -118,7 +125,7 @@ fails closed.
 `milestones/v<X.Y>-phases/<phase>/` archive and the workstream archive
 `milestones/ws-<name>-<date>/phases/<phase>/` that `workstream complete` writes. `cmdFindPhase`
 builds its own search list and admits only the first (`/^v\d+.*-phases$/`), so a phase that lives
-*only* in a `ws-*` archive resolves to nothing today and the not-found rule above fails closed.
+_only_ in a `ws-*` archive resolves to nothing today and the not-found rule above fails closed.
 The refusal below still names both layouts, so it keeps holding if `find-phase` is ever taught the
 second one:
 
@@ -170,25 +177,31 @@ fi
 ```
 
 If `PHASE_DIR_ARCHIVED` is non-empty, stop — this message, not the not-found one:
+
 ```
 Phase ${TARGET_PHASE} resolves to an ARCHIVED milestone directory (${PHASE_DIR_ARCHIVED}).
 Refusing: the anchor there is the archival commit, so the window would span later
 milestones and select their same-numbered phase instead of this one.
 Use /gsd-undo --last N and select commits explicitly.
 ```
+
 If `PHASE_DIR_FOREIGN` is non-empty, stop with its own message:
+
 ```
 Phase ${TARGET_PHASE} is planned in the repository at ${PHASE_DIR_FOREIGN}, not the one this
 command is running in. Refusing: that repository's history cannot bound commits in this one.
 Use /gsd-undo --last N here and select commits explicitly.
 ```
+
 And if `PHASE_DIR_REUSED` is non-empty, stop with its own message:
+
 ```
 Phase ${TARGET_PHASE} resolves to ${PHASE_DIR_LIVE}, but that path was emptied by commit
 ${PHASE_DIR_REUSED} and re-created later. Refusing: the first commit adding this path belongs
 to the earlier occupant, so the window would open there and select its commits too.
 Use /gsd-undo --last N and select commits explicitly.
 ```
+
 Exit cleanly in every case.
 
 Derive the selection window from `PHASE_DIR` (the `#3995` anchor, shared with
@@ -214,10 +227,12 @@ fi
 ```
 
 **Fail closed when no anchor resolves.** If `UNDO_RANGE` is empty, stop:
+
 ```
 Cannot determine a reliable commit window for phase ${TARGET_PHASE} (no commit adds ${PHASE_DIR}).
 Re-run with /gsd-undo --last N and select commits explicitly.
 ```
+
 Exit cleanly. An unbounded repository-wide search is never the fallback — that is the
 defect this anchor replaces.
 
@@ -248,6 +263,7 @@ Use matching commits as COMMITS.
 **Report truncation, never truncate silently.** If the selection exceeds 50 commits, show
 the count and stop rather than capping — a partial phase revert leaves a worse tree state
 than either reverting the phase or not:
+
 ```
 Phase ${TARGET_PHASE} selects ${N} commits (>50). Refusing to revert a partial phase.
 Use /gsd-undo --plan NN-MM per plan, or /gsd-undo --last N.
@@ -331,6 +347,7 @@ Use matching commits as COMMITS.
 
 **Report truncation, never truncate silently** — the same rule as MODE=phase. If the
 selection exceeds 50 commits, show the count and stop rather than capping:
+
 ```
 Plan ${TARGET_PLAN} selects ${N} commits (>50). Refusing to revert a partial plan.
 Use /gsd-undo --last N and select commits explicitly.
@@ -340,23 +357,23 @@ Use /gsd-undo --last N and select commits explicitly.
 
 **Known residual — a revision range is ancestry, not chronology.** `PHASE_START^..HEAD`
 excludes everything reachable from `PHASE_START^`, which is the right bound for the
-ordinary linear case. It is not a *chronological* lower bound: a long-lived side branch
+ordinary linear case. It is not a _chronological_ lower bound: a long-lived side branch
 created before the phase, carrying matching scopes, and merged in **after** `PHASE_START`
 is reachable from `HEAD` without being an ancestor of `PHASE_START^`, so it stays
 selectable. This is strictly narrower than the unbounded search it replaces, not a new
 exposure — but it is not zero.
 
 **Known residual — a RENAMED phase directory under-selects.** The anchor is
-`--diff-filter=A` on the phase directory's *current* path and does not follow renames, so
+`--diff-filter=A` on the phase directory's _current_ path and does not follow renames, so
 for a phase whose directory has since moved the oldest add at that path is the **move**
 commit, and the phase's real work commits — which predate it — fall outside the window.
-For a rename *within* the live `phases/` tree the failure is under-selection: the undo
+For a rename _within_ the live `phases/` tree the failure is under-selection: the undo
 reverts too little or refuses, never too much.
 
 The **archival** case is not that case, and is no longer a residual — it is refused above.
 It was previously documented here as under-selection only, which was wrong in the direction
 that matters: the window runs forward from the archival commit, so while the target's own
-work falls outside it, a *later* milestone's same-numbered phase falls inside and matches
+work falls outside it, a _later_ milestone's same-numbered phase falls inside and matches
 the subject grep. Driven on a two-archived-milestone fixture it selected the wrong
 milestone's commit and none of the right one's. Both modes now refuse an archived
 `PHASE_DIR` outright; `/gsd-undo --last N` is the route for a phase that has been archived.
@@ -364,8 +381,8 @@ milestone's commit and none of the right one's. Both modes now refuse an archive
 **Known residual — a phase directory introduced by a merge commit resolves no anchor.**
 `git log --diff-filter=A -- "${PHASE_DIR}"` does not walk merge diffs by default. A phase
 directory added on a side branch is still found, because the side-branch commit that added
-it is itself in history; the uncovered case is a directory that first appears *in the merge
-resolution itself*, which a **default** `git log` does not show: it suppresses merge diffs
+it is itself in history; the uncovered case is a directory that first appears _in the merge
+resolution itself_, which a **default** `git log` does not show: it suppresses merge diffs
 unless asked (`-m` prints the add once per parent, so the information exists — the anchor
 command simply does not request it). `PHASE_START` then resolves
 empty and both modes fail closed on a legitimate phase. Safe-direction only — it refuses
@@ -374,7 +391,7 @@ the branch is worth while the failure mode is a refusal. `/gsd-undo --last N` is
 if it is ever hit.
 
 **A re-created directory — same number AND same slug — is REFUSED, not a residual.** The
-anchor is the *current path*, and `--diff-filter=A` does not follow renames, so re-creating
+anchor is the _current path_, and `--diff-filter=A` does not follow renames, so re-creating
 a literal directory an earlier occupant used (`03-auth` again, not merely phase `03` again)
 makes the oldest add at that path the **previous occupant's**. The archived refusal above
 cannot reach it — `find-phase` returns the **live** directory, so nothing is under
@@ -390,7 +407,7 @@ it reverts, which is why this one is a refusal rather than a note.
 
 **Known residual — the collision check reads history, so it sees only what history shows.**
 Two edges, in opposite directions. It **misses** a single commit that both moves the directory
-away *and* re-creates it at the same path: the path is never empty in any commit's tree, so the
+away _and_ re-creates it at the same path: the path is never empty in any commit's tree, so the
 history carries no vacancy to find, and the anchor opens on the earlier occupant. That takes a
 hand-assembled commit — it is not the shape of an archive followed by later planning — and the
 over-selection it allows still has to pass `confirm_revert`. It **over-refuses** when a side
@@ -407,8 +424,8 @@ indistinguishable subjects and both fall inside each other's window. Narrowing t
 refusals above removes the unreachable-branch class entirely and every previous-milestone
 route this workflow can detect — residual 2 is the one it cannot, since a merged side branch
 is genuinely reachable from `HEAD`. This last class
-needs a discriminator that does not exist in a commit subject today (`#3995`: *"Message
-subjects demonstrably do not carry enough information to identify a phase"*). Until one
+needs a discriminator that does not exist in a commit subject today (`#3995`: _"Message
+subjects demonstrably do not carry enough information to identify a phase"_). Until one
 exists, `confirm_revert` is the backstop for it.
 
 ---
@@ -416,9 +433,11 @@ exists, `confirm_revert` is the backstop for it.
 **Empty check:**
 
 If COMMITS is empty after gathering:
+
 ```
 No commits found for ${MODE} ${TARGET}. Nothing to revert.
 ```
+
 Exit cleanly.
 </step>
 
@@ -443,15 +462,18 @@ PLANNING_DIR=$(gsd_run query planning inspect --pick generated_from.planning_roo
 Read `${PLANNING_DIR}/ROADMAP.md` inline.
 
 Search for phases that list a dependency on the target phase. Look for patterns like:
+
 - "Depends on: Phase ${TARGET_PHASE}"
 - "Depends on: ${TARGET_PHASE}"
 - "depends_on: [${TARGET_PHASE}]"
 
 For each dependent phase N found:
+
 1. Check if `${PLANNING_DIR}/phases/${N}-*/` directory exists
 2. If directory exists, check for any PLAN.md or SUMMARY.md files inside it
 
 If any downstream phase has started work, collect warnings:
+
 ```
 ⚠  Downstream dependency detected:
    Phase ${N} depends on Phase ${TARGET_PHASE} and has started work.
@@ -465,10 +487,12 @@ Extract the phase number from TARGET_PLAN (the NN part of NN-MM). Extract the pl
 
 Look for later plans in the same phase directory (`${PLANNING_DIR}/phases/${NN}-*/`, the
 same workstream-resolved root). For each later plan (plans with number > MM):
+
 1. Read the later plan's PLAN.md
 2. Check if its `<files>` sections or `consumes` fields reference outputs from the target plan
 
 If any later plan references the target plan's outputs, collect warnings:
+
 ```
 ⚠  Intra-phase dependency detected:
    Plan ${LATER_PLAN} in phase ${NN} references outputs from plan ${TARGET_PLAN}.
@@ -477,6 +501,7 @@ If any later plan references the target plan's outputs, collect warnings:
 ---
 
 If any warnings exist (from either mode):
+
 - Display all warnings
 - Use AskUserQuestion with approve-revise-abort pattern:
   - question: "Downstream work depends on the target being reverted. Proceed anyway?"
@@ -490,6 +515,7 @@ If user selects "Abort": exit with "Revert cancelled. No changes made."
 Display the confirmation gate using approve-revise-abort pattern from gate-prompts.md.
 
 Show:
+
 ```
 The following commits will be reverted (in reverse chronological order):
 
@@ -501,6 +527,7 @@ Total: {N} commit(s) to revert
 ```
 
 Use AskUserQuestion:
+
 - question: "Proceed with revert?"
 - header: "Approve?"
 - options: Approve | Abort
@@ -525,9 +552,11 @@ Store the response as REVERT_REASON. Continue to execute_revert.
 **Dirty-tree guard (run first, before any revert):**
 
 Run `git status --porcelain`. If the output is non-empty, display the dirty files and abort:
+
 ```
 Working tree has uncommitted changes. Commit or stash them before running /gsd-undo.
 ```
+
 Exit immediately — do not proceed to any revert operations.
 
 ---
@@ -535,11 +564,13 @@ Exit immediately — do not proceed to any revert operations.
 Sort COMMITS in reverse chronological order (newest first). If commits came from git log (already newest-first), they are already in correct order.
 
 For each commit hash in COMMITS:
+
 ```bash
 git revert --no-commit ${HASH}
 ```
 
 If any revert fails (merge conflict or error):
+
 1. Display the error message
 2. Run cleanup — handle both first-call and mid-sequence cases:
    ```bash
@@ -551,15 +582,20 @@ If any revert fails (merge conflict or error):
    git restore . 2>/dev/null
    ```
 3. Display:
+
    ```
+
+   ```
+
 ### ERROR
 
-   Revert failed on commit ${HASH}.
-   Likely cause: merge conflict with subsequent changes.
+Revert failed on commit ${HASH}.
+Likely cause: merge conflict with subsequent changes.
 
-   **To fix:** Resolve the conflict manually or revert commits individually.
-   All pending reverts have been aborted — working tree is clean.
-   ```
+**To fix:** Resolve the conflict manually or revert commits individually.
+All pending reverts have been aborted — working tree is clean.
+
+````
 4. Exit with error.
 
 After all reverts are staged successfully, create a single commit:
@@ -567,17 +603,20 @@ After all reverts are staged successfully, create a single commit:
 For MODE=phase:
 ```bash
 git commit -m "revert(${TARGET_PHASE}): undo phase ${TARGET_PHASE} — ${REVERT_REASON}"
-```
+````
 
 For MODE=plan:
+
 ```bash
 git commit -m "revert(${TARGET_PLAN}): undo plan ${TARGET_PLAN} — ${REVERT_REASON}"
 ```
 
 For MODE=last:
+
 ```bash
 git commit -m "revert: undo ${N} selected commits — ${REVERT_REASON}"
 ```
+
 </step>
 
 <step name="summary">
@@ -588,12 +627,14 @@ Display the completion banner:
 ```
 
 Show summary:
+
 ```
   ✓ ${N} commit(s) reverted
   ✓ Single revert commit created: ${REVERT_HASH}
 ```
 
 Show next steps:
+
 ```
 ---
 
@@ -613,11 +654,13 @@ Show next steps:
 
 ---
 ```
+
 </step>
 
 </process>
 
 <success_criteria>
+
 - [ ] Arguments parsed correctly for all three modes
 - [ ] --phase mode anchors selection on the phase's own directory (find-phase -> PHASE_START), never a repository-wide commit-subject grep
 - [ ] --phase and --plan modes fail closed when no anchor resolves, never widening to an unbounded search
@@ -629,4 +672,4 @@ Show next steps:
 - [ ] Single commit created after all reverts staged
 - [ ] Error handling cleans up both first-call and mid-sequence conflict cases
 - [ ] git reset --hard is NEVER used anywhere in this workflow
-</success_criteria>
+      </success_criteria>

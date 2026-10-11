@@ -21,11 +21,11 @@
 // Debounce: 5 tool uses between warnings to avoid spam
 // Severity escalation bypasses debounce (WARNING -> CRITICAL fires immediately)
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const { spawn } = require('child_process');
-const { HOOK_ON_CRASH, allow, crash } = require('./lib/hook-exit.js');
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { spawn } = require("child_process");
+const { HOOK_ON_CRASH, allow, crash } = require("./lib/hook-exit.js");
 
 // This hook only injects an advisory context-usage warning; it never blocks
 // the tool call it rides in on. A crash here (e.g. a malformed bridge file)
@@ -33,10 +33,10 @@ const { HOOK_ON_CRASH, allow, crash } = require('./lib/hook-exit.js');
 // context warning is far cheaper than stalling the agent's work (#3911).
 const ON_CRASH = HOOK_ON_CRASH.ALLOW;
 
-const WARNING_THRESHOLD = 35;  // remaining_percentage <= 35% (default, see resolveThresholds)
+const WARNING_THRESHOLD = 35; // remaining_percentage <= 35% (default, see resolveThresholds)
 const CRITICAL_THRESHOLD = 25; // remaining_percentage <= 25% (default, see resolveThresholds)
-const STALE_SECONDS = 60;      // ignore metrics older than 60s
-const DEBOUNCE_CALLS = 5;      // min tool uses between warnings
+const STALE_SECONDS = 60; // ignore metrics older than 60s
+const DEBOUNCE_CALLS = 5; // min tool uses between warnings
 // How long after a PreCompact readings stay suspect. The watermark records the
 // compaction's START; the compaction keeps running after it, and a statusline
 // render during it stamps the PRE-compaction reading with a CURRENT timestamp
@@ -84,10 +84,10 @@ const WATERMARK_SKEW_SECONDS = 5;
 // disk, and refusing it there would block a legitimate configuration.
 function resolveThresholds(hooks) {
   const defaults = { warning: WARNING_THRESHOLD, critical: CRITICAL_THRESHOLD };
-  if (!hooks || typeof hooks !== 'object') return defaults;
+  if (!hooks || typeof hooks !== "object") return defaults;
 
   const usable = (value, fallback) =>
-    (Number.isFinite(value) && value >= 0 && value <= 100) ? value : fallback;
+    Number.isFinite(value) && value >= 0 && value <= 100 ? value : fallback;
 
   const warning = usable(hooks.context_warning_threshold, WARNING_THRESHOLD);
   const critical = usable(hooks.context_critical_threshold, CRITICAL_THRESHOLD);
@@ -108,7 +108,7 @@ function resolveThresholds(hooks) {
 // side effects intact — on both call sites.
 function readEventName(data) {
   const name = data && data.hook_event_name;
-  if (typeof name === 'string') return name.trim();
+  if (typeof name === "string") return name.trim();
   // ABSENT vs MALFORMED are not the same event (Codex review of #3808, round 7,
   // measured base-vs-head). A MISSING name is the documented pre-#2289 Gemini
   // fallback: under GEMINI_API_KEY it means AfterTool and still emits. A name
@@ -120,7 +120,7 @@ function readEventName(data) {
   // `['PreCompact']`. null keeps them distinguishable while staying unequal to
   // every event name, so the PreCompact reset and the allowlist below are
   // byte-for-byte unchanged for every well-formed payload.
-  return (name === undefined || name === null) ? '' : null;
+  return name === undefined || name === null ? "" : null;
 }
 
 // SENTINEL WRITE HARDENING (review of #3808, round 7). `warnPath` lives in
@@ -156,8 +156,11 @@ function readEventName(data) {
 // degrades to "no file", which is the same behaviour the inline copies had.
 function readSentinel(target) {
   const st = fs.lstatSync(target);
-  if (!st.isFile() || st.size > 4096) throw new Error('not a plain sentinel');
-  const fd = fs.openSync(target, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0));
+  if (!st.isFile() || st.size > 4096) throw new Error("not a plain sentinel");
+  const fd = fs.openSync(
+    target,
+    fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0),
+  );
   try {
     const buf = Buffer.alloc(st.size);
     // The RETURN VALUE, not just the call (review of #3808, round 11). A file that shrinks
@@ -167,9 +170,12 @@ function readSentinel(target) {
     // treats a throw here as "no file", so refusing a short read is both safer and the same
     // outcome the caller would reach one line later, stated on purpose rather than by accident.
     const bytesRead = fs.readSync(fd, buf, 0, st.size, 0);
-    if (bytesRead !== st.size) throw new Error('sentinel shrank under the read');
-    return buf.toString('utf8');
-  } finally { fs.closeSync(fd); }
+    if (bytesRead !== st.size)
+      throw new Error("sentinel shrank under the read");
+    return buf.toString("utf8");
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 function writeSentinel(target, payload) {
@@ -177,11 +183,11 @@ function writeSentinel(target, payload) {
     try {
       fs.unlinkSync(target);
     } catch (e) {
-      if (!e || e.code !== 'ENOENT') throw e;
+      if (!e || e.code !== "ENOENT") throw e;
     }
     const fd = fs.openSync(
       target,
-      fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL
+      fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL,
     );
     try {
       // LOOP, and check progress (Codex review of round 11). A single `fs.writeSync` is
@@ -190,18 +196,22 @@ function writeSentinel(target, payload) {
       // debounce accounting or the compaction watermark this write exists to record. Node's own
       // `writeFileSync` loops for exactly this reason; the explicit no-progress guard keeps a
       // pathological fd from spinning. Symmetric with the bytesRead check in readSentinel.
-      const buf = Buffer.from(payload, 'utf8');
+      const buf = Buffer.from(payload, "utf8");
       let written = 0;
       while (written < buf.length) {
         const n = fs.writeSync(fd, buf, written, buf.length - written);
-        if (!(n > 0)) throw new Error('sentinel write made no progress');
+        if (!(n > 0)) throw new Error("sentinel write made no progress");
         written += n;
       }
-    } finally { fs.closeSync(fd); }
-  } catch (e) { /* best effort — see above */ }
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch (e) {
+    /* best effort — see above */
+  }
 }
 
-let input = '';
+let input = "";
 // Assigned by main(); the handler below clears it. Declared out here rather
 // than inside main() because the handler closes over it.
 let stdinTimeout = null;
@@ -226,7 +236,10 @@ const handleStdinEnd = () => {
     const tmpDir = os.tmpdir();
     const warnPath = path.join(tmpDir, `claude-ctx-${sessionId}-warned.json`);
     const metricsPath = path.join(tmpDir, `claude-ctx-${sessionId}.json`);
-    const watermarkPath = path.join(tmpDir, `claude-ctx-${sessionId}-compacted.json`);
+    const watermarkPath = path.join(
+      tmpDir,
+      `claude-ctx-${sessionId}-compacted.json`,
+    );
 
     // #3709: a compaction RESTARTS the context lifecycle, so neither the warn
     // sentinel nor the pre-compaction statusline reading may survive it. Full
@@ -235,7 +248,7 @@ const handleStdinEnd = () => {
     // aborted compaction deliberately stays cleared — lives in ONE place:
     // docs/context-monitor.md, "PreCompact reset". Constraints the code itself
     // must keep are stated at their lines below.
-    if (readEventName(data) === 'PreCompact') {
+    if (readEventName(data) === "PreCompact") {
       // ORDERING ASSUMPTION, stated rather than enforced (review of #3808,
       // round 9): this reset and the debounce writeSentinel(warnPath) further
       // down are two writers to the same file, and nothing here serialises
@@ -254,7 +267,7 @@ const handleStdinEnd = () => {
         try {
           fs.unlinkSync(stale);
         } catch (e) {
-          if (e && e.code === 'ENOENT') continue;   // already absent — that IS the reset
+          if (e && e.code === "ENOENT") continue; // already absent — that IS the reset
           // Best-effort fallback for a held handle (Windows EPERM/EBUSY):
           // truncate to EMPTY — the one state both readers treat exactly like
           // deletion, because JSON.parse('') throws. A well-formed "neutral"
@@ -270,12 +283,18 @@ const handleStdinEnd = () => {
           // which is why the fallback is best-effort, never asserted-on.
           try {
             if (fs.lstatSync(stale).isFile()) {
-              fs.closeSync(fs.openSync(
-                stale,
-                fs.constants.O_WRONLY | fs.constants.O_TRUNC | (fs.constants.O_NOFOLLOW || 0)
-              ));
+              fs.closeSync(
+                fs.openSync(
+                  stale,
+                  fs.constants.O_WRONLY |
+                    fs.constants.O_TRUNC |
+                    (fs.constants.O_NOFOLLOW || 0),
+                ),
+              );
             }
-          } catch (e2) { /* give up, never throw */ }
+          } catch (e2) {
+            /* give up, never throw */
+          }
         }
       }
 
@@ -292,7 +311,10 @@ const handleStdinEnd = () => {
       // unlink-then-O_EXCL so an existing file — or a planted symlink — is
       // never followed or overwritten in place; failure to write degrades to
       // the old narrowing, never throws.
-      writeSentinel(watermarkPath, JSON.stringify({ at: Math.floor(Date.now() / 1000) }));
+      writeSentinel(
+        watermarkPath,
+        JSON.stringify({ at: Math.floor(Date.now() / 1000) }),
+      );
       // allow(), not raw process.exit: #3911/ADR-3889 moved this hook onto the
       // declared-policy exit vocabulary while this PR was in review, and the
       // PreCompact branch is new here, so it needs the same conversion.
@@ -306,10 +328,13 @@ const handleStdinEnd = () => {
     // Collapsed existsSync+readFileSync into a single read guarded by try/catch
     // (ENOENT or parse error → use defaults, same as old "planningDir absent" branch).
     const cwd = data.cwd || process.cwd();
-    let thresholds = { warning: WARNING_THRESHOLD, critical: CRITICAL_THRESHOLD };
+    let thresholds = {
+      warning: WARNING_THRESHOLD,
+      critical: CRITICAL_THRESHOLD,
+    };
     try {
-      const configPath = path.join(cwd, '.planning', 'config.json');
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const configPath = path.join(cwd, ".planning", "config.json");
+      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
       if (config.hooks?.context_warnings === false) {
         allow(undefined);
       }
@@ -340,7 +365,7 @@ const handleStdinEnd = () => {
     try {
       metricsRaw = readSentinel(metricsPath);
     } catch (e) {
-      if (e && e.code === 'ENOENT') allow(undefined);
+      if (e && e.code === "ENOENT") allow(undefined);
       throw e;
     }
     const metrics = JSON.parse(metricsRaw);
@@ -376,18 +401,21 @@ const handleStdinEnd = () => {
     try {
       const watermark = JSON.parse(readSentinel(watermarkPath));
       if (
-        watermark && typeof watermark.at === 'number'
-        && watermark.at <= now + WATERMARK_SKEW_SECONDS
-        && !(metrics.timestamp > watermark.at + COMPACT_GRACE_SECONDS)
+        watermark &&
+        typeof watermark.at === "number" &&
+        watermark.at <= now + WATERMARK_SKEW_SECONDS &&
+        !(metrics.timestamp > watermark.at + COMPACT_GRACE_SECONDS)
       ) {
         // Same #3911/ADR-3889 conversion as the PreCompact branch above: this
         // gate is new in this PR, so it did not exist to be migrated.
         allow(undefined);
       }
-    } catch (e) { /* no watermark — nothing to compare against */ }
+    } catch (e) {
+      /* no watermark — nothing to compare against */
+    }
 
     // Ignore stale metrics
-    if (metrics.timestamp && (now - metrics.timestamp) > STALE_SECONDS) {
+    if (metrics.timestamp && now - metrics.timestamp > STALE_SECONDS) {
       allow(undefined);
     }
 
@@ -433,12 +461,17 @@ const handleStdinEnd = () => {
     warnData.callsSinceWarn = (warnData.callsSinceWarn || 0) + 1;
 
     const isCritical = remaining <= thresholds.critical;
-    const currentLevel = isCritical ? 'critical' : 'warning';
+    const currentLevel = isCritical ? "critical" : "warning";
 
     // Emit immediately on first warning, then debounce subsequent ones
     // Severity escalation (WARNING -> CRITICAL) bypasses debounce
-    const severityEscalated = currentLevel === 'critical' && warnData.lastLevel === 'warning';
-    if (!firstWarn && warnData.callsSinceWarn < DEBOUNCE_CALLS && !severityEscalated) {
+    const severityEscalated =
+      currentLevel === "critical" && warnData.lastLevel === "warning";
+    if (
+      !firstWarn &&
+      warnData.callsSinceWarn < DEBOUNCE_CALLS &&
+      !severityEscalated
+    ) {
       // Update counter and exit without warning
       writeSentinel(warnPath, JSON.stringify(warnData));
       allow(undefined);
@@ -450,7 +483,7 @@ const handleStdinEnd = () => {
     writeSentinel(warnPath, JSON.stringify(warnData));
 
     // Detect if GSD is active (has .planning/STATE.md in working directory)
-    const isGsdActive = fs.existsSync(path.join(cwd, '.planning', 'STATE.md'));
+    const isGsdActive = fs.existsSync(path.join(cwd, ".planning", "STATE.md"));
 
     // On CRITICAL with active GSD project, auto-record session state as a
     // breadcrumb for /gsd-resume-work (#1974). Fire-and-forget subprocess —
@@ -463,19 +496,27 @@ const handleStdinEnd = () => {
         // and gsd-tools.cjs lives at <runtime-config>/gsd-core/bin/.
         // Using __dirname makes this work on Qwen Code, OpenCode, Gemini,
         // Kilo, etc. without hardcoding ~/.qwen/.
-        const gsdTools = path.join(__dirname, '..', 'gsd-core', 'bin', 'gsd-tools.cjs');
+        const gsdTools = path.join(
+          __dirname,
+          "..",
+          "gsd-core",
+          "bin",
+          "gsd-tools.cjs",
+        );
         // Coerce usedPct to a safe number in case bridge file is malformed
         const safeUsedPct = Number(usedPct) || 0;
-        const stoppedAt = `context exhaustion at ${safeUsedPct}% (${new Date().toISOString().split('T')[0]})`;
+        const stoppedAt = `context exhaustion at ${safeUsedPct}% (${new Date().toISOString().split("T")[0]})`;
         spawn(
           process.execPath,
-          [gsdTools, 'state', 'record-session', '--stopped-at', stoppedAt],
-          { cwd, detached: true, stdio: 'ignore', windowsHide: true }
+          [gsdTools, "state", "record-session", "--stopped-at", stoppedAt],
+          { cwd, detached: true, stdio: "ignore", windowsHide: true },
         ).unref();
         warnData.criticalRecorded = true;
         // Persist the sentinel so subsequent debounce cycles don't re-fire
         writeSentinel(warnPath, JSON.stringify(warnData));
-      } catch { /* non-critical — don't let state recording break the hook */ }
+      } catch {
+        /* non-critical — don't let state recording break the hook */
+      }
     }
 
     // Build advisory warning message (never use imperative commands that
@@ -484,20 +525,20 @@ const handleStdinEnd = () => {
     if (isCritical) {
       message = isGsdActive
         ? `CONTEXT CRITICAL: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +
-          'Context is nearly exhausted. Do NOT start new complex work or write handoff files — ' +
-          'GSD state is already tracked in STATE.md. Inform the user so they can run ' +
-          '/gsd-pause-work at the next natural stopping point.'
+          "Context is nearly exhausted. Do NOT start new complex work or write handoff files — " +
+          "GSD state is already tracked in STATE.md. Inform the user so they can run " +
+          "/gsd-pause-work at the next natural stopping point."
         : `CONTEXT CRITICAL: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +
-          'Context is nearly exhausted. Inform the user that context is low and ask how they ' +
-          'want to proceed. Do NOT autonomously save state or write handoff files unless the user asks.';
+          "Context is nearly exhausted. Inform the user that context is low and ask how they " +
+          "want to proceed. Do NOT autonomously save state or write handoff files unless the user asks.";
     } else {
       message = isGsdActive
         ? `CONTEXT WARNING: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +
-          'Context is getting limited. Avoid starting new complex work. If not between ' +
-          'defined plan steps, inform the user so they can prepare to pause.'
+          "Context is getting limited. Avoid starting new complex work. If not between " +
+          "defined plan steps, inform the user so they can prepare to pause."
         : `CONTEXT WARNING: Usage at ${usedPct}%. Remaining: ${remaining}%. ` +
-          'Be aware that context is getting limited. Avoid unnecessary exploration or ' +
-          'starting new complex work.';
+          "Be aware that context is getting limited. Avoid unnecessary exploration or " +
+          "starting new complex work.";
     }
 
     // #2289: the hookSpecificOutput.additionalContext envelope is only a valid
@@ -516,15 +557,18 @@ const handleStdinEnd = () => {
     // Gemini-dialect runtime (GEMINI_API_KEY set) still means AfterTool, so its
     // advisory output is unchanged. A missing name on any other host is silent.
     const geminiFallback = eventName === "" && !!process.env.GEMINI_API_KEY;
-    const injectionSupported = eventName === "PostToolUse" || eventName === "AfterTool" || geminiFallback;
+    const injectionSupported =
+      eventName === "PostToolUse" ||
+      eventName === "AfterTool" ||
+      geminiFallback;
 
     if (injectionSupported) {
       const output = {
         hookSpecificOutput: {
           hookEventName: eventName || "AfterTool",
           additionalContext: message,
-          severity: currentLevel
-        }
+          severity: currentLevel,
+        },
       };
       process.stdout.write(JSON.stringify(output));
     }
@@ -551,9 +595,9 @@ function main() {
   // exit silently instead of hanging until Qwen Code kills the process
   // and reports "hook error". See #775, #1162.
   stdinTimeout = setTimeout(() => allow(undefined), 10000);
-  process.stdin.setEncoding('utf8');
-  process.stdin.on('data', chunk => input += chunk);
-  process.stdin.on('end', handleStdinEnd);
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (chunk) => (input += chunk));
+  process.stdin.on("end", handleStdinEnd);
 }
 
 if (require.main === module) {

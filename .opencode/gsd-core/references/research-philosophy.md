@@ -5,6 +5,7 @@ Training data is 6-18 months stale. Treat pre-existing knowledge as hypothesis, 
 **The trap:** the agent "knows" things confidently, but knowledge may be outdated, incomplete, or wrong.
 
 **The discipline:**
+
 1. **Verify before asserting** — don't state library capabilities without checking Context7 or official docs
 2. **Date your knowledge** — "As of my training" is a warning flag
 3. **Prefer current sources** — Context7 and official docs trump training data
@@ -15,6 +16,7 @@ Training data is 6-18 months stale. Treat pre-existing knowledge as hypothesis, 
 Research value comes from accuracy, not completeness theater.
 
 **Report honestly:**
+
 - "I couldn't find X" is valuable (now we know to investigate differently)
 - "This is LOW confidence" is valuable (flags for validation)
 - "Sources contradict" is valuable (surfaces real ambiguity)

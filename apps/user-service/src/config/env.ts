@@ -22,7 +22,9 @@ const envSchema = z.object({
   CLERK_SECRET_KEY: z
     .string()
     .default("sk_test_123456789012345678901234567890"),
-  INTERNAL_SERVICE_SECRET: z.string().default("internal_secret_dev"),
+  INTERNAL_SERVICE_SECRET: z
+    .string()
+    .default("dev-shared-internal-secret-larekmart"),
   ALLOWED_ORIGINS: z
     .string()
     .default(

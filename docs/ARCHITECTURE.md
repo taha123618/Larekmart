@@ -48,6 +48,20 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
   pass through untouched during migration).
 - Access control: `src/middleware.ts` requires `metadata.role === "admin"`.
 
+### Gateway
+
+**`api-gateway` (Fastify 5, :8080 / :8090)** — Single public entry point reverse proxy.
+
+- **Responsibilities**: Request routing, authentication enforcement (Clerk session validation),
+  authorization context injection (`x-user-id`, `x-user-role`, `x-internal-secret`), rate limiting
+  via Redis token bucket, request correlation (`x-request-id`, `x-correlation-id`), W3C traceparent
+  propagation, circuit breaking, safe retries (GET/HEAD), and bounded timeouts.
+- **Routing**: Centralized declarative route registry mapping all 14 downstream microservices.
+- **Aggregation**: `GET /api/v1/home` fans out concurrently to `catalog-service` and
+  `recommendation-service` with graceful partial degradation.
+- **Security**: Strips client-supplied internal headers before routing; enforces role gates
+  (public, authenticated, admin).
+
 ### Services
 
 **`product-service` (Express 5, :8000)** — the catalog.

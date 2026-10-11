@@ -8,7 +8,6 @@ allowed-tools:
   - Grep
 ---
 
-
 **STOP -- DO NOT READ THIS FILE. You are already reading it. This prompt was injected into your context by the command system. Using the Read tool on this file wastes tokens. Begin executing Step 0 immediately.**
 
 ## Step 0 -- Banner
@@ -47,7 +46,7 @@ This step is `onError: skip` at `discuss:post` / `plan:post` / `verify:post` -- 
    - `CONTEXT.md` → `decisions`
    - `PLAN.md` → `planning`
    - `SUMMARY.md` → `milestones`
-   (Confirmed problem→fix pairs go to `problems` — see the `capture-problems` fragment used at `execute:wave:post`.)
+     (Confirmed problem→fix pairs go to `problems` — see the `capture-problems` fragment used at `execute:wave:post`.)
 3. **Wing.** `config.mempalace.wing` if non-empty, else `config.project_code`, else the repo directory name.
 4. **Mode / transport.** Read `config.mempalace.memory_mode`. Prefer MCP (`mempalace_*`) when your MemPalace MCP server is registered and your runtime permits those tools; otherwise use the `mempalace` CLI (covered by this skill's `Bash` allow-tool), as in `mempalace-recall`.
 
@@ -91,7 +90,8 @@ On any error or timeout, stop and let the phase continue -- capture is best-effo
    # capture. The background queue defers the job until the lock frees.
    mempalace mine "$STAGE" --wing <wing> --daemon --background
    ```
-3. **Mirror KG facts** unless `config.mempalace.mirror_kg === false` (registry default is true — an absent key means enabled): extract decision/delivery facts and `mempalace_kg_add` them with `valid_from` = the phase date (e.g. `(<project>, decided, <decision>)` from CONTEXT; `(<phase>, delivered, <capability>)` from SUMMARY). Under `augment` these are an *additive* mirror of GSD's native `.planning/graphs/`. Under `kg_backend`/`replace` the palace KG is the *authoritative* fact store — GSD still produces `.planning/graphs/` through its normal graphify, so an unreachable palace never loses a fact.
+
+3. **Mirror KG facts** unless `config.mempalace.mirror_kg === false` (registry default is true — an absent key means enabled): extract decision/delivery facts and `mempalace_kg_add` them with `valid_from` = the phase date (e.g. `(<project>, decided, <decision>)` from CONTEXT; `(<phase>, delivered, <capability>)` from SUMMARY). Under `augment` these are an _additive_ mirror of GSD's native `.planning/graphs/`. Under `kg_backend`/`replace` the palace KG is the _authoritative_ fact store — GSD still produces `.planning/graphs/` through its normal graphify, so an unreachable palace never loses a fact.
 4. Re-running a phase MUST NOT create duplicate drawers (deterministic ids + `check_duplicate`).
 
 ## Step 4 -- Report

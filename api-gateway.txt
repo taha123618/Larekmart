@@ -1,0 +1,1845 @@
+API Gateway — AI Editor Implementation Prompt
+# API Gateway — AI Editor Setup & Implementation Specification
+
+## Role
+
+Act as a **Principal Backend Engineer, API Gateway Architect, Distributed Systems Engineer, and Cloud Infrastructure Engineer**.
+
+You are responsible for designing and implementing a production-ready **`api-gateway`** for this microservices marketplace e-commerce platform.
+
+The API Gateway is the **single public HTTP entry point** for client applications.
+
+It must provide:
+
+- request routing
+- authentication enforcement
+- authorization context propagation
+- API versioning
+- rate limiting
+- request correlation
+- security middleware
+- request validation where appropriate
+- timeout handling
+- retry handling where safe
+- service health visibility
+- observability
+- centralized error handling
+- controlled access to internal microservices
+
+Do **not** move business logic into the API Gateway.
+
+The gateway should coordinate and protect traffic, not become another business service.
+
+---
+
+# 1. Mandatory Technology Stack
+
+Use:
+
+```text
+Node.js
+TypeScript
+Fastify
+Redis
+Zod
+OpenTelemetry
+Prometheus
+Docker
+
+Use the existing repository infrastructure wherever possible.
+
+For service-to-service proxying/routing, use a maintained Fastify-compatible proxy implementation rather than manually implementing HTTP proxy behavior.
+
+For direct outbound HTTP calls that are genuinely required, use:
+
+native fetch / undici
+
+Do not add Axios unless there is a project-wide requirement.
+
+2. Core Architecture
+
+The target architecture is:
+
+                              ┌───────────────┐
+                              │ Web / Mobile  │
+                              │ Admin Client  │
+                              └───────┬───────┘
+                                      │
+                                      ▼
+                              ┌───────────────┐
+                              │  API Gateway  │
+                              │ Node + Fastify│
+                              └───────┬───────┘
+                                      │
+         ┌────────────────────────────┼─────────────────────────────┐
+         │                            │                             │
+         ▼                            ▼                             ▼
+   auth-service                 user-service                 product-service
+         │                            │                             │
+         ├────────────────────────────┼─────────────────────────────┤
+         │                            │                             │
+         ▼                            ▼                             ▼
+   catalog-service               cart-service               order-service
+         │                            │                             │
+         ▼                            ▼                             ▼
+   search-service              checkout-service             payment-service
+                                                                   
+         ┌───────────────────────────────────────────────────────────┐
+         │                                                           │
+         ▼                                                           ▼
+ inventory-service                                            shipping-service
+         │                                                           │
+         ▼                                                           ▼
+ notification-service                                      recommendation-service
+
+The gateway is the public boundary.
+
+Internal services should not be directly exposed to the public internet.
+
+3. Primary Responsibility
+
+The API Gateway is responsible for:
+
+client request
+    ↓
+security checks
+    ↓
+authentication
+    ↓
+authorization context
+    ↓
+rate limiting
+    ↓
+request correlation
+    ↓
+routing
+    ↓
+timeout/retry policies
+    ↓
+response normalization
+    ↓
+observability
+
+It is NOT responsible for:
+
+product business logic
+cart business logic
+order business logic
+payment business logic
+inventory business logic
+shipping business logic
+seller business logic
+recommendation algorithms
+
+Keep those inside their owning services.
+
+4. Gateway Technology Responsibilities
+Node.js
+
+Use Node.js as the runtime.
+
+The gateway must be horizontally scalable.
+
+Do not store important state in process memory.
+
+TypeScript
+
+Use strict TypeScript.
+
+Avoid:
+
+any
+
+unless there is a documented reason.
+
+Create strongly typed route configuration and service metadata.
+
+Fastify
+
+Use Fastify for:
+
+HTTP server
+route handling
+plugins
+middleware/hooks
+request context
+error handling
+health endpoints
+API documentation where appropriate
+
+Keep the core gateway modular.
+
+Redis
+
+Redis should handle:
+
+distributed rate limiting
+short-lived authentication/cache data
+temporary request state where necessary
+abuse protection
+optional gateway response caching for safe GET endpoints
+
+Do not store user sessions or business state in gateway memory.
+
+Zod
+
+Use Zod for:
+
+environment variables
+gateway configuration
+route-level input validation where required
+internal gateway DTOs
+external configuration
+
+Do not duplicate business-domain validation already handled by downstream services.
+
+OpenTelemetry
+
+Instrument:
+
+inbound requests
+proxy requests
+outbound HTTP requests
+authentication verification
+Redis
+downstream service latency
+errors
+retries
+timeouts
+
+Propagate trace context to downstream services.
+
+Prometheus
+
+Expose gateway metrics such as:
+
+gateway_requests_total
+gateway_request_duration_seconds
+gateway_request_errors_total
+gateway_rate_limit_hits_total
+gateway_auth_failures_total
+gateway_proxy_requests_total
+gateway_proxy_errors_total
+gateway_proxy_timeouts_total
+gateway_proxy_retries_total
+gateway_circuit_breaker_open_total
+gateway_5xx_total
+gateway_4xx_total
+
+Also track service-specific request metrics where appropriate.
+
+5. Gateway Routing
+
+Create centralized route configuration.
+
+Example:
+
+/api/v1/auth/*              → auth-service
+/api/v1/users/*             → user-service
+/api/v1/sellers/*           → seller-service
+/api/v1/products/*          → product-service
+/api/v1/catalog/*           → catalog-service
+/api/v1/search/*            → search-service
+/api/v1/cart/*              → cart-service
+/api/v1/checkout/*          → checkout-service
+/api/v1/orders/*            → order-service
+/api/v1/payments/*          → payment-service
+/api/v1/inventory/*         → inventory-service
+/api/v1/shipping/*          → shipping-service
+/api/v1/notifications/*     → notification-service
+/api/v1/recommendations/*   → recommendation-service
+/api/v1/reviews/*           → review-service
+/api/v1/wishlist/*          → wishlist-service
+/api/v1/promotions/*        → promotion-service
+/api/v1/media/*             → media-service
+/api/v1/marketplace/*       → marketplace-service
+/api/v1/returns/*           → return-service
+/api/v1/disputes/*          → dispute-service
+
+Do not hard-code service URLs throughout route handlers.
+
+Use centralized service configuration.
+
+6. Service Registry Configuration
+
+Create a typed service registry.
+
+Conceptually:
+
+const services = {
+  auth: {
+    url: env.AUTH_SERVICE_URL,
+  },
+  user: {
+    url: env.USER_SERVICE_URL,
+  },
+  product: {
+    url: env.PRODUCT_SERVICE_URL,
+  },
+  catalog: {
+    url: env.CATALOG_SERVICE_URL,
+  },
+};
+
+Do not scatter URLs throughout the codebase.
+
+7. Environment Configuration
+
+Use Zod to validate gateway configuration.
+
+Example:
+
+NODE_ENV=development
+PORT=8080
+
+REDIS_URL=redis://redis:6379
+
+AUTH_SERVICE_URL=http://auth-service:3000
+USER_SERVICE_URL=http://user-service:3000
+SELLER_SERVICE_URL=http://seller-service:3000
+PRODUCT_SERVICE_URL=http://product-service:3000
+CATALOG_SERVICE_URL=http://catalog-service:3000
+SEARCH_SERVICE_URL=http://search-service:3000
+CART_SERVICE_URL=http://cart-service:3000
+CHECKOUT_SERVICE_URL=http://checkout-service:3000
+ORDER_SERVICE_URL=http://order-service:3000
+PAYMENT_SERVICE_URL=http://payment-service:3000
+INVENTORY_SERVICE_URL=http://inventory-service:3000
+SHIPPING_SERVICE_URL=http://shipping-service:3000
+NOTIFICATION_SERVICE_URL=http://notification-service:3000
+RECOMMENDATION_SERVICE_URL=http://recommendation-service:3000
+REVIEW_SERVICE_URL=http://review-service:3000
+MEDIA_SERVICE_URL=http://media-service:3000
+
+JWT_ISSUER=...
+JWT_AUDIENCE=...
+
+OTEL_SERVICE_NAME=api-gateway
+OTEL_EXPORTER_OTLP_ENDPOINT=...
+
+RATE_LIMIT_DEFAULT=100
+RATE_LIMIT_WINDOW_SECONDS=60
+
+REQUEST_TIMEOUT_MS=5000
+
+Use values consistent with the actual repository.
+
+Never commit secrets.
+
+8. Authentication Architecture
+
+The API Gateway must integrate with auth-service.
+
+The gateway should NOT become the authentication source of truth.
+
+Architecture:
+
+Client
+   ↓
+API Gateway
+   ↓
+validate access token
+   ↓
+forward authenticated identity
+   ↓
+downstream service
+
+auth-service remains responsible for:
+
+login
+passwords
+refresh tokens
+OAuth
+MFA
+identity
+token issuance
+
+The gateway is responsible for validating the authentication context required for protected routes.
+
+9. Token Validation
+
+Prefer validating signed access tokens using the appropriate trusted signing configuration.
+
+Support:
+
+JWT verification
+issuer validation
+audience validation
+expiration validation
+signature validation
+
+Do not trust arbitrary headers such as:
+
+x-user-id
+x-role
+x-admin
+
+from public clients.
+
+If the gateway injects identity headers for downstream services, first remove any client-supplied versions.
+
+Example internal headers:
+
+x-request-id
+x-user-id
+x-user-roles
+x-authenticated
+
+Only the gateway or trusted internal infrastructure should set these.
+
+10. Authentication Context Propagation
+
+After authentication:
+
+Client
+   ↓
+API Gateway
+   ↓
+Authenticated Context
+   ↓
+Downstream Service
+
+Propagate:
+
+user_id
+subject
+roles
+scopes
+tenant_id where applicable
+request_id
+trace_id
+
+Only propagate claims actually required by downstream services.
+
+Do not forward the complete JWT unless there is a specific reason.
+
+11. Public vs Protected Routes
+
+Create explicit route policies.
+
+Example:
+
+PUBLIC
+├── /api/v1/auth/login
+├── /api/v1/auth/register
+├── /api/v1/auth/refresh
+├── /api/v1/catalog/*
+├── /api/v1/search/*
+├── /api/v1/recommendations/*
+└── /health/*
+
+AUTHENTICATED
+├── /api/v1/users/*
+├── /api/v1/cart/*
+├── /api/v1/orders/*
+├── /api/v1/wishlist/*
+├── /api/v1/reviews/*
+└── /api/v1/checkout/*
+
+ADMIN
+├── /api/v1/admin/*
+└── protected administrative routes
+
+The exact authorization policy must follow the application's existing security model.
+
+12. Role-Based Access Control
+
+Do not implement business-domain permissions in the gateway.
+
+The gateway may enforce coarse-grained access such as:
+
+PUBLIC
+AUTHENTICATED
+ADMIN
+SELLER
+INTERNAL
+
+Detailed authorization remains inside the owning service.
+
+Example:
+
+Gateway
+→ user must be authenticated
+
+seller-service
+→ user must own seller account
+
+payment-service
+→ user must be authorized for payment operation
+
+This preserves proper service boundaries.
+
+13. Rate Limiting
+
+Implement Redis-backed rate limiting.
+
+Different route groups should have different policies.
+
+Example:
+
+Authentication
+→ strict
+
+Public catalog
+→ high allowance
+
+Search
+→ controlled
+
+Cart
+→ moderate
+
+Checkout/payment
+→ strict abuse protection
+
+Admin
+→ strict + authenticated
+
+Do not blindly apply the same rate limit to every endpoint.
+
+Support rate limits by:
+
+IP
+user ID
+route
+API key where applicable
+
+Use the combination appropriate to the route.
+
+14. Abuse Protection
+
+Add protections for:
+
+credential stuffing
+login abuse
+request flooding
+large payloads
+path abuse
+invalid HTTP methods
+oversized headers
+repeated failed authentication
+
+Do not create a complex WAF inside the application gateway.
+
+Use infrastructure-level WAF/CDN capabilities where available.
+
+15. Request Size Limits
+
+Define route-sensitive payload limits.
+
+Examples:
+
+normal API JSON
+→ small/medium payload
+
+media
+→ direct-to-S3 presigned upload
+
+The gateway should not become the media upload bottleneck.
+
+For large files:
+
+Client
+   ↓
+media-service
+   ↓
+presigned URL
+   ↓
+S3 / MinIO
+
+not:
+
+Client
+   ↓
+API Gateway
+   ↓
+media-service
+   ↓
+S3
+
+unless a specific security requirement requires proxying.
+
+16. Request ID
+
+Every incoming request should receive a request ID.
+
+Behavior:
+
+Client sends x-request-id
+     ↓
+validate/use if safe
+     ↓
+otherwise generate new ID
+     ↓
+attach to request context
+     ↓
+forward downstream
+
+Every downstream request should receive the same correlation identifier.
+
+Example:
+
+x-request-id: req_01J...
+
+Never trust arbitrary request IDs for security decisions.
+
+17. Trace Propagation
+
+Use OpenTelemetry trace propagation.
+
+Example:
+
+Client
+  ↓
+Gateway
+  ↓
+catalog-service
+  ↓
+product-service
+
+One distributed trace should allow operators to see the complete request path.
+
+18. Proxy Behavior
+
+The gateway should forward:
+
+HTTP method
+path
+query parameters
+approved headers
+body
+request ID
+trace context
+authenticated identity context
+
+Do not blindly forward every incoming header.
+
+Explicitly control forwarded headers.
+
+19. Header Sanitization
+
+Remove or overwrite client-controlled internal headers such as:
+
+x-user-id
+x-user-roles
+x-authenticated
+x-internal-service
+x-service-auth
+
+before creating the trusted internal context.
+
+Also handle hop-by-hop headers correctly.
+
+20. Timeout Policy
+
+Every downstream service request must have a timeout.
+
+Do not allow an unavailable service to hold gateway connections indefinitely.
+
+Example baseline:
+
+catalog/search
+→ short timeout
+
+cart/order
+→ moderate timeout
+
+payment
+→ carefully tuned timeout
+
+recommendation
+→ short bounded timeout
+
+Use configurable timeouts.
+
+21. Retry Policy
+
+Retries must be conservative.
+
+Retry only when:
+
+operation is idempotent
+failure is transient
+request timeout policy allows it
+
+Good retry candidates can include certain:
+
+GET
+HEAD
+safe internal reads
+
+Avoid automatic retries for:
+
+POST payment
+POST order
+POST shipment
+POST payout
+
+unless explicit idempotency support exists.
+
+Never blindly retry financial operations.
+
+22. Circuit Breaker
+
+Implement or integrate a circuit-breaker mechanism where justified.
+
+Conceptually:
+
+Healthy
+   ↓
+Failures increase
+   ↓
+OPEN
+   ↓
+fail fast
+   ↓
+HALF_OPEN
+   ↓
+test request
+   ↓
+Healthy / OPEN
+
+Use circuit breaking for unstable downstream dependencies.
+
+Do not create unnecessary complexity for services that are already highly reliable.
+
+23. Service Unavailability
+
+If a downstream service is unavailable:
+
+Do not expose internal stack traces.
+
+Return a consistent gateway response.
+
+Example:
+
+{
+  "error": {
+    "code": "SERVICE_UNAVAILABLE",
+    "message": "The requested service is temporarily unavailable.",
+    "requestId": "req_123"
+  }
+}
+
+Do not expose:
+
+database hostnames
+internal IPs
+service URLs
+stack traces
+connection strings
+24. Error Normalization
+
+Downstream services should have their own error models.
+
+The gateway may normalize transport-level errors:
+
+timeout
+connection refused
+service unavailable
+invalid proxy response
+
+Do not unnecessarily rewrite every domain error.
+
+For example:
+
+product-service
+→ PRODUCT_NOT_FOUND
+
+gateway
+→ preserve domain error
+
+while:
+
+product-service unreachable
+
+gateway
+→ SERVICE_UNAVAILABLE
+
+This prevents the gateway from hiding useful business errors.
+
+25. API Versioning
+
+Use versioned public routes:
+
+/api/v1/...
+
+Do not expose internal service versions directly unless required.
+
+Example:
+
+/api/v1/products
+
+may internally route to:
+
+product-service internal endpoint
+
+This allows internal services to evolve independently.
+
+26. Service Discovery
+
+For the first implementation, support environment-based service URLs.
+
+Example:
+
+PRODUCT_SERVICE_URL=http://product-service:3000
+
+Design the registry so it can later support:
+
+Docker Compose service names
+Kubernetes DNS
+service mesh
+external service discovery
+
+Do not hard-code localhost assumptions into production configuration.
+
+27. Gateway Route Registry
+
+Create a central typed configuration.
+
+Example concept:
+
+type GatewayRoute = {
+  prefix: string;
+  target: string;
+  auth: 'public' | 'authenticated' | 'admin';
+  timeoutMs?: number;
+  rateLimit?: {
+    limit: number;
+    windowSeconds: number;
+  };
+};
+
+Routes should be declarative.
+
+Avoid large collections of custom route handlers that simply repeat proxy code.
+
+28. API Aggregation
+
+The gateway may expose a small number of read-oriented aggregation endpoints when that materially reduces frontend complexity.
+
+Example:
+
+GET /api/v1/home
+
+could combine:
+
+catalog
+recommendations
+promotions
+
+However:
+
+keep aggregation limited
+avoid embedding business rules
+avoid turning the gateway into a monolithic backend
+protect against fan-out latency
+
+Use aggregation only where there is a clear client/API benefit.
+
+29. Do Not Put Business Logic in the Gateway
+
+Do not implement:
+
+cart totals
+payment calculations
+inventory reservations
+order state transitions
+promotion rules
+commission calculations
+shipping business rules
+recommendation algorithms
+seller settlement logic
+
+inside the gateway.
+
+The gateway should answer:
+
+Where should this request go, is the caller allowed to call it, and can the request safely reach the target service?
+
+30. Caching
+
+Gateway-level caching should be limited.
+
+Potential candidates:
+
+public catalog GET
+public category GET
+public configuration GET
+
+Avoid caching:
+
+payments
+cart
+checkout
+order creation
+user-private information
+
+unless there is an explicit strategy.
+
+Prefer service-level caches where domain semantics are important.
+
+31. CORS
+
+Configure CORS explicitly.
+
+Do not use:
+
+Access-Control-Allow-Origin: *
+
+for authenticated production APIs unless there is a justified public use case.
+
+Use configured origins per environment.
+
+Example:
+
+CORS_ALLOWED_ORIGINS=https://example.com,https://app.example.com
+32. Security Headers
+
+Apply appropriate security headers at the gateway.
+
+Consider:
+
+Content-Security-Policy where applicable
+X-Content-Type-Options
+Referrer-Policy
+X-Frame-Options
+Strict-Transport-Security in HTTPS deployments
+
+Do not blindly apply browser-specific policies to APIs without testing compatibility.
+
+33. HTTP Methods
+
+Reject unsupported methods explicitly.
+
+Expected methods:
+
+GET
+POST
+PUT
+PATCH
+DELETE
+OPTIONS
+HEAD where appropriate
+
+Do not allow arbitrary methods through the proxy.
+
+34. Internal Service Security
+
+Do not assume internal services are automatically trusted.
+
+Where possible:
+
+TLS/mTLS
+internal network isolation
+service authentication
+trusted internal headers
+network policies
+
+The gateway should be the public entry point, but internal services should still protect themselves.
+
+35. Public Exposure
+
+Only expose:
+
+api-gateway
+
+to the public application network.
+
+Keep:
+
+auth-service
+product-service
+order-service
+payment-service
+inventory-service
+shipping-service
+
+and other internal services on the private network.
+
+36. Gateway Health Endpoints
+
+Implement:
+
+GET /health
+GET /health/live
+GET /health/ready
+/health/live
+
+Check only:
+
+process alive
+/health/ready
+
+Check required infrastructure:
+
+Redis
+gateway configuration
+critical dependencies
+
+Do not make readiness depend on every downstream service unless that is explicitly required.
+
+One unavailable microservice should not necessarily make the entire gateway fail readiness.
+
+37. Gateway Metrics
+
+Track:
+
+request count
+request latency
+request errors
+status code distribution
+route latency
+service latency
+rate-limit rejections
+authentication failures
+proxy failures
+timeouts
+retries
+circuit breaker state
+
+Example labels:
+
+route
+method
+service
+status
+
+Avoid labels with unbounded values such as:
+
+userId
+requestId
+full URL
+
+to prevent metric-cardinality problems.
+
+38. Structured Logging
+
+Use structured JSON logs.
+
+Example fields:
+
+timestamp
+level
+service
+route
+method
+status
+request_id
+trace_id
+user_id where appropriate
+target_service
+duration_ms
+error_code
+
+Do not log:
+
+passwords
+JWT tokens
+refresh tokens
+payment card data
+API secrets
+full authorization headers
+39. Authentication Logging
+
+Log authentication outcomes without logging token contents.
+
+Example:
+
+authentication_failed
+reason=expired_token
+route=/api/v1/orders
+request_id=req_123
+
+Do not log the actual JWT.
+
+40. API Documentation
+
+The gateway should provide API documentation for the public API surface.
+
+Do not expose every internal service implementation detail.
+
+Document:
+
+public routes
+authentication
+headers
+pagination
+common errors
+rate-limit behavior
+
+If the gateway is primarily proxy-based, consider generating or composing documentation carefully rather than duplicating every downstream schema manually.
+
+41. Project Structure
+
+Use this baseline:
+
+apps/api-gateway/
+
+├── src/
+│   ├── app.ts
+│   ├── server.ts
+│   │
+│   ├── config/
+│   │   └── env.ts
+│   │
+│   ├── gateway/
+│   │   ├── route-registry.ts
+│   │   ├── proxy.ts
+│   │   ├── service-registry.ts
+│   │   └── policies.ts
+│   │
+│   ├── auth/
+│   │   ├── token-verifier.ts
+│   │   ├── auth-middleware.ts
+│   │   └── authorization.ts
+│   │
+│   ├── middleware/
+│   │   ├── request-id.ts
+│   │   ├── rate-limit.ts
+│   │   ├── security.ts
+│   │   ├── cors.ts
+│   │   ├── error-handler.ts
+│   │   └── tracing.ts
+│   │
+│   ├── routing/
+│   │   ├── public.routes.ts
+│   │   ├── authenticated.routes.ts
+│   │   └── admin.routes.ts
+│   │
+│   ├── aggregation/
+│   │   └── home.ts
+│   │
+│   ├── resilience/
+│   │   ├── timeout.ts
+│   │   ├── retry.ts
+│   │   └── circuit-breaker.ts
+│   │
+│   ├── cache/
+│   │   └── redis.ts
+│   │
+│   ├── schemas/
+│   │   ├── gateway.ts
+│   │   └── errors.ts
+│   │
+│   ├── observability/
+│   │   ├── metrics.ts
+│   │   └── tracing.ts
+│   │
+│   └── errors/
+│       └── errors.ts
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   ├── routing/
+│   ├── auth/
+│   ├── resilience/
+│   └── security/
+│
+├── Dockerfile
+├── package.json
+├── tsconfig.json
+├── .env.example
+└── README.md
+42. Shared Packages
+
+Reuse the monorepo's shared packages where possible.
+
+Recommended gateway-related shared packages:
+
+packages/
+├── auth-client
+├── events
+├── kafka
+├── redis
+├── logger
+├── errors
+├── validation
+├── monitoring
+├── tracing
+└── types
+
+Do not duplicate these if they already exist.
+
+43. Kafka
+
+Kafka is not required for normal HTTP routing.
+
+Do not put every HTTP request onto Kafka.
+
+Use Kafka only for gateway events that have a real architectural use case, such as:
+
+gateway.security_event
+gateway.rate_limit_event
+gateway.audit_event
+gateway.authentication_failure
+
+Avoid creating Kafka dependencies merely because the platform already uses Kafka.
+
+44. Audit Events
+
+Where required, the gateway may publish security/audit events such as:
+
+authentication.failed
+rate_limit.triggered
+admin.route.accessed
+security.policy.blocked
+
+The dedicated audit-service can consume those events.
+
+Do not publish every successful GET request as a Kafka event.
+
+45. Rate-Limit Strategy
+
+Use separate policy groups:
+
+AUTH
+PUBLIC_READ
+SEARCH
+WRITE
+CHECKOUT
+PAYMENT
+ADMIN
+
+Example configuration concept:
+
+{
+  AUTH: {
+    limit: 10,
+    windowSeconds: 60
+  },
+
+  PUBLIC_READ: {
+    limit: 300,
+    windowSeconds: 60
+  },
+
+  SEARCH: {
+    limit: 120,
+    windowSeconds: 60
+  },
+
+  PAYMENT: {
+    limit: 30,
+    windowSeconds: 60
+  }
+}
+
+These are starting configuration examples, not universal production values.
+
+Tune them using traffic measurements and security requirements.
+
+46. Downstream Request Context
+
+Forward only required headers.
+
+Example:
+
+x-request-id
+traceparent
+x-user-id
+x-user-roles
+x-user-scopes
+
+Use trusted internal headers only.
+
+Strip conflicting client values first.
+
+47. Request Context
+
+Create a gateway context containing:
+
+requestId
+traceId
+userId
+roles
+scopes
+targetService
+route
+startTime
+
+Use it consistently for:
+
+logs
+metrics
+traces
+proxy requests
+errors
+48. Error Model
+
+Create consistent gateway transport errors:
+
+BAD_REQUEST
+UNAUTHORIZED
+FORBIDDEN
+NOT_FOUND
+RATE_LIMITED
+REQUEST_TIMEOUT
+SERVICE_UNAVAILABLE
+BAD_GATEWAY
+GATEWAY_TIMEOUT
+
+Example:
+
+{
+  "error": {
+    "code": "GATEWAY_TIMEOUT",
+    "message": "The upstream service did not respond in time.",
+    "requestId": "req_123"
+  }
+}
+
+Do not convert legitimate downstream business errors into generic gateway errors.
+
+49. Timeout and Retry Matrix
+
+Use different policies by operation type.
+
+Operation	Retry by default
+GET catalog	Yes, limited
+GET search	Yes, limited
+GET product	Yes, limited
+GET recommendations	Limited
+POST cart item	No by default
+POST order	No
+POST payment	No
+POST shipment	No
+DELETE resource	Depends on idempotency
+
+Every retry policy must account for idempotency.
+
+50. Security Boundary
+
+The API Gateway is a security boundary, not the only security layer.
+
+Use:
+
+Internet
+   ↓
+Load Balancer / CDN / WAF
+   ↓
+API Gateway
+   ↓
+Internal services
+
+Where the infrastructure supports it.
+
+Do not attempt to replace a dedicated WAF with application middleware alone.
+
+51. Deployment
+
+The API Gateway must be stateless.
+
+Example:
+
+                  Load Balancer
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+      Gateway 1    Gateway 2    Gateway 3
+          │            │            │
+          └────────────┼────────────┘
+                       │
+             Internal Services
+
+Do not rely on local memory for:
+
+sessions
+rate-limit counters
+critical state
+
+Use Redis or external infrastructure.
+
+52. Docker
+
+Create a production-ready Dockerfile.
+
+Requirements:
+
+non-root user
+minimal production dependencies
+deterministic install
+no secrets baked into image
+health endpoint
+configurable port
+graceful shutdown
+53. Graceful Shutdown
+
+When shutting down:
+
+stop accepting new connections
+finish in-flight requests where possible
+close Redis connection
+close telemetry providers
+close internal resources
+exit cleanly
+
+This is important for Kubernetes/container orchestration.
+
+54. Testing Requirements
+Unit Tests
+
+Test:
+
+route registry
+authentication policy
+authorization policy
+header sanitization
+request ID generation
+rate-limit policy
+timeout policy
+retry policy
+error mapping
+Integration Tests
+
+Test:
+
+Redis
+downstream proxying
+authentication validation
+service unavailable behavior
+timeouts
+retries
+Security Tests
+
+Test:
+
+invalid JWT
+expired JWT
+wrong issuer
+wrong audience
+missing token
+forged identity headers
+cross-role access
+rate-limit bypass attempts
+oversized requests
+invalid methods
+Routing Tests
+
+Verify every public route resolves to the expected service.
+
+55. Contract Testing
+
+Where practical, verify gateway-to-service contracts.
+
+Examples:
+
+/api/v1/products
+→ product-service
+
+/api/v1/cart
+→ cart-service
+
+/api/v1/orders
+→ order-service
+
+A route must fail tests if its service target is missing or malformed.
+
+56. Local Development
+
+The gateway should be runnable through the existing Docker Compose/local infrastructure.
+
+Example:
+
+client
+   ↓
+api-gateway:8080
+   ↓
+service containers
+
+Do not require developers to expose every internal microservice port publicly.
+
+57. Internal Networking
+
+In Docker Compose:
+
+frontend/client
+    ↓
+api-gateway
+    ↓
+internal Docker network
+    ↓
+microservices
+
+Only the gateway should need the public API port.
+
+58. Kubernetes Readiness
+
+Design service URLs so the gateway can later route using Kubernetes DNS:
+
+http://product-service:3000
+
+or equivalent cluster-local service names.
+
+Do not hard-code Docker-specific hostnames into business code.
+
+59. Performance
+
+Optimize for:
+
+low proxy latency
+efficient connection reuse
+bounded memory usage
+high concurrent connections
+low Redis latency
+minimal gateway logic
+
+Do not perform expensive transformations in the gateway.
+
+60. Gateway Anti-Patterns
+
+Do NOT:
+
+put domain business logic in gateway
+query databases directly
+connect directly to every service database
+implement payment logic
+calculate orders
+calculate inventory
+store uploaded media
+store large request bodies unnecessarily
+duplicate service validation
+create a shared database
+use Kafka for every request
+retry non-idempotent financial operations blindly
+trust client-provided identity headers
+61. API Gateway vs Service Responsibilities
+
+Maintain:
+
+API Gateway
+→ routing + security + resilience + observability
+
+auth-service
+→ identity + credentials
+
+user-service
+→ profile + addresses + preferences
+
+product-service
+→ product source of truth
+
+catalog-service
+→ catalog read model
+
+search-service
+→ search
+
+cart-service
+→ cart
+
+checkout-service
+→ checkout orchestration
+
+order-service
+→ orders
+
+payment-service
+→ payments
+
+inventory-service
+→ stock
+
+shipping-service
+→ shipments
+
+recommendation-service
+→ recommendations
+
+notification-service
+→ notifications
+
+media-service
+→ media
+
+seller-service
+→ seller domain
+62. Recommended Public API Structure
+
+Use:
+
+/api/v1/auth/*
+/api/v1/users/*
+/api/v1/sellers/*
+/api/v1/products/*
+/api/v1/catalog/*
+/api/v1/search/*
+/api/v1/cart/*
+/api/v1/checkout/*
+/api/v1/orders/*
+/api/v1/payments/*
+/api/v1/inventory/*
+/api/v1/shipping/*
+/api/v1/recommendations/*
+/api/v1/reviews/*
+/api/v1/wishlist/*
+/api/v1/promotions/*
+/api/v1/media/*
+/api/v1/marketplace/*
+/api/v1/returns/*
+/api/v1/disputes/*
+
+Administrative routes should use a separate policy boundary:
+
+/api/v1/admin/*
+63. Optional BFF Layer
+
+Do not immediately create separate gateways for every client.
+
+Start with:
+
+api-gateway
+
+Later, if the clients diverge significantly, consider:
+
+web-bff
+mobile-bff
+admin-bff
+
+Keep this as a future evolution rather than adding unnecessary complexity now.
+
+64. Observability Flow
+
+The complete trace should look like:
+
+Client
+  |
+  | trace
+  v
+API Gateway
+  |
+  | trace context
+  v
+Cart Service
+  |
+  v
+Inventory Service
+  |
+  v
+Kafka
+  |
+  v
+Order Service
+
+Operators should be able to follow the request through the entire distributed system.
+
+65. Documentation
+
+Create/update:
+
+README.md
+.env.example
+architecture.md
+route-map.md
+security.md
+observability.md
+
+Document:
+
+gateway purpose
+route mapping
+authentication
+authorization
+rate limits
+service registry
+timeouts
+retry policies
+error handling
+security headers
+local development
+Docker
+deployment
+monitoring
+troubleshooting
+66. Implementation Phases
+Phase 1 — Foundation
+
+Implement:
+
+Fastify
+TypeScript
+environment validation
+structured logging
+health endpoints
+OpenTelemetry
+Prometheus
+Docker
+Phase 2 — Service Routing
+
+Implement:
+
+service registry
+route registry
+proxy layer
+public API versioning
+Phase 3 — Authentication
+
+Implement:
+
+JWT/token validation
+public/protected route policies
+identity propagation
+header sanitization
+Phase 4 — Security
+
+Implement:
+
+CORS
+security headers
+request size limits
+rate limiting
+basic abuse protection
+Phase 5 — Resilience
+
+Implement:
+
+timeouts
+safe retries
+circuit breaker
+downstream failure handling
+consistent gateway errors
+Phase 6 — Observability
+
+Implement:
+
+distributed tracing
+request IDs
+proxy metrics
+downstream latency metrics
+authentication metrics
+rate-limit metrics
+Phase 7 — Optional Aggregation
+
+Only after the base gateway is stable, add carefully selected:
+
+read-only aggregation endpoints
+
+Do not turn the gateway into a business-logic layer.
+
+67. Definition of Done
+
+The API Gateway is complete only when:
+
+[ ] Fastify service starts
+[ ] TypeScript compilation succeeds
+[ ] environment validation works
+[ ] service registry works
+[ ] route registry works
+[ ] all required services are routable
+[ ] public routes work
+[ ] protected routes require authentication
+[ ] admin routes enforce appropriate access policy
+[ ] JWT validation works
+[ ] client identity headers are sanitized
+[ ] trusted identity context is propagated
+[ ] request IDs are generated/propagated
+[ ] OpenTelemetry tracing works
+[ ] Prometheus metrics work
+[ ] Redis rate limiting works
+[ ] CORS is configured
+[ ] security headers are configured
+[ ] body/request limits work
+[ ] downstream timeouts work
+[ ] safe retries work
+[ ] circuit-breaker behavior works where configured
+[ ] downstream errors are handled safely
+[ ] gateway does not expose internal details
+[ ] Docker build succeeds
+[ ] health checks work
+[ ] graceful shutdown works
+[ ] unit tests pass
+[ ] integration tests pass
+[ ] security tests pass
+[ ] routing tests pass
+[ ] documentation is complete
+[ ] .env.example is complete
+68. Final Target Architecture
+                              INTERNET
+                                  |
+                                  v
+                         CDN / WAF / LB
+                                  |
+                                  v
+                         +----------------+
+                         |  API Gateway   |
+                         | Node + Fastify |
+                         +-------+--------+
+                                 |
+       +-------------------------+---------------------------+
+       |             |             |             |           |
+       v             v             v             v           v
+     Auth          User         Catalog        Search      Product
+   Service       Service        Service       Service     Service
+       |             |             |             |           |
+       +-------------+-------------+-------------+-----------+
+                                 |
+                                 v
+                          Other Services
+                                 |
+                  +--------------+--------------+
+                  |                             |
+                  v                             v
+                Redis                         Kafka
+69. Final Technology Stack
+api-gateway
+├── Node.js
+├── TypeScript
+├── Fastify
+├── Redis
+├── Zod
+├── OpenTelemetry
+├── Prometheus
+└── Docker
+
+Optional infrastructure around it:
+
+CDN
+WAF
+Load Balancer
+Kubernetes / Docker Compose
+70. Final AI Editor Instruction
+
+Before modifying the codebase:
+
+Inspect the complete repository.
+Inspect all existing apps/*.
+Inspect packages/kafka.
+Inspect packages/redis.
+Inspect packages/monitoring.
+Inspect packages/types.
+Inspect existing authentication/token conventions.
+Inspect Docker and infrastructure configuration.
+Inspect existing API conventions.
+Reuse existing shared infrastructure instead of creating duplicates.
+
+Then implement the API Gateway incrementally.
+
+Do not blindly overwrite existing code.
+
+Do not introduce a second authentication architecture.
+
+Do not expose internal services unnecessarily.
+
+Do not move business logic into the gateway.
+
+After implementation:
+
+run type checking
+run linting
+run unit tests
+run integration tests
+run routing tests
+run authentication/security tests
+verify Redis
+verify downstream proxying
+verify timeouts
+verify rate limiting
+verify tracing
+verify Prometheus metrics
+verify Docker build
+verify graceful shutdown
+update README
+update .env.example
+
+The final result must be a stateless, horizontally scalable, security-focused API Gateway built with Node.js + TypeScript + Fastify, acting as the controlled public entry point to the marketplace microservices while keeping all domain business logic inside the appropriate services.

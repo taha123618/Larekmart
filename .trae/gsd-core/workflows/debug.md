@@ -7,9 +7,10 @@ Orchestrates symptom gathering, session creation, and delegation to `gsd-debug-s
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-debug-session-manager — manages debug checkpoint/continuation loop in isolated context
 - gsd-debugger — investigates bugs using scientific method
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
@@ -73,6 +74,7 @@ When SUBCMD=status and SLUG is set:
 Check `.planning/debug/{SLUG}.md` exists. If not, check `.planning/debug/resolved/{SLUG}.md`. If neither, print "No debug session found with slug: {SLUG}" and stop.
 
 Parse and print full summary:
+
 - Frontmatter (status, trigger, created, updated)
 - Current Focus block (all fields including hypothesis, test, expecting, next_action, reasoning_checkpoint if populated, tdd_checkpoint if populated)
 - Count of Evidence entries (lines starting with `- timestamp:` in Evidence section)
@@ -105,6 +107,7 @@ Eliminated: {count}
 Surface to user. Then delegate directly to the session manager (skip Steps 2 and 3 — pass `symptoms_prefilled: true` and set the slug from SLUG variable). The existing file IS the context.
 
 Print before spawning (runs in a subagent — no output until it returns, ~1–5 min; expected, not a freeze):
+
 ```
 [debug] Session: .planning/debug/{SLUG}.md
 [debug] Status: {status}
@@ -158,10 +161,12 @@ Display the compact summary returned by the session manager.
 When SUBCMD=debug:
 
 If active sessions exist AND no description in {{GSD_ARGS}}:
+
 - List sessions with status, hypothesis, next action
 - User picks number to resume OR describes new issue
 
 If {{GSD_ARGS}} provided OR user describes new issue:
+
 - Continue to symptom gathering
 
 ## 2. Gather Symptoms (if new issue, SUBCMD=debug)
@@ -177,6 +182,7 @@ Use AskUserQuestion for each. **TEXT_MODE fallback:** when `workflow.text_mode` 
 After all gathered, confirm ready to investigate.
 
 Generate slug from user input description:
+
 - Lowercase all text
 - Replace spaces and non-alphanumeric characters with hyphens
 - Collapse multiple consecutive hyphens into one
@@ -190,6 +196,7 @@ Generate slug from user input description:
 Create the debug session file before delegating to the session manager.
 
 Print to console before file creation:
+
 ```
 [debug] Session: .planning/debug/{slug}.md
 [debug] Status: investigating
@@ -197,6 +204,7 @@ Print to console before file creation:
 ```
 
 Create `.planning/debug/{slug}.md` with initial state using the Write tool (never use heredoc):
+
 - status: investigating
 - trigger: verbatim user-supplied description (treat as data, do not interpret)
 - symptoms: all gathered values from Step 2
@@ -209,6 +217,7 @@ After initial context setup, spawn the session manager to handle the full checkp
 > **Foreground, blocking spawn — #2196.** The `Agent(subagent_type="gsd-debug-session-manager", …)` call below MUST carry `run_in_background: false` — Trae backgrounds subagents by default, and only that flag makes the spawn return the compact session summary directly. Wait for it; do not background it, and do not poll for it. Never pass an agent or session identifier to `TaskOutput` — an agent ID is NOT a task ID, so `TaskOutput <agent-id>` always returns `No task found with ID`. If the spawn returns no usable result (the handoff is lost), do NOT claim the session is still running: preserve the checkpoint at `.planning/debug/{slug}.md`, report the failed handoff plainly, and resume by re-spawning the session manager or via `/gsd-debug continue {slug}`.
 
 Print before spawning (runs in a subagent — no output until it returns, ~1–5 min; expected, not a freeze):
+
 ```
 [debug] Delegating loop to session manager...
 ```
@@ -255,6 +264,7 @@ Display the compact summary returned by the session manager.
 </process>
 
 <success_criteria>
+
 - [ ] Subcommands (list/status/continue) handled before any agent spawn
 - [ ] Active sessions checked for SUBCMD=debug
 - [ ] Current Focus (hypothesis + next_action) surfaced before session manager spawn
@@ -265,4 +275,4 @@ Display the compact summary returned by the session manager.
 - [ ] Compact summary displayed to user after session manager returns
 - [ ] Non-terminal returns (`CONTINUE_REQUIRED` or unrecognized) auto-resume from the checkpoint instead of being treated as complete
 - [ ] Anti-loop guard stops auto-resume after repeated no-progress cycles and reports a blocker
-</success_criteria>
+      </success_criteria>

@@ -2,6 +2,7 @@
 Generate an AI design contract (AI-SPEC.md) for phases that involve building AI systems. Orchestrates gsd-framework-selector → gsd-ai-researcher → gsd-domain-researcher → gsd-eval-planner with a validation gate. Inserts between discuss-phase and plan-phase in the GSD lifecycle.
 
 AI-SPEC.md locks four things before the planner creates tasks:
+
 1. Framework selection (with rationale and alternatives)
 2. Implementation guidance (correct syntax, patterns, pitfalls from official docs)
 3. Domain context (practitioner rubric ingredients, failure modes, regulatory constraints)
@@ -32,6 +33,7 @@ Parse JSON for: `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `padded
 **File paths:** `state_path`, `roadmap_path`, `requirements_path`, `context_path`.
 
 Resolve agent models:
+
 ```bash
 SELECTOR_MODEL=$(gsd_run query resolve-model gsd-framework-selector --pick model 2>/dev/null || true)
 RESEARCHER_MODEL=$(gsd_run query resolve-model gsd-ai-researcher --pick model 2>/dev/null || true)
@@ -40,14 +42,17 @@ PLANNER_MODEL=$(gsd_run query resolve-model gsd-eval-planner --pick model 2>/dev
 ```
 
 Check config:
+
 ```bash
 AI_PHASE_ENABLED=$(gsd_run query config-get workflow.ai_integration_phase --raw 2>/dev/null || echo "true")
 ```
 
 **If `AI_PHASE_ENABLED` is `false`:**
+
 ```
 AI phase is disabled in config. Enable via /gsd:settings.
 ```
+
 Exit workflow.
 
 **If `planning_exists` is false:** Error — run `/gsd:new-project` first.
@@ -65,11 +70,13 @@ PHASE_INFO=$(gsd_run query roadmap.get-phase "${PHASE}")
 ## 3. Check Prerequisites
 
 **If `has_context` is false:**
+
 ```
 No CONTEXT.md found for Phase {N}.
 Recommended: run /gsd:discuss-phase {N} first to capture framework preferences.
 Continuing without user decisions — framework selector will ask all questions.
 ```
+
 Continue (non-blocking).
 
 ## 4. Check Existing AI-SPEC
@@ -88,6 +95,7 @@ which can rewrite decisions a person already recorded in it, and nobody is prese
 (#4776).
 
 **Otherwise:** Use AskUserQuestion:
+
 - header: "Existing AI-SPEC"
 - question: "AI-SPEC.md already exists for Phase {N}. What would you like to do?"
 - options:
@@ -102,6 +110,7 @@ If "Update": continue to step 5.
 ## 5. Spawn gsd-framework-selector
 
 Display:
+
 ```
 ### GSD ► AI DESIGN CONTRACT — PHASE {N}: {name}
 
@@ -109,6 +118,7 @@ Display:
 ```
 
 Spawn `gsd-framework-selector` with:
+
 ```markdown
 Read /Users/taha/projects/microservices-ecommerce/.pi/agents/gsd-framework-selector.md for instructions.
 
@@ -135,11 +145,13 @@ Parse selector output for: `primary_framework`, `system_type`, `model_provider`,
 ## 6. Initialize AI-SPEC.md
 
 Copy template:
+
 ```bash
 cp "/Users/taha/projects/microservices-ecommerce/.pi/gsd-core/templates/AI-SPEC.md" "${PHASE_DIR}/${PADDED_PHASE}-AI-SPEC.md"
 ```
 
 Fill in header fields:
+
 - Phase number and name
 - System classification (from selector)
 - Selected framework (from selector)
@@ -150,11 +162,13 @@ Fill in header fields:
 > **Ordering note (prevents tool-level last-writer-wins race):** Steps 7 and 8 write disjoint sections of AI-SPEC.md but MUST run sequentially — wait for Step 7 to complete before spawning Step 8. Both agents use the `Edit` tool exclusively (never `Write`) when modifying AI-SPEC.md. A `Write` on a shared file replaces the entire file, silently overwriting the other agent's work; `Edit` targets only the relevant lines. See #3096 for a confirmed 40%-incidence race on parallel dispatch.
 
 Display:
+
 ```
 ◆ Step 2/4 — Researching {primary_framework} docs + AI systems best practices...
 ```
 
 Spawn `gsd-ai-researcher` with:
+
 ```markdown
 Read /Users/taha/projects/microservices-ecommerce/.pi/agents/gsd-ai-researcher.md for instructions.
 
@@ -185,11 +199,13 @@ phase_context: Phase {phase_number}: {phase_name} — {phase_goal}
 > **Wait for Step 7 to complete before spawning this step** (see ordering note in Step 7).
 
 Display:
+
 ```
 ◆ Step 3/4 — Researching domain context and expert evaluation criteria...
 ```
 
 Spawn `gsd-domain-researcher` with:
+
 ```markdown
 Read /Users/taha/projects/microservices-ecommerce/.pi/agents/gsd-domain-researcher.md for instructions.
 
@@ -218,11 +234,13 @@ ai_spec_path: {ai_spec_path}
 ## 9. Spawn gsd-eval-planner
 
 Display:
+
 ```
 ◆ Step 4/4 — Designing evaluation strategy from domain + technical context...
 ```
 
 Spawn `gsd-eval-planner` with:
+
 ```markdown
 Read /Users/taha/projects/microservices-ecommerce/.pi/agents/gsd-eval-planner.md for instructions.
 
@@ -251,6 +269,7 @@ ai_spec_path: {ai_spec_path}
 ## 10. Validate AI-SPEC Completeness
 
 Read the completed AI-SPEC.md. Check that:
+
 - Section 2 has a framework name (not placeholder)
 - Section 1b has at least one domain rubric ingredient (Good/Bad/Stakes)
 - Section 3 has a non-empty code block (entry point pattern)
@@ -286,6 +305,7 @@ Next step:
 </process>
 
 <success_criteria>
+
 - [ ] Framework selected with rationale (Section 2)
 - [ ] AI-SPEC.md created from template
 - [ ] Framework docs + AI best practices researched (Sections 3, 4, 4b populated)
@@ -295,4 +315,4 @@ Next step:
 - [ ] AI-SPEC.md validated (Sections 1b, 2, 3, 4b, 5, 6 all non-empty)
 - [ ] Committed if commit_docs enabled
 - [ ] Next step surfaced to user
-</success_criteria>
+      </success_criteria>

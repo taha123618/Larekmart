@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 // hooks/lib/filename-classification.js — hand-written, NOT generated. One
 // tiny, deliberately-named filename slicer.
 //
@@ -21,8 +21,8 @@
  * @returns {string}
  */
 function finalExtension(name) {
-  if (typeof name !== 'string' || name === '') return '';
-  const i = name.lastIndexOf('.');
+  if (typeof name !== "string" || name === "") return "";
+  const i = name.lastIndexOf(".");
   return i === -1 ? name : name.slice(i + 1);
 }
 
@@ -47,17 +47,17 @@ function finalExtension(name) {
  * @returns {string}
  */
 function normalizeWindowsBasename(name) {
-  if (typeof name !== 'string' || name === '') return '';
+  if (typeof name !== "string" || name === "") return "";
   let end = name.length;
-  while (end > 0 && (name[end - 1] === '.' || name[end - 1] === ' ')) end--;
+  while (end > 0 && (name[end - 1] === "." || name[end - 1] === " ")) end--;
   return name.slice(0, end);
 }
 
 // Last `/`- or `\`-separated segment, ignoring trailing separators. A string
 // with no separator IS its own last segment.
 function lastSegment(tok) {
-  const s = tok.replace(/[\\/]+$/, '');
-  const i = Math.max(s.lastIndexOf('/'), s.lastIndexOf('\\'));
+  const s = tok.replace(/[\\/]+$/, "");
+  const i = Math.max(s.lastIndexOf("/"), s.lastIndexOf("\\"));
   return i === -1 ? s : s.slice(i + 1);
 }
 

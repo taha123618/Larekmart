@@ -100,10 +100,14 @@
 //        bug in a hook that runs on EVERY Bash call must never brick a
 //        session; the crash policy is declared once below).
 
-'use strict';
+"use strict";
 
-const { HOOK_ON_CRASH, allow, deny, crash } = require('./lib/hook-exit.js');
-const { finalExtension, normalizeWindowsBasename, lastSegment } = require('./lib/filename-classification.js');
+const { HOOK_ON_CRASH, allow, deny, crash } = require("./lib/hook-exit.js");
+const {
+  finalExtension,
+  normalizeWindowsBasename,
+  lastSegment,
+} = require("./lib/filename-classification.js");
 
 // Fail open on a hook-internal error (see header). Declared ONCE so the
 // outer catch states its policy explicitly (#3911).
@@ -119,17 +123,44 @@ const MAX_NESTING_DEPTH = 3;
 const MAX_GLOB_ALTERNATIVES = 64;
 
 // `.env.<suffix>` names that are templates, not secrets (case-insensitive).
-const NON_SECRET_ENV_SUFFIXES = new Set(['example', 'sample', 'template', 'dist']);
+const NON_SECRET_ENV_SUFFIXES = new Set([
+  "example",
+  "sample",
+  "template",
+  "dist",
+]);
 
 // Command-prefix wrappers to look through when locating the command word at
 // the head of a segment (same set as hooks/gsd-windsurf-pre-command.js).
-const CMD_PREFIXES = new Set(['sudo', 'env', 'command', 'nice', 'nohup', 'time', 'doas']);
+const CMD_PREFIXES = new Set([
+  "sudo",
+  "env",
+  "command",
+  "nice",
+  "nohup",
+  "time",
+  "doas",
+]);
 
 // Commands whose ordinary operands are file NAMES, never file CONTENTS. A
 // closed set on purpose: anything not listed is assumed to read.
 const NON_READING_COMMANDS = new Set([
-  'test', '[', '[[', 'ls', 'stat', 'touch', 'rm', 'chmod', 'chown', 'mkdir',
-  'basename', 'dirname', 'realpath', 'file', 'echo', 'printf',
+  "test",
+  "[",
+  "[[",
+  "ls",
+  "stat",
+  "touch",
+  "rm",
+  "chmod",
+  "chown",
+  "mkdir",
+  "basename",
+  "dirname",
+  "realpath",
+  "file",
+  "echo",
+  "printf",
 ]);
 
 // #4639: container runtimes take `--env-file <file>` — the runtime opens the
@@ -138,7 +169,12 @@ const NON_READING_COMMANDS = new Set([
 // same category NON_READING_COMMANDS encodes, expressed as a flag value. Only
 // the flag's value under these runtimes is exempt; every other operand in the
 // segment is still checked, so the carve-out cannot launder a read.
-const CONTAINER_RUNTIMES = new Set(['docker', 'docker-compose', 'podman', 'nerdctl']);
+const CONTAINER_RUNTIMES = new Set([
+  "docker",
+  "docker-compose",
+  "podman",
+  "nerdctl",
+]);
 const ENV_FILE_FLAG_RE = /^--env-file(=|$)/;
 
 // Shell interpreters that run a script from `-c`, a file operand, or stdin
@@ -146,17 +182,35 @@ const ENV_FILE_FLAG_RE = /^--env-file(=|$)/;
 // form (`su [user] -c 'cmd'`); a bare `su user` resolves to file mode, which
 // only runs the ordinary operand check. `eval`, `source`/`.` and `xargs` are
 // their own cases below; they are not in this set.
-const SHELL_INTERPRETERS = new Set(['bash', 'sh', 'zsh', 'dash', 'ksh', 'su']);
+const SHELL_INTERPRETERS = new Set(["bash", "sh", "zsh", "dash", "ksh", "su"]);
 
 // Shell flags whose VALUE is the next operand (`bash -o pipefail`,
 // `bash --rcfile x <<EOF`): skipped when locating a script-file operand, so a
 // flag value is not mistaken for the script and stdin mode still applies.
-const SHELL_VALUE_FLAGS = new Set(['-o', '-O', '+o', '+O', '--rcfile', '--init-file']);
+const SHELL_VALUE_FLAGS = new Set([
+  "-o",
+  "-O",
+  "+o",
+  "+O",
+  "--rcfile",
+  "--init-file",
+]);
 
 // Value-taking `xargs` flags (long `--flag=value` forms are single words).
 // `-a`/`--arg-file` additionally replaces stdin, so it suppresses the pipeline
 // inference below.
-const XARGS_VALUE_FLAGS = new Set(['-n', '-I', '-i', '-L', '-l', '-P', '-s', '-d', '-E', '-a']);
+const XARGS_VALUE_FLAGS = new Set([
+  "-n",
+  "-I",
+  "-i",
+  "-L",
+  "-l",
+  "-P",
+  "-s",
+  "-d",
+  "-E",
+  "-a",
+]);
 
 // Probe names a Grep glob alternative is matched against. `.env` and
 // `.secrets` are the exact names; the rest stand in for the open-ended
@@ -165,9 +219,16 @@ const XARGS_VALUE_FLAGS = new Set(['-n', '-I', '-i', '-L', '-l', '-P', '-s', '-d
 // an alternative like `*.ts` matches no probe and is allowed even though a
 // `.env.foo.ts` would satisfy the name predicate.
 const GLOB_PROBES = [
-  '.env', '.secrets', '.env.local', '.env.development', '.env.production',
-  '.env.staging', '.env.test', '.env.development.local', '.env.production.local',
-  '.env.zzq',
+  ".env",
+  ".secrets",
+  ".env.local",
+  ".env.development",
+  ".env.production",
+  ".env.staging",
+  ".env.test",
+  ".env.development.local",
+  ".env.production.local",
+  ".env.zzq",
 ];
 
 // ---------------------------------------------------------------------------
@@ -179,10 +240,13 @@ function isSecretBasename(name) {
   // `.env ` etc. resolve to the real `.env` on Windows — normalize FIRST so
   // those aliases can't bypass classification.
   const n = normalizeWindowsBasename(name);
-  if (n === '.env' || n === '.secrets') return true;
-  if (n.startsWith('.env.')) {
-    const suffix = n.slice('.env.'.length);
-    return suffix !== '' && !NON_SECRET_ENV_SUFFIXES.has(finalExtension(suffix).toLowerCase());
+  if (n === ".env" || n === ".secrets") return true;
+  if (n.startsWith(".env.")) {
+    const suffix = n.slice(".env.".length);
+    return (
+      suffix !== "" &&
+      !NON_SECRET_ENV_SUFFIXES.has(finalExtension(suffix).toLowerCase())
+    );
   }
   return false;
 }
@@ -193,10 +257,10 @@ function isSecretBasename(name) {
 // case-insensitive filesystems (macOS, Windows) where they ARE the secret file
 // — the same stance as the write guard's `/i` patterns.
 function namesSecret(tok) {
-  if (typeof tok !== 'string' || tok === '') return false;
+  if (typeof tok !== "string" || tok === "") return false;
   const lower = tok.toLowerCase();
   if (isSecretBasename(lastSegment(lower))) return true;
-  const colon = lower.lastIndexOf(':');
+  const colon = lower.lastIndexOf(":");
   return colon !== -1 && isSecretBasename(lastSegment(lower.slice(colon + 1)));
 }
 
@@ -208,18 +272,21 @@ function namesSecret(tok) {
 // when the list would exceed MAX_GLOB_ALTERNATIVES. Malformed braces are
 // treated literally.
 function expandBraces(glob) {
-  const open = glob.indexOf('{');
+  const open = glob.indexOf("{");
   if (open === -1) return [glob];
   let depth = 0;
   let close = -1;
   const commas = [];
   for (let i = open; i < glob.length; i++) {
     const ch = glob[i];
-    if (ch === '{') depth++;
-    else if (ch === '}') {
+    if (ch === "{") depth++;
+    else if (ch === "}") {
       depth--;
-      if (depth === 0) { close = i; break; }
-    } else if (ch === ',' && depth === 1) commas.push(i);
+      if (depth === 0) {
+        close = i;
+        break;
+      }
+    } else if (ch === "," && depth === 1) commas.push(i);
   }
   if (close === -1) return [glob];
   const pre = glob.slice(0, open);
@@ -247,27 +314,33 @@ function expandBraces(glob) {
 // Anchored regex for one brace-free glob alternative (`*` → `[^/]*`,
 // `?` → `[^/]`, `[…]` classes passed through with `[!` → `[^`).
 function globAltToRegex(alt) {
-  let out = '^';
+  let out = "^";
   for (let i = 0; i < alt.length; i++) {
     const ch = alt[i];
-    if (ch === '*') out += '[^/]*';
-    else if (ch === '?') out += '[^/]';
-    else if (ch === '[') {
-      const j = alt.indexOf(']', i + 1);
-      if (j === -1) out += '\\[';
+    if (ch === "*") out += "[^/]*";
+    else if (ch === "?") out += "[^/]";
+    else if (ch === "[") {
+      const j = alt.indexOf("]", i + 1);
+      if (j === -1) out += "\\[";
       else {
         const body = alt.slice(i + 1, j);
-        out += '[' + (body.startsWith('!') ? '^' + body.slice(1) : body).replace(/\\/g, '\\\\') + ']';
+        out +=
+          "[" +
+          (body.startsWith("!") ? "^" + body.slice(1) : body).replace(
+            /\\/g,
+            "\\\\",
+          ) +
+          "]";
         i = j;
       }
-    } else out += ch.replace(/[.+^${}()|\\]/g, '\\$&');
+    } else out += ch.replace(/[.+^${}()|\\]/g, "\\$&");
   }
-  return new RegExp(out + '$');
+  return new RegExp(out + "$");
 }
 
 // Does this single alternative select any secret name? (See header.)
 function globAltSelectsSecret(alt) {
-  if (alt === '') return false;
+  if (alt === "") return false;
   if (/^[*?]+$/.test(alt)) return false; // pure wildcard: equivalent to no glob
   const wild = alt.search(/[*?[]/);
   const lit = wild === -1 ? alt : alt.slice(0, wild);
@@ -281,10 +354,11 @@ function globAltSelectsSecret(alt) {
   // conservative prefix rule stays.
   if (wild === -1) {
     if (isSecretBasename(lit)) return true;
-  } else if (lit.startsWith('.env.')) {
+  } else if (lit.startsWith(".env.")) {
     return true;
   }
-  if (lit !== '' && ('.env.'.startsWith(lit) || '.secrets'.startsWith(lit))) return true;
+  if (lit !== "" && (".env.".startsWith(lit) || ".secrets".startsWith(lit)))
+    return true;
   let re;
   try {
     re = globAltToRegex(alt);
@@ -305,8 +379,8 @@ function classifyGrepGlob(glob) {
   // `*.ENV` select the secret namespace on case-insensitive filesystems.
   const segment = lastSegment(glob).toLowerCase();
   const alts = expandBraces(segment);
-  if (alts === null) return 'glob-too-complex';
-  return alts.some(globAltSelectsSecret) ? 'secret-read' : null;
+  if (alts === null) return "glob-too-complex";
+  return alts.some(globAltSelectsSecret) ? "secret-read" : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -321,7 +395,10 @@ function findParenClose(str, i) {
   let heredocTags = [];
   while (i < str.length) {
     const ch = str[i];
-    if (ch === '\\') { i += 2; continue; }
+    if (ch === "\\") {
+      i += 2;
+      continue;
+    }
     if (ch === "'") {
       const j = str.indexOf("'", i + 1);
       i = j === -1 ? str.length : j + 1;
@@ -330,10 +407,16 @@ function findParenClose(str, i) {
     if (ch === '"') {
       i++;
       while (i < str.length && str[i] !== '"') {
-        if (str[i] === '\\') { i += 2; continue; }
-        if (str[i] === '$' && str[i + 1] === '(') { i = findParenClose(str, i + 2) + 1; continue; }
-        if (str[i] === '`') {
-          const j = str.indexOf('`', i + 1);
+        if (str[i] === "\\") {
+          i += 2;
+          continue;
+        }
+        if (str[i] === "$" && str[i + 1] === "(") {
+          i = findParenClose(str, i + 2) + 1;
+          continue;
+        }
+        if (str[i] === "`") {
+          const j = str.indexOf("`", i + 1);
           i = j === -1 ? str.length : j + 1;
           continue;
         }
@@ -342,24 +425,24 @@ function findParenClose(str, i) {
       i++;
       continue;
     }
-    if (ch === '`') {
-      const j = str.indexOf('`', i + 1);
+    if (ch === "`") {
+      const j = str.indexOf("`", i + 1);
       i = j === -1 ? str.length : j + 1;
       continue;
     }
-    if (ch === '<' && str[i + 1] === '<' && str[i + 2] !== '<') {
+    if (ch === "<" && str[i + 1] === "<" && str[i + 2] !== "<") {
       const tag = readHeredocTag(str, i + 2);
       heredocTags.push(tag);
       i = tag.end;
       continue;
     }
-    if (ch === '\n' && heredocTags.length) {
+    if (ch === "\n" && heredocTags.length) {
       i = consumeHeredocBodies(str, i + 1, heredocTags).end;
       heredocTags = [];
       continue;
     }
-    if (ch === '(') depth++;
-    else if (ch === ')') {
+    if (ch === "(") depth++;
+    else if (ch === ")") {
       depth--;
       if (depth === 0) return i;
     }
@@ -371,10 +454,13 @@ function findParenClose(str, i) {
 // Reads the tag word after `<<` / `<<-` starting at `i`.
 function readHeredocTag(str, i) {
   let stripTabs = false;
-  if (str[i] === '-') { stripTabs = true; i++; }
-  while (str[i] === ' ' || str[i] === '\t') i++;
+  if (str[i] === "-") {
+    stripTabs = true;
+    i++;
+  }
+  while (str[i] === " " || str[i] === "\t") i++;
   let quoted = false;
-  let tag = '';
+  let tag = "";
   if (str[i] === "'" || str[i] === '"') {
     const q = str[i];
     const j = str.indexOf(q, i + 1);
@@ -382,7 +468,10 @@ function readHeredocTag(str, i) {
     quoted = true;
     i = j === -1 ? str.length : j + 1;
   } else {
-    if (str[i] === '\\') { quoted = true; i++; }
+    if (str[i] === "\\") {
+      quoted = true;
+      i++;
+    }
     while (i < str.length && !/[\s;&|<>()]/.test(str[i])) tag += str[i++];
   }
   return { tag, quoted, stripTabs, end: i };
@@ -396,16 +485,19 @@ function readHeredocTag(str, i) {
 function consumeHeredocBodies(str, i, tags) {
   const bodies = [];
   for (const t of tags) {
-    let body = '';
+    let body = "";
     let terminated = false;
     while (i < str.length) {
-      const nl = str.indexOf('\n', i);
+      const nl = str.indexOf("\n", i);
       const lineEnd = nl === -1 ? str.length : nl;
       const line = str.slice(i, lineEnd);
       i = nl === -1 ? str.length : nl + 1;
-      const probe = t.stripTabs ? line.replace(/^\t+/, '') : line;
-      if (probe === t.tag) { terminated = true; break; }
-      body += line + '\n';
+      const probe = t.stripTabs ? line.replace(/^\t+/, "") : line;
+      if (probe === t.tag) {
+        terminated = true;
+        break;
+      }
+      body += line + "\n";
     }
     bodies.push({ body, quoted: t.quoted, seg: t.seg });
     if (!terminated) break;
@@ -417,14 +509,14 @@ function consumeHeredocBodies(str, i, tags) {
 function collectSubstitutions(body, nested) {
   let i = 0;
   while (i < body.length) {
-    if (body[i] === '$' && body[i + 1] === '(') {
+    if (body[i] === "$" && body[i + 1] === "(") {
       const e = findParenClose(body, i + 2);
       nested.push(body.slice(i + 2, e));
       i = e + 1;
       continue;
     }
-    if (body[i] === '`') {
-      const j = body.indexOf('`', i + 1);
+    if (body[i] === "`") {
+      const j = body.indexOf("`", i + 1);
       const e = j === -1 ? body.length : j;
       nested.push(body.slice(i + 1, e));
       i = e + 1;
@@ -440,8 +532,8 @@ function collectSubstitutions(body, nested) {
 function tokenize(str) {
   const tokens = [];
   const nested = [];
-  let buf = '';
-  let quoted = 'none';
+  let buf = "";
+  let quoted = "none";
   let hasWord = false;
   let seg = 0;
   let heredocs = [];
@@ -452,24 +544,29 @@ function tokenize(str) {
     if (expectTag) {
       // Record the current seg (still the `<<` segment — flush runs before the
       // newline sep increments it) so pass 2 can attach the body to the shell.
-      heredocs.push({ tag: buf, quoted: quoted !== 'none', stripTabs: expectTag.stripTabs, seg });
+      heredocs.push({
+        tag: buf,
+        quoted: quoted !== "none",
+        stripTabs: expectTag.stripTabs,
+        seg,
+      });
       expectTag = null;
     } else {
-      tokens.push({ kind: 'word', text: buf, quoted, seg });
+      tokens.push({ kind: "word", text: buf, quoted, seg });
     }
-    buf = '';
-    quoted = 'none';
+    buf = "";
+    quoted = "none";
     hasWord = false;
   };
   // The operator text ends segment `seg`; pass 2 reads it to tell `a | bash`
   // (pipe inference) from `a || bash` and to skip grouping seps.
   const sep = (text) => {
     flush();
-    tokens.push({ kind: 'sep', text, quoted: 'none', seg });
+    tokens.push({ kind: "sep", text, quoted: "none", seg });
     seg++;
   };
   const op = (text, read, dup) => {
-    tokens.push({ kind: 'op', text, quoted: 'none', seg, read, dup });
+    tokens.push({ kind: "op", text, quoted: "none", seg, read, dup });
   };
 
   let i = 0;
@@ -478,7 +575,7 @@ function tokenize(str) {
 
     if (ch === "'") {
       hasWord = true;
-      if (quoted === 'none') quoted = 'single';
+      if (quoted === "none") quoted = "single";
       const j = str.indexOf("'", i + 1);
       const end = j === -1 ? str.length : j;
       buf += str.slice(i + 1, end);
@@ -488,23 +585,27 @@ function tokenize(str) {
 
     if (ch === '"') {
       hasWord = true;
-      if (quoted === 'none') quoted = 'double';
+      if (quoted === "none") quoted = "double";
       i++;
       while (i < str.length && str[i] !== '"') {
         const c = str[i];
-        if (c === '\\' && i + 1 < str.length && '"\\$`\n'.includes(str[i + 1])) {
-          if (str[i + 1] !== '\n') buf += str[i + 1];
+        if (
+          c === "\\" &&
+          i + 1 < str.length &&
+          '"\\$`\n'.includes(str[i + 1])
+        ) {
+          if (str[i + 1] !== "\n") buf += str[i + 1];
           i += 2;
           continue;
         }
-        if (c === '$' && str[i + 1] === '(') {
+        if (c === "$" && str[i + 1] === "(") {
           const e = findParenClose(str, i + 2);
           nested.push(str.slice(i + 2, e));
           i = e + 1;
           continue;
         }
-        if (c === '`') {
-          const j = str.indexOf('`', i + 1);
+        if (c === "`") {
+          const j = str.indexOf("`", i + 1);
           const e = j === -1 ? str.length : j;
           nested.push(str.slice(i + 1, e));
           i = e + 1;
@@ -517,15 +618,18 @@ function tokenize(str) {
       continue;
     }
 
-    if (ch === '\\') {
-      if (str[i + 1] === '\n') { i += 2; continue; } // line continuation
+    if (ch === "\\") {
+      if (str[i + 1] === "\n") {
+        i += 2;
+        continue;
+      } // line continuation
       hasWord = true;
       if (i + 1 < str.length) buf += str[i + 1];
       i += 2;
       continue;
     }
 
-    if (ch === '$' && str[i + 1] === '(') {
+    if (ch === "$" && str[i + 1] === "(") {
       hasWord = true;
       const e = findParenClose(str, i + 2);
       nested.push(str.slice(i + 2, e));
@@ -533,25 +637,25 @@ function tokenize(str) {
       continue;
     }
 
-    if (ch === '$' && str[i + 1] === '{') {
+    if (ch === "$" && str[i + 1] === "{") {
       hasWord = true;
-      const j = str.indexOf('}', i);
+      const j = str.indexOf("}", i);
       const e = j === -1 ? str.length - 1 : j;
       buf += str.slice(i, e + 1);
       i = e + 1;
       continue;
     }
 
-    if (ch === '`') {
+    if (ch === "`") {
       hasWord = true;
-      const j = str.indexOf('`', i + 1);
+      const j = str.indexOf("`", i + 1);
       const e = j === -1 ? str.length : j;
       nested.push(str.slice(i + 1, e));
       i = e + 1;
       continue;
     }
 
-    if ((ch === '<' || ch === '>') && str[i + 1] === '(') {
+    if ((ch === "<" || ch === ">") && str[i + 1] === "(") {
       flush();
       const e = findParenClose(str, i + 2);
       const inner = str.slice(i + 2, e);
@@ -559,20 +663,31 @@ function tokenize(str) {
       // Emit a word carrying the inner script so a shell / `source` operand
       // (`sh <(echo 'cat .env')`) can reconstruct it; the bare nested recursion
       // above only sees `echo …`, whose operands are not read.
-      tokens.push({ kind: 'word', text: str.slice(i, e + 1), quoted: 'none', seg, procsub: inner });
+      tokens.push({
+        kind: "word",
+        text: str.slice(i, e + 1),
+        quoted: "none",
+        seg,
+        procsub: inner,
+      });
       i = e + 1;
       continue;
     }
 
-    if (ch === '\n') {
-      sep('\n');
+    if (ch === "\n") {
+      sep("\n");
       i++;
       if (heredocs.length) {
         const r = consumeHeredocBodies(str, i, heredocs);
         for (const b of r.bodies) {
           // Emit a heredoc token per body (quoted included) — the body is the
           // stdin script only a shell interpreter runs. Kept out of `words`.
-          tokens.push({ kind: 'heredoc', text: b.body, quoted: b.quoted, seg: b.seg });
+          tokens.push({
+            kind: "heredoc",
+            text: b.body,
+            quoted: b.quoted,
+            seg: b.seg,
+          });
           if (!b.quoted) collectSubstitutions(b.body, nested); // bash expands $( ) here
         }
         heredocs = [];
@@ -581,85 +696,121 @@ function tokenize(str) {
       continue;
     }
 
-    if (ch === ' ' || ch === '\t' || ch === '\r') {
+    if (ch === " " || ch === "\t" || ch === "\r") {
       flush();
       i++;
       continue;
     }
 
-    if (ch === '#' && !hasWord) {
-      const j = str.indexOf('\n', i);
+    if (ch === "#" && !hasWord) {
+      const j = str.indexOf("\n", i);
       i = j === -1 ? str.length : j;
       continue;
     }
 
-    if (ch === '<' || ch === '>' || (ch === '&' && str[i + 1] === '>')) {
-      let fd = '';
-      if (hasWord && quoted === 'none' && /^\d+$/.test(buf)) {
+    if (ch === "<" || ch === ">" || (ch === "&" && str[i + 1] === ">")) {
+      let fd = "";
+      if (hasWord && quoted === "none" && /^\d+$/.test(buf)) {
         fd = buf;
-        buf = '';
+        buf = "";
         hasWord = false;
       } else {
         flush();
       }
       let j = i;
       let text;
-      if (str.startsWith('<<<', j)) { text = '<<<'; j += 3; }
-      else if (str.startsWith('<<-', j)) { text = '<<-'; j += 3; }
-      else if (str.startsWith('<<', j)) { text = '<<'; j += 2; }
-      else if (str.startsWith('&>>', j)) { text = '&>>'; j += 3; }
-      else if (str.startsWith('&>', j)) { text = '&>'; j += 2; }
-      else if (str.startsWith('>>', j)) { text = '>>'; j += 2; }
-      else if (str.startsWith('>|', j)) { text = '>|'; j += 2; }
-      else { text = ch; j += 1; }
-      if (text === '<<' || text === '<<-') {
-        expectTag = { stripTabs: text === '<<-' };
+      if (str.startsWith("<<<", j)) {
+        text = "<<<";
+        j += 3;
+      } else if (str.startsWith("<<-", j)) {
+        text = "<<-";
+        j += 3;
+      } else if (str.startsWith("<<", j)) {
+        text = "<<";
+        j += 2;
+      } else if (str.startsWith("&>>", j)) {
+        text = "&>>";
+        j += 3;
+      } else if (str.startsWith("&>", j)) {
+        text = "&>";
+        j += 2;
+      } else if (str.startsWith(">>", j)) {
+        text = ">>";
+        j += 2;
+      } else if (str.startsWith(">|", j)) {
+        text = ">|";
+        j += 2;
+      } else {
+        text = ch;
+        j += 1;
+      }
+      if (text === "<<" || text === "<<-") {
+        expectTag = { stripTabs: text === "<<-" };
         i = j;
         continue;
       }
       let dup = false;
-      if ((text === '<' || text === '>') && str[j] === '&' && /[\d-]/.test(str[j + 1] || '')) {
+      if (
+        (text === "<" || text === ">") &&
+        str[j] === "&" &&
+        /[\d-]/.test(str[j + 1] || "")
+      ) {
         let k = j + 1;
         while (k < str.length && /[\d-]/.test(str[k])) k++;
         text += str.slice(j, k);
         j = k;
         dup = true;
       }
-      op(fd + text, text[0] === '<' && text !== '<<<', dup);
+      op(fd + text, text[0] === "<" && text !== "<<<", dup);
       i = j;
       continue;
     }
 
     // Lookahead first, THEN record the full operator, so `a || bash` reports
     // `||` (no pipe inference) and `a | bash` reports `|` (pipe inference).
-    if (ch === ';') {
-      let text = ';';
+    if (ch === ";") {
+      let text = ";";
       i++;
-      if (str[i] === ';') { text = ';;'; i++; }
+      if (str[i] === ";") {
+        text = ";;";
+        i++;
+      }
       sep(text);
       continue;
     }
-    if (ch === '|') {
-      let text = '|';
+    if (ch === "|") {
+      let text = "|";
       i++;
-      if (str[i] === '|') { text = '||'; i++; }
-      else if (str[i] === '&') { text = '|&'; i++; }
+      if (str[i] === "|") {
+        text = "||";
+        i++;
+      } else if (str[i] === "&") {
+        text = "|&";
+        i++;
+      }
       sep(text);
       continue;
     }
-    if (ch === '&') {
-      let text = '&';
+    if (ch === "&") {
+      let text = "&";
       i++;
-      if (str[i] === '&') { text = '&&'; i++; }
+      if (str[i] === "&") {
+        text = "&&";
+        i++;
+      }
       sep(text);
       continue;
     }
-    if (ch === '(' || ch === ')') {
+    if (ch === "(" || ch === ")") {
       sep(ch);
       i++;
       continue;
     }
-    if ((ch === '{' || ch === '}') && !hasWord && (i + 1 >= str.length || /[\s;&|)]/.test(str[i + 1]))) {
+    if (
+      (ch === "{" || ch === "}") &&
+      !hasWord &&
+      (i + 1 >= str.length || /[\s;&|)]/.test(str[i + 1]))
+    ) {
       sep(ch);
       i++;
       continue;
@@ -680,9 +831,9 @@ function tokenize(str) {
 // `@file` (curl -d), `--flag=value`, `-Xvalue` → the operand that names the file.
 function normalizeOperand(text) {
   let v = text;
-  if (v.startsWith('@')) v = v.slice(1);
-  if (v.startsWith('--')) {
-    const eq = v.indexOf('=');
+  if (v.startsWith("@")) v = v.slice(1);
+  if (v.startsWith("--")) {
+    const eq = v.indexOf("=");
     if (eq !== -1) v = v.slice(eq + 1);
   } else if (/^-[A-Za-z]./.test(v)) {
     v = v.slice(2);
@@ -695,7 +846,7 @@ const ASSIGNMENT_RE = /^[A-Za-z_][A-Za-z0-9_]*=/;
 // `-c`, or a combined short flag ending in `c` (`-lc`, `-ec`, `-euc`): mode c.
 const DASH_C_RE = /^-[A-Za-z]*c$/;
 
-const GROUPING_SEPS = new Set(['(', ')', '{', '}']);
+const GROUPING_SEPS = new Set(["(", ")", "{", "}"]);
 
 // Command base + operands after leading `VAR=val` assignments and prefix
 // wrappers (`sudo`, `env VAR=x`, …), or null when nothing but prefixes remain.
@@ -706,12 +857,15 @@ function resolveCommand(words) {
     const base = lastSegment(words[idx].text).toLowerCase();
     if (!CMD_PREFIXES.has(base)) break;
     idx++;
-    if (base === 'env') {
+    if (base === "env") {
       while (idx < words.length && ASSIGNMENT_RE.test(words[idx].text)) idx++;
     }
   }
   if (idx >= words.length) return null;
-  return { base: lastSegment(words[idx].text).toLowerCase(), operands: words.slice(idx + 1) };
+  return {
+    base: lastSegment(words[idx].text).toLowerCase(),
+    operands: words.slice(idx + 1),
+  };
 }
 
 // The statically-knowable stdin a segment writes: `echo`/`printf` operands
@@ -720,12 +874,19 @@ function resolveCommand(words) {
 function reconstructedScript(words) {
   const cmd = resolveCommand(words);
   if (!cmd) return null;
-  if (cmd.base === 'echo') {
+  if (cmd.base === "echo") {
     let start = 0;
-    while (start < cmd.operands.length && /^-[neE]+$/.test(cmd.operands[start].text)) start++;
-    return cmd.operands.slice(start).map((w) => w.text).join(' ');
+    while (
+      start < cmd.operands.length &&
+      /^-[neE]+$/.test(cmd.operands[start].text)
+    )
+      start++;
+    return cmd.operands
+      .slice(start)
+      .map((w) => w.text)
+      .join(" ");
   }
-  if (cmd.base === 'printf') return cmd.operands.map((w) => w.text).join(' ');
+  if (cmd.base === "printf") return cmd.operands.map((w) => w.text).join(" ");
   return null;
 }
 
@@ -734,8 +895,8 @@ function reconstructedProcsub(inner) {
   const { tokens } = tokenize(inner);
   const words = [];
   for (const t of tokens) {
-    if (t.kind === 'sep') break;
-    if (t.kind === 'word') words.push(t);
+    if (t.kind === "sep") break;
+    if (t.kind === "word") words.push(t);
   }
   return reconstructedScript(words);
 }
@@ -745,7 +906,7 @@ function reconstructedProcsub(inner) {
 // empty segment between `)` and `|`). Returns { op, prevSeg }.
 function precedingOp(s, bySeg, sepAfter) {
   let p = s - 1;
-  while (p >= 0 && !(bySeg.get(p) || []).some((t) => t.kind === 'word')) p--;
+  while (p >= 0 && !(bySeg.get(p) || []).some((t) => t.kind === "word")) p--;
   if (p < 0) return { op: undefined, prevSeg: -1 };
   let op;
   for (let q = p; q < s; q++) {
@@ -776,9 +937,9 @@ function findSecretRead(command, depth) {
   let maxSeg = 0;
   for (const t of tokens) {
     if (t.seg > maxSeg) maxSeg = t.seg;
-    if (t.kind === 'sep') {
+    if (t.kind === "sep") {
       sepAfter.set(t.seg, t.text);
-    } else if (t.kind === 'heredoc') {
+    } else if (t.kind === "heredoc") {
       if (!heredocsBySeg.has(t.seg)) heredocsBySeg.set(t.seg, []);
       heredocsBySeg.get(t.seg).push(t);
     } else {
@@ -795,12 +956,13 @@ function findSecretRead(command, depth) {
     const hereStrings = [];
     for (let k = 0; k < segTokens.length; k++) {
       const t = segTokens[k];
-      if (t.kind === 'op') {
+      if (t.kind === "op") {
         if (t.dup) continue;
         const target = segTokens[k + 1];
-        if (target && target.kind === 'word') {
+        if (target && target.kind === "word") {
           k++;
-          if (t.text.endsWith('<<<')) hereStrings.push(target.text); // stdin data for a shell
+          if (t.text.endsWith("<<<"))
+            hereStrings.push(target.text); // stdin data for a shell
           // Input redirects are reads regardless of the command's exemption.
           else if (t.read && namesSecret(target.text)) return target.text;
         }
@@ -816,16 +978,19 @@ function findSecretRead(command, depth) {
     const heredocs = heredocsBySeg.get(s) || [];
 
     // eval concatenates ALL its operands and runs the result.
-    if (base === 'eval') {
+    if (base === "eval") {
       if (depth < MAX_NESTING_DEPTH) {
-        const hit = findSecretRead(operands.map((w) => w.text).join(' '), depth + 1);
+        const hit = findSecretRead(
+          operands.map((w) => w.text).join(" "),
+          depth + 1,
+        );
         if (hit) return hit;
       }
       continue;
     }
 
     // `source` / `.` reads a file (or a process-substitution script).
-    if (base === 'source' || base === '.') {
+    if (base === "source" || base === ".") {
       for (const w of operands) {
         if (w.procsub !== undefined && depth < MAX_NESTING_DEPTH) {
           const src = reconstructedProcsub(w.procsub);
@@ -839,7 +1004,7 @@ function findSecretRead(command, depth) {
     }
 
     // xargs turns stdin file names into a sub-command's operands.
-    if (base === 'xargs' && depth < MAX_NESTING_DEPTH) {
+    if (base === "xargs" && depth < MAX_NESTING_DEPTH) {
       const hit = scanXargsPipe(operands, s, bySeg, sepAfter, depth);
       if (hit) return hit;
       // `.env` given to xargs itself (`xargs -a .env cat`) is an ordinary
@@ -847,7 +1012,15 @@ function findSecretRead(command, depth) {
     }
 
     if (SHELL_INTERPRETERS.has(base) && depth < MAX_NESTING_DEPTH) {
-      const hit = scanShellInterpreter(operands, heredocs, hereStrings, s, bySeg, sepAfter, depth);
+      const hit = scanShellInterpreter(
+        operands,
+        heredocs,
+        hereStrings,
+        s,
+        bySeg,
+        sepAfter,
+        depth,
+      );
       if (hit) return hit;
       // `bash .env` (file mode) is caught by the operand check below.
     }
@@ -861,9 +1034,12 @@ function findSecretRead(command, depth) {
     let skipNext = false;
     for (const w of operands) {
       if (envFileExempt) {
-        if (skipNext) { skipNext = false; continue; }
+        if (skipNext) {
+          skipNext = false;
+          continue;
+        }
         if (ENV_FILE_FLAG_RE.test(w.text)) {
-          if (!w.text.includes('=')) skipNext = true; // bare flag consumes the next operand
+          if (!w.text.includes("=")) skipNext = true; // bare flag consumes the next operand
           continue;
         }
       }
@@ -874,7 +1050,15 @@ function findSecretRead(command, depth) {
 }
 
 // A shell interpreter's script comes from `-c`, a file operand, or stdin.
-function scanShellInterpreter(operands, heredocs, hereStrings, s, bySeg, sepAfter, depth) {
+function scanShellInterpreter(
+  operands,
+  heredocs,
+  hereStrings,
+  s,
+  bySeg,
+  sepAfter,
+  depth,
+) {
   const cIdx = operands.findIndex((w) => DASH_C_RE.test(w.text));
   if (cIdx !== -1) {
     // Mode c: the next operand is the script; stdin is DATA (not scanned).
@@ -884,8 +1068,14 @@ function scanShellInterpreter(operands, heredocs, hereStrings, s, bySeg, sepAfte
   }
   let fileTok;
   for (let m = 0; m < operands.length; m++) {
-    if (SHELL_VALUE_FLAGS.has(operands[m].text)) { m++; continue; }
-    if (!operands[m].text.startsWith('-')) { fileTok = operands[m]; break; }
+    if (SHELL_VALUE_FLAGS.has(operands[m].text)) {
+      m++;
+      continue;
+    }
+    if (!operands[m].text.startsWith("-")) {
+      fileTok = operands[m];
+      break;
+    }
   }
   if (fileTok) {
     // Mode file: `bash <(echo 'cat .env')`; a plain file is checked as an operand.
@@ -905,8 +1095,10 @@ function scanShellInterpreter(operands, heredocs, hereStrings, s, bySeg, sepAfte
     if (hit) return hit;
   }
   const { op, prevSeg } = precedingOp(s, bySeg, sepAfter);
-  if ((op === '|' || op === '|&') && prevSeg >= 0) {
-    const src = reconstructedScript((bySeg.get(prevSeg) || []).filter((t) => t.kind === 'word'));
+  if ((op === "|" || op === "|&") && prevSeg >= 0) {
+    const src = reconstructedScript(
+      (bySeg.get(prevSeg) || []).filter((t) => t.kind === "word"),
+    );
     if (src !== null) return findSecretRead(src, depth + 1);
   }
   return null;
@@ -922,11 +1114,21 @@ function scanXargsPipe(operands, s, bySeg, sepAfter, depth) {
   let subIdx = -1;
   for (let m = 0; m < operands.length; m++) {
     const t = operands[m].text;
-    if (t === '-a' || t === '--arg-file') { argFile = true; m++; continue; }
-    if (t.startsWith('--arg-file=')) { argFile = true; continue; }
-    if (XARGS_VALUE_FLAGS.has(t)) { m++; continue; }
-    if (t.startsWith('--') && t.includes('=')) continue;
-    if (t.startsWith('-')) continue; // no-value flag (-0 -r -t -p) or long flag
+    if (t === "-a" || t === "--arg-file") {
+      argFile = true;
+      m++;
+      continue;
+    }
+    if (t.startsWith("--arg-file=")) {
+      argFile = true;
+      continue;
+    }
+    if (XARGS_VALUE_FLAGS.has(t)) {
+      m++;
+      continue;
+    }
+    if (t.startsWith("--") && t.includes("=")) continue;
+    if (t.startsWith("-")) continue; // no-value flag (-0 -r -t -p) or long flag
     subIdx = m;
     break;
   }
@@ -935,20 +1137,30 @@ function scanXargsPipe(operands, s, bySeg, sepAfter, depth) {
   const subBase = lastSegment(operands[subIdx].text).toLowerCase();
   if (SHELL_INTERPRETERS.has(subBase)) {
     // Heredocs/here-strings belong to xargs, not the sub-shell; pass none.
-    const hit = scanShellInterpreter(operands.slice(subIdx + 1), [], [], s, bySeg, sepAfter, depth);
+    const hit = scanShellInterpreter(
+      operands.slice(subIdx + 1),
+      [],
+      [],
+      s,
+      bySeg,
+      sepAfter,
+      depth,
+    );
     if (hit) return hit;
   }
   if (argFile) return null; // stdin replaced by a file — no pipeline inference
   if (NON_READING_COMMANDS.has(subBase)) return null;
 
   const { op, prevSeg } = precedingOp(s, bySeg, sepAfter);
-  if (op !== '|' && op !== '|&') return null;
+  if (op !== "|" && op !== "|&") return null;
   if (prevSeg < 0) return null;
 
   // Every upstream operand is a candidate file name — the NON_READING
   // exemption is bypassed for it, but the `.env.example|…` suffix exemption in
   // isSecretBasename still holds.
-  const prevCmd = resolveCommand((bySeg.get(prevSeg) || []).filter((t) => t.kind === 'word'));
+  const prevCmd = resolveCommand(
+    (bySeg.get(prevSeg) || []).filter((t) => t.kind === "word"),
+  );
   if (!prevCmd) return null;
   for (const w of prevCmd.operands) {
     if (namesSecret(normalizeOperand(w.text))) return w.text;
@@ -960,34 +1172,41 @@ function scanXargsPipe(operands, s, bySeg, sepAfter, depth) {
 // Emission
 // ---------------------------------------------------------------------------
 
-const PATTERN_TEXT = '.env, .env.<suffix> (except .env.example/.sample/.template/.dist), .secrets';
+const PATTERN_TEXT =
+  ".env, .env.<suffix> (except .env.example/.sample/.template/.dist), .secrets";
 
 function reasonFor(code, tool, target) {
-  if (code === 'command-too-large') {
-    return `Secret read guard: this Bash command is over ${MAX_COMMAND_LENGTH} characters and ` +
-      'cannot be checked for secret-file reads. Split it into smaller commands.';
+  if (code === "command-too-large") {
+    return (
+      `Secret read guard: this Bash command is over ${MAX_COMMAND_LENGTH} characters and ` +
+      "cannot be checked for secret-file reads. Split it into smaller commands."
+    );
   }
-  if (code === 'glob-too-complex') {
-    return `Secret read guard: the Grep glob '${target}' expands to more than ${MAX_GLOB_ALTERNATIVES} ` +
-      'alternatives and cannot be checked for secret-file matches. Use a narrower glob.';
+  if (code === "glob-too-complex") {
+    return (
+      `Secret read guard: the Grep glob '${target}' expands to more than ${MAX_GLOB_ALTERNATIVES} ` +
+      "alternatives and cannot be checked for secret-file matches. Use a narrower glob."
+    );
   }
-  return `Secret read guard: ${tool} would read '${target}', which matches a protected secret-file ` +
+  return (
+    `Secret read guard: ${tool} would read '${target}', which matches a protected secret-file ` +
     `pattern (${PATTERN_TEXT}). Secret values must not be read into the conversation. ` +
-    'If you need a specific value, ask the user for it; if you need the variable NAMES, ' +
-    'read the non-secret template (.env.example) instead.';
+    "If you need a specific value, ask the user for it; if you need the variable NAMES, " +
+    "read the non-secret template (.env.example) instead."
+  );
 }
 
 // stdout gets the typed JSON block; stderr gets the plain reason string
 // (Kimi's hook bus reads stderr verbatim back to the model — #3911).
 function emitBlock(code, tool, target) {
   const reason = reasonFor(code, tool, target);
-  deny({ decision: 'block', code, tool, path: target, reason }, reason);
+  deny({ decision: "block", code, tool, path: target, reason }, reason);
 }
 
 // Strips a `module:` prefix so Kimi's `kimi_cli.tools.file:Grep` (not in the
 // KIMI_TOOL_NAMES map — Grep has the same name on both buses) matches.
 function bareToolName(raw) {
-  return typeof raw === 'string' ? raw.slice(raw.lastIndexOf(':') + 1) : '';
+  return typeof raw === "string" ? raw.slice(raw.lastIndexOf(":") + 1) : "";
 }
 
 // #2304: Kimi's native hook bus delivers Kimi's tool vocabulary in the
@@ -996,7 +1215,12 @@ function bareToolName(raw) {
 // tests/kimi-guard-normalization-parity.test.cjs — do not edit locally).
 // Grep keeps its name on Kimi and is not in the map; bareToolName() above
 // strips the module prefix for it.
-const KIMI_TOOL_NAMES = new Map([['WriteFile', 'Write'], ['StrReplaceFile', 'Edit'], ['ReadFile', 'Read'], ['Shell', 'Bash']]);
+const KIMI_TOOL_NAMES = new Map([
+  ["WriteFile", "Write"],
+  ["StrReplaceFile", "Edit"],
+  ["ReadFile", "Read"],
+  ["Shell", "Bash"],
+]);
 function normalizeKimiPayload(data) {
   // #2595 (review nit): `JSON.parse('null')` is null, and null/primitive
   // payloads reached the `data.tool_name` read below and threw — falsifying
@@ -1004,17 +1228,17 @@ function normalizeKimiPayload(data) {
   // property (e) now tests directly. Harmless in practice (a null payload has
   // nothing to guard, and the throw landed in the same fail-open catch as the
   // exit-0 it now takes deliberately) but the claim should be true as stated.
-  if (data === null || typeof data !== 'object') return data;
+  if (data === null || typeof data !== "object") return data;
   const raw = data.tool_name;
-  if (typeof raw !== 'string') return data;
-  const mapped = KIMI_TOOL_NAMES.get(raw.slice(raw.lastIndexOf(':') + 1));
+  if (typeof raw !== "string") return data;
+  const mapped = KIMI_TOOL_NAMES.get(raw.slice(raw.lastIndexOf(":") + 1));
   if (!mapped) return data;
   data.tool_name = mapped;
   if (data.tool_response === undefined && data.tool_output !== undefined) {
     data.tool_response = data.tool_output;
   }
   const input = data.tool_input;
-  if (input && typeof input === 'object') {
+  if (input && typeof input === "object") {
     // #2547 (review): Kimi's `path` is AUTHORITATIVE — it must win outright,
     // not merely fill in when `file_path` happens to be absent. kimi-cli's file
     // tools carry no `file_path` field at all (src/kimi_cli/tools/file/write.py,
@@ -1033,11 +1257,14 @@ function normalizeKimiPayload(data) {
     // elsewhere, reached through the guard's own read rather than through
     // normalization. Overwriting can only ever narrow what a guard inspects to
     // the path that will actually be written, so it cannot under-block.
-    if (typeof input.path === 'string') {
+    if (typeof input.path === "string") {
       input.file_path = input.path;
     }
-    const edits = Array.isArray(input.edit) ? input.edit
-      : (input.edit && typeof input.edit === 'object') ? [input.edit] : [];
+    const edits = Array.isArray(input.edit)
+      ? input.edit
+      : input.edit && typeof input.edit === "object"
+        ? [input.edit]
+        : [];
     if (edits.length) {
       // #2547: `e?.old`, not `e.old` — `??` guards the value, not the
       // dereference, so a NULLISH entry (`edit: [null]`) threw a TypeError
@@ -1053,7 +1280,13 @@ function normalizeKimiPayload(data) {
       // stringification intact for every value that CAN coerce (numbers,
       // arrays, plain objects), so nothing downstream — including
       // gsd-prompt-guard's scan of new_string — loses content it saw before.
-      const editText = (v) => { try { return String(v ?? ''); } catch { return ''; } };
+      const editText = (v) => {
+        try {
+          return String(v ?? "");
+        } catch {
+          return "";
+        }
+      };
       // #2595 (review Major 2): reconstruct UNCONDITIONALLY, mirroring the
       // `path` decision above rather than merely filling in when the field
       // happens to be absent. kimi-cli's StrReplaceFile schema is `path` +
@@ -1066,50 +1299,58 @@ function normalizeKimiPayload(data) {
       // real `edit[].new` — a one-key bypass of the very scan this fix's
       // guarded coercion exists to keep fed. A `typeof` test would NOT close
       // it: a benign non-empty string shadows just as effectively as ''.
-      input.old_string = edits.map((e) => editText(e?.old)).join('\n');
-      input.new_string = edits.map((e) => editText(e?.new)).join('\n');
+      input.old_string = edits.map((e) => editText(e?.old)).join("\n");
+      input.new_string = edits.map((e) => editText(e?.new)).join("\n");
     }
   }
   return data;
 }
 
-let input = '';
+let input = "";
 const stdinTimeout = setTimeout(() => allow(undefined), 3000);
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => input += chunk);
-process.stdin.on('end', () => {
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => (input += chunk));
+process.stdin.on("end", () => {
   clearTimeout(stdinTimeout);
   try {
     const data = normalizeKimiPayload(JSON.parse(input));
 
     // A null/primitive payload has nothing to guard — exit deliberately
     // rather than throwing into the fail-open catch below (#2595 class).
-    if (data === null || typeof data !== 'object') {
+    if (data === null || typeof data !== "object") {
       allow(undefined);
     }
 
     const tool = bareToolName(data.tool_name);
-    if (tool !== 'Read' && tool !== 'Grep' && tool !== 'Bash') {
+    if (tool !== "Read" && tool !== "Grep" && tool !== "Bash") {
       allow(undefined);
     }
-    if (!data.tool_input || typeof data.tool_input !== 'object') {
+    if (!data.tool_input || typeof data.tool_input !== "object") {
       allow(undefined);
     }
 
     // Every payload field is read TYPED in a single statement (#2547 class):
     // `[]`/`{}` are truthy and a non-string degrades to '' here.
-    if (tool === 'Read') {
-      const filePath = typeof data.tool_input.file_path === 'string' ? data.tool_input.file_path : '';
-      if (namesSecret(filePath)) emitBlock('secret-read', tool, filePath);
+    if (tool === "Read") {
+      const filePath =
+        typeof data.tool_input.file_path === "string"
+          ? data.tool_input.file_path
+          : "";
+      if (namesSecret(filePath)) emitBlock("secret-read", tool, filePath);
       allow(undefined);
     }
 
-    if (tool === 'Grep') {
-      const grepPath = typeof data.tool_input.path === 'string' ? data.tool_input.path
-        : (typeof data.tool_input.file_path === 'string' ? data.tool_input.file_path : '');
-      if (namesSecret(grepPath)) emitBlock('secret-read', tool, grepPath);
-      const glob = typeof data.tool_input.glob === 'string' ? data.tool_input.glob : '';
-      if (glob !== '') {
+    if (tool === "Grep") {
+      const grepPath =
+        typeof data.tool_input.path === "string"
+          ? data.tool_input.path
+          : typeof data.tool_input.file_path === "string"
+            ? data.tool_input.file_path
+            : "";
+      if (namesSecret(grepPath)) emitBlock("secret-read", tool, grepPath);
+      const glob =
+        typeof data.tool_input.glob === "string" ? data.tool_input.glob : "";
+      if (glob !== "") {
         const verdict = classifyGrepGlob(glob);
         if (verdict) emitBlock(verdict, tool, glob);
       }
@@ -1117,11 +1358,15 @@ process.stdin.on('end', () => {
     }
 
     // Bash
-    const command = typeof data.tool_input.command === 'string' ? data.tool_input.command : '';
-    if (command === '') allow(undefined);
-    if (command.length > MAX_COMMAND_LENGTH) emitBlock('command-too-large', tool, '');
+    const command =
+      typeof data.tool_input.command === "string"
+        ? data.tool_input.command
+        : "";
+    if (command === "") allow(undefined);
+    if (command.length > MAX_COMMAND_LENGTH)
+      emitBlock("command-too-large", tool, "");
     const hit = findSecretRead(command, 0);
-    if (hit !== null) emitBlock('secret-read', tool, hit);
+    if (hit !== null) emitBlock("secret-read", tool, hit);
     allow(undefined);
   } catch {
     // Fail open — never block valid tool calls due to hook errors.

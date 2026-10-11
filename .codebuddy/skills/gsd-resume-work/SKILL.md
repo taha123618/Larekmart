@@ -4,7 +4,6 @@ description: "Resume work from previous session with full context restoration"
 user-invocable: false
 ---
 
-
 <objective>
 Restore complete project context and resume work seamlessly from previous session.
 

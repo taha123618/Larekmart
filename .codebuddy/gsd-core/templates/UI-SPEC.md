@@ -15,13 +15,13 @@ created: "{date}"
 
 ## Design System
 
-| Property | Value |
-|----------|-------|
-| Tool | {shadcn / none} |
-| Preset | {preset string or "not applicable"} |
-| Component library | {radix / base-ui / none} |
-| Icon library | {library} |
-| Font | {font} |
+| Property          | Value                               |
+| ----------------- | ----------------------------------- |
+| Tool              | {shadcn / none}                     |
+| Preset            | {preset string or "not applicable"} |
+| Component library | {radix / base-ui / none}            |
+| Icon library      | {library}                           |
+| Font              | {font}                              |
 
 ---
 
@@ -38,9 +38,9 @@ never a closed allowlist — the executor may use anything the design system exp
 `gsd-ui-checker` Dimension 7 reports the missing line as a defect. Checking for a component
 outside the table is the expected path, not an exception.
 
-| Component | Import path | Notes |
-|-----------|-------------|-------|
-| {name} | {import path} | {when to reach for it} |
+| Component | Import path   | Notes                  |
+| --------- | ------------- | ---------------------- |
+| {name}    | {import path} | {when to reach for it} |
 
 Omit this section entirely when the project has no design system (`Tool: none`).
 
@@ -50,15 +50,15 @@ Omit this section entirely when the project has no design system (`Tool: none`).
 
 Declared values (must be multiples of 4):
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| xs | 4px | Icon gaps, inline padding |
-| sm | 8px | Compact element spacing |
-| md | 16px | Default element spacing |
-| lg | 24px | Section padding |
-| xl | 32px | Layout gaps |
-| 2xl | 48px | Major section breaks |
-| 3xl | 64px | Page-level spacing |
+| Token | Value | Usage                     |
+| ----- | ----- | ------------------------- |
+| xs    | 4px   | Icon gaps, inline padding |
+| sm    | 8px   | Compact element spacing   |
+| md    | 16px  | Default element spacing   |
+| lg    | 24px  | Section padding           |
+| xl    | 32px  | Layout gaps               |
+| 2xl   | 48px  | Major section breaks      |
+| 3xl   | 64px  | Page-level spacing        |
 
 Exceptions: {list any, or "none"}
 
@@ -66,23 +66,23 @@ Exceptions: {list any, or "none"}
 
 ## Typography
 
-| Role | Size | Weight | Line Height |
-|------|------|--------|-------------|
-| Body | {px} | {weight} | {ratio} |
-| Label | {px} | {weight} | {ratio} |
-| Heading | {px} | {weight} | {ratio} |
-| Display | {px} | {weight} | {ratio} |
+| Role    | Size | Weight   | Line Height |
+| ------- | ---- | -------- | ----------- |
+| Body    | {px} | {weight} | {ratio}     |
+| Label   | {px} | {weight} | {ratio}     |
+| Heading | {px} | {weight} | {ratio}     |
+| Display | {px} | {weight} | {ratio}     |
 
 ---
 
 ## Color
 
-| Role | Value | Usage |
-|------|-------|-------|
-| Dominant (60%) | {hex} | Background, surfaces |
-| Secondary (30%) | {hex} | Cards, sidebar, nav |
-| Accent (10%) | {hex} | {list specific elements only} |
-| Destructive | {hex} | Destructive actions only |
+| Role            | Value | Usage                         |
+| --------------- | ----- | ----------------------------- |
+| Dominant (60%)  | {hex} | Background, surfaces          |
+| Secondary (30%) | {hex} | Cards, sidebar, nav           |
+| Accent (10%)    | {hex} | {list specific elements only} |
+| Destructive     | {hex} | Destructive actions only      |
 
 Accent reserved for: {explicit list — never "all interactive elements"}
 
@@ -90,12 +90,12 @@ Accent reserved for: {explicit list — never "all interactive elements"}
 
 ## Copywriting Contract
 
-| Element | Copy |
-|---------|------|
-| Primary CTA | {specific verb + noun} |
-| Empty state heading | {copy} |
-| Empty state body | {copy + next step} |
-| Error state | {problem + solution path} |
+| Element                  | Copy                               |
+| ------------------------ | ---------------------------------- |
+| Primary CTA              | {specific verb + noun}             |
+| Empty state heading      | {copy}                             |
+| Empty state body         | {copy + next step}                 |
+| Error state              | {problem + solution path}          |
 | Destructive confirmation | {action name}: {confirmation copy} |
 
 ---
@@ -103,18 +103,18 @@ Accent reserved for: {explicit list — never "all interactive elements"}
 ## UI Considerations
 
 > Populated by the ui-phase UI-consideration probe (Step 9.5) and lifted by plan-phase's
-> `## UI Considerations` lift rule via the identical rule as SPEC `## Edge Coverage`. Shape-rooted UI *state*
+> `## UI Considerations` lift rule via the identical rule as SPEC `## Edge Coverage`. Shape-rooted UI _state_
 > coverage (empty / loading / error / populated / partial / overflow / zero-one-many / long-text).
 > Empty-state and error-state COPY live in `## Copywriting Contract` above — this section covers
 > state coverage and REFERENCES those rows rather than restating the copy (de-dup).
 
 Applicable state considerations resolved: {N covered, M backstop, K unresolved — or "none applicable"}
 
-| Category | Element(s) | Status | Resolution / Reason |
-|----------|------------|--------|---------------------|
-| {empty} | {list-collection} | ✅ covered | {concrete truth string — e.g. "Empty results render the documented 'No results' copy"} |
-| {long-text} | {static-content} | 🧪 backstop | {held-out/visual UI-state test — lifts as `{ statement, verification: backstop }`} |
-| {overflow} | {list-collection} | ⚠ unresolved | {planner treats as assumption} |
+| Category    | Element(s)        | Status        | Resolution / Reason                                                                    |
+| ----------- | ----------------- | ------------- | -------------------------------------------------------------------------------------- |
+| {empty}     | {list-collection} | ✅ covered    | {concrete truth string — e.g. "Empty results render the documented 'No results' copy"} |
+| {long-text} | {static-content}  | 🧪 backstop   | {held-out/visual UI-state test — lifts as `{ statement, verification: backstop }`}     |
+| {overflow}  | {list-collection} | ⚠ unresolved | {planner treats as assumption}                                                         |
 
 <!-- Status vocabulary (locked by probe-core projectTruths):
      ✅ covered   → a plain truth string lifted into must_haves.truths
@@ -127,10 +127,10 @@ Applicable state considerations resolved: {N covered, M backstop, K unresolved �
 
 ## Registry Safety
 
-| Registry | Blocks Used | Safety Gate |
-|----------|-------------|-------------|
-| shadcn official | {list} | not required |
-| {third-party name} | {list} | shadcn view + diff required |
+| Registry           | Blocks Used | Safety Gate                 |
+| ------------------ | ----------- | --------------------------- |
+| shadcn official    | {list}      | not required                |
+| {third-party name} | {list}      | shadcn view + diff required |
 
 ---
 

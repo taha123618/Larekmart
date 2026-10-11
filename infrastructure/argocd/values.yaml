@@ -1,0 +1,101 @@
+## Argo CD Production Helm Values
+## Repository: https://argoproj.github.io/argo-helm
+## Chart: argo-cd
+
+global:
+  domain: argocd.larekmart.com
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+
+configs:
+  params:
+    server.insecure: false
+
+  cm:
+    url: https://argocd.larekmart.com
+    application.instanceLabelKey: argocd.argoproj.io/instance
+    admin.enabled: true
+    timeout.reconciliation: 180s
+    resource.customizations: |
+      networking.k8s.io/Ingress:
+        health.lua: |
+          hs = {}
+          hs.status = "Healthy"
+          return hs
+
+  rbac:
+    policy.default: role:readonly
+    policy.csv: |
+      g, devops-team, role:admin
+      g, dev-team, role:developer
+      p, role:developer, applications, get, larekmart/*, allow
+      p, role:developer, applications, sync, larekmart-dev/*, allow
+      p, role:developer, applications, sync, larekmart-staging/*, allow
+
+controller:
+  replicas: 2
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2048Mi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+server:
+  replicas: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+      nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    tls:
+      - secretName: argocd-server-tls
+        hosts:
+          - argocd.larekmart.com
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+repoServer:
+  replicas: 2
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+redis-ha:
+  enabled: true
+
+notifications:
+  enabled: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 20m
+      memory: 64Mi

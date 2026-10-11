@@ -64,15 +64,16 @@ export function DataTable<TData, TValue>({
       await Promise.all(
         selectedRows.map(async (row) => {
           const userId = (row.original as User).id;
-          await fetch(
-            `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users/${userId}`,
-            {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+          const authUrl =
+            process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
+            process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+            "http://localhost:8080";
+          await fetch(`${authUrl}/users/${userId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
             },
-          );
+          });
         }),
       );
     },

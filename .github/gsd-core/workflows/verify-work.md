@@ -13,14 +13,16 @@ User tests, the agent records. One test at a time. Plain text responses.
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-planner — Creates detailed plans from phase scope
 - gsd-plan-checker — Reviews plan quality before execution
-</available_agent_types>
+  </available_agent_types>
 
 <philosophy>
 **Show expected, ask if reality matches.**
 
 the agent presents what SHOULD happen. User confirms or describes what's different.
+
 - "yes" / "y" / "next" / empty → pass
 - Anything else → logged as issue, severity inferred
 
@@ -60,6 +62,7 @@ Parse JSON for: `planner_model`, `checker_model`, `commit_docs`, `phase_found`, 
 # so we omit --cli-flag — the verb falls through roadmap → config → false.
 MVP_MODE=$(gsd_run query phase.mvp-mode "${phase_number}" ${GSD_WS} --pick active)
 ```
+
 </step>
 
 <step name="verify_pre_hooks">
@@ -99,7 +102,7 @@ GATE_BLOCK=$(printf '%s' "$GATE_RESULT" | jq -r '.block // false' 2>/dev/null ||
 
 - **Step 1 — command failure:** if the `gsd_run check ...` invocation itself
   fails (non-zero exit, no JSON), route by the gate's `onError`. An `onError:
-  halt` gate HALTs; an `onError: skip` gate logs a warning and continues.
+halt` gate HALTs; an `onError: skip` gate logs a warning and continues.
 - **Step 2 — block evaluation:** parse `GATE_RESULT.block`. For a **blocking
   gate** (`hook.blocking == true`) with `block == true`: HALT — do not begin UAT,
   present the gate's `message`, and tell the user what artifact resolves it. For
@@ -177,36 +180,41 @@ Read each SUMMARY.md to extract testable deliverables.
 number (the executor derives it from its on-disk plan commit ledger and records the base as
 `plan_head_before:`), and this is where that claim is checked against reality with the SAME
 instrument — the executor's own narration is never the last word. For each `*-SUMMARY.md`:
+
 ```bash
 BASE=$(grep -oE '^plan_head_before: [0-9a-f]{7,40}' "$SUMMARY_FILE" | awk '{print $2}')
 CLAIMED=$(grep -oE '^commits: [0-9]+' "$SUMMARY_FILE" | grep -oE '[0-9]+' || echo absent)
 ACTUAL=$(git rev-list --count "${BASE}"..HEAD)
 AFTER=$(grep -oE '^plan_head_after: [0-9a-f]{7,40}' "$SUMMARY_FILE" | awk '{print $2}')
 ```
+
 - A `commits: absent` or `plan_head_before: absent` SUMMARY (pre-#3968 legacy) is reported as
   a WARNING with the measured git state, not a mismatch.
 - **Bounded reconciliation (#4670).** A SUMMARY carrying `plan_head_after:` (the executor's
   HEAD at its measurement moment — after the last task commit, before the SUMMARY commit) is
   reconciled against the plan's OWN window:
+
 ```bash
 if git merge-base --is-ancestor "$AFTER" HEAD 2>/dev/null \
    && [ "$(git rev-list --count "${BASE}..${AFTER}")" = "$CLAIMED" ]; then
   : # consistent
 fi
 ```
-  Consistent → done. Anything else is a **BLOCKER** — `commit_claim_mismatch` with both
-  numbers and the SUMMARY path: commits claimed but never made (#3968), task commits lost
-  after the fact, or the plan's recorded window rewritten afterwards (a rebase/amend/cherry-pick
-  of those commits makes `$AFTER` a non-ancestor — recount that plan's commits manually
-  before treating it as a genuine mismatch). The unbounded `${BASE}..HEAD` count is NOT
-  evidence either way: it grows with every later plan's commits and execute-phase's own
-  phase-completion commit, so an honest plan would read as a mismatch (#4670).
+
+Consistent → done. Anything else is a **BLOCKER** — `commit_claim_mismatch` with both
+numbers and the SUMMARY path: commits claimed but never made (#3968), task commits lost
+after the fact, or the plan's recorded window rewritten afterwards (a rebase/amend/cherry-pick
+of those commits makes `$AFTER` a non-ancestor — recount that plan's commits manually
+before treating it as a genuine mismatch). The unbounded `${BASE}..HEAD` count is NOT
+evidence either way: it grows with every later plan's commits and execute-phase's own
+phase-completion commit, so an honest plan would read as a mismatch (#4670).
+
 - **Legacy fallback (#4670).** A SUMMARY with a base but no `plan_head_after:` (pre-#4670)
   cannot be bounded to its own window — report the measured `${BASE}..HEAD` count as a
   **WARNING** with the SUMMARY's task-commit list for manual counting. The old
   `ACTUAL == CLAIMED` / `ACTUAL == CLAIMED + 1` tolerance was a guess that later plans'
   commits defeat; it must never produce a BLOCKER on the unsound window.
-</step>
+  </step>
 
 <step name="extract_tests">
 If `section_manifest` is `null` or `"mvp-uat-framing"` is in its `included` list: read and execute `gsd-core/workflows/verify-work/steps/mvp-uat-framing.md`. Otherwise skip — do not read the file.
@@ -262,18 +270,21 @@ Merge rules:
 **Extract testable deliverables from SUMMARY.md (legacy fallback — used when `mode: legacy`):**
 
 Parse for:
+
 1. **Accomplishments** - Features/functionality added
 2. **User-facing changes** - UI, workflows, interactions
 
 Focus on USER-OBSERVABLE outcomes, not implementation details.
 
 For each deliverable, create a test:
+
 - name: Brief test name
 - expected: What the user should see/experience (specific, observable)
 
 **If `response_language` is set, write the `name` and `expected` text in `{response_language}`** — the examples below are illustrative templates only, not literal output to copy.
 
 Examples:
+
 - Accomplishment: "Added comment threading with infinite nesting"
   → Test: "Reply to a Comment"
   → Expected: "Clicking Reply opens inline composer below comment. Submitting shows reply nested under parent with visual indentation."
@@ -315,34 +326,39 @@ updated: [ISO timestamp]
 ---
 
 ## Current Test
+
 <!-- OVERWRITE each test - shows where we are -->
 
 number: 1
 name: [first test name]
 expected: |
-  [what user should observe]
+[what user should observe]
 awaiting: user response
 
 ## Tests
 
 ### 1. [Test Name]
+
 expected: [observable behavior]
 result: [pending]
 
 ### 2. [Test Name]
+
 expected: [observable behavior]
 result: [pending]
 
 ...
 
 **Coverage auto-passed entries (#1602):** for each `auto_passed[]` entry from `uat classify-coverage`, write a Tests entry pre-resolved as automated — these are NOT presented to the user:
-
 ```
+
 ### N. [coverage description]
+
 expected: [coverage description]
 result: pass
 source: automated
 coverage_id: [D-id]
+
 ```
 
 The `source: automated` marker is additive — existing consumers that read only `result:` are unaffected.
@@ -382,6 +398,7 @@ Display the returned checkpoint EXACTLY as-is:
 ```
 
 **Critical response hygiene:**
+
 - Your entire response MUST equal `{CHECKPOINT}` byte-for-byte.
 - Do NOT add commentary before or after the block.
 - If you notice protocol/meta markers such as `to=all:`, role-routing text, XML system tags, hidden instruction markers, ad copy, or any unrelated suffix, discard the draft and output `{CHECKPOINT}` only.
@@ -394,9 +411,11 @@ Wait for user response (plain text, no AskUserQuestion).
 **Process user response and update file:**
 
 **If response indicates pass:**
+
 - Empty response, "yes", "y", "ok", "pass", "next", "approved", "✓"
 
 Update Tests section:
+
 ```
 ### {N}. {name}
 expected: {expected}
@@ -404,9 +423,11 @@ result: pass
 ```
 
 **If response indicates skip:**
+
 - "skip", "can't test", "n/a"
 
 Update Tests section:
+
 ```
 ### {N}. {name}
 expected: {expected}
@@ -415,10 +436,12 @@ reason: [user's reason if provided]
 ```
 
 **If response indicates blocked:**
+
 - "blocked", "can't test - server not running", "need physical device", "need release build"
 - Or any response containing: "server", "blocked", "not running", "physical device", "release build"
 
 Infer blocked_by tag from response:
+
 - Contains: server, not running, gateway, API → `server`
 - Contains: physical, device, hardware, real phone → `physical-device`
 - Contains: release, preview, build, EAS → `release-build`
@@ -427,6 +450,7 @@ Infer blocked_by tag from response:
 - Default: `other`
 
 Update Tests section:
+
 ```
 ### {N}. {name}
 expected: {expected}
@@ -438,11 +462,13 @@ reason: "{verbatim user response}"
 Note: Blocked tests do NOT go into the Gaps section (they aren't code issues — they're prerequisite gates).
 
 **If response indicates a deferred follow-up (NOT a current-phase blocker):**
+
 - "later", "future", "follow-up", "next version", "out of scope", "nice to have", "not now", "defer", "down the road", "separate phase", "phase 2"
 
 These are future-work ideas, not code issues for the current phase. Capture them WITHOUT creating a gap plan (#1921 — a deferred follow-up must never become a blocking gap or spawn a fix plan):
 
 Update Tests section:
+
 ```
 ### {N}. {name}
 expected: {expected}
@@ -451,18 +477,21 @@ reason: "Deferred follow-up: {verbatim user response}"
 ```
 
 Append to UAT.md `## Deferred Follow-Ups` (create the section if absent):
+
 ```yaml
-- test: {N}
+- test: { N }
   idea: "{verbatim user response}"
-  deferred_at: {today}
+  deferred_at: { today }
 ```
 
 Do NOT append to `## Gaps` — deferred follow-ups are not blocking gaps. Continue to the next test.
 
 **If response is anything else:**
+
 - Treat as issue description
 
 Infer severity from description:
+
 - Contains: crash, error, exception, fails, broken, unusable → blocker
 - Contains: doesn't work, wrong, missing, can't → major
 - Contains: slow, weird, off, minor, small → minor
@@ -470,6 +499,7 @@ Infer severity from description:
 - Default if unclear: major
 
 Update Tests section:
+
 ```
 ### {N}. {name}
 expected: {expected}
@@ -479,15 +509,16 @@ severity: {inferred}
 ```
 
 Append to Gaps section (structured YAML for plan-phase --gaps):
+
 ```yaml
-- gap_id: G-{phase}-{N}        # Stable id (phase + test number) — gap-closure plans tag it in their frontmatter so verify-work can reconcile resolved gaps on resume (#1921).
+- gap_id: G-{phase}-{N} # Stable id (phase + test number) — gap-closure plans tag it in their frontmatter so verify-work can reconcile resolved gaps on resume (#1921).
   truth: "{expected behavior from test}"
   status: failed
   reason: "User reported: {verbatim user response}"
-  severity: {inferred}
-  test: {N}
-  artifacts: []  # Filled by diagnosis
-  missing: []    # Filled by diagnosis
+  severity: { inferred }
+  test: { N }
+  artifacts: [] # Filled by diagnosis
+  missing: [] # Filled by diagnosis
 ```
 
 **After any response:**
@@ -522,6 +553,7 @@ Exact resume-announcement wording: `gsd-core/workflows/verify-work/detail/elabor
 **Determine final status:**
 
 Count results:
+
 - `pending_count`: tests with `result: [pending]`
 - `blocked_count`: tests with `result: blocked`
 - `skipped_no_reason`: tests with `result: skipped` and no `reason` field
@@ -536,10 +568,12 @@ else:
 ```
 
 Update frontmatter:
+
 - status: {computed status}
 - updated: [now]
 
 Clear Current Test section:
+
 ```
 ## Current Test
 
@@ -547,6 +581,7 @@ Clear Current Test section:
 ```
 
 Commit the UAT file:
+
 ```bash
 gsd_run query commit "test({phase_num}): complete UAT - {passed} passed, {issues} issues" --files ".planning/phases/XX-name/{phase_num}-UAT.md"
 ```
@@ -567,6 +602,7 @@ Choice [K]:
 (TEXT_MODE: present this as a plain-text numbered list per the text-mode convention and wait for the typed choice.)
 
 **If the user chooses [P]:**
+
 1. Compute the next backlog number: `{backlog_number}` = the smallest positive integer not already used by an existing `### Phase 999.{n}` heading in `.planning/ROADMAP.md` — scan the headings rather than counting them, since numbering may be non-contiguous. If `.planning/ROADMAP.md` does not exist, create it containing only a `## Backlog` section and use `1`.
 2. Append to that `## Backlog` section one backlog entry per deferred follow-up (each with its own `999.{backlog_number}` heading, incrementing per entry), with `test`/`idea`/`deferred_at` verbatim from the section's YAML and `{idea}` flattened to a single line (newlines → spaces — a multi-line response would corrupt the single-line entry; this mirrors `next.md`'s use of a slug for the same reason):
 
@@ -577,10 +613,12 @@ Choice [K]:
 **Source phase:** {phase_num}
 **Deferred at:** {date} during /gsd-verify-work {phase} session completion
 **Follow-ups:**
+
 - [ ] Test {test}: {idea} (deferred {deferred_at})
 ```
 
 3. Commit the deferral record:
+
 ```bash
 gsd_run query commit "docs: defer Phase {phase_num} UAT follow-ups to backlog" --files .planning/ROADMAP.md
 ```
@@ -588,6 +626,7 @@ gsd_run query commit "docs: defer Phase {phase_num} UAT follow-ups to backlog" -
 **If the user chooses [K]:** continue to the summary unchanged — the deferred items remain in the UAT file's `## Deferred Follow-Ups` section.
 
 Present summary:
+
 ```
 ## UAT Complete: Phase {phase}
 
@@ -641,6 +680,7 @@ All tests passed, but phase advancement is blocked until security review produce
 ```
 
 If an active secure-phase step hook exists AND `SECURITY_FILE` exists: check frontmatter `threats_open`. If > 0:
+
 ```
 ⚠ Security gate: {threats_open} threats open
   /gsd-secure-phase {phase} — resolve before advancing
@@ -724,6 +764,7 @@ All tests passed. Phase {phase} marked complete.
 - `/gsd-secure-phase {phase}` — security review
 - `/gsd-ui-review {phase}` — visual quality audit (if frontend files were modified)
 ```
+
 </step>
 
 <step name="scan_phase_artifacts">
@@ -736,11 +777,13 @@ gsd_run query audit-open --json
 ```
 
 Parse the JSON output. For the CURRENT PHASE ONLY, surface:
+
 - UAT files with status != 'complete'
 - VERIFICATION.md with status 'gaps_found' or 'human_needed'
 - CONTEXT.md with non-empty open_questions
 
 If any are found, display:
+
 ```
 Phase {N} Artifact Check
 
@@ -766,6 +809,7 @@ When UAT testing found issues, this sub-flow (diagnose_issues -> plan_gap_closur
 Spawn gsd-planner in --gaps mode against the UAT (with diagnoses), `{state_path}` (Project State), and `{roadmap_path}` (Roadmap). Each created PLAN.md MUST carry `gap_closure: true` and `gap_ids: [...]` in its frontmatter (#1921) so a later verify-work resume can reconcile it.
 
 <!-- gsd-protected -->
+
 > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Agent() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
 PLANNING COMPLETE proceeds to verify_gap_plans; PLANNING INCONCLUSIVE reports and offers manual intervention.
@@ -775,9 +819,11 @@ PLANNING COMPLETE proceeds to verify_gap_plans; PLANNING INCONCLUSIVE reports an
 Spawn gsd-plan-checker against the fix plans (iteration_count starts at 1), model="{checker_model}" (omit on inherit/empty, #2517).
 
 <!-- gsd-protected -->
+
 > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Agent() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
 On return:
+
 - **VERIFICATION PASSED:** Proceed to `present_ready`
 - **ISSUES FOUND:** Count BLOCKER + WARNING entries in the YAML issues block; an entry whose severity is missing or unrecognized counts as a BLOCKER (fail closed). If zero — every entry is explicitly INFO — display `ℹ advisory — {dimension}: {description}` per entry and proceed to `present_ready`; INFO is advisory and never enters the loop (#3724). Otherwise proceed to `revision_loop`
 
@@ -806,6 +852,7 @@ the alternatives rather than applying or working around it. Full contract:
 Do NOT replan from scratch unless issues are fundamental.
 
 <!-- gsd-protected -->
+
 > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Agent() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
 **If the planner returns `## REVISION_CONFLICT`:** do NOT increment `iteration_count` and do NOT
@@ -832,6 +879,7 @@ Increment iteration_count
 Display: `Max iterations reached. {N} issues remain.`
 
 Offer options:
+
 1. Force proceed (execute despite issues)
 2. Provide guidance (user gives direction, retry)
 3. Abandon (exit, user runs /gsd-plan-phase manually)
@@ -840,7 +888,6 @@ Then wait for the user to pick one.
 
 Exact Agent() prompt fields (revision_context, required_reading): `gsd-core/workflows/verify-work/detail/elaboration.md` § 3.
 </step>
-
 
 <step name="present_ready">
 **Present completion and next steps:**
@@ -867,6 +914,7 @@ Plans verified and ready for execution.
 
 ---
 ```
+
 </step>
 
 </process>
@@ -875,18 +923,19 @@ Plans verified and ready for execution.
 **Batched writes for efficiency:**
 
 Keep results in memory. Write to file only when:
+
 1. **Issue found** — Preserve the problem immediately
 2. **Session complete** — Final write before commit
 3. **Checkpoint** — Every 5 passed tests (safety net)
 
-| Section | Rule | When Written |
-|---------|------|--------------|
-| Frontmatter.status | OVERWRITE | Start, complete |
+| Section             | Rule      | When Written      |
+| ------------------- | --------- | ----------------- |
+| Frontmatter.status  | OVERWRITE | Start, complete   |
 | Frontmatter.updated | OVERWRITE | On any file write |
-| Current Test | OVERWRITE | On any file write |
-| Tests.{N}.result | OVERWRITE | On any file write |
-| Summary | OVERWRITE | On any file write |
-| Gaps | APPEND | When issue found |
+| Current Test        | OVERWRITE | On any file write |
+| Tests.{N}.result    | OVERWRITE | On any file write |
+| Summary             | OVERWRITE | On any file write |
+| Gaps                | APPEND    | When issue found  |
 
 On context reset: File shows last checkpoint. Resume from there.
 </update_rules>
@@ -894,12 +943,12 @@ On context reset: File shows last checkpoint. Resume from there.
 <severity_inference>
 **Infer severity from user's natural language:**
 
-| User says | Infer |
-|-----------|-------|
-| "crashes", "error", "exception", "fails completely" | blocker |
-| "doesn't work", "nothing happens", "wrong behavior" | major |
-| "works but...", "slow", "weird", "minor issue" | minor |
-| "color", "spacing", "alignment", "looks off" | cosmetic |
+| User says                                           | Infer    |
+| --------------------------------------------------- | -------- |
+| "crashes", "error", "exception", "fails completely" | blocker  |
+| "doesn't work", "nothing happens", "wrong behavior" | major    |
+| "works but...", "slow", "weird", "minor issue"      | minor    |
+| "color", "spacing", "alignment", "looks off"        | cosmetic |
 
 Default to **major** if unclear. User can correct if needed.
 
@@ -907,6 +956,7 @@ Default to **major** if unclear. User can correct if needed.
 </severity_inference>
 
 <success_criteria>
+
 - [ ] UAT file created with all tests from SUMMARY.md
 - [ ] Tests presented one at a time with expected behavior
 - [ ] User responses processed as pass/issue/skip
@@ -918,4 +968,4 @@ Default to **major** if unclear. User can correct if needed.
 - [ ] If issues: gsd-plan-checker verifies fix plans
 - [ ] If issues: revision loop until plans pass (max 3 iterations)
 - [ ] Ready for `/gsd-execute-phase --gaps-only` when complete
-</success_criteria>
+      </success_criteria>

@@ -16,13 +16,13 @@ Example: "A signed-in user can view their email on a dashboard page served by th
 
 ## Architectural Decisions
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| Framework | (e.g., Next.js 15 App Router) | Why this fits the project |
-| Data layer | (e.g., Postgres + Drizzle) | Why |
-| Auth | (e.g., session cookies + bcrypt) | Why |
-| Deployment target | (e.g., Vercel preview) | Why |
-| Directory layout | (e.g., feature-folders under src/features/*) | Why |
+| Decision          | Choice                                        | Rationale                 |
+| ----------------- | --------------------------------------------- | ------------------------- |
+| Framework         | (e.g., Next.js 15 App Router)                 | Why this fits the project |
+| Data layer        | (e.g., Postgres + Drizzle)                    | Why                       |
+| Auth              | (e.g., session cookies + bcrypt)              | Why                       |
+| Deployment target | (e.g., Vercel preview)                        | Why                       |
+| Directory layout  | (e.g., feature-folders under src/features/\*) | Why                       |
 
 ## Stack Touched in Phase 1
 
@@ -34,7 +34,7 @@ Example: "A signed-in user can view their email on a dashboard page served by th
 
 ## Out of Scope (Deferred to Later Slices)
 
-> Anything that is *not* in the skeleton. Be explicit — this list prevents future phases from re-litigating Phase 1's minimalism.
+> Anything that is _not_ in the skeleton. Be explicit — this list prevents future phases from re-litigating Phase 1's minimalism.
 
 - (e.g., password reset, email verification, multi-tenancy)
 

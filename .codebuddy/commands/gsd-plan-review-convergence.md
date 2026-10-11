@@ -2,6 +2,7 @@
 description: "Cross-AI plan convergence - replan until review concerns are resolved."
 argument-hint: "<phase> [--claude] [--codex] [--coderabbit] [--opencode] [--qwen] [--cursor] [--antigravity] [--agy] [--ollama] [--lm-studio] [--llama-cpp] [--kimi-code] [--text] [--ws <name>] [--all] [--max-cycles N]"
 ---
+
 <objective>
 Cross-AI plan convergence loop — an outer revision gate around gsd-review and gsd-planner.
 Repeatedly: review plans with external AI CLIs → if HIGH or actionable non-HIGH concerns remain → replan with --reviews feedback → re-review. Stops when no unresolved HIGH concerns or actionable MEDIUM/LOW findings remain outside PLAN.md, or when max cycles is reached.
@@ -20,12 +21,11 @@ Replaces gsd-plan-phase's internal gsd-plan-checker with external AI reviewers (
 @/Users/taha/projects/microservices-ecommerce/.codebuddy/gsd-core/references/agent-contracts.md
 </execution_context>
 
-
-
 <context>
 Phase number: extracted from {{GSD_ARGS}} (required)
 
 **Flags:**
+
 - `--codex` — Use Codex CLI as reviewer (default if no reviewer flag given AND `review.default_reviewers` is unset; otherwise `review.default_reviewers` wins per ADR-0011 — #2315)
 - `--agy` / `--antigravity` — Use Antigravity CLI as reviewer
 - `--claude` — Use Claude CLI as reviewer (separate session)

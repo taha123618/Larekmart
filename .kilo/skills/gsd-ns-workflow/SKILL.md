@@ -10,24 +10,24 @@ absorbs the former next/do workflow-advance commands. The reclaimed
 `gsd-next` target is the state-aware smart-entry launcher, not the retired
 workflow-advance command.
 
-| User wants | Invoke |
-|---|---|
-| Gather context before planning | gsd-discuss-phase |
-| Clarify what a phase delivers | gsd-spec-phase |
-| Create a PLAN.md | gsd-plan-phase |
-| Execute plans in a phase | gsd-execute-phase |
-| Verify built features through UAT | gsd-verify-work |
-| Add / insert / remove / edit a phase | gsd-phase |
-| Advance to the next logical step | gsd-progress |
-| Open the state-aware smart-entry launcher | gsd-next |
-| Offload planning to the ultraplan cloud | gsd-ultraplan-phase |
-| Cross-AI plan review convergence loop | gsd-plan-review-convergence |
-| Generate tests for a completed phase | gsd-add-tests |
-| Design an AI-integration phase | gsd-ai-integration-phase |
-| Run all remaining phases autonomously | gsd-autonomous |
-| Execute a trivial task inline | gsd-fast |
-| Plan a phase as a vertical MVP slice | gsd-mvp-phase |
-| Execute a quick task with GSD guarantees | gsd-quick |
-| Batch several quick-shaped tasks together | gsd-quick-batch |
+| User wants                                | Invoke                      |
+| ----------------------------------------- | --------------------------- |
+| Gather context before planning            | gsd-discuss-phase           |
+| Clarify what a phase delivers             | gsd-spec-phase              |
+| Create a PLAN.md                          | gsd-plan-phase              |
+| Execute plans in a phase                  | gsd-execute-phase           |
+| Verify built features through UAT         | gsd-verify-work             |
+| Add / insert / remove / edit a phase      | gsd-phase                   |
+| Advance to the next logical step          | gsd-progress                |
+| Open the state-aware smart-entry launcher | gsd-next                    |
+| Offload planning to the ultraplan cloud   | gsd-ultraplan-phase         |
+| Cross-AI plan review convergence loop     | gsd-plan-review-convergence |
+| Generate tests for a completed phase      | gsd-add-tests               |
+| Design an AI-integration phase            | gsd-ai-integration-phase    |
+| Run all remaining phases autonomously     | gsd-autonomous              |
+| Execute a trivial task inline             | gsd-fast                    |
+| Plan a phase as a vertical MVP slice      | gsd-mvp-phase               |
+| Execute a quick task with GSD guarantees  | gsd-quick                   |
+| Batch several quick-shaped tasks together | gsd-quick-batch             |
 
 Invoke the matched skill directly using the Skill tool.

@@ -10,7 +10,6 @@ allowed-tools:
   - Grep
 ---
 
-
 <objective>
 Create, list, close, or resume persistent context threads. Threads are lightweight
 cross-session knowledge stores for work that spans multiple sessions but

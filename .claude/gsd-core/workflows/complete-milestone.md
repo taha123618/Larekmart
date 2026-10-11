@@ -55,6 +55,7 @@ If the output contains open items (any section with count > 0):
 Display the full audit report to the user.
 
 Then ask:
+
 ```
 These items are open. Choose an action:
 [R] Resolve — stop and fix items, then re-run /gsd-complete-milestone
@@ -67,6 +68,7 @@ These items are open. Choose an action:
 If output shows all clear (no open items): set `closeout_type=verified_closeout` — but if any items are `acknowledged.total` from a PRIOR close, note that carried-forward suppression explicitly rather than implying everything was fixed this time.
 
 <!-- gsd:protected -->
+
 SECURITY: Audit JSON output is structured data from the `audit-open` query handler (same JSON contract as legacy `gsd_run audit-open`) — validated and sanitized at source. The `audit-open acknowledge` writer is the only path that sets the `audit_acknowledged` suppression marker — it snapshots each artifact's current state itself from the identifiers passed on the command line, so this workflow never hand-authors the marker. When writing the STATE.md disclosure table, item identifiers, statuses, and deferred-item text are sanitized via `sanitizeForDisplay()` before inclusion. Never inject raw user-supplied content into STATE.md without sanitization.
 
 Exact per-category bash (including the `@file:` large-payload handling, the `todos` 5-per-scan cap, and the phase-scoped `--archived-milestone` handling) and the exact STATE.md table shape: `gsd-core/workflows/complete-milestone/detail/elaboration.md` § 1.
@@ -82,6 +84,7 @@ if [[ "$INIT_MANAGER" == @file:* ]]; then INIT_MANAGER=$(cat "${INIT_MANAGER#@fi
 ```
 
 This returns all phases with implementation and verification projection. Use this to verify:
+
 - Which phases belong to this milestone?
 - `all_phases_verified`: all milestone phases have `phase_complete === true` and `verification_status === 'passed'`.
 - `progress_percent` should be 100%.
@@ -96,6 +99,7 @@ ALL_PHASES_VERIFIED=$(printf '%s' "$INIT_MANAGER" | jq -r '[
 ```
 
 If not all_phases_verified, verified_closeout must not proceed. Set `closeout_type=override_closeout`, show each phase whose `phase_complete !== true` or `verification_status !== 'passed'`, and require an explicit user choice:
+
 1. **Proceed anyway** — record verification overrides in MILESTONES.md/STATE.md
 2. **Run verification first** — `/gsd-verify-work {phase}` or `/gsd-execute-phase {phase}`
 3. **Abort** — return to development
@@ -105,6 +109,7 @@ Only set `closeout_type=verified_closeout` when `ALL_PHASES_VERIFIED` is `true`.
 **Requirements completion check (REQUIRED before presenting):**
 
 Parse REQUIREMENTS.md traceability table:
+
 - Count total v1 requirements vs checked-off (`[x]`) requirements
 - Identify any non-Complete rows in the traceability table
 
@@ -135,6 +140,7 @@ Requirements: {N}/{M} v1 requirements checked off
 ```
 
 MUST present 3 options:
+
 1. **Proceed anyway** — mark milestone complete with known gaps
 2. **Run audit first** — `/gsd-audit-milestone` to assess gap severity
 3. **Abort** — return to development
@@ -169,6 +175,7 @@ Ready to mark this milestone as shipped?
 ```
 
 Wait for confirmation.
+
 - "adjust scope": Ask which phases to include.
 - "wait": Stop, user returns when ready.
 
@@ -298,7 +305,8 @@ Update PROJECT.md inline. Update "Last updated" footer:
 
 ```markdown
 ---
-*Last updated: [date] after v[X.Y] milestone*
+
+_Last updated: [date] after v[X.Y] milestone_
 ```
 
 **Example full evolution (v1.0 → v1.1 prep):**
@@ -409,6 +417,7 @@ workflow has already gathered the user's explicit intent by this step, so passin
 correct; `--dry-run` previews the exact move list without mutating if a preview is ever needed first.
 
 The CLI handles:
+
 - Creating `.planning/milestones/` directory
 - Archiving ROADMAP.md to `milestones/v[X.Y]-ROADMAP.md`
 - Archiving REQUIREMENTS.md to `milestones/v[X.Y]-REQUIREMENTS.md` with archive header
@@ -436,6 +445,7 @@ gsd_run query milestone complete v[X.Y] --no-archive-phases --confirm
 Verify after a default (archived) completion: `✅ Phase directories archived to .planning/milestones/v[X.Y]-phases/`
 
 After archival, the AI still handles:
+
 - Reorganizing ROADMAP.md with milestone grouping (requires judgment) — overwrite in place after extracting Backlog section, with the write-guard's single-use sentinel armed first (a per-step env var cannot reach a hook — see the reorganize step for the sentinel mechanics)
 - Full PROJECT.md evolution review (requires understanding)
 - Safety commit of archive files + updated ROADMAP.md, then `git rm .planning/REQUIREMENTS.md`
@@ -464,7 +474,7 @@ If `$BACKLOG_SECTION` is empty, there is no Backlog section — skip silently.
 
 **Reorganize ROADMAP.md** — overwrite in place (do NOT delete first) with milestone groupings.
 
-This rewrite is an *intentional* catastrophic shrink: phase detail was just archived to `milestones/v[X.Y]-ROADMAP.md`, and a multi-hundred-line ROADMAP.md collapses to a compact grouped summary. The `gsd-write-guard` PreToolUse hook (#2255) hard-blocks exactly that shape on curated `.planning/` files — this step is the legitimate milestone reset its escape hatch exists for. A hook inherits the *runtime's* environment, so no per-step env var can reach it; the hatch is a **single-use sentinel file the guard itself consumes**. Arm it, then write:
+This rewrite is an _intentional_ catastrophic shrink: phase detail was just archived to `milestones/v[X.Y]-ROADMAP.md`, and a multi-hundred-line ROADMAP.md collapses to a compact grouped summary. The `gsd-write-guard` PreToolUse hook (#2255) hard-blocks exactly that shape on curated `.planning/` files — this step is the legitimate milestone reset its escape hatch exists for. A hook inherits the _runtime's_ environment, so no per-step env var can reach it; the hatch is a **single-use sentinel file the guard itself consumes**. Arm it, then write:
 
 1. Arm the sentinel (single-use; the guard checks it is fresh — within 15 minutes — and names exactly this file, then consumes it):
 
@@ -539,6 +549,7 @@ git rm "$REQUIREMENTS_PATH"
 **Append to living retrospective:**
 
 Check for existing retrospective:
+
 ```bash
 ls .planning/RETROSPECTIVE.md 2>/dev/null || true
 ```
@@ -564,21 +575,27 @@ ls .planning/RETROSPECTIVE.md 2>/dev/null || true
 **Phases:** {phase_count} | **Plans:** {plan_count}
 
 ### What Was Built
+
 {Extract from SUMMARY.md one-liners}
 
 ### What Worked
+
 {Patterns that led to smooth execution}
 
 ### What Was Inefficient
+
 {Missed opportunities, rework, bottlenecks}
 
 ### Patterns Established
+
 {New conventions discovered during this milestone}
 
 ### Key Lessons
+
 {Specific, actionable takeaways}
 
 ### Cost Observations
+
 - Model mix: {X}% opus, {Y}% sonnet, {Z}% haiku
 - Sessions: {count}
 - Notable: {efficiency observation}
@@ -589,6 +606,7 @@ ls .planning/RETROSPECTIVE.md 2>/dev/null || true
 If the "## Cross-Milestone Trends" section exists, update the tables with new data from this milestone.
 
 **Commit:**
+
 ```bash
 gsd_run query commit "docs: update retrospective for v${VERSION}" --files .planning/RETROSPECTIVE.md
 ```
@@ -611,6 +629,7 @@ See: .planning/PROJECT.md (updated [today])
 ```
 
 **Accumulated Context:**
+
 - Clear decisions summary (full log in PROJECT.md)
 - Clear resolved blockers
 - Keep open blockers for next milestone
@@ -620,6 +639,7 @@ See: .planning/PROJECT.md (updated [today])
 <step name="handle_branches">
 
 Check the project's `branching_strategy` (from `init.execute-phase`/`init.complete-milestone`). `"none"` skips straight to `git_tag`. For `"phase"` or `"milestone"`, list the matching branches (by the configured prefix template); no branches found also skips to `git_tag`. Resolve the base branch through the single shared resolver, never a bare `main`/`master` fallback (Issue #1146):
+
 ```bash
 BASE_BRANCH=$(gsd_run query git.base-branch)
 ```
@@ -680,6 +700,7 @@ Tag: v[X.Y]
 <milestone_naming>
 
 **Version conventions:**
+
 - **v1.0** — Initial MVP
 - **v1.1, v1.2** — Minor updates, new features, fixes
 - **v2.0, v3.0** — Major rewrites, breaking changes, new direction

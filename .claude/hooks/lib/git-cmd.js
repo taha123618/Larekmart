@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * git-cmd.js — token-walk git command classifier.
@@ -30,37 +30,55 @@
  * in tests/token-scanner.test.cjs row 5).
  */
 
-const path = require('path');
-const { tokenizeShellLike } = require(path.join(__dirname, '..', '..', 'gsd-core', 'bin', 'lib', 'token-scanner.cjs'));
+const path = require("path");
+const { tokenizeShellLike } = require(
+  path.join(
+    __dirname,
+    "..",
+    "..",
+    "gsd-core",
+    "bin",
+    "lib",
+    "token-scanner.cjs",
+  ),
+);
 
 /**
  * Git global options that take a following argument.
  * These must be consumed as (option, argument) pairs when walking tokens.
  */
 const ARGUMENT_TAKING_FLAGS = new Set([
-  '-C',                // working directory
-  '-c',                // config override (separate-arg form: `git -c k=v …`; #3504)
-  '--git-dir',         // path to git repository
-  '--work-tree',       // path to working tree
-  '--namespace',       // git namespace
-  '--super-prefix',    // superproject-relative prefix
-  '--exec-path',       // path to core git programs (when given an arg)
-  '--html-path',
-  '--man-path',
-  '--info-path',
-  '--list-cmds',
+  "-C", // working directory
+  "-c", // config override (separate-arg form: `git -c k=v …`; #3504)
+  "--git-dir", // path to git repository
+  "--work-tree", // path to working tree
+  "--namespace", // git namespace
+  "--super-prefix", // superproject-relative prefix
+  "--exec-path", // path to core git programs (when given an arg)
+  "--html-path",
+  "--man-path",
+  "--info-path",
+  "--list-cmds",
 ]);
 
 /**
  * Git global flags that consume no extra argument.
  */
 const BOOLEAN_FLAGS = new Set([
-  '-p', '--paginate', '--no-pager',
-  '--no-replace-objects', '--bare',
-  '--literal-pathspecs', '--glob-pathspecs', '--noglob-pathspecs',
-  '--icase-pathspecs', '--no-optional-locks',
-  '-P', '--no-lazy-fetch',
-  '--version', '--help',
+  "-p",
+  "--paginate",
+  "--no-pager",
+  "--no-replace-objects",
+  "--bare",
+  "--literal-pathspecs",
+  "--glob-pathspecs",
+  "--noglob-pathspecs",
+  "--icase-pathspecs",
+  "--no-optional-locks",
+  "-P",
+  "--no-lazy-fetch",
+  "--version",
+  "--help",
 ]);
 
 /**
@@ -93,11 +111,11 @@ function skipToSubcommand(tokens) {
   }
   if (i >= tokens.length) return -1;
   const gitToken = tokens[i++];
-  if (path.basename(gitToken) !== 'git') return -1;
+  if (path.basename(gitToken) !== "git") return -1;
 
   while (i < tokens.length) {
     const t = tokens[i];
-    const eqIdx = t.indexOf('=');
+    const eqIdx = t.indexOf("=");
     const flagName = eqIdx !== -1 ? t.slice(0, eqIdx) : t;
     if (ARGUMENT_TAKING_FLAGS.has(flagName)) {
       i += eqIdx !== -1 ? 1 : 2;
@@ -142,16 +160,16 @@ function extractBranchArgument(cmd) {
   if (subIdx === -1 || subIdx >= tokens.length) return null;
   const sub = tokens[subIdx];
 
-  if (sub === 'checkout') {
+  if (sub === "checkout") {
     for (let j = subIdx + 1; j < tokens.length; j++) {
-      if (tokens[j] === '-b' && j + 1 < tokens.length) return tokens[j + 1];
+      if (tokens[j] === "-b" && j + 1 < tokens.length) return tokens[j + 1];
     }
     return null;
   }
 
-  if (sub === 'branch') {
+  if (sub === "branch") {
     for (let j = subIdx + 1; j < tokens.length; j++) {
-      if (!tokens[j].startsWith('-')) return tokens[j];
+      if (!tokens[j].startsWith("-")) return tokens[j];
     }
     return null;
   }
@@ -256,7 +274,7 @@ function resolveCommitSubject(messageArg) {
   // guard was inert, an empty CRLF message resolved to 'EOF\r' instead of '',
   // and a real 72-char subject measured 73 (review of #3816). Splitting on
   // /\r?\n/ is the repo-wide remedy for this recurring defect class.
-  const lines = String(messageArg == null ? '' : messageArg).split(/\r?\n/);
+  const lines = String(messageArg == null ? "" : messageArg).split(/\r?\n/);
   // The path prefix is a PATH-CHARACTER class, not \S*: `\S*` accepted
   // `id;/bin/cat`, so `$(id;/bin/cat <<'EOF' ...` was resolved to its heredoc
   // body while bash actually runs `id` first and git's real subject is `id`'s
@@ -306,8 +324,10 @@ function resolveCommitSubject(messageArg) {
   // `\\(...)` (backslash-quoted) and `(...)` (bare) were one `\\?(...)` branch,
   // which conflated the only two spellings that differ in bash. See the
   // expansion guard below.
-  const opener = /^\$\([ \t]*(?:\/(?:usr\/)?bin\/)?cat[ \t]*<<(-?)[ \t]*(?:'([^']+)'|"([^"]+)"|\\([^\s'"();|&<>\\]+)|([^\s'"();|&<>\\]+))[ \t]*$/
-    .exec(lines[0]);
+  const opener =
+    /^\$\([ \t]*(?:\/(?:usr\/)?bin\/)?cat[ \t]*<<(-?)[ \t]*(?:'([^']+)'|"([^"]+)"|\\([^\s'"();|&<>\\]+)|([^\s'"();|&<>\\]+))[ \t]*$/.exec(
+      lines[0],
+    );
   if (!opener) return lines[0];
 
   // EXPANSION GUARD (review of #3816, round 4 — BLOCKER). Only `<<'D'`, `<<"D"`
@@ -327,9 +347,11 @@ function resolveCommitSubject(messageArg) {
   if (opener[5]) return lines[0];
 
   // `<<-` strips leading TABS from every body line, including the terminator.
-  const stripTabs = opener[1] === '-';
+  const stripTabs = opener[1] === "-";
   const delimiter = opener[2] || opener[3] || opener[4];
-  const body = lines.slice(1).map((l) => (stripTabs ? l.replace(/^\t+/, '') : l));
+  const body = lines
+    .slice(1)
+    .map((l) => (stripTabs ? l.replace(/^\t+/, "") : l));
 
   // TRUNCATION GUARD. The capture that produced this argument stops at the first
   // `"`, so a message containing one arrives here missing its tail — and its
@@ -368,7 +390,7 @@ function resolveCommitSubject(messageArg) {
   // first line is now returned as the subject and fails the format gate: the
   // same fail-closed direction git itself takes.
   const idx = scan.findIndex((l) => !/^[ \t]*$/.test(l));
-  if (idx === -1) return end === -1 ? lines[0] : '';
+  if (idx === -1) return end === -1 ? lines[0] : "";
 
   // Truncation is only fatal to the line it lands IN. A captured line is complete
   // exactly when another line follows it, because the capture kept its newline.
@@ -386,7 +408,13 @@ function resolveCommitSubject(messageArg) {
   // 72 — a still-blocked conforming commit, the very defect #3802 reports
   // (review of #3816). Trailing only, here: leading blank-LINE handling is the
   // findIndex above, and `<<-` leading-tab stripping already happened.
-  return scan[idx].replace(/[ \t]+$/, '');
+  return scan[idx].replace(/[ \t]+$/, "");
 }
 
-module.exports = { isGitSubcommand, tokenize, extractBranchArgument, skipToSubcommand, resolveCommitSubject };
+module.exports = {
+  isGitSubcommand,
+  tokenize,
+  extractBranchArgument,
+  skipToSubcommand,
+  resolveCommitSubject,
+};

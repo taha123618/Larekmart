@@ -103,6 +103,7 @@ Production secret synchronization is managed via `ExternalSecret` and `SecretSto
   - `REDIS_PASSWORD`, `OPENSEARCH_INITIAL_ADMIN_PASSWORD`
 
 Deploy ESO:
+
 ```bash
 helm repo add external-secrets https://charts.external-secrets.io
 helm install external-secrets external-secrets/external-secrets -n external-secrets --create-namespace
@@ -118,6 +119,7 @@ In addition to resource-based HPA (CPU/memory), event-driven workloads scale on 
 - **`notification-service-scaledobject`**: Scales from 2 to 10 replicas when lag on `notification.send` exceeds 50 messages per pod.
 
 Deploy KEDA:
+
 ```bash
 helm repo add kedacore https://kedacore.github.io/charts
 helm install keda kedacore/keda -n keda --create-namespace
@@ -147,9 +149,9 @@ pnpm test:staging:traffic http://localhost:80
 ```
 
 The test validates:
+
 - Next.js Storefront (`client`) and Admin Portal (`admin`) HTTP 200/30x resolution.
 - All 14 microservice health endpoints (`/api/v1/*/health`).
 - WebSocket upgrade route `/ws` on `notification-service`.
 - CORS preflight headers (`Access-Control-Allow-Origin`).
 - Defensive HTTP security headers (`X-Content-Type-Options`).
-

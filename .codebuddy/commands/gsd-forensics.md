@@ -2,6 +2,7 @@
 description: "Post-mortem investigation for failed GSD workflows — diagnoses what went wrong."
 argument-hint: "[problem description]"
 ---
+
 <objective>
 Investigate what went wrong during a GSD workflow execution. Analyzes git history, `.planning/` artifacts, and file system state to detect anomalies and generate a structured diagnostic report.
 
@@ -23,25 +24,28 @@ Output: Forensic report saved to `.planning/forensics/`, presented inline, with 
 - `.planning/reports/SESSION_REPORT.md` (last session outcomes)
 
 **User input:**
+
 - Problem description: {{GSD_ARGS}} (optional — will ask if not provided)
-</context>
+  </context>
 
 <process>
 Execute end-to-end.
 </process>
 
 <success_criteria>
+
 - Evidence gathered from all available data sources
 - At least 4 anomaly types checked (stuck loop, missing artifacts, abandoned work, crash/interruption)
 - Structured forensic report written to `.planning/forensics/report-{timestamp}.md`
 - Report presented inline with findings, anomalies, and recommendations
 - Interactive investigation offered for deeper analysis
 - GitHub issue creation offered if actionable findings exist
-</success_criteria>
+  </success_criteria>
 
 <critical_rules>
+
 - **Read-only investigation:** Do not modify project source files during forensics. Only write the forensic report and update STATE.md session tracking.
 - **Redact sensitive data:** Strip absolute paths, API keys, tokens from reports and issues.
 - **Ground findings in evidence:** Every anomaly must cite specific commits, files, or state data.
 - **No speculation without evidence:** If data is insufficient, say so — do not fabricate root causes.
-</critical_rules>
+  </critical_rules>

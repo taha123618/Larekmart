@@ -11,9 +11,9 @@ print("Initializing Larekmart MongoDB databases and collections...");
 // 1. Order Service Database
 const orderDb = db.getSiblingDB("order_db");
 orderDb.createUser({
-    user: "order_user",
-    pwd: "order_password",
-    roles: [{ role: "readWrite", db: "order_db" }]
+  user: "order_user",
+  pwd: "order_password",
+  roles: [{ role: "readWrite", db: "order_db" }],
 });
 
 orderDb.createCollection("orders");

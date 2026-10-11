@@ -40,7 +40,8 @@ export default function RecommendationTester() {
 
   const serviceUrl =
     process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
-    "http://localhost:8008";
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8080";
 
   const handleTest = async () => {
     setLoading(true);

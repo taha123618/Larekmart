@@ -7,11 +7,11 @@ which investigation technique to use, **replacing** (not appending to) the flat
 
 ## Why this exists
 
-The 11 investigation techniques are all still here — they are the *routed
-targets*, not an undifferentiated list. But picking the right technique ad hoc
+The 11 investigation techniques are all still here — they are the _routed
+targets_, not an undifferentiated list. But picking the right technique ad hoc
 wastes cycles or actively misleads: a deterministic **Bohrbug** wants
 reproduction + fault localization + bisection; a **Heisenbug/Mandelbug** will
-*disappear or change* under naive repro-and-inspect and wants record-replay or
+_disappear or change_ under naive repro-and-inspect and wants record-replay or
 stability-stress; a **concurrency** bug wants the atomicity/order/deadlock
 checklist before general techniques. Classification takes one sentence and
 routes the rest.
@@ -38,12 +38,12 @@ and revise it as evidence accumulates.
 
 ## The routing table (explicit, inspectable — Kernighan: no opaque heuristic)
 
-| bug_class | Route to | Revoke if already run |
-|---|---|---|
-| **Bohrbug** | deterministic reproduction → **SBFL (Phase 1.25)** → git bisect → binary search | — |
-| **Heisenbug / Mandelbug** | record-replay (`rr`) → stability-stress → statistical sampling; for Mandelbug, look for resource-exhaustion / uptime-dependent patterns | **SBFL** — if Phase 1.25 already ran, **mark its Evidence entry revoked** (flaky spectrum poisons `failed(s)`) |
-| **Concurrency** | the atomicity / order / deadlock checklist (below) FIRST, then general techniques | — |
-| **General (any class — situation-cued)** | Binary search (large codebase), Working backwards (known desired output), Differential debugging (worked-before/works-elsewhere), Delta debugging (large change set), Comment out everything (many possible causes), Follow the indirection (constructed paths/URLs/keys), Rubber duck (confused), Observability first (always, before changes) | — |
+| bug_class                                | Route to                                                                                                                                                                                                                                                                                                                                        | Revoke if already run                                                                                          |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Bohrbug**                              | deterministic reproduction → **SBFL (Phase 1.25)** → git bisect → binary search                                                                                                                                                                                                                                                                 | —                                                                                                              |
+| **Heisenbug / Mandelbug**                | record-replay (`rr`) → stability-stress → statistical sampling; for Mandelbug, look for resource-exhaustion / uptime-dependent patterns                                                                                                                                                                                                         | **SBFL** — if Phase 1.25 already ran, **mark its Evidence entry revoked** (flaky spectrum poisons `failed(s)`) |
+| **Concurrency**                          | the atomicity / order / deadlock checklist (below) FIRST, then general techniques                                                                                                                                                                                                                                                               | —                                                                                                              |
+| **General (any class — situation-cued)** | Binary search (large codebase), Working backwards (known desired output), Differential debugging (worked-before/works-elsewhere), Delta debugging (large change set), Comment out everything (many possible causes), Follow the indirection (constructed paths/URLs/keys), Rubber duck (confused), Observability first (always, before changes) | —                                                                                                              |
 
 The class-routed rows decide which technique to reach for **first**. The
 General lane holds the situational techniques that apply regardless of class —

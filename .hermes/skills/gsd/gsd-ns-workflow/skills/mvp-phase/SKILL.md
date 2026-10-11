@@ -30,8 +30,6 @@ Phase 1 of the vertical-mvp-slice PRD shipped the planner-side machinery; this c
 @/Users/taha/projects/microservices-ecommerce/.hermes/gsd-core/references/user-story-template.md
 </execution_context>
 
-
-
 <context>
 Phase number: $ARGUMENTS (required — integer or decimal like `2.1`)
 

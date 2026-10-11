@@ -11,7 +11,6 @@ allowed-tools:
   - Glob
 ---
 
-
 <objective>
 Generate a structured milestone summary for team onboarding and project review. Reads completed milestone artifacts (ROADMAP, REQUIREMENTS, CONTEXT, SUMMARY, VERIFICATION files) and produces a human-friendly overview of what was built, how, and why.
 
@@ -34,14 +33,16 @@ Output: MILESTONE_SUMMARY written to `.planning/reports/`, presented inline, opt
 - `.planning/phases/*-*/` (SUMMARY.md, VERIFICATION.md, CONTEXT.md, RESEARCH.md)
 
 **User input:**
+
 - Version: $ARGUMENTS (optional — defaults to current/latest milestone)
-</context>
+  </context>
 
 <process>
 Execute end-to-end.
 </process>
 
 <success_criteria>
+
 - Milestone version resolved (from args, STATE.md, or archive scan)
 - All available artifacts read (ROADMAP, REQUIREMENTS, CONTEXT, SUMMARY, VERIFICATION, RESEARCH, RETROSPECTIVE)
 - Summary document written to `.planning/reports/MILESTONE_SUMMARY-v{version}.md`
@@ -49,4 +50,4 @@ Execute end-to-end.
 - Summary presented inline to user
 - Interactive Q&A offered
 - STATE.md updated
-</success_criteria>
+  </success_criteria>

@@ -53,13 +53,13 @@ Then run /gsd:graphify build to create the initial graph.
 
 Parse `$ARGUMENTS` to determine the operation mode:
 
-| Argument | Action |
-|----------|--------|
-| `build` | Run inline build (Step 3) |
-| `query <term>` | Run inline query (Step 2a) |
-| `status` | Run inline status check (Step 2b) |
-| `diff` | Run inline diff check (Step 2c) |
-| No argument or unknown | Show usage message |
+| Argument               | Action                            |
+| ---------------------- | --------------------------------- |
+| `build`                | Run inline build (Step 3)         |
+| `query <term>`         | Run inline query (Step 2a)        |
+| `status`               | Run inline status check (Step 2b) |
+| `diff`                 | Run inline diff check (Step 2c)   |
+| No argument or unknown | Show usage message                |
 
 **Usage message** (shown when no argument or unrecognized argument):
 
@@ -85,6 +85,7 @@ gsd_run graphify query <term>
 ```
 
 Parse the JSON output and display results:
+
 - If the output contains `"disabled": true`, display the disabled message from Step 1 and **STOP**
 - If the output contains `"error"` field, display the error message and **STOP**
 - If no nodes found, display: `No graph matches for '<term>'. Try /gsd:graphify build to create or rebuild the graph.`
@@ -102,6 +103,7 @@ gsd_run graphify status
 ```
 
 Parse the JSON output and display:
+
 - If `exists: false`, display the message field
 - Otherwise show last build time, node/edge/hyperedge counts, and STALE or FRESH indicator
 - If `built_at_commit` is non-null, also display a `Source commit:` line:
@@ -127,6 +129,7 @@ gsd_run graphify diff
 ```
 
 Parse the JSON output and display:
+
 - If `no_baseline: true`, display the message field
 - Otherwise show node and edge change counts (added/removed/changed)
 
@@ -146,6 +149,7 @@ gsd_run graphify build
 ```
 
 Parse the JSON output:
+
 - If `disabled: true`: display the disabled message from Step 1 and **STOP**
 - If `error`: display the error message and **STOP**
 - If `action: "spawn_agent"`: pre-flight passed -- proceed with the inline build below
@@ -173,11 +177,13 @@ graphify update . \
 Do NOT pass `run_in_background: true`. Typical builds complete in 15-60 seconds and the entire chain must run foreground.
 
 If the chain fails (non-zero exit):
+
 - Display: `## GRAPHIFY BUILD FAILED` followed by the captured stderr
 - Do NOT delete `.planning/graphs/` -- the prior valid graph remains available
 - **STOP**
 
 If the chain succeeds:
+
 - Parse the trailing `graphify status` JSON
 - Display: `## GRAPHIFY BUILD COMPLETE` with the node, edge, and hyperedge counts
 

@@ -1,6 +1,7 @@
 ---
 description: "Smart entry — detect project state and route to the right next GSD action."
 ---
+
 <objective>
 GSD smart entry — the state-aware front door. Detect what's going on in this project, then present a short menu of the right next actions and dispatch to one.
 

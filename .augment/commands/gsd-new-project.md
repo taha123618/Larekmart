@@ -12,7 +12,6 @@ allowed-tools:
 requires: [config, phase, plan-phase]
 ---
 
-
 <context>
 **Flags:**
 - `--auto` — Automatic mode. After config questions, runs research → requirements → roadmap without further interaction. Expects idea document via @ reference.
@@ -22,6 +21,7 @@ requires: [config, phase, plan-phase]
 Initialize a new project through unified flow: questioning → research (optional) → requirements → roadmap.
 
 **Creates:**
+
 - `.planning/PROJECT.md` — project context
 - `.planning/config.json` — workflow preferences
 - `.planning/research/` — domain research (optional)

@@ -20,12 +20,13 @@ Read all files referenced by the invoking prompt's execution_context before star
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-phase-researcher — Researches technical approaches for an item
 - gsd-planner — Creates a plan for one item (`quick-batch` mode)
 - gsd-plan-checker — Reviews one item's plan before execution
 - gsd-executor — Executes one item's plan, commits, creates SUMMARY.md
 - gsd-verifier — Verifies one item's goal achievement
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 **Step 1: Parse arguments, resolve mode**
@@ -94,6 +95,7 @@ fi
 value alone; `--jobs N` is capped by it (`min(taskCount, N, capacity)` — the
 `quick-batch effective-concurrency` verb, called per-wave below, does the
 arithmetic; this is only the raw resolve):
+
 ```bash
 CAPACITY=$(gsd_run query dispatch-capacity --raw 2>/dev/null || echo 1)
 ```
@@ -107,6 +109,7 @@ substitute `{harnessFlag}` in Step 6's `Agent()` with `$HARNESS_FLAG`+comma
 when `ISOLATION = "harness-worktree"`, else empty.
 
 If `USE_WORKTREES` is not `"false"`, sweep orphaned worktrees before dispatching anything (mirrors `$gsd-quick`'s own startup sweep):
+
 ```bash
 if [ "$USE_WORKTREES" != "false" ]; then
   gsd_run query worktree.reap-orphans 2>/dev/null || true
@@ -114,6 +117,7 @@ fi
 ```
 
 Display banner:
+
 ```
 ### GSD ► QUICK BATCH
 ◆ jobs=${JOBS} validate=${VALIDATE_MODE} research=${RESEARCH_MODE}${RESUME_BATCH_ID:+ resume=${RESUME_BATCH_ID}}
@@ -183,6 +187,7 @@ complete item, updates STATE.md, and prints the final batch report.
 </process>
 
 <success_criteria>
+
 - [ ] `--discuss`/`--full` rejected with a usage error before any dispatch
 - [ ] A malformed `--jobs` value rejected before any dispatch
 - [ ] `--resume <batch-id>` skips task-list parsing, dispatches only eligible items
@@ -196,4 +201,4 @@ complete item, updates STATE.md, and prints the final batch report.
 - [ ] (--validate) Verifier dispatched per item post-merge; `human_needed` never completes the item, `gaps_found` fails it without rollback or retry
 - [ ] A merge_failed/scope_violation item is marked failed with the worktree PRESERVED
 - [ ] `completeQuickItem` called only for genuinely complete items; STATE.md updated; artifacts committed
-</success_criteria>
+      </success_criteria>

@@ -57,11 +57,11 @@ fi
 gsd_run query dispatch-isolation --raw --force-isolation "$ISOLATION" >/dev/null 2>&1 || true
 ```
 
-| `ISOLATION` | Meaning | What a dispatch site does |
-|---|---|---|
-| `harness-worktree` | The host's own harness creates and binds a worktree per agent. | Pass the host's declared `harnessFlag` on the dispatch. GSD runs no git. |
+| `ISOLATION`             | Meaning                                                                  | What a dispatch site does                                                                        |
+| ----------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `harness-worktree`      | The host's own harness creates and binds a worktree per agent.           | Pass the host's declared `harnessFlag` on the dispatch. GSD runs no git.                         |
 | `orchestrator-worktree` | No harness primitive, but a headless exec accepting a working directory. | GSD creates the worktree and process-spawns the agent into it. GSD performs every git operation. |
-| `none` | No isolation primitive. | Run inline, sequentially. |
+| `none`                  | No isolation primitive.                                                  | Run inline, sequentially.                                                                        |
 
 Fail-closed is the invariant: an undeclared, unknown, or unresolvable declaration degrades to
 `none`, never to an unsafe parallel path.

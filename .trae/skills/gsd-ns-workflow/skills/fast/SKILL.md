@@ -4,7 +4,6 @@ description: "Execute a trivial task inline — no subagents, no planning overhe
 stage: workflow
 ---
 
-
 <objective>
 Execute a trivial task directly in the current context without spawning subagents
 or generating PLAN.md files. For tasks too small to justify planning overhead:

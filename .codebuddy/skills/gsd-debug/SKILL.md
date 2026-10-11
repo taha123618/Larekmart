@@ -4,13 +4,13 @@ description: "Systematic debugging with persistent state across context resets"
 user-invocable: false
 ---
 
-
 <objective>
 Debug issues using scientific method with subagent isolation.
 
 **Orchestrator role:** Gather symptoms, spawn gsd-debugger agent, handle checkpoints, spawn continuations.
 
 **Flags:**
+
 - `--diagnose` — Diagnose only. Returns a Root Cause Report without applying a fix.
 
 **Subcommands:** `list` · `status <slug>` · `continue <slug>`
@@ -18,9 +18,10 @@ Debug issues using scientific method with subagent isolation.
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-debug-session-manager — manages debug checkpoint/continuation loop in isolated context
 - gsd-debugger — investigates bugs using scientific method
-</available_agent_types>
+  </available_agent_types>
 
 <execution_context>
 @/Users/taha/projects/microservices-ecommerce/.codebuddy/gsd-core/workflows/debug.md
@@ -30,6 +31,7 @@ Valid GSD subagent types (use exact names — do not fall back to 'general-purpo
 User's input: {{GSD_ARGS}}
 
 Parse subcommands and flags from {{GSD_ARGS}} BEFORE the active-session check:
+
 - If {{GSD_ARGS}} starts with "list": SUBCMD=list, no further args
 - If {{GSD_ARGS}} starts with "status ": SUBCMD=status, SLUG=remainder (trim whitespace)
 - If {{GSD_ARGS}} starts with "continue ": SUBCMD=continue, SLUG=remainder (trim whitespace)
@@ -37,9 +39,11 @@ Parse subcommands and flags from {{GSD_ARGS}} BEFORE the active-session check:
 - Otherwise: SUBCMD=debug, diagnose_only=false
 
 Check for active sessions (used for non-list/status/continue flows):
+
 ```bash
 ls .planning/debug/*.md 2>/dev/null | grep -v resolved | head -5
 ```
+
 </context>
 
 <process>

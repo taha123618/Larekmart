@@ -18,7 +18,7 @@ Import external plan files into the GSD planning system with conflict detection 
 
 - **--from**: Import an external plan file, detect conflicts, write as GSD PLAN.md, validate via gsd-plan-checker.
 - **--from-gsd2**: Reverse-migrate a GSD-2 project (`.gsd/` directory) back to GSD v1 (`.planning/`) format. Runs `gsd_run from-gsd2`. Pass `--path <dir>` to migrate a project at a different path.
-</objective>
+  </objective>
 
 <execution_context>
 @/Users/taha/projects/microservices-ecommerce/.claude/gsd-core/workflows/import.md

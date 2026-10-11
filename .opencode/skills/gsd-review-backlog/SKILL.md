@@ -11,15 +11,18 @@ milestone sequence or remove stale entries.
 <process>
 
 1. **List backlog items:**
+
    ```bash
    _BACKLOG=( .planning/phases/999* )
    if [ -e "${_BACKLOG[0]}" ]; then ls -d "${_BACKLOG[@]}"; else echo "No backlog items found"; fi
    ```
 
 2. **Read ROADMAP.md** and extract all 999.x phase entries:
+
    ```bash
    cat .planning/ROADMAP.md
    ```
+
    Show each backlog item with its description, any accumulated context (CONTEXT.md, RESEARCH.md), and creation date.
 
 3. **Present the list to the user** via question:
@@ -42,11 +45,13 @@ milestone sequence or remove stale entries.
    - Remove the entry from ROADMAP.md `## Backlog` section
 
 6. **Commit changes:**
+
    ```bash
    gsd-tools query commit "docs: review backlog — promoted N, removed M" --files .planning/ROADMAP.md
    ```
 
 7. **Report summary:**
+
    ```
    ## 📋 Backlog Review Complete
 

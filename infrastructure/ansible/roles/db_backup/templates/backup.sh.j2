@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Larekmart Automated Database S3 Backup Script
+# Managed by Ansible
+# ==============================================================================
+set -euo pipefail
+
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+BACKUP_DIR="/opt/larekmart/backups/dumps"
+S3_BUCKET="{{ backup_s3_bucket | default('larekmart-database-backups') }}"
+RETENTION_DAYS="{{ backup_retention_days | default(30) }}"
+
+mkdir -p "${BACKUP_DIR}"
+
+echo "[$(date)] Starting Larekmart Database Backup..."
+
+# 1. PostgreSQL Backup
+if [ "{{ db_type | default('') }}" = "postgresql" ]; then
+    PG_FILE="${BACKUP_DIR}/postgres_${TIMESTAMP}.sql.gz"
+    echo "[$(date)] Dumping PostgreSQL databases..."
+    PGPASSWORD="{{ postgres_password | default('') }}" pg_dumpall -h localhost -U "{{ postgres_user | default('postgres') }}" | gzip > "${PG_FILE}"
+    echo "[$(date)] Uploading PostgreSQL dump to s3://${S3_BUCKET}/postgres/..."
+    aws s3 cp "${PG_FILE}" "s3://${S3_BUCKET}/postgres/$(basename "${PG_FILE}")" --sse aws:kms
+    rm -f "${PG_FILE}"
+fi
+
+# 2. Prune local dumps older than 3 days
+find "${BACKUP_DIR}" -type f -mtime +3 -delete
+
+echo "[$(date)] Backup completed successfully."

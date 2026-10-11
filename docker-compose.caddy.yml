@@ -1,0 +1,44 @@
+name: larekmart-caddy
+
+# ============================================================================
+# Larekmart Caddy Application Reverse Proxy Stack
+# Provides:
+#   - Caddy reverse proxy for Larekmart application services (API Gateway, Client, Admin)
+#   - Traefik Integration: Auto-routed via labels on larekmart-network
+# ============================================================================
+
+services:
+  caddy:
+    image: caddy:alpine
+    container_name: larekmart-caddy
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    expose:
+      - 80
+    ports:
+      - "${CADDY_BIND_IP:-127.0.0.1}:${CADDY_HTTP_PORT:-8086}:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.caddy-app.rule=Host(`${APP_DOMAIN:-app.localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`)"
+      - "traefik.http.services.caddy-app.loadbalancer.server.port=80"
+      - "traefik.http.routers.caddy-app.entrypoints=web,websecure"
+      - "traefik.docker.network=larekmart-network"
+      - "traefik.http.routers.caddy-app.tls=true"
+      - "traefik.http.routers.caddy-app.tls.certresolver=cert-resolver"
+    networks:
+      - larekmart-network
+
+volumes:
+  caddy_data:
+    name: larekmart_caddy_data
+  caddy_config:
+    name: larekmart_caddy_config
+
+networks:
+  larekmart-network:
+    name: larekmart-network
+    driver: bridge
+    attachable: true

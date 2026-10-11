@@ -12,7 +12,9 @@ import type {
 } from "@repo/types";
 
 const USER_BASE =
-  process.env.NEXT_PUBLIC_USER_SERVICE_URL || "http://localhost:8012";
+  process.env.NEXT_PUBLIC_USER_SERVICE_URL ||
+  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+  "http://localhost:8080";
 
 const BASE = `${USER_BASE}/api/v1/users`;
 

@@ -4,9 +4,10 @@ Each sketch produces 2-3 variants for comparison. Saves artifacts to `.planning/
 Companion to `/gsd-sketch --wrap-up`.
 
 Supports two modes:
+
 - **Idea mode** (default) — user describes a design idea to sketch
 - **Frontier mode** — no argument or "frontier" / "what should I sketch?" — analyzes existing sketch landscape and proposes consistency and frontier sketches
-</purpose>
+  </purpose>
 
 <required_reading>
 Read all files referenced by the invoking prompt's execution_context before starting.
@@ -25,6 +26,7 @@ Read all files referenced by the invoking prompt's execution_context before star
 ```
 
 Parse `{{GSD_ARGS}}` for:
+
 - `--quick` flag → set `QUICK_MODE=true`
 - `--text` flag → set `TEXT_MODE=true`
 - `frontier` or empty → set `FRONTIER_MODE=true`
@@ -38,7 +40,7 @@ Parse `{{GSD_ARGS}}` for:
 
 - **FRONTIER_MODE is true** → Jump to `frontier_mode`
 - **Otherwise** → Continue to `setup_directory`
-</step>
+  </step>
 
 <step name="frontier_mode">
 ## Frontier Mode — Propose What to Sketch Next
@@ -91,11 +93,13 @@ mkdir -p .planning/sketches/themes
 ```
 
 Check for existing sketches to determine numbering:
+
 ```bash
 ls -d .planning/sketches/[0-9][0-9][0-9]-* 2>/dev/null | sort | tail -1
 ```
 
 Check `commit_docs` config:
+
 ```bash
 _GSD_SHIM_NAME="gsd-tools.cjs"; _GSD_RUNTIME_ROOT="${RUNTIME_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"; GSD_TOOLS="${_GSD_RUNTIME_ROOT}/gsd-core/bin/${_GSD_SHIM_NAME}"; _gsd_at() { for _p; do if [ -f "$_p" ]; then GSD_TOOLS="$_p"; return 0; fi; done; return 1; }; _gsd_id_ok() { case "$("$1" runtime-identity --raw 2>/dev/null || true)" in '{"packageName":"@opengsd/gsd-core"'*'}') return 0;; *) return 1;; esac; }; _gsd_homes() { _gsd_at "${CLAUDE_CONFIG_DIR:-/Users/taha/projects/microservices-ecommerce/.cursor}/gsd-core/bin/${_GSD_SHIM_NAME}" "${HERMES_HOME:-$HOME/.hermes}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CURSOR_CONFIG_DIR:-$HOME/.cursor}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CODEX_HOME:-$HOME/.codex}/gsd-core/bin/${_GSD_SHIM_NAME}" "${GEMINI_CONFIG_DIR:-$HOME/.gemini}/gsd-core/bin/${_GSD_SHIM_NAME}" "${COPILOT_CONFIG_DIR:-$HOME/.copilot}/gsd-core/bin/${_GSD_SHIM_NAME}" "${WINDSURF_CONFIG_DIR:-$HOME/.codeium/windsurf}/gsd-core/bin/${_GSD_SHIM_NAME}" "${AUGMENT_CONFIG_DIR:-$HOME/.augment}/gsd-core/bin/${_GSD_SHIM_NAME}" "${TRAE_CONFIG_DIR:-$HOME/.trae}/gsd-core/bin/${_GSD_SHIM_NAME}" "${QWEN_CONFIG_DIR:-$HOME/.qwen}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CODEBUDDY_CONFIG_DIR:-$HOME/.codebuddy}/gsd-core/bin/${_GSD_SHIM_NAME}" "${CLINE_CONFIG_DIR:-$HOME/.cline}/gsd-core/bin/${_GSD_SHIM_NAME}" "${GROK_AGENTS_HOME:-$HOME/.agents}/gsd-core/bin/${_GSD_SHIM_NAME}" "${ANTIGRAVITY_CONFIG_DIR:-$HOME/.gemini/antigravity}/gsd-core/bin/${_GSD_SHIM_NAME}" "${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}/gsd-core/bin/${_GSD_SHIM_NAME}" "${KILO_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/kilo}/gsd-core/bin/${_GSD_SHIM_NAME}"; }; if _gsd_at "${_GSD_RUNTIME_ROOT}/gsd-core/bin/${_GSD_SHIM_NAME}" "${_GSD_RUNTIME_ROOT}/.claude/gsd-core/bin/${_GSD_SHIM_NAME}" "${_GSD_RUNTIME_ROOT}/.codex/gsd-core/bin/${_GSD_SHIM_NAME}"; then gsd_run() { node "$GSD_TOOLS" "$@"; }; elif _gsd_homes; then gsd_run() { node "$GSD_TOOLS" "$@"; }; elif unset -f gsd_run; _G="$(command -v gsd_run)"; [ -n "$_G" ] && _gsd_id_ok "$_G"; then GSD_TOOLS="$_G"; gsd_run() { "$GSD_TOOLS" "$@"; }; else echo "ERROR: gsd-tools.cjs not found at $GSD_TOOLS and no identity-proving gsd_run is on PATH. Run: npx -y @opengsd/gsd-core@latest --claude --local" >&2; exit 1; fi; GSD_IDENTITY_STATUS=unverified; _gsd_id_ok gsd_run && GSD_IDENTITY_STATUS=ok; export GSD_IDENTITY_STATUS; [ "$GSD_IDENTITY_STATUS" = ok ] || echo "WARNING: \"$GSD_TOOLS\" did not prove it is @opengsd/gsd-core - it is either a different package or an @opengsd/gsd-core older than the runtime-identity verb. See docs/how-to/diagnose-a-foreign-gsd-tools.md" >&2; if [ -n "${CLAUDE_ENV_FILE:-}" ] && [ -n "${GSD_TOOLS:-}" ]; then printf "export PATH='%s':\"\$PATH\"\n" "${GSD_TOOLS%/*}" >> "$CLAUDE_ENV_FILE" 2>/dev/null || true; fi
 RESPONSE_LANGUAGE=$(gsd_run query config-get response_language --raw --default "" 2>/dev/null || echo "")
@@ -137,6 +141,7 @@ If spikes exist for this project, read them to ground the sketches in reality. M
 **c.** Read `.planning/spikes/CONVENTIONS.md` if it exists — the established stack informs what's buildable and what interaction patterns are idiomatic.
 
 **How spike context improves sketches:**
+
 - Use real field names and data shapes from spike findings instead of generic placeholders
 - Show realistic UI states that match what the spikes proved (e.g., if streaming was validated, show a streaming message state)
 - Reference real component names and patterns from the target stack
@@ -148,18 +153,20 @@ If spikes exist for this project, read them to ground the sketches in reality. M
 <step name="decompose">
 Break the idea into 2-5 design questions. Present as a table:
 
-| Sketch | Design question | Approach | Risk |
-|--------|----------------|----------|------|
-| 001 | Does a two-panel layout feel right? | Sidebar + main, variants: fixed/collapsible/floating | **High** — sets page structure |
-| 002 | How should the form controls look? | Grouped cards, variants: stacked/inline/floating labels | Medium |
+| Sketch | Design question                     | Approach                                                | Risk                           |
+| ------ | ----------------------------------- | ------------------------------------------------------- | ------------------------------ |
+| 001    | Does a two-panel layout feel right? | Sidebar + main, variants: fixed/collapsible/floating    | **High** — sets page structure |
+| 002    | How should the form controls look?  | Grouped cards, variants: stacked/inline/floating labels | Medium                         |
 
 Each sketch answers one specific visual question. Good sketches:
+
 - "Does this layout feel right?" — build with real-ish content
 - "How should these controls be grouped?" — build with actual labels and inputs
 - "What does this interaction feel like?" — build the hover/click/transition
 - "Does this color palette work?" — apply to actual UI, not a swatch grid
 
 Bad sketches:
+
 - "Design the whole app" — too broad
 - "Set up the component library" — that's implementation
 - "Pick a color palette" — apply it to UI instead
@@ -175,11 +182,13 @@ Before sketching, ground the design in what's actually buildable. Sketches are H
 **a. Identify the target stack.** Check for package.json, Cargo.toml, etc. If the user mentioned a framework (React, SwiftUI, Flutter, etc.), note it.
 
 **b. Check component/pattern availability.** Use context7 (resolve-library-id → query-docs) or web search to answer:
+
 - What layout primitives does the target framework provide?
 - Are there existing component libraries in use? What components are available?
 - What interaction patterns are idiomatic?
 
 **c. Note constraints that affect design:**
+
 - Platform conventions (iOS nav patterns, desktop menu bars, terminal grid constraints)
 - Framework limitations (what's easy vs requires custom work)
 - Existing design tokens or theme systems already in the project
@@ -196,15 +205,17 @@ Create or update `.planning/sketches/MANIFEST.md`:
 # Sketch Manifest
 
 ## Design Direction
+
 [One paragraph capturing the mood/feel/direction from the intake conversation]
 
 ## Reference Points
+
 [Apps/sites the user referenced]
 
 ## Sketches
 
-| # | Name | Design Question | Winner | Tags |
-|---|------|----------------|--------|------|
+| #   | Name | Design Question | Winner | Tags |
+| --- | ---- | --------------- | ------ | ---- |
 ```
 
 If MANIFEST.md already exists, append new sketches to the existing table.
@@ -231,6 +242,7 @@ Build each sketch in order.
 **Subsequent rounds — refinements:** Subtler variations within the chosen direction.
 
 Each variant is a page/tab in the same HTML file. Include:
+
 - Tab navigation to switch between variants (see `sketch-variant-patterns.md`)
 - Clear labels: "Variant A: Sidebar Layout", "Variant B: Top Nav", etc.
 - The sketch toolbar (see `sketch-tooling.md`)
@@ -254,17 +266,21 @@ tags: [layout, dashboard]
 # Sketch NNN: Descriptive Name
 
 ## Design Question
+
 [The specific visual question this sketch answers]
 
 ## How to View
+
 open .planning/sketches/NNN-descriptive-name/index.html
 
 ## Variants
+
 - **A: [name]** — [one-line description of this approach]
 - **B: [name]** — [one-line description]
 - **C: [name]** — [one-line description]
 
 ## What to Look For
+
 [Specific things to pay attention to when comparing variants]
 ```
 
@@ -283,6 +299,7 @@ Compare: {what to look for between variants}
 **→ Which variant feels right? Or cherry-pick elements across variants.**
 
 **f.** Handle feedback:
+
 - **Pick a direction:** mark winner, move to next sketch
 - **Cherry-pick elements:** build synthesis as new variant, show again
 - **Want more exploration:** build new variants
@@ -290,21 +307,25 @@ Compare: {what to look for between variants}
 Iterate until satisfied.
 
 **g.** Finalize:
+
 1. Mark winning variant in README frontmatter (`winner: "B"`)
 2. Add ★ indicator to winning tab in HTML
 3. Update `.planning/sketches/MANIFEST.md`
 
 **h.** Commit (if `COMMIT_DOCS` is true):
+
 ```bash
 gsd_run query commit "docs(sketch-NNN): [winning direction] — [key visual insight]" --files .planning/sketches/NNN-descriptive-name/ .planning/sketches/MANIFEST.md
 ```
 
 **i.** Report:
+
 ```
 ◆ Sketch NNN: {name}
   Winner: Variant {X} — {description}
   Insight: {key visual decision made}
 ```
+
 </step>
 
 <step name="report">
@@ -334,16 +355,19 @@ After all sketches complete:
 ---
 
 **Also available:**
+
 - `/gsd-sketch` — sketch more (or run with no argument for frontier mode)
 - `/gsd-plan-phase` — start building the real UI
 - `/gsd-spike` — spike technical feasibility of a design pattern
 
 ---
+
 </step>
 
 </process>
 
 <success_criteria>
+
 - [ ] `.planning/sketches/` created (auto-creates if needed, no project init required)
 - [ ] Design direction explored conversationally before any code (unless --quick)
 - [ ] Spike context loaded — real data shapes, requirements, and conventions inform mockups
@@ -355,4 +379,4 @@ After all sketches complete:
 - [ ] MANIFEST.md is current
 - [ ] Commits use `docs(sketch-NNN): [winner]` format
 - [ ] Summary presented with next-step routing
-</success_criteria>
+      </success_criteria>

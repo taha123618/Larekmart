@@ -3,7 +3,6 @@ name: gsd-mempalace-recall
 description: "Recall decisions, patterns, and surprises from MemPalace before planning"
 ---
 
-
 **STOP -- DO NOT READ THIS FILE. You are already reading it. This prompt was injected into your context by the command system. Using the Read tool on this file wastes tokens. Begin executing Step 0 immediately.**
 
 ## Step 0 -- Banner
@@ -44,11 +43,11 @@ This step is `onError: skip` at `plan:pre` -- recall never blocks planning.
 
 1. **Wing.** Use `config.mempalace.wing` if non-empty; otherwise derive from `config.project_code`; otherwise fall back to the repository directory name.
 2. **Mode.** Read `config.mempalace.memory_mode` (`augment` | `kg_backend` | `replace`, default `augment`). It sets how authoritative the palace is during recall:
-   - `augment` — the palace is an *additional* layer; read native memory (`.planning/graphs/`, STATE) too and treat the palace as supplementary.
-   - `kg_backend` — for knowledge-graph facts, query the palace's temporal KG *first, as the primary source*; fall back to `.planning/graphs/` when the palace is unreachable. Non-KG drawer recall stays additive.
-   - `replace` — resolve recall *through the palace as the source of truth*; consult native artifacts only as a fallback when the palace is unreachable.
-   In every mode an unreachable palace degrades to native memory — recall never blocks (`onError: skip`).
-3. **Transport.** Prefer the **MCP tools** (`mempalace_*`) in interactive runs *when your MemPalace MCP server is registered and your runtime permits those tools*. Otherwise — headless/cron/autonomous runs, or runtimes that don't grant the MemPalace MCP tools — use the **CLI** (`mempalace wake-up`, `mempalace search`), which this skill's `Bash` allow-tool always covers. If neither is reachable, go to Step 4.
+   - `augment` — the palace is an _additional_ layer; read native memory (`.planning/graphs/`, STATE) too and treat the palace as supplementary.
+   - `kg_backend` — for knowledge-graph facts, query the palace's temporal KG _first, as the primary source_; fall back to `.planning/graphs/` when the palace is unreachable. Non-KG drawer recall stays additive.
+   - `replace` — resolve recall _through the palace as the source of truth_; consult native artifacts only as a fallback when the palace is unreachable.
+     In every mode an unreachable palace degrades to native memory — recall never blocks (`onError: skip`).
+3. **Transport.** Prefer the **MCP tools** (`mempalace_*`) in interactive runs _when your MemPalace MCP server is registered and your runtime permits those tools_. Otherwise — headless/cron/autonomous runs, or runtimes that don't grant the MemPalace MCP tools — use the **CLI** (`mempalace wake-up`, `mempalace search`), which this skill's `Bash` allow-tool always covers. If neither is reachable, go to Step 4.
 4. **Topic.** Read the phase `CONTEXT.md` (the consumed artifact). Derive a short search query from its title, goal, and key decisions.
 
 ## Step 3 -- Retrieve (read-only)
@@ -61,7 +60,7 @@ All calls in this step are side-effect-free. On any error or timeout, stop retri
 2. **Targeted search:**
    - Interactive: `mempalace_search(query=<topic>, wing=<wing>)`.
    - Headless: `mempalace search "<topic>" --wing <wing>`.
-3. **Knowledge-graph facts** (unless `config.mempalace.mirror_kg !== false` — registry default is true, an absent key means enabled): `mempalace_kg_query` / `mempalace_kg_timeline` for decisions relevant to the topic and their validity windows. Under `augment` the palace KG *supplements* GSD's native `.planning/graphs/` — combine both, do not treat the palace as the sole source. Under `kg_backend` or `replace` the palace KG is the *primary* graph source — query it first and use `.planning/graphs/` only as a fallback when the palace is unreachable.
+3. **Knowledge-graph facts** (unless `config.mempalace.mirror_kg !== false` — registry default is true, an absent key means enabled): `mempalace_kg_query` / `mempalace_kg_timeline` for decisions relevant to the topic and their validity windows. Under `augment` the palace KG _supplements_ GSD's native `.planning/graphs/` — combine both, do not treat the palace as the sole source. Under `kg_backend` or `replace` the palace KG is the _primary_ graph source — query it first and use `.planning/graphs/` only as a fallback when the palace is unreachable.
 4. **Dedup** the returned drawers/facts; keep the top results.
 
 ## Step 4 -- Write MEMORY-RECALL.md
@@ -76,12 +75,15 @@ When recall succeeded, structure it as:
 _Wing: <wing> · Mode: <mode> · Transport: <mcp|cli>_
 
 ## Prior decisions
+
 - <decision> — <provenance: drawer id / kg fact, valid_from>
 
 ## Patterns
+
 - <pattern> — <provenance>
 
 ## Surprises / gotchas
+
 - <surprise> — <provenance>
 ```
 

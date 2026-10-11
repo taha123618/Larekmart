@@ -11,7 +11,7 @@ async function fetchInventory(
 ): Promise<InventoryItemData[]> {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || "http://localhost:8007"}/api/v1/inventory/items?limit=500`,
+      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080"}/api/v1/inventory/items?limit=500`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

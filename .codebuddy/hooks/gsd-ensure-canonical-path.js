@@ -29,18 +29,24 @@
 // checked). A real (non-symlink) file or directory already sitting at a managed
 // link target is NEVER clobbered.
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { allow } = require('./lib/hook-exit.js');
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const { allow } = require("./lib/hook-exit.js");
 
 // Immutable, bundled subdirectories that the canonical path must expose. These
 // are the directories `@~/.codebuddy/gsd-core/<subdir>/...` includes point into.
 // User-generated artifacts (USER-PROFILE.md, STATE.md, VERSION, config, …) are
 // NOT in this list and are never created, moved, or deleted by this hook.
-const MANAGED_SUBDIRS = ['bin', 'contexts', 'references', 'templates', 'workflows'];
+const MANAGED_SUBDIRS = [
+  "bin",
+  "contexts",
+  "references",
+  "templates",
+  "workflows",
+];
 
 /**
  * Resolve the canonical runtime config dir for the active runtime.
@@ -51,10 +57,10 @@ const MANAGED_SUBDIRS = ['bin', 'contexts', 'references', 'templates', 'workflow
  */
 function resolveConfigDir(homeDir, env) {
   const envDir = env.CLAUDE_CONFIG_DIR;
-  if (envDir && typeof envDir === 'string' && envDir.trim().length > 0) {
+  if (envDir && typeof envDir === "string" && envDir.trim().length > 0) {
     return envDir;
   }
-  return path.join(homeDir, '.codebuddy');
+  return path.join(homeDir, ".codebuddy");
 }
 
 /**
@@ -66,7 +72,11 @@ function resolveConfigDir(homeDir, env) {
  * realpath collapses symlinks/.. so the subsequent containment check is sound.
  */
 function resolveBundledTree(pluginRoot) {
-  if (!pluginRoot || typeof pluginRoot !== 'string' || pluginRoot.trim().length === 0) {
+  if (
+    !pluginRoot ||
+    typeof pluginRoot !== "string" ||
+    pluginRoot.trim().length === 0
+  ) {
     return null;
   }
   let root;
@@ -75,7 +85,7 @@ function resolveBundledTree(pluginRoot) {
   } catch (_) {
     return null; // plugin root does not exist
   }
-  const bundled = path.join(root, 'gsd-core');
+  const bundled = path.join(root, "gsd-core");
   let bundledReal;
   try {
     // The bundled tree must be a real directory (or a symlink to one) that
@@ -106,7 +116,7 @@ function resolveBundledTree(pluginRoot) {
  * without a Windows host.
  */
 function dirLinkType(platform) {
-  return platform === 'win32' ? 'junction' : 'dir';
+  return platform === "win32" ? "junction" : "dir";
 }
 
 /**
@@ -153,7 +163,8 @@ function ensureCanonicalPath(opts = {}) {
   const env = opts.env || process.env;
   const homeDir = opts.homeDir || os.homedir();
   const platform = opts.platform || process.platform;
-  const pluginRoot = opts.pluginRoot !== undefined ? opts.pluginRoot : env.CLAUDE_PLUGIN_ROOT;
+  const pluginRoot =
+    opts.pluginRoot !== undefined ? opts.pluginRoot : env.CLAUDE_PLUGIN_ROOT;
 
   // Uniform result contract: every return carries the four action arrays so
   // callers can read result.linked/etc without first switching on status.
@@ -162,11 +173,11 @@ function ensureCanonicalPath(opts = {}) {
   // No plugin context → classic/npm install or non-plugin runtime. No-op.
   const bundledTree = resolveBundledTree(pluginRoot);
   if (!bundledTree) {
-    return { status: 'noop', reason: 'no-plugin-bundle', ...empty };
+    return { status: "noop", reason: "no-plugin-bundle", ...empty };
   }
 
   const configDir = resolveConfigDir(homeDir, env);
-  const canonicalDir = path.join(configDir, 'gsd-core');
+  const canonicalDir = path.join(configDir, "gsd-core");
 
   // Inspect the canonical path itself exactly once.
   //  - If it is a SYMLINK, the user (or another tool) deliberately pointed the
@@ -175,10 +186,20 @@ function ensureCanonicalPath(opts = {}) {
   //  - If it is a REAL directory with at least one REAL (non-link) managed
   //    subdir, this is a classic `bin/install.js` install — leave it alone.
   let canonicalStat = null;
-  try { canonicalStat = fs.lstatSync(canonicalDir); } catch (_) { canonicalStat = null; }
+  try {
+    canonicalStat = fs.lstatSync(canonicalDir);
+  } catch (_) {
+    canonicalStat = null;
+  }
 
   if (canonicalStat && canonicalStat.isSymbolicLink()) {
-    return { status: 'noop', reason: 'canonical-is-symlink', canonicalDir, bundledTree, ...empty };
+    return {
+      status: "noop",
+      reason: "canonical-is-symlink",
+      canonicalDir,
+      bundledTree,
+      ...empty,
+    };
   }
 
   if (canonicalStat && canonicalStat.isDirectory()) {
@@ -186,9 +207,17 @@ function ensureCanonicalPath(opts = {}) {
       try {
         const subSt = fs.lstatSync(path.join(canonicalDir, sub));
         if (subSt.isDirectory() && !subSt.isSymbolicLink()) {
-          return { status: 'noop', reason: 'classic-install', canonicalDir, bundledTree, ...empty };
+          return {
+            status: "noop",
+            reason: "classic-install",
+            canonicalDir,
+            bundledTree,
+            ...empty,
+          };
         }
-      } catch (_) { /* subdir absent — keep checking */ }
+      } catch (_) {
+        /* subdir absent — keep checking */
+      }
     }
   }
 
@@ -197,7 +226,13 @@ function ensureCanonicalPath(opts = {}) {
   try {
     fs.mkdirSync(canonicalDir, { recursive: true });
   } catch (e) {
-    return { status: 'error', reason: `mkdir-canonical: ${e.code || e.message}`, canonicalDir, bundledTree, ...empty };
+    return {
+      status: "error",
+      reason: `mkdir-canonical: ${e.code || e.message}`,
+      canonicalDir,
+      bundledTree,
+      ...empty,
+    };
   }
 
   const linked = [];
@@ -208,7 +243,9 @@ function ensureCanonicalPath(opts = {}) {
   // SECURITY: prefix used to confirm every per-subdir link target resolves
   // strictly inside the bundled tree. Defence-in-depth against a tampered
   // bundle that ships an internally-escaping symlink at <bundledTree>/<sub>.
-  const bundledWithSep = bundledTree.endsWith(path.sep) ? bundledTree : bundledTree + path.sep;
+  const bundledWithSep = bundledTree.endsWith(path.sep)
+    ? bundledTree
+    : bundledTree + path.sep;
 
   for (const sub of MANAGED_SUBDIRS) {
     const target = path.join(bundledTree, sub);
@@ -225,9 +262,12 @@ function ensureCanonicalPath(opts = {}) {
       // the tree root would otherwise be exposed at the wrong level (e.g.
       // `workflows` -> the whole tree), making `@.../workflows/foo` resolve to
       // `<tree>/foo` instead of `<tree>/workflows/foo`.
-      targetIsDir = fs.statSync(targetReal).isDirectory()
-        && targetReal.startsWith(bundledWithSep);
-    } catch (_) { targetIsDir = false; }
+      targetIsDir =
+        fs.statSync(targetReal).isDirectory() &&
+        targetReal.startsWith(bundledWithSep);
+    } catch (_) {
+      targetIsDir = false;
+    }
     if (!targetIsDir) {
       skipped.push(sub);
       continue;
@@ -242,7 +282,11 @@ function ensureCanonicalPath(opts = {}) {
     }
 
     let existing = null;
-    try { existing = fs.lstatSync(linkPath); } catch (_) { existing = null; }
+    try {
+      existing = fs.lstatSync(linkPath);
+    } catch (_) {
+      existing = null;
+    }
 
     if (existing) {
       // lstat().isSymbolicLink() is true for BOTH POSIX symlinks and Windows
@@ -275,7 +319,7 @@ function ensureCanonicalPath(opts = {}) {
   }
 
   return {
-    status: 'ensured',
+    status: "ensured",
     canonicalDir,
     bundledTree,
     linked,

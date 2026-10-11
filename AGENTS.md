@@ -32,7 +32,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
-   - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`
+   - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`, `apps/api-gateway/AGENTS.md`
    - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`
    - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
@@ -77,6 +77,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | ------------------------- | ----------------------------- | ----------------------- | ---- | ---------------------------------------------------------------------------------- |
 | `client`                  | `apps/client`                 | Next.js 15 (App Router) | 3002 | Storefront: browse, cart, Stripe checkout, orders                                  |
 | `admin`                   | `apps/admin`                  | Next.js 15 (App Router) | 3003 | Admin dashboard: products, categories, users, orders                               |
+| `api-gateway`             | `apps/api-gateway`            | Fastify 5               | 8080 | Single entrypoint reverse proxy, auth, rate limiting, and request correlation      |
 | `product-service`         | `apps/product-service`        | Express 5               | 8000 | Product + category CRUD (Prisma/Postgres)                                          |
 | `order-service`           | `apps/order-service`          | Fastify 5               | 8001 | Orders (Mongoose/MongoDB) + analytics                                              |
 | `payment-service`         | `apps/payment-service`        | Hono                    | 8002 | Stripe checkout sessions, webhooks, Stripe product sync                            |

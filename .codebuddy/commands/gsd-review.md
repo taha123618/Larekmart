@@ -2,6 +2,7 @@
 description: "Request cross-AI peer review of phase plans from external AI CLIs"
 argument-hint: "--phase N [--claude] [--codex] [--opencode] [--qwen] [--cursor] [--agy] [--all]"
 ---
+
 <objective>
 Invoke external AI CLIs (Claude, Codex, OpenCode, Qwen Code, Cursor, Antigravity) to independently review phase plans.
 Produces a structured REVIEWS.md with per-reviewer feedback that can be fed back into
@@ -18,6 +19,7 @@ planning via /gsd-plan-phase --reviews.
 Phase number: extracted from {{GSD_ARGS}} (required)
 
 **Flags:**
+
 - `--claude` — Include Claude CLI review (uses separate session)
 - `--codex` — Include Codex CLI review
 - `--opencode` — Include OpenCode review (uses model from user's OpenCode config)

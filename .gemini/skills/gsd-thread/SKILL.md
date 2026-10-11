@@ -3,7 +3,6 @@ name: gsd-thread
 description: "Manage persistent context threads for cross-session work"
 ---
 
-
 <objective>
 Create, list, close, or resume persistent context threads. Threads are lightweight
 cross-session knowledge stores for work that spans multiple sessions but
