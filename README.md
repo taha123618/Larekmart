@@ -86,7 +86,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 .
 ├── apps/
 │   ├── admin/                # Next.js 15 admin dashboard (:3003)
-│   ├── client/               # Next.js 15 customer storefront (:3002)
+│   ├── client/               # Next.js 16 customer storefront (:3002)
 │   ├── api-gateway/          # Fastify 5 API Gateway reverse proxy & aggregator (:8080 / :8090)
 │   ├── auth-service/         # Express 5 + Clerk user management (:8003)
 │   ├── order-service/        # Fastify 5 + MongoDB orders & analytics (:8001)
@@ -130,7 +130,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 
 | Application                  | Technology Stack                                                                      | Port   | Purpose & Responsibilities                                                                                                                      |
 | ---------------------------- | ------------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`client`**                 | Next.js 15, React 19, Tailwind v4, Zustand, Stripe, Clerk                             | `3002` | Customer storefront: catalog search/filter, persistent cart, Stripe custom checkout, customer order history.                                    |
+| **`client`**                 | Next.js 16, React 19, Tailwind v4, Zustand, Framer Motion, GSAP, Stripe, Clerk        | `3002` | Customer storefront: catalog search/filter, persistent cart, Framer Motion drawers/modals, GSAP banners, Stripe checkout, order history.       |
 | **`admin`**                  | Next.js 15, React 19, Tailwind v4, shadcn/ui, TanStack Table & Query, Recharts, Clerk | `3003` | Admin dashboard: catalog management, user administration proxy, order trends, and real-time KPI cards & charts from `analytic-service`.         |
 | **`api-gateway`**            | Fastify 5, `@fastify/http-proxy`, Opossum, Redis, Clerk                               | `8080` | Unified public reverse proxy, header sanitization, Clerk JWT validation, Redis rate limiting, circuit breaker, and `/api/v1/home` aggregation.  |
 | **`product-service`**        | Express 5, Prisma, PostgreSQL, Kafka                                                  | `8000` | Product and category catalog CRUD; publishes `product.created` and `product.deleted`.                                                           |

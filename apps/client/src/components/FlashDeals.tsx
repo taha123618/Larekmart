@@ -123,7 +123,7 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
           return (
             <div
               key={item.id}
-              className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group relative overflow-hidden hover:-translate-y-1.5"
+              className="bg-white rounded-2xl p-4 border border-rose-100 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group relative overflow-hidden hover:-translate-y-1.5"
             >
               {/* Discount Badge */}
               <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-rose-600 text-white rounded-xl text-xs font-black shadow-xs">
@@ -134,7 +134,7 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
               <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1.5">
                 <button
                   onClick={() => handleOpenQuickView(item)}
-                  className="w-8 h-8 rounded-full bg-white text-slate-700 hover:text-indigo-600 flex items-center justify-center shadow-md transition cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-white text-slate-700 hover:text-indigo-600 flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                   title="Quick view"
                 >
                   <Eye className="w-4 h-4" />
@@ -196,7 +196,7 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
               <div className="mt-4 pt-3 border-t border-slate-100">
                 <button
                   onClick={() => handleQuickAdd(item)}
-                  className="w-full py-2 px-3 bg-slate-900 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                  className="w-full py-2 px-3 bg-slate-900 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
                   <span>Claim Deal</span>

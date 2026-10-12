@@ -41,6 +41,47 @@ Postgres, Mongo, or Kafka directly.
 - `src/stores/` — Zustand stores (`cartStore.ts`, `wishlistStore.ts`, `uiStore.ts`).
 - `src/lib/utils.ts` — `cn(...)` utility helper (`clsx` + `tailwind-merge`).
 
+## Animation & Framer Motion Architecture
+
+The client storefront uses a hybrid animation strategy optimized for React 19 and Next.js 16:
+
+1. **GSAP (`@gsap/react`, `useGSAP`)**:
+   - Reserved for complex, coordinated multi-element timelines, the hero entrance choreography, and the promotional carousel in `HeroBanner.tsx`.
+   - Clean up timelines with GSAP's React context lifecycle.
+
+2. **Framer Motion (`framer-motion`)**:
+   - **Allowed Scope**: Client-only overlays, slide-overs, modals, and workflow transitions that are unmounted on initial SSR or gated behind `AnimatePresence`:
+     - `CartDrawer.tsx`: spring slide-over (`x: "100%" -> 0`), backdrop fade, and item removal list animations.
+     - `WishlistDrawer.tsx`: spring slide-over, backdrop fade, and empty-state transitions.
+     - `QuickViewModal.tsx`: spring scale-up (`scale: 0.94 -> 1`), backdrop fade.
+     - `src/app/cart/page.tsx`: animated multi-step checkout workflow (`<AnimatePresence mode="wait">`) and cart item removals (`<AnimatePresence mode="popLayout">`).
+   - **Forbidden Scope**: Do NOT use `<motion.button>`, `<motion.div layoutId>`, or Framer Motion tap/hover hooks on high-cardinality static SSR product or category grids (`ProductCard.tsx`, `CategoriesClient.tsx`, `FlashDeals.tsx`). Framer Motion's server-rendered markup injects `tabindex="0"` and internal `data-motion-id` attributes that mismatch with client DOM hydration in React 19.
+
+3. **Tailwind CSS GPU Transitions**:
+   - For all static server-rendered product cards, department grids, countdown tickers, and navigation links, use standard GPU-accelerated Tailwind classes (e.g. `transition-all duration-300 hover:scale-[1.02] active:scale-95`).
+
+## SSR Hydration Safety Rules
+
+React 19 and Next.js 16 enforce strict hydration equality between server HTML and client initial render. Always follow these rules:
+
+1. **Client Storage & Stores (`wishlistStore`, `cartStore`)**:
+   - Never query `localStorage` directly during server rendering or the initial client render pass.
+   - Guard persistent state queries with an `isMounted` state flag:
+     ```tsx
+     const [isMounted, setIsMounted] = useState(false);
+     useEffect(() => { setIsMounted(true); }, []);
+     const isFavorited = isMounted ? isInWishlist(product.id) : false;
+     ```
+   - Add `suppressHydrationWarning` on interactive toggle buttons (e.g. wishlist heart buttons) that switch state upon client mount.
+
+2. **Third-Party & Browser Extension Defense**:
+   - Chrome extensions (e.g. Motion, accessibility tools) inject attributes like `data-motion-id="svg 2"` into SVGs before React attaches event listeners.
+   - Add `suppressHydrationWarning` on dynamic SVG icons in the navigation or header (e.g. `<Sparkles suppressHydrationWarning />` in `Navbar.tsx`).
+
+3. **Dynamic Tickers & Timestamps**:
+   - Countdown timers and date-based displays (e.g. `FlashDeals.tsx`) drift between SSR server time and client hydration time.
+   - Apply `suppressHydrationWarning` to the ticker container or text spans.
+
 ## Remix-style rules for this app
 
 - **Server components by default.** Add `"use client"` only for state, effects, event

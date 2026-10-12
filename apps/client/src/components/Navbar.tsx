@@ -218,7 +218,11 @@ export default function Navbar() {
 
           {/* Right Ribbon Highlight */}
           <div className="flex items-center gap-2 text-indigo-600 font-bold">
-            <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: "4s" }} />
+            <Sparkles
+              suppressHydrationWarning
+              className="w-3.5 h-3.5 animate-spin"
+              style={{ animationDuration: "4s" }}
+            />
             <span>Summer Super Sale: Up to 70% Off</span>
           </div>
         </div>

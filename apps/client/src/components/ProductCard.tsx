@@ -1,12 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import useCartStore from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { useUIStore } from "@/stores/uiStore";
 import { ProductType } from "@repo/types";
 import { ShoppingCart, Heart, Eye, Star } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import { toast } from "react-toastify";
 import MediaImage from "./MediaImage";
 
@@ -33,7 +33,12 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { toggleWishlist, isInWishlist } = useWishlistStore();
   const { openQuickView } = useUIStore();
 
-  const isFavorited = isInWishlist(product.id);
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const isFavorited = isMounted ? isInWishlist(product.id) : false;
 
   const handleProductType = ({
     type,
@@ -101,8 +106,9 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5 opacity-90 group-hover:opacity-100 transition">
         <button
+          suppressHydrationWarning
           onClick={handleWishlistClick}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition shadow-xs cursor-pointer ${
+          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-xs cursor-pointer ${
             isFavorited
               ? "bg-rose-50 text-rose-500 border border-rose-200"
               : "bg-white/90 backdrop-blur-xs text-slate-500 hover:text-rose-500 hover:bg-white"
@@ -115,7 +121,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         <button
           onClick={handleQuickViewClick}
-          className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs text-slate-500 hover:text-indigo-600 hover:bg-white flex items-center justify-center transition shadow-xs opacity-0 group-hover:opacity-100 cursor-pointer"
+          className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs text-slate-500 hover:text-indigo-600 hover:bg-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-xs opacity-0 group-hover:opacity-100 cursor-pointer"
           title="Quick preview"
           aria-label="Quick preview"
         >
@@ -182,7 +188,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                       e.preventDefault();
                       handleProductType({ type: "color", value: color });
                     }}
-                    className={`w-4 h-4 rounded-full border transition p-0.5 ${
+                    className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 active:scale-90 p-0.5 cursor-pointer ${
                       productTypes.color === color
                         ? "border-indigo-600 scale-110"
                         : "border-slate-300 opacity-80"
@@ -204,7 +210,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 onChange={(e) =>
                   handleProductType({ type: "size", value: e.target.value })
                 }
-                className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-1.5 py-0.5 outline-hidden hover:border-slate-300"
+                className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-1.5 py-0.5 outline-hidden hover:border-slate-300 cursor-pointer"
               >
                 {product.sizes.map((s) => (
                   <option key={s} value={s}>
@@ -234,7 +240,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           <button
             onClick={handleAddToCart}
-            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs hover:shadow-md cursor-pointer shrink-0"
+            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center gap-1.5 shadow-xs hover:shadow-md cursor-pointer shrink-0"
             title="Add to cart"
             aria-label="Add to cart"
           >

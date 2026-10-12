@@ -8,16 +8,31 @@ The high-performance, customer-facing marketplace storefront for Larekmart. Buil
 - **Styling**: Tailwind CSS v4, custom marketplace design tokens, glassmorphism utilities (`globals.css`)
 - **Animation**:
   - **GSAP & `@gsap/react` (`useGSAP`)**: Timeline-based hero sequence animations, promotional banner carousels, and entrance choreography.
-  - **Framer Motion (`framer-motion`)**: Interactive drawer transitions, micro-interactions, layout effects, and hover animations.
+  - **Framer Motion (`framer-motion`)**: High-performance physics-based slide-overs, modals, and workflow step transitions (`CartDrawer`, `WishlistDrawer`, `QuickViewModal`, and multi-step cart checkout).
+  - **Tailwind GPU Transitions**: Native hardware-accelerated transforms for high-cardinality static SSR product grids and category ribbons.
 - **State Management**: **Zustand**
   - `cartStore.ts`: Optimistic client operations synchronized with authoritative `cart-service` server calculations.
-  - `wishlistStore.ts`: Persistent customer saved-items with `localStorage` and 1-click move-to-cart.
+  - `wishlistStore.ts`: Persistent customer saved-items with `localStorage`, hydration mounts, and 1-click move-to-cart.
   - `uiStore.ts`: Shared UI state for slide-over `CartDrawer`, `QuickViewModal`, and search overlay.
 - **UI Primitives**: Radix UI (`@radix-ui/react-*`), `clsx`, `tailwind-merge` (`cn` helper in `src/lib/utils.ts`)
 - **Forms & Validation**: React Hook Form, `@hookform/resolvers/zod`, Zod
 - **Payments**: Stripe (`@stripe/react-stripe-js`, `@stripe/stripe-js`) & Cash on Delivery (COD)
 - **Auth**: Clerk (`@clerk/nextjs`)
 - **Port**: `3002`
+
+## Animation & Hydration Architecture
+
+The storefront couples **Framer Motion** for dynamic overlays and **Tailwind CSS GPU transitions** for static SSR content to guarantee silky 60fps animations alongside zero React 19 hydration mismatches:
+
+- **Framer Motion Overlays (`AnimatePresence`)**:
+  - **`CartDrawer.tsx`**: Off-canvas slide-over using spring physics (`type: "spring", damping: 30, stiffness: 300`), backdrop opacity fade, and animated item list removals.
+  - **`WishlistDrawer.tsx`**: Slide-over drawer with spring entry and empty-state layout transition.
+  - **`QuickViewModal.tsx`**: Centered modal with smooth backdrop fade and scale-in (`scale: 0.94 -> 1`).
+  - **`cart/page.tsx`**: Multi-step checkout transitions (`<AnimatePresence mode="wait">`) between Review, Shipping, and Payment stages, with item dismissal animations (`<AnimatePresence mode="popLayout">`).
+- **SSR Hydration Resilience**:
+  - **No Motion on Static SSR Grids**: Product listings (`ProductCard.tsx`) and categories (`CategoriesClient.tsx`) use GPU-accelerated Tailwind transitions (`hover:scale-[1.02] active:scale-95 transition-all`) rather than `<motion.button>` or dynamic `layoutId` to prevent server attribute injection (`tabindex="0"`, `data-motion-id`) from mismatching client DOM.
+  - **LocalStorage Mount Guards**: Persistent Zustand stores (`wishlistStore`) guard initial client rendering via `isMounted` checks to prevent SSR hydration warnings.
+  - **Extension & Clock Immunity**: Dynamic countdown tickers (`FlashDeals.tsx`) and header icon SVGs (`Navbar.tsx`) include `suppressHydrationWarning` to remain resilient against browser extension attribute injections.
 
 ## Key Marketplace Features
 

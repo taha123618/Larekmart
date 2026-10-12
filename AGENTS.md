@@ -75,7 +75,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 
 | Workspace                 | Path                          | Runtime                 | Port | Purpose                                                                            |
 | ------------------------- | ----------------------------- | ----------------------- | ---- | ---------------------------------------------------------------------------------- |
-| `client`                  | `apps/client`                 | Next.js 15 (App Router) | 3002 | Storefront: browse, cart, Stripe checkout, orders                                  |
+| `client`                  | `apps/client`                 | Next.js 16 (App Router) | 3002 | Storefront: browse, cart, Stripe checkout, orders                                  |
 | `admin`                   | `apps/admin`                  | Next.js 15 (App Router) | 3003 | Admin dashboard: products, categories, users, orders                               |
 | `api-gateway`             | `apps/api-gateway`            | Fastify 5               | 8080 | Single entrypoint reverse proxy, auth, rate limiting, and request correlation      |
 | `product-service`         | `apps/product-service`        | Express 5               | 8000 | Product + category CRUD (Prisma/Postgres)                                          |
