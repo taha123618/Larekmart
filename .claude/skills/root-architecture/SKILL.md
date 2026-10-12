@@ -88,6 +88,7 @@ consistency). E.g. a product change in Postgres is mirrored to Stripe via
    publishes `product.created` → payment-service creates a Stripe product,
    search-service upserts the OpenSearch document, AND recommendation-service computes vector embeddings.
 4. **Storefront Personalization:** client queries `GET /api/v1/recommendations/home` (or category/recently-viewed) with Clerk `userId` → returns multi-strategy shelves → customer views/clicks dispatch zero-throw telemetry events.
+5. **Cash on Delivery (COD) & Multi-Carrier Shipping:** client queries `shipping-service` (`GET /rates?city=...`) for live courier quotes (TCS, Leopards, DHL) → submits `POST /orders/cod` directly to `order-service` → order-service persists the COD Order and publishes `order.created` → `shipping-service` provisions shipment tracking.
 
 ## Before changing anything
 
