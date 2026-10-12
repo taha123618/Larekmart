@@ -198,6 +198,13 @@ The homepage (`apps/client/src/app/page.tsx`) implements a proven e-commerce con
 - **Dual Engine**: Compatible with native window scrolling and Lenis smooth scrolling.
 - **Route Navigation**: Automatically resets scroll position on route change via `usePathname()`.
 
+### 5.12 Editorial Directory Footer (`Footer.tsx`)
+
+- **Typography & Scramble FX**: Scoped Google Font `Barlow Condensed` with animated `ShuffleText` scramble effect running via `requestAnimationFrame` on a periodic loop.
+- **Massive Brand Showcase**: Heroic brand container bounded by 4-corner bracket accents featuring responsive massive `LAREKMART` scramble typography.
+- **Navigation & Departments**: Spring-hover magnetic micro-interactions (`whileHover={{ x: 10 }}`) across Navigation, Marketplace Departments, and Social links.
+- **Real-Time Clock & Safe Checkout**: Live UTC operations clock, VIP newsletter subscription with toast feedback, and guaranteed safe checkout badges (`STRIPE`, `VISA`, `MASTERCARD`, `APPLE PAY`, `COD`).
+
 ---
 
 ## 6. Motion & Animation Principles
