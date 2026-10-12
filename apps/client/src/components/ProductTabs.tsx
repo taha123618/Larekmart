@@ -28,7 +28,9 @@ interface Review {
 }
 
 export default function ProductTabs({ product }: ProductTabsProps) {
-  const [activeTab, setActiveTab] = useState<"specs" | "reviews" | "shipping">("specs");
+  const [activeTab, setActiveTab] = useState<"specs" | "reviews" | "shipping">(
+    "specs",
+  );
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isWriteReviewOpen, setIsWriteReviewOpen] = useState(false);
 
@@ -74,7 +76,10 @@ export default function ProductTabs({ product }: ProductTabsProps) {
     setReviews(updated);
 
     try {
-      localStorage.setItem(`lkm_reviews_${product.id}`, JSON.stringify(updated));
+      localStorage.setItem(
+        `lkm_reviews_${product.id}`,
+        JSON.stringify(updated),
+      );
     } catch {
       // LocalStorage quota or unavailable
     }

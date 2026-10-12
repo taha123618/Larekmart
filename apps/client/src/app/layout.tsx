@@ -24,7 +24,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Larekmart — Modern Global Marketplace",
-  description: "Shop millions of trending products with buyer protection, fast delivery, and secure payments.",
+  description:
+    "Shop millions of trending products with buyer protection, fast delivery, and secure payments.",
   icons: {
     icon: "/icon.png",
     shortcut: "/favicon.ico",
@@ -41,11 +42,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <QueryProvider>
-        <html
-          lang="en"
-          className="scroll-smooth"
-          data-scroll-behavior="smooth"
-        >
+        <html lang="en" className="scroll-smooth" data-scroll-behavior="smooth">
           <body
             className={`${geistSans.variable} ${geistMono.variable} font-sans bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col`}
             suppressHydrationWarning

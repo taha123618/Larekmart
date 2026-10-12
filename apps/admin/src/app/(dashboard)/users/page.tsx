@@ -27,8 +27,8 @@ const getData = async (): Promise<{
 
     const clerkUsers = (authRes.data ||
       (Array.isArray(authRes) ? authRes : [])) as Array<
-        Record<string, unknown> & { id: string }
-      >;
+      Record<string, unknown> & { id: string }
+    >;
     const userSvcMap = new Map(
       userSvcRes?.users?.map((u) => [u.authUserId, u]) || [],
     );

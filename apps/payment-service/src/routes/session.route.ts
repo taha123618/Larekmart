@@ -33,11 +33,19 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
         let unitAmount = await getStripeProductPrice(item.id);
         if (typeof unitAmount !== "number" || unitAmount <= 0) {
           // Fallback: calculate price in cents from item price
-          if (typeof item.price === "number" && !isNaN(item.price) && item.price > 0) {
+          if (
+            typeof item.price === "number" &&
+            !isNaN(item.price) &&
+            item.price > 0
+          ) {
             unitAmount = Math.round(item.price * 100);
           }
         }
-        if (typeof unitAmount !== "number" || unitAmount <= 0 || isNaN(unitAmount)) {
+        if (
+          typeof unitAmount !== "number" ||
+          unitAmount <= 0 ||
+          isNaN(unitAmount)
+        ) {
           throw new Error(`Valid price not found for product ID ${item.id}`);
         }
         return {

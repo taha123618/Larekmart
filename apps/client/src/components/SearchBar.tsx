@@ -206,13 +206,13 @@ const SearchBar = () => {
   return (
     <div
       ref={containerRef}
-      className="relative hidden sm:flex items-center gap-2 rounded-md ring-1 ring-gray-200 px-2 py-1 shadow-md"
+      className="relative flex w-full items-center gap-2 rounded-xl ring-1 ring-slate-200 bg-white px-3 py-2 shadow-xs focus-within:ring-2 focus-within:ring-indigo-500 transition"
     >
-      <Search className="w-4 h-4 text-gray-500" />
+      <Search className="w-4 h-4 text-slate-400 shrink-0" />
       <input
         id="search"
-        placeholder="Search..."
-        className="text-sm outline-0"
+        placeholder="Search products, brands, categories..."
+        className="w-full flex-1 text-xs sm:text-sm outline-none bg-transparent placeholder-slate-400 text-slate-900"
         role="combobox"
         aria-expanded={showDropdown}
         aria-controls={listboxId}
@@ -230,7 +230,7 @@ const SearchBar = () => {
         onKeyDown={handleKeyDown}
       />
       {isLoading && (
-        <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" />
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500 shrink-0" />
       )}
 
       {showDropdown && (
@@ -259,8 +259,9 @@ const SearchBar = () => {
                 id={`${listboxId}-${index}`}
                 role="option"
                 aria-selected={index === activeIndex}
-                className={`cursor-pointer px-3 py-1.5 ${index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
-                  }`}
+                className={`cursor-pointer px-3 py-1.5 ${
+                  index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
+                }`}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => activateOption(option)}
               >

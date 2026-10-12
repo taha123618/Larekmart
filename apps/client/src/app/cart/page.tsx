@@ -265,7 +265,9 @@ const CartContent = () => {
                   </div>
                 ) : cart.length === 0 ? (
                   <div className="text-center py-16 flex flex-col items-center gap-4">
-                    <p className="text-gray-500">Your cart is currently empty.</p>
+                    <p className="text-gray-500">
+                      Your cart is currently empty.
+                    </p>
                     <button
                       onClick={() => router.push("/products")}
                       className="px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition cursor-pointer"
@@ -290,12 +292,12 @@ const CartContent = () => {
                           stiffness: 350,
                           damping: 25,
                         }}
-                        className="flex items-center justify-between pb-6 border-b border-gray-100 last:border-b-0"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100 last:border-b-0"
                         key={`${item.id}-${item.selectedSize}-${item.selectedColor}-${index}`}
                       >
                         {/* IMAGE AND DETAILS */}
-                        <div className="flex gap-6 items-center">
-                          <div className="relative w-24 h-24 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-100 flex items-center justify-center">
+                        <div className="flex gap-4 sm:gap-6 items-center">
+                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-gray-100 flex items-center justify-center">
                             <MediaImage
                               src={
                                 (item.images as Record<string, string>)?.[
@@ -315,7 +317,7 @@ const CartContent = () => {
                             />
                           </div>
                           <div className="flex flex-col gap-1">
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p className="text-sm font-semibold text-gray-900 line-clamp-2">
                               {item.name}
                             </p>
                             <div className="flex flex-wrap gap-2 text-xs text-gray-500">
@@ -338,8 +340,8 @@ const CartContent = () => {
                         </div>
 
                         {/* CONTROLS */}
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white">
                             <motion.button
                               whileTap={{ scale: 0.88 }}
                               onClick={() =>

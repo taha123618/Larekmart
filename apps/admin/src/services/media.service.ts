@@ -32,14 +32,14 @@ export interface MediaResolveResponse {
 
 export interface UploadMediaOptions {
   ownerType:
-  | "product"
-  | "category"
-  | "brand"
-  | "collection"
-  | "user"
-  | "review"
-  | "seller"
-  | "marketing";
+    | "product"
+    | "category"
+    | "brand"
+    | "collection"
+    | "user"
+    | "review"
+    | "seller"
+    | "marketing";
   ownerId: string;
   category?: string;
   visibility?: "PUBLIC" | "PRIVATE" | "PROTECTED";

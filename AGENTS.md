@@ -201,4 +201,3 @@ Before considering a task complete:
 - [ ] `pnpm test` passes for affected workspaces with test suites.
 - [ ] New env vars were added to the relevant `.env.example` (never a real `.env`).
 - [ ] Docs/AGENTS.md updated when architecture, contracts, or workflows changed.
-

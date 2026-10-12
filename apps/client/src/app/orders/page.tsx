@@ -82,7 +82,8 @@ const OrdersPage = async (): Promise<React.JSX.Element> => {
             My Orders & Tracking
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time fulfillment updates, carrier delivery milestones, and order receipts
+            Real-time fulfillment updates, carrier delivery milestones, and
+            order receipts
           </p>
         </div>
         <Link
@@ -101,7 +102,8 @@ const OrdersPage = async (): Promise<React.JSX.Element> => {
             No orders placed yet
           </h3>
           <p className="text-xs text-slate-500 mt-1 mb-4">
-            Items you purchase will appear here along with live carrier tracking.
+            Items you purchase will appear here along with live carrier
+            tracking.
           </p>
           <Link
             href="/products"
@@ -146,13 +148,13 @@ const OrdersPage = async (): Promise<React.JSX.Element> => {
                       <Calendar className="w-3.5 h-3.5" />
                       {order.createdAt
                         ? new Date(order.createdAt).toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          },
-                        )
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )
                         : "-"}
                     </span>
                     <span>•</span>

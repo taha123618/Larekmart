@@ -78,13 +78,20 @@ const ProductPage = async ({
     <div className="py-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-slate-500 mb-6">
-        <Link href="/" className="hover:text-indigo-600 transition">Home</Link>
+        <Link href="/" className="hover:text-indigo-600 transition">
+          Home
+        </Link>
         <span>/</span>
-        <Link href={`/products?category=${product.categorySlug}`} className="hover:text-indigo-600 transition uppercase">
+        <Link
+          href={`/products?category=${product.categorySlug}`}
+          className="hover:text-indigo-600 transition uppercase"
+        >
           {product.categorySlug || "Marketplace"}
         </Link>
         <span>/</span>
-        <span className="text-slate-900 font-semibold truncate max-w-xs">{product.name}</span>
+        <span className="text-slate-900 font-semibold truncate max-w-xs">
+          {product.name}
+        </span>
       </nav>
 
       <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-xs flex flex-col lg:flex-row gap-8 lg:gap-14">
@@ -181,7 +188,8 @@ const ProductPage = async ({
               />
             </div>
             <p className="text-[11px] text-slate-400 leading-normal">
-              Safe & encrypted checkout. Prices include all applicable taxes. Covered by Larekmart 100% Buyer Protection Guarantee.
+              Safe & encrypted checkout. Prices include all applicable taxes.
+              Covered by Larekmart 100% Buyer Protection Guarantee.
             </p>
           </div>
         </div>

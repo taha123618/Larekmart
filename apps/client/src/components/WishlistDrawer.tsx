@@ -72,19 +72,19 @@ export default function WishlistDrawer({
             className="fixed inset-0 bg-black/50 backdrop-blur-xs cursor-pointer"
           />
 
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10 pointer-events-none">
+          <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 pointer-events-none">
             <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="w-screen max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto"
+              className="w-screen max-w-full sm:max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto h-full"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50">
                 <div className="flex items-center gap-2">
                   <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
-                  <h2 className="text-lg font-bold text-slate-900">
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900">
                     My Wishlist ({items.length})
                   </h2>
                 </div>
@@ -98,7 +98,7 @@ export default function WishlistDrawer({
               </div>
 
               {/* Items */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                 {items.length === 0 ? (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -112,7 +112,8 @@ export default function WishlistDrawer({
                       Your wishlist is empty
                     </h3>
                     <p className="text-xs text-slate-500 max-w-xs mb-6">
-                      Save items you love by tapping the heart icon on any product card.
+                      Save items you love by tapping the heart icon on any
+                      product card.
                     </p>
                     <button
                       onClick={effectiveOnClose}
@@ -128,8 +129,16 @@ export default function WishlistDrawer({
                         layout
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, x: 25, transition: { duration: 0.2 } }}
-                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                        exit={{
+                          opacity: 0,
+                          x: 25,
+                          transition: { duration: 0.2 },
+                        }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 350,
+                          damping: 25,
+                        }}
                         key={item.id}
                         className="flex gap-4 p-3 rounded-2xl border border-slate-100 hover:border-slate-200 bg-white transition group"
                       >

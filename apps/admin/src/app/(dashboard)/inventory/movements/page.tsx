@@ -18,14 +18,14 @@ interface MovementRecord {
   id: string;
   inventoryItemId: string;
   type:
-  | "PURCHASE"
-  | "RESTOCK"
-  | "RESERVE"
-  | "RELEASE"
-  | "SALE"
-  | "RETURN"
-  | "ADJUSTMENT"
-  | "DAMAGE";
+    | "PURCHASE"
+    | "RESTOCK"
+    | "RESERVE"
+    | "RELEASE"
+    | "SALE"
+    | "RETURN"
+    | "ADJUSTMENT"
+    | "DAMAGE";
   quantity: number;
   referenceType?: string | null;
   referenceId?: string | null;

@@ -11,6 +11,7 @@ unified API Gateway (`NEXT_PUBLIC_API_GATEWAY_URL`, port `8080`) with a Clerk to
 Postgres, Mongo, or Kafka directly.
 
 ### Technology Stack
+
 - **Next.js 16** (`next@16.4.0`) with App Router and Turbopack
 - **React 19**
 - **Tailwind CSS v4** with custom marketplace theme tokens and glassmorphism utilities
@@ -69,7 +70,9 @@ React 19 and Next.js 16 enforce strict hydration equality between server HTML an
    - Guard persistent state queries with an `isMounted` state flag:
      ```tsx
      const [isMounted, setIsMounted] = useState(false);
-     useEffect(() => { setIsMounted(true); }, []);
+     useEffect(() => {
+       setIsMounted(true);
+     }, []);
      const isFavorited = isMounted ? isInWishlist(product.id) : false;
      ```
    - Add `suppressHydrationWarning` on interactive toggle buttons (e.g. wishlist heart buttons) that switch state upon client mount.

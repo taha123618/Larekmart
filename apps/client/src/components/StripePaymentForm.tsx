@@ -7,7 +7,13 @@ import { useEffect, useState, useMemo } from "react";
 import { CartItemsType, ShippingFormInputs } from "@repo/types";
 import CheckoutForm from "./CheckoutForm";
 import useCartStore from "@/stores/cartStore";
-import { AlertCircle, CreditCard, Banknote, RefreshCw, Loader2 } from "lucide-react";
+import {
+  AlertCircle,
+  CreditCard,
+  Banknote,
+  RefreshCw,
+  Loader2,
+} from "lucide-react";
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 const isStripeConfigured = Boolean(
@@ -129,11 +135,13 @@ const StripePaymentForm = ({
               Stripe Gateway Configuration
             </h3>
             <p className="text-xs text-amber-800 leading-relaxed">
-              Online credit card processing requires a valid Stripe publishable key in{" "}
+              Online credit card processing requires a valid Stripe publishable
+              key in{" "}
               <code className="bg-amber-100/80 px-1 py-0.5 rounded font-mono text-[11px]">
                 .env
               </code>
-              . You can complete your order right now without credentials using Cash on Delivery.
+              . You can complete your order right now without credentials using
+              Cash on Delivery.
             </p>
           </div>
         </div>
@@ -157,7 +165,9 @@ const StripePaymentForm = ({
     return (
       <div className="flex items-center justify-center py-12 gap-3 text-slate-500">
         <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-        <span className="text-sm font-medium">Securing payment gateway session...</span>
+        <span className="text-sm font-medium">
+          Securing payment gateway session...
+        </span>
       </div>
     );
   }
@@ -170,9 +180,12 @@ const StripePaymentForm = ({
           <AlertCircle className="w-5 h-5" />
         </div>
         <div className="max-w-sm">
-          <h3 className="text-sm font-bold text-slate-900">Sign in to Pay with Card</h3>
+          <h3 className="text-sm font-bold text-slate-900">
+            Sign in to Pay with Card
+          </h3>
           <p className="text-xs text-slate-500 mt-1">
-            Stripe checkout requires an active user session to link your payment and order receipts.
+            Stripe checkout requires an active user session to link your payment
+            and order receipts.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-xs mt-1">
@@ -203,9 +216,7 @@ const StripePaymentForm = ({
             <h4 className="text-sm font-bold text-rose-950">
               Payment Gateway Notice
             </h4>
-            <p className="text-xs text-rose-800 leading-relaxed">
-              {initError}
-            </p>
+            <p className="text-xs text-rose-800 leading-relaxed">{initError}</p>
           </div>
         </div>
 

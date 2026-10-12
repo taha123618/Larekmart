@@ -32,7 +32,8 @@ const SLIDES: SlideData[] = [
     badge: "GLOBAL BRAND FESTIVAL",
     badgeColor: "bg-amber-400 text-slate-950",
     title: "Up to 70% Off Trending Styles",
-    subtitle: "Explore high-performance apparel, streetwear, and premium lifestyle footwear curated for you.",
+    subtitle:
+      "Explore high-performance apparel, streetwear, and premium lifestyle footwear curated for you.",
     ctaText: "Shop SuperDeals",
     ctaLink: "/products?sort=desc",
     bgGradient: "from-indigo-900 via-indigo-950 to-slate-950",
@@ -47,7 +48,8 @@ const SLIDES: SlideData[] = [
     badge: "FRESH SEASON DROPS",
     badgeColor: "bg-rose-500 text-white",
     title: "New Season Arrivals Are Here",
-    subtitle: "Discover the latest urban techwear and breathable athletics engineered for peak performance.",
+    subtitle:
+      "Discover the latest urban techwear and breathable athletics engineered for peak performance.",
     ctaText: "Explore New Arrivals",
     ctaLink: "/products?sort=newest",
     bgGradient: "from-purple-900 via-slate-900 to-slate-950",
@@ -75,34 +77,34 @@ export default function HeroBanner() {
       tl.fromTo(
         ".hero-badge",
         { opacity: 0, y: -20, scale: 0.9 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }
+        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" },
       )
         .fromTo(
           ".hero-title",
           { opacity: 0, y: 25 },
           { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" },
-          "-=0.3"
+          "-=0.3",
         )
         .fromTo(
           ".hero-subtitle",
           { opacity: 0, y: 15 },
           { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
-          "-=0.4"
+          "-=0.4",
         )
         .fromTo(
           ".hero-cta",
           { opacity: 0, scale: 0.9 },
           { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.7)" },
-          "-=0.3"
+          "-=0.3",
         )
         .fromTo(
           ".hero-stat-card",
           { opacity: 0, y: 20 },
           { opacity: 1, y: 0, duration: 0.4, stagger: 0.1, ease: "power2.out" },
-          "-=0.2"
+          "-=0.2",
         );
     },
-    { scope: containerRef, dependencies: [currentSlideIndex] }
+    { scope: containerRef, dependencies: [currentSlideIndex] },
   );
 
   // Auto-advance banner every 7 seconds
@@ -141,7 +143,14 @@ export default function HeroBanner() {
           {/* Slide Content */}
           <div ref={slideContentRef} className="relative z-10 max-w-xl">
             {/* Promo Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-4 hero-badge shadow-sm" style={{ backgroundColor: currentSlideIndex === 0 ? "#F59E0B" : "#F43F5E", color: "#0F172A" }}>
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-4 hero-badge shadow-sm"
+              style={{
+                backgroundColor:
+                  currentSlideIndex === 0 ? "#F59E0B" : "#F43F5E",
+                color: "#0F172A",
+              }}
+            >
               <Zap className="w-3.5 h-3.5 fill-current" />
               <span>{slide.badge}</span>
             </div>
@@ -157,7 +166,7 @@ export default function HeroBanner() {
             </p>
 
             {/* Action CTA */}
-            <div className="hero-cta flex items-center gap-4">
+            <div className="hero-cta flex flex-wrap items-center gap-3 sm:gap-4">
               <Link
                 href={slide.ctaLink}
                 className="px-6 py-3.5 bg-white text-slate-950 font-bold rounded-2xl text-sm hover:bg-slate-100 hover:shadow-lg hover:shadow-white/20 transition flex items-center gap-2 group cursor-pointer"
@@ -193,7 +202,7 @@ export default function HeroBanner() {
             <button
               onClick={() =>
                 setCurrentSlideIndex(
-                  (prev) => (prev - 1 + SLIDES.length) % SLIDES.length
+                  (prev) => (prev - 1 + SLIDES.length) % SLIDES.length,
                 )
               }
               className="w-8 h-8 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white flex items-center justify-center transition border border-slate-700"
@@ -242,7 +251,11 @@ export default function HeroBanner() {
                 Claim $15 Off Your First Order
               </h3>
               <p className="text-xs text-amber-100 mt-2">
-                Use code <strong className="bg-black/20 px-2 py-0.5 rounded text-white font-mono">WELCOME15</strong> at checkout.
+                Use code{" "}
+                <strong className="bg-black/20 px-2 py-0.5 rounded text-white font-mono">
+                  WELCOME15
+                </strong>{" "}
+                at checkout.
               </p>
             </div>
 
@@ -267,7 +280,8 @@ export default function HeroBanner() {
                   Larekmart Buyer Protection
                 </h4>
                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Full refund if your item doesn&apos;t arrive or is not as described. 100% secure escrow payments.
+                  Full refund if your item doesn&apos;t arrive or is not as
+                  described. 100% secure escrow payments.
                 </p>
               </div>
             </div>

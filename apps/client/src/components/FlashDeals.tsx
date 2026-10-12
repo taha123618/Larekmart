@@ -47,9 +47,7 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
   const handleQuickAdd = (product: ProductType) => {
     const selectedSize = product.sizes?.[0] || "m";
     const selectedColor =
-      product.colors?.[0] ||
-      Object.keys(product.images || {})[0] ||
-      "default";
+      product.colors?.[0] || Object.keys(product.images || {})[0] || "default";
 
     addToCart({
       ...product,

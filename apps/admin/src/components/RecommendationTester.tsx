@@ -152,17 +152,17 @@ export default function RecommendationTester() {
 
           {(strategyType === "personalized" ||
             strategyType === "recently_viewed") && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground">
-                  User ID
-                </label>
-                <Input
-                  placeholder="e.g. user_sample_123"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                />
-              </div>
-            )}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">
+                User ID
+              </label>
+              <Input
+                placeholder="e.g. user_sample_123"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+              />
+            </div>
+          )}
 
           {(strategyType === "similar" || strategyType === "fbt") && (
             <div className="space-y-1.5">
@@ -243,12 +243,12 @@ export default function RecommendationTester() {
                 </Badge>
                 {Boolean(
                   result.metadata.fallbackUsed ??
-                  (result.metadata as Record<string, unknown>).fallback_used,
+                    (result.metadata as Record<string, unknown>).fallback_used,
                 ) && (
-                    <Badge variant="destructive" className="font-mono">
-                      Fallback Cascade Used
-                    </Badge>
-                  )}
+                  <Badge variant="destructive" className="font-mono">
+                    Fallback Cascade Used
+                  </Badge>
+                )}
                 {result.metadata.cached ? (
                   <Badge
                     variant="default"
@@ -270,9 +270,9 @@ export default function RecommendationTester() {
                   <Clock className="h-3.5 w-3.5" />
                   {Number(
                     result.metadata.executionTimeMs ??
-                    (result.metadata as Record<string, unknown>)
-                      .execution_time_ms ??
-                    0,
+                      (result.metadata as Record<string, unknown>)
+                        .execution_time_ms ??
+                      0,
                   )}{" "}
                   ms
                 </span>

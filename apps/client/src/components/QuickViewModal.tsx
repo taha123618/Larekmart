@@ -3,7 +3,14 @@
 import { useUIStore } from "@/stores/uiStore";
 import useCartStore from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
-import { X, ShoppingCart, Heart, Star, CheckCircle, ShieldCheck } from "lucide-react";
+import {
+  X,
+  ShoppingCart,
+  Heart,
+  Star,
+  CheckCircle,
+  ShieldCheck,
+} from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
@@ -47,12 +54,16 @@ export default function QuickViewModal() {
     };
   }, [quickViewProduct]);
 
-  const inWishlist = quickViewProduct ? isInWishlist(quickViewProduct.id) : false;
+  const inWishlist = quickViewProduct
+    ? isInWishlist(quickViewProduct.id)
+    : false;
 
   const activeImage = quickViewProduct
     ? (quickViewProduct.images as Record<string, string>)?.[selectedColor] ||
-    (quickViewProduct.images ? Object.values(quickViewProduct.images)[0] : "") ||
-    "/placeholder.png"
+      (quickViewProduct.images
+        ? Object.values(quickViewProduct.images)[0]
+        : "") ||
+      "/placeholder.png"
     : "/placeholder.png";
 
   const handleAddToCart = () => {
@@ -97,7 +108,7 @@ export default function QuickViewModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 15 }}
             transition={{ type: "spring", damping: 26, stiffness: 320 }}
-            className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden z-10 border border-slate-100 flex flex-col md:flex-row pointer-events-auto"
+            className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden z-10 border border-slate-100 flex flex-col md:flex-row pointer-events-auto max-h-[92vh] overflow-y-auto"
           >
             {/* Close Button */}
             <button
@@ -109,7 +120,7 @@ export default function QuickViewModal() {
             </button>
 
             {/* Product Image Gallery */}
-            <div className="w-full md:w-1/2 bg-slate-50 p-6 flex flex-col items-center justify-center relative min-h-[320px]">
+            <div className="w-full md:w-1/2 bg-slate-50 p-4 sm:p-6 flex flex-col items-center justify-center relative min-h-[260px] sm:min-h-[320px]">
               <div className="relative w-full aspect-square max-w-[280px] rounded-xl overflow-hidden bg-white shadow-xs flex items-center justify-center">
                 {activeImage ? (
                   <MediaImage
@@ -131,10 +142,11 @@ export default function QuickViewModal() {
                     <button
                       key={color}
                       onClick={() => setSelectedColor(color)}
-                      className={`w-7 h-7 rounded-full border-2 transition p-0.5 ${selectedColor === color
+                      className={`w-7 h-7 rounded-full border-2 transition p-0.5 ${
+                        selectedColor === color
                           ? "border-indigo-600 scale-110"
                           : "border-transparent opacity-80 hover:opacity-100"
-                        }`}
+                      }`}
                       title={color}
                     >
                       <div
@@ -168,24 +180,29 @@ export default function QuickViewModal() {
                   <div className="flex items-center gap-2 mt-2">
                     <div className="flex items-center text-amber-400">
                       {[...Array(5)].map((_, i) => {
-                        const r = (quickViewProduct as ProductWithRating).rating ?? 0;
+                        const r =
+                          (quickViewProduct as ProductWithRating).rating ?? 0;
                         return (
                           <Star
                             key={i}
-                            className={`w-4 h-4 ${r >= i + 1
+                            className={`w-4 h-4 ${
+                              r >= i + 1
                                 ? "fill-amber-400 text-amber-400"
                                 : "text-slate-300"
-                              }`}
+                            }`}
                           />
                         );
                       })}
                     </div>
                     <span className="text-xs font-bold text-slate-700">
-                      {Number((quickViewProduct as ProductWithRating).rating).toFixed(1)}
+                      {Number(
+                        (quickViewProduct as ProductWithRating).rating,
+                      ).toFixed(1)}
                     </span>
                     {(quickViewProduct as ProductWithRating).reviewCount ? (
                       <span className="text-xs text-slate-400">
-                        ({(quickViewProduct as ProductWithRating).reviewCount} reviews)
+                        ({(quickViewProduct as ProductWithRating).reviewCount}{" "}
+                        reviews)
                       </span>
                     ) : null}
                   </div>
@@ -220,17 +237,20 @@ export default function QuickViewModal() {
                   <div className="mt-4">
                     <div className="flex justify-between text-xs font-medium text-slate-700 mb-1.5">
                       <span>Size:</span>
-                      <span className="font-bold uppercase text-indigo-600">{selectedSize}</span>
+                      <span className="font-bold uppercase text-indigo-600">
+                        {selectedSize}
+                      </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {quickViewProduct.sizes.map((size) => (
                         <button
                           key={size}
                           onClick={() => setSelectedSize(size)}
-                          className={`px-3 py-1 text-xs font-semibold rounded-lg border transition ${selectedSize === size
+                          className={`px-3 py-1 text-xs font-semibold rounded-lg border transition ${
+                            selectedSize === size
                               ? "border-indigo-600 bg-indigo-50 text-indigo-700 shadow-xs"
                               : "border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                            }`}
+                          }`}
                         >
                           {size.toUpperCase()}
                         </button>
@@ -241,7 +261,9 @@ export default function QuickViewModal() {
 
                 {/* Quantity */}
                 <div className="mt-4 flex items-center gap-3">
-                  <span className="text-xs font-medium text-slate-700">Quantity:</span>
+                  <span className="text-xs font-medium text-slate-700">
+                    Quantity:
+                  </span>
                   <div className="flex items-center border border-slate-200 rounded-lg">
                     <button
                       onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -249,7 +271,9 @@ export default function QuickViewModal() {
                     >
                       -
                     </button>
-                    <span className="px-3 text-xs font-bold text-slate-800">{quantity}</span>
+                    <span className="px-3 text-xs font-bold text-slate-800">
+                      {quantity}
+                    </span>
                     <button
                       onClick={() => setQuantity((q) => Math.min(10, q + 1))}
                       className="px-2.5 py-1 text-slate-500 hover:bg-slate-100 rounded-r-lg transition"
@@ -272,13 +296,18 @@ export default function QuickViewModal() {
                   </button>
                   <button
                     onClick={handleWishlistToggle}
-                    className={`p-2.5 rounded-xl border transition ${inWishlist
+                    className={`p-2.5 rounded-xl border transition ${
+                      inWishlist
                         ? "border-rose-200 bg-rose-50 text-rose-500"
                         : "border-slate-200 text-slate-500 hover:text-rose-500 hover:bg-slate-50"
-                      }`}
-                    title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                    }`}
+                    title={
+                      inWishlist ? "Remove from Wishlist" : "Add to Wishlist"
+                    }
                   >
-                    <Heart className={`w-5 h-5 ${inWishlist ? "fill-rose-500" : ""}`} />
+                    <Heart
+                      className={`w-5 h-5 ${inWishlist ? "fill-rose-500" : ""}`}
+                    />
                   </button>
                 </div>
 
@@ -296,7 +325,6 @@ export default function QuickViewModal() {
                   </Link>
                 </div>
               </div>
-
             </div>
           </motion.div>
         </div>

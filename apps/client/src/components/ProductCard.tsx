@@ -85,7 +85,9 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   const originalPrice = product.price * 1.3;
-  const discountPercent = Math.round(((originalPrice - product.price) / originalPrice) * 100);
+  const discountPercent = Math.round(
+    ((originalPrice - product.price) / originalPrice) * 100,
+  );
 
   const activeImage =
     (product.images as Record<string, string>)?.[productTypes.color] ||
@@ -116,12 +118,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           title={isFavorited ? "Remove from wishlist" : "Save to wishlist"}
           aria-label="Wishlist"
         >
-          <Heart className={`w-4 h-4 ${isFavorited ? "fill-rose-500 text-rose-500" : ""}`} />
+          <Heart
+            className={`w-4 h-4 ${isFavorited ? "fill-rose-500 text-rose-500" : ""}`}
+          />
         </button>
 
         <button
           onClick={handleQuickViewClick}
-          className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs text-slate-500 hover:text-indigo-600 hover:bg-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-xs opacity-0 group-hover:opacity-100 cursor-pointer"
+          className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs text-slate-500 hover:text-indigo-600 hover:bg-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-xs opacity-100 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
           title="Quick preview"
           aria-label="Quick preview"
         >
@@ -130,7 +134,10 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* PRODUCT IMAGE */}
-      <Link href={`/products/${product.id}`} className="block relative aspect-[4/5] bg-slate-50 overflow-hidden">
+      <Link
+        href={`/products/${product.id}`}
+        className="block relative aspect-[4/5] bg-slate-50 overflow-hidden"
+      >
         <MediaImage
           src={activeImage}
           alt={product.name}
@@ -172,14 +179,16 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           {/* Description */}
           <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">
-            {product.shortDescription || "High quality guaranteed marketplace item."}
+            {product.shortDescription ||
+              "High quality guaranteed marketplace item."}
           </p>
 
           {/* COLOR SWATCHES & SIZES */}
           <div className="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-slate-100">
             {/* Colors */}
             <div className="flex items-center gap-1">
-              {product.colors && product.colors.length > 0 &&
+              {product.colors &&
+                product.colors.length > 0 &&
                 product.colors.map((color) => (
                   <button
                     key={color}

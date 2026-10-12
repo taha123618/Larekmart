@@ -72,7 +72,9 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
    - Fix: Guard client-only state checks with an `isMounted` flag:
      ```tsx
      const [isMounted, setIsMounted] = useState(false);
-     useEffect(() => { setIsMounted(true); }, []);
+     useEffect(() => {
+       setIsMounted(true);
+     }, []);
      const isFavorited = isMounted ? isInWishlist(product.id) : false;
      ```
      Add `suppressHydrationWarning` on the button or icon element.

@@ -27,7 +27,10 @@ export default function CartHeaderButton() {
       ? serverCart.items.reduce((acc, item) => acc + item.quantity, 0)
       : cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const subtotal = cart.reduce(
+    (acc, item) => acc + item.price * item.quantity,
+    0,
+  );
 
   return (
     <button

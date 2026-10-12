@@ -22,19 +22,19 @@ const CategoriesClient = ({ categories }: { categories: CategoryItem[] }) => {
   };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 bg-gray-100 p-2 rounded-lg mb-4 text-sm">
+    <div className="flex overflow-x-auto sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 bg-slate-100 p-2 rounded-xl mb-4 text-xs sm:text-sm no-scrollbar whitespace-nowrap">
       {categories.map((category) => (
         <div
-          className={`flex items-center justify-center gap-2 cursor-pointer px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
+          className={`flex items-center justify-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg shrink-0 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
             category.slug === selectedCategory
               ? "bg-white shadow-xs font-bold text-indigo-600"
-              : "text-gray-500 hover:text-gray-900"
+              : "text-slate-600 hover:text-slate-900 bg-white/50 sm:bg-transparent"
           }`}
           key={category.slug}
           onClick={() => handleChange(category.slug)}
         >
           {category.icon}
-          {category.name}
+          <span>{category.name}</span>
         </div>
       ))}
     </div>

@@ -256,11 +256,12 @@ const SingleUserPage = async ({
               <div className="flex items-center gap-2">
                 <span className="font-bold">Status:</span>
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-semibold ${(userDetail?.status ||
+                  className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                    (userDetail?.status ||
                       (data?.banned ? "BANNED" : "ACTIVE")) === "ACTIVE"
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
-                    }`}
+                  }`}
                 >
                   {userDetail?.status || (data?.banned ? "BANNED" : "ACTIVE")}
                 </span>

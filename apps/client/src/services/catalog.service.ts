@@ -129,12 +129,12 @@ export interface CatalogProductQuery {
   page?: number;
   limit?: number;
   sort?:
-  | "newest"
-  | "price_asc"
-  | "price_desc"
-  | "rating"
-  | "featured"
-  | "popular";
+    | "newest"
+    | "price_asc"
+    | "price_desc"
+    | "rating"
+    | "featured"
+    | "popular";
   category?: string;
   brand?: string;
   minPrice?: number;
@@ -324,7 +324,8 @@ export function normalizeCatalogProduct(p: CatalogProductCard): ProductType {
       : p.thumbnailUrl
         ? { default: p.thumbnailUrl }
         : {};
-  const colors = Object.keys(images).length > 0 ? Object.keys(images) : ["default"];
+  const colors =
+    Object.keys(images).length > 0 ? Object.keys(images) : ["default"];
   const numericId = parseInt(p.productId ?? p.id, 10);
 
   return {
@@ -341,4 +342,3 @@ export function normalizeCatalogProduct(p: CatalogProductCard): ProductType {
     updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date(),
   };
 }
-

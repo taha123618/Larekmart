@@ -11,7 +11,10 @@ import MediaImage from "./MediaImage";
 export default function CartDrawer() {
   const { isCartDrawerOpen, closeCartDrawer } = useUIStore();
   const { cart, removeFromCart, updateQuantity } = useCartStore();
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const subtotal = cart.reduce(
+    (acc, item) => acc + item.price * item.quantity,
+    0,
+  );
 
   // Prevent background scroll when drawer is open
   useEffect(() => {
@@ -39,20 +42,21 @@ export default function CartDrawer() {
             className="fixed inset-0 bg-black/50 backdrop-blur-xs cursor-pointer"
           />
 
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10 pointer-events-none">
+          <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 pointer-events-none">
             <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="w-screen max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto"
+              className="w-screen max-w-full sm:max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto h-full"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-slate-50">
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100 bg-slate-50">
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5 text-indigo-600" />
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Shopping Cart ({cart.reduce((acc, i) => acc + i.quantity, 0)})
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+                    Shopping Cart (
+                    {cart.reduce((acc, i) => acc + i.quantity, 0)})
                   </h2>
                 </div>
                 <button
@@ -65,7 +69,7 @@ export default function CartDrawer() {
               </div>
 
               {/* Cart Items List */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                 {cart.length === 0 ? (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -79,7 +83,8 @@ export default function CartDrawer() {
                       Your cart is empty
                     </h3>
                     <p className="text-sm text-gray-500 max-w-xs mb-6">
-                      Explore our marketplace collections and discover trending deals.
+                      Explore our marketplace collections and discover trending
+                      deals.
                     </p>
                     <button
                       onClick={closeCartDrawer}
@@ -92,7 +97,9 @@ export default function CartDrawer() {
                   <AnimatePresence mode="popLayout">
                     {cart.map((item) => {
                       const itemImg =
-                        (item.images as Record<string, string>)?.[item.selectedColor || ""] ||
+                        (item.images as Record<string, string>)?.[
+                          item.selectedColor || ""
+                        ] ||
                         (item.images ? Object.values(item.images)[0] : "") ||
                         "/placeholder.png";
 
@@ -101,8 +108,16 @@ export default function CartDrawer() {
                           layout
                           initial={{ opacity: 0, y: 15 }}
                           animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, x: 25, transition: { duration: 0.2 } }}
-                          transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                          exit={{
+                            opacity: 0,
+                            x: 25,
+                            transition: { duration: 0.2 },
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 350,
+                            damping: 25,
+                          }}
                           key={`${item.id}-${item.selectedSize}-${item.selectedColor}`}
                           className="flex gap-4 p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition bg-white shadow-xs"
                         >
@@ -114,7 +129,9 @@ export default function CartDrawer() {
                                 className="w-full h-full object-contain p-1"
                               />
                             ) : (
-                              <div className="text-xs text-gray-400">No image</div>
+                              <div className="text-xs text-gray-400">
+                                No image
+                              </div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -122,8 +139,10 @@ export default function CartDrawer() {
                               {item.name}
                             </h4>
                             <p className="text-xs text-gray-500 mt-0.5">
-                              {item.selectedSize && `Size: ${item.selectedSize.toUpperCase()}`}
-                              {item.selectedColor && ` • Color: ${item.selectedColor}`}
+                              {item.selectedSize &&
+                                `Size: ${item.selectedSize.toUpperCase()}`}
+                              {item.selectedColor &&
+                                ` • Color: ${item.selectedColor}`}
                             </p>
                             <div className="flex items-center justify-between mt-3">
                               <div className="flex items-center border border-gray-200 rounded-lg">
@@ -143,7 +162,9 @@ export default function CartDrawer() {
                                   {item.quantity}
                                 </span>
                                 <button
-                                  onClick={() => updateQuantity(item, item.quantity + 1)}
+                                  onClick={() =>
+                                    updateQuantity(item, item.quantity + 1)
+                                  }
                                   className="p-1 hover:bg-gray-50 text-gray-600 transition cursor-pointer"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
@@ -177,7 +198,8 @@ export default function CartDrawer() {
                     <span>${subtotal.toFixed(2)}</span>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Taxes, shipping and promotion discounts calculated at checkout.
+                    Taxes, shipping and promotion discounts calculated at
+                    checkout.
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <Link

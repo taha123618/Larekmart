@@ -71,7 +71,7 @@ export async function fetchViaGateway<T>(
     }
     throw new Error(
       errorPayload.message ||
-      `Gateway request failed with status ${res.status}`,
+        `Gateway request failed with status ${res.status}`,
     );
   }
 

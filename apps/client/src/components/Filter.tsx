@@ -107,7 +107,9 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
       {/* SORT */}
       <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">Sort by:</span>
+          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">
+            Sort by:
+          </span>
           <select
             name="sort"
             id="sort"
@@ -157,7 +159,9 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
                   style={{ backgroundColor: value }}
                 />
                 <span className="capitalize">{value}</span>
-                <span className="text-[10px] text-slate-400 font-normal">({doc_count})</span>
+                <span className="text-[10px] text-slate-400 font-normal">
+                  ({doc_count})
+                </span>
               </button>
             );
           })}
@@ -167,7 +171,9 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
       {/* SIZE FACETS */}
       {sizes.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">Size:</span>
+          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">
+            Size:
+          </span>
           {sizes.map(({ key, doc_count }) => {
             const value = String(key);
             const isActive = activeSizes.includes(value);
@@ -184,7 +190,9 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
                 }`}
               >
                 <span>{value}</span>
-                <span className="ml-1 text-[10px] text-slate-400 font-normal">({doc_count})</span>
+                <span className="ml-1 text-[10px] text-slate-400 font-normal">
+                  ({doc_count})
+                </span>
               </button>
             );
           })}
@@ -194,7 +202,9 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
       {/* PRICE FACET */}
       {priceStats && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">Price:</span>
+          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">
+            Price:
+          </span>
           <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-xl border border-slate-200">
             <span className="text-xs text-slate-400">$</span>
             <input
@@ -205,7 +215,8 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
               onChange={(event) => setMinPriceInput(event.target.value)}
               onBlur={() => applyPrice("min_price", minPriceInput)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") applyPrice("min_price", minPriceInput);
+                if (event.key === "Enter")
+                  applyPrice("min_price", minPriceInput);
               }}
               className="w-16 bg-transparent text-xs font-semibold outline-hidden"
             />
@@ -219,7 +230,8 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
               onChange={(event) => setMaxPriceInput(event.target.value)}
               onBlur={() => applyPrice("max_price", maxPriceInput)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") applyPrice("max_price", maxPriceInput);
+                if (event.key === "Enter")
+                  applyPrice("max_price", maxPriceInput);
               }}
               className="w-16 bg-transparent text-xs font-semibold outline-hidden"
             />

@@ -45,6 +45,7 @@ export const useUIStore = create<UIState>((set) => ({
   openQuickView: (product: ProductType) => set({ quickViewProduct: product }),
   closeQuickView: () => set({ quickViewProduct: null }),
 
-  setActiveMegaMenu: (category: string | null) => set({ activeMegaMenu: category }),
+  setActiveMegaMenu: (category: string | null) =>
+    set({ activeMegaMenu: category }),
   setSearchOverlayOpen: (isOpen: boolean) => set({ searchOverlayOpen: isOpen }),
 }));

@@ -1,4 +1,10 @@
-import { ShieldCheck, Truck, RotateCcw, Headphones, CreditCard } from "lucide-react";
+import {
+  ShieldCheck,
+  Truck,
+  RotateCcw,
+  Headphones,
+  CreditCard,
+} from "lucide-react";
 
 const BADGES = [
   {
@@ -40,14 +46,21 @@ export default function TrustBadges() {
         {BADGES.map((item, idx) => {
           const Icon = item.icon;
           return (
-            <div key={idx} className="flex items-start gap-3.5">
+            <div
+              key={idx}
+              className={`flex items-start gap-3 sm:gap-3.5 ${
+                idx === BADGES.length - 1 ? "col-span-2 md:col-span-1" : ""
+              }`}
+            >
               <div
                 className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${item.color}`}
               >
                 <Icon className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xs font-black text-slate-900">{item.title}</h4>
+                <h4 className="text-xs font-black text-slate-900">
+                  {item.title}
+                </h4>
                 <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                   {item.desc}
                 </p>

@@ -107,7 +107,9 @@ const ActiveFilters = (): React.JSX.Element | null => {
 
   return (
     <div className="mb-6 flex flex-wrap items-center gap-2 text-xs">
-      <span className="font-bold text-slate-400 uppercase tracking-wider text-[11px]">Active Filters:</span>
+      <span className="font-bold text-slate-400 uppercase tracking-wider text-[11px]">
+        Active Filters:
+      </span>
       {filters.map((filter) => (
         <button
           key={filter.id}

@@ -20,13 +20,13 @@ interface RecommendationSectionProps {
   title: string;
   subtitle?: string;
   type:
-  | "trending"
-  | "personalized"
-  | "similar"
-  | "frequently_bought_together"
-  | "cart"
-  | "category"
-  | "recently_viewed";
+    | "trending"
+    | "personalized"
+    | "similar"
+    | "frequently_bought_together"
+    | "cart"
+    | "category"
+    | "recently_viewed";
   productId?: number | string;
   productIds?: number[];
   categorySlug?: string;

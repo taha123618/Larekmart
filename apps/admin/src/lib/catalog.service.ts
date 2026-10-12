@@ -127,12 +127,12 @@ export interface CatalogProductQuery {
   page?: number;
   limit?: number;
   sort?:
-  | "newest"
-  | "price_asc"
-  | "price_desc"
-  | "rating"
-  | "featured"
-  | "popular";
+    | "newest"
+    | "price_asc"
+    | "price_desc"
+    | "rating"
+    | "featured"
+    | "popular";
   category?: string;
   brand?: string;
   minPrice?: number;

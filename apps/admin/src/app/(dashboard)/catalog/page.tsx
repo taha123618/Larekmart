@@ -119,10 +119,11 @@ const CategoryRow = ({
       <td className="py-2 px-4 text-center">{category.productCount}</td>
       <td className="py-2 px-4">
         <span
-          className={`px-2 py-0.5 rounded-full text-xs ${category.isActive
+          className={`px-2 py-0.5 rounded-full text-xs ${
+            category.isActive
               ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
               : "bg-gray-100 text-gray-500"
-            }`}
+          }`}
         >
           {category.isActive ? "Active" : "Inactive"}
         </span>
@@ -320,10 +321,11 @@ const CatalogPage = async () => {
                       </td>
                       <td className="py-2 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-xs ${brand.isActive
+                          className={`px-2 py-0.5 rounded-full text-xs ${
+                            brand.isActive
                               ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
                               : "bg-gray-100 text-gray-500"
-                            }`}
+                          }`}
                         >
                           {brand.isActive ? "Active" : "Inactive"}
                         </span>
@@ -369,12 +371,13 @@ const CatalogPage = async () => {
                       </td>
                       <td className="py-2 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-xs ${col.status === "active"
+                          className={`px-2 py-0.5 rounded-full text-xs ${
+                            col.status === "active"
                               ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
                               : col.status === "draft"
                                 ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
                                 : "bg-gray-100 text-gray-500"
-                            }`}
+                          }`}
                         >
                           {col.status}
                         </span>
@@ -426,12 +429,13 @@ const CatalogPage = async () => {
                       </td>
                       <td className="py-2 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-xs ${p.availabilityStatus === "in_stock"
+                          className={`px-2 py-0.5 rounded-full text-xs ${
+                            p.availabilityStatus === "in_stock"
                               ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
                               : p.availabilityStatus === "low_stock"
                                 ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
                                 : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                            }`}
+                          }`}
                         >
                           {p.availabilityStatus.replace("_", " ")}
                         </span>

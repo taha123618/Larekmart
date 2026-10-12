@@ -4,12 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import {
-  Mail,
-  ArrowRight,
-  Sparkles,
-  Lock,
-} from "lucide-react";
+import { Mail, ArrowRight, Sparkles, Lock } from "lucide-react";
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -20,7 +15,9 @@ export default function Footer() {
       toast.error("Please enter a valid email address");
       return;
     }
-    toast.success("Thank you for subscribing! Your $10 coupon code is on its way.");
+    toast.success(
+      "Thank you for subscribing! Your $10 coupon code is on its way.",
+    );
     setEmail("");
   };
 
@@ -38,7 +35,8 @@ export default function Footer() {
               Get $10 Off Your Next Order
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              Subscribe for flash deal alerts, secret coupons, and weekly new arrival highlights.
+              Subscribe for flash deal alerts, secret coupons, and weekly new
+              arrival highlights.
             </p>
           </div>
 
@@ -88,7 +86,8 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Global multi-vendor marketplace connecting verified sellers with millions of customers worldwide.
+              Global multi-vendor marketplace connecting verified sellers with
+              millions of customers worldwide.
             </p>
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <Lock className="w-3.5 h-3.5 text-emerald-400" />
@@ -102,11 +101,21 @@ export default function Footer() {
               Customer Service
             </h4>
             <div className="flex flex-col gap-2 text-xs text-slate-400">
-              <Link href="/track" className="hover:text-white transition">Track Your Order</Link>
-              <Link href="/orders" className="hover:text-white transition">Order History</Link>
-              <Link href="/return" className="hover:text-white transition">Returns & Refunds</Link>
-              <Link href="/account" className="hover:text-white transition">Account Settings</Link>
-              <Link href="/track" className="hover:text-white transition">Shipping Policy</Link>
+              <Link href="/track" className="hover:text-white transition">
+                Track Your Order
+              </Link>
+              <Link href="/orders" className="hover:text-white transition">
+                Order History
+              </Link>
+              <Link href="/return" className="hover:text-white transition">
+                Returns & Refunds
+              </Link>
+              <Link href="/account" className="hover:text-white transition">
+                Account Settings
+              </Link>
+              <Link href="/track" className="hover:text-white transition">
+                Shipping Policy
+              </Link>
             </div>
           </div>
 
@@ -116,11 +125,36 @@ export default function Footer() {
               Departments
             </h4>
             <div className="flex flex-col gap-2 text-xs text-slate-400">
-              <Link href="/products?category=mens-clothing" className="hover:text-white transition">Men&apos;s Apparel</Link>
-              <Link href="/products?category=womens-clothing" className="hover:text-white transition">Women&apos;s Fashion</Link>
-              <Link href="/products?category=shoes" className="hover:text-white transition">Footwear & Sneakers</Link>
-              <Link href="/products?category=sports" className="hover:text-white transition">Activewear & Gear</Link>
-              <Link href="/products?sort=newest" className="hover:text-white transition">New Arrivals</Link>
+              <Link
+                href="/products?category=mens-clothing"
+                className="hover:text-white transition"
+              >
+                Men&apos;s Apparel
+              </Link>
+              <Link
+                href="/products?category=womens-clothing"
+                className="hover:text-white transition"
+              >
+                Women&apos;s Fashion
+              </Link>
+              <Link
+                href="/products?category=shoes"
+                className="hover:text-white transition"
+              >
+                Footwear & Sneakers
+              </Link>
+              <Link
+                href="/products?category=sports"
+                className="hover:text-white transition"
+              >
+                Activewear & Gear
+              </Link>
+              <Link
+                href="/products?sort=newest"
+                className="hover:text-white transition"
+              >
+                New Arrivals
+              </Link>
             </div>
           </div>
 
@@ -130,11 +164,21 @@ export default function Footer() {
               Sell & Partner
             </h4>
             <div className="flex flex-col gap-2 text-xs text-slate-400">
-              <Link href="/" className="hover:text-white transition">Sell on Larekmart</Link>
-              <Link href="/" className="hover:text-white transition">Merchant Hub</Link>
-              <Link href="/" className="hover:text-white transition">Affiliate Program</Link>
-              <Link href="/" className="hover:text-white transition">Wholesale / Bulk</Link>
-              <Link href="/" className="hover:text-white transition">Brand Protection</Link>
+              <Link href="/" className="hover:text-white transition">
+                Sell on Larekmart
+              </Link>
+              <Link href="/" className="hover:text-white transition">
+                Merchant Hub
+              </Link>
+              <Link href="/" className="hover:text-white transition">
+                Affiliate Program
+              </Link>
+              <Link href="/" className="hover:text-white transition">
+                Wholesale / Bulk
+              </Link>
+              <Link href="/" className="hover:text-white transition">
+                Brand Protection
+              </Link>
             </div>
           </div>
 
@@ -144,30 +188,51 @@ export default function Footer() {
               About Larekmart
             </h4>
             <div className="flex flex-col gap-2 text-xs text-slate-400">
-              <Link href="/" className="hover:text-white transition">About Our Marketplace</Link>
-              <Link href="/" className="hover:text-white transition">Buyer Protection</Link>
-              <Link href="/" className="hover:text-white transition">Privacy Policy</Link>
-              <Link href="/" className="hover:text-white transition">Terms of Service</Link>
-              <Link href="/" className="hover:text-white transition">Dispute Resolution</Link>
+              <Link href="/" className="hover:text-white transition">
+                About Our Marketplace
+              </Link>
+              <Link href="/" className="hover:text-white transition">
+                Buyer Protection
+              </Link>
+              <Link href="/" className="hover:text-white transition">
+                Privacy Policy
+              </Link>
+              <Link href="/" className="hover:text-white transition">
+                Terms of Service
+              </Link>
+              <Link href="/" className="hover:text-white transition">
+                Dispute Resolution
+              </Link>
             </div>
           </div>
         </div>
 
         {/* 3. PAYMENT METHODS & TRUST RIBBON */}
         <div className="mt-12 pt-8 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 text-xs text-slate-400">
             <span>Guaranteed Safe Checkout:</span>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-slate-900 rounded-md border border-slate-800 font-mono text-[10px] text-white">STRIPE</span>
-              <span className="px-2 py-1 bg-slate-900 rounded-md border border-slate-800 font-mono text-[10px] text-white">VISA</span>
-              <span className="px-2 py-1 bg-slate-900 rounded-md border border-slate-800 font-mono text-[10px] text-white">MASTERCARD</span>
-              <span className="px-2 py-1 bg-slate-900 rounded-md border border-slate-800 font-mono text-[10px] text-white">APPLE PAY</span>
-              <span className="px-2 py-1 bg-slate-900 rounded-md border border-slate-800 font-mono text-[10px] text-white">COD</span>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="px-2 py-1 bg-slate-900 rounded-md border border-slate-800 font-mono text-[10px] text-white">
+                STRIPE
+              </span>
+              <span className="px-2 py-1 bg-slate-900 rounded-md border border-slate-800 font-mono text-[10px] text-white">
+                VISA
+              </span>
+              <span className="px-2 py-1 bg-slate-900 rounded-md border border-slate-800 font-mono text-[10px] text-white">
+                MASTERCARD
+              </span>
+              <span className="px-2 py-1 bg-slate-900 rounded-md border border-slate-800 font-mono text-[10px] text-white">
+                APPLE PAY
+              </span>
+              <span className="px-2 py-1 bg-slate-900 rounded-md border border-slate-800 font-mono text-[10px] text-white">
+                COD
+              </span>
             </div>
           </div>
 
           <div className="text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} Larekmart Marketplace Inc. All rights reserved.
+            &copy; {new Date().getFullYear()} Larekmart Marketplace Inc. All
+            rights reserved.
           </div>
         </div>
       </div>
