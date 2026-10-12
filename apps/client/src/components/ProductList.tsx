@@ -161,7 +161,7 @@ const ProductList = async ({
       {params === "products" && <Filter facets={facets} />}
       {params === "products" && <ActiveFilters />}
       {products.length === 0 ? (
-        <p className="py-12 text-center text-sm text-gray-500">
+        <p className="py-12 text-center text-sm text-gray-500 dark:text-slate-400">
           No products match your filters.
         </p>
       ) : (
@@ -173,7 +173,7 @@ const ProductList = async ({
       )}
       <Link
         href={category ? `/products/?category=${category}` : "/products"}
-        className="flex justify-end mt-4 underline text-sm text-gray-500"
+        className="flex justify-end mt-4 underline text-sm text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white transition-colors"
       >
         View all products
       </Link>

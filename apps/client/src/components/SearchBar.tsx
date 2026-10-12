@@ -206,13 +206,13 @@ const SearchBar = () => {
   return (
     <div
       ref={containerRef}
-      className="relative flex w-full items-center gap-2 rounded-xl ring-1 ring-slate-200 bg-white px-3 py-2 shadow-xs focus-within:ring-2 focus-within:ring-indigo-500 transition"
+      className="relative flex w-full items-center gap-2 rounded-xl ring-1 ring-slate-200 dark:ring-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-xs focus-within:ring-2 focus-within:ring-indigo-500 transition"
     >
       <Search className="w-4 h-4 text-slate-400 shrink-0" />
       <input
         id="search"
         placeholder="Search products, brands, categories..."
-        className="w-full flex-1 text-xs sm:text-sm outline-none bg-transparent placeholder-slate-400 text-slate-900"
+        className="w-full flex-1 text-xs sm:text-sm outline-none bg-transparent placeholder-slate-400 dark:placeholder-slate-500 text-slate-900 dark:text-slate-100"
         role="combobox"
         aria-expanded={showDropdown}
         aria-controls={listboxId}
@@ -234,14 +234,14 @@ const SearchBar = () => {
       )}
 
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-md bg-white text-sm shadow-lg ring-1 ring-gray-200">
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-md bg-white dark:bg-slate-900 text-sm shadow-lg ring-1 ring-gray-200 dark:ring-slate-800">
           {showRecentsHeader && (
-            <div className="flex items-center justify-between px-3 pt-2 text-xs uppercase tracking-wide text-gray-400">
+            <div className="flex items-center justify-between px-3 pt-2 text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
               <span>Recent</span>
               <button
                 type="button"
                 onClick={clearRecents}
-                className="normal-case underline"
+                className="normal-case underline hover:text-gray-600 dark:hover:text-slate-300"
               >
                 Clear
               </button>
@@ -259,14 +259,16 @@ const SearchBar = () => {
                 id={`${listboxId}-${index}`}
                 role="option"
                 aria-selected={index === activeIndex}
-                className={`cursor-pointer px-3 py-1.5 ${
-                  index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
+                className={`cursor-pointer px-3 py-1.5 transition-colors ${
+                  index === activeIndex
+                    ? "bg-gray-100 dark:bg-slate-800"
+                    : "hover:bg-gray-50 dark:hover:bg-slate-800/60"
                 }`}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => activateOption(option)}
               >
                 {option.kind === "recent" ? (
-                  <span className="flex items-center gap-2 text-gray-600">
+                  <span className="flex items-center gap-2 text-gray-600 dark:text-slate-300">
                     <Clock className="h-3.5 w-3.5 text-gray-400" />
                     {option.label}
                   </span>
@@ -285,19 +287,21 @@ const SearchBar = () => {
                           className="h-8 w-8 rounded object-cover"
                         />
                       ) : (
-                        <span className="h-8 w-8 shrink-0 rounded bg-gray-100" />
+                        <span className="h-8 w-8 shrink-0 rounded bg-gray-100 dark:bg-slate-800" />
                       );
                     })()}
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate">{option.item.name}</span>
+                      <span className="block truncate text-slate-900 dark:text-slate-100">
+                        {option.item.name}
+                      </span>
                       {option.item.brand && (
-                        <span className="block truncate text-xs text-gray-400">
+                        <span className="block truncate text-xs text-gray-400 dark:text-slate-500">
                           {option.item.brand}
                         </span>
                       )}
                     </span>
                     {typeof option.item.price === "number" && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-slate-400">
                         ${option.item.price.toFixed(2)}
                       </span>
                     )}

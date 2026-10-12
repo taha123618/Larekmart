@@ -35,12 +35,12 @@ export default function CartHeaderButton() {
   return (
     <button
       onClick={openCartDrawer}
-      className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-100/80 transition group"
+      className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition group cursor-pointer"
       aria-label={`Shopping cart with ${count} items`}
     >
       <div className="relative">
-        <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 transition">
-          <ShoppingBag className="w-5 h-5 text-indigo-600" />
+        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/60 transition">
+          <ShoppingBag className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
         </div>
         {count > 0 && (
           <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
@@ -50,10 +50,10 @@ export default function CartHeaderButton() {
       </div>
 
       <div className="hidden xl:flex flex-col text-left">
-        <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           My Cart
         </span>
-        <span className="text-xs font-bold text-slate-900">
+        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
           ${subtotal.toFixed(2)}
         </span>
       </div>

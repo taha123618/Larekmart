@@ -107,7 +107,7 @@ const ActiveFilters = (): React.JSX.Element | null => {
 
   return (
     <div className="mb-6 flex flex-wrap items-center gap-2 text-xs">
-      <span className="font-bold text-slate-400 uppercase tracking-wider text-[11px]">
+      <span className="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px]">
         Active Filters:
       </span>
       {filters.map((filter) => (
@@ -116,16 +116,16 @@ const ActiveFilters = (): React.JSX.Element | null => {
           type="button"
           onClick={filter.remove}
           aria-label={`Remove ${filter.ariaLabel} filter`}
-          className="flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-900 font-semibold px-2.5 py-1 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 shadow-xs cursor-pointer group"
+          className="flex items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/70 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-semibold px-2.5 py-1 transition hover:bg-rose-50 dark:hover:bg-rose-950/50 hover:border-rose-200 dark:hover:border-rose-900 hover:text-rose-700 dark:hover:text-rose-300 shadow-xs cursor-pointer group"
         >
           {filter.swatch && (
             <span
-              className="h-2.5 w-2.5 rounded-full border border-slate-300 shrink-0"
+              className="h-2.5 w-2.5 rounded-full border border-slate-300 dark:border-slate-600 shrink-0"
               style={{ backgroundColor: filter.swatch }}
             />
           )}
           <span>{filter.label}</span>
-          <X className="h-3 w-3 text-indigo-400 group-hover:text-rose-600 transition" />
+          <X className="h-3 w-3 text-indigo-400 dark:text-indigo-300 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition" />
         </button>
       ))}
     </div>

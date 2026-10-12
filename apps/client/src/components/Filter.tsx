@@ -103,18 +103,18 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
   );
 
   return (
-    <div className="my-6 flex flex-col gap-4 rounded-2xl bg-white border border-slate-200/80 p-5 text-sm text-slate-700 shadow-xs">
+    <div className="my-6 flex flex-col gap-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 text-sm text-slate-700 dark:text-slate-300 shadow-xs">
       {/* SORT */}
-      <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
+      <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">
+          <span className="font-semibold text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Sort by:
           </span>
           <select
             name="sort"
             id="sort"
             value={searchParams.get("sort") ?? "newest"}
-            className="border border-slate-200 bg-slate-50 shadow-xs px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800 outline-hidden hover:border-slate-300 transition"
+            className="border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 shadow-xs px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-hidden hover:border-slate-300 dark:hover:border-slate-600 transition"
             onChange={(event) => setParam("sort", event.target.value)}
           >
             <option value="newest">Newest Arrivals</option>
@@ -127,7 +127,7 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
           <button
             type="button"
             onClick={clearFilters}
-            className="text-xs font-bold text-rose-600 hover:text-rose-700 transition px-2.5 py-1 rounded-lg hover:bg-rose-50"
+            className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 transition px-2.5 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
           >
             Clear all filters
           </button>
@@ -137,7 +137,9 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
       {/* COLOR FACETS */}
       {colors.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-gray-500">Color:</span>
+          <span className="font-semibold text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            Color:
+          </span>
           {colors.map(({ key, doc_count }) => {
             const value = String(key);
             const isActive = activeColors.includes(value);
@@ -148,18 +150,18 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
                 aria-pressed={isActive}
                 title={`${value} (${doc_count})`}
                 onClick={() => toggleFacet("color", value)}
-                className={`flex items-center gap-1.5 rounded-full border px-2 py-1 capitalize transition-colors ${
+                className={`flex items-center gap-1.5 rounded-full border px-2 py-1 capitalize transition-colors cursor-pointer ${
                   isActive
-                    ? "border-indigo-600 bg-indigo-50 text-indigo-900 font-bold shadow-xs"
-                    : "border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white text-slate-700"
+                    ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-bold shadow-xs"
+                    : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                 }`}
               >
                 <span
-                  className="h-3 w-3 rounded-full border border-slate-300 shrink-0"
+                  className="h-3 w-3 rounded-full border border-slate-300 dark:border-slate-600 shrink-0"
                   style={{ backgroundColor: value }}
                 />
                 <span className="capitalize">{value}</span>
-                <span className="text-[10px] text-slate-400 font-normal">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
                   ({doc_count})
                 </span>
               </button>
@@ -171,7 +173,7 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
       {/* SIZE FACETS */}
       {sizes.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">
+          <span className="font-semibold text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Size:
           </span>
           {sizes.map(({ key, doc_count }) => {
@@ -183,14 +185,14 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
                 type="button"
                 aria-pressed={isActive}
                 onClick={() => toggleFacet("size", value)}
-                className={`rounded-xl border px-3 py-1 uppercase text-xs transition ${
+                className={`rounded-xl border px-3 py-1 uppercase text-xs transition cursor-pointer ${
                   isActive
-                    ? "border-indigo-600 bg-indigo-50 text-indigo-900 font-bold shadow-xs"
-                    : "border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white text-slate-700"
+                    ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-bold shadow-xs"
+                    : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                 }`}
               >
                 <span>{value}</span>
-                <span className="ml-1 text-[10px] text-slate-400 font-normal">
+                <span className="ml-1 text-[10px] text-slate-400 dark:text-slate-500 font-normal">
                   ({doc_count})
                 </span>
               </button>
@@ -202,11 +204,13 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
       {/* PRICE FACET */}
       {priceStats && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-xs text-slate-500 uppercase tracking-wider">
+          <span className="font-semibold text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Price:
           </span>
-          <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-xl border border-slate-200">
-            <span className="text-xs text-slate-400">$</span>
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              $
+            </span>
             <input
               inputMode="numeric"
               aria-label="Minimum price"
@@ -218,10 +222,12 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
                 if (event.key === "Enter")
                   applyPrice("min_price", minPriceInput);
               }}
-              className="w-16 bg-transparent text-xs font-semibold outline-hidden"
+              className="w-16 bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-hidden"
             />
-            <span className="text-slate-300">–</span>
-            <span className="text-xs text-slate-400">$</span>
+            <span className="text-slate-300 dark:text-slate-600">–</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              $
+            </span>
             <input
               inputMode="numeric"
               aria-label="Maximum price"
@@ -233,7 +239,7 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
                 if (event.key === "Enter")
                   applyPrice("max_price", maxPriceInput);
               }}
-              className="w-16 bg-transparent text-xs font-semibold outline-hidden"
+              className="w-16 bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-hidden"
             />
           </div>
         </div>

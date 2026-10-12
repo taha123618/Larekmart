@@ -73,7 +73,15 @@ export const useWishlistStore = create<WishlistState>()(
     }),
     {
       name: "larekmart_wishlist",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined"
+          ? window.localStorage
+          : {
+              getItem: () => null,
+              setItem: () => {},
+              removeItem: () => {},
+            },
+      ),
     },
   ),
 );

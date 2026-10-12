@@ -80,10 +80,10 @@ export default function ProductGallery({
             <button
               key={idx}
               onClick={() => handleThumbnailClick(item)}
-              className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all p-1 bg-slate-50 shrink-0 ${
+              className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all p-1 bg-slate-50 dark:bg-slate-800 shrink-0 ${
                 activeUrl === item.url
                   ? "border-indigo-600 shadow-md scale-105"
-                  : "border-slate-200/80 hover:border-slate-300 opacity-80 hover:opacity-100"
+                  : "border-slate-200/80 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 opacity-80 hover:opacity-100"
               }`}
             >
               <MediaImage
@@ -98,7 +98,7 @@ export default function ProductGallery({
 
       {/* Main Large Image Viewer with Interactive Zoom */}
       <div
-        className="relative w-full aspect-[3/4] bg-slate-50 rounded-2xl overflow-hidden border border-slate-200/80 flex items-center justify-center cursor-crosshair group shadow-xs"
+        className="relative w-full aspect-[3/4] bg-slate-50 dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 flex items-center justify-center cursor-crosshair group shadow-xs"
         onMouseEnter={() => setIsZoomed(true)}
         onMouseLeave={() => setIsZoomed(false)}
         onMouseMove={handleMouseMove}
@@ -119,7 +119,7 @@ export default function ProductGallery({
         {/* Zoomed Lens Layer */}
         {isZoomed && (
           <div
-            className="absolute inset-0 pointer-events-none bg-no-repeat bg-white transition-opacity"
+            className="absolute inset-0 pointer-events-none bg-no-repeat bg-white dark:bg-slate-950 transition-opacity"
             style={{
               backgroundImage: `url(${activeUrl})`,
               backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,

@@ -78,19 +78,19 @@ export default function WishlistDrawer({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="w-screen max-w-full sm:max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto h-full"
+              className="w-screen max-w-full sm:max-w-md bg-white dark:bg-slate-900 shadow-2xl flex flex-col pointer-events-auto h-full text-slate-900 dark:text-slate-100"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50">
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
                 <div className="flex items-center gap-2">
                   <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                     My Wishlist ({items.length})
                   </h2>
                 </div>
                 <button
                   onClick={effectiveOnClose}
-                  className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200 transition cursor-pointer"
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition cursor-pointer"
                   aria-label="Close wishlist"
                 >
                   <X className="w-5 h-5" />
@@ -105,13 +105,13 @@ export default function WishlistDrawer({
                     animate={{ opacity: 1, scale: 1 }}
                     className="h-full flex flex-col items-center justify-center text-center py-12"
                   >
-                    <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center mb-4">
-                      <Heart className="w-8 h-8 text-rose-300" />
+                    <div className="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center mb-4">
+                      <Heart className="w-8 h-8 text-rose-300 dark:text-rose-400" />
                     </div>
-                    <h3 className="text-base font-semibold text-slate-800 mb-1">
+                    <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-1">
                       Your wishlist is empty
                     </h3>
-                    <p className="text-xs text-slate-500 max-w-xs mb-6">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mb-6">
                       Save items you love by tapping the heart icon on any
                       product card.
                     </p>
@@ -140,12 +140,12 @@ export default function WishlistDrawer({
                           damping: 25,
                         }}
                         key={item.id}
-                        className="flex gap-4 p-3 rounded-2xl border border-slate-100 hover:border-slate-200 bg-white transition group"
+                        className="flex gap-4 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-800/80 transition group"
                       >
                         <Link
                           href={`/products/${item.id}`}
                           onClick={effectiveOnClose}
-                          className="relative w-20 h-20 rounded-xl overflow-hidden bg-slate-50 shrink-0"
+                          className="relative w-20 h-20 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-900 shrink-0"
                         >
                           {item.image ? (
                             <MediaImage
@@ -154,7 +154,7 @@ export default function WishlistDrawer({
                               className="w-full h-full object-contain p-1"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xs text-slate-300">
+                            <div className="w-full h-full flex items-center justify-center text-xs text-slate-300 dark:text-slate-600">
                               No image
                             </div>
                           )}
@@ -165,11 +165,11 @@ export default function WishlistDrawer({
                             <Link
                               href={`/products/${item.id}`}
                               onClick={effectiveOnClose}
-                              className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1 hover:text-indigo-600 transition"
+                              className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 line-clamp-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
                             >
                               {item.name}
                             </Link>
-                            <p className="text-sm font-black text-rose-600 mt-1">
+                            <p className="text-sm font-black text-rose-600 dark:text-rose-400 mt-1">
                               ${item.price.toFixed(2)}
                             </p>
                           </div>
@@ -177,7 +177,7 @@ export default function WishlistDrawer({
                           <div className="flex items-center justify-between pt-2">
                             <button
                               onClick={() => handleMoveToCart(item)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-bold transition cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-600 dark:hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white text-xs font-bold transition cursor-pointer"
                             >
                               <ShoppingCart className="w-3.5 h-3.5" />
                               <span>Move to Cart</span>
@@ -200,10 +200,10 @@ export default function WishlistDrawer({
 
               {/* Footer */}
               {items.length > 0 && (
-                <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-between">
                   <button
                     onClick={clearWishlist}
-                    className="text-xs font-semibold text-slate-500 hover:text-rose-600 transition cursor-pointer"
+                    className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-600 transition cursor-pointer"
                   >
                     Clear Wishlist
                   </button>
@@ -211,7 +211,7 @@ export default function WishlistDrawer({
                   <Link
                     href="/products"
                     onClick={effectiveOnClose}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 cursor-pointer"
                   >
                     <span>Continue Shopping</span>
                     <ArrowRight className="w-3.5 h-3.5" />

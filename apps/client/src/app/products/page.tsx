@@ -33,7 +33,7 @@ const ProductsPage = async ({
         params="products"
       />
 
-      <div className="border-t border-gray-100 pt-8">
+      <div className="border-t border-gray-100 dark:border-slate-800 pt-8">
         <RecommendationSection
           title={
             category

@@ -65,42 +65,48 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
   return (
     <section
       id="flash-deals"
-      className="my-10 bg-gradient-to-r from-rose-500/10 via-orange-500/10 to-amber-500/10 rounded-3xl p-6 sm:p-8 border border-rose-200/60 shadow-xs"
+      className="my-10 bg-gradient-to-r from-rose-500/10 via-orange-500/10 to-amber-500/10 dark:from-rose-950/20 dark:via-orange-950/20 dark:to-amber-950/20 rounded-3xl p-6 sm:p-8 border border-rose-200/60 dark:border-rose-900/40 shadow-xs"
     >
       {/* Header with Countdown */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-rose-200">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-rose-200 dark:shadow-none">
             <Flame className="w-6 h-6 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 Flash Deals
               </h2>
               <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black uppercase tracking-wider">
                 Limited Stock
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Refreshes every 24 hours. Grab live deals before stock runs out!
             </p>
           </div>
         </div>
 
         {/* Ticker */}
-        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-xs px-4 py-2 rounded-2xl border border-rose-200 shadow-xs">
+        <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs px-4 py-2 rounded-2xl border border-rose-200 dark:border-rose-900/50 shadow-xs">
           <Clock className="w-4 h-4 text-rose-500" />
-          <span className="text-xs font-bold text-slate-600">Ends in:</span>
+          <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+            Ends in:
+          </span>
           <div className="flex items-center gap-1 font-mono text-xs font-black text-white">
-            <span className="bg-slate-900 px-2 py-1 rounded-md">
+            <span className="bg-slate-900 dark:bg-slate-800 px-2 py-1 rounded-md">
               {String(timeLeft.hours).padStart(2, "0")}
             </span>
-            <span className="text-slate-900 font-bold">:</span>
-            <span className="bg-slate-900 px-2 py-1 rounded-md">
+            <span className="text-slate-900 dark:text-slate-200 font-bold">
+              :
+            </span>
+            <span className="bg-slate-900 dark:bg-slate-800 px-2 py-1 rounded-md">
               {String(timeLeft.minutes).padStart(2, "0")}
             </span>
-            <span className="text-slate-900 font-bold">:</span>
+            <span className="text-slate-900 dark:text-slate-200 font-bold">
+              :
+            </span>
             <span className="bg-rose-600 px-2 py-1 rounded-md animate-pulse">
               {String(timeLeft.seconds).padStart(2, "0")}
             </span>
@@ -121,7 +127,7 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
           return (
             <div
               key={item.id}
-              className="bg-white rounded-2xl p-4 border border-rose-100 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group relative overflow-hidden hover:-translate-y-1.5"
+              className="bg-white dark:bg-slate-900/80 dark:backdrop-blur-md rounded-2xl p-4 border border-rose-100 dark:border-slate-800/80 shadow-xs hover:shadow-xl dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] dark:hover:border-rose-500/50 dark:hover:shadow-[0_12px_30px_-5px_rgba(0,0,0,0.6),0_0_20px_-3px_rgba(244,63,94,0.2)] transition-all duration-300 flex flex-col justify-between group relative overflow-hidden hover:-translate-y-1.5"
             >
               {/* Discount Badge */}
               <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-rose-600 text-white rounded-xl text-xs font-black shadow-xs">
@@ -132,7 +138,7 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
               <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1.5">
                 <button
                   onClick={() => handleOpenQuickView(item)}
-                  className="w-8 h-8 rounded-full bg-white text-slate-700 hover:text-indigo-600 flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                   title="Quick view"
                 >
                   <Eye className="w-4 h-4" />
@@ -142,7 +148,7 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
               {/* Image */}
               <Link
                 href={`/products/${item.id}`}
-                className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-50 mb-3 flex items-center justify-center"
+                className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/60 mb-3 flex items-center justify-center"
               >
                 {imageSrc ? (
                   <MediaImage
@@ -160,28 +166,30 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
               {/* Content */}
               <div>
                 <Link href={`/products/${item.id}`}>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1 hover:text-indigo-600 transition">
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white line-clamp-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
                     {item.name}
                   </h3>
                 </Link>
 
                 {/* Price */}
                 <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-base sm:text-lg font-black text-rose-600">
+                  <span className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400">
                     ${item.price.toFixed(2)}
                   </span>
-                  <span className="text-xs text-slate-400 line-through">
+                  <span className="text-xs text-slate-400 dark:text-slate-500 line-through">
                     ${originalPrice.toFixed(2)}
                   </span>
                 </div>
 
                 {/* Stock Progress Bar */}
                 <div className="mt-3">
-                  <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
                     <span>Claimed: {soldPercentage}%</span>
-                    <span className="text-rose-600">High Demand</span>
+                    <span className="text-rose-600 dark:text-rose-400">
+                      High Demand
+                    </span>
                   </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-amber-500 to-rose-500 rounded-full transition-all duration-500"
                       style={{ width: `${soldPercentage}%` }}
@@ -191,10 +199,10 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
               </div>
 
               {/* Add to Cart Button */}
-              <div className="mt-4 pt-3 border-t border-slate-100">
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   onClick={() => handleQuickAdd(item)}
-                  className="w-full py-2 px-3 bg-slate-900 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                  className="w-full py-2 px-3 bg-slate-900 dark:bg-slate-800 hover:bg-rose-600 dark:hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
                   <span>Claim Deal</span>

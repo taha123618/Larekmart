@@ -43,8 +43,9 @@ export default function ProductTabs({ product }: ProductTabsProps) {
 
   // Load reviews from local persistence for this product
   useEffect(() => {
+    if (typeof window === "undefined") return;
     try {
-      const stored = localStorage.getItem(`lkm_reviews_${product.id}`);
+      const stored = window.localStorage.getItem(`lkm_reviews_${product.id}`);
       if (stored) {
         setReviews(JSON.parse(stored));
       } else {
@@ -75,13 +76,15 @@ export default function ProductTabs({ product }: ProductTabsProps) {
     const updated = [review, ...reviews];
     setReviews(updated);
 
-    try {
-      localStorage.setItem(
-        `lkm_reviews_${product.id}`,
-        JSON.stringify(updated),
-      );
-    } catch {
-      // LocalStorage quota or unavailable
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(
+          `lkm_reviews_${product.id}`,
+          JSON.stringify(updated),
+        );
+      } catch {
+        // LocalStorage quota or unavailable
+      }
     }
 
     toast.success("Thank you! Your verified review has been published.");
@@ -100,15 +103,15 @@ export default function ProductTabs({ product }: ProductTabsProps) {
       : null;
 
   return (
-    <div className="mt-12 bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-xs">
+    <div className="mt-12 bg-white dark:bg-slate-900/70 dark:backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] p-6 sm:p-10 shadow-xs">
       {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-200 gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab("specs")}
           className={`pb-4 text-sm font-bold transition whitespace-nowrap cursor-pointer border-b-2 ${
             activeTab === "specs"
-              ? "border-indigo-600 text-indigo-600"
-              : "border-transparent text-slate-500 hover:text-slate-900"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
           }`}
         >
           Product Specifications
@@ -118,13 +121,13 @@ export default function ProductTabs({ product }: ProductTabsProps) {
           onClick={() => setActiveTab("reviews")}
           className={`pb-4 text-sm font-bold transition whitespace-nowrap cursor-pointer border-b-2 flex items-center gap-1.5 ${
             activeTab === "reviews"
-              ? "border-indigo-600 text-indigo-600"
-              : "border-transparent text-slate-500 hover:text-slate-900"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
           }`}
         >
           <span>Customer Reviews</span>
           {reviews.length > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
+            <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
               {avgRating} ★ ({reviews.length})
             </span>
           )}
@@ -134,8 +137,8 @@ export default function ProductTabs({ product }: ProductTabsProps) {
           onClick={() => setActiveTab("shipping")}
           className={`pb-4 text-sm font-bold transition whitespace-nowrap cursor-pointer border-b-2 ${
             activeTab === "shipping"
-              ? "border-indigo-600 text-indigo-600"
-              : "border-transparent text-slate-500 hover:text-slate-900"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
           }`}
         >
           Delivery & Returns
@@ -148,10 +151,10 @@ export default function ProductTabs({ product }: ProductTabsProps) {
         {activeTab === "specs" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-base font-bold text-slate-900 mb-4">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">
                 Technical Highlights
               </h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
+              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                 {product.description ||
                   product.shortDescription ||
                   "Detailed product information verified by marketplace catalog."}
@@ -159,7 +162,7 @@ export default function ProductTabs({ product }: ProductTabsProps) {
 
               <div className="mt-6 flex flex-col gap-3">
                 {product.sizes && product.sizes.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-slate-700">
+                  <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                     <span>
                       Available in {product.sizes.length} fit sizes (
@@ -168,7 +171,7 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                   </div>
                 )}
                 {product.colors && product.colors.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-slate-700">
+                  <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                     <span>
                       Available in {product.colors.length} verified colorway
@@ -176,44 +179,54 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                     </span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-xs text-slate-700">
+                <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                   <span>Quality checked and approved by marketplace team</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-4">
+            <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-6 border border-slate-100 dark:border-slate-800">
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-4">
                 Product Details
               </h4>
               <dl className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
-                <dt className="text-slate-500">Department</dt>
-                <dd className="font-bold text-slate-900 uppercase">
+                <dt className="text-slate-500 dark:text-slate-400">
+                  Department
+                </dt>
+                <dd className="font-bold text-slate-900 dark:text-white uppercase">
                   {product.categorySlug || "General"}
                 </dd>
 
-                <dt className="text-slate-500">Available Sizes</dt>
-                <dd className="font-bold text-slate-900 uppercase">
+                <dt className="text-slate-500 dark:text-slate-400">
+                  Available Sizes
+                </dt>
+                <dd className="font-bold text-slate-900 dark:text-white uppercase">
                   {product.sizes?.length
                     ? product.sizes.join(", ")
                     : "Standard / One Size"}
                 </dd>
 
-                <dt className="text-slate-500">Color Options</dt>
-                <dd className="font-bold text-slate-900 capitalize">
+                <dt className="text-slate-500 dark:text-slate-400">
+                  Color Options
+                </dt>
+                <dd className="font-bold text-slate-900 dark:text-white capitalize">
                   {product.colors?.length
                     ? product.colors.join(", ")
                     : "Standard"}
                 </dd>
 
-                <dt className="text-slate-500">Catalog SKU</dt>
-                <dd className="font-mono text-slate-700">
+                <dt className="text-slate-500 dark:text-slate-400">
+                  Catalog SKU
+                </dt>
+                <dd className="font-mono text-slate-700 dark:text-slate-300">
                   LKM-{product.id}-CATALOG
                 </dd>
 
-                <dt className="text-slate-500">Stock Status</dt>
-                <dd className="font-semibold text-emerald-600">
+                <dt className="text-slate-500 dark:text-slate-400">
+                  Stock Status
+                </dt>
+                <dd className="font-semibold text-emerald-600 dark:text-emerald-400">
                   Active Listing
                 </dd>
               </dl>
@@ -225,9 +238,9 @@ export default function ProductTabs({ product }: ProductTabsProps) {
         {activeTab === "reviews" && (
           <div className="flex flex-col gap-8">
             {/* Rating Breakdown Header */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-6 rounded-2xl bg-slate-50 border border-slate-100">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-4">
-                <div className="text-4xl font-black text-slate-900">
+                <div className="text-4xl font-black text-slate-900 dark:text-white">
                   {avgRating || "0.0"}
                 </div>
                 <div>
@@ -238,12 +251,12 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                         className={`w-4 h-4 ${
                           avgRating && Number(avgRating) >= star
                             ? "fill-amber-400 text-amber-400"
-                            : "text-slate-300"
+                            : "text-slate-300 dark:text-slate-600"
                         }`}
                       />
                     ))}
                   </div>
-                  <span className="text-xs text-slate-500 mt-1 block">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">
                     {reviews.length === 0
                       ? "No reviews yet"
                       : `Based on ${reviews.length} customer review${
@@ -268,16 +281,16 @@ export default function ProductTabs({ product }: ProductTabsProps) {
             {isWriteReviewOpen && (
               <form
                 onSubmit={handleAddReview}
-                className="p-6 bg-slate-50/70 rounded-2xl border border-indigo-100 flex flex-col gap-4 animate-in fade-in"
+                className="p-6 bg-slate-50/70 dark:bg-slate-800/80 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 flex flex-col gap-4 animate-in fade-in"
               >
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-slate-900">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                     Share Your Feedback
                   </h4>
                   <button
                     type="button"
                     onClick={() => setIsWriteReviewOpen(false)}
-                    className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -285,7 +298,7 @@ export default function ProductTabs({ product }: ProductTabsProps) {
 
                 {/* Star rating selector */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Rating
                   </label>
                   <div className="flex items-center gap-1">
@@ -302,12 +315,12 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                           className={`w-5 h-5 ${
                             (hoverRating || newRating) >= star
                               ? "fill-amber-400 text-amber-400"
-                              : "text-slate-300"
+                              : "text-slate-300 dark:text-slate-600"
                           }`}
                         />
                       </button>
                     ))}
-                    <span className="ml-2 text-xs font-bold text-slate-600">
+                    <span className="ml-2 text-xs font-bold text-slate-600 dark:text-slate-300">
                       {newRating} / 5 Stars
                     </span>
                   </div>
@@ -315,7 +328,7 @@ export default function ProductTabs({ product }: ProductTabsProps) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Your Name
                     </label>
                     <input
@@ -324,12 +337,12 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                       placeholder="e.g. Sarah J."
                       value={newAuthor}
                       onChange={(e) => setNewAuthor(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-indigo-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-indigo-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Headline
                     </label>
                     <input
@@ -338,13 +351,13 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                       placeholder="e.g. Great quality and fast shipping"
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-indigo-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-indigo-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Your Review
                   </label>
                   <textarea
@@ -353,7 +366,7 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                     placeholder="Tell other shoppers about fit, quality, or material..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-indigo-500"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-indigo-500"
                   />
                 </div>
 
@@ -361,7 +374,7 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                   <button
                     type="button"
                     onClick={() => setIsWriteReviewOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200 transition cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -377,11 +390,11 @@ export default function ProductTabs({ product }: ProductTabsProps) {
 
             {/* Reviews List */}
             {reviews.length === 0 ? (
-              <div className="py-12 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                <p className="text-sm font-semibold text-slate-700">
+              <div className="py-12 text-center bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                   No reviews yet for this product
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                   Be the first customer to share your experience with this item.
                 </p>
               </div>
@@ -390,20 +403,22 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                 {reviews.map((rev) => (
                   <div
                     key={rev.id}
-                    className="p-5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 transition"
+                    className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-200 dark:hover:border-slate-700 transition"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-900">
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">
                           {rev.author}
                         </span>
                         {rev.verified && (
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
                             Verified Buyer
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-slate-400">{rev.date}</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">
+                        {rev.date}
+                      </span>
                     </div>
 
                     <div className="flex items-center text-amber-400 mb-2">
@@ -412,10 +427,10 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                       ))}
                     </div>
 
-                    <h5 className="text-sm font-bold text-slate-800 mb-1">
+                    <h5 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1">
                       {rev.title}
                     </h5>
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                       {rev.comment}
                     </p>
                   </div>
@@ -428,40 +443,40 @@ export default function ProductTabs({ product }: ProductTabsProps) {
         {/* SHIPPING & RETURNS TAB */}
         {activeTab === "shipping" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+            <div className="p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                 <Truck className="w-5 h-5" />
               </div>
-              <h4 className="text-sm font-bold text-slate-900">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                 Express Delivery
               </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                 Orders dispatch within 24 hours. Track shipment status in real
                 time with carrier integrations.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
+            <div className="p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
                 <RotateCcw className="w-5 h-5" />
               </div>
-              <h4 className="text-sm font-bold text-slate-900">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                 30-Day Easy Returns
               </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                 Not completely satisfied? Initiate a return within 30 days for a
                 full refund or size exchange.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+            <div className="p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h4 className="text-sm font-bold text-slate-900">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                 Buyer Protection
               </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                 Every transaction is secure and backed by Larekmart guarantee
                 until package receipt is confirmed.
               </p>

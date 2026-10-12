@@ -19,13 +19,13 @@ export const getOrCreateGuestToken = (): string => {
   if (typeof window === "undefined") return "server-guest-token";
 
   try {
-    let token = localStorage.getItem(GUEST_TOKEN_KEY);
+    let token = window.localStorage.getItem(GUEST_TOKEN_KEY);
     if (!token) {
       token =
         typeof crypto !== "undefined" && crypto.randomUUID
           ? crypto.randomUUID()
           : `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem(GUEST_TOKEN_KEY, token);
+      window.localStorage.setItem(GUEST_TOKEN_KEY, token);
     }
     return token;
   } catch {
@@ -36,7 +36,7 @@ export const getOrCreateGuestToken = (): string => {
 export const clearGuestToken = (): void => {
   if (typeof window !== "undefined") {
     try {
-      localStorage.removeItem(GUEST_TOKEN_KEY);
+      window.localStorage.removeItem(GUEST_TOKEN_KEY);
     } catch {
       // Ignore localStorage access failures in restricted environments
     }

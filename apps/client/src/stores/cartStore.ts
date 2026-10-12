@@ -314,7 +314,15 @@ const useCartStore = create<ExtendedCartState & ExtendedCartActions>()(
     }),
     {
       name: "cart",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined"
+          ? window.localStorage
+          : {
+              getItem: () => null,
+              setItem: () => {},
+              removeItem: () => {},
+            },
+      ),
       // `localStorage` is synchronous, so without this zustand rehydrates during module
       // evaluation - before React's first render. The server has no `localStorage` and
       // renders the initial empty cart, so the client would render the persisted one and

@@ -186,21 +186,25 @@ const ProductInteraction = ({
 
       {/* SIZE */}
       <div className="flex flex-col gap-2 text-xs">
-        <span className="text-gray-500">Size</span>
+        <span className="text-gray-500 dark:text-slate-400 font-semibold">
+          Size
+        </span>
         <div className="flex items-center gap-2">
           {product.sizes.map((size) => (
             <div
-              className={`cursor-pointer border-1 p-[2px] ${
-                selectedSize === size ? "border-gray-600" : "border-gray-300"
+              className={`cursor-pointer border p-[2px] rounded-lg transition ${
+                selectedSize === size
+                  ? "border-indigo-600 dark:border-indigo-400"
+                  : "border-slate-200 dark:border-slate-700"
               }`}
               key={size}
               onClick={() => handleTypeChange("size", size)}
             >
               <div
-                className={`w-6 h-6 text-center flex items-center justify-center ${
+                className={`w-7 h-7 text-xs font-bold rounded-md text-center flex items-center justify-center transition ${
                   selectedSize === size
-                    ? "bg-black text-white"
-                    : "bg-white text-black"
+                    ? "bg-slate-900 dark:bg-indigo-600 text-white"
+                    : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
                 }`}
               >
                 {size.toUpperCase()}
@@ -212,17 +216,24 @@ const ProductInteraction = ({
 
       {/* COLOR */}
       <div className="flex flex-col gap-2 text-sm">
-        <span className="text-gray-500">Color</span>
+        <span className="text-gray-500 dark:text-slate-400 font-semibold">
+          Color
+        </span>
         <div className="flex items-center gap-2">
           {product.colors.map((color) => (
             <div
-              className={`cursor-pointer border-1 p-[2px] ${
-                selectedColor === color ? "border-gray-300" : "border-white"
+              className={`cursor-pointer border p-[2px] rounded-full transition ${
+                selectedColor === color
+                  ? "border-indigo-600 dark:border-indigo-400"
+                  : "border-transparent hover:border-slate-300 dark:hover:border-slate-600"
               }`}
               key={color}
               onClick={() => handleTypeChange("color", color)}
             >
-              <div className={`w-6 h-6`} style={{ backgroundColor: color }} />
+              <div
+                className="w-6 h-6 rounded-full border border-black/10 dark:border-white/10"
+                style={{ backgroundColor: color }}
+              />
             </div>
           ))}
         </div>
@@ -230,18 +241,22 @@ const ProductInteraction = ({
 
       {/* QUANTITY */}
       <div className="flex flex-col gap-2 text-sm">
-        <span className="text-gray-500">Quantity</span>
+        <span className="text-gray-500 dark:text-slate-400 font-semibold">
+          Quantity
+        </span>
         <div className="flex items-center gap-2">
           <button
-            className="cursor-pointer border-1 border-gray-300 p-1 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="cursor-pointer border border-slate-200 dark:border-slate-700 p-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             disabled={isOutOfStock}
             onClick={() => handleQuantityChange("decrement")}
           >
             <Minus className="w-4 h-4" />
           </button>
-          <span>{quantity}</span>
+          <span className="px-3 font-bold text-slate-900 dark:text-white">
+            {quantity}
+          </span>
           <button
-            className="cursor-pointer border-1 border-gray-300 p-1 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="cursor-pointer border border-slate-200 dark:border-slate-700 p-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             disabled={
               isOutOfStock || (inventory !== null && quantity >= inventory)
             }
@@ -259,8 +274,8 @@ const ProductInteraction = ({
           disabled={isOutOfStock}
           className={`flex-1 px-5 py-3 rounded-xl shadow-md flex items-center justify-center gap-2 text-sm font-bold transition-all ${
             isOutOfStock
-              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-indigo-100"
+              ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-indigo-100 dark:shadow-none"
           }`}
         >
           <Plus className="w-4 h-4" />
@@ -275,8 +290,8 @@ const ProductInteraction = ({
           disabled={isOutOfStock}
           className={`flex-1 px-5 py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all ${
             isOutOfStock
-              ? "border border-slate-200 text-slate-400 cursor-not-allowed"
-              : "bg-slate-900 hover:bg-slate-800 text-white cursor-pointer shadow-md"
+              ? "border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
+              : "bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white cursor-pointer shadow-md"
           }`}
         >
           <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -292,8 +307,8 @@ const ProductInteraction = ({
           }}
           className={`p-3 rounded-xl border transition flex items-center justify-center cursor-pointer ${
             isFavorited
-              ? "bg-rose-50 border-rose-200 text-rose-600 shadow-xs"
-              : "bg-white border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-200"
+              ? "bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 shadow-xs"
+              : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:border-rose-200 dark:hover:border-rose-800"
           }`}
           title={isFavorited ? "Saved to Wishlist" : "Save to Wishlist"}
           aria-label="Toggle Wishlist"

@@ -41,7 +41,7 @@ const CatalogCard = ({ product }: { product: CatalogProductCard }) => {
       href={`/products/${product.productId || product.id}`}
       className="group min-w-[220px] max-w-[220px] flex flex-col gap-2"
     >
-      <div className="relative aspect-[2/3] rounded-xl overflow-hidden">
+      <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900/80 border border-transparent dark:border-slate-800/80 group-hover:border-indigo-500/40 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-all">
         {imageSrc ? (
           <MediaImage
             src={imageSrc}
@@ -49,7 +49,7 @@ const CatalogCard = ({ product }: { product: CatalogProductCard }) => {
             className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
           />
         ) : (
-          <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+          <div className="w-full h-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-400 dark:text-slate-500 text-xs">
             No image
           </div>
         )}
@@ -66,16 +66,20 @@ const CatalogCard = ({ product }: { product: CatalogProductCard }) => {
         )}
       </div>
       <div className="flex flex-col gap-1">
-        <p className="font-medium text-sm line-clamp-1">{product.name}</p>
+        <p className="font-medium text-sm text-slate-900 dark:text-white line-clamp-1">
+          {product.name}
+        </p>
         {product.brand && (
-          <p className="text-xs text-gray-400">{product.brand.name}</p>
+          <p className="text-xs text-gray-400 dark:text-slate-400">
+            {product.brand.name}
+          </p>
         )}
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm">
+          <span className="font-semibold text-sm text-slate-900 dark:text-white">
             ${product.price.toFixed(2)}
           </span>
           {product.compareAtPrice && product.compareAtPrice > product.price && (
-            <span className="line-through text-xs text-gray-400">
+            <span className="line-through text-xs text-gray-400 dark:text-slate-500">
               ${product.compareAtPrice.toFixed(2)}
             </span>
           )}
@@ -114,17 +118,23 @@ const FeaturedSection = async ({
     <div className="flex flex-col gap-4 mb-12">
       <div className="flex items-end justify-between">
         <div>
-          <h2 className="text-xl font-semibold">{title}</h2>
-          {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              {subtitle}
+            </p>
+          )}
         </div>
         <Link
           href={`/products${type !== "featured" ? `?sort=${type === "new-arrivals" ? "newest" : "popular"}` : ""}`}
-          className="text-sm text-gray-500 underline hover:text-black transition-colors"
+          className="text-sm text-gray-500 dark:text-slate-400 underline hover:text-black dark:hover:text-white transition-colors"
         >
           View all
         </Link>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-200">
+      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-slate-700">
         {products.map((product) => (
           <CatalogCard key={product.id} product={product} />
         ))}

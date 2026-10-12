@@ -77,24 +77,27 @@ const ProductPage = async ({
   return (
     <div className="py-8">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-xs text-slate-500 mb-6">
-        <Link href="/" className="hover:text-indigo-600 transition">
+      <nav className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-6">
+        <Link
+          href="/"
+          className="hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+        >
           Home
         </Link>
         <span>/</span>
         <Link
           href={`/products?category=${product.categorySlug}`}
-          className="hover:text-indigo-600 transition uppercase"
+          className="hover:text-indigo-600 dark:hover:text-indigo-400 transition uppercase"
         >
           {product.categorySlug || "Marketplace"}
         </Link>
         <span>/</span>
-        <span className="text-slate-900 font-semibold truncate max-w-xs">
+        <span className="text-slate-900 dark:text-white font-semibold truncate max-w-xs">
           {product.name}
         </span>
       </nav>
 
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-xs flex flex-col lg:flex-row gap-8 lg:gap-14">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 sm:p-10 shadow-xs flex flex-col lg:flex-row gap-8 lg:gap-14">
         {/* IMAGE GALLERY */}
         <div className="w-full lg:w-5/12">
           <ProductGallery
@@ -108,48 +111,48 @@ const ProductPage = async ({
         <div className="w-full lg:w-7/12 flex flex-col justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+              <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider">
                 {product.categorySlug || "Marketplace"}
               </span>
-              <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
                 Verified Seller
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               {product.name}
             </h1>
 
             {/* Price & Discount */}
             <div className="mt-4 flex items-baseline gap-3">
-              <span className="text-3xl font-black text-slate-900">
+              <span className="text-3xl font-black text-slate-900 dark:text-white">
                 $
                 {typeof product.price === "number"
                   ? product.price.toFixed(2)
                   : "0.00"}
               </span>
-              <span className="text-base text-slate-400 line-through">
+              <span className="text-base text-slate-400 dark:text-slate-500 line-through">
                 $
                 {typeof product.price === "number"
                   ? (product.price * 1.3).toFixed(2)
                   : "0.00"}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-xs font-extrabold">
+              <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-xs font-extrabold">
                 Save 23%
               </span>
             </div>
 
-            <p className="text-sm text-slate-600 mt-4 leading-relaxed">
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-4 leading-relaxed">
               {product.description || product.shortDescription}
             </p>
 
             {/* Micro-guarantee strip */}
-            <div className="grid grid-cols-2 gap-3 my-6 p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs">
-              <div className="flex items-center gap-2 text-slate-700 font-medium">
+            <div className="grid grid-cols-2 gap-3 my-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
                 <span className="text-emerald-500 font-bold">✓</span>
                 <span>Free 3-5 day delivery</span>
               </div>
-              <div className="flex items-center gap-2 text-slate-700 font-medium">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
                 <span className="text-emerald-500 font-bold">✓</span>
                 <span>30-Day Hassle-free Returns</span>
               </div>
@@ -163,7 +166,7 @@ const ProductPage = async ({
           </div>
 
           {/* PAYMENT TRUST */}
-          <div className="pt-6 border-t border-slate-100">
+          <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2 mb-2">
               <Image
                 src="/klarna.png"
@@ -187,7 +190,7 @@ const ProductPage = async ({
                 className="rounded-md"
               />
             </div>
-            <p className="text-[11px] text-slate-400 leading-normal">
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-normal">
               Safe & encrypted checkout. Prices include all applicable taxes.
               Covered by Larekmart 100% Buyer Protection Guarantee.
             </p>
@@ -199,7 +202,7 @@ const ProductPage = async ({
       <ProductTabs product={product} />
 
       {/* RECOMMENDATIONS */}
-      <div className="mt-16 flex flex-col gap-12 border-t pt-12">
+      <div className="mt-16 flex flex-col gap-12 border-t border-slate-200 dark:border-slate-800 pt-12">
         <RecommendationSection
           title="Frequently Bought Together"
           subtitle="Customers who purchased this item also loved"

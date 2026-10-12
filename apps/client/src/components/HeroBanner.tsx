@@ -270,30 +270,30 @@ export default function HeroBanner() {
           </div>
 
           {/* Buyer Protection Guarantee Card */}
-          <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200/80 flex flex-col justify-between flex-1">
+          <div className="bg-white dark:bg-slate-900/80 dark:backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-col justify-between flex-1">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-6 h-6 text-indigo-600" />
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <h4 className="text-sm font-black text-slate-900">
+                <h4 className="text-sm font-black text-slate-900 dark:text-white">
                   Larekmart Buyer Protection
                 </h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   Full refund if your item doesn&apos;t arrive or is not as
                   described. 100% secure escrow payments.
                 </p>
               </div>
             </div>
 
-            <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
                 <Clock className="w-3.5 h-3.5" />
                 <span>30-Day Free Returns</span>
               </div>
               <Link
                 href="/return"
-                className="text-indigo-600 font-bold hover:underline"
+                className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
               >
                 Learn More &rarr;
               </Link>
