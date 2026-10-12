@@ -114,53 +114,57 @@ export default function CodConfirmationForm({
 
   if (confirmedOrderId) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-center">
-        <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle2 className="w-7 h-7" />
+      <div className="flex flex-col items-center justify-center p-8 sm:p-10 bg-white/90 dark:bg-[#0b0f19]/90 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/20 rounded-3xl text-center shadow-xl shadow-emerald-500/5 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
+        <div className="w-16 h-16 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/25 animate-in zoom-in-95 duration-200">
+          <CheckCircle2 className="w-8 h-8" />
         </div>
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+        <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
           Order Confirmed!
         </h3>
-        <p className="text-xs text-gray-600 dark:text-slate-300 mt-1 max-w-md">
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5 max-w-md leading-relaxed">
           Your Cash on Delivery booking with{" "}
-          <span className="font-semibold">{carrierName}</span> has been
-          dispatched. Please keep exact cash ready upon delivery.
+          <span className="font-bold text-slate-900 dark:text-white">
+            {carrierName}
+          </span>{" "}
+          has been dispatched. Please keep exact cash ready upon delivery.
         </p>
 
-        <div className="mt-4 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg w-full max-w-sm text-left text-xs flex flex-col gap-1.5">
-          <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-slate-400">Order ID:</span>
-            <span className="font-mono font-medium text-gray-900 dark:text-white">
+        <div className="mt-5 p-4 bg-slate-50/90 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl w-full max-w-sm text-left text-xs flex flex-col gap-2 shadow-xs">
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500 dark:text-slate-400">
+              Order ID:
+            </span>
+            <span className="font-mono font-bold text-slate-900 dark:text-white bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[11px]">
               {confirmedOrderId}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-slate-400">Courier:</span>
-            <span className="font-semibold text-gray-900 dark:text-white">
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500 dark:text-slate-400">Courier:</span>
+            <span className="font-bold text-slate-900 dark:text-white">
               {carrierName}
             </span>
           </div>
-          <div className="flex justify-between border-t border-gray-100 dark:border-slate-700 pt-1 font-semibold text-sm">
-            <span className="text-gray-900 dark:text-white">
+          <div className="flex justify-between border-t border-slate-200 dark:border-slate-800 pt-2 font-bold text-sm">
+            <span className="text-slate-900 dark:text-white">
               Pay on Delivery:
             </span>
-            <span className="text-emerald-700 dark:text-emerald-400">
+            <span className="text-emerald-600 dark:text-emerald-400 font-black">
               PKR {Math.round(grandTotal)}
             </span>
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="flex flex-wrap gap-3 mt-6">
           <button
             onClick={() => router.push(`/track`)}
-            className="px-5 py-2.5 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            className="px-5 py-3 bg-gradient-to-r from-slate-900 to-slate-800 dark:from-emerald-600 dark:to-teal-600 hover:from-slate-800 hover:to-slate-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-md cursor-pointer"
           >
-            Track Shipment
+            <span>Track Shipment</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => router.push("/orders")}
-            className="px-5 py-2.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition cursor-pointer"
+            className="px-5 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
           >
             My Orders
           </button>
@@ -171,8 +175,8 @@ export default function CodConfirmationForm({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-start gap-3">
-        <Truck className="w-5 h-5 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
+      <div className="p-4 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl flex items-start gap-3 shadow-xs">
+        <Truck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
         <div className="flex flex-col gap-1">
           <h4 className="text-sm font-bold text-emerald-950 dark:text-emerald-200">
             Cash on Delivery with {carrierName}
@@ -180,56 +184,56 @@ export default function CodConfirmationForm({
           <p className="text-xs text-emerald-800 dark:text-emerald-300 leading-relaxed">
             No upfront card payment required. Our courier rider will collect
             cash at your doorstep in{" "}
-            <span className="font-semibold">{shippingForm.city}</span> before
+            <span className="font-bold">{shippingForm.city}</span> before
             handing over your package.
           </p>
         </div>
       </div>
 
-      <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 bg-gray-50/50 dark:bg-slate-800/50 flex flex-col gap-2 text-xs">
-        <span className="font-semibold text-gray-900 dark:text-white">
+      <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4.5 bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-md flex flex-col gap-2.5 text-xs shadow-xs">
+        <span className="font-bold text-slate-900 dark:text-white">
           Delivery & Collection Summary:
         </span>
-        <div className="flex justify-between text-gray-600 dark:text-slate-400">
+        <div className="flex justify-between text-slate-600 dark:text-slate-400">
           <span>Recipient:</span>
-          <span className="font-medium text-gray-900 dark:text-white">
+          <span className="font-bold text-slate-900 dark:text-white">
             {shippingForm.name} ({shippingForm.phone})
           </span>
         </div>
-        <div className="flex justify-between text-gray-600 dark:text-slate-400">
+        <div className="flex justify-between text-slate-600 dark:text-slate-400">
           <span>Address:</span>
-          <span className="font-medium text-gray-900 dark:text-white">
+          <span className="font-medium text-slate-900 dark:text-white text-right max-w-[240px] truncate">
             {shippingForm.address}, {shippingForm.city}
           </span>
         </div>
-        <div className="flex justify-between text-gray-600 dark:text-slate-400">
+        <div className="flex justify-between text-slate-600 dark:text-slate-400">
           <span>Courier Service:</span>
-          <span className="font-medium text-gray-900 dark:text-white">
+          <span className="font-medium text-slate-900 dark:text-white">
             {carrierName} ({shippingForm.serviceType})
           </span>
         </div>
-        <div className="flex justify-between text-gray-600 dark:text-slate-400">
+        <div className="flex justify-between text-slate-600 dark:text-slate-400">
           <span>Shipping Fee:</span>
-          <span className="font-medium text-gray-900 dark:text-white">
+          <span className="font-medium text-slate-900 dark:text-white">
             PKR {shippingAmount}
           </span>
         </div>
         {codFee > 0 && (
-          <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
+          <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
             <span>COD Handling Fee:</span>
-            <span className="font-medium">+PKR {codFee}</span>
+            <span>+PKR {codFee}</span>
           </div>
         )}
-        <div className="border-t border-gray-200 dark:border-slate-700 pt-2 flex justify-between font-bold text-sm text-gray-900 dark:text-white">
+        <div className="border-t border-slate-200 dark:border-slate-800 pt-2.5 flex justify-between font-bold text-sm text-slate-900 dark:text-white">
           <span>Amount to Pay Rider:</span>
-          <span className="text-emerald-700 dark:text-emerald-400">
+          <span className="text-emerald-600 dark:text-emerald-400 font-black">
             PKR {Math.round(grandTotal)}
           </span>
         </div>
       </div>
 
       {error && (
-        <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-lg text-xs text-rose-700 dark:text-rose-400 flex items-center gap-2">
+        <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-700 dark:text-rose-400 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -238,7 +242,7 @@ export default function CodConfirmationForm({
       <button
         onClick={handleConfirmCodOrder}
         disabled={loading}
-        className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-sm"
+        className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:via-teal-500 hover:to-emerald-500 disabled:opacity-50 text-white font-bold py-3.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-emerald-500/25 active:scale-[0.99]"
       >
         {loading ? (
           <>

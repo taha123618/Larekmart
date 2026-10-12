@@ -370,7 +370,7 @@ export default function AccountPage(): React.JSX.Element {
   return (
     <div className="py-8 px-4 sm:px-6 max-w-5xl mx-auto">
       {/* Top Profile Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-gray-900 to-zinc-900 text-white rounded-2xl p-6 sm:p-8 mb-8 shadow-xl flex flex-col sm:flex-row items-center gap-6">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-950 dark:from-[#0b0f19] dark:via-indigo-950/60 dark:to-[#080c14] border border-indigo-500/30 text-white rounded-3xl p-6 sm:p-8 mb-8 shadow-2xl flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
         <div className="relative">
           {avatarMediaId ? (
             <AvatarMediaImage

@@ -245,7 +245,7 @@ function TrackContent(): React.JSX.Element {
       {data && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-300">
           {/* OVERVIEW CARD */}
-          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+          <div className="bg-white/95 dark:bg-slate-900/70 dark:backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] rounded-3xl p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-gray-100 dark:border-slate-800 gap-4">
               <div>
                 <div className="flex items-center gap-3 flex-wrap">

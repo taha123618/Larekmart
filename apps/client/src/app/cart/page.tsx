@@ -201,7 +201,7 @@ const CartContent = () => {
       </div>
 
       {/* STEPS */}
-      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 bg-white dark:bg-slate-900 p-2 sm:p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 bg-white/95 dark:bg-slate-900/60 dark:backdrop-blur-xl p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
         {steps.map((step) => {
           const isActive = step.id === activeStep;
           return (
@@ -229,7 +229,7 @@ const CartContent = () => {
       {/* INVENTORY ADJUSTMENTS NOTICE */}
       {activeServerCart?.adjustments &&
         activeServerCart.adjustments.length > 0 && (
-          <div className="w-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 p-4 rounded-lg flex items-start gap-3 text-sm">
+          <div className="w-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 p-4 rounded-2xl flex items-start gap-3 text-sm">
             <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
               <span className="font-semibold">
@@ -247,7 +247,7 @@ const CartContent = () => {
       {/* MAIN CONTAINER */}
       <div className="w-full flex flex-col lg:flex-row gap-8">
         {/* LEFT COLUMN: ITEMS OR CHECKOUT STEPS */}
-        <div className="w-full lg:w-7/12 bg-white dark:bg-slate-900 shadow-xs border border-slate-200/80 dark:border-slate-800 p-6 md:p-8 rounded-3xl flex flex-col gap-6 overflow-hidden">
+        <div className="w-full lg:w-7/12 bg-white/95 dark:bg-slate-900/70 dark:backdrop-blur-xl shadow-xs border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] p-6 md:p-8 rounded-3xl flex flex-col gap-6 overflow-hidden">
           <AnimatePresence mode="wait">
             {activeStep === 1 ? (
               <motion.div
@@ -433,7 +433,7 @@ const CartContent = () => {
         </div>
 
         {/* RIGHT COLUMN: PRICING BREAKDOWN & COUPONS */}
-        <div className="w-full lg:w-5/12 bg-white dark:bg-slate-900 shadow-xs border border-slate-200/80 dark:border-slate-800 p-6 md:p-8 rounded-3xl flex flex-col gap-6 h-max">
+        <div className="w-full lg:w-5/12 bg-white/95 dark:bg-slate-900/70 dark:backdrop-blur-xl shadow-xs border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] p-6 md:p-8 rounded-3xl flex flex-col gap-6 h-max">
           <h2 className="font-bold text-lg text-slate-900 dark:text-white">
             Order Summary
           </h2>
@@ -567,7 +567,7 @@ const CartContent = () => {
           {activeStep === 1 && cart.length > 0 && (
             <button
               onClick={() => router.push("/cart?step=2", { scroll: false })}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 transition text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer mt-2 shadow-md"
+              className="w-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 text-white py-3.5 px-4 rounded-2xl font-bold flex items-center justify-center gap-2 cursor-pointer mt-2 shadow-lg shadow-indigo-500/25 active:scale-95"
             >
               Proceed to Shipping
               <ArrowRight className="w-4 h-4" />

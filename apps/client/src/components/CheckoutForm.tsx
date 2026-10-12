@@ -40,7 +40,7 @@ const CheckoutForm = ({
         type="button"
         disabled={loading}
         onClick={handleClick}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-md cursor-pointer flex items-center justify-center gap-2"
+        className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:via-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/25 cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99]"
       >
         {loading ? "Processing Payment..." : "Pay Now"}
       </button>

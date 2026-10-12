@@ -97,8 +97,9 @@ const ProductPage = async ({
         </span>
       </nav>
 
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 sm:p-10 shadow-xs flex flex-col lg:flex-row gap-8 lg:gap-14">
+      <div className="bg-white/95 dark:bg-slate-900/70 dark:backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] p-6 sm:p-10 shadow-xs flex flex-col lg:flex-row gap-8 lg:gap-14">
         {/* IMAGE GALLERY */}
+
         <div className="w-full lg:w-5/12">
           <ProductGallery
             images={product.images as Record<string, string>}

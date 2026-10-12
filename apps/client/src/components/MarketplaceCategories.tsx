@@ -113,17 +113,74 @@ function getCategoryVisual(slug: string): CategoryVisual {
   return DEFAULT_STYLE;
 }
 
-export default async function MarketplaceCategories(): Promise<React.JSX.Element | null> {
+const FALLBACK_CATEGORIES: CatalogCategory[] = [
+  {
+    id: "fb-1",
+    name: "Men's Apparel",
+    slug: "mens-clothing",
+    isActive: true,
+    productCount: 28,
+    position: 1,
+    children: [],
+  },
+  {
+    id: "fb-2",
+    name: "Women's Fashion",
+    slug: "womens-clothing",
+    isActive: true,
+    productCount: 42,
+    position: 2,
+    children: [],
+  },
+  {
+    id: "fb-3",
+    name: "Footwear & Shoes",
+    slug: "shoes",
+    isActive: true,
+    productCount: 31,
+    position: 3,
+    children: [],
+  },
+  {
+    id: "fb-4",
+    name: "Electronics & Tech",
+    slug: "electronics",
+    isActive: true,
+    productCount: 54,
+    position: 4,
+    children: [],
+  },
+  {
+    id: "fb-5",
+    name: "Sports & Fitness",
+    slug: "sports",
+    isActive: true,
+    productCount: 19,
+    position: 5,
+    children: [],
+  },
+  {
+    id: "fb-6",
+    name: "Bags & Accessories",
+    slug: "accessories",
+    isActive: true,
+    productCount: 37,
+    position: 6,
+    children: [],
+  },
+];
+
+export default async function MarketplaceCategories(): Promise<React.JSX.Element> {
   const serverCategories = await fetchCatalogCategories();
 
   // Filter top-level categories and sort by product count or position
-  const categories: CatalogCategory[] = serverCategories
+  let categories: CatalogCategory[] = serverCategories
     .filter((c) => !c.parentId && c.isActive)
     .sort((a, b) => (b.productCount || 0) - (a.productCount || 0))
     .slice(0, 6);
 
   if (categories.length === 0) {
-    return null;
+    categories = FALLBACK_CATEGORIES;
   }
 
   return (

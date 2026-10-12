@@ -257,41 +257,41 @@ const ShippingForm = ({
     >
       {/* Saved Addresses Selector (if signed in and has addresses) */}
       {isSignedIn && savedAddresses.length > 0 && (
-        <div className="p-3 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl mb-1">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-gray-600 dark:text-slate-400" />
+        <div className="p-4 bg-slate-50/80 dark:bg-slate-900/60 dark:backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-2xl mb-1 shadow-xs">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-indigo-500" />
               Use Saved Address
             </span>
-            <span className="text-[11px] text-gray-500 dark:text-slate-400">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
               Click to autofill
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {savedAddresses.map((addr) => {
               const isSelected = selectedAddressId === addr.id;
               return (
                 <div
                   key={addr.id}
                   onClick={() => handleSelectSavedAddress(addr)}
-                  className={`p-2.5 rounded-lg border text-left cursor-pointer transition text-xs ${
+                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all text-xs ${
                     isSelected
-                      ? "border-indigo-600 dark:border-indigo-400 bg-white dark:bg-slate-800 ring-1 ring-indigo-600 dark:ring-indigo-400 shadow-xs"
-                      : "border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-gray-300 dark:hover:border-slate-600"
+                      ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20 shadow-xs"
+                      : "border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-800"
                   }`}
                 >
-                  <div className="flex items-center justify-between font-semibold text-gray-900 dark:text-white mb-0.5">
+                  <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white mb-1">
                     <span>{addr.recipientName}</span>
                     {addr.isDefault && (
-                      <span className="text-[10px] px-1 py-0.2 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 rounded font-bold">
+                      <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 rounded-full font-bold">
                         Default
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-500 dark:text-slate-400 truncate">
+                  <p className="text-slate-600 dark:text-slate-400 truncate">
                     {addr.addressLine1}
                   </p>
-                  <p className="text-gray-500 dark:text-slate-400 font-medium">
+                  <p className="text-slate-500 dark:text-slate-500 font-medium mt-0.5">
                     {addr.city}
                   </p>
                 </div>
@@ -300,124 +300,142 @@ const ShippingForm = ({
           </div>
         </div>
       )}
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="name"
-          className="text-xs text-gray-500 dark:text-slate-400 font-medium"
-        >
-          Name
-        </label>
-        <input
-          className="border-b border-gray-200 dark:border-slate-700 py-2 outline-none text-sm text-slate-900 dark:text-white bg-transparent focus:border-indigo-600 dark:focus:border-indigo-400 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition"
-          type="text"
-          id="name"
-          placeholder="Muhammad Ali"
-          {...register("name")}
-        />
-        {errors.name && (
-          <p className="text-xs text-red-500">{errors.name.message}</p>
-        )}
+
+      {/* Grid: Name & Email */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="name"
+            className="text-xs text-slate-700 dark:text-slate-300 font-bold"
+          >
+            Full Name
+          </label>
+          <input
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs"
+            type="text"
+            id="name"
+            placeholder="Muhammad Ali"
+            {...register("name")}
+          />
+          {errors.name && (
+            <p className="text-xs text-rose-500 font-medium">
+              {errors.name.message}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="email"
+            className="text-xs text-slate-700 dark:text-slate-300 font-bold"
+          >
+            Email Address
+          </label>
+          <input
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs"
+            type="email"
+            id="email"
+            placeholder="ali@example.com"
+            {...register("email")}
+          />
+          {errors.email && (
+            <p className="text-xs text-rose-500 font-medium">
+              {errors.email.message}
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="email"
-          className="text-xs text-gray-500 dark:text-slate-400 font-medium"
-        >
-          Email
-        </label>
-        <input
-          className="border-b border-gray-200 dark:border-slate-700 py-2 outline-none text-sm text-slate-900 dark:text-white bg-transparent focus:border-indigo-600 dark:focus:border-indigo-400 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition"
-          type="email"
-          id="email"
-          placeholder="ali@example.com"
-          {...register("email")}
-        />
-        {errors.email && (
-          <p className="text-xs text-red-500">{errors.email.message}</p>
-        )}
+      {/* Grid: Phone & City */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="phone"
+            className="text-xs text-slate-700 dark:text-slate-300 font-bold"
+          >
+            Phone Number
+          </label>
+          <input
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs"
+            type="text"
+            id="phone"
+            placeholder="03001234567"
+            {...register("phone")}
+          />
+          {errors.phone && (
+            <p className="text-xs text-rose-500 font-medium">
+              {errors.phone.message}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="city"
+            className="text-xs text-slate-700 dark:text-slate-300 font-bold"
+          >
+            City
+          </label>
+          <input
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs"
+            type="text"
+            id="city"
+            placeholder="Karachi, Lahore, Islamabad..."
+            {...register("city")}
+          />
+          {errors.city && (
+            <p className="text-xs text-rose-500 font-medium">
+              {errors.city.message}
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="phone"
-          className="text-xs text-gray-500 dark:text-slate-400 font-medium"
-        >
-          Phone
-        </label>
-        <input
-          className="border-b border-gray-200 dark:border-slate-700 py-2 outline-none text-sm text-slate-900 dark:text-white bg-transparent focus:border-indigo-600 dark:focus:border-indigo-400 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition"
-          type="text"
-          id="phone"
-          placeholder="03001234567"
-          {...register("phone")}
-        />
-        {errors.phone && (
-          <p className="text-xs text-red-500">{errors.phone.message}</p>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1">
+      {/* Address */}
+      <div className="flex flex-col gap-1.5">
         <label
           htmlFor="address"
-          className="text-xs text-gray-500 dark:text-slate-400 font-medium"
+          className="text-xs text-slate-700 dark:text-slate-300 font-bold"
         >
-          Delivery Address
+          Delivery Street Address
         </label>
         <input
-          className="border-b border-gray-200 dark:border-slate-700 py-2 outline-none text-sm text-slate-900 dark:text-white bg-transparent focus:border-indigo-600 dark:focus:border-indigo-400 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition"
+          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs"
           type="text"
           id="address"
           placeholder="House 45, Street 12, Phase 5 DHA"
           {...register("address")}
         />
         {errors.address && (
-          <p className="text-xs text-red-500">{errors.address.message}</p>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="city"
-          className="text-xs text-gray-500 dark:text-slate-400 font-medium"
-        >
-          City
-        </label>
-        <input
-          className="border-b border-gray-200 dark:border-slate-700 py-2 outline-none text-sm text-slate-900 dark:text-white bg-transparent focus:border-indigo-600 dark:focus:border-indigo-400 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition"
-          type="text"
-          id="city"
-          placeholder="Karachi, Lahore, Islamabad..."
-          {...register("city")}
-        />
-        {errors.city && (
-          <p className="text-xs text-red-500">{errors.city.message}</p>
+          <p className="text-xs text-rose-500 font-medium">
+            {errors.address.message}
+          </p>
         )}
       </div>
 
       {/* SAVE ADDRESS TO ACCOUNT OPTION */}
       {isSignedIn && (
-        <label className="flex items-center gap-2 py-1 cursor-pointer">
+        <label className="flex items-center gap-2 py-1 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={saveAddressToAccount}
             onChange={(e) => setSaveAddressToAccount(e.target.checked)}
-            className="rounded border-gray-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+            className="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
           />
-          <span className="text-xs text-gray-700 dark:text-slate-300 font-medium flex items-center gap-1">
-            <BookmarkCheck className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
+          <span className="text-xs text-slate-700 dark:text-slate-300 font-medium flex items-center gap-1.5">
+            <BookmarkCheck className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
             Save this address to my account for future orders
           </span>
         </label>
       )}
 
       {/* CASH ON DELIVERY TOGGLE */}
-      <div className="mt-2 p-3 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center justify-between">
+      <div className="mt-1 p-4 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl flex items-center justify-between shadow-xs">
         <div className="flex flex-col">
-          <span className="text-xs font-semibold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
+          <span className="text-xs font-bold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
             💵 Cash on Delivery (COD)
           </span>
-          <span className="text-[11px] text-emerald-700 dark:text-emerald-400">
+          <span className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
             Pay in cash to courier rider upon parcel arrival
           </span>
         </div>
@@ -428,31 +446,31 @@ const ShippingForm = ({
             onChange={(e) => handleToggleCod(e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+          <div className="w-10 h-5.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
         </label>
       </div>
 
       {/* DYNAMIC DELIVERY OPTIONS */}
-      <div className="mt-1 pt-2 border-t border-gray-100 dark:border-slate-800 flex flex-col gap-2">
+      <div className="mt-2 pt-3 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 flex items-center gap-1.5">
-            <Truck className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
+          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <Truck className="w-3.5 h-3.5 text-indigo-500" />
             Carrier Delivery Options
           </label>
           {loadingRates && (
-            <span className="text-[11px] text-gray-400 dark:text-slate-500 flex items-center gap-1">
-              <Loader2 className="w-3 h-3 animate-spin" />
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />
               Calculating carrier rates...
             </span>
           )}
         </div>
 
         {availableRates.length === 0 && !loadingRates ? (
-          <p className="text-xs text-gray-400 dark:text-slate-500 italic">
+          <p className="text-xs text-slate-500 dark:text-slate-400 italic">
             Enter your city above to view live carrier delivery rates and times.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-1">
             {availableRates.slice(0, 6).map((rate) => {
               const isSelected = selectedRateId === rate.id;
               const isCodSupported = rate.isCodAvailable;
@@ -461,30 +479,30 @@ const ShippingForm = ({
                 <div
                   key={rate.id}
                   onClick={() => handleSelectRate(rate)}
-                  className={`p-3 rounded-lg border text-left cursor-pointer transition flex items-center justify-between ${
+                  className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all flex items-center justify-between ${
                     isSelected
-                      ? "border-indigo-600 dark:border-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/40 ring-1 ring-indigo-600 dark:ring-indigo-400"
-                      : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800"
+                      ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20 shadow-xs"
+                      : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white/70 dark:bg-slate-800/60"
                   }`}
                 >
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
                       {getCarrierBadge(rate.carrier)}
-                      <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
                         {rate.name}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-gray-500 dark:text-slate-400">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
                         Est. {rate.estimatedDaysMin ?? 1}-
                         {rate.estimatedDaysMax ?? 3} days
                       </span>
                       {isCodEnabled && (
                         <span
-                          className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                             isCodSupported
                               ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
-                              : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 line-through"
+                              : "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 line-through"
                           }`}
                         >
                           {isCodSupported
@@ -495,7 +513,7 @@ const ShippingForm = ({
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white">
+                    <span className="text-xs font-black text-slate-900 dark:text-white">
                       PKR{" "}
                       {rate.amount +
                         (isCodEnabled && isCodSupported
@@ -503,7 +521,7 @@ const ShippingForm = ({
                           : 0)}
                     </span>
                     {isSelected && (
-                      <div className="w-4 h-4 bg-indigo-600 dark:bg-indigo-500 rounded-full flex items-center justify-center text-white ml-auto mt-1">
+                      <div className="w-4 h-4 bg-indigo-600 dark:bg-indigo-500 rounded-full flex items-center justify-center text-white ml-auto mt-1 shadow-xs">
                         <Check className="w-2.5 h-2.5" />
                       </div>
                     )}
@@ -517,9 +535,9 @@ const ShippingForm = ({
 
       <button
         type="submit"
-        className="w-full bg-indigo-600 hover:bg-indigo-700 transition-all duration-300 text-white p-3 rounded-xl cursor-pointer flex items-center justify-center gap-2 mt-2 font-bold text-sm shadow-md"
+        className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:via-purple-500 hover:to-indigo-500 transition-all duration-300 text-white p-3.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 mt-2 font-bold text-sm shadow-lg shadow-indigo-500/25 active:scale-[0.99]"
       >
-        Proceed to Payment
+        <span>Proceed to Payment</span>
         <ArrowRight className="w-4 h-4" />
       </button>
     </form>

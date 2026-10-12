@@ -21,7 +21,22 @@ const ProductsPage = async ({
     await searchParams;
 
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-10 pb-16 pt-4">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1.5 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          {category
+            ? `${category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, " ")} Collection`
+            : search
+              ? `Search Results for "${search}"`
+              : "Explore Marketplace Catalog"}
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          Discover verified merchandise with real-time stock availability, live
+          facet filters, and buyer protection.
+        </p>
+      </div>
+
       <ProductList
         category={category}
         sort={sort}

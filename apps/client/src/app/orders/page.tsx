@@ -96,7 +96,7 @@ const OrdersPage = async (): Promise<React.JSX.Element> => {
       </div>
 
       {!orders || orders.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        <div className="text-center py-16 bg-white/95 dark:bg-slate-900/70 dark:backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
           <Package className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-800 dark:text-white">
             No orders placed yet
@@ -107,7 +107,7 @@ const OrdersPage = async (): Promise<React.JSX.Element> => {
           </p>
           <Link
             href="/products"
-            className="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition shadow-xs"
+            className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 active:scale-95 transition"
           >
             Start Shopping
           </Link>
@@ -119,7 +119,7 @@ const OrdersPage = async (): Promise<React.JSX.Element> => {
             return (
               <div
                 key={order._id}
-                className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-xs hover:shadow-md transition flex flex-col md:flex-row md:items-center justify-between gap-6"
+                className="bg-white/95 dark:bg-slate-900/70 dark:backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] rounded-3xl p-6 sm:p-7 shadow-xs hover:shadow-lg dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
               >
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-3 flex-wrap">

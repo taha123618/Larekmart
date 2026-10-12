@@ -13,6 +13,77 @@ interface FlashDealsProps {
   products?: ProductType[];
 }
 
+const FALLBACK_FLASH_PRODUCTS: ProductType[] = [
+  {
+    id: 99101,
+    name: "Aura Sound Pro Wireless ANC Headphones",
+    price: 189,
+    categorySlug: "electronics",
+    shortDescription: "Premium noise cancelling wireless headphones",
+    description:
+      "40mm beryllium drivers, active hybrid noise cancellation, 45-hour battery.",
+    sizes: ["One Size"],
+    colors: ["black"],
+    images: {
+      black:
+        "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80",
+    },
+    createdAt: new Date("2025-01-01"),
+    updatedAt: new Date("2025-01-01"),
+  },
+  {
+    id: 99102,
+    name: "Vanguard Chrono Titanium Smartwatch",
+    price: 249,
+    categorySlug: "accessories",
+    shortDescription: "Titanium grade 5 chassis with sapphire crystal",
+    description:
+      "Titanium grade 5 chassis with sapphire crystal, ECG, and dual-band GPS.",
+    sizes: ["44mm"],
+    colors: ["silver"],
+    images: {
+      silver:
+        "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80",
+    },
+    createdAt: new Date("2025-01-01"),
+    updatedAt: new Date("2025-01-01"),
+  },
+  {
+    id: 99103,
+    name: "Nomad All-Weather Tactical Weekender",
+    price: 119,
+    categorySlug: "accessories",
+    shortDescription: "Waterproof Cordura ballistic nylon",
+    description:
+      "Waterproof Cordura ballistic nylon with magnetic Fidlock closures.",
+    sizes: ["35L"],
+    colors: ["charcoal"],
+    images: {
+      charcoal:
+        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80",
+    },
+    createdAt: new Date("2025-01-01"),
+    updatedAt: new Date("2025-01-01"),
+  },
+  {
+    id: 99104,
+    name: "Kinetic Velocity Carbon Running Shoes",
+    price: 159,
+    categorySlug: "shoes",
+    shortDescription: "Full-length carbon fiber propulsion plate",
+    description:
+      "Full-length carbon fiber propulsion plate with responsive supercritical foam.",
+    sizes: ["42", "43", "44"],
+    colors: ["white"],
+    images: {
+      white:
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop&q=80",
+    },
+    createdAt: new Date("2025-01-01"),
+    updatedAt: new Date("2025-01-01"),
+  },
+];
+
 export default function FlashDeals({ products = [] }: FlashDealsProps) {
   const { addToCart } = useCartStore();
   const { openQuickView } = useUIStore();
@@ -40,9 +111,8 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
     return () => clearInterval(timer);
   }, []);
 
-  if (!products || products.length === 0) {
-    return null;
-  }
+  const displayProducts =
+    products && products.length > 0 ? products : FALLBACK_FLASH_PRODUCTS;
 
   const handleQuickAdd = (product: ProductType) => {
     const selectedSize = product.sizes?.[0] || "m";
@@ -116,13 +186,15 @@ export default function FlashDeals({ products = [] }: FlashDealsProps) {
 
       {/* Grid of Real Flash Products */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {products.map((item) => {
+        {displayProducts.map((item) => {
           const imageSrc =
             item.images && Object.values(item.images)[0]
               ? Object.values(item.images)[0]
               : "";
           const originalPrice = item.price * 1.35;
-          const soldPercentage = 68 + ((item.id * 7) % 28);
+          const idNum =
+            typeof item.id === "number" ? item.id : item.name.length;
+          const soldPercentage = 68 + ((idNum * 7) % 28);
 
           return (
             <div
