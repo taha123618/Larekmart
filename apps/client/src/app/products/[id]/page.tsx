@@ -112,10 +112,11 @@ const ProductPage = async ({
         <div className="w-full lg:w-7/12 flex flex-col justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider">
+              <span className="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-900/60 text-xs font-bold uppercase tracking-wider">
                 {product.categorySlug || "Marketplace"}
               </span>
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-900/60 px-2.5 py-1 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Verified Seller
               </span>
             </div>
@@ -126,7 +127,7 @@ const ProductPage = async ({
 
             {/* Price & Discount */}
             <div className="mt-4 flex items-baseline gap-3">
-              <span className="text-3xl font-black text-slate-900 dark:text-white">
+              <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">
                 $
                 {typeof product.price === "number"
                   ? product.price.toFixed(2)
@@ -138,7 +139,7 @@ const ProductPage = async ({
                   ? (product.price * 1.3).toFixed(2)
                   : "0.00"}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-xs font-extrabold">
+              <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-rose-600 to-pink-600 text-white text-xs font-black uppercase tracking-wider shadow-sm shadow-rose-950/30">
                 Save 23%
               </span>
             </div>
@@ -148,13 +149,17 @@ const ProductPage = async ({
             </p>
 
             {/* Micro-guarantee strip */}
-            <div className="grid grid-cols-2 gap-3 my-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs">
-              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                <span className="text-emerald-500 font-bold">✓</span>
+            <div className="grid grid-cols-2 gap-3 my-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800/80 text-xs">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold">
+                <span className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-[10px]">
+                  ✓
+                </span>
                 <span>Free 3-5 day delivery</span>
               </div>
-              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                <span className="text-emerald-500 font-bold">✓</span>
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold">
+                <span className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-[10px]">
+                  ✓
+                </span>
                 <span>30-Day Hassle-free Returns</span>
               </div>
             </div>

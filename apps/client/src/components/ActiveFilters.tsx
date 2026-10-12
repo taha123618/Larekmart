@@ -116,7 +116,7 @@ const ActiveFilters = (): React.JSX.Element | null => {
           type="button"
           onClick={filter.remove}
           aria-label={`Remove ${filter.ariaLabel} filter`}
-          className="flex items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/70 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-semibold px-2.5 py-1 transition hover:bg-rose-50 dark:hover:bg-rose-950/50 hover:border-rose-200 dark:hover:border-rose-900 hover:text-rose-700 dark:hover:text-rose-300 shadow-xs cursor-pointer group"
+          className="flex items-center gap-1.5 rounded-full border border-indigo-200/80 dark:border-indigo-800/80 bg-indigo-50/80 dark:bg-indigo-950/60 backdrop-blur-xs text-indigo-900 dark:text-indigo-200 font-semibold px-3 py-1 transition-all hover:bg-rose-50 dark:hover:bg-rose-950/50 hover:border-rose-200 dark:hover:border-rose-900 hover:text-rose-700 dark:hover:text-rose-300 shadow-xs cursor-pointer group active:scale-95"
         >
           {filter.swatch && (
             <span

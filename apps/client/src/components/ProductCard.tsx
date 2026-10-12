@@ -95,13 +95,13 @@ export default function ProductCard({ product }: ProductCardProps) {
     "";
 
   return (
-    <div className="group bg-white dark:bg-slate-900/80 dark:backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/60 dark:hover:border-indigo-500/50 shadow-xs hover:shadow-xl dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] dark:hover:shadow-[0_12px_30px_-5px_rgba(0,0,0,0.6),0_0_20px_-3px_rgba(99,102,241,0.2)] transition-all duration-300 flex flex-col justify-between overflow-hidden relative hover:-translate-y-1">
+    <div className="group bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/50 dark:hover:border-indigo-400/50 shadow-xs hover:shadow-2xl dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] dark:hover:shadow-[0_16px_36px_-8px_rgba(0,0,0,0.8),0_0_24px_-4px_rgba(99,102,241,0.25)] transition-all duration-300 flex flex-col justify-between overflow-hidden relative hover:-translate-y-1">
       {/* BADGES & QUICK ACTIONS OVERLAY */}
       <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5 pointer-events-none">
-        <span className="px-2 py-0.5 rounded-lg bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">
+        <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-rose-600 to-pink-600 text-white text-[10px] font-black uppercase tracking-wider shadow-sm shadow-rose-950/30 backdrop-blur-md">
           -{discountPercent}%
         </span>
-        <span className="px-2 py-0.5 rounded-lg bg-indigo-600 text-white text-[10px] font-bold tracking-wider shadow-xs hidden group-hover:inline-block transition">
+        <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-[10px] font-bold tracking-wider shadow-sm shadow-indigo-950/30 hidden group-hover:inline-block transition">
           Top Pick
         </span>
       </div>
@@ -186,7 +186,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           {/* COLOR SWATCHES & SIZES */}
           <div className="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
             {/* Colors */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {product.colors &&
                 product.colors.length > 0 &&
                 product.colors.map((color) => (
@@ -197,10 +197,10 @@ export default function ProductCard({ product }: ProductCardProps) {
                       e.preventDefault();
                       handleProductType({ type: "color", value: color });
                     }}
-                    className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 active:scale-90 p-0.5 cursor-pointer ${
+                    className={`w-4 h-4 rounded-full border transition-all hover:scale-125 active:scale-90 p-0.5 cursor-pointer ${
                       productTypes.color === color
-                        ? "border-indigo-600 scale-110"
-                        : "border-slate-300 dark:border-slate-600 opacity-80"
+                        ? "border-indigo-600 ring-2 ring-indigo-500/50 ring-offset-1 ring-offset-white dark:ring-offset-slate-900 scale-110"
+                        : "border-slate-300 dark:border-slate-700 opacity-80 hover:opacity-100"
                     }`}
                     title={color}
                   >
@@ -242,14 +242,17 @@ export default function ProductCard({ product }: ProductCardProps) {
                 ${originalPrice.toFixed(2)}
               </span>
             </div>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">
-              Free Shipping
-            </span>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">
+                Free Shipping
+              </span>
+            </div>
           </div>
 
           <button
             onClick={handleAddToCart}
-            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center gap-1.5 shadow-xs hover:shadow-md cursor-pointer shrink-0"
+            className="px-3 py-2 bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-bold transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] flex items-center gap-1.5 shadow-sm hover:shadow-indigo-500/25 cursor-pointer shrink-0"
             title="Add to cart"
             aria-label="Add to cart"
           >

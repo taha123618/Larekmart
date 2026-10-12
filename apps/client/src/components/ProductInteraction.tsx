@@ -167,17 +167,17 @@ const ProductInteraction = ({
             Checking warehouse stock...
           </span>
         ) : isOutOfStock ? (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
             <XCircle className="w-3.5 h-3.5" />
             Out of Stock
           </span>
         ) : isLowStock ? (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 animate-pulse">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60 animate-pulse">
             <AlertCircle className="w-3.5 h-3.5" />
             Low Stock — only {inventory} left!
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60">
             <CheckCircle2 className="w-3.5 h-3.5" />
             In Stock ({inventory} units available)
           </span>
@@ -186,24 +186,24 @@ const ProductInteraction = ({
 
       {/* SIZE */}
       <div className="flex flex-col gap-2 text-xs">
-        <span className="text-gray-500 dark:text-slate-400 font-semibold">
-          Size
+        <span className="text-gray-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+          Select Size
         </span>
         <div className="flex items-center gap-2">
           {product.sizes.map((size) => (
             <div
-              className={`cursor-pointer border p-[2px] rounded-lg transition ${
+              className={`cursor-pointer border p-[2px] rounded-xl transition-all duration-200 ${
                 selectedSize === size
-                  ? "border-indigo-600 dark:border-indigo-400"
-                  : "border-slate-200 dark:border-slate-700"
+                  ? "border-indigo-600 ring-2 ring-indigo-500/40 ring-offset-1 ring-offset-white dark:ring-offset-slate-900"
+                  : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
               }`}
               key={size}
               onClick={() => handleTypeChange("size", size)}
             >
               <div
-                className={`w-7 h-7 text-xs font-bold rounded-md text-center flex items-center justify-center transition ${
+                className={`w-8 h-8 text-xs font-bold rounded-lg text-center flex items-center justify-center transition ${
                   selectedSize === size
-                    ? "bg-slate-900 dark:bg-indigo-600 text-white"
+                    ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-xs"
                     : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
                 }`}
               >
@@ -216,16 +216,19 @@ const ProductInteraction = ({
 
       {/* COLOR */}
       <div className="flex flex-col gap-2 text-sm">
-        <span className="text-gray-500 dark:text-slate-400 font-semibold">
-          Color
+        <span className="text-gray-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+          Select Color:{" "}
+          <span className="text-slate-900 dark:text-white capitalize">
+            {selectedColor}
+          </span>
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {product.colors.map((color) => (
             <div
-              className={`cursor-pointer border p-[2px] rounded-full transition ${
+              className={`cursor-pointer border p-[2px] rounded-full transition-all duration-200 ${
                 selectedColor === color
-                  ? "border-indigo-600 dark:border-indigo-400"
-                  : "border-transparent hover:border-slate-300 dark:hover:border-slate-600"
+                  ? "border-indigo-600 ring-2 ring-indigo-500/50 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 scale-110"
+                  : "border-transparent hover:border-slate-300 dark:hover:border-slate-600 opacity-80 hover:opacity-100"
               }`}
               key={color}
               onClick={() => handleTypeChange("color", color)}
@@ -241,28 +244,30 @@ const ProductInteraction = ({
 
       {/* QUANTITY */}
       <div className="flex flex-col gap-2 text-sm">
-        <span className="text-gray-500 dark:text-slate-400 font-semibold">
+        <span className="text-gray-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
           Quantity
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80 w-fit">
           <button
-            className="cursor-pointer border border-slate-200 dark:border-slate-700 p-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            className="cursor-pointer border border-slate-200 dark:border-slate-700 p-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition"
             disabled={isOutOfStock}
             onClick={() => handleQuantityChange("decrement")}
+            aria-label="Decrease quantity"
           >
-            <Minus className="w-4 h-4" />
+            <Minus className="w-3.5 h-3.5" />
           </button>
-          <span className="px-3 font-bold text-slate-900 dark:text-white">
+          <span className="px-3 font-black text-sm text-slate-900 dark:text-white min-w-[2rem] text-center">
             {quantity}
           </span>
           <button
-            className="cursor-pointer border border-slate-200 dark:border-slate-700 p-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            className="cursor-pointer border border-slate-200 dark:border-slate-700 p-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition"
             disabled={
               isOutOfStock || (inventory !== null && quantity >= inventory)
             }
             onClick={() => handleQuantityChange("increment")}
+            aria-label="Increase quantity"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -272,10 +277,10 @@ const ProductInteraction = ({
         <button
           onClick={handleAddToCart}
           disabled={isOutOfStock}
-          className={`flex-1 px-5 py-3 rounded-xl shadow-md flex items-center justify-center gap-2 text-sm font-bold transition-all ${
+          className={`flex-1 px-5 py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 active:scale-[0.98] ${
             isOutOfStock
               ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-indigo-100 dark:shadow-none"
+              : "bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white cursor-pointer shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/25"
           }`}
         >
           <Plus className="w-4 h-4" />
@@ -288,10 +293,10 @@ const ProductInteraction = ({
             openCartDrawer();
           }}
           disabled={isOutOfStock}
-          className={`flex-1 px-5 py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all ${
+          className={`flex-1 px-5 py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 active:scale-[0.98] ${
             isOutOfStock
               ? "border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
-              : "bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white cursor-pointer shadow-md"
+              : "bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white cursor-pointer shadow-md hover:shadow-lg border border-slate-700/50"
           }`}
         >
           <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -305,7 +310,7 @@ const ProductInteraction = ({
             if (added) toast.success("Saved to wishlist!");
             else toast.info("Removed from wishlist");
           }}
-          className={`p-3 rounded-xl border transition flex items-center justify-center cursor-pointer ${
+          className={`p-3.5 rounded-xl border transition-all duration-200 flex items-center justify-center cursor-pointer active:scale-95 ${
             isFavorited
               ? "bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 shadow-xs"
               : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:border-rose-200 dark:hover:border-rose-800"

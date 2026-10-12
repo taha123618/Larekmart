@@ -80,10 +80,10 @@ export default function ProductGallery({
             <button
               key={idx}
               onClick={() => handleThumbnailClick(item)}
-              className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all p-1 bg-slate-50 dark:bg-slate-800 shrink-0 ${
+              className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all p-1 bg-white dark:bg-slate-900/80 shrink-0 cursor-pointer ${
                 activeUrl === item.url
-                  ? "border-indigo-600 shadow-md scale-105"
-                  : "border-slate-200/80 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 opacity-80 hover:opacity-100"
+                  ? "border-indigo-600 ring-2 ring-indigo-500/50 ring-offset-1 ring-offset-white dark:ring-offset-slate-950 shadow-md scale-105"
+                  : "border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 opacity-70 hover:opacity-100"
               }`}
             >
               <MediaImage
@@ -98,13 +98,13 @@ export default function ProductGallery({
 
       {/* Main Large Image Viewer with Interactive Zoom */}
       <div
-        className="relative w-full aspect-[3/4] bg-slate-50 dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 flex items-center justify-center cursor-crosshair group shadow-xs"
+        className="relative w-full aspect-[3/4] bg-white dark:bg-slate-950/70 dark:backdrop-blur-md rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800/80 flex items-center justify-center cursor-crosshair group shadow-xs dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
         onMouseEnter={() => setIsZoomed(true)}
         onMouseLeave={() => setIsZoomed(false)}
         onMouseMove={handleMouseMove}
       >
-        <div className="absolute top-3 right-3 z-10 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          <ZoomIn className="w-3 h-3" />
+        <div className="absolute top-3.5 right-3.5 z-10 px-2.5 py-1 rounded-full bg-slate-900/80 dark:bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-white/10 shadow-sm">
+          <ZoomIn className="w-3 h-3 text-indigo-400" />
           <span>Hover to Zoom</span>
         </div>
 
