@@ -39,7 +39,7 @@ export default function CartDrawer() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={closeCartDrawer}
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs cursor-pointer"
+            className="fixed inset-0 bg-black/75 backdrop-blur-md cursor-pointer"
           />
 
           <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 pointer-events-none">
@@ -48,17 +48,20 @@ export default function CartDrawer() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="w-screen max-w-full sm:max-w-md bg-white dark:bg-slate-900 shadow-2xl flex flex-col pointer-events-auto h-full text-slate-900 dark:text-slate-100"
+              className="w-screen max-w-full sm:max-w-md bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-2xl border-l border-slate-200/80 dark:border-slate-800/80 shadow-2xl flex flex-col pointer-events-auto h-full text-slate-900 dark:text-slate-100 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)]"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4.5 border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 backdrop-blur-md">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+                    <ShoppingBag className="w-4.5 h-4.5" />
+                  </div>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                     Shopping Cart (
                     {cart.reduce((acc, i) => acc + i.quantity, 0)})
                   </h2>
                 </div>
+
                 <button
                   onClick={closeCartDrawer}
                   className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-200 dark:hover:bg-slate-800 transition cursor-pointer"
@@ -205,14 +208,14 @@ export default function CartDrawer() {
                     <Link
                       href="/cart"
                       onClick={closeCartDrawer}
-                      className="w-full py-3 px-4 rounded-xl border border-gray-300 dark:border-slate-700 text-center text-sm font-semibold text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 transition"
+                      className="w-full py-3 px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-center text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95"
                     >
                       View Cart
                     </Link>
                     <Link
                       href="/cart"
                       onClick={closeCartDrawer}
-                      className="w-full py-3 px-4 rounded-xl bg-indigo-600 text-white text-center text-sm font-semibold hover:bg-indigo-700 transition flex items-center justify-center gap-2 shadow-md shadow-indigo-200 dark:shadow-none"
+                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-center text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 active:scale-95"
                     >
                       <span>Checkout</span>
                       <ArrowRight className="w-4 h-4" />

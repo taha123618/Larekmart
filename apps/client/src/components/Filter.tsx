@@ -103,7 +103,7 @@ const Filter = ({ facets }: { facets?: SearchFacets }) => {
   );
 
   return (
-    <div className="my-6 flex flex-col gap-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 text-sm text-slate-700 dark:text-slate-300 shadow-xs">
+    <div className="my-6 flex flex-col gap-4 rounded-3xl bg-white/95 dark:bg-slate-900/70 dark:backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 p-5 sm:p-6 text-sm text-slate-700 dark:text-slate-300 shadow-xs dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
       {/* SORT */}
       <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2">

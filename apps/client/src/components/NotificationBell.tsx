@@ -230,7 +230,7 @@ export default function NotificationBell() {
 
   if (!isSignedIn) {
     return (
-      <Bell className="w-4 h-4 text-gray-400 dark:text-slate-500 cursor-not-allowed opacity-60" />
+      <Bell className="w-4 h-4 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50" />
     );
   }
 
@@ -238,22 +238,25 @@ export default function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors focus:outline-none cursor-pointer"
+        className="relative p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all focus:outline-none cursor-pointer"
         aria-label="Notifications"
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
-            {unreadCount > 9 ? "9+" : unreadCount}
+          <span className="absolute top-1 right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-sm shadow-rose-500/30">
+            <span className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-75" />
+            <span className="relative">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-slate-900 dark:text-slate-100">
-          <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-800">
+        <div className="absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-2xl p-4 shadow-2xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-slate-900 dark:text-slate-100">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-white">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
                 Notifications
               </h3>
               <span
@@ -263,7 +266,7 @@ export default function NotificationBell() {
                 {isReady ? (
                   <Wifi className="w-3 h-3 text-emerald-500" />
                 ) : (
-                  <WifiOff className="w-3 h-3 text-gray-300 dark:text-slate-600" />
+                  <WifiOff className="w-3 h-3 text-slate-400 dark:text-slate-600" />
                 )}
               </span>
             </div>
@@ -271,40 +274,46 @@ export default function NotificationBell() {
               <button
                 onClick={() => markAllReadMutation.mutate()}
                 disabled={markAllReadMutation.isPending}
-                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium disabled:opacity-50 cursor-pointer"
+                className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold disabled:opacity-50 cursor-pointer transition-colors"
               >
                 Mark all read
               </button>
             )}
           </div>
 
-          <div className="max-h-80 overflow-y-auto divide-y divide-gray-50 dark:divide-slate-800/80 py-1">
+          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100/60 dark:divide-slate-800/60 py-1 no-scrollbar">
             {isLoading ? (
-              <p className="py-6 text-center text-xs text-gray-400 dark:text-slate-500">
+              <p className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
                 Loading notifications...
               </p>
             ) : notifications.length === 0 ? (
-              <p className="py-6 text-center text-xs text-gray-400 dark:text-slate-500">
-                No notifications yet
-              </p>
+              <div className="py-8 text-center">
+                <Bell className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2 opacity-50" />
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  You are all caught up!
+                </p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                  Order updates and promos will appear here.
+                </p>
+              </div>
             ) : (
               notifications.map((n) => (
                 <div
                   key={n.id}
-                  className={`py-3 px-2 flex items-start justify-between gap-3 rounded-lg transition-colors ${
+                  className={`py-3 px-2.5 my-1 flex items-start justify-between gap-3 rounded-xl transition-all ${
                     !n.read_at
-                      ? "bg-blue-50/50 dark:bg-blue-950/40"
-                      : "hover:bg-gray-50 dark:hover:bg-slate-800/60"
+                      ? "bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100/60 dark:border-indigo-900/40"
+                      : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
                   }`}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-800 dark:text-slate-100 truncate">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
                       {n.title}
                     </p>
-                    <p className="text-xs text-gray-600 dark:text-slate-300 line-clamp-2 mt-0.5">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 mt-0.5 leading-relaxed">
                       {n.body}
                     </p>
-                    <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-1 block">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 block font-mono">
                       {new Date(n.created_at).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -317,7 +326,7 @@ export default function NotificationBell() {
                       onClick={() => markReadMutation.mutate(n.id)}
                       disabled={markReadMutation.isPending}
                       title="Mark as read"
-                      className="p-1 text-gray-400 hover:text-blue-600 dark:text-slate-500 dark:hover:text-blue-400 rounded disabled:opacity-50 cursor-pointer"
+                      className="p-1 text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 cursor-pointer transition-colors"
                     >
                       <Check className="w-3.5 h-3.5" />
                     </button>

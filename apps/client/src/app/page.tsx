@@ -6,6 +6,8 @@ import HeroBanner from "@/components/HeroBanner";
 import FlashDeals from "@/components/FlashDeals";
 import MarketplaceCategories from "@/components/MarketplaceCategories";
 import TrustBadges from "@/components/TrustBadges";
+import ShopCTA from "@/components/ShopCTA";
+import Testimonials from "@/components/Testimonials";
 import {
   fetchFeaturedProducts,
   normalizeCatalogProduct,
@@ -22,76 +24,79 @@ const Homepage = async ({
 
   return (
     <div className="w-full pb-16">
-      {/* 1. ANIMATED HERO CAROUSEL WITH GSAP & PROMO CARDS */}
+      {/* 1. ANIMATED HERO CAROUSEL WITH PROMO PANELS & CTAs */}
       <HeroBanner />
 
-      {/* 2. MARKETPLACE TRUST GUARANTEES STRIP */}
+      {/* 2. MARKETPLACE TRUST GUARANTEES & CONFIDENCE INDICATORS */}
       <TrustBadges />
 
-      {/* 3. FLASH DEALS SECTION WITH COUNTDOWN TICKER */}
-      <FlashDeals products={flashProducts} />
-
-      {/* 4. POPULAR MARKETPLACE CATEGORIES GRID */}
+      {/* 3. VISUAL CATEGORY HIGHLIGHTS GRID */}
       <MarketplaceCategories />
 
-      {/* 5. TRENDING — AI-powered recommendations */}
-      <div id="trending">
-        <RecommendationSection
-          title="Trending Styles & Viral Picks"
-          subtitle="Top rated by shoppers this week with verified reviews"
-          type="trending"
-          limit={4}
-        />
-      </div>
+      {/* 4. FLASH DEALS SECTION WITH COUNTDOWN TICKER */}
+      <FlashDeals products={flashProducts} />
 
-      {/* 6. NEW ARRIVALS — catalog-service read model */}
-      <div id="new-arrivals">
+      {/* 5. FEATURED PRODUCTS — Curated Editor's Picks */}
+      <div id="featured">
         <FeaturedSection
-          type="new-arrivals"
-          title="Fresh New Arrivals"
-          subtitle="Latest styles and seasonal collection just landed"
+          type="featured"
+          title="Editor's Featured Picks"
+          subtitle="Hand-picked premium selections recommended by our stylists"
           limit={8}
         />
       </div>
 
-      {/* 7. ALL MARKETPLACE PRODUCTS GRID */}
+      {/* 6. BEST SELLERS — High-velocity top rated items */}
+      <div id="best-sellers">
+        <FeaturedSection
+          type="best-sellers"
+          title="All-Time Best Sellers"
+          subtitle="Consistently top-rated and reordered by thousands of customers"
+          limit={8}
+        />
+      </div>
+
+      {/* 7. HIGH-CONVERTING MID-PAGE CALL TO ACTION & COUPON BANNER */}
+      <ShopCTA />
+
+      {/* 8. RECENT PRODUCTS — Fresh seasonal arrivals */}
+      <div id="new-arrivals">
+        <FeaturedSection
+          type="new-arrivals"
+          title="Fresh New Arrivals"
+          subtitle="Latest styles, seasonal drops, and tech accessories just landed"
+          limit={8}
+        />
+      </div>
+
+      {/* 9. ALL MARKETPLACE PRODUCTS CATALOG GRID */}
       <div className="my-12">
         <div className="mb-6">
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             Explore Marketplace Catalog
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Filter by size, color, brand, or search query with live facet counts
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Filter by category, size, color, brand, or search query with live
+            facet counts
           </p>
         </div>
         <ProductList category={category} params="homepage" />
       </div>
 
-      {/* 8. FEATURED PICKS — catalog-service read model */}
-      <FeaturedSection
-        type="featured"
-        title="Editor's Featured Picks"
-        subtitle="Hand-picked premium selections recommended by our stylists"
-        limit={8}
-      />
+      {/* 10. SOCIAL PROOF & VERIFIED CUSTOMER REVIEWS */}
+      <Testimonials />
 
-      {/* 9. PERSONALIZED PICKS — AI-powered */}
-      <RecommendationSection
-        title="Recommended Just For You"
-        subtitle="Curated using your browsing patterns and interaction preferences"
-        type="personalized"
-        limit={4}
-      />
+      {/* 11. TRENDING & PERSONALIZED RECOMMENDATIONS */}
+      <div id="trending">
+        <RecommendationSection
+          title="Trending Styles & Viral Picks"
+          subtitle="Top rated by shoppers this week with verified buyer badges"
+          type="trending"
+          limit={4}
+        />
+      </div>
 
-      {/* 10. BEST SELLERS */}
-      <FeaturedSection
-        type="best-sellers"
-        title="All-Time Best Sellers"
-        subtitle="Consistently top-rated and reordered by thousands of customers"
-        limit={8}
-      />
-
-      {/* 11. RECENTLY VIEWED */}
+      {/* 12. RECENTLY VIEWED PRODUCTS */}
       <RecommendationSection
         title="Recently Viewed Products"
         subtitle="Pick up right where you left off"

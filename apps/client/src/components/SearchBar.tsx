@@ -206,9 +206,9 @@ const SearchBar = () => {
   return (
     <div
       ref={containerRef}
-      className="relative flex w-full items-center gap-2 rounded-xl ring-1 ring-slate-200 dark:ring-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-xs focus-within:ring-2 focus-within:ring-indigo-500 transition"
+      className="relative flex w-full items-center gap-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-50/90 dark:bg-slate-900/80 backdrop-blur-md px-3.5 py-2 sm:py-2.5 shadow-inner focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/30 transition-all duration-200"
     >
-      <Search className="w-4 h-4 text-slate-400 shrink-0" />
+      <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
       <input
         id="search"
         placeholder="Search products, brands, categories..."
@@ -234,21 +234,25 @@ const SearchBar = () => {
       )}
 
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-md bg-white dark:bg-slate-900 text-sm shadow-lg ring-1 ring-gray-200 dark:ring-slate-800">
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-2xl text-sm shadow-2xl border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] animate-in fade-in slide-in-from-top-1 duration-150">
           {showRecentsHeader && (
-            <div className="flex items-center justify-between px-3 pt-2 text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
-              <span>Recent</span>
+            <div className="flex items-center justify-between px-3.5 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <span>Recent Searches</span>
               <button
                 type="button"
                 onClick={clearRecents}
-                className="normal-case underline hover:text-gray-600 dark:hover:text-slate-300"
+                className="normal-case text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
               >
                 Clear
               </button>
             </div>
           )}
 
-          <ul id={listboxId} role="listbox" className="py-1">
+          <ul
+            id={listboxId}
+            role="listbox"
+            className="py-1 divide-y divide-slate-100/40 dark:divide-slate-800/40"
+          >
             {options.map((option, index) => (
               <li
                 key={

@@ -99,7 +99,7 @@ export default function QuickViewModal() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={closeQuickView}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs cursor-pointer"
+            className="fixed inset-0 bg-black/75 backdrop-blur-md cursor-pointer"
           />
 
           {/* Modal Dialog */}
@@ -108,12 +108,12 @@ export default function QuickViewModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 15 }}
             transition={{ type: "spring", damping: 26, stiffness: 320 }}
-            className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden z-10 border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row pointer-events-auto max-h-[92vh] overflow-y-auto text-slate-900 dark:text-slate-100"
+            className="relative w-full max-w-3xl bg-white dark:bg-[#0b0f19] rounded-3xl shadow-2xl overflow-hidden z-10 border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] flex flex-col md:flex-row pointer-events-auto max-h-[92vh] overflow-y-auto text-slate-900 dark:text-slate-100"
           >
             {/* Close Button */}
             <button
               onClick={closeQuickView}
-              className="absolute top-4 right-4 z-20 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 rounded-full shadow-xs transition cursor-pointer"
+              className="absolute top-4 right-4 z-20 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 rounded-full shadow-md transition cursor-pointer"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
@@ -286,19 +286,19 @@ export default function QuickViewModal() {
 
               {/* Action CTAs */}
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5">
-                <div className="flex gap-2">
+                <div className="flex gap-2.5">
                   <button
                     onClick={handleAddToCart}
-                    className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-md shadow-indigo-100 dark:shadow-none transition cursor-pointer"
+                    className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 active:scale-95 transition-all duration-200 cursor-pointer"
                   >
                     <ShoppingCart className="w-4 h-4" />
                     Add to Cart
                   </button>
                   <button
                     onClick={handleWishlistToggle}
-                    className={`p-2.5 rounded-xl border transition cursor-pointer ${
+                    className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer active:scale-95 ${
                       inWishlist
-                        ? "border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-500"
+                        ? "border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-500 shadow-sm shadow-rose-500/20"
                         : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-50 dark:hover:bg-slate-800"
                     }`}
                     title={

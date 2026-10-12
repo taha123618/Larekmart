@@ -69,7 +69,7 @@ export default function WishlistDrawer({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={effectiveOnClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs cursor-pointer"
+            className="fixed inset-0 bg-black/75 backdrop-blur-md cursor-pointer"
           />
 
           <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 pointer-events-none">
@@ -78,16 +78,19 @@ export default function WishlistDrawer({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="w-screen max-w-full sm:max-w-md bg-white dark:bg-slate-900 shadow-2xl flex flex-col pointer-events-auto h-full text-slate-900 dark:text-slate-100"
+              className="w-screen max-w-full sm:max-w-md bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-2xl border-l border-slate-200/80 dark:border-slate-800/80 shadow-2xl flex flex-col pointer-events-auto h-full text-slate-900 dark:text-slate-100 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)]"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-                <div className="flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4.5 border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 backdrop-blur-md">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400">
+                    <Heart className="w-4.5 h-4.5 fill-rose-500 text-rose-500" />
+                  </div>
                   <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                     My Wishlist ({items.length})
                   </h2>
                 </div>
+
                 <button
                   onClick={effectiveOnClose}
                   className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition cursor-pointer"
