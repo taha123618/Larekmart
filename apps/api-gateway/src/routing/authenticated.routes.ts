@@ -119,4 +119,14 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/notifications",
     websocket: true,
   },
+
+  // 9. Customer Personal Reviews
+  {
+    prefix: "/api/v1/me/reviews",
+    target: services.review.url,
+    serviceName: services.review.name,
+    timeoutMs: services.review.timeoutMs,
+    rewritePrefix: "/api/v1/me/reviews",
+    requireAuth: true,
+  },
 ];

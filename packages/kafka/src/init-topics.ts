@@ -27,6 +27,12 @@ export const ALL_LAREKMART_TOPICS = [
   "wishlist.product_added",
   "recommendation.interaction",
   "review.created",
+  "review.updated",
+  "review.deleted",
+  "review.approved",
+  "review.rejected",
+  "review.reported",
+  "product.rating-summary.updated",
 
   // Cart Events
   "cart.created",

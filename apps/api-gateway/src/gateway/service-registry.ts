@@ -77,6 +77,11 @@ export const services = {
     url: env.MEDIA_SERVICE_URL,
     timeoutMs: 15000,
   },
+  review: {
+    name: "review-service",
+    url: env.REVIEW_SERVICE_URL,
+    timeoutMs: 5000,
+  },
 } as const satisfies Record<string, ServiceTarget>;
 
 export const downstreamServices = services;

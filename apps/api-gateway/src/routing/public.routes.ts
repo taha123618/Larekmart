@@ -111,4 +111,13 @@ export const publicRoutes: GatewayRouteConfig[] = [
     timeoutMs: services.media.timeoutMs,
     rewritePrefix: "/api/v1/media",
   },
+
+  // 10. Review Service Public Product Reviews & Rating Summaries
+  {
+    prefix: "/api/v1/reviews",
+    target: services.review.url,
+    serviceName: services.review.name,
+    timeoutMs: services.review.timeoutMs,
+    rewritePrefix: "/api/v1/reviews",
+  },
 ];
