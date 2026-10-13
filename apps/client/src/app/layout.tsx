@@ -1,6 +1,7 @@
 import type React from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { shadcn } from "@clerk/ui/themes"
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -43,7 +44,7 @@ export default function RootLayout({
 }>): React.JSX.Element {
   // `suppressHydrationWarning` is set on <body> to guard against browser extensions
   return (
-    <ClerkProvider>
+    <ClerkProvider appearance={{ theme: shadcn }}>
       <html
         lang="en"
         className="scroll-smooth"
