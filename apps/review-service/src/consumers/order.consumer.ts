@@ -5,7 +5,7 @@ export async function handleOrderDelivered(payload: any): Promise<void> {
     const data = payload?.data || payload;
     const userId = data?.userId;
     const orderId = data?.orderId || data?.id;
-    const items = data?.items || [];
+    const items = data?.items || data?.products || [];
     const deliveredAt = data?.deliveredAt
       ? new Date(data.deliveredAt)
       : new Date();
@@ -20,7 +20,8 @@ export async function handleOrderDelivered(payload: any): Promise<void> {
     );
 
     for (const item of items) {
-      const productId = item.productId || item.product?.id || item.id;
+      const productId =
+        item.productId || item.product?.id || item.id || item.name;
       const orderItemId =
         item.orderItemId || item._id || item.id || `${orderId}_${productId}`;
 

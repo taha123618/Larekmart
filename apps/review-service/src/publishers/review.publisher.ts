@@ -29,6 +29,7 @@ async function sendEvent<T extends object>(
     eventType: eventName,
     timestamp: new Date().toISOString(),
     data,
+    ...data,
   };
 
   try {

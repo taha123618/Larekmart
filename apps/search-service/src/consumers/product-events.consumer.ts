@@ -134,6 +134,48 @@ export async function registerProductEventSubscriptions(
         }
       },
     },
+    {
+      topicName: config.kafka.topics.ratingSummaryUpdated,
+      topicHandler: async (message: any) => {
+        const payload = message.value || message;
+        logger.info("Received product.rating-summary.updated event", { payload });
+
+        try {
+          const productId = payload.productId || payload.data?.productId;
+          const rating = payload.averageRating ?? payload.data?.averageRating;
+          const reviewCount = payload.reviewCount ?? payload.data?.reviewCount;
+
+          if (productId !== undefined && productId !== null) {
+            await indexingService.updateProductPartial(productId, {
+              rating: typeof rating === "number" ? rating : Number(rating) || 0,
+              reviewCount:
+                typeof reviewCount === "number"
+                  ? reviewCount
+                  : Number(reviewCount) || 0,
+            });
+            searchMetrics.kafkaEventsProcessedTotal.inc({
+              topic: config.kafka.topics.ratingSummaryUpdated,
+              status: "success",
+            });
+            logger.info(
+              `Successfully updated OpenSearch product [${productId}] ratings: ${rating} (${reviewCount} reviews)`,
+            );
+          }
+        } catch (error: any) {
+          searchMetrics.kafkaEventsProcessedTotal.inc({
+            topic: config.kafka.topics.ratingSummaryUpdated,
+            status: "error",
+          });
+          logger.error(
+            "Failed to process product.rating-summary.updated event",
+            {
+              error: error.message,
+              payload,
+            },
+          );
+        }
+      },
+    },
   ];
 
   try {

@@ -101,6 +101,65 @@ export const recordMediaEvent = async (
   );
 };
 
+export const recordReviewEvent = async (
+  eventType:
+    | "review.created"
+    | "review.approved"
+    | "review.rejected"
+    | "review.reported"
+    | "product.rating-summary.updated",
+  payload: any,
+) => {
+  const data = payload?.data || payload;
+  const userId = data?.userId || data?.moderatorId || "system";
+  const amount = data?.rating || data?.averageRating || 0;
+
+  const memoryEvent: AnalyticsEventType = {
+    id: inMemoryEvents.length + 1,
+    event_type: eventType,
+    user_id: String(userId),
+    amount,
+    metadata: {
+      reviewId: data?.reviewId,
+      productId: data?.productId,
+      rating: data?.rating,
+      averageRating: data?.averageRating,
+      reviewCount: data?.reviewCount,
+      reason: data?.reason,
+    },
+    created_at: payload?.timestamp || new Date().toISOString(),
+  };
+
+  inMemoryEvents.unshift(memoryEvent);
+  if (inMemoryEvents.length > 100) inMemoryEvents.pop();
+
+  if (getDbStatus()) {
+    try {
+      await pool.query(
+        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          eventType,
+          String(userId),
+          amount,
+          JSON.stringify(memoryEvent.metadata),
+          memoryEvent.created_at,
+        ],
+      );
+    } catch (err) {
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordReviewEvent.dbInsert",
+      });
+    }
+  }
+
+  logger.info(
+    `[Review Event] ${eventType} for ${userId} (productId: ${data?.productId})`,
+  );
+};
+
 export const recordCartEvent = async (
   eventType:
     | "cart.created"

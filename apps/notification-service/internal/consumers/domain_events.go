@@ -136,12 +136,56 @@ func (h *DomainEventHandler) dispatchDomainNotification(ctx context.Context, top
 		return h.handlePaymentSuccessful(ctx, payload)
 	case "inventory.low_stock":
 		return h.handleInventoryLowStock(ctx, payload)
+	case "review.reported":
+		return h.handleReviewReported(ctx, payload)
+	case "review.approved":
+		return h.handleReviewApproved(ctx, payload)
 	case "notification.dispatch":
 		return h.handleDirectDispatch(ctx, payload)
 	default:
 		h.logger.Debug(ctx, fmt.Sprintf("Ignoring unhandled topic '%s'", topic))
 		return nil
 	}
+}
+
+func (h *DomainEventHandler) handleReviewReported(ctx context.Context, payload map[string]interface{}) error {
+	reviewID := payload["reviewId"]
+	reason := payload["reason"]
+	productID := payload["productId"]
+
+	title := "Review Reported"
+	body := fmt.Sprintf("A product review (%v) on product %v was reported for %v and requires moderation.", reviewID, productID, reason)
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   "admin",
+		Type:     "review_reported",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityHigh,
+	})
+	return err
+}
+
+func (h *DomainEventHandler) handleReviewApproved(ctx context.Context, payload map[string]interface{}) error {
+	userID, ok := payload["userId"].(string)
+	if !ok || userID == "" {
+		return nil
+	}
+	productID := payload["productId"]
+
+	title := "Review Approved"
+	body := fmt.Sprintf("Your review on product %v has been approved and is now live!", productID)
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   userID,
+		Type:     "review_approved",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityNormal,
+	})
+	return err
 }
 
 func (h *DomainEventHandler) handleInventoryLowStock(ctx context.Context, payload map[string]interface{}) error {

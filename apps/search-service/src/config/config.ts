@@ -38,6 +38,7 @@ export const config = {
       productCreated: "product.created",
       productUpdated: "product.updated",
       productDeleted: "product.deleted",
+      ratingSummaryUpdated: "product.rating-summary.updated",
     },
   },
   search: {
