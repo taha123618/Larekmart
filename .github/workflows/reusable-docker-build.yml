@@ -1,0 +1,159 @@
+name: Reusable Docker Build & Scan
+
+on:
+  workflow_call:
+    inputs:
+      primary_tag:
+        description: "Primary image tag (e.g. staging, latest)"
+        required: true
+        type: string
+        default: "staging"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/larekmart
+
+jobs:
+  docker-base-node:
+    name: Docker Build — Shared Base Node Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine Image Tags
+        id: meta
+        run: |
+          SHA_SHORT="${GITHUB_SHA::8}"
+          echo "sha=${SHA_SHORT}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push Shared Base Node Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/base-node/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/base-node:${{ steps.meta.outputs.sha }}
+            ${{ env.IMAGE_PREFIX }}/base-node:${{ inputs.primary_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-build:
+    name: Docker Build & Scan — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: docker-base-node
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: client
+            context: .
+            dockerfile: apps/client/Dockerfile
+          - service: admin
+            context: .
+            dockerfile: apps/admin/Dockerfile
+          - service: api-gateway
+            context: .
+            dockerfile: apps/api-gateway/Dockerfile
+          - service: product-service
+            context: .
+            dockerfile: apps/product-service/Dockerfile
+          - service: order-service
+            context: .
+            dockerfile: apps/order-service/Dockerfile
+          - service: payment-service
+            context: .
+            dockerfile: apps/payment-service/Dockerfile
+          - service: auth-service
+            context: .
+            dockerfile: apps/auth-service/Dockerfile
+          - service: analytic-service
+            context: .
+            dockerfile: apps/analytic-service/Dockerfile
+          - service: notification-service
+            context: ./apps/notification-service
+            dockerfile: ./apps/notification-service/Dockerfile
+          - service: search-service
+            context: .
+            dockerfile: apps/search-service/Dockerfile
+          - service: inventory-service
+            context: .
+            dockerfile: apps/inventory-service/Dockerfile
+          - service: recommendation-service
+            context: ./apps/recommendation-service
+            dockerfile: ./apps/recommendation-service/Dockerfile
+          - service: cart-service
+            context: .
+            dockerfile: apps/cart-service/Dockerfile
+          - service: catalog-service
+            context: .
+            dockerfile: apps/catalog-service/Dockerfile
+          - service: shipping-service
+            context: .
+            dockerfile: apps/shipping-service/Dockerfile
+          - service: user-service
+            context: .
+            dockerfile: apps/user-service/Dockerfile
+          - service: media-service
+            context: .
+            dockerfile: apps/media-service/Dockerfile
+          - service: email-service
+            context: .
+            dockerfile: apps/email-service/Dockerfile
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine Image Tags
+        id: meta
+        run: |
+          SHA_SHORT="${GITHUB_SHA::8}"
+          echo "sha=${SHA_SHORT}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push Service Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ steps.meta.outputs.sha }}
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ inputs.primary_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_BASE_IMAGE=${{ env.IMAGE_PREFIX }}/base-node:${{ steps.meta.outputs.sha }}
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+
+      - name: Run Trivy Container Vulnerability Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ steps.meta.outputs.sha }}"
+          format: "table"
+          exit-code: "0"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH"

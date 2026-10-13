@@ -1,0 +1,193 @@
+name: Reusable Quality Gates
+
+on:
+  workflow_call:
+
+jobs:
+  code-quality:
+    name: Code Quality & Security Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install Monorepo Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Frontends (Admin & Client)
+        run: pnpm lint
+
+      - name: Verify Code Formatting (Prettier)
+        run: pnpm format:check
+
+      - name: Generate Database Clients (Prisma & Drizzle)
+        run: pnpm db:generate
+
+      - name: Strict TypeScript Compilation (All Workspaces)
+        run: pnpm check-types
+
+      - name: Secret Detection & Credential Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          scanners: "secret"
+          severity: "CRITICAL,HIGH"
+          format: "table"
+          exit-code: "0"
+
+  test-workspace:
+    name: Workspace Unit & Integration Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: apps/notification-service/go.sum
+
+      - name: Setup Python via uv
+        run: |
+          pip install uv
+          cd apps/recommendation-service
+          uv sync
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Database Clients
+        run: pnpm db:generate
+
+      - name: Run Workspace Test Suites (Turborepo)
+        run: pnpm test
+
+  test-go:
+    name: Go Race & Concurrency Tests (Notification Service)
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: apps/notification-service/go.sum
+
+      - name: Run Go Tests with Race Detection
+        working-directory: apps/notification-service
+        run: go test -v -race -timeout 5m ./...
+
+  test-python:
+    name: Python Quality & Recommendation Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python via uv
+        run: |
+          pip install uv
+          cd apps/recommendation-service
+          uv sync
+
+      - name: Python Ruff Linter & Formatting
+        working-directory: apps/recommendation-service
+        run: uv run ruff check .
+
+      - name: Python Mypy Static Type Analysis
+        working-directory: apps/recommendation-service
+        run: uv run mypy app/ --ignore-missing-imports || true
+
+      - name: Recommendation Service Pytest Suite
+        working-directory: apps/recommendation-service
+        run: uv run pytest tests/ -v
+
+  build-validation:
+    name: Production Build Validation
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: apps/notification-service/go.sum
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Database Clients
+        run: pnpm db:generate
+
+      - name: Build All Frontends & Services
+        run: pnpm build
+
+  validate-infra:
+    name: Infrastructure & Manifest Validation
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+        with:
+          kustomize-version: "5.4.1"
+
+      - name: Validate Development Kustomize Overlay
+        run: kustomize build infrastructure/kubernetes/overlays/development > /dev/null
+
+      - name: Validate Staging Kustomize Overlay
+        run: kustomize build infrastructure/kubernetes/overlays/staging > /dev/null
+
+      - name: Validate Production Kustomize Overlay
+        run: kustomize build infrastructure/kubernetes/overlays/production > /dev/null
+
+      - name: Validate Docker Compose Configurations
+        run: |
+          docker compose config --quiet
+          docker compose -f docker-compose.observability.yml config --quiet

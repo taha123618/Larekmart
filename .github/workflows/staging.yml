@@ -1,0 +1,229 @@
+name: CD — Staging Deployment Pipeline
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: staging-deployment
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+  id-token: write
+
+jobs:
+  # ════════════════════════════════════════════════════════════════
+  # STAGE 1: Automated Quality Assurance Gate
+  # ════════════════════════════════════════════════════════════════
+  quality-gates:
+    name: Staging QA Gates
+    uses: ./.github/workflows/reusable-quality-gates.yml
+
+  # ════════════════════════════════════════════════════════════════
+  # STAGE 2: Multi-Service Container Builds & Trivy Vulnerability Scan
+  # ════════════════════════════════════════════════════════════════
+  build-and-push:
+    name: Container Build & Vulnerability Audit
+    needs: quality-gates
+    uses: ./.github/workflows/reusable-docker-build.yml
+    with:
+      primary_tag: "staging"
+    secrets: inherit
+
+  # ════════════════════════════════════════════════════════════════
+  # STAGE 3: Database Migrations (Safe Expand Phase)
+  # ════════════════════════════════════════════════════════════════
+  migrate-staging:
+    name: Database Migrations (Staging)
+    runs-on: ubuntu-latest
+    needs: quality-gates
+    environment: staging
+    env:
+      PRODUCT_DATABASE_URL: ${{ secrets.STAGING_PRODUCT_DATABASE_URL }}
+      INVENTORY_DATABASE_URL: ${{ secrets.STAGING_INVENTORY_DATABASE_URL }}
+      CATALOG_DATABASE_URL: ${{ secrets.STAGING_CATALOG_DATABASE_URL }}
+      SHIPPING_DATABASE_URL: ${{ secrets.STAGING_SHIPPING_DATABASE_URL }}
+      USER_DATABASE_URL: ${{ secrets.STAGING_USER_DATABASE_URL }}
+      MEDIA_DATABASE_URL: ${{ secrets.STAGING_MEDIA_DATABASE_URL }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Database Schemas
+        run: pnpm db:generate
+
+      - name: Run Prisma Migration Deploy (Product DB)
+        if: env.PRODUCT_DATABASE_URL != ''
+        run: pnpm --filter @repo/product-db db:deploy
+
+      - name: Run Prisma Migration Deploy (Inventory DB)
+        if: env.INVENTORY_DATABASE_URL != ''
+        run: pnpm --filter @repo/inventory-db db:deploy
+
+      - name: Run Prisma Migration Deploy (Catalog DB)
+        if: env.CATALOG_DATABASE_URL != ''
+        run: pnpm --filter @repo/catalog-db db:deploy
+
+      - name: Run Prisma Migration Deploy (Shipping DB)
+        if: env.SHIPPING_DATABASE_URL != ''
+        run: pnpm --filter @repo/shipping-db db:deploy
+
+      - name: Run Prisma Migration Deploy (User DB)
+        if: env.USER_DATABASE_URL != ''
+        run: pnpm --filter @repo/user-db db:deploy
+
+      - name: Run Drizzle Migration Deploy (Media Service)
+        if: env.MEDIA_DATABASE_URL != ''
+        run: pnpm --filter media-service db:migrate
+
+  # ════════════════════════════════════════════════════════════════
+  # STAGE 4: Kubernetes Deployment, Rollout Probes & Synthetic Verification
+  # ════════════════════════════════════════════════════════════════
+  deploy-staging:
+    name: Staging Deployment & Route Verification
+    runs-on: ubuntu-latest
+    needs: [build-and-push, migrate-staging]
+    environment: staging
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+        with:
+          kustomize-version: "5.4.1"
+
+      - name: Setup Kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure Staging Kubeconfig
+        if: env.KUBECONFIG_DATA != ''
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_STAGING }}
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${KUBECONFIG_DATA}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Apply Staging Kustomize Overlay & Monitor Rollouts
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_STAGING }}
+        run: |
+          SHA_SHORT="${GITHUB_SHA::8}"
+          cd infrastructure/kubernetes/overlays/staging
+
+          if [ -n "${KUBECONFIG_DATA}" ]; then
+            echo "Configuring staging images with immutable tag: staging-${SHA_SHORT}..."
+            kustomize edit set image \
+              larekmart/client=ghcr.io/${{ github.repository_owner }}/larekmart/client:staging-${SHA_SHORT} \
+              larekmart/admin=ghcr.io/${{ github.repository_owner }}/larekmart/admin:staging-${SHA_SHORT} \
+              larekmart/product-service=ghcr.io/${{ github.repository_owner }}/larekmart/product-service:staging-${SHA_SHORT} \
+              larekmart/order-service=ghcr.io/${{ github.repository_owner }}/larekmart/order-service:staging-${SHA_SHORT} \
+              larekmart/payment-service=ghcr.io/${{ github.repository_owner }}/larekmart/payment-service:staging-${SHA_SHORT} \
+              larekmart/auth-service=ghcr.io/${{ github.repository_owner }}/larekmart/auth-service:staging-${SHA_SHORT} \
+              larekmart/analytic-service=ghcr.io/${{ github.repository_owner }}/larekmart/analytic-service:staging-${SHA_SHORT} \
+              larekmart/notification-service=ghcr.io/${{ github.repository_owner }}/larekmart/notification-service:staging-${SHA_SHORT} \
+              larekmart/search-service=ghcr.io/${{ github.repository_owner }}/larekmart/search-service:staging-${SHA_SHORT} \
+              larekmart/inventory-service=ghcr.io/${{ github.repository_owner }}/larekmart/inventory-service:staging-${SHA_SHORT} \
+              larekmart/recommendation-service=ghcr.io/${{ github.repository_owner }}/larekmart/recommendation-service:staging-${SHA_SHORT} \
+              larekmart/cart-service=ghcr.io/${{ github.repository_owner }}/larekmart/cart-service:staging-${SHA_SHORT} \
+              larekmart/catalog-service=ghcr.io/${{ github.repository_owner }}/larekmart/catalog-service:staging-${SHA_SHORT} \
+              larekmart/shipping-service=ghcr.io/${{ github.repository_owner }}/larekmart/shipping-service:staging-${SHA_SHORT} \
+              larekmart/user-service=ghcr.io/${{ github.repository_owner }}/larekmart/user-service:staging-${SHA_SHORT} \
+              larekmart/media-service=ghcr.io/${{ github.repository_owner }}/larekmart/media-service:staging-${SHA_SHORT} \
+              larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:staging-${SHA_SHORT}
+
+            echo "Applying Staging manifests to namespace larekmart-staging..."
+            kubectl apply -k .
+
+            echo "Tracking rollout status across all 17 microservice workloads..."
+            DEPLOYMENTS=(
+              staging-client
+              staging-admin
+              staging-product-service
+              staging-order-service
+              staging-payment-service
+              staging-auth-service
+              staging-analytic-service
+              staging-notification-service
+              staging-search-service
+              staging-inventory-service
+              staging-recommendation-service
+              staging-cart-service
+              staging-catalog-service
+              staging-shipping-service
+              staging-user-service
+              staging-media-service
+              staging-email-service
+            )
+            for dep in "${DEPLOYMENTS[@]}"; do
+              echo "Awaiting deployment rollout: ${dep}..."
+              kubectl rollout status deployment/"${dep}" -n larekmart-staging --timeout=180s
+            done
+            echo "All staging deployments rolled out successfully."
+          else
+            echo "KUBECONFIG_STAGING not configured. Validating declarative staging overlay locally..."
+            kustomize build . > /dev/null
+            echo "Staging Kustomize manifest dry-run validated."
+          fi
+
+      - name: Run Synthetic Ingress Traffic Verification
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_STAGING }}
+          STAGING_INGRESS_URL: ${{ secrets.STAGING_INGRESS_URL || 'https://staging.larekmart.com' }}
+        run: |
+          if [ -n "${KUBECONFIG_DATA}" ]; then
+            echo "Initiating synthetic traffic verification against ${STAGING_INGRESS_URL}..."
+            bash scripts/verify-staging-traffic.sh "${STAGING_INGRESS_URL}"
+          else
+            echo "Skipping live endpoint probe: KUBECONFIG_STAGING is not populated."
+          fi
+
+      - name: Automated Rollback on Staging Failure
+        if: failure() && env.KUBECONFIG_DATA != ''
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_STAGING }}
+        run: |
+          echo "CRITICAL ALERT: Staging deployment or health probe failed. Executing automatic rollback..."
+          DEPLOYMENTS=(
+            staging-client
+            staging-admin
+            staging-product-service
+            staging-order-service
+            staging-payment-service
+            staging-auth-service
+            staging-analytic-service
+            staging-notification-service
+            staging-search-service
+            staging-inventory-service
+            staging-recommendation-service
+            staging-cart-service
+            staging-catalog-service
+            staging-shipping-service
+            staging-user-service
+            staging-media-service
+            staging-email-service
+          )
+          for dep in "${DEPLOYMENTS[@]}"; do
+            echo "Rolling back deployment: ${dep}..."
+            kubectl rollout undo deployment/"${dep}" -n larekmart-staging || true
+          done
+          echo "Automated rollback commands completed."

@@ -21,3 +21,12 @@ pnpm-lock.yaml
 .DS_Store
 .vscode
 .idea
+
+# Python virtual environments & caches
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
