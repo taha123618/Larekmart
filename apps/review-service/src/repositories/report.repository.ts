@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, desc } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import { reviewReports, reviews } from "../db/schema.js";
 
@@ -49,6 +49,42 @@ export class ReportRepository {
       return true;
     }
     return false;
+  }
+
+  async getAllReports(page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+    const items = await db
+      .select({
+        id: reviewReports.id,
+        reviewId: reviewReports.reviewId,
+        userId: reviewReports.userId,
+        reason: reviewReports.reason,
+        details: reviewReports.details,
+        status: reviewReports.status,
+        createdAt: reviewReports.createdAt,
+        reviewContent: reviews.content,
+        reviewRating: reviews.rating,
+        reviewStatus: reviews.status,
+        productId: reviews.productId,
+      })
+      .from(reviewReports)
+      .leftJoin(reviews, eq(reviewReports.reviewId, reviews.id))
+      .orderBy(desc(reviewReports.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const [countResult] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(reviewReports);
+
+    const total = countResult?.total ?? 0;
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 }
 

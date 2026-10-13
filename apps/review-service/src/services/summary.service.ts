@@ -40,6 +40,14 @@ export class SummaryService {
 
     return summary;
   }
+
+  async getAllSummaries(page = 1, limit = 20) {
+    return await summaryRepository.getAllSummaries(page, limit);
+  }
+
+  async recalculateAll() {
+    return await summaryRepository.recalculateAll();
+  }
 }
 
 export const summaryService = new SummaryService();

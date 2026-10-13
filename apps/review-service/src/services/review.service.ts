@@ -322,6 +322,10 @@ export class ReviewService {
 
     return updated;
   }
+
+  async getReports(page = 1, limit = 20) {
+    return await reportRepository.getAllReports(page, limit);
+  }
 }
 
 export const reviewService = new ReviewService();

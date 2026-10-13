@@ -1,4 +1,4 @@
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import { productRatingSummaries, reviews } from "../db/schema.js";
 
@@ -37,6 +37,45 @@ export class SummaryRepository {
       verifiedCount: summary.verifiedCount,
       lastCalculatedAt: summary.lastCalculatedAt,
     };
+  }
+
+  async getAllSummaries(page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+    const items = await db
+      .select()
+      .from(productRatingSummaries)
+      .orderBy(desc(productRatingSummaries.lastCalculatedAt))
+      .limit(limit)
+      .offset(offset);
+
+    const [countResult] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(productRatingSummaries);
+
+    const total = countResult?.total ?? 0;
+    return {
+      items: items.map((s) => ({
+        ...s,
+        averageRating: parseFloat(s.averageRating),
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async recalculateAll() {
+    const distinctProducts = await db
+      .selectDistinct({ productId: reviews.productId })
+      .from(reviews);
+
+    const results = [];
+    for (const p of distinctProducts) {
+      const summary = await this.recalculateSummary(p.productId);
+      results.push(summary);
+    }
+    return { recalculatedCount: results.length, summaries: results };
   }
 
   async recalculateSummary(productId: string) {
