@@ -16,6 +16,9 @@ const EnvSchema = z.object({
   KAFKA_GROUP_ID: z.string().default("review-service-group"),
   CLERK_SECRET_KEY: z.string().default("sk_test_placeholder"),
   CLERK_PUBLISHABLE_KEY: z.string().default("pk_test_placeholder"),
+  INTERNAL_SERVICE_SECRET: z
+    .string()
+    .default("dev-shared-internal-secret-larekmart"),
   AUTO_APPROVE_VERIFIED: z.coerce.boolean().default(true),
   REPORT_FLAG_THRESHOLD: z.coerce.number().default(3),
 });
