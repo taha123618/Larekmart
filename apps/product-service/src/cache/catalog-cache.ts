@@ -50,6 +50,7 @@ const CATEGORY_TTL_SECONDS = positiveInt(
 
 /** The list-endpoint query params that affect the response body. */
 export interface ProductListQuery {
+  ids?: string;
   sort?: string;
   category?: string;
   search?: string;
@@ -71,6 +72,7 @@ async function getCacheVersion(): Promise<number> {
  */
 function normalizeListQuery(query: ProductListQuery): string {
   return [
+    query.ids ?? "",
     query.sort ?? "default",
     query.category ?? "",
     query.search ?? "",

@@ -97,20 +97,25 @@ export default function RecommendationSection({
           process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
           "http://localhost:8090";
 
-        const fetched = await Promise.all(
-          recResponse.items.map(async (item) => {
-            try {
-              const res = await fetch(
-                `${productUrl}/products/${item.productId}`,
-              );
-              if (!res.ok) return null;
-              const prod: ProductType = await res.json();
-              return { product: prod, item };
-            } catch {
-              return null;
+        // Fetch product details for the recommended IDs in a single batch
+        let fetched: Array<{ product: ProductType; item: RecommendationItemType } | null> = [];
+        const itemIds = recResponse.items.map(i => i.productId).join(",");
+
+        if (itemIds) {
+          try {
+            const res = await fetch(`${productUrl}/products?ids=${itemIds}`);
+            if (res.ok) {
+              const prods: ProductType[] = await res.json();
+              const prodMap = new Map(prods.map(p => [String(p.id), p]));
+              fetched = recResponse.items.map(item => {
+                const prod = prodMap.get(String(item.productId));
+                return prod ? { product: prod as ProductType, item } : null;
+              });
             }
-          }),
-        );
+          } catch {
+            fetched = [];
+          }
+        }
 
         if (isMounted) {
           const valid = fetched.filter(
