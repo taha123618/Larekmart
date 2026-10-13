@@ -6,39 +6,42 @@
 
 ---
 
-## Proposed Tasks
+## Tasks & Execution Status
 
-### Task 1: Storefront Review Service Client (`apps/client`)
-- Create `apps/client/src/services/review.service.ts`.
-- Implement `fetchProductReviews`, `fetchProductRatingSummary`, `submitReview`, `voteReview`, `reportReview`.
-- Type-check: `pnpm --filter client check-types`.
+- [x] **Task 1: Storefront Review Service Client (`apps/client`)**
+  - Created `apps/client/src/services/review.service.ts`.
+  - Implemented `fetchProductReviews`, `fetchProductRatingSummary`, `submitProductReview`, `voteProductReview`, `reportProductReview`.
+  - Added `uploadReviewPhoto` helper in `apps/client/src/services/media.service.ts`.
+  - Type-check: `pnpm --filter client check-types` passed.
 
-### Task 2: Storefront Write Review Modal (`apps/client`)
-- Create `apps/client/src/components/WriteReviewModal.tsx`.
-- Support 1-5 star selection, title, feedback, and image upload with preview using `media.service.ts`.
-- Clear handling of Clerk authentication and verified buyer eligibility (403 errors).
+- [x] **Task 2: Storefront Write Review Modal (`apps/client`)**
+  - Created `apps/client/src/components/WriteReviewModal.tsx`.
+  - 1-5 star selector, headline, review feedback, photo upload with presigned URLs & preview.
+  - Verified buyer eligibility check, Clerk authentication, error alerts.
 
-### Task 3: Storefront ProductTabs Live Integration (`apps/client`)
-- Update `apps/client/src/components/ProductTabs.tsx` to remove `localStorage` mocks.
-- Render rating breakdown progress bars (1-5 stars) and average score.
-- Render reviews list with verified buyer badges, image thumbnails, seller responses, helpful votes, and report modal.
-- Verify: `pnpm --filter client check-types`.
+- [x] **Task 3: Storefront ProductTabs Live Integration (`apps/client`)**
+  - Updated `apps/client/src/components/ProductTabs.tsx` to remove mock `localStorage`.
+  - Real-time rating breakdown bars with percentage calculations and aggregate ratings.
+  - Reviews list with verified buyer badges, image thumbnail preview lightbox modal, helpful/unhelpful voting, official seller responses, and abuse reporting modal.
 
-### Task 4: Admin Review Service Client (`apps/admin`)
-- Create `apps/admin/src/services/review.service.ts`.
-- Implement `fetchPendingReviews`, `moderateReview`, `fetchReviewReports`, `recalculateRatingSummaries`.
-- Type-check: `pnpm --filter admin check-types`.
+- [x] **Task 4: Admin Review Service Client (`apps/admin`)**
+  - Created `apps/admin/src/services/review.service.ts`.
+  - Implemented `fetchAdminReviews`, `moderateReview`, `fetchReviewReports`, `fetchReviewSummaries`, `recalculateReviewSummaries`.
 
-### Task 5: Admin Customer Reviews Dashboard (`apps/admin`)
-- Create `apps/admin/src/app/(dashboard)/reviews/page.tsx`.
-- Implement KPI summary cards, Moderation Queue tab (Approve/Reject/Flag), Abuse Reports tab, and Product Summaries tab.
-- Type-check: `pnpm --filter admin check-types`.
+- [x] **Task 5: Admin Customer Reviews Dashboard (`apps/admin`)**
+  - Created `apps/admin/src/app/(dashboard)/reviews/page.tsx` and `ReviewsDashboardClient.tsx`.
+  - Created `ReviewsStatsCards.tsx` with KPI metrics and global recalculate trigger.
+  - Created `ReviewsDataTable.tsx` with Moderation Queue (Approve / Reject modal with reason / Flag), Abuse Reports tab, and Catalog Summaries tab.
 
-### Task 6: Admin Sidebar Navigation Integration (`apps/admin`)
-- Update `apps/admin/src/components/AppSidebar.tsx` to add "Customer Reviews" navigation item with star icon.
-- Type-check: `pnpm --filter admin check-types`.
+- [x] **Task 6: Admin Sidebar Navigation Integration (`apps/admin`)**
+  - Updated `apps/admin/src/components/AppSidebar.tsx` to add "Customer Reviews" navigation link under "Customer Feedback" sidebar group.
 
-### Task 7: Full Verification & Quality Gates
-- Run `pnpm --filter client check-types` and `pnpm --filter admin check-types`.
-- Run `pnpm lint`.
-- Run build tests.
+- [x] **Task 7: Full Verification & Quality Gates**
+  - `pnpm --filter client check-types` ➔ Passed (0 errors).
+  - `pnpm --filter admin check-types` ➔ Passed (0 errors).
+  - `pnpm --filter review-service check-types` ➔ Passed (0 errors).
+  - `pnpm --filter review-service test` ➔ Passed (All 5 suites passed).
+  - `pnpm --filter admin lint` ➔ Passed (0 errors, 0 warnings).
+  - `pnpm --filter client lint` ➔ Passed (0 errors).
+  - `pnpm --filter client build` ➔ Passed (Turbopack production build).
+  - `pnpm --filter admin build` ➔ Passed (Optimized production build with `/reviews`).
