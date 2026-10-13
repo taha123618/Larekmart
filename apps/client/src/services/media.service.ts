@@ -16,6 +16,9 @@ const MEDIA_BASE =
 
 const cache = new Map<string, string | null>();
 
+let batchQueue: string[] = [];
+let batchPromise: Promise<void> | null = null;
+
 /** Batch-resolves media references; results are memoized for the session. */
 export async function resolveMediaUrls(
   refs: string[],
@@ -27,21 +30,39 @@ export async function resolveMediaUrls(
   );
 
   if (missing.length > 0) {
-    try {
-      const res = await fetch(`${MEDIA_BASE}/api/v1/media/resolve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: missing }),
+    batchQueue.push(...missing);
+
+    if (!batchPromise) {
+      batchPromise = new Promise<void>((resolve) => {
+        // Delay slightly to batch multiple synchronous or near-synchronous calls
+        setTimeout(async () => {
+          const idsToFetch = [...new Set(batchQueue)].filter((ref) => !cache.has(ref));
+          batchQueue = [];
+          batchPromise = null;
+
+          if (idsToFetch.length > 0) {
+            try {
+              const res = await fetch(`${MEDIA_BASE}/api/v1/media/resolve`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids: idsToFetch }),
+              });
+              if (res.ok) {
+                const data: { items: Record<string, string | null> } = await res.json();
+                for (const [ref, url] of Object.entries(data.items ?? {})) {
+                  cache.set(ref, url);
+                }
+              }
+            } catch {
+              // media-service unavailable → fall through to cached/legacy values.
+            }
+          }
+          resolve();
+        }, 5);
       });
-      if (res.ok) {
-        const data: { items: Record<string, string | null> } = await res.json();
-        for (const [ref, url] of Object.entries(data.items ?? {})) {
-          cache.set(ref, url);
-        }
-      }
-    } catch {
-      // media-service unavailable → fall through to cached/legacy values.
     }
+
+    await batchPromise;
   }
 
   const result: Record<string, string | null> = {};
