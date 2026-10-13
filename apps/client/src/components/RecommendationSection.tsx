@@ -95,7 +95,7 @@ export default function RecommendationSection({
         const productUrl =
           process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
           process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-          "http://localhost:8080";
+          "http://localhost:8090";
 
         const fetched = await Promise.all(
           recResponse.items.map(async (item) => {
@@ -167,11 +167,15 @@ export default function RecommendationSection({
         <div>
           <div className="flex items-center gap-2">
             {getIcon()}
-            <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-gray-900">
+            <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
               {title}
             </h2>
           </div>
-          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+          {subtitle && (
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+              {subtitle}
+            </p>
+          )}
         </div>
       </div>
 

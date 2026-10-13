@@ -34,12 +34,21 @@ const CheckoutForm = ({
   };
 
   return (
-    <form>
+    <form className="flex flex-col gap-4">
       <PaymentElement options={{ layout: "accordion" }} />
-      <button disabled={loading} onClick={handleClick}>
-        {loading ? "Loading..." : "Pay"}
+      <button
+        type="button"
+        disabled={loading}
+        onClick={handleClick}
+        className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:via-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/25 cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99]"
+      >
+        {loading ? "Processing Payment..." : "Pay Now"}
       </button>
-      {error && <div className="">{error.message}</div>}
+      {error && (
+        <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-700 dark:text-rose-400">
+          {error.message}
+        </div>
+      )}
     </form>
   );
 };

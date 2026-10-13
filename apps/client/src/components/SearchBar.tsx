@@ -11,7 +11,7 @@ import MediaImage from "@/components/MediaImage";
 const SEARCH_SERVICE_URL =
   process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL ||
   process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8080";
+  "http://localhost:8090";
 const SUGGESTION_LIMIT = 6;
 const DEBOUNCE_MS = 250;
 const RECENT_SEARCHES_KEY = "larekmart:recent-searches";
@@ -206,13 +206,13 @@ const SearchBar = () => {
   return (
     <div
       ref={containerRef}
-      className="relative hidden sm:flex items-center gap-2 rounded-md ring-1 ring-gray-200 px-2 py-1 shadow-md"
+      className="relative flex w-full items-center gap-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-50/90 dark:bg-slate-900/80 backdrop-blur-md px-3.5 py-2 sm:py-2.5 shadow-inner focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/30 transition-all duration-200"
     >
-      <Search className="w-4 h-4 text-gray-500" />
+      <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
       <input
         id="search"
-        placeholder="Search..."
-        className="text-sm outline-0"
+        placeholder="Search products, brands, categories..."
+        className="w-full flex-1 text-xs sm:text-sm outline-none bg-transparent placeholder-slate-400 dark:placeholder-slate-500 text-slate-900 dark:text-slate-100"
         role="combobox"
         aria-expanded={showDropdown}
         aria-controls={listboxId}
@@ -230,25 +230,29 @@ const SearchBar = () => {
         onKeyDown={handleKeyDown}
       />
       {isLoading && (
-        <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" />
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500 shrink-0" />
       )}
 
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-md bg-white text-sm shadow-lg ring-1 ring-gray-200">
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-2xl text-sm shadow-2xl border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] animate-in fade-in slide-in-from-top-1 duration-150">
           {showRecentsHeader && (
-            <div className="flex items-center justify-between px-3 pt-2 text-xs uppercase tracking-wide text-gray-400">
-              <span>Recent</span>
+            <div className="flex items-center justify-between px-3.5 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <span>Recent Searches</span>
               <button
                 type="button"
                 onClick={clearRecents}
-                className="normal-case underline"
+                className="normal-case text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
               >
                 Clear
               </button>
             </div>
           )}
 
-          <ul id={listboxId} role="listbox" className="py-1">
+          <ul
+            id={listboxId}
+            role="listbox"
+            className="py-1 divide-y divide-slate-100/40 dark:divide-slate-800/40"
+          >
             {options.map((option, index) => (
               <li
                 key={
@@ -259,14 +263,16 @@ const SearchBar = () => {
                 id={`${listboxId}-${index}`}
                 role="option"
                 aria-selected={index === activeIndex}
-                className={`cursor-pointer px-3 py-1.5 ${
-                  index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
+                className={`cursor-pointer px-3 py-1.5 transition-colors ${
+                  index === activeIndex
+                    ? "bg-gray-100 dark:bg-slate-800"
+                    : "hover:bg-gray-50 dark:hover:bg-slate-800/60"
                 }`}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => activateOption(option)}
               >
                 {option.kind === "recent" ? (
-                  <span className="flex items-center gap-2 text-gray-600">
+                  <span className="flex items-center gap-2 text-gray-600 dark:text-slate-300">
                     <Clock className="h-3.5 w-3.5 text-gray-400" />
                     {option.label}
                   </span>
@@ -285,19 +291,21 @@ const SearchBar = () => {
                           className="h-8 w-8 rounded object-cover"
                         />
                       ) : (
-                        <span className="h-8 w-8 shrink-0 rounded bg-gray-100" />
+                        <span className="h-8 w-8 shrink-0 rounded bg-gray-100 dark:bg-slate-800" />
                       );
                     })()}
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate">{option.item.name}</span>
+                      <span className="block truncate text-slate-900 dark:text-slate-100">
+                        {option.item.name}
+                      </span>
                       {option.item.brand && (
-                        <span className="block truncate text-xs text-gray-400">
+                        <span className="block truncate text-xs text-gray-400 dark:text-slate-500">
                           {option.item.brand}
                         </span>
                       )}
                     </span>
                     {typeof option.item.price === "number" && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-slate-400">
                         ${option.item.price.toFixed(2)}
                       </span>
                     )}

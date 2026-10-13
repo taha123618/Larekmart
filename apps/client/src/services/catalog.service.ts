@@ -18,10 +18,12 @@
  *   - Storefront overview (full homepage layout)
  */
 
+import type { ProductType } from "@repo/types";
+
 const CATALOG_BASE =
   process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL ||
   process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8080";
+  "http://localhost:8090";
 
 const BASE = `${CATALOG_BASE}/api/v1/catalog`;
 
@@ -309,4 +311,34 @@ export async function fetchStorefrontOverview(): Promise<StorefrontOverview | nu
   } catch {
     return null;
   }
+}
+
+/**
+ * Maps a catalog-service product card to the ProductType shape the UI expects.
+ * Reconstructs colors and default images from the read model.
+ */
+export function normalizeCatalogProduct(p: CatalogProductCard): ProductType {
+  const images =
+    p.images && Object.keys(p.images).length > 0
+      ? p.images
+      : p.thumbnailUrl
+        ? { default: p.thumbnailUrl }
+        : {};
+  const colors =
+    Object.keys(images).length > 0 ? Object.keys(images) : ["default"];
+  const numericId = parseInt(p.productId ?? p.id, 10);
+
+  return {
+    id: isNaN(numericId) ? 0 : numericId,
+    name: p.name,
+    shortDescription: p.shortDescription ?? "",
+    description: "",
+    price: p.price,
+    sizes: ["s", "m", "l", "xl"],
+    colors,
+    images,
+    categorySlug: p.primaryCategory?.slug ?? "",
+    createdAt: p.publishedAt ? new Date(p.publishedAt) : new Date(),
+    updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+  };
 }

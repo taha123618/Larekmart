@@ -12,7 +12,7 @@ const getData = async (): Promise<{
     const authUrl =
       process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
       process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8080";
+      "http://localhost:8090";
     const token = await getToken();
     const [authRes, userSvcRes] = await Promise.all([
       fetch(`${authUrl}/users`, {

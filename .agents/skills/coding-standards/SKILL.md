@@ -38,3 +38,9 @@ Monorepo-wide coding standards for Larekmart.
 3. **Forms**: Use `react-hook-form` + `zodResolver` utilizing shared schemas from `@repo/types`.
 4. **Design System**: Use Tailwind CSS v4 design tokens and CSS variables in `src/app/globals.css`. Do not hardcode arbitrary hex codes.
 5. **Images**: Always use `next/image` with remote domains registered in `next.config.ts`.
+6. **Animation Boundaries & Framer Motion**:
+   - Use `framer-motion` for client-only interactive overlays, slide-overs, modals (`CartDrawer`, `WishlistDrawer`, `QuickViewModal`), and workflow transitions (`<AnimatePresence mode="wait">`).
+   - Do NOT use `<motion.button>` or dynamic `layoutId` on static server-rendered product or category grids (`ProductCard`, `CategoriesClient`, `FlashDeals`). Framer Motion SSR generates `tabindex="0"` and `data-motion-id` attributes that cause React 19 hydration mismatches. Use Tailwind CSS transitions for static SSR elements.
+7. **SSR Hydration Safety (React 19 & Next.js 16)**:
+   - Guard `localStorage`-backed Zustand store reads with an `isMounted` flag before rendering dependent attributes on the client.
+   - Add `suppressHydrationWarning` to SVG icons (to protect against browser extensions injecting attributes like `data-motion-id`) and live countdown tickers/timestamps.

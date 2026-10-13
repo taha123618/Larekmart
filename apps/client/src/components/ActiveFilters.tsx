@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
 
@@ -37,7 +38,7 @@ const colorLabel = (value: string) =>
  * into the filter panel. Each pill removes only its own value; bulk clearing
  * stays with the filter panel.
  */
-const ActiveFilters = () => {
+const ActiveFilters = (): React.JSX.Element | null => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -105,24 +106,26 @@ const ActiveFilters = () => {
   if (filters.length === 0) return null;
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-600">
-      <span className="text-gray-500">Filters:</span>
+    <div className="mb-6 flex flex-wrap items-center gap-2 text-xs">
+      <span className="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px]">
+        Active Filters:
+      </span>
       {filters.map((filter) => (
         <button
           key={filter.id}
           type="button"
           onClick={filter.remove}
           aria-label={`Remove ${filter.ariaLabel} filter`}
-          className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2 py-1 transition-colors hover:border-gray-400"
+          className="flex items-center gap-1.5 rounded-full border border-indigo-200/80 dark:border-indigo-800/80 bg-indigo-50/80 dark:bg-indigo-950/60 backdrop-blur-xs text-indigo-900 dark:text-indigo-200 font-semibold px-3 py-1 transition-all hover:bg-rose-50 dark:hover:bg-rose-950/50 hover:border-rose-200 dark:hover:border-rose-900 hover:text-rose-700 dark:hover:text-rose-300 shadow-xs cursor-pointer group active:scale-95"
         >
           {filter.swatch && (
             <span
-              className="h-3 w-3 rounded-full border border-gray-300"
+              className="h-2.5 w-2.5 rounded-full border border-slate-300 dark:border-slate-600 shrink-0"
               style={{ backgroundColor: filter.swatch }}
             />
           )}
-          {filter.label}
-          <X className="h-3 w-3 text-gray-400" />
+          <span>{filter.label}</span>
+          <X className="h-3 w-3 text-indigo-400 dark:text-indigo-300 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition" />
         </button>
       ))}
     </div>

@@ -25,13 +25,15 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 
 ### Frontends
 
-**`client` (storefront, :3002)** — Next.js App Router, React 19.
+**`client` (storefront, :3002)** — Next.js 16 App Router, React 19.
 
-- Browsing: `ProductList`, `Categories`, `Filter`, `SearchBar`.
+- Browsing: `ProductList`, `Categories`, `Filter`, `SearchBar`, OpenSearch autocomplete.
+- Animation & Overlays: Framer Motion physics-based drawers & modals (`CartDrawer`, `WishlistDrawer`, `QuickViewModal`, checkout transitions in `cart/page.tsx`); GSAP `HeroBanner` promotional timeline carousels; GPU-accelerated Tailwind transitions for static SSR listing grids.
+- Hydration Safety: LocalStorage client store guards (`isMounted`) and `suppressHydrationWarning` for live countdown timers and SVG extension injections.
 - Product page: variant (size/color) selection via search params; `ProductInteraction`
-  writes to the cart.
-- Cart: `zustand` store persisted to `localStorage` (`src/stores/cartStore.ts`).
-- Checkout: `ShippingForm` → `StripePaymentForm` (Stripe `CheckoutProvider`, custom UI) →
+  writes to the cart; interaction telemetry (`VIEW`, `ADD_TO_CART`).
+- Cart: `zustand` store persisted to `localStorage` (`src/stores/cartStore.ts`) with optimistic sync to `cart-service`.
+- Checkout: `ShippingForm` (carrier rate calculations & COD) → `StripePaymentForm` (Stripe `CheckoutProvider`, custom UI) / `CodConfirmationForm` →
   return page polls the session status → `/orders`.
 - Auth: Clerk; server components fetch orders with `auth().getToken()`.
 

@@ -38,7 +38,7 @@ const getData = async (
     const authUrl =
       process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
       process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8080";
+      "http://localhost:8090";
     const res = await fetch(`${authUrl}/users/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,

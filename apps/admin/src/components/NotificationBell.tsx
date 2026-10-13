@@ -25,7 +25,7 @@ export default function NotificationBell() {
   const serviceUrl =
     process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080";
+    "http://localhost:8090";
   const wsUrl =
     process.env.NEXT_PUBLIC_NOTIFICATION_WS_URL || "ws://localhost:8080/ws";
 

@@ -26,7 +26,7 @@ async function getShippingHealth(): Promise<{ ok: boolean; status?: string }> {
     const base =
       process.env.NEXT_PUBLIC_SHIPPING_SERVICE_URL ||
       process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8080";
+      "http://localhost:8090";
     const res = await fetch(`${base}/api/v1/health/ready`, {
       cache: "no-store",
     });

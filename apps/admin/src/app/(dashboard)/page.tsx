@@ -18,11 +18,11 @@ const Homepage = async () => {
   const orderUrl =
     process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080";
+    "http://localhost:8090";
   const analyticUrl =
     process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080";
+    "http://localhost:8090";
 
   const orderChartData = fetch(`${orderUrl}/order-chart`, {
     headers: {

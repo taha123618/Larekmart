@@ -41,7 +41,7 @@ async function getCatalogHealth(): Promise<{ ok: boolean; status?: string }> {
     const base =
       process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL ||
       process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8080";
+      "http://localhost:8090";
     const res = await fetch(`${base}/ready`, { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as { status?: string };

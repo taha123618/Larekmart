@@ -10,144 +10,8 @@ import Filter from "./Filter";
 import ActiveFilters from "./ActiveFilters";
 import {
   fetchCatalogProducts,
-  type CatalogProductCard,
+  normalizeCatalogProduct,
 } from "@/services/catalog.service";
-
-// TEMPORARY
-// const products: ProductsType = [
-//   {
-//     id: 1,
-//     name: "Adidas CoreFit T-Shirt",
-//     shortDescription:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     description:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     price: 39.9,
-//     sizes: ["s", "m", "l", "xl", "xxl"],
-//     colors: ["gray", "purple", "green"],
-//     images: {
-//       gray: "/products/1g.png",
-//       purple: "/products/1p.png",
-//       green: "/products/1gr.png",
-//     },
-//     categorySlug: "test",
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: 2,
-//     name: "Puma Ultra Warm Zip",
-//     shortDescription:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     description:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     price: 59.9,
-//     sizes: ["s", "m", "l", "xl"],
-//     colors: ["gray", "green"],
-//     images: { gray: "/products/2g.png", green: "/products/2gr.png" },
-//     categorySlug: "test",
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: 3,
-//     name: "Nike Air Essentials Pullover",
-//     shortDescription:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     description:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     price: 69.9,
-//     sizes: ["s", "m", "l"],
-//     colors: ["green", "blue", "black"],
-//     images: {
-//       green: "/products/3gr.png",
-//       blue: "/products/3b.png",
-//       black: "/products/3bl.png",
-//     },
-//     categorySlug: "test",
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: 123,
-//     name: "Nike Dri Flex T-Shirt",
-//     shortDescription:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     description:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     price: 29.9,
-//     sizes: ["s", "m", "l"],
-//     colors: ["white", "pink"],
-//     images: { white: "/products/4w.png", pink: "/products/4p.png" },
-//     categorySlug: "test",
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: 5,
-//     name: "Under Armour StormFleece",
-//     shortDescription:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     description:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     price: 49.9,
-//     sizes: ["s", "m", "l"],
-//     colors: ["red", "orange", "black"],
-//     images: {
-//       red: "/products/5r.png",
-//       orange: "/products/5o.png",
-//       black: "/products/5bl.png",
-//     },
-//     categorySlug: "test",
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: 6,
-//   name: "Nike Air Max 270",
-//   shortDescription:
-//     "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//   description:
-//     "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//   price: 59.9,
-//   sizes: ["40", "42", "43", "44"],
-//   colors: ["gray", "white"],
-//   images: { gray: "/products/6g.png", white: "/products/6w.png" },
-//   categorySlug: "test",
-//   createdAt: new Date(),
-//   updatedAt: new Date(),
-// },
-//   {
-//     id: 7,
-//     name: "Nike Ultraboost Pulse ",
-//     shortDescription:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     description:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     price: 69.9,
-//     sizes: ["40", "42", "43"],
-//     colors: ["gray", "pink"],
-//     images: { gray: "/products/7g.png", pink: "/products/7p.png" },
-//     categorySlug: "test",
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: 8,
-//     name: "Levi’s Classic Denim",
-//     shortDescription:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     description:
-//       "Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit. Lorem ipsum dolor sit amet consect adipisicing elit lorem ipsum dolor sit.",
-//     price: 59.9,
-//     sizes: ["s", "m", "l"],
-//     colors: ["blue", "green"],
-//     images: { blue: "/products/8b.png", green: "/products/8gr.png" },
-//     categorySlug: "test",
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-// ];
 
 type ProductListParams = {
   category?: string;
@@ -175,31 +39,6 @@ const SEARCH_SORT: Record<string, string> = {
   oldest: "oldest",
   asc: "price_asc",
   desc: "price_desc",
-};
-
-/**
- * Maps a catalog-service product card to the ProductType shape the UI expects.
- * catalog-service uses `variants[].size/color` arrays; ProductCard reads flat
- * `sizes` and `colors` from ProductType — so we reconstruct them here.
- */
-const normalizeCatalogProduct = (p: CatalogProductCard): ProductType => {
-  const images = p.images || {};
-  const colors = Object.keys(images).length > 0 ? Object.keys(images) : [];
-  // productId is the product-service int id stored as string in the read model
-  const numericId = parseInt(p.productId ?? p.id, 10);
-  return {
-    id: isNaN(numericId) ? 0 : numericId,
-    name: p.name,
-    shortDescription: p.shortDescription ?? "",
-    description: "",
-    price: p.price,
-    sizes: [],
-    colors,
-    images,
-    categorySlug: p.primaryCategory?.slug ?? "",
-    createdAt: p.publishedAt ? new Date(p.publishedAt) : new Date(),
-    updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date(),
-  };
 };
 
 /**
@@ -260,7 +99,7 @@ const fetchSearch = async ({
   const productServiceUrl =
     process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080";
+    "http://localhost:8090";
   const res = await fetch(
     `${productServiceUrl}/products/search?${query.toString()}`,
   );
@@ -322,11 +161,11 @@ const ProductList = async ({
       {params === "products" && <Filter facets={facets} />}
       {params === "products" && <ActiveFilters />}
       {products.length === 0 ? (
-        <p className="py-12 text-center text-sm text-gray-500">
+        <p className="py-12 text-center text-sm text-gray-500 dark:text-slate-400">
           No products match your filters.
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -334,7 +173,7 @@ const ProductList = async ({
       )}
       <Link
         href={category ? `/products/?category=${category}` : "/products"}
-        className="flex justify-end mt-4 underline text-sm text-gray-500"
+        className="flex justify-end mt-4 underline text-sm text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white transition-colors"
       >
         View all products
       </Link>

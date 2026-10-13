@@ -11,7 +11,7 @@
 const MEDIA_BASE =
   process.env.NEXT_PUBLIC_MEDIA_SERVICE_URL ||
   process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8080";
+  "http://localhost:8090";
 
 export interface MediaUploadResponse {
   mediaId: string;

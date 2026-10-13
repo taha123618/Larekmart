@@ -11,7 +11,7 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
 
 ### Issue: Event not being processed by consumer
 
-1. Check Kafka UI at `http://localhost:8080`.
+1. Check Kafka UI at `http://localhost:8090`.
 2. Inspect topic messages:
    - Does the message match the `{ value: <payload> }` envelope?
    - Is the consumer group active and assigned partitions?
@@ -59,11 +59,34 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
 
 ## 4. Next.js Hydration & SSR Issues
 
-### Issue: Hydration mismatch between server and client
+### Issue: Hydration mismatch between server and client (React 19 / Next.js 16)
 
-1. Avoid accessing `window` or `localStorage` during initial server render.
-2. For the Zustand cart store, ensure state persistence uses hydration-safe hooks or `"use client"` components.
-3. Check browser console for specific mismatched HTML tags.
+1. **Framer Motion SSR Attribute Collisions**:
+   - Symptoms: Console warning reporting `tabindex="0"` or internal `data-motion-id` differences on buttons or list items.
+   - Cause: `<motion.button>` or dynamic `layoutId` on server-rendered listing grids (`ProductCard.tsx`, `CategoriesClient.tsx`).
+   - Fix: Replace motion wrappers on static grids with GPU-accelerated Tailwind transitions (`transition-all duration-300 hover:scale-[1.02] active:scale-95`). Reserve Framer Motion for client-only overlays (`CartDrawer`, `QuickViewModal`, `cart/page.tsx`).
+
+2. **Persistent LocalStorage Store Drift (`wishlistStore`, `cartStore`)**:
+   - Symptoms: Heart icon or cart badge mismatching server HTML on first load.
+   - Cause: Store reads `localStorage` synchronously during render pass.
+   - Fix: Guard client-only state checks with an `isMounted` flag:
+     ```tsx
+     const [isMounted, setIsMounted] = useState(false);
+     useEffect(() => {
+       setIsMounted(true);
+     }, []);
+     const isFavorited = isMounted ? isInWishlist(product.id) : false;
+     ```
+     Add `suppressHydrationWarning` on the button or icon element.
+
+3. **Live Countdown & Timestamp Drift**:
+   - Symptoms: Text content mismatch in seconds/milliseconds (`FlashDeals.tsx`).
+   - Cause: SSR time differs from browser execution time.
+   - Fix: Add `suppressHydrationWarning` to the dynamic ticker `<span>` or parent container.
+
+4. **Browser Extension Injections**:
+   - Symptoms: `data-motion-id` or inline styles injected into SVGs before React hydration completes.
+   - Fix: Add `suppressHydrationWarning` directly to the `<svg>` or Lucide icon component (e.g. `<Sparkles suppressHydrationWarning />`).
 
 ## 5. Notification Service & WebSockets (Go :8005)
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
+import Image from "next/image";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -39,7 +40,7 @@ import type {
   UpdateSettingsInput,
 } from "@repo/types";
 
-export default function AccountPage() {
+export default function AccountPage(): React.JSX.Element {
   const { isSignedIn, isLoaded, getToken } = useAuth();
   const { user: clerkUser } = useUser();
   const router = useRouter();
@@ -369,7 +370,7 @@ export default function AccountPage() {
   return (
     <div className="py-8 px-4 sm:px-6 max-w-5xl mx-auto">
       {/* Top Profile Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-gray-900 to-zinc-900 text-white rounded-2xl p-6 sm:p-8 mb-8 shadow-xl flex flex-col sm:flex-row items-center gap-6">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-950 dark:from-[#0b0f19] dark:via-indigo-950/60 dark:to-[#080c14] border border-indigo-500/30 text-white rounded-3xl p-6 sm:p-8 mb-8 shadow-2xl flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
         <div className="relative">
           {avatarMediaId ? (
             <AvatarMediaImage
@@ -378,9 +379,12 @@ export default function AccountPage() {
               userInitial={userInitial.toUpperCase()}
             />
           ) : clerkUser?.imageUrl ? (
-            <img
+            <Image
               src={clerkUser.imageUrl}
               alt="Avatar"
+              width={96}
+              height={96}
+              unoptimized
               className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white/20 object-cover shadow-lg"
             />
           ) : (
@@ -448,6 +452,23 @@ export default function AccountPage() {
               &ldquo;{bio}&rdquo;
             </p>
           )}
+
+          {/* Quick Account Badges */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4 pt-3 border-t border-white/10 text-xs">
+            <span className="px-2.5 py-1 rounded-lg bg-white/10 text-gray-200 border border-white/10 font-medium">
+              {addresses.length} Saved{" "}
+              {addresses.length === 1 ? "Address" : "Addresses"}
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-white/10 text-gray-200 border border-white/10 font-medium">
+              Currency: {currency}
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-white/10 text-gray-200 border border-white/10 font-medium">
+              Language: {preferredLanguage.toUpperCase()}
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
+              Verified Shopper
+            </span>
+          </div>
         </div>
       </div>
 
@@ -1139,9 +1160,12 @@ function AvatarMediaImage({
   }
 
   return (
-    <img
+    <Image
       src={url}
       alt="Avatar"
+      width={96}
+      height={96}
+      unoptimized
       className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white/20 object-cover shadow-lg"
     />
   );

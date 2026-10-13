@@ -1,10 +1,13 @@
 ## Description
+
 <!-- Provide a brief summary of the changes introduced by this pull request. -->
 
 ## Related Issues
+
 <!-- Link relevant issue numbers, e.g., Closes #123 -->
 
 ## Type of Change
+
 - [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
 - [ ] ✨ New feature (non-breaking change which adds functionality)
 - [ ] 💥 Breaking change (fix or feature that would cause existing functionality to change)
@@ -14,7 +17,9 @@
 - [ ] 🔧 Tooling / CI / Infrastructure update
 
 ## Affected Workspaces
+
 <!-- Mark workspaces affected by this PR: -->
+
 - [ ] `apps/client` (Storefront)
 - [ ] `apps/admin` (Admin Dashboard)
 - [ ] `apps/api-gateway`
@@ -24,7 +29,9 @@
 - [ ] Docker / Kubernetes / DevOps
 
 ## Pre-Merge Verification Checklist
+
 <!-- Complete these checks before requesting a review: -->
+
 - [ ] `pnpm check-types` passed with zero errors
 - [ ] `pnpm build` succeeded (if modifying Next.js apps or payment-service)
 - [ ] `pnpm test` passed for affected test suites

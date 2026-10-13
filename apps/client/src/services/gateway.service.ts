@@ -11,7 +11,7 @@ import type {
 } from "@repo/types";
 
 export const getApiGatewayUrl = (): string => {
-  return process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080";
+  return process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090";
 };
 
 /**

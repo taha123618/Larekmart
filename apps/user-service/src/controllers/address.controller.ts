@@ -9,7 +9,7 @@ export class AddressController {
     const user = await userService.getCurrentUser(authUserId);
 
     if (!user) {
-      return reply.status(404).send({ message: "User not found" });
+      return reply.status(200).send([]);
     }
 
     const addresses = await addressService.getAddresses(user.id);
@@ -41,13 +41,18 @@ export class AddressController {
 
   async createMyAddress(request: FastifyRequest, reply: FastifyReply) {
     const authUserId = request.authUserId!;
-    const user = await userService.getCurrentUser(authUserId);
-
-    if (!user) {
-      return reply.status(404).send({ message: "User not found" });
-    }
+    let user = await userService.getCurrentUser(authUserId);
 
     const body = CreateAddressSchema.parse(request.body);
+
+    if (!user) {
+      user = await userService.getOrCreateUser(
+        authUserId,
+        undefined,
+        body.phone || undefined,
+      );
+    }
+
     const address = await addressService.createAddress(
       user.id,
       body,

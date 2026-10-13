@@ -1,12 +1,20 @@
+import type React from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { shadcn } from "@clerk/ui/themes"
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import CartDrawer from "@/components/CartDrawer";
+import WishlistDrawer from "@/components/WishlistDrawer";
+import QuickViewModal from "@/components/QuickViewModal";
 import { ToastContainer } from "react-toastify";
 import { ClerkProvider } from "@clerk/nextjs";
 import CartStoreHydration from "@/components/providers/CartStoreHydration";
 import QueryProvider from "@/components/providers/QueryProvider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import ClientWrapper from "@/wrapper/client-wrapper";
+import ScrollToTop from "@/components/common/ScrollToTop";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,38 +27,67 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Larekmart - Best Clothes",
-  description: "Larekmart is the best place to find the best clothes",
+  title: "Larekmart — Modern Global Marketplace",
+  description:
+    "Shop millions of trending products with buyer protection, fast delivery, and secure payments.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/favicon.ico",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>) {
-  // `suppressHydrationWarning` is set on <body> only. It guards against browser
-  // extensions that inject attributes into it before React hydrates — Grammarly adds
-  // `data-gr-ext-installed` and `data-new-gr-c-s-check-loaded`. React's suppression is
-  // per element, so it does not cover children: a genuine mismatch inside the tree is
-  // still reported. It is deliberately NOT set on <html>, which nothing mutates here.
+}>): React.JSX.Element {
+  // `suppressHydrationWarning` is set on <body> to guard against browser extensions
   return (
-    <ClerkProvider>
-      <QueryProvider>
-        <html lang="en">
-          <body
-            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-            suppressHydrationWarning
-          >
-            <CartStoreHydration />
-            <div className="mx-auto p-4 sm:px-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-6xl">
-              <Navbar />
-              {children}
-              <Footer />
-            </div>
-            <ToastContainer position="bottom-right" />
-          </body>
-        </html>
-      </QueryProvider>
+    <ClerkProvider appearance={{ theme: shadcn }}>
+      <html
+        lang="en"
+        className="scroll-smooth"
+        data-scroll-behavior="smooth"
+        suppressHydrationWarning
+      >
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} font-sans bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col transition-colors duration-200 relative selection:bg-indigo-500/20 selection:text-indigo-400`}
+          suppressHydrationWarning
+        >
+          <QueryProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <ClientWrapper>
+                <CartStoreHydration />
+                <CartDrawer />
+                <WishlistDrawer />
+                <QuickViewModal />
+
+                {/* FULL-WIDTH MARKETPLACE NAVIGATION */}
+                <Navbar />
+
+                {/* MAIN CONTENT CONTAINER */}
+                <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  {children}
+                </main>
+
+                {/* FULL-WIDTH FOOTER */}
+                <Footer />
+
+                {/* SCROLL TO TOP FLOATING BUTTON & PROGRESS */}
+                <ScrollToTop />
+
+                <ToastContainer position="bottom-right" theme="dark" />
+              </ClientWrapper>
+            </ThemeProvider>
+          </QueryProvider>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }

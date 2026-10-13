@@ -11,7 +11,7 @@ Local Kafka is provided by `packages/kafka/docker-compose.yml`:
 
 - 3 brokers (`confluentinc/cp-kafka:7.5.0`) on `localhost:9094`, `:9095`, `:9096`
 - ZooKeeper on `:2181`
-- Kafka UI on `http://localhost:8080`
+- Kafka UI on `http://localhost:8090`
 - `KAFKA_CLUSTER_ID`-style fixed `CLUSTER_ID`, replication factor 3 for internal topics
 
 Start it with:

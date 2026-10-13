@@ -23,7 +23,7 @@ const runBackfillWindow = async (token: string | null, afterId?: number) => {
   const productServiceUrl =
     process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
     process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8080";
+    "http://localhost:8090";
   const res = await fetch(`${productServiceUrl}/products/backfill-search`, {
     method: "POST",
     headers: {

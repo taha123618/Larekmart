@@ -55,7 +55,7 @@ export default function RestockSheet({
     mutationFn: async (data: z.infer<typeof InventoryRestockSchema>) => {
       const token = await getToken();
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080"}/api/v1/inventory/restock`,
+        `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/inventory/restock`,
         {
           method: "POST",
           headers: {

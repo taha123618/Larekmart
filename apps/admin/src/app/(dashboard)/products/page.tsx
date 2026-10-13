@@ -8,7 +8,7 @@ const getData = async (): Promise<ProductsType> => {
     const productUrl =
       process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
       process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8080";
+      "http://localhost:8090";
     const res = await fetch(`${productUrl}/products`);
     const data = await res.json();
     return data;

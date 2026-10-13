@@ -15,7 +15,7 @@ import type { CatalogProductQuery } from "@/services/catalog.service";
 const CATALOG_BASE =
   process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL ||
   process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8080";
+  "http://localhost:8090";
 const BASE = `${CATALOG_BASE}/api/v1/catalog`;
 
 async function get<T>(path: string): Promise<T> {

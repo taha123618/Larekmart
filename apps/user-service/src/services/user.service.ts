@@ -15,14 +15,15 @@ export class UserService {
     let user = await userRepository.findByAuthUserId(authUserId);
 
     if (!user) {
-      if (!email) {
-        throw new Error("Email is required to initialize user record");
-      }
+      const resolvedEmail =
+        email && email.includes("@")
+          ? email
+          : `${authUserId.toLowerCase()}@user.larekmart.local`;
 
       logger.info(`Creating initial user record for authUserId: ${authUserId}`);
       user = await userRepository.create({
         authUserId,
-        email,
+        email: resolvedEmail,
         phone,
       });
 

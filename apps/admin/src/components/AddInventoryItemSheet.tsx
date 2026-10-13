@@ -60,7 +60,7 @@ export default function AddInventoryItemSheet({
     mutationFn: async (data: z.infer<typeof CreateItemSchema>) => {
       const token = await getToken();
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080"}/api/v1/inventory/items`,
+        `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/inventory/items`,
         {
           method: "POST",
           headers: {

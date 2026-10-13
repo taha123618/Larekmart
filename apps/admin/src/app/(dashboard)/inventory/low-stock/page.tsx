@@ -22,7 +22,7 @@ async function fetchLowStock(
 ): Promise<InventoryItemData[]> {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080"}/api/v1/inventory/low-stock?limit=200`,
+      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/inventory/low-stock?limit=200`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

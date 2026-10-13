@@ -25,9 +25,10 @@ import {
   Loader2,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import RecommendationSection from "@/components/RecommendationSection";
 import { useAuth } from "@clerk/nextjs";
+import { motion, AnimatePresence } from "framer-motion";
 
 const defaultSteps = [
   {
@@ -72,10 +73,14 @@ const CartContent = () => {
 
   const activeServerCart = serverCartQueryData;
 
+  const hasMergedRef = useRef(false);
+
   useEffect(() => {
+    if (hasMergedRef.current || !userId) return;
     const init = async () => {
       const token = await getToken();
-      if (userId && token) {
+      if (userId && token && !hasMergedRef.current) {
+        hasMergedRef.current = true;
         await mergeGuestCart(token);
       }
     };
@@ -184,42 +189,48 @@ const CartContent = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-8 items-center justify-center mt-12 px-4 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-8 items-center justify-center py-8 px-4 max-w-7xl mx-auto">
       {/* TITLE */}
-      <h1 className="text-2xl font-medium">Your Shopping Cart</h1>
+      <div className="text-center">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          Marketplace Checkout
+        </h1>
+        <p className="text-xs text-slate-500 mt-1">
+          Review your items, apply vouchers, and complete your secure order.
+        </p>
+      </div>
 
       {/* STEPS */}
-      <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
-        {steps.map((step) => (
-          <div
-            className={`flex items-center gap-2 border-b-2 pb-4 ${
-              step.id === activeStep ? "border-gray-800" : "border-gray-200"
-            }`}
-            key={step.id}
-          >
+      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 bg-white/95 dark:bg-slate-900/60 dark:backdrop-blur-xl p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
+        {steps.map((step) => {
+          const isActive = step.id === activeStep;
+          return (
             <div
-              className={`w-6 h-6 rounded-full text-white p-4 flex items-center justify-center text-sm font-semibold ${
-                step.id === activeStep ? "bg-gray-800" : "bg-gray-400"
+              className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition ${
+                isActive
+                  ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold"
+                  : "text-slate-500 dark:text-slate-400"
               }`}
+              key={step.id}
             >
-              {step.id}
+              <div
+                className={`w-6 h-6 rounded-full text-white flex items-center justify-center text-xs font-bold ${
+                  isActive ? "bg-indigo-600" : "bg-slate-300 dark:bg-slate-700"
+                }`}
+              >
+                {step.id}
+              </div>
+              <span className="text-xs sm:text-sm">{step.title}</span>
             </div>
-            <p
-              className={`text-sm font-medium ${
-                step.id === activeStep ? "text-gray-800" : "text-gray-400"
-              }`}
-            >
-              {step.title}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* INVENTORY ADJUSTMENTS NOTICE */}
       {activeServerCart?.adjustments &&
         activeServerCart.adjustments.length > 0 && (
-          <div className="w-full bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg flex items-start gap-3 text-sm">
-            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="w-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 p-4 rounded-2xl flex items-start gap-3 text-sm">
+            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
               <span className="font-semibold">
                 Notice regarding your cart items:{" "}
@@ -234,155 +245,217 @@ const CartContent = () => {
         )}
 
       {/* MAIN CONTAINER */}
-      <div className="w-full flex flex-col lg:flex-row gap-12">
+      <div className="w-full flex flex-col lg:flex-row gap-8">
         {/* LEFT COLUMN: ITEMS OR CHECKOUT STEPS */}
-        <div className="w-full lg:w-7/12 shadow-md border border-gray-100 p-6 md:p-8 rounded-lg flex flex-col gap-6">
-          {activeStep === 1 ? (
-            isCartLoading && cart.length === 0 ? (
-              <div className="flex items-center justify-center py-16 gap-2 text-gray-500">
-                <Loader2 className="w-5 h-5 animate-spin text-gray-800" />
-                <span>Loading your cart...</span>
-              </div>
-            ) : cart.length === 0 ? (
-              <div className="text-center py-16 flex flex-col items-center gap-4">
-                <p className="text-gray-500">Your cart is currently empty.</p>
-                <button
-                  onClick={() => router.push("/products")}
-                  className="px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition cursor-pointer"
-                >
-                  Explore Catalog
-                </button>
-              </div>
-            ) : (
-              cart.map((item, index) => (
-                <div
-                  className="flex items-center justify-between pb-6 border-b border-gray-100 last:border-b-0"
-                  key={`${item.id}-${item.selectedSize}-${item.selectedColor}-${index}`}
-                >
-                  {/* IMAGE AND DETAILS */}
-                  <div className="flex gap-6 items-center">
-                    <div className="relative w-24 h-24 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-100 flex items-center justify-center">
-                      <MediaImage
-                        src={
-                          (item.images as Record<string, string>)?.[
-                            item.selectedColor
-                          ] ||
-                          (typeof item.images === "object" && item.images
-                            ? Object.values(
-                                item.images as Record<string, string>,
-                              )[0] || ""
-                            : "") ||
-                          (item as any).image ||
-                          ""
-                        }
-                        alt={item.name}
-                        fallbackSrc="/placeholder.png"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {item.name}
-                      </p>
-                      <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                        {item.selectedSize && (
-                          <span>Size: {item.selectedSize}</span>
-                        )}
-                        {item.selectedColor && (
-                          <span>Color: {item.selectedColor}</span>
-                        )}
-                      </div>
-                      <p className="text-sm font-semibold text-gray-800 mt-1">
-                        ${(item.price * item.quantity).toFixed(2)}
-                        {item.quantity > 1 && (
-                          <span className="text-xs font-normal text-gray-500 ml-1">
-                            (${item.price.toFixed(2)} each)
-                          </span>
-                        )}
-                      </p>
-                    </div>
+        <div className="w-full lg:w-7/12 bg-white/95 dark:bg-slate-900/70 dark:backdrop-blur-xl shadow-xs border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] p-6 md:p-8 rounded-3xl flex flex-col gap-6 overflow-hidden">
+          <AnimatePresence mode="wait">
+            {activeStep === 1 ? (
+              <motion.div
+                key="step-1"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col gap-6"
+              >
+                {isCartLoading && cart.length === 0 ? (
+                  <div className="flex items-center justify-center py-16 gap-2 text-gray-500 dark:text-slate-400">
+                    <Loader2 className="w-5 h-5 animate-spin text-gray-800 dark:text-slate-200" />
+                    <span>Loading your cart...</span>
                   </div>
-
-                  {/* CONTROLS */}
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                      <button
-                        onClick={() =>
-                          handleQuantityChange(item, item.quantity - 1)
-                        }
-                        className="px-2.5 py-1.5 hover:bg-gray-100 text-gray-600 transition cursor-pointer"
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="px-3 py-1 text-sm font-medium text-gray-800">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() =>
-                          handleQuantityChange(item, item.quantity + 1)
-                        }
-                        className="px-2.5 py-1.5 hover:bg-gray-100 text-gray-600 transition cursor-pointer"
-                        aria-label="Increase quantity"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
+                ) : cart.length === 0 ? (
+                  <div className="text-center py-16 flex flex-col items-center gap-4">
+                    <p className="text-gray-500 dark:text-slate-400">
+                      Your cart is currently empty.
+                    </p>
                     <button
-                      onClick={() => handleRemoveItem(item)}
-                      className="w-8 h-8 rounded-full bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition cursor-pointer"
-                      title="Remove item"
+                      onClick={() => router.push("/products")}
+                      className="px-6 py-2.5 bg-slate-900 dark:bg-slate-800 text-white rounded-lg hover:bg-slate-800 dark:hover:bg-slate-700 transition cursor-pointer"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      Explore Catalog
                     </button>
                   </div>
-                </div>
-              ))
-            )
-          ) : activeStep === 2 ? (
-            <ShippingForm setShippingForm={setShippingForm} />
-          ) : activeStep === 3 && shippingForm ? (
-            shippingForm.isCod ? (
-              <CodConfirmationForm
-                shippingForm={shippingForm}
-                cart={cart}
-                grandTotal={grandTotal}
-                discountTotal={discountTotal}
-                taxTotal={taxTotal}
-              />
+                ) : (
+                  <AnimatePresence mode="popLayout">
+                    {cart.map((item, index) => (
+                      <motion.div
+                        layout
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{
+                          opacity: 0,
+                          x: -25,
+                          transition: { duration: 0.2 },
+                        }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 350,
+                          damping: 25,
+                        }}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100 dark:border-slate-800 last:border-b-0"
+                        key={`${item.id}-${item.selectedSize}-${item.selectedColor}-${index}`}
+                      >
+                        {/* IMAGE AND DETAILS */}
+                        <div className="flex gap-4 sm:gap-6 items-center">
+                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-gray-50 dark:bg-slate-800 rounded-xl overflow-hidden shrink-0 border border-gray-100 dark:border-slate-700 flex items-center justify-center">
+                            <MediaImage
+                              src={
+                                (item.images as Record<string, string>)?.[
+                                  item.selectedColor
+                                ] ||
+                                (typeof item.images === "object" && item.images
+                                  ? Object.values(
+                                      item.images as Record<string, string>,
+                                    )[0] || ""
+                                  : "") ||
+                                (item as { image?: string }).image ||
+                                ""
+                              }
+                              alt={item.name}
+                              fallbackSrc="/placeholder.png"
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2">
+                              {item.name}
+                            </p>
+                            <div className="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-slate-400">
+                              {item.selectedSize && (
+                                <span>Size: {item.selectedSize}</span>
+                              )}
+                              {item.selectedColor && (
+                                <span>Color: {item.selectedColor}</span>
+                              )}
+                            </div>
+                            <p className="text-sm font-semibold text-gray-800 dark:text-slate-100 mt-1">
+                              ${(item.price * item.quantity).toFixed(2)}
+                              {item.quantity > 1 && (
+                                <span className="text-xs font-normal text-gray-500 dark:text-slate-400 ml-1">
+                                  (${item.price.toFixed(2)} each)
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* CONTROLS */}
+                        <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800">
+                            <motion.button
+                              whileTap={{ scale: 0.88 }}
+                              onClick={() =>
+                                handleQuantityChange(item, item.quantity - 1)
+                              }
+                              className="px-2.5 py-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 transition cursor-pointer"
+                              aria-label="Decrease quantity"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </motion.button>
+                            <span className="px-3 py-1 text-sm font-medium text-gray-800 dark:text-slate-100">
+                              {item.quantity}
+                            </span>
+                            <motion.button
+                              whileTap={{ scale: 0.88 }}
+                              onClick={() =>
+                                handleQuantityChange(item, item.quantity + 1)
+                              }
+                              className="px-2.5 py-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 transition cursor-pointer"
+                              aria-label="Increase quantity"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </motion.button>
+                          </div>
+
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => handleRemoveItem(item)}
+                            className="w-8 h-8 rounded-full bg-red-50 dark:bg-rose-950/40 hover:bg-red-100 dark:hover:bg-rose-900/60 text-red-500 dark:text-rose-400 flex items-center justify-center transition cursor-pointer"
+                            title="Remove item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                )}
+              </motion.div>
+            ) : activeStep === 2 ? (
+              <motion.div
+                key="step-2"
+                initial={{ opacity: 0, x: 15 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -15 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ShippingForm setShippingForm={setShippingForm} />
+              </motion.div>
+            ) : activeStep === 3 && shippingForm ? (
+              <motion.div
+                key="step-3"
+                initial={{ opacity: 0, x: 15 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -15 }}
+                transition={{ duration: 0.2 }}
+              >
+                {shippingForm.isCod ? (
+                  <CodConfirmationForm
+                    shippingForm={shippingForm}
+                    cart={cart}
+                    grandTotal={grandTotal}
+                    discountTotal={discountTotal}
+                    taxTotal={taxTotal}
+                  />
+                ) : (
+                  <StripePaymentForm
+                    shippingForm={shippingForm}
+                    onSwitchToCod={() =>
+                      setShippingForm((prev) =>
+                        prev ? { ...prev, isCod: true } : undefined,
+                      )
+                    }
+                  />
+                )}
+              </motion.div>
             ) : (
-              <StripePaymentForm shippingForm={shippingForm} />
-            )
-          ) : (
-            <p className="text-sm text-gray-500">
-              Please fill in the shipping form to continue.
-            </p>
-          )}
+              <motion.p
+                key="step-fallback"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-gray-500"
+              >
+                Please fill in the shipping form to continue.
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* RIGHT COLUMN: PRICING BREAKDOWN & COUPONS */}
-        <div className="w-full lg:w-5/12 shadow-md border border-gray-100 p-6 md:p-8 rounded-lg flex flex-col gap-6 h-max">
-          <h2 className="font-semibold text-lg text-gray-900">Order Summary</h2>
+        <div className="w-full lg:w-5/12 bg-white/95 dark:bg-slate-900/70 dark:backdrop-blur-xl shadow-xs border border-slate-200/80 dark:border-slate-800/80 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] p-6 md:p-8 rounded-3xl flex flex-col gap-6 h-max">
+          <h2 className="font-bold text-lg text-slate-900 dark:text-white">
+            Order Summary
+          </h2>
 
           {/* COUPON CODE FORM */}
           {activeStep === 1 && (
-            <div className="flex flex-col gap-2 pt-2 pb-4 border-b border-gray-100">
+            <div className="flex flex-col gap-2 pt-2 pb-4 border-b border-gray-100 dark:border-slate-800">
               <form onSubmit={handleApplyCoupon} className="flex gap-2">
                 <div className="relative flex-1">
-                  <Tag className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                  <Tag className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-slate-500" />
                   <input
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     placeholder="Enter coupon (e.g. SAVE10)"
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-gray-800"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={couponLoading || !couponCode.trim()}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-2 bg-slate-900 dark:bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-50 transition cursor-pointer flex items-center gap-1.5"
                 >
                   {couponLoading && (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -395,8 +468,8 @@ const CartContent = () => {
                 <div
                   className={`text-xs mt-1 flex items-center gap-1.5 ${
                     couponFeedback.type === "success"
-                      ? "text-emerald-700 font-medium"
-                      : "text-rose-600"
+                      ? "text-emerald-700 dark:text-emerald-400 font-medium"
+                      : "text-rose-600 dark:text-rose-400"
                   }`}
                 >
                   {couponFeedback.type === "success" ? (
@@ -415,13 +488,13 @@ const CartContent = () => {
                     {activeServerCart.coupons.map((coupon) => (
                       <span
                         key={coupon.code}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                       >
                         <Tag className="w-3 h-3" />
                         {coupon.code} (-${coupon.appliedAmount.toFixed(2)})
                         <button
                           onClick={() => handleRemoveCoupon(coupon.code)}
-                          className="hover:text-emerald-950 ml-1 cursor-pointer"
+                          className="hover:text-emerald-950 dark:hover:text-emerald-100 ml-1 cursor-pointer"
                           title="Remove coupon"
                         >
                           <X className="w-3 h-3" />
@@ -436,33 +509,33 @@ const CartContent = () => {
           {/* FINANCIAL TOTALS */}
           <div className="flex flex-col gap-3">
             <div className="flex justify-between text-sm">
-              <p className="text-gray-500">Subtotal</p>
-              <p className="font-medium text-gray-900">
+              <p className="text-gray-500 dark:text-slate-400">Subtotal</p>
+              <p className="font-medium text-gray-900 dark:text-white">
                 ${subtotal.toFixed(2)}
               </p>
             </div>
 
             {discountTotal > 0 && (
-              <div className="flex justify-between text-sm text-emerald-600 font-medium">
+              <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400 font-medium">
                 <p>Discounts Applied</p>
                 <p>-${discountTotal.toFixed(2)}</p>
               </div>
             )}
 
             <div className="flex justify-between text-sm">
-              <p className="text-gray-500">
+              <p className="text-gray-500 dark:text-slate-400">
                 Shipping{" "}
                 {shippingForm?.carrier
                   ? `(${shippingForm.carrier.toUpperCase()})`
                   : "Estimate"}
               </p>
-              <p className="font-medium text-gray-900">
+              <p className="font-medium text-gray-900 dark:text-white">
                 {shippingFee === 0 ? "Free" : `$${shippingFee.toFixed(2)}`}
               </p>
             </div>
 
             {codFee > 0 && (
-              <div className="flex justify-between text-sm text-emerald-700 font-medium">
+              <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400 font-medium">
                 <p>COD Handling Fee</p>
                 <p>+${codFee.toFixed(2)}</p>
               </div>
@@ -470,20 +543,22 @@ const CartContent = () => {
 
             {taxTotal > 0 && (
               <div className="flex justify-between text-sm">
-                <p className="text-gray-500">Estimated Tax</p>
-                <p className="font-medium text-gray-900">
+                <p className="text-gray-500 dark:text-slate-400">
+                  Estimated Tax
+                </p>
+                <p className="font-medium text-gray-900 dark:text-white">
                   ${taxTotal.toFixed(2)}
                 </p>
               </div>
             )}
 
-            <hr className="border-gray-200 my-1" />
+            <hr className="border-gray-200 dark:border-slate-800 my-1" />
 
             <div className="flex justify-between items-center">
-              <p className="text-gray-900 font-semibold text-base">
+              <p className="text-gray-900 dark:text-white font-semibold text-base">
                 Estimated Total
               </p>
-              <p className="font-bold text-lg text-gray-900">
+              <p className="font-bold text-lg text-gray-900 dark:text-white">
                 ${grandTotal.toFixed(2)}
               </p>
             </div>
@@ -492,7 +567,7 @@ const CartContent = () => {
           {activeStep === 1 && cart.length > 0 && (
             <button
               onClick={() => router.push("/cart?step=2", { scroll: false })}
-              className="w-full bg-gray-900 hover:bg-gray-800 transition text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer mt-2"
+              className="w-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 text-white py-3.5 px-4 rounded-2xl font-bold flex items-center justify-center gap-2 cursor-pointer mt-2 shadow-lg shadow-indigo-500/25 active:scale-95"
             >
               Proceed to Shipping
               <ArrowRight className="w-4 h-4" />
