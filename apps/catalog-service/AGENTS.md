@@ -27,6 +27,7 @@ the storefront fast, denormalized catalog queries.
 product-service  →  Kafka (product.created/updated/deleted)  →  catalog-service (projectors)  →  catalog-db (read models)
 inventory-service  →  Kafka (inventory.adjusted/restocked)   →  catalog-service (projectors)  →  catalog-db (availability)
 product-service (category.*)  →  Kafka                       →  catalog-service (projectors)  →  catalog-db (category tree)
+review-service  →  Kafka (product.rating-summary.updated)    →  catalog-service (projectors)  →  catalog-db (rating & reviews)
 client/admin  →  HTTP GET  →  catalog-service  →  Redis cache-aside  →  catalog-db
 ```
 

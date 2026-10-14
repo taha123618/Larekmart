@@ -158,3 +158,10 @@ spec:
                 name: media-service
                 port:
                   number: 8013
+          - path: /api/v1/reviews
+            pathType: Prefix
+            backend:
+              service:
+                name: review-service
+                port:
+                  number: 8014

@@ -92,7 +92,8 @@ export async function fetchAdminReviews(
   query?: { status?: string; page?: number; limit?: number },
 ): Promise<AdminReviewsListResponse | null> {
   const params = new URLSearchParams();
-  if (query?.status && query.status !== "ALL") params.set("status", query.status);
+  if (query?.status && query.status !== "ALL")
+    params.set("status", query.status);
   if (query?.page) params.set("page", String(query.page));
   if (query?.limit) params.set("limit", String(query.limit));
 

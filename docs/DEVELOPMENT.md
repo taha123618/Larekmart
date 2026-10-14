@@ -130,7 +130,9 @@ Postgres container provisions via `POSTGRES_MULTIPLE_DATABASES`):
 | cart-service                     | 8009               |
 | catalog-service                  | 8010               |
 | shipping-service                 | 8011               |
+| user-service                     | 8012               |
 | media-service (Hono)             | 8013               |
+| review-service (Fastify)         | 8014               |
 | Kafka UI                         | 8080               |
 | Mongo Express                    | 8081               |
 | Kafka brokers                    | 9094 / 9095 / 9096 |

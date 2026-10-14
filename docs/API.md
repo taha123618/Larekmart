@@ -4,19 +4,20 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ## Service Ports & Protocols
 
-| Service                  | Port   | Framework              | Auth Guard                         | Owner                                         |
-| ------------------------ | ------ | ---------------------- | ---------------------------------- | --------------------------------------------- |
-| `product-service`        | `8000` | Express 5              | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog                    |
-| `order-service`          | `8001` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics                  |
-| `payment-service`        | `8002` | Hono 4                 | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks                    |
-| `auth-service`           | `8003` | Express 5              | `shouldBeAdmin`                    | Admin User Management Proxy                   |
-| `analytic-service`       | `8004` | Express 5              | `shouldBeAdmin`                    | Analytics & KPI Aggregations                  |
-| `notification-service`   | `8005` | Go / Chi               | User token / public probes         | Notifications, WebSockets & delivery          |
-| `search-service`         | `8006` | Fastify 5              | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete       |
-| `inventory-service`      | `8007` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory     |
-| `recommendation-service` | `8008` | Python 3.12+ / FastAPI | Public / User telemetry            | AI recommendations, embeddings & interactions |
-| `media-service`          | `8013` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Media uploads, storage, variants & lifecycle  |
-| `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                  |
+| Service                  | Port   | Framework              | Auth Guard                         | Owner                                                  |
+| ------------------------ | ------ | ---------------------- | ---------------------------------- | ------------------------------------------------------ |
+| `product-service`        | `8000` | Express 5              | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog                             |
+| `order-service`          | `8001` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics                           |
+| `payment-service`        | `8002` | Hono 4                 | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks                             |
+| `auth-service`           | `8003` | Express 5              | `shouldBeAdmin`                    | Admin User Management Proxy                            |
+| `analytic-service`       | `8004` | Express 5              | `shouldBeAdmin`                    | Analytics & KPI Aggregations                           |
+| `notification-service`   | `8005` | Go / Chi               | User token / public probes         | Notifications, WebSockets & delivery                   |
+| `search-service`         | `8006` | Fastify 5              | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete                |
+| `inventory-service`      | `8007` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory              |
+| `recommendation-service` | `8008` | Python 3.12+ / FastAPI | Public / User telemetry            | AI recommendations, embeddings & interactions          |
+| `media-service`          | `8013` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Media uploads, storage, variants & lifecycle           |
+| `review-service`         | `8014` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Customer reviews, ratings, verified gating, moderation |
+| `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                           |
 
 ---
 
@@ -592,3 +593,88 @@ only a best-effort availability cache.
 - **Auth**: Public / Scraper
 - **Response**: Health status, PostgreSQL probe, Redis probe, storage (S3/MinIO) connectivity probe, and Prometheus metrics exposition.
 - **Note**: `media-worker` (Sharp variants) and `media-cleanup` (session expiry, stale-job requeue, purge GC) run as separate containers with no HTTP surface.
+
+---
+
+## 12. Review Service (`:8014`)
+
+### `GET /api/v1/products/:productId/reviews`
+
+- **Auth**: Public
+- **Query Params**: `page` (default 1), `limit` (default 10), `sort` (`newest`, `highest_rating`, `lowest_rating`, `most_helpful`), `rating` (1-5 filter), `verifiedOnly` (`true`/`false`), `hasMedia` (`true`/`false`)
+- **Response**: `{ reviews: ReviewType[], total: number, page: number, totalPages: number }`
+
+### `GET /api/v1/products/:productId/rating-summary`
+
+- **Auth**: Public
+- **Response**: `ProductRatingSummaryType` — `{ productId, averageRating, totalReviews, verifiedPurchasesCount, distribution: { [1..5]: number } }`
+- **Cache**: Redis read-through cache (`review:summary:<productId>`) with write-through invalidation and Kafka broadcast.
+
+### `GET /api/v1/reviews/:reviewId`
+
+- **Auth**: Public
+- **Response**: Single review object including author info, verified purchase badge, media list, and seller response thread.
+
+### `POST /api/v1/products/:productId/reviews`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `{ rating: number (1-5), title?: string, content: string, mediaIds?: string[] }`
+- **Response**: `201 Created` — `{ review: ReviewType }`
+- **Enforcement**: Checks database `purchase_eligibility` table derived from consumed `order.delivered` / `shipment.delivered` events. If customer has not purchased or already reviewed this product, rejects with `403 Forbidden` / `409 Conflict`.
+- **Side Effect**: Publishes `review.created` Kafka event, triggers rating summary recalculation, and publishes `product.rating-summary.updated`.
+
+### `GET /api/v1/me/reviews`
+
+- **Auth**: User (`shouldBeUser`)
+- **Response**: `{ reviews: ReviewType[] }` — all reviews submitted by the authenticated user.
+
+### `PATCH /api/v1/reviews/:reviewId`
+
+- **Auth**: User (owner)
+- **Body**: `{ rating?: number, title?: string, content?: string }`
+- **Response**: `{ review: ReviewType }`
+- **Side Effect**: Publishes `review.updated` Kafka event and updates rating summary.
+
+### `DELETE /api/v1/reviews/:reviewId`
+
+- **Auth**: User (owner) or Admin (`shouldBeAdmin`)
+- **Response**: `{ success: true, message: "Review deleted" }`
+- **Side Effect**: Publishes `review.deleted` Kafka event, recalculates product rating summary, and invalidates Redis cache.
+
+### `POST /api/v1/reviews/:reviewId/votes`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `{ isHelpful: boolean }`
+- **Response**: `{ success: true, helpfulCount: number, unhelpfulCount: number }`
+- **Anti-Abuse**: Prevents author self-voting; atomic transitions if changing from helpful to unhelpful.
+
+### `POST /api/v1/reviews/:reviewId/reports`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `{ reason: string, details?: string }`
+- **Response**: `201 Created` — `{ message: "Review reported" }`
+- **Side Effect**: Publishes `review.reported` event. Automatically flags reviews with 5+ distinct reports for moderation.
+
+### `POST /api/v1/reviews/:reviewId/response`
+
+- **Auth**: Seller / Admin (`shouldBeAdmin` or authorized seller)
+- **Body**: `{ content: string }`
+- **Response**: `201 Created` — `{ response: SellerResponseType }`
+
+### `GET /api/v1/admin/reviews/pending`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `page`, `limit`
+- **Response**: Moderation queue of flagged and pending reviews.
+
+### `POST /api/v1/admin/reviews/:reviewId/moderate`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `{ action: "APPROVE" | "REJECT", notes?: string }`
+- **Response**: `{ success: true, status: string }`
+- **Side Effect**: Publishes `review.approved` or `review.rejected` event.
+
+### `GET /health`, `GET /ready`, `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Health liveness, PostgreSQL + Redis readiness probes, and Prometheus metrics exposition.

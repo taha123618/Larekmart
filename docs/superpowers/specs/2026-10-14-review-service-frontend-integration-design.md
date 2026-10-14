@@ -3,6 +3,7 @@
 ## 1. Overview & Objectives
 
 This specification defines the end-to-end integration of the **`review-service`** (:8014) into:
+
 1. **Storefront (`apps/client`)**: Product review listing, 1-5 star rating breakdown, verified purchase enforcement, helpful voting, abuse reporting, and image-attached review submissions via `media-service`.
 2. **Admin Dashboard (`apps/admin`)**: Dedicated moderation queue, abuse reports management, audit logging, and product rating summary recalculation.
 
@@ -13,6 +14,7 @@ All communication routes through the **API Gateway** (`:8090`).
 ## 2. Storefront Integration (`apps/client`)
 
 ### 2.1 Service Layer (`apps/client/src/services/review.service.ts`)
+
 - Connects to `NEXT_PUBLIC_API_GATEWAY_URL` (default `http://localhost:8090`).
 - Methods:
   - `fetchProductReviews(productId, query)`: `GET /api/v1/products/:productId/reviews` with pagination (`page`, `limit`) and sorting (`newest`, `highest_rating`, `lowest_rating`, `most_helpful`).
@@ -22,6 +24,7 @@ All communication routes through the **API Gateway** (`:8090`).
   - `reportReview(reviewId, reason, details, token)`: `POST /api/v1/reviews/:reviewId/reports`.
 
 ### 2.2 Product Tabs & Review List (`apps/client/src/components/ProductTabs.tsx`)
+
 - Removes local `localStorage` mock.
 - Replaces with live state:
   - Rating summary banner with 5-star to 1-star visual percentage bars and average score.
@@ -33,6 +36,7 @@ All communication routes through the **API Gateway** (`:8090`).
   - Report button opening abuse reporting dialog.
 
 ### 2.3 Review Submission Dialog (`apps/client/src/components/WriteReviewModal.tsx`)
+
 - Modal dialog with:
   - Interactive star picker (1–5).
   - Review title & detailed feedback input.
@@ -47,6 +51,7 @@ All communication routes through the **API Gateway** (`:8090`).
 ## 3. Admin Portal Integration (`apps/admin`)
 
 ### 3.1 Service Layer (`apps/admin/src/services/review.service.ts`)
+
 - Methods:
   - `fetchPendingReviews(params, token)`: `GET /api/v1/admin/reviews/pending`.
   - `moderateReview(reviewId, action, reason, token)`: `POST /api/v1/admin/reviews/:reviewId/moderate` (`APPROVE`, `REJECT`, `FLAG`).
@@ -54,6 +59,7 @@ All communication routes through the **API Gateway** (`:8090`).
   - `recalculateRatingSummaries(token)`: `POST /api/v1/admin/reviews/recalculate-summaries`.
 
 ### 3.2 Reviews Management Dashboard (`apps/admin/src/app/(dashboard)/reviews/page.tsx`)
+
 - Navigation: Add "Customer Reviews" to `apps/admin/src/components/AppSidebar.tsx`.
 - KPI Summary Cards:
   - Total Reviews across marketplace

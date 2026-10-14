@@ -31,6 +31,10 @@ A hybrid Kafka consumer worker and Express HTTP API service that listens to all 
   - `user.created` (and alias `email-successful`)
   - `product.created`
   - `product.deleted`
+  - `review.created`
+  - `review.approved`
+  - `review.reported`
+  - `product.rating-summary.updated`
 - If modifying topic contracts, update the producer, all consumers, `@repo/types`, and `docs/EVENT-DRIVEN-ARCHITECTURE.md` together.
 
 ## Database & Persistence

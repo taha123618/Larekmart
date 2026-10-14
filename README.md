@@ -102,7 +102,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── catalog-service/       # Fastify 5 + Prisma read-model catalog discovery, brands & collections (:8010)
 │   ├── shipping-service/      # Koa + PostgreSQL + carrier adapters shipment lifecycle & tracking (:8011)
 │   ├── user-service/          # Fastify 5 + Prisma customer profiles, addresses & preferences (:8012)
-│   └── media-service/         # Hono + S3/MinIO + Drizzle media uploads, variants & workers (:8013)
+│   ├── media-service/         # Hono + S3/MinIO + Drizzle media uploads, variants & workers (:8013)
+│   └── review-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis reviews, ratings, moderation & reputation (:8014)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -148,6 +149,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`shipping-service`**       | Koa (Node.js), Prisma, PostgreSQL, Redis, Kafka, Clerk                                | `8011` | Shipment lifecycle, rate quotes, carrier adapters (TCS/Leopards/DHL/FedEx), tracking, and labels.                                               |
 | **`user-service`**           | Fastify 5, Prisma, PostgreSQL, Redis, Kafka, Clerk                                    | `8012` | Customer profiles, saved addresses, preferences, and account-domain events.                                                                     |
 | **`media-service`**          | Hono 4, Drizzle, PostgreSQL, S3/MinIO, Redis, Kafka, Clerk, Sharp                     | `8013` | Presigned direct uploads, media metadata, image variants, lifecycle events, and processing/cleanup workers.                                     |
+| **`review-service`**         | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk                                   | `8014` | Customer reviews, ratings, verified purchase gating, moderation queue, helpful voting, seller replies, and rating summary projections.          |
 
 ---
 

@@ -138,7 +138,9 @@ export async function registerProductEventSubscriptions(
       topicName: config.kafka.topics.ratingSummaryUpdated,
       topicHandler: async (message: any) => {
         const payload = message.value || message;
-        logger.info("Received product.rating-summary.updated event", { payload });
+        logger.info("Received product.rating-summary.updated event", {
+          payload,
+        });
 
         try {
           const productId = payload.productId || payload.data?.productId;

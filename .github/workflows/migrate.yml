@@ -33,6 +33,7 @@ jobs:
       SHIPPING_DATABASE_URL: ${{ secrets.SHIPPING_DATABASE_URL }}
       USER_DATABASE_URL: ${{ secrets.USER_DATABASE_URL }}
       MEDIA_DATABASE_URL: ${{ secrets.MEDIA_DATABASE_URL }}
+      REVIEW_DATABASE_URL: ${{ secrets.REVIEW_DATABASE_URL }}
 
     steps:
       - name: Checkout Code
@@ -104,3 +105,9 @@ jobs:
         run: pnpm --filter media-service db:migrate
         env:
           DATABASE_URL: ${{ env.MEDIA_DATABASE_URL }}
+
+      - name: Run review-service (Drizzle) migrations
+        if: github.event.inputs.action == 'deploy' && env.REVIEW_DATABASE_URL != ''
+        run: pnpm --filter review-service db:migrate
+        env:
+          DATABASE_URL: ${{ env.REVIEW_DATABASE_URL }}

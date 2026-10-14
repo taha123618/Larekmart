@@ -42,8 +42,8 @@ export default async function ReviewsPage() {
           Customer Reviews & Moderation
         </h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Moderate customer feedback, inspect reported reviews for abuse or spam,
-          and maintain real-time product rating summary aggregates.
+          Moderate customer feedback, inspect reported reviews for abuse or
+          spam, and maintain real-time product rating summary aggregates.
         </p>
       </div>
 

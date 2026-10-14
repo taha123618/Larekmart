@@ -58,6 +58,7 @@ A dedicated search and indexing microservice for Larekmart built with Node.js, F
   - `product.created`: Indexes new product document into OpenSearch.
   - `product.updated`: Updates existing document in OpenSearch.
   - `product.deleted`: Removes product document from OpenSearch index.
+  - `product.rating-summary.updated`: Partially updates rating and reviewCount in the OpenSearch document.
 - Automatically invalidates Redis search cache namespace on index mutations.
 
 ## Verification

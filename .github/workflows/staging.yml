@@ -49,6 +49,7 @@ jobs:
       SHIPPING_DATABASE_URL: ${{ secrets.STAGING_SHIPPING_DATABASE_URL }}
       USER_DATABASE_URL: ${{ secrets.STAGING_USER_DATABASE_URL }}
       MEDIA_DATABASE_URL: ${{ secrets.STAGING_MEDIA_DATABASE_URL }}
+      REVIEW_DATABASE_URL: ${{ secrets.STAGING_REVIEW_DATABASE_URL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -93,6 +94,10 @@ jobs:
       - name: Run Drizzle Migration Deploy (Media Service)
         if: env.MEDIA_DATABASE_URL != ''
         run: pnpm --filter media-service db:migrate
+
+      - name: Run Drizzle Migration Deploy (Review Service)
+        if: env.REVIEW_DATABASE_URL != ''
+        run: pnpm --filter review-service db:migrate
 
   # ════════════════════════════════════════════════════════════════
   # STAGE 4: Kubernetes Deployment, Rollout Probes & Synthetic Verification
@@ -149,12 +154,13 @@ jobs:
               larekmart/shipping-service=ghcr.io/${{ github.repository_owner }}/larekmart/shipping-service:staging-${SHA_SHORT} \
               larekmart/user-service=ghcr.io/${{ github.repository_owner }}/larekmart/user-service:staging-${SHA_SHORT} \
               larekmart/media-service=ghcr.io/${{ github.repository_owner }}/larekmart/media-service:staging-${SHA_SHORT} \
+              larekmart/review-service=ghcr.io/${{ github.repository_owner }}/larekmart/review-service:staging-${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:staging-${SHA_SHORT}
 
             echo "Applying Staging manifests to namespace larekmart-staging..."
             kubectl apply -k .
 
-            echo "Tracking rollout status across all 17 microservice workloads..."
+            echo "Tracking rollout status across all 18 microservice workloads..."
             DEPLOYMENTS=(
               staging-client
               staging-admin
@@ -172,6 +178,7 @@ jobs:
               staging-shipping-service
               staging-user-service
               staging-media-service
+              staging-review-service
               staging-email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do
@@ -220,6 +227,7 @@ jobs:
             staging-shipping-service
             staging-user-service
             staging-media-service
+            staging-review-service
             staging-email-service
           )
           for dep in "${DEPLOYMENTS[@]}"; do

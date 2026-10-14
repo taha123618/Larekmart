@@ -83,7 +83,9 @@ export class AdminController {
     try {
       const body = (request.body || {}) as { productId?: string };
       if (body.productId) {
-        const summary = await summaryService.recalculateAndPublish(body.productId);
+        const summary = await summaryService.recalculateAndPublish(
+          body.productId,
+        );
         return reply.send({ success: true, summary });
       }
       const result = await summaryService.recalculateAll();

@@ -89,7 +89,10 @@ export default function ReviewsStatsCards({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">
-            {flaggedCount} <span className="text-xs font-normal text-muted-foreground">({totalReports} reports)</span>
+            {flaggedCount}{" "}
+            <span className="text-xs font-normal text-muted-foreground">
+              ({totalReports} reports)
+            </span>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Abuse or auto-flagged

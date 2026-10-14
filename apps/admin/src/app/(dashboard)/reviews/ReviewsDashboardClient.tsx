@@ -28,7 +28,8 @@ export default function ReviewsDashboardClient({
   token,
 }: ReviewsDashboardClientProps) {
   const [reviews, setReviews] = useState<AdminReviewItem[]>(initialReviews);
-  const [reports, setReports] = useState<AdminReviewReportItem[]>(initialReports);
+  const [reports, setReports] =
+    useState<AdminReviewReportItem[]>(initialReports);
   const [summaries, setSummaries] =
     useState<AdminProductRatingSummaryItem[]>(initialSummaries);
   const [isRecalculating, setIsRecalculating] = useState(false);

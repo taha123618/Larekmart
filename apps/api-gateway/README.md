@@ -145,6 +145,8 @@ apps/api-gateway/
 | `/api/v1/notifications/*`   | `notification-service` (8005)   | `/notifications` (WS)     | Authenticated | 5,000ms  |
 | `/api/v1/media/*`           | `media-service` (8013)          | `/api/v1/media`           | Public Read   | 15,000ms |
 | `/api/v1/admin/media/*`     | `media-service` (8013)          | `/api/v1/admin/media`     | Admin Only    | 15,000ms |
+| `/api/v1/reviews/*`         | `review-service` (8014)         | `/api/v1/reviews`         | Public / User | 5,000ms  |
+| `/api/v1/admin/reviews/*`   | `review-service` (8014)         | `/api/v1/admin/reviews`   | Admin Only    | 5,000ms  |
 | `/order-chart`              | `order-service` (8001)          | `/order-chart`            | Admin Only    | 10,000ms |
 | `/api/v1/analytics/*`       | `analytic-service` (8004)       | `/analytics`              | Admin Only    | 5,000ms  |
 | `/api/v1/home`              | _Gateway Aggregated_            | _Internal Fan-out_        | Public        | 2,500ms  |

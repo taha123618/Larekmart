@@ -109,6 +109,9 @@ jobs:
           - service: media-service
             context: .
             dockerfile: apps/media-service/Dockerfile
+          - service: review-service
+            context: .
+            dockerfile: apps/review-service/Dockerfile
           - service: email-service
             context: .
             dockerfile: apps/email-service/Dockerfile

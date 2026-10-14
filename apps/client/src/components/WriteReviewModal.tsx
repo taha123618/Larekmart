@@ -6,7 +6,10 @@ import { useAuth } from "@clerk/nextjs";
 import { toast } from "react-toastify";
 import Image from "next/image";
 import { submitProductReview } from "@/services/review.service";
-import { uploadReviewPhoto, type ReviewMediaUploadResult } from "@/services/media.service";
+import {
+  uploadReviewPhoto,
+  type ReviewMediaUploadResult,
+} from "@/services/media.service";
 
 interface WriteReviewModalProps {
   productId: string;
@@ -62,7 +65,11 @@ export default function WriteReviewModal({
       setMediaList((prev) => [...prev, uploaded]);
       toast.success("Photo attached successfully!");
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to upload photo attachment.");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to upload photo attachment.",
+      );
     } finally {
       setIsUploadingPhoto(false);
       e.target.value = "";
@@ -103,14 +110,15 @@ export default function WriteReviewModal({
             displayOrder: idx,
           })),
         },
-        token
+        token,
       );
 
       toast.success("Thank you! Your verified review has been submitted.");
       onReviewSubmitted();
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to submit review.";
+      const msg =
+        err instanceof Error ? err.message : "Failed to submit review.";
       setErrorMessage(msg);
       toast.error(msg);
     } finally {
@@ -245,7 +253,9 @@ export default function WriteReviewModal({
                   ) : (
                     <>
                       <UploadCloud className="w-5 h-5" />
-                      <span className="text-[9px] font-bold mt-0.5">Upload</span>
+                      <span className="text-[9px] font-bold mt-0.5">
+                        Upload
+                      </span>
                     </>
                   )}
                   <input
@@ -259,7 +269,8 @@ export default function WriteReviewModal({
               )}
             </div>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">
-              Attach up to 5 real photos of the product. Images are processed securely.
+              Attach up to 5 real photos of the product. Images are processed
+              securely.
             </p>
           </div>
 

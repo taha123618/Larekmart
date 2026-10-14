@@ -45,7 +45,7 @@ export default function ProductTabs({ product }: ProductTabsProps) {
   const { isSignedIn, getToken } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"specs" | "reviews" | "shipping">(
-    "specs"
+    "specs",
   );
 
   // Review states
@@ -62,18 +62,24 @@ export default function ProductTabs({ product }: ProductTabsProps) {
   // Filters & sorting
   const [currentPage, setCurrentPage] = useState(1);
   const [currentSort, setCurrentSort] = useState<ReviewSortOption>("newest");
-  const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined);
+  const [ratingFilter, setRatingFilter] = useState<number | undefined>(
+    undefined,
+  );
   const [verifiedFilter, setVerifiedFilter] = useState(false);
 
   // Modals
   const [isWriteReviewOpen, setIsWriteReviewOpen] = useState(false);
-  const [reportingReviewId, setReportingReviewId] = useState<string | null>(null);
+  const [reportingReviewId, setReportingReviewId] = useState<string | null>(
+    null,
+  );
   const [reportReason, setReportReason] = useState<ReportReason>("SPAM");
   const [reportDetails, setReportDetails] = useState("");
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   // Voted tracking to prevent repeat clicking in same session
-  const [votedReviews, setVotedReviews] = useState<Record<string, "HELPFUL" | "UNHELPFUL">>({});
+  const [votedReviews, setVotedReviews] = useState<
+    Record<string, "HELPFUL" | "UNHELPFUL">
+  >({});
 
   // 1. Load reviews & summary from review-service
   const loadReviews = useCallback(async () => {
@@ -113,7 +119,10 @@ export default function ProductTabs({ product }: ProductTabsProps) {
   }, [product.id]);
 
   // 2. Handle Helpful / Unhelpful Vote
-  const handleVote = async (reviewId: string, voteType: "HELPFUL" | "UNHELPFUL") => {
+  const handleVote = async (
+    reviewId: string,
+    voteType: "HELPFUL" | "UNHELPFUL",
+  ) => {
     if (!isSignedIn) {
       toast.info("Please sign in to vote on reviews.");
       return;
@@ -140,13 +149,17 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                 helpfulCount: res.helpfulCount,
                 unhelpfulCount: res.unhelpfulCount,
               }
-            : r
+            : r,
         ),
       }));
 
-      toast.success(voteType === "HELPFUL" ? "Marked as helpful" : "Feedback recorded");
+      toast.success(
+        voteType === "HELPFUL" ? "Marked as helpful" : "Feedback recorded",
+      );
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Could not record vote.");
+      toast.error(
+        err instanceof Error ? err.message : "Could not record vote.",
+      );
     }
   };
 
@@ -167,14 +180,18 @@ export default function ProductTabs({ product }: ProductTabsProps) {
         reportingReviewId,
         reportReason,
         reportDetails.trim() || undefined,
-        token
+        token,
       );
 
-      toast.success("Thank you. Review has been submitted for moderation review.");
+      toast.success(
+        "Thank you. Review has been submitted for moderation review.",
+      );
       setReportingReviewId(null);
       setReportDetails("");
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit report.");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to submit report.",
+      );
     } finally {
       setIsSubmittingReport(false);
     }
@@ -185,11 +202,11 @@ export default function ProductTabs({ product }: ProductTabsProps) {
   const avgRating = summary
     ? Number(summary.averageRating).toFixed(1)
     : reviewsData.reviews.length > 0
-    ? (
-        reviewsData.reviews.reduce((acc, r) => acc + r.rating, 0) /
-        reviewsData.reviews.length
-      ).toFixed(1)
-    : "0.0";
+      ? (
+          reviewsData.reviews.reduce((acc, r) => acc + r.rating, 0) /
+          reviewsData.reviews.length
+        ).toFixed(1)
+      : "0.0";
 
   const getPercent = (count: number) => {
     if (!totalReviews || totalReviews === 0) return 0;
@@ -285,27 +302,41 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                 Product Details
               </h4>
               <dl className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
-                <dt className="text-slate-500 dark:text-slate-400">Department</dt>
+                <dt className="text-slate-500 dark:text-slate-400">
+                  Department
+                </dt>
                 <dd className="font-bold text-slate-900 dark:text-white uppercase">
                   {product.categorySlug || "General"}
                 </dd>
 
-                <dt className="text-slate-500 dark:text-slate-400">Available Sizes</dt>
+                <dt className="text-slate-500 dark:text-slate-400">
+                  Available Sizes
+                </dt>
                 <dd className="font-bold text-slate-900 dark:text-white uppercase">
-                  {product.sizes?.length ? product.sizes.join(", ") : "Standard / One Size"}
+                  {product.sizes?.length
+                    ? product.sizes.join(", ")
+                    : "Standard / One Size"}
                 </dd>
 
-                <dt className="text-slate-500 dark:text-slate-400">Color Options</dt>
+                <dt className="text-slate-500 dark:text-slate-400">
+                  Color Options
+                </dt>
                 <dd className="font-bold text-slate-900 dark:text-white capitalize">
-                  {product.colors?.length ? product.colors.join(", ") : "Standard"}
+                  {product.colors?.length
+                    ? product.colors.join(", ")
+                    : "Standard"}
                 </dd>
 
-                <dt className="text-slate-500 dark:text-slate-400">Catalog SKU</dt>
+                <dt className="text-slate-500 dark:text-slate-400">
+                  Catalog SKU
+                </dt>
                 <dd className="font-mono text-slate-700 dark:text-slate-300">
                   LKM-{product.id}-CATALOG
                 </dd>
 
-                <dt className="text-slate-500 dark:text-slate-400">Stock Status</dt>
+                <dt className="text-slate-500 dark:text-slate-400">
+                  Stock Status
+                </dt>
                 <dd className="font-semibold text-emerald-600 dark:text-emerald-400">
                   Active Listing
                 </dd>
@@ -373,7 +404,9 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                     <button
                       key={star}
                       onClick={() =>
-                        setRatingFilter((prev) => (prev === star ? undefined : star))
+                        setRatingFilter((prev) =>
+                          prev === star ? undefined : star,
+                        )
                       }
                       className={`flex items-center gap-3 text-xs w-full text-left p-1.5 rounded-xl transition cursor-pointer ${
                         isFiltered
@@ -439,7 +472,9 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                 </label>
                 <select
                   value={currentSort}
-                  onChange={(e) => setCurrentSort(e.target.value as ReviewSortOption)}
+                  onChange={(e) =>
+                    setCurrentSort(e.target.value as ReviewSortOption)
+                  }
                   className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-indigo-500 transition cursor-pointer"
                 >
                   <option value="newest">Most Recent</option>
@@ -454,7 +489,9 @@ export default function ProductTabs({ product }: ProductTabsProps) {
             {isLoadingReviews ? (
               <div className="py-16 flex flex-col items-center justify-center gap-3 text-slate-400">
                 <Loader2 className="w-7 h-7 animate-spin text-indigo-600" />
-                <span className="text-xs font-medium">Loading verified customer reviews...</span>
+                <span className="text-xs font-medium">
+                  Loading verified customer reviews...
+                </span>
               </div>
             ) : reviewsData.reviews.length === 0 ? (
               <div className="py-16 text-center bg-slate-50/50 dark:bg-slate-800/30 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 p-8">
@@ -614,7 +651,11 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                       Page {reviewsData.page} of {reviewsData.totalPages}
                     </span>
                     <button
-                      onClick={() => setCurrentPage((p) => Math.min(reviewsData.totalPages, p + 1))}
+                      onClick={() =>
+                        setCurrentPage((p) =>
+                          Math.min(reviewsData.totalPages, p + 1),
+                        )
+                      }
                       disabled={currentPage === reviewsData.totalPages}
                       className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 transition flex items-center gap-1 cursor-pointer"
                     >
@@ -639,7 +680,8 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                 Express Delivery
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Orders dispatch within 24 hours. Track shipment status in real time with carrier integrations.
+                Orders dispatch within 24 hours. Track shipment status in real
+                time with carrier integrations.
               </p>
             </div>
 
@@ -651,7 +693,8 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                 30-Day Easy Returns
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Not completely satisfied? Initiate a return within 30 days for a full refund or size exchange.
+                Not completely satisfied? Initiate a return within 30 days for a
+                full refund or size exchange.
               </p>
             </div>
 
@@ -663,7 +706,8 @@ export default function ProductTabs({ product }: ProductTabsProps) {
                 Buyer Protection
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Every transaction is secure and backed by Larekmart guarantee until package receipt is confirmed.
+                Every transaction is secure and backed by Larekmart guarantee
+                until package receipt is confirmed.
               </p>
             </div>
           </div>
@@ -702,7 +746,8 @@ export default function ProductTabs({ product }: ProductTabsProps) {
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Help us maintain marketplace authenticity. What is wrong with this review?
+              Help us maintain marketplace authenticity. What is wrong with this
+              review?
             </p>
 
             <div>
@@ -711,7 +756,9 @@ export default function ProductTabs({ product }: ProductTabsProps) {
               </label>
               <select
                 value={reportReason}
-                onChange={(e) => setReportReason(e.target.value as ReportReason)}
+                onChange={(e) =>
+                  setReportReason(e.target.value as ReportReason)
+                }
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-indigo-500 transition cursor-pointer"
               >
                 <option value="SPAM">Spam or Advertising</option>

@@ -26,6 +26,7 @@ resources:
   - services/shipping-service.yaml
   - services/user-service.yaml
   - services/media-service.yaml
+  - services/review-service.yaml
   - workers/email-service.yaml
   - autoscaling/hpa.yaml
   - autoscaling/keda-scaledobjects.yaml

@@ -39,22 +39,26 @@ export default function ReviewsDataTable({
   token,
   onRefresh,
 }: ReviewsDataTableProps) {
-  const [activeTab, setActiveTab] = useState<
-    "queue" | "reports" | "summaries"
-  >("queue");
+  const [activeTab, setActiveTab] = useState<"queue" | "reports" | "summaries">(
+    "queue",
+  );
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
   // Rejection modal state
-  const [rejectingReviewId, setRejectingReviewId] = useState<string | null>(null);
+  const [rejectingReviewId, setRejectingReviewId] = useState<string | null>(
+    null,
+  );
   const [rejectionReason, setRejectionReason] = useState<string>("");
 
   // Media preview modal state
   const [previewMediaUrl, setPreviewMediaUrl] = useState<string | null>(null);
 
   // Recalculating single summary
-  const [recalculatingProductId, setRecalculatingProductId] = useState<string | null>(null);
+  const [recalculatingProductId, setRecalculatingProductId] = useState<
+    string | null
+  >(null);
 
   // Filter reviews
   const filteredReviews = initialReviews.filter((r) => {
@@ -65,7 +69,8 @@ export default function ReviewsDataTable({
         ? true
         : r.productId.toLowerCase().includes(searchQuery.toLowerCase()) ||
           r.userId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (r.title && r.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (r.title &&
+            r.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
           r.content.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
@@ -238,7 +243,10 @@ export default function ReviewsDataTable({
               <tbody className="divide-y divide-border">
                 {filteredReviews.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                    <td
+                      colSpan={7}
+                      className="p-8 text-center text-muted-foreground"
+                    >
                       No reviews found matching your filter criteria.
                     </td>
                   </tr>
@@ -276,7 +284,8 @@ export default function ReviewsDataTable({
                         </p>
                         {r.moderationReason && (
                           <div className="mt-1.5 text-[11px] bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 p-1.5 rounded border border-rose-200 dark:border-rose-900">
-                            <strong>Moderation Note:</strong> {r.moderationReason}
+                            <strong>Moderation Note:</strong>{" "}
+                            {r.moderationReason}
                           </div>
                         )}
                         <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
@@ -323,7 +332,9 @@ export default function ReviewsDataTable({
                             ))}
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground/50">—</span>
+                          <span className="text-xs text-muted-foreground/50">
+                            —
+                          </span>
                         )}
                       </td>
 
@@ -426,7 +437,10 @@ export default function ReviewsDataTable({
               <tbody className="divide-y divide-border">
                 {initialReports.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                    <td
+                      colSpan={6}
+                      className="p-8 text-center text-muted-foreground"
+                    >
                       No active abuse reports filed by customers.
                     </td>
                   </tr>
@@ -506,8 +520,12 @@ export default function ReviewsDataTable({
               <tbody className="divide-y divide-border">
                 {initialSummaries.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                      No calculated product summaries found. Click &quot;Recalculate All&quot; above to initialize.
+                    <td
+                      colSpan={7}
+                      className="p-8 text-center text-muted-foreground"
+                    >
+                      No calculated product summaries found. Click
+                      &quot;Recalculate All&quot; above to initialize.
                     </td>
                   </tr>
                 ) : (
