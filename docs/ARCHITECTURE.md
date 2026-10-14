@@ -205,6 +205,14 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Deduplication & Merging: Unique index on `(wishlist_id, product_id, COALESCE(variant_id, ''))` strictly prevents duplicates. Guest wishlists are migrated idempotently to customer default wishlist upon authentication.
 - Events: Publishes `wishlist.created`, `wishlist.item.added`, `wishlist.item.removed`, `wishlist.item.moved`, `wishlist.merged`, `wishlist.price-drop`, `wishlist.restocked`. Consumes `product.updated`, `product.deleted`, `price.updated`, `inventory.availability.changed`, `inventory.adjusted`, `user.deleted`.
 
+**`promotion-service` (Hono 4, :8016)** — centralized promotion engine for campaigns, coupons, discount calculations, budgets, and checkout reservations.
+
+- Routes: `GET /api/v1/promotions/active`, `POST /api/v1/promotions/quote`, `POST /api/v1/promotions/validate-coupon`, `POST /api/v1/promotions/reserve`, `POST /api/v1/promotions/commit`, `POST /api/v1/promotions/release`, `GET /api/v1/admin/promotions`, `POST /api/v1/admin/promotions`, `GET /api/v1/admin/promotions/:id`, `PATCH /api/v1/admin/promotions/:id`, `POST /api/v1/admin/promotions/:id/deactivate`, `POST /api/v1/admin/promotions/:id/coupons`, `GET /api/v1/admin/promotions/:id/redemptions`, `GET /api/v1/admin/promotions/overview`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
+- Persistence: PostgreSQL via Drizzle ORM targeting `larekmart_promotion_db` (`promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets`, `promotion_audit_logs`).
+- Caching: Redis (`promotion:v1:*` namespace) through `@repo/redis` for cached active campaigns, coupon lookups, and rate limiting.
+- Reservation Lifecycle: 15-minute transactional hold on promotional budgets and customer usage counts during checkout (`PENDING`), committed (`COMMITTED`) on order confirmation, and released (`RELEASED` / `EXPIRED`) on checkout failure or background worker sweep.
+- Events: Publishes `promotion.created`, `promotion.activated`, `promotion.deactivated`, `promotion.budget_exhausted`, `promotion.reserved`, `promotion.redeemed`, `promotion.released`. Consumes `order.confirmed`, `order.completed`, `order.cancelled`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                           |
@@ -220,6 +228,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | media-service                    | Drizzle (`pg`)                | `media`, `media_variants`, `media_uploads`, `media_processing_jobs`, `processed_events`                                                  |
 | PostgreSQL | review-service                   | Drizzle (`pg`)                | `reviews`, `review_media`, `review_votes`, `review_reports`, `review_moderation_actions`, `seller_responses`, `product_rating_summaries` |
 | PostgreSQL | wishlist-service                 | Drizzle (`pg`)                | `wishlists`, `wishlist_items`, `wishlist_shares`, `wishlist_events`                                                                      |
+| PostgreSQL | promotion-service                | Drizzle (`pg`)                | `promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets` |
 | S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                   |
 | Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                    |
 | Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                                |
@@ -232,6 +241,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                             |
 | Redis      | review-service                   | `@repo/redis` (ioredis)       | `review:*` (product rating summary cache, anti-abuse vote/report limits)                                                                 |
 | Redis      | wishlist-service                 | `@repo/redis` (ioredis)       | `wishlist:v1:*` (share token cache, link verification)                                                                                   |
+| Redis      | promotion-service                | `@repo/redis` (ioredis)       | `promotion:v1:*` (active promotion cache, coupon fast-lookup, rate-limiting)                                                             |
 | OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                    |
 | MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                  |
 | MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                 |

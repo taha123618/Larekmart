@@ -330,14 +330,15 @@ export interface PromotionRedeemedEvent {
 export interface PromotionReservationReleasedEvent {
   reservationId: string;
   promotionId: string;
-  discountAmount: number;
+  discountAmount?: number;
   releasedAt: string;
   reason?: string | null;
 }
 
 export interface PromotionBudgetExhaustedEvent {
   promotionId: string;
-  totalBudget: number;
-  spentAmount: number;
+  totalBudget?: number;
+  spentAmount?: number;
   exhaustedAt: string;
 }
+

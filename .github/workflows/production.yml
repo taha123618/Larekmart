@@ -55,6 +55,7 @@ jobs:
       MEDIA_DATABASE_URL: ${{ secrets.PROD_MEDIA_DATABASE_URL }}
       REVIEW_DATABASE_URL: ${{ secrets.PROD_REVIEW_DATABASE_URL }}
       WISHLIST_DATABASE_URL: ${{ secrets.PROD_WISHLIST_DATABASE_URL }}
+      PROMOTION_DATABASE_URL: ${{ secrets.PROD_PROMOTION_DATABASE_URL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -107,6 +108,10 @@ jobs:
       - name: Execute Non-Destructive Migrations (Wishlist Service)
         if: env.WISHLIST_DATABASE_URL != ''
         run: pnpm --filter wishlist-service db:migrate
+
+      - name: Execute Non-Destructive Migrations (Promotion Service)
+        if: env.PROMOTION_DATABASE_URL != ''
+        run: pnpm --filter promotion-service db:migrate
 
   # ════════════════════════════════════════════════════════════════
   # STAGE 4: Zero-Downtime Kubernetes Rolling Update & Verification

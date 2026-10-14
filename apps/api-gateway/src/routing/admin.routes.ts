@@ -57,4 +57,22 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/wishlists",
     requireAdmin: true,
   },
+
+  // 5. Promotion Service Admin Campaigns & Coupons
+  {
+    prefix: "/api/v1/admin/promotions",
+    target: services.promotion.url,
+    serviceName: services.promotion.name,
+    timeoutMs: services.promotion.timeoutMs,
+    rewritePrefix: "/api/v1/admin/promotions",
+    requireAdmin: true,
+  },
+  {
+    prefix: "/api/v1/admin/coupons",
+    target: services.promotion.url,
+    serviceName: services.promotion.name,
+    timeoutMs: services.promotion.timeoutMs,
+    rewritePrefix: "/api/v1/admin/coupons",
+    requireAdmin: true,
+  },
 ];

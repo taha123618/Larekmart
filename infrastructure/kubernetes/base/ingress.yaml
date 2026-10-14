@@ -186,3 +186,25 @@ spec:
                 name: wishlist-service
                 port:
                   number: 8015
+          - path: /api/v1/promotions
+            pathType: Prefix
+            backend:
+              service:
+                name: promotion-service
+                port:
+                  number: 8016
+          - path: /api/v1/admin/promotions
+            pathType: Prefix
+            backend:
+              service:
+                name: promotion-service
+                port:
+                  number: 8016
+          - path: /api/v1/admin/coupons
+            pathType: Prefix
+            backend:
+              service:
+                name: promotion-service
+                port:
+                  number: 8016
+

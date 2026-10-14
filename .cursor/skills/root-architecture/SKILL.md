@@ -31,6 +31,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `media-service` (:8013) — Hono 4, S3/MinIO object storage behind an `ObjectStorage` interface, Drizzle/PostgreSQL metadata, Redis-cached resolve, Sharp processing + cleanup workers.
   - `review-service` (:8014) — Fastify 5, product reviews, ratings, verified purchase checking, moderation, helpful voting, summary projections; PostgreSQL (`review_db`) via Drizzle ORM + Redis cache.
   - `wishlist-service` (:8015) — Fastify 5, saved products, multiple wishlists, guest-to-user merging, price drop & restock alerts; PostgreSQL (`larekmart_wishlist_db`) via Drizzle ORM + Redis cache.
+  - `promotion-service` (:8016) — Hono 4, centralized promotions, coupons, discount eligibility, budgets, checkout reservations, redemptions; PostgreSQL (`larekmart_promotion_db`) via Drizzle ORM + Redis cache.
   - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).
@@ -59,6 +60,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Media uploads, variants, image processing                  | `apps/media-service`                                   |
 | Product reviews, ratings, verified purchases, moderation   | `apps/review-service`                                  |
 | Wishlists, saved products, guest merge, price-drop alerts  | `apps/wishlist-service`                                |
+| Promotions, campaigns, coupons, discounts, budget holds    | `apps/promotion-service`                               |
 | Kafka client/producer/consumer helpers                     | `packages/kafka`                                       |
 | Shared types, Zod schemas, Kafka payload types             | `packages/types`                                       |
 | Telemetry, structured logging, health checks               | `packages/monitoring`                                  |
