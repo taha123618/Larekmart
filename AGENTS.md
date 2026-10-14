@@ -157,9 +157,11 @@ pnpm --filter @repo/product-db db:deploy     # prisma migrate deploy
 pnpm --filter @repo/inventory-db db:generate # generate inventory Prisma client
 pnpm --filter @repo/inventory-db db:migrate  # inventory migration in development
 pnpm --filter media-service db:migrate       # media-service Drizzle migrations (media_db)
+pnpm --filter review-service db:migrate      # review-service Drizzle migrations (review_db)
+pnpm --filter wishlist-service db:migrate    # wishlist-service Drizzle migrations (larekmart_wishlist_db)
 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
-docker compose up -d --build                 # start entire microservices stack (15 apps + backing DBs)
+docker compose up -d --build                 # start entire microservices stack (16 services + backing DBs)
 docker compose down                          # stop all containers preserving volumes
 docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui # backing infra only
 # See docs/DOCKER.md for complete operations manual

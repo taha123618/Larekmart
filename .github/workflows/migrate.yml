@@ -34,6 +34,7 @@ jobs:
       USER_DATABASE_URL: ${{ secrets.USER_DATABASE_URL }}
       MEDIA_DATABASE_URL: ${{ secrets.MEDIA_DATABASE_URL }}
       REVIEW_DATABASE_URL: ${{ secrets.REVIEW_DATABASE_URL }}
+      WISHLIST_DATABASE_URL: ${{ secrets.WISHLIST_DATABASE_URL }}
 
     steps:
       - name: Checkout Code
@@ -111,3 +112,9 @@ jobs:
         run: pnpm --filter review-service db:migrate
         env:
           DATABASE_URL: ${{ env.REVIEW_DATABASE_URL }}
+
+      - name: Run wishlist-service (Drizzle) migrations
+        if: github.event.inputs.action == 'deploy' && env.WISHLIST_DATABASE_URL != ''
+        run: pnpm --filter wishlist-service db:migrate
+        env:
+          DATABASE_URL: ${{ env.WISHLIST_DATABASE_URL }}

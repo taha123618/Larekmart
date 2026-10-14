@@ -54,6 +54,7 @@ jobs:
       USER_DATABASE_URL: ${{ secrets.PROD_USER_DATABASE_URL }}
       MEDIA_DATABASE_URL: ${{ secrets.PROD_MEDIA_DATABASE_URL }}
       REVIEW_DATABASE_URL: ${{ secrets.PROD_REVIEW_DATABASE_URL }}
+      WISHLIST_DATABASE_URL: ${{ secrets.PROD_WISHLIST_DATABASE_URL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -102,6 +103,10 @@ jobs:
       - name: Execute Non-Destructive Migrations (Review Service)
         if: env.REVIEW_DATABASE_URL != ''
         run: pnpm --filter review-service db:migrate
+
+      - name: Execute Non-Destructive Migrations (Wishlist Service)
+        if: env.WISHLIST_DATABASE_URL != ''
+        run: pnpm --filter wishlist-service db:migrate
 
   # ════════════════════════════════════════════════════════════════
   # STAGE 4: Zero-Downtime Kubernetes Rolling Update & Verification
@@ -159,6 +164,7 @@ jobs:
               larekmart/user-service=ghcr.io/${{ github.repository_owner }}/larekmart/user-service:${SHA_SHORT} \
               larekmart/media-service=ghcr.io/${{ github.repository_owner }}/larekmart/media-service:${SHA_SHORT} \
               larekmart/review-service=ghcr.io/${{ github.repository_owner }}/larekmart/review-service:${SHA_SHORT} \
+              larekmart/wishlist-service=ghcr.io/${{ github.repository_owner }}/larekmart/wishlist-service:${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:${SHA_SHORT}
 
             echo "Applying Production manifests to namespace larekmart..."
@@ -183,6 +189,7 @@ jobs:
               user-service
               media-service
               review-service
+              wishlist-service
               email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do
@@ -239,6 +246,7 @@ jobs:
             user-service
             media-service
             review-service
+            wishlist-service
             email-service
           )
           for dep in "${DEPLOYMENTS[@]}"; do

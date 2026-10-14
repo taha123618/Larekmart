@@ -30,7 +30,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `user-service` (:8012) — Fastify 5, customer profiles, addresses, preferences; PostgreSQL via `@repo/user-db`.
   - `media-service` (:8013) — Hono 4, S3/MinIO object storage behind an `ObjectStorage` interface, Drizzle/PostgreSQL metadata, Redis-cached resolve, Sharp processing + cleanup workers.
   - `review-service` (:8014) — Fastify 5, product reviews, ratings, verified purchase checking, moderation, helpful voting, summary projections; PostgreSQL (`review_db`) via Drizzle ORM + Redis cache.
-  - `wishlist-service` (:8015) — Fastify 5, saved products, multiple wishlists, guest-to-user merging, price drop & restock alerts; PostgreSQL (`wishlist_db`) via Drizzle ORM + Redis cache.
+  - `wishlist-service` (:8015) — Fastify 5, saved products, multiple wishlists, guest-to-user merging, price drop & restock alerts; PostgreSQL (`larekmart_wishlist_db`) via Drizzle ORM + Redis cache.
   - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).

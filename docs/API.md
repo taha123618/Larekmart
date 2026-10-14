@@ -679,3 +679,100 @@ only a best-effort availability cache.
 
 - **Auth**: Public / Scraper
 - **Response**: Health liveness, PostgreSQL + Redis readiness probes, and Prometheus metrics exposition.
+
+---
+
+## 17. Wishlist Service (`:8015`)
+
+### `GET /api/v1/me/wishlists`
+
+- **Auth**: User (`shouldBeUser`) or Guest token (`x-guest-token`)
+- **Response**: `{ wishlists: Wishlist[] }` — retrieves customer wishlists; automatically initializes default wishlist if none exists.
+
+### `POST /api/v1/me/wishlists`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `{ name: string, visibility?: "PUBLIC" | "PRIVATE" | "SHARED" }`
+- **Response**: `201 Created` — `{ wishlist: Wishlist }`
+- **Side Effect**: Publishes `wishlist.created` Kafka event.
+
+### `GET /api/v1/me/wishlists/:wishlistId`
+
+- **Auth**: User (`shouldBeUser`) or Guest token (`x-guest-token`)
+- **Response**: `{ wishlist: Wishlist, items: WishlistItem[] }`
+
+### `PATCH /api/v1/me/wishlists/:wishlistId`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `{ name?: string, visibility?: "PUBLIC" | "PRIVATE" | "SHARED" }`
+- **Response**: `{ wishlist: Wishlist }`
+- **Side Effect**: Publishes `wishlist.updated` Kafka event.
+
+### `DELETE /api/v1/me/wishlists/:wishlistId`
+
+- **Auth**: User (`shouldBeUser`)
+- **Response**: `{ success: true, message: "Wishlist deleted" }`
+- **Side Effect**: Cascades item deletions and publishes `wishlist.deleted` Kafka event.
+
+### `POST /api/v1/me/wishlists/:wishlistId/items`
+
+- **Auth**: User (`shouldBeUser`) or Guest token (`x-guest-token`)
+- **Body**: `{ productId: number, variantId?: string, addedPrice?: number, inStock?: boolean }`
+- **Response**: `201 Created` — `{ item: WishlistItem }`
+- **Duplicate Prevention**: Rejects duplicate additions within the same wishlist.
+- **Side Effect**: Publishes `wishlist.item.added` and `wishlist.product_added` (recommendation score weight 4.0) Kafka events.
+
+### `DELETE /api/v1/me/wishlists/:wishlistId/items/:itemId`
+
+- **Auth**: User (`shouldBeUser`) or Guest token (`x-guest-token`)
+- **Response**: `{ success: true, message: "Item removed" }`
+- **Side Effect**: Publishes `wishlist.item.removed` Kafka event.
+
+### `DELETE /api/v1/me/wishlists/:wishlistId/items` (Bulk Removal)
+
+- **Auth**: User (`shouldBeUser`) or Guest token (`x-guest-token`)
+- **Body**: `{ itemIds?: string[] }` (omitting `itemIds` clears the entire wishlist)
+- **Response**: `{ success: true, removedCount: number }`
+
+### `POST /api/v1/me/wishlists/:wishlistId/items/move`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `{ itemId: string, targetWishlistId: string }`
+- **Response**: `{ success: true, movedItem: WishlistItem }`
+- **Side Effect**: Publishes `wishlist.item.moved` Kafka event.
+
+### `POST /api/v1/me/wishlists/merge`
+
+- **Auth**: User (`shouldBeUser`) with guest token header (`x-guest-token`)
+- **Body**: `{ guestId: string }`
+- **Response**: `{ success: true, mergedCount: number, wishlistId: string }`
+- **Side Effect**: Merges guest items into authenticated account's default wishlist; publishes `wishlist.merged` Kafka event.
+
+### `POST /api/v1/me/wishlists/:wishlistId/share`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `{ permission?: "VIEW" | "EDIT", expiresInDays?: number }`
+- **Response**: `{ shareToken: string, shareUrl: string, permission: string, expiresAt?: string }`
+- **Security**: Generates 64-character unguessable crypto token cached in Redis for fast access control.
+
+### `GET /api/v1/shared-wishlists/:shareToken`
+
+- **Auth**: Public (Unguessable token)
+- **Response**: `{ wishlist: PublicWishlist, items: WishlistItem[], permission: string }`
+- **Access Control**: Validates token validity and expiration without exposing internal private wishlist IDs.
+
+### `GET /api/v1/admin/wishlists/overview`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ totalWishlists: number, totalItems: number, priceDropAlerts: number, restockAlerts: number, topProducts: Array<{ productId: number, count: number }> }`
+
+### `GET /api/v1/admin/wishlists`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `page` (default 1), `limit` (default 20, max 100), `search` (optional)
+- **Response**: `{ wishlists: Array<Wishlist & { itemsCount: number }>, pagination: { page: number, limit: number, total: number, totalPages: number } }`
+
+### `GET /health`, `GET /ready`, `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Liveness probe, readiness probe (verifies PostgreSQL `larekmart_wishlist_db` and Redis connectivity), and Prometheus metrics exposition.

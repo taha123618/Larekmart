@@ -6,7 +6,7 @@ High-performance wishlists, saved products, guest-to-user merging, and price dro
 
 - **Runtime**: Node.js 22 LTS
 - **Framework**: Fastify 5
-- **Database**: PostgreSQL (`wishlist_db`) managed with Drizzle ORM
+- **Database**: PostgreSQL (`larekmart_wishlist_db`) managed with Drizzle ORM
 - **Cache**: Redis (`@repo/redis`) with prefix `wishlist:v1:`
 - **Event Bus**: Apache Kafka (`@repo/kafka`)
 - **Authentication**: Clerk JWT & Api-Gateway Internal Secret Delegation (`@repo/types`)
@@ -34,6 +34,9 @@ High-performance wishlists, saved products, guest-to-user merging, and price dro
 7. **Bulk Operations & Pagination**:
    - High-throughput batch removal of items (`DELETE /api/v1/me/wishlists/:wishlistId/items`).
    - Standard cursor/offset pagination on items and lists.
+8. **Admin Platform Intelligence**:
+   - Platform-wide aggregate metrics (`GET /api/v1/admin/wishlists/overview`) reporting total customer lists, saved item counts, price drop alerts triggered, and top saved products leaderboard.
+   - Administrative wishlists directory (`GET /api/v1/admin/wishlists`) with pagination and search.
 
 ## API Endpoints
 
@@ -53,6 +56,9 @@ POST   /api/v1/me/wishlists/:wishlistId/items/move
 POST   /api/v1/me/wishlists/:wishlistId/share
 
 GET    /api/v1/shared-wishlists/:shareToken
+
+GET    /api/v1/admin/wishlists/overview
+GET    /api/v1/admin/wishlists
 
 GET    /health
 GET    /ready
