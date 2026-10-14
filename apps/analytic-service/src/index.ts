@@ -14,6 +14,7 @@ import {
   recordCartEvent,
   recordMediaEvent,
   recordReviewEvent,
+  recordWishlistEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
 import type {
@@ -380,6 +381,60 @@ const start = async () => {
           const payload = message.value || message;
           if (payload) {
             await recordReviewEvent("product.rating-summary.updated", payload);
+          }
+        },
+      },
+      {
+        topicName: "wishlist.created",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordWishlistEvent("wishlist.created", payload);
+          }
+        },
+      },
+      {
+        topicName: "wishlist.item.added",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordWishlistEvent("wishlist.item.added", payload);
+          }
+        },
+      },
+      {
+        topicName: "wishlist.item.removed",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordWishlistEvent("wishlist.item.removed", payload);
+          }
+        },
+      },
+      {
+        topicName: "wishlist.merged",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordWishlistEvent("wishlist.merged", payload);
+          }
+        },
+      },
+      {
+        topicName: "wishlist.price-drop.alert",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordWishlistEvent("wishlist.price-drop.alert", payload);
+          }
+        },
+      },
+      {
+        topicName: "wishlist.restock.alert",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordWishlistEvent("wishlist.restock.alert", payload);
           }
         },
       },

@@ -36,7 +36,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
       POSTGRES_DB: ${POSTGRES_DB:-product_db}
-      POSTGRES_MULTIPLE_DATABASES: "product_db,inventory_db,catalog_db,shipping_db,analytics_db,notification_db,recommendation_db,user_db,media_db,review_db"
+      POSTGRES_MULTIPLE_DATABASES: "product_db,inventory_db,catalog_db,shipping_db,analytics_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -748,6 +748,38 @@ services:
     networks:
       - larekmart-network
 
+  wishlist-service:
+    build:
+      context: .
+      dockerfile: apps/wishlist-service/Dockerfile
+    container_name: larekmart-wishlist-service
+    restart: unless-stopped
+    expose:
+      - "8015"
+    ports:
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8015:8015"
+    env_file:
+      - ./apps/wishlist-service/.env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8015/health || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
   # ============================================================================
   # API Gateway (Centralized API Gateway for the Application)
   # ============================================================================
@@ -804,6 +836,8 @@ services:
       media-service:
         condition: service_healthy
       review-service:
+        condition: service_healthy
+      wishlist-service:
         condition: service_healthy
     networks:
       - larekmart-network

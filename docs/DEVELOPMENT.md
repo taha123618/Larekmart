@@ -133,6 +133,7 @@ Postgres container provisions via `POSTGRES_MULTIPLE_DATABASES`):
 | user-service                     | 8012               |
 | media-service (Hono)             | 8013               |
 | review-service (Fastify)         | 8014               |
+| wishlist-service (Fastify)       | 8015               |
 | Kafka UI                         | 8080               |
 | Mongo Express                    | 8081               |
 | Kafka brokers                    | 9094 / 9095 / 9096 |

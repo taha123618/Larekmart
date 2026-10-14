@@ -14,3 +14,4 @@ export * from "./user";
 export * from "./media";
 export * from "./gateway";
 export * from "./review";
+export * from "./wishlist";

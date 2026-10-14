@@ -67,5 +67,7 @@ images:
     newTag: dev
   - name: larekmart/review-service
     newTag: dev
+  - name: larekmart/wishlist-service
+    newTag: dev
   - name: larekmart/email-service
     newTag: dev

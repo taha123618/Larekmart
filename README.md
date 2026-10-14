@@ -103,7 +103,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── shipping-service/      # Koa + PostgreSQL + carrier adapters shipment lifecycle & tracking (:8011)
 │   ├── user-service/          # Fastify 5 + Prisma customer profiles, addresses & preferences (:8012)
 │   ├── media-service/         # Hono + S3/MinIO + Drizzle media uploads, variants & workers (:8013)
-│   └── review-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis reviews, ratings, moderation & reputation (:8014)
+│   ├── review-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis reviews, ratings, moderation & reputation (:8014)
+│   └── wishlist-service/      # Fastify 5 + PostgreSQL + Drizzle + Redis wishlists, guest migration & price/stock alerts (:8015)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -150,6 +151,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`user-service`**           | Fastify 5, Prisma, PostgreSQL, Redis, Kafka, Clerk                                    | `8012` | Customer profiles, saved addresses, preferences, and account-domain events.                                                                     |
 | **`media-service`**          | Hono 4, Drizzle, PostgreSQL, S3/MinIO, Redis, Kafka, Clerk, Sharp                     | `8013` | Presigned direct uploads, media metadata, image variants, lifecycle events, and processing/cleanup workers.                                     |
 | **`review-service`**         | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk                                   | `8014` | Customer reviews, ratings, verified purchase gating, moderation queue, helpful voting, seller replies, and rating summary projections.          |
+| **`wishlist-service`**       | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk                                   | `8015` | Customer wishlists, multiple lists, guest-to-user migration, unguessable sharing tokens, price-drop and restock notification alerts.            |
 
 ---
 

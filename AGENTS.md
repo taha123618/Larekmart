@@ -8,7 +8,7 @@ and the relevant scoped `AGENTS.md`.
 ## 1. What this is
 
 **Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . It is a
-**pnpm + Turborepo monorepo** with two Next.js frontends, 15 backend services, and
+**pnpm + Turborepo monorepo** with two Next.js frontends, 16 backend services, and
 shared internal packages. Cross-service communication is **asynchronous via Kafka**;
 there are no service-to-service HTTP calls.
 
@@ -33,7 +33,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`, `apps/api-gateway/AGENTS.md`
-   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`
+   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`
    - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.
@@ -94,6 +94,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `user-service`            | `apps/user-service`           | Fastify 5               | 8012 | Customer profiles, saved addresses, preferences, and account domain                 |
 | `media-service`           | `apps/media-service`          | Hono 4                  | 8013 | Media uploads, object storage, image variants & lifecycle events                    |
 | `review-service`          | `apps/review-service`         | Fastify 5               | 8014 | Product reviews, ratings, verified purchases, moderation, helpful votes & summaries |
+| `wishlist-service`        | `apps/wishlist-service`       | Fastify 5               | 8015 | Saved products, wishlists, guest-to-user merge, price drops & restock alerts        |
 | `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                               |
 | `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                       |
 | `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                         |
@@ -156,9 +157,11 @@ pnpm --filter @repo/product-db db:deploy     # prisma migrate deploy
 pnpm --filter @repo/inventory-db db:generate # generate inventory Prisma client
 pnpm --filter @repo/inventory-db db:migrate  # inventory migration in development
 pnpm --filter media-service db:migrate       # media-service Drizzle migrations (media_db)
+pnpm --filter review-service db:migrate      # review-service Drizzle migrations (review_db)
+pnpm --filter wishlist-service db:migrate    # wishlist-service Drizzle migrations (larekmart_wishlist_db)
 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
-docker compose up -d --build                 # start entire microservices stack (15 apps + backing DBs)
+docker compose up -d --build                 # start entire microservices stack (16 services + backing DBs)
 docker compose down                          # stop all containers preserving volumes
 docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui # backing infra only
 # See docs/DOCKER.md for complete operations manual
@@ -174,9 +177,9 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
   Follow the extension style of the file you are editing.
 - **Type-check before you finish.** Run `pnpm check-types` (or the workspace filter)
   and `pnpm build` for changes that affect a Next.js app or payment-service.
-- **Testing strategy.** Eight workspaces ship real test suites run by `pnpm test`
+- **Testing strategy.** Ten workspaces ship real test suites run by `pnpm test`
   (Turborepo): `@repo/types`, `user-service`, `cart-service`, `shipping-service`,
-  `order-service`, and `media-service` use standalone tsx-run test files under
+  `order-service`, `media-service`, `review-service`, and `wishlist-service` use standalone tsx-run test files under
   `tests/` (follow the file's internal runner convention, e.g.
   `media-service/tests/index.test.ts`); `notification-service` uses `go test ./...`;
   `recommendation-service` uses pytest via `uv`. There is **no Vitest/Jest anywhere** —

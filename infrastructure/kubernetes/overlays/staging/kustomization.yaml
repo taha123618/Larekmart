@@ -58,5 +58,7 @@ images:
     newTag: staging
   - name: larekmart/review-service
     newTag: staging
+  - name: larekmart/wishlist-service
+    newTag: staging
   - name: larekmart/email-service
     newTag: staging

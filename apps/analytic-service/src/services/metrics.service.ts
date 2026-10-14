@@ -160,6 +160,69 @@ export const recordReviewEvent = async (
   );
 };
 
+export const recordWishlistEvent = async (
+  eventType:
+    | "wishlist.created"
+    | "wishlist.item.added"
+    | "wishlist.item.removed"
+    | "wishlist.merged"
+    | "wishlist.price-drop.alert"
+    | "wishlist.restock.alert",
+  payload: any,
+) => {
+  const data = payload?.data || payload;
+  const userId = data?.userId || data?.guestId || "system";
+  const amount =
+    (data?.priceAtAdditionInPaisa ? data.priceAtAdditionInPaisa / 100 : 0) ||
+    (data?.newPriceInPaisa ? data.newPriceInPaisa / 100 : 0) ||
+    0;
+
+  const memoryEvent: AnalyticsEventType = {
+    id: inMemoryEvents.length + 1,
+    event_type: eventType,
+    user_id: String(userId),
+    amount,
+    metadata: {
+      wishlistId: data?.wishlistId,
+      productId: data?.productId,
+      variantId: data?.variantId,
+      priceAtAdditionInPaisa: data?.priceAtAdditionInPaisa,
+      newPriceInPaisa: data?.newPriceInPaisa,
+      mergedCount: data?.mergedCount,
+    },
+    created_at: payload?.timestamp || new Date().toISOString(),
+  };
+
+  inMemoryEvents.unshift(memoryEvent);
+  if (inMemoryEvents.length > 100) inMemoryEvents.pop();
+
+  if (getDbStatus()) {
+    try {
+      await pool.query(
+        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          eventType,
+          String(userId),
+          amount,
+          JSON.stringify(memoryEvent.metadata),
+          memoryEvent.created_at,
+        ],
+      );
+    } catch (err) {
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordWishlistEvent.dbInsert",
+      });
+    }
+  }
+
+  logger.info(
+    `[Wishlist Event] ${eventType} for ${userId} (wishlistId: ${data?.wishlistId})`,
+  );
+};
+
 export const recordCartEvent = async (
   eventType:
     | "cart.created"

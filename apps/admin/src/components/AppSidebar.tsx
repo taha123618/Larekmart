@@ -19,6 +19,7 @@ import {
   LayoutGrid,
   Truck,
   Star,
+  Heart,
 } from "lucide-react";
 import {
   Sidebar,
@@ -291,7 +292,7 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Customer Feedback</SidebarGroupLabel>
+          <SidebarGroupLabel>Customer Feedback & Intent</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -299,6 +300,14 @@ const AppSidebar = () => {
                   <Link href="/reviews">
                     <Star />
                     Customer Reviews
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/wishlists">
+                    <Heart />
+                    Customer Wishlists
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

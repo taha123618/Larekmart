@@ -165,3 +165,24 @@ spec:
                 name: review-service
                 port:
                   number: 8014
+          - path: /api/v1/shared-wishlists
+            pathType: Prefix
+            backend:
+              service:
+                name: wishlist-service
+                port:
+                  number: 8015
+          - path: /api/v1/me/wishlists
+            pathType: Prefix
+            backend:
+              service:
+                name: wishlist-service
+                port:
+                  number: 8015
+          - path: /api/v1/admin/wishlists
+            pathType: Prefix
+            backend:
+              service:
+                name: wishlist-service
+                port:
+                  number: 8015

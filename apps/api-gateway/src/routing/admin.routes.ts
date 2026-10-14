@@ -47,4 +47,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/reviews",
     requireAdmin: true,
   },
+
+  // 4. Wishlist Service Admin Overview & Management
+  {
+    prefix: "/api/v1/admin/wishlists",
+    target: services.wishlist.url,
+    serviceName: services.wishlist.name,
+    timeoutMs: services.wishlist.timeoutMs,
+    rewritePrefix: "/api/v1/admin/wishlists",
+    requireAdmin: true,
+  },
 ];

@@ -41,5 +41,7 @@ images:
     newTag: v1.0.0
   - name: larekmart/review-service
     newTag: v1.0.0
+  - name: larekmart/wishlist-service
+    newTag: v1.0.0
   - name: larekmart/email-service
     newTag: v1.0.0

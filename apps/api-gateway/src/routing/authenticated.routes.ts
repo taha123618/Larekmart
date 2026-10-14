@@ -129,4 +129,13 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/me/reviews",
     requireAuth: true,
   },
+
+  // 10. Customer Wishlists
+  {
+    prefix: "/api/v1/me/wishlists",
+    target: services.wishlist.url,
+    serviceName: services.wishlist.name,
+    timeoutMs: services.wishlist.timeoutMs,
+    rewritePrefix: "/api/v1/me/wishlists",
+  },
 ];

@@ -46,6 +46,16 @@ export const ALL_LAREKMART_TOPICS = [
   "cart.expired",
   "cart.cleared",
 
+  // Wishlist Events
+  "wishlist.created",
+  "wishlist.updated",
+  "wishlist.deleted",
+  "wishlist.item.added",
+  "wishlist.item.removed",
+  "wishlist.merged",
+  "wishlist.price-drop.alert",
+  "wishlist.restock.alert",
+
   // Shipping & Logistics
   "shipment.created",
   "shipment.label_created",

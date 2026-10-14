@@ -323,6 +323,7 @@ pnpm --filter @repo/catalog-db db:migrate
 pnpm --filter @repo/shipping-db db:migrate
 pnpm --filter media-service db:migrate        # Drizzle migrations (media_db)
 pnpm --filter review-service db:migrate       # Drizzle migrations (review_db)
+pnpm --filter wishlist-service db:migrate     # Drizzle migrations (larekmart_wishlist_db)
 ```
 
 ### Production

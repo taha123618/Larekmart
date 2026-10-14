@@ -112,6 +112,9 @@ jobs:
           - service: review-service
             context: .
             dockerfile: apps/review-service/Dockerfile
+          - service: wishlist-service
+            context: .
+            dockerfile: apps/wishlist-service/Dockerfile
           - service: email-service
             context: .
             dockerfile: apps/email-service/Dockerfile
