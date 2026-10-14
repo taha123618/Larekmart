@@ -9,7 +9,7 @@ guest-to-user merging, item transfers, unguessable share tokens, and price-drop 
 
 **Source-of-truth split (never mix these):**
 
-- PostgreSQL (`wishlist_db`, Drizzle ORM) — wishlists, wishlist_items, wishlist_shares, and wishlist_events.
+- PostgreSQL (`larekmart_wishlist_db`, Drizzle ORM) — wishlists, wishlist_items, wishlist_shares, and wishlist_events.
 - Redis — share token fast resolution (`wishlist:v1:share:<token>`) and rate limits.
   Never authoritative. Outages degrade cache performance, never correctness.
 - Kafka — asynchronously consumes product and inventory events (`product.updated`, `product.deleted`,
@@ -23,7 +23,7 @@ guest-to-user merging, item transfers, unguessable share tokens, and price-drop 
 - `src/server.ts` & `src/index.ts` — Fastify 5 HTTP application with CORS, request logging, and graceful teardown.
 - `src/db/` — Drizzle ORM schema (`schema.ts`), PostgreSQL connection pool (`connection.ts`), and idempotent migrations (`migrate.ts`).
 - `src/repositories/` — Isolated data access layer for wishlists, wishlist items, and shares:
-  - `wishlist.repository.ts`: User and guest wishlist lookup, default wishlist management, audit logs.
+  - `wishlist.repository.ts`: User and guest wishlist lookup, default wishlist management, audit logs, and admin analytics.
   - `wishlist-item.repository.ts`: Item persistence, unique constraint enforcement, item moves, price & stock updates.
   - `wishlist-share.repository.ts`: Unguessable token generation, expiration verification.
 - `src/services/` — Business logic (`wishlist.service.ts`):
@@ -31,8 +31,9 @@ guest-to-user merging, item transfers, unguessable share tokens, and price-drop 
   - Enforces duplicate item prevention per wishlist.
   - Guest wishlist migration on login with configurable conflict strategies.
   - Generates unguessable 64-char crypto tokens with expiration.
+  - Platform-wide admin metrics and customer wishlists directory.
 - `src/events/` — Kafka producers (`producers/wishlist.producer.ts`) and consumers (`consumers/product-events.consumer.ts`, `consumers/inventory-events.consumer.ts`, `consumers/user-events.consumer.ts`).
-- `src/middleware/` — Clerk JWT validation and gateway header propagation (`shouldBeUser`, `optionalUserOrGuest`).
+- `src/middleware/` — Clerk JWT validation and gateway header propagation (`shouldBeUser`, `shouldBeAdmin`, `optionalUserOrGuest`).
 - `src/observability/` — Prometheus metrics and structured Pino logger via `@repo/monitoring`.
 
 ## Routes & Endpoints
@@ -49,6 +50,9 @@ guest-to-user merging, item transfers, unguessable share tokens, and price-drop 
   - `DELETE /api/v1/me/wishlists/:wishlistId/items` — bulk item removal.
   - `POST /api/v1/me/wishlists/:wishlistId/items/move` — moves item between wishlists.
   - `POST /api/v1/me/wishlists/:wishlistId/share` — generates unguessable share token.
+- Admin (`shouldBeAdmin`):
+  - `GET /api/v1/admin/wishlists/overview` — aggregate metrics (total wishlists, saved items, active price/stock alerts, top saved products).
+  - `GET /api/v1/admin/wishlists` — paginated customer wishlists directory with search.
 - Public:
   - `GET /api/v1/shared-wishlists/:shareToken` — resolves shared wishlist via token without exposing private wishlist IDs.
 - Health:

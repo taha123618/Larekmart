@@ -78,7 +78,7 @@ apps/review-service ────────┬─▶ drizzle-orm + pg ─▶ Po
                            ├─▶ @repo/monitoring
                            └─▶ @repo/types
 
-apps/wishlist-service ──────┬─▶ drizzle-orm + pg ─▶ PostgreSQL (wishlist_db)
+apps/wishlist-service ──────┬─▶ drizzle-orm + pg ─▶ PostgreSQL (larekmart_wishlist_db)
                            ├─▶ @repo/kafka
                            ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                            ├─▶ @repo/monitoring
