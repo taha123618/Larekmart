@@ -9,10 +9,14 @@ export function startReservationExpiryWorker(intervalMs = 60000): () => void {
     try {
       const released = await reservationRepository.releaseExpiredReservations();
       if (released > 0) {
-        logger.info(`[ExpiryWorker] Released ${released} expired promotion reservations`);
+        logger.info(
+          `[ExpiryWorker] Released ${released} expired promotion reservations`,
+        );
       }
     } catch (error) {
-      logger.error("[ExpiryWorker] Error releasing expired reservations:", { error });
+      logger.error("[ExpiryWorker] Error releasing expired reservations:", {
+        error,
+      });
     }
   }, intervalMs);
 

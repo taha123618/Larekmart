@@ -20,39 +20,39 @@ function safeTimingCompare(a: string, b: string): boolean {
   }
 }
 
-export const optionalUserOrGuest = createMiddleware<{ Variables: AuthVariables }>(
-  async (c, next) => {
-    const internalSecret = c.req.header(GATEWAY_HEADERS.INTERNAL_SECRET);
-    const configuredSecret = env.INTERNAL_SERVICE_SECRET;
-    const gatewayUserId = c.req.header(GATEWAY_HEADERS.USER_ID);
-    const gatewayUserRole = c.req.header(GATEWAY_HEADERS.USER_ROLE);
+export const optionalUserOrGuest = createMiddleware<{
+  Variables: AuthVariables;
+}>(async (c, next) => {
+  const internalSecret = c.req.header(GATEWAY_HEADERS.INTERNAL_SECRET);
+  const configuredSecret = env.INTERNAL_SERVICE_SECRET;
+  const gatewayUserId = c.req.header(GATEWAY_HEADERS.USER_ID);
+  const gatewayUserRole = c.req.header(GATEWAY_HEADERS.USER_ROLE);
 
-    if (
-      internalSecret &&
-      configuredSecret &&
-      safeTimingCompare(internalSecret, configuredSecret) &&
-      gatewayUserId
-    ) {
-      c.set("userId", gatewayUserId);
-      c.set("userRole", gatewayUserRole);
-    } else {
-      const auth = getAuth(c);
-      if (auth?.userId) {
-        c.set("userId", auth.userId);
-      }
+  if (
+    internalSecret &&
+    configuredSecret &&
+    safeTimingCompare(internalSecret, configuredSecret) &&
+    gatewayUserId
+  ) {
+    c.set("userId", gatewayUserId);
+    c.set("userRole", gatewayUserRole);
+  } else {
+    const auth = getAuth(c);
+    if (auth?.userId) {
+      c.set("userId", auth.userId);
     }
+  }
 
-    const guestId =
-      c.req.header("x-guest-id") ||
-      c.req.header("x-guest-session-id") ||
-      c.req.query("guestId");
-    if (guestId) {
-      c.set("guestId", guestId);
-    }
+  const guestId =
+    c.req.header("x-guest-id") ||
+    c.req.header("x-guest-session-id") ||
+    c.req.query("guestId");
+  if (guestId) {
+    c.set("guestId", guestId);
+  }
 
-    await next();
-  },
-);
+  await next();
+});
 
 export const shouldBeUser = createMiddleware<{ Variables: AuthVariables }>(
   async (c, next) => {

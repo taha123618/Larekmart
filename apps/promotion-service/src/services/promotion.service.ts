@@ -45,16 +45,26 @@ export class PromotionService {
    */
   async getActivePromotions(): Promise<Promotion[]> {
     try {
-      const res = await cacheRead<Promotion[]>(redis.client, ACTIVE_PROMOTIONS_CACHE_KEY);
+      const res = await cacheRead<Promotion[]>(
+        redis.client,
+        ACTIVE_PROMOTIONS_CACHE_KEY,
+      );
       if (res.status === "hit" && res.value) return res.value;
     } catch (e) {
-      logger.warn("Redis get error for active promotions, reading from db", { e });
+      logger.warn("Redis get error for active promotions, reading from db", {
+        e,
+      });
     }
 
     const active = await promotionRepository.findActive();
 
     try {
-      await cacheSet(redis.client, ACTIVE_PROMOTIONS_CACHE_KEY, active, CACHE_TTL_SECONDS);
+      await cacheSet(
+        redis.client,
+        ACTIVE_PROMOTIONS_CACHE_KEY,
+        active,
+        CACHE_TTL_SECONDS,
+      );
     } catch (e) {
       logger.warn("Redis set error for active promotions", { e });
     }
@@ -72,7 +82,9 @@ export class PromotionService {
   /**
    * Validate a single coupon code against cart items
    */
-  async validateCoupon(input: ValidateCouponInput): Promise<ValidateCouponResponse> {
+  async validateCoupon(
+    input: ValidateCouponInput,
+  ): Promise<ValidateCouponResponse> {
     recordPromotionOperation("validate_coupon");
 
     const couponResult = await couponRepository.findByCode(input.code);
@@ -102,7 +114,10 @@ export class PromotionService {
       };
     }
 
-    if (coupon.maxRedemptions != null && coupon.redemptionsCount >= coupon.maxRedemptions) {
+    if (
+      coupon.maxRedemptions != null &&
+      coupon.redemptionsCount >= coupon.maxRedemptions
+    ) {
       return {
         valid: false,
         code: input.code,
@@ -111,11 +126,12 @@ export class PromotionService {
     }
 
     // Check customer usage
-    const customerUsageCount = await reservationRepository.getCustomerUsageCount(
-      promotion.id,
-      input.userId,
-      input.guestId,
-    );
+    const customerUsageCount =
+      await reservationRepository.getCustomerUsageCount(
+        promotion.id,
+        input.userId,
+        input.guestId,
+      );
 
     // Fetch full promotion details (rules, targets)
     const fullPromo = await promotionRepository.findById(promotion.id);
@@ -127,11 +143,15 @@ export class PromotionService {
       };
     }
 
-    const evalResult = promotionEvaluator.evaluatePromotion(fullPromo, input.items, {
-      userId: input.userId,
-      guestId: input.guestId,
-      customerUsageCount,
-    });
+    const evalResult = promotionEvaluator.evaluatePromotion(
+      fullPromo,
+      input.items,
+      {
+        userId: input.userId,
+        guestId: input.guestId,
+        customerUsageCount,
+      },
+    );
 
     if (!evalResult.eligible) {
       return {
@@ -157,7 +177,9 @@ export class PromotionService {
   /**
    * Calculate a comprehensive promotion quote for cart items, with automatic campaigns and coupons.
    */
-  async quotePromotions(input: PromotionQuoteInput): Promise<PromotionQuoteResponse> {
+  async quotePromotions(
+    input: PromotionQuoteInput,
+  ): Promise<PromotionQuoteResponse> {
     recordPromotionOperation("quote");
 
     const candidates: Array<{ promotion: Promotion; code?: string }> = [];
@@ -169,7 +191,10 @@ export class PromotionService {
       for (const rawCode of input.couponCodes) {
         const couponResult = await couponRepository.findByCode(rawCode);
         if (!couponResult) {
-          invalidCoupons.push({ code: rawCode, reason: "Coupon code not found" });
+          invalidCoupons.push({
+            code: rawCode,
+            reason: "Coupon code not found",
+          });
           continue;
         }
 
@@ -202,10 +227,14 @@ export class PromotionService {
     }
 
     // 3. Evaluate cart
-    const quote = promotionEvaluator.evaluateCartPromotions(candidates, input.items, {
-      userId: input.userId,
-      guestId: input.guestId,
-    });
+    const quote = promotionEvaluator.evaluateCartPromotions(
+      candidates,
+      input.items,
+      {
+        userId: input.userId,
+        guestId: input.guestId,
+      },
+    );
 
     // Merge any upfront invalid coupons
     quote.invalidCoupons.push(...invalidCoupons);
@@ -216,7 +245,9 @@ export class PromotionService {
   /**
    * Create an ACID reservation during checkout.
    */
-  async createReservation(input: CreateReservationInput): Promise<PromotionReservation> {
+  async createReservation(
+    input: CreateReservationInput,
+  ): Promise<PromotionReservation> {
     recordPromotionOperation("create_reservation");
 
     const promo = await promotionRepository.findById(input.promotionId);
@@ -225,7 +256,9 @@ export class PromotionService {
     }
 
     if (promo.status !== "ACTIVE") {
-      throw new Error(`Promotion is in status '${promo.status}' and cannot be reserved`);
+      throw new Error(
+        `Promotion is in status '${promo.status}' and cannot be reserved`,
+      );
     }
 
     let coupon: CouponCode | undefined;
@@ -237,11 +270,8 @@ export class PromotionService {
       coupon = couponResult.coupon;
     }
 
-    const { reservation, exhausted } = await reservationRepository.createReservation(
-      input,
-      promo,
-      coupon,
-    );
+    const { reservation, exhausted } =
+      await reservationRepository.createReservation(input, promo, coupon);
 
     recordPromotionReservation(promo.id);
 
@@ -267,13 +297,14 @@ export class PromotionService {
   /**
    * Commit a reservation on order completion.
    */
-  async commitReservation(id: string, orderId: string): Promise<PromotionRedemption> {
+  async commitReservation(
+    id: string,
+    orderId: string,
+  ): Promise<PromotionRedemption> {
     recordPromotionOperation("commit_reservation");
 
-    const { redemption, reservation, exhausted } = await reservationRepository.commitReservation(
-      id,
-      orderId,
-    );
+    const { redemption, reservation, exhausted } =
+      await reservationRepository.commitReservation(id, orderId);
 
     recordPromotionRedemption(reservation.promotionId);
 
@@ -300,7 +331,10 @@ export class PromotionService {
   /**
    * Release a reservation on checkout cancellation or expiry.
    */
-  async releaseReservation(id: string, reason?: string): Promise<PromotionReservation | null> {
+  async releaseReservation(
+    id: string,
+    reason?: string,
+  ): Promise<PromotionReservation | null> {
     recordPromotionOperation("release_reservation");
 
     const released = await reservationRepository.releaseReservation(id);
@@ -317,7 +351,10 @@ export class PromotionService {
 
   // --- Admin Operations ---
 
-  async createPromotion(input: CreatePromotionInput, actorId = "system"): Promise<Promotion> {
+  async createPromotion(
+    input: CreatePromotionInput,
+    actorId = "system",
+  ): Promise<Promotion> {
     recordPromotionOperation("admin_create_promotion");
     const promo = await promotionRepository.create(input, actorId);
     await this.invalidateActiveCache();
@@ -346,7 +383,10 @@ export class PromotionService {
     return promo;
   }
 
-  async activatePromotion(id: string, actorId = "system"): Promise<Promotion | null> {
+  async activatePromotion(
+    id: string,
+    actorId = "system",
+  ): Promise<Promotion | null> {
     recordPromotionOperation("admin_activate_promotion");
     const promo = await promotionRepository.activate(id, actorId);
     await this.invalidateActiveCache();
@@ -362,7 +402,10 @@ export class PromotionService {
     return promo;
   }
 
-  async deactivatePromotion(id: string, actorId = "system"): Promise<Promotion | null> {
+  async deactivatePromotion(
+    id: string,
+    actorId = "system",
+  ): Promise<Promotion | null> {
     recordPromotionOperation("admin_deactivate_promotion");
     const promo = await promotionRepository.deactivate(id, actorId);
     await this.invalidateActiveCache();

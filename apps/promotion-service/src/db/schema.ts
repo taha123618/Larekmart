@@ -22,15 +22,25 @@ export const promotions = pgTable(
     name: varchar("name", { length: 255 }).notNull(),
     description: text("description"),
     type: varchar("type", { length: 50 }).notNull(), // 'PERCENTAGE' | 'FIXED_AMOUNT' | 'FREE_SHIPPING'
-    discountValue: numeric("discount_value", { precision: 12, scale: 2 }).notNull(),
-    maxDiscountAmount: numeric("max_discount_amount", { precision: 12, scale: 2 }),
+    discountValue: numeric("discount_value", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+    maxDiscountAmount: numeric("max_discount_amount", {
+      precision: 12,
+      scale: 2,
+    }),
     status: varchar("status", { length: 50 }).default("DRAFT").notNull(), // 'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'EXPIRED' | 'DEACTIVATED'
     priority: integer("priority").default(0).notNull(),
     isStackable: boolean("is_stackable").default(false).notNull(),
     startDate: timestamp("start_date", { withTimezone: true }).notNull(),
     endDate: timestamp("end_date", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("promotions_status_idx").on(table.status),
@@ -50,17 +60,23 @@ export const promotionRules = pgTable(
     promotionId: uuid("promotion_id")
       .references(() => promotions.id, { onDelete: "cascade" })
       .notNull(),
-    minOrderAmount: numeric("min_order_amount", { precision: 12, scale: 2 }).default("0.00").notNull(),
-    customerSegment: varchar("customer_segment", { length: 50 }).default("ALL").notNull(), // 'ALL' | 'FIRST_TIME' | 'VIP'
+    minOrderAmount: numeric("min_order_amount", { precision: 12, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    customerSegment: varchar("customer_segment", { length: 50 })
+      .default("ALL")
+      .notNull(), // 'ALL' | 'FIRST_TIME' | 'VIP'
     maxPerCustomer: integer("max_per_customer").default(1).notNull(),
     globalLimit: integer("global_limit"),
     usageCount: integer("usage_count").default(0).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
-  (table) => [
-    index("promotion_rules_promo_idx").on(table.promotionId),
-  ],
+  (table) => [index("promotion_rules_promo_idx").on(table.promotionId)],
 );
 
 // ==============================================================================
@@ -76,7 +92,9 @@ export const promotionTargets = pgTable(
     targetType: varchar("target_type", { length: 50 }).notNull(), // 'PRODUCT' | 'CATEGORY' | 'SELLER' | 'ORDER'
     targetId: varchar("target_id", { length: 255 }),
     ruleType: varchar("rule_type", { length: 50 }).default("INCLUDE").notNull(), // 'INCLUDE' | 'EXCLUDE'
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("promotion_targets_promo_idx").on(table.promotionId),
@@ -99,8 +117,12 @@ export const couponCodes = pgTable(
     redemptionsCount: integer("redemptions_count").default(0).notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("coupon_codes_code_unique").on(table.code),
@@ -119,17 +141,26 @@ export const promotionReservations = pgTable(
     promotionId: uuid("promotion_id")
       .references(() => promotions.id, { onDelete: "cascade" })
       .notNull(),
-    couponId: uuid("coupon_id").references(() => couponCodes.id, { onDelete: "set null" }),
+    couponId: uuid("coupon_id").references(() => couponCodes.id, {
+      onDelete: "set null",
+    }),
     userId: varchar("user_id", { length: 255 }),
     guestId: varchar("guest_id", { length: 255 }),
     orderId: varchar("order_id", { length: 255 }),
-    discountAmount: numeric("discount_amount", { precision: 12, scale: 2 }).notNull(),
+    discountAmount: numeric("discount_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
     status: varchar("status", { length: 50 }).default("RESERVED").notNull(), // 'RESERVED' | 'COMMITTED' | 'RELEASED' | 'EXPIRED'
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     committedAt: timestamp("committed_at", { withTimezone: true }),
     releasedAt: timestamp("released_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("promotion_reservations_promo_idx").on(table.promotionId),
@@ -150,12 +181,22 @@ export const promotionRedemptions = pgTable(
     promotionId: uuid("promotion_id")
       .references(() => promotions.id, { onDelete: "cascade" })
       .notNull(),
-    couponId: uuid("coupon_id").references(() => couponCodes.id, { onDelete: "set null" }),
-    reservationId: uuid("reservation_id").references(() => promotionReservations.id, { onDelete: "set null" }),
+    couponId: uuid("coupon_id").references(() => couponCodes.id, {
+      onDelete: "set null",
+    }),
+    reservationId: uuid("reservation_id").references(
+      () => promotionReservations.id,
+      { onDelete: "set null" },
+    ),
     userId: varchar("user_id", { length: 255 }),
     orderId: varchar("order_id", { length: 255 }).notNull(),
-    discountAmount: numeric("discount_amount", { precision: 12, scale: 2 }).notNull(),
-    redeemedAt: timestamp("redeemed_at", { withTimezone: true }).defaultNow().notNull(),
+    discountAmount: numeric("discount_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+    redeemedAt: timestamp("redeemed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("promotion_redemptions_order_idx").on(table.orderId),
@@ -176,11 +217,19 @@ export const promotionBudgets = pgTable(
       .references(() => promotions.id, { onDelete: "cascade" })
       .notNull(),
     totalBudget: numeric("total_budget", { precision: 14, scale: 2 }).notNull(),
-    reservedAmount: numeric("reserved_amount", { precision: 14, scale: 2 }).default("0.00").notNull(),
-    spentAmount: numeric("spent_amount", { precision: 14, scale: 2 }).default("0.00").notNull(),
+    reservedAmount: numeric("reserved_amount", { precision: 14, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    spentAmount: numeric("spent_amount", { precision: 14, scale: 2 })
+      .default("0.00")
+      .notNull(),
     currency: varchar("currency", { length: 10 }).default("USD").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("promotion_budgets_promo_unique").on(table.promotionId),
@@ -194,12 +243,16 @@ export const promotionAuditLogs = pgTable(
   "promotion_audit_logs",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    entityType: varchar("entity_type", { length: 50 }).default("PROMOTION").notNull(),
+    entityType: varchar("entity_type", { length: 50 })
+      .default("PROMOTION")
+      .notNull(),
     entityId: varchar("entity_id", { length: 255 }).notNull(),
     action: varchar("action", { length: 100 }).notNull(),
     performedBy: varchar("performed_by", { length: 255 }),
     metadata: jsonb("metadata").default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("promotion_audit_entity_idx").on(table.entityType, table.entityId),

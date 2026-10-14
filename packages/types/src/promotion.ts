@@ -24,7 +24,12 @@ export type PromotionType = z.infer<typeof PromotionTypeEnum>;
 export const CustomerSegmentEnum = z.enum(["ALL", "FIRST_TIME", "VIP"]);
 export type CustomerSegment = z.infer<typeof CustomerSegmentEnum>;
 
-export const TargetTypeEnum = z.enum(["PRODUCT", "CATEGORY", "SELLER", "ORDER"]);
+export const TargetTypeEnum = z.enum([
+  "PRODUCT",
+  "CATEGORY",
+  "SELLER",
+  "ORDER",
+]);
 export type TargetType = z.infer<typeof TargetTypeEnum>;
 
 export const TargetRuleTypeEnum = z.enum(["INCLUDE", "EXCLUDE"]);
@@ -184,7 +189,10 @@ export const CreateCouponSchema = z.object({
     .string()
     .min(3)
     .max(30)
-    .regex(/^[A-Z0-9_-]+$/, "Code must contain uppercase letters, numbers, hyphens or underscores"),
+    .regex(
+      /^[A-Z0-9_-]+$/,
+      "Code must contain uppercase letters, numbers, hyphens or underscores",
+    ),
   maxRedemptions: z.number().int().positive().optional(),
   expiresAt: z.string().datetime().optional(),
 });
@@ -341,4 +349,3 @@ export interface PromotionBudgetExhaustedEvent {
   spentAmount?: number;
   exhaustedAt: string;
 }
-

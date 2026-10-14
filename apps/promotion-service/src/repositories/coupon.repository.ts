@@ -57,7 +57,9 @@ export class CouponRepository {
         status: row.promotion.status as Promotion["status"],
         type: row.promotion.type as Promotion["type"],
         discountValue: Number(row.promotion.discountValue),
-        maxDiscountAmount: row.promotion.maxDiscountAmount ? Number(row.promotion.maxDiscountAmount) : null,
+        maxDiscountAmount: row.promotion.maxDiscountAmount
+          ? Number(row.promotion.maxDiscountAmount)
+          : null,
         startDate: row.promotion.startDate.toISOString(),
         endDate: row.promotion.endDate.toISOString(),
         priority: row.promotion.priority,
@@ -72,7 +74,10 @@ export class CouponRepository {
    * Find coupon by ID
    */
   async findById(id: string): Promise<CouponCode | null> {
-    const [coupon] = await db.select().from(couponCodes).where(eq(couponCodes.id, id));
+    const [coupon] = await db
+      .select()
+      .from(couponCodes)
+      .where(eq(couponCodes.id, id));
     return coupon ? this.mapCoupon(coupon) : null;
   }
 

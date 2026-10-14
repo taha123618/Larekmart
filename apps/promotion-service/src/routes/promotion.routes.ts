@@ -52,7 +52,10 @@ promotionRoutes.post("/promotions/validate", optionalUserOrGuest, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parseResult = ValidateCouponSchema.safeParse(body);
   if (!parseResult.success) {
-    return c.json({ message: "Invalid payload", errors: parseResult.error.format() }, 400);
+    return c.json(
+      { message: "Invalid payload", errors: parseResult.error.format() },
+      400,
+    );
   }
 
   const userId = c.get("userId") || parseResult.data.userId;
@@ -75,7 +78,10 @@ promotionRoutes.post("/promotions/quote", optionalUserOrGuest, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parseResult = PromotionQuoteSchema.safeParse(body);
   if (!parseResult.success) {
-    return c.json({ message: "Invalid payload", errors: parseResult.error.format() }, 400);
+    return c.json(
+      { message: "Invalid payload", errors: parseResult.error.format() },
+      400,
+    );
   }
 
   const userId = c.get("userId") || parseResult.data.userId;
@@ -94,27 +100,37 @@ promotionRoutes.post("/promotions/quote", optionalUserOrGuest, async (c) => {
  * POST /api/v1/promotions/reservations
  * Atomically reserve a promotion during checkout.
  */
-promotionRoutes.post("/promotions/reservations", optionalUserOrGuest, async (c) => {
-  const body = await c.req.json().catch(() => ({}));
-  const parseResult = CreateReservationSchema.safeParse(body);
-  if (!parseResult.success) {
-    return c.json({ message: "Invalid payload", errors: parseResult.error.format() }, 400);
-  }
+promotionRoutes.post(
+  "/promotions/reservations",
+  optionalUserOrGuest,
+  async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const parseResult = CreateReservationSchema.safeParse(body);
+    if (!parseResult.success) {
+      return c.json(
+        { message: "Invalid payload", errors: parseResult.error.format() },
+        400,
+      );
+    }
 
-  const userId = c.get("userId") || parseResult.data.userId;
-  const guestId = c.get("guestId") || parseResult.data.guestId;
+    const userId = c.get("userId") || parseResult.data.userId;
+    const guestId = c.get("guestId") || parseResult.data.guestId;
 
-  try {
-    const reservation = await promotionService.createReservation({
-      ...parseResult.data,
-      userId,
-      guestId,
-    });
-    return c.json({ data: reservation }, 201);
-  } catch (error: any) {
-    return c.json({ message: error.message || "Failed to reserve promotion" }, 400);
-  }
-});
+    try {
+      const reservation = await promotionService.createReservation({
+        ...parseResult.data,
+        userId,
+        guestId,
+      });
+      return c.json({ data: reservation }, 201);
+    } catch (error: any) {
+      return c.json(
+        { message: error.message || "Failed to reserve promotion" },
+        400,
+      );
+    }
+  },
+);
 
 /**
  * POST /api/v1/promotions/reservations/:id/commit
@@ -125,14 +141,23 @@ promotionRoutes.post("/promotions/reservations/:id/commit", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parseResult = CommitReservationSchema.safeParse(body);
   if (!parseResult.success) {
-    return c.json({ message: "Invalid payload", errors: parseResult.error.format() }, 400);
+    return c.json(
+      { message: "Invalid payload", errors: parseResult.error.format() },
+      400,
+    );
   }
 
   try {
-    const redemption = await promotionService.commitReservation(id, parseResult.data.orderId);
+    const redemption = await promotionService.commitReservation(
+      id,
+      parseResult.data.orderId,
+    );
     return c.json({ data: redemption });
   } catch (error: any) {
-    return c.json({ message: error.message || "Failed to commit reservation" }, 400);
+    return c.json(
+      { message: error.message || "Failed to commit reservation" },
+      400,
+    );
   }
 });
 
@@ -155,7 +180,10 @@ promotionRoutes.post("/promotions/reservations/:id/release", async (c) => {
     }
     return c.json({ data: released });
   } catch (error: any) {
-    return c.json({ message: error.message || "Failed to release reservation" }, 400);
+    return c.json(
+      { message: error.message || "Failed to release reservation" },
+      400,
+    );
   }
 });
 
@@ -171,15 +199,24 @@ promotionRoutes.post("/admin/promotions", shouldBeAdmin, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parseResult = CreatePromotionSchema.safeParse(body);
   if (!parseResult.success) {
-    return c.json({ message: "Validation error", errors: parseResult.error.format() }, 400);
+    return c.json(
+      { message: "Validation error", errors: parseResult.error.format() },
+      400,
+    );
   }
 
   const actorId = c.get("userId") || "admin";
   try {
-    const created = await promotionService.createPromotion(parseResult.data, actorId);
+    const created = await promotionService.createPromotion(
+      parseResult.data,
+      actorId,
+    );
     return c.json({ data: created }, 201);
   } catch (error: any) {
-    return c.json({ message: error.message || "Failed to create promotion" }, 400);
+    return c.json(
+      { message: error.message || "Failed to create promotion" },
+      400,
+    );
   }
 });
 
@@ -187,55 +224,83 @@ promotionRoutes.post("/admin/promotions", shouldBeAdmin, async (c) => {
  * PATCH /api/v1/admin/promotions/:promotionId
  * Update an existing promotion.
  */
-promotionRoutes.patch("/admin/promotions/:promotionId", shouldBeAdmin, async (c) => {
-  const promotionId = c.req.param("promotionId");
-  const body = await c.req.json().catch(() => ({}));
-  const parseResult = UpdatePromotionSchema.safeParse(body);
-  if (!parseResult.success) {
-    return c.json({ message: "Validation error", errors: parseResult.error.format() }, 400);
-  }
-
-  const actorId = c.get("userId") || "admin";
-  try {
-    const updated = await promotionService.updatePromotion(promotionId, parseResult.data, actorId);
-    if (!updated) {
-      return c.json({ message: "Promotion not found" }, 404);
+promotionRoutes.patch(
+  "/admin/promotions/:promotionId",
+  shouldBeAdmin,
+  async (c) => {
+    const promotionId = c.req.param("promotionId");
+    const body = await c.req.json().catch(() => ({}));
+    const parseResult = UpdatePromotionSchema.safeParse(body);
+    if (!parseResult.success) {
+      return c.json(
+        { message: "Validation error", errors: parseResult.error.format() },
+        400,
+      );
     }
-    return c.json({ data: updated });
-  } catch (error: any) {
-    return c.json({ message: error.message || "Failed to update promotion" }, 400);
-  }
-});
+
+    const actorId = c.get("userId") || "admin";
+    try {
+      const updated = await promotionService.updatePromotion(
+        promotionId,
+        parseResult.data,
+        actorId,
+      );
+      if (!updated) {
+        return c.json({ message: "Promotion not found" }, 404);
+      }
+      return c.json({ data: updated });
+    } catch (error: any) {
+      return c.json(
+        { message: error.message || "Failed to update promotion" },
+        400,
+      );
+    }
+  },
+);
 
 /**
  * POST /api/v1/admin/promotions/:promotionId/activate
  * Activate a promotion.
  */
-promotionRoutes.post("/admin/promotions/:promotionId/activate", shouldBeAdmin, async (c) => {
-  const promotionId = c.req.param("promotionId");
-  const actorId = c.get("userId") || "admin";
+promotionRoutes.post(
+  "/admin/promotions/:promotionId/activate",
+  shouldBeAdmin,
+  async (c) => {
+    const promotionId = c.req.param("promotionId");
+    const actorId = c.get("userId") || "admin";
 
-  const activated = await promotionService.activatePromotion(promotionId, actorId);
-  if (!activated) {
-    return c.json({ message: "Promotion not found" }, 404);
-  }
-  return c.json({ data: activated });
-});
+    const activated = await promotionService.activatePromotion(
+      promotionId,
+      actorId,
+    );
+    if (!activated) {
+      return c.json({ message: "Promotion not found" }, 404);
+    }
+    return c.json({ data: activated });
+  },
+);
 
 /**
  * POST /api/v1/admin/promotions/:promotionId/deactivate
  * Deactivate a promotion.
  */
-promotionRoutes.post("/admin/promotions/:promotionId/deactivate", shouldBeAdmin, async (c) => {
-  const promotionId = c.req.param("promotionId");
-  const actorId = c.get("userId") || "admin";
+promotionRoutes.post(
+  "/admin/promotions/:promotionId/deactivate",
+  shouldBeAdmin,
+  async (c) => {
+    const promotionId = c.req.param("promotionId");
+    const actorId = c.get("userId") || "admin";
 
-  const deactivated = await promotionService.deactivatePromotion(promotionId, actorId);
-  if (!deactivated) {
-    return c.json({ message: "Promotion not found" }, 404);
-  }
-  return c.json({ data: deactivated });
-});
+    const deactivated = await promotionService.deactivatePromotion(
+      promotionId,
+      actorId,
+    );
+    if (!deactivated) {
+      return c.json({ message: "Promotion not found" }, 404);
+    }
+    return c.json({ data: deactivated });
+  },
+);
 
 /**
  * POST /api/v1/admin/coupons
@@ -245,7 +310,10 @@ promotionRoutes.post("/admin/coupons", shouldBeAdmin, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parseResult = CreateCouponSchema.safeParse(body);
   if (!parseResult.success) {
-    return c.json({ message: "Validation error", errors: parseResult.error.format() }, 400);
+    return c.json(
+      { message: "Validation error", errors: parseResult.error.format() },
+      400,
+    );
   }
 
   try {
@@ -260,21 +328,32 @@ promotionRoutes.post("/admin/coupons", shouldBeAdmin, async (c) => {
  * GET /api/v1/admin/promotions/:promotionId/redemptions
  * View promotion redemptions history and order associations.
  */
-promotionRoutes.get("/admin/promotions/:promotionId/redemptions", shouldBeAdmin, async (c) => {
-  const promotionId = c.req.param("promotionId");
-  const limit = Math.min(100, Math.max(1, Number(c.req.query("limit") ?? 50)));
-  const offset = Math.max(0, Number(c.req.query("offset") ?? 0));
+promotionRoutes.get(
+  "/admin/promotions/:promotionId/redemptions",
+  shouldBeAdmin,
+  async (c) => {
+    const promotionId = c.req.param("promotionId");
+    const limit = Math.min(
+      100,
+      Math.max(1, Number(c.req.query("limit") ?? 50)),
+    );
+    const offset = Math.max(0, Number(c.req.query("offset") ?? 0));
 
-  const result = await promotionService.getPromotionRedemptions(promotionId, limit, offset);
-  return c.json({
-    data: result.redemptions,
-    pagination: {
-      total: result.total,
+    const result = await promotionService.getPromotionRedemptions(
+      promotionId,
       limit,
       offset,
-    },
-  });
-});
+    );
+    return c.json({
+      data: result.redemptions,
+      pagination: {
+        total: result.total,
+        limit,
+        offset,
+      },
+    });
+  },
+);
 
 /**
  * GET /api/v1/admin/promotions/overview

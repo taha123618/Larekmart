@@ -30,7 +30,10 @@ export class ReservationRepository {
   /**
    * Find reservations by user or guest
    */
-  async findActiveByUserOrGuest(userId?: string, guestId?: string): Promise<PromotionReservation[]> {
+  async findActiveByUserOrGuest(
+    userId?: string,
+    guestId?: string,
+  ): Promise<PromotionReservation[]> {
     if (!userId && !guestId) return [];
 
     const condition = userId
@@ -218,7 +221,11 @@ export class ReservationRepository {
   async commitReservation(
     id: string,
     orderId: string,
-  ): Promise<{ redemption: PromotionRedemption; reservation: PromotionReservation; exhausted: boolean }> {
+  ): Promise<{
+    redemption: PromotionRedemption;
+    reservation: PromotionReservation;
+    exhausted: boolean;
+  }> {
     return await db.transaction(async (tx) => {
       // 1. Lock and retrieve reservation
       const [res] = await tx
@@ -248,7 +255,9 @@ export class ReservationRepository {
       }
 
       if (res.status !== "RESERVED") {
-        throw new Error(`Reservation is in status '${res.status}', cannot commit`);
+        throw new Error(
+          `Reservation is in status '${res.status}', cannot commit`,
+        );
       }
 
       const discountAmt = Number(res.discountAmount);
@@ -333,7 +342,11 @@ export class ReservationRepository {
         .returning();
 
       // 2. Release budget
-      await budgetRepository.releaseBudget(res.promotionId, discountAmt, tx as any);
+      await budgetRepository.releaseBudget(
+        res.promotionId,
+        discountAmt,
+        tx as any,
+      );
 
       // 3. Decrement coupon redemptions
       if (res.couponId) {
@@ -368,7 +381,9 @@ export class ReservationRepository {
     return releasedCount;
   }
 
-  private mapReservation(r: typeof promotionReservations.$inferSelect): PromotionReservation {
+  private mapReservation(
+    r: typeof promotionReservations.$inferSelect,
+  ): PromotionReservation {
     return {
       id: r.id,
       promotionId: r.promotionId,
@@ -383,7 +398,9 @@ export class ReservationRepository {
     };
   }
 
-  private mapRedemption(r: typeof promotionRedemptions.$inferSelect): PromotionRedemption {
+  private mapRedemption(
+    r: typeof promotionRedemptions.$inferSelect,
+  ): PromotionRedemption {
     return {
       id: r.id,
       promotionId: r.promotionId,

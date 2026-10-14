@@ -82,15 +82,20 @@ export default function PromotionsAdminDashboardPage() {
   const [minSpend, setMinSpend] = useState(0);
   const [budgetLimit, setBudgetLimit] = useState(1000);
   const [isStackable, setIsStackable] = useState(false);
-  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
   const [endDate, setEndDate] = useState(
     new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
   );
 
   // New Coupon Form State
-  const [selectedPromoForCoupon, setSelectedPromoForCoupon] = useState<Promotion | null>(null);
+  const [selectedPromoForCoupon, setSelectedPromoForCoupon] =
+    useState<Promotion | null>(null);
   const [couponCode, setCouponCode] = useState("");
-  const [maxCouponRedemptions, setMaxCouponRedemptions] = useState<number | undefined>();
+  const [maxCouponRedemptions, setMaxCouponRedemptions] = useState<
+    number | undefined
+  >();
 
   // 1. Fetch Overview Stats
   const {
@@ -115,7 +120,14 @@ export default function PromotionsAdminDashboardPage() {
     refetch: refetchPromotions,
     isRefetching: isPromotionsRefetching,
   } = useQuery<AdminPromotionsResponse>({
-    queryKey: ["admin-promotions-list", page, limit, statusFilter, typeFilter, debouncedSearch],
+    queryKey: [
+      "admin-promotions-list",
+      page,
+      limit,
+      statusFilter,
+      typeFilter,
+      debouncedSearch,
+    ],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
@@ -140,7 +152,9 @@ export default function PromotionsAdminDashboardPage() {
       setIsCreateOpen(false);
       resetPromoForm();
       queryClient.invalidateQueries({ queryKey: ["admin-promotions-list"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-promotions-overview"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-promotions-overview"],
+      });
     },
   });
 
@@ -152,12 +166,22 @@ export default function PromotionsAdminDashboardPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-promotions-list"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-promotions-overview"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-promotions-overview"],
+      });
     },
   });
 
   const createCouponMutation = useMutation({
-    mutationFn: async ({ promoId, code, maxRedemptions }: { promoId: string; code: string; maxRedemptions?: number }) => {
+    mutationFn: async ({
+      promoId,
+      code,
+      maxRedemptions,
+    }: {
+      promoId: string;
+      code: string;
+      maxRedemptions?: number;
+    }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       return createAdminCoupon(token, promoId, {
@@ -169,7 +193,9 @@ export default function PromotionsAdminDashboardPage() {
       setSelectedPromoForCoupon(null);
       setCouponCode("");
       queryClient.invalidateQueries({ queryKey: ["admin-promotions-list"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-promotions-overview"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-promotions-overview"],
+      });
     },
   });
 
@@ -217,7 +243,9 @@ export default function PromotionsAdminDashboardPage() {
     createCouponMutation.mutate({
       promoId: selectedPromoForCoupon.id,
       code: couponCode.trim().toUpperCase(),
-      maxRedemptions: maxCouponRedemptions ? Number(maxCouponRedemptions) : undefined,
+      maxRedemptions: maxCouponRedemptions
+        ? Number(maxCouponRedemptions)
+        : undefined,
     });
   };
 
@@ -233,7 +261,8 @@ export default function PromotionsAdminDashboardPage() {
             <span>Campaigns & Promotions Engine</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Authoritative management for marketing campaigns, coupons, discount eligibility, budgets & checkout reservations.
+            Authoritative management for marketing campaigns, coupons, discount
+            eligibility, budgets & checkout reservations.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -247,7 +276,9 @@ export default function PromotionsAdminDashboardPage() {
             disabled={isRefreshing}
             className="gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
 
@@ -265,7 +296,8 @@ export default function PromotionsAdminDashboardPage() {
                   Create Promotion Campaign
                 </SheetTitle>
                 <SheetDescription>
-                  Configure discount rules, scheduling, eligibility, and promotional budget caps.
+                  Configure discount rules, scheduling, eligibility, and
+                  promotional budget caps.
                 </SheetDescription>
               </SheetHeader>
 
@@ -301,7 +333,9 @@ export default function PromotionsAdminDashboardPage() {
                     <select
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       value={promoType}
-                      onChange={(e) => setPromoType(e.target.value as PromotionType)}
+                      onChange={(e) =>
+                        setPromoType(e.target.value as PromotionType)
+                      }
                     >
                       <option value="PERCENTAGE">Percentage (%)</option>
                       <option value="FIXED_AMOUNT">Fixed Amount ($)</option>
@@ -419,7 +453,9 @@ export default function PromotionsAdminDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Active Promotions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Promotions
+            </CardTitle>
             <Tag className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
@@ -427,7 +463,7 @@ export default function PromotionsAdminDashboardPage() {
               {isOverviewLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               ) : (
-                overview?.activePromotions.toLocaleString() ?? 0
+                (overview?.activePromotions.toLocaleString() ?? 0)
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -438,7 +474,9 @@ export default function PromotionsAdminDashboardPage() {
 
         <Card className="border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Coupons Issued</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Coupons Issued
+            </CardTitle>
             <Ticket className="h-4 w-4 text-sky-500" />
           </CardHeader>
           <CardContent>
@@ -446,7 +484,7 @@ export default function PromotionsAdminDashboardPage() {
               {isOverviewLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               ) : (
-                overview?.totalCoupons.toLocaleString() ?? 0
+                (overview?.totalCoupons.toLocaleString() ?? 0)
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -457,7 +495,9 @@ export default function PromotionsAdminDashboardPage() {
 
         <Card className="border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Discounts Awarded</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Discounts Awarded
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
@@ -476,7 +516,9 @@ export default function PromotionsAdminDashboardPage() {
 
         <Card className="border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total Redemptions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Redemptions
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-violet-500" />
           </CardHeader>
           <CardContent>
@@ -484,7 +526,7 @@ export default function PromotionsAdminDashboardPage() {
               {isOverviewLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               ) : (
-                overview?.totalRedemptions.toLocaleString() ?? 0
+                (overview?.totalRedemptions.toLocaleString() ?? 0)
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -499,9 +541,12 @@ export default function PromotionsAdminDashboardPage() {
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-lg font-semibold">Promotions & Campaigns</CardTitle>
+              <CardTitle className="text-lg font-semibold">
+                Promotions & Campaigns
+              </CardTitle>
               <CardDescription>
-                Browse, monitor budgets, generate coupon codes, and pause or deactivate promotional campaigns.
+                Browse, monitor budgets, generate coupon codes, and pause or
+                deactivate promotional campaigns.
               </CardDescription>
             </div>
 
@@ -579,12 +624,15 @@ export default function PromotionsAdminDashboardPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : !promotionsData?.items || promotionsData.items.length === 0 ? (
+                ) : !promotionsData?.items ||
+                  promotionsData.items.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-40 text-center">
                       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <AlertCircle className="h-6 w-6" />
-                        <span>No promotion campaigns found matching criteria.</span>
+                        <span>
+                          No promotion campaigns found matching criteria.
+                        </span>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -593,13 +641,18 @@ export default function PromotionsAdminDashboardPage() {
                     const budget = row.budget;
                     const spent = budget?.spentAmount ?? 0;
                     const total = budget?.totalBudget ?? 1;
-                    const pct = Math.min(100, Math.round((spent / total) * 100));
+                    const pct = Math.min(
+                      100,
+                      Math.round((spent / total) * 100),
+                    );
 
                     return (
                       <TableRow key={row.id}>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="font-semibold text-sm">{row.name}</span>
+                            <span className="font-semibold text-sm">
+                              {row.name}
+                            </span>
                             {row.description && (
                               <span className="text-xs text-muted-foreground truncate max-w-[200px]">
                                 {row.description}
@@ -607,14 +660,21 @@ export default function PromotionsAdminDashboardPage() {
                             )}
                             <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground">
                               {row.coupons && row.coupons.length > 0 ? (
-                                <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
-                                  {row.coupons.length} coupon{row.coupons.length > 1 ? "s" : ""}
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] py-0 px-1.5 h-4"
+                                >
+                                  {row.coupons.length} coupon
+                                  {row.coupons.length > 1 ? "s" : ""}
                                 </Badge>
                               ) : (
                                 <span className="italic">Automatic deal</span>
                               )}
                               {row.isStackable && (
-                                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] py-0 px-1.5 h-4"
+                                >
                                   Stackable
                                 </Badge>
                               )}
@@ -632,8 +692,8 @@ export default function PromotionsAdminDashboardPage() {
                             )}
                             {row.type === "FIXED_AMOUNT" && (
                               <Badge className="bg-blue-600/10 text-blue-700 hover:bg-blue-600/20 border-blue-300">
-                                <DollarSign className="h-3 w-3 mr-0.5" />
-                                ${row.discountValue} OFF
+                                <DollarSign className="h-3 w-3 mr-0.5" />$
+                                {row.discountValue} OFF
                               </Badge>
                             )}
                             {row.type === "FREE_SHIPPING" && (
@@ -656,17 +716,26 @@ export default function PromotionsAdminDashboardPage() {
                             </Badge>
                           )}
                           {row.status === "DRAFT" && (
-                            <Badge variant="outline" className="text-amber-600 border-amber-300 flex items-center w-fit gap-1">
+                            <Badge
+                              variant="outline"
+                              className="text-amber-600 border-amber-300 flex items-center w-fit gap-1"
+                            >
                               <Clock className="h-3 w-3" /> Draft
                             </Badge>
                           )}
                           {row.status === "DEACTIVATED" && (
-                            <Badge variant="destructive" className="flex items-center w-fit gap-1">
+                            <Badge
+                              variant="destructive"
+                              className="flex items-center w-fit gap-1"
+                            >
                               <XCircle className="h-3 w-3" /> Deactivated
                             </Badge>
                           )}
                           {row.status === "EXPIRED" && (
-                            <Badge variant="secondary" className="flex items-center w-fit gap-1">
+                            <Badge
+                              variant="secondary"
+                              className="flex items-center w-fit gap-1"
+                            >
                               Expired
                             </Badge>
                           )}
@@ -677,13 +746,19 @@ export default function PromotionsAdminDashboardPage() {
                             <div className="space-y-1">
                               <div className="flex justify-between text-[11px]">
                                 <span>${spent.toFixed(2)}</span>
-                                <span className="text-muted-foreground">${budget.totalBudget}</span>
+                                <span className="text-muted-foreground">
+                                  ${budget.totalBudget}
+                                </span>
                               </div>
                               <Progress value={pct} className="h-1.5" />
-                              <span className="text-[10px] text-muted-foreground">{pct}% consumed</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {pct}% consumed
+                              </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-muted-foreground">Uncapped</span>
+                            <span className="text-xs text-muted-foreground">
+                              Uncapped
+                            </span>
                           )}
                         </TableCell>
 
@@ -701,9 +776,13 @@ export default function PromotionsAdminDashboardPage() {
                         <TableCell className="text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            <span>{new Date(row.startDate).toLocaleDateString()}</span>
+                            <span>
+                              {new Date(row.startDate).toLocaleDateString()}
+                            </span>
                           </div>
-                          <div>to {new Date(row.endDate).toLocaleDateString()}</div>
+                          <div>
+                            to {new Date(row.endDate).toLocaleDateString()}
+                          </div>
                         </TableCell>
 
                         <TableCell className="text-right">
@@ -714,7 +793,12 @@ export default function PromotionsAdminDashboardPage() {
                               className="h-8 text-xs gap-1"
                               onClick={() => {
                                 setSelectedPromoForCoupon(row);
-                                setCouponCode(`${row.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}`);
+                                setCouponCode(
+                                  `${row.name
+                                    .replace(/[^a-zA-Z0-9]/g, "")
+                                    .slice(0, 8)
+                                    .toUpperCase()}`,
+                                );
                               }}
                             >
                               <Ticket className="h-3.5 w-3.5" />
@@ -726,7 +810,9 @@ export default function PromotionsAdminDashboardPage() {
                                 variant="outline"
                                 size="sm"
                                 className="h-8 text-xs text-destructive hover:bg-destructive/10"
-                                onClick={() => deactivatePromoMutation.mutate(row.id)}
+                                onClick={() =>
+                                  deactivatePromoMutation.mutate(row.id)
+                                }
                                 disabled={deactivatePromoMutation.isPending}
                               >
                                 Deactivate
@@ -746,7 +832,8 @@ export default function PromotionsAdminDashboardPage() {
           {promotionsData && promotionsData.totalPages > 1 && (
             <div className="flex items-center justify-between p-4 border-t text-sm text-muted-foreground">
               <div>
-                Page {promotionsData.page} of {promotionsData.totalPages} ({promotionsData.total} campaigns)
+                Page {promotionsData.page} of {promotionsData.totalPages} (
+                {promotionsData.total} campaigns)
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -773,7 +860,10 @@ export default function PromotionsAdminDashboardPage() {
 
       {/* Add Coupon Modal */}
       {selectedPromoForCoupon && (
-        <Sheet open={!!selectedPromoForCoupon} onOpenChange={() => setSelectedPromoForCoupon(null)}>
+        <Sheet
+          open={!!selectedPromoForCoupon}
+          onOpenChange={() => setSelectedPromoForCoupon(null)}
+        >
           <SheetContent className="sm:max-w-md">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
@@ -781,7 +871,8 @@ export default function PromotionsAdminDashboardPage() {
                 Add Coupon Code
               </SheetTitle>
               <SheetDescription>
-                Issue a custom coupon code tied to campaign: <strong>{selectedPromoForCoupon.name}</strong>.
+                Issue a custom coupon code tied to campaign:{" "}
+                <strong>{selectedPromoForCoupon.name}</strong>.
               </SheetDescription>
             </SheetHeader>
 
@@ -811,7 +902,9 @@ export default function PromotionsAdminDashboardPage() {
                   placeholder="Leave empty for unlimited"
                   value={maxCouponRedemptions ?? ""}
                   onChange={(e) =>
-                    setMaxCouponRedemptions(e.target.value ? Number(e.target.value) : undefined)
+                    setMaxCouponRedemptions(
+                      e.target.value ? Number(e.target.value) : undefined,
+                    )
                   }
                 />
               </div>

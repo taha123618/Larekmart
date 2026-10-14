@@ -7,7 +7,10 @@ export class BudgetRepository {
   /**
    * Find budget for a promotion
    */
-  async findByPromotionId(promotionId: string, client = db): Promise<PromotionBudget | null> {
+  async findByPromotionId(
+    promotionId: string,
+    client = db,
+  ): Promise<PromotionBudget | null> {
     const [b] = await client
       .select()
       .from(promotionBudgets)
@@ -24,14 +27,21 @@ export class BudgetRepository {
     promotionId: string,
     amount: number,
     client = db,
-  ): Promise<{ success: boolean; budget?: PromotionBudget; exhausted?: boolean }> {
+  ): Promise<{
+    success: boolean;
+    budget?: PromotionBudget;
+    exhausted?: boolean;
+  }> {
     const budget = await this.findByPromotionId(promotionId, client);
     if (!budget) {
       // No budget cap defined
       return { success: true };
     }
 
-    if (budget.spentAmount + budget.reservedAmount + amount > budget.totalBudget) {
+    if (
+      budget.spentAmount + budget.reservedAmount + amount >
+      budget.totalBudget
+    ) {
       return { success: false, exhausted: true };
     }
 
@@ -51,7 +61,8 @@ export class BudgetRepository {
     }
 
     const mapped = this.mapBudget(updated);
-    const isNowExhausted = mapped.spentAmount + mapped.reservedAmount >= mapped.totalBudget;
+    const isNowExhausted =
+      mapped.spentAmount + mapped.reservedAmount >= mapped.totalBudget;
 
     return {
       success: true,

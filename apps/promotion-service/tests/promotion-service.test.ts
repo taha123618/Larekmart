@@ -48,13 +48,19 @@ async function runTests() {
     // ------------------------------------------------------------
     console.log("[Test 1] Health, Readiness & Metrics Endpoints");
     const healthRes = await app.request("/health");
-    assert.ok([200, 503].includes(healthRes.status), "Health status should be 200 or 503");
-    const healthJson = await healthRes.json() as any;
+    assert.ok(
+      [200, 503].includes(healthRes.status),
+      "Health status should be 200 or 503",
+    );
+    const healthJson = (await healthRes.json()) as any;
     assert.equal(healthJson.service, "promotion-service");
     console.log("✓ /health passed");
 
     const readyRes = await app.request("/ready");
-    assert.ok([200, 503].includes(readyRes.status), "Ready status should be 200 or 503");
+    assert.ok(
+      [200, 503].includes(readyRes.status),
+      "Ready status should be 200 or 503",
+    );
     console.log("✓ /ready passed");
 
     const metricsRes = await app.request("/metrics");
@@ -81,7 +87,11 @@ async function runTests() {
       headers: USER_HEADERS,
       body: JSON.stringify({}),
     });
-    assert.equal(nonAdminRes.status, 403, "Non-admin request must be rejected with 403");
+    assert.equal(
+      nonAdminRes.status,
+      403,
+      "Non-admin request must be rejected with 403",
+    );
     console.log("✓ Non-admin request rejected with 403");
 
     // ------------------------------------------------------------
@@ -118,8 +128,12 @@ async function runTests() {
       }),
     });
 
-    assert.equal(createPromoRes.status, 201, "Expected 201 Created for promotion");
-    const createPromoJson = await createPromoRes.json() as any;
+    assert.equal(
+      createPromoRes.status,
+      201,
+      "Expected 201 Created for promotion",
+    );
+    const createPromoJson = (await createPromoRes.json()) as any;
     assert.ok(createPromoJson.data?.id, "Created promotion must have an ID");
     createdPromoId = createPromoJson.data.id;
     assert.equal(createPromoJson.data.status, "DRAFT");
@@ -139,8 +153,12 @@ async function runTests() {
       }),
     });
 
-    assert.equal(createCouponRes.status, 201, "Expected 201 Created for coupon");
-    const createCouponJson = await createCouponRes.json() as any;
+    assert.equal(
+      createCouponRes.status,
+      201,
+      "Expected 201 Created for coupon",
+    );
+    const createCouponJson = (await createCouponRes.json()) as any;
     assert.equal(createCouponJson.data.code, couponCodeStr);
     assert.equal(createCouponJson.data.isActive, true);
     console.log(`✓ Coupon code created: ${couponCodeStr}`);
@@ -157,13 +175,13 @@ async function runTests() {
       },
     );
     assert.equal(activateRes.status, 200);
-    const activateJson = await activateRes.json() as any;
+    const activateJson = (await activateRes.json()) as any;
     assert.equal(activateJson.data.status, "ACTIVE");
 
     // Verify it is present in active promotions
     const activeRes = await app.request("/api/v1/promotions/active");
     assert.equal(activeRes.status, 200);
-    const activeJson = await activeRes.json() as any;
+    const activeJson = (await activeRes.json()) as any;
     const found = activeJson.data.some((p: any) => p.id === createdPromoId);
     assert.ok(found, "Newly activated promotion must appear in active list");
     console.log("✓ Promotion activated and listed in /promotions/active");
@@ -178,14 +196,16 @@ async function runTests() {
       headers: USER_HEADERS,
       body: JSON.stringify({
         code: couponCodeStr,
-        items: [
-          { productId: 101, price: 30, quantity: 1 },
-        ],
+        items: [{ productId: 101, price: 30, quantity: 1 }],
       }),
     });
     assert.equal(invalidValRes.status, 200);
-    const invalidValJson = await invalidValRes.json() as any;
-    assert.equal(invalidValJson.valid, false, "Should be invalid when subtotal < 50");
+    const invalidValJson = (await invalidValRes.json()) as any;
+    assert.equal(
+      invalidValJson.valid,
+      false,
+      "Should be invalid when subtotal < 50",
+    );
     console.log("✓ Subtotal under minOrderAmount correctly rejected");
 
     // Valid when order subtotal >= 50
@@ -200,8 +220,12 @@ async function runTests() {
       }),
     });
     assert.equal(validValRes.status, 200);
-    const validValJson = await validValRes.json() as any;
-    assert.equal(validValJson.valid, true, "Should be valid when subtotal >= 50");
+    const validValJson = (await validValRes.json()) as any;
+    assert.equal(
+      validValJson.valid,
+      true,
+      "Should be valid when subtotal >= 50",
+    );
     assert.equal(validValJson.estimatedDiscount, 20); // 20% of 100 = $20
     console.log("✓ Coupon validation passed with estimatedDiscount $20");
 
@@ -220,11 +244,13 @@ async function runTests() {
       }),
     });
     assert.equal(quoteRes.status, 200);
-    const quoteJson = await quoteRes.json() as any;
+    const quoteJson = (await quoteRes.json()) as any;
     assert.equal(quoteJson.data.subtotal, 120);
     assert.equal(quoteJson.data.totalDiscount, 24); // 20% of 120 = $24
     assert.equal(quoteJson.data.finalTotal, 96);
-    console.log("✓ Quote calculation verified: subtotal $120 -> discount $24 -> total $96");
+    console.log(
+      "✓ Quote calculation verified: subtotal $120 -> discount $24 -> total $96",
+    );
 
     // ------------------------------------------------------------
     // Test 8: Create Reservation (Checkout Hold)
@@ -243,7 +269,7 @@ async function runTests() {
       }),
     });
     assert.equal(reserveRes.status, 201);
-    const reserveJson = await reserveRes.json() as any;
+    const reserveJson = (await reserveRes.json()) as any;
     assert.ok(reserveJson.data?.id);
     reservationId = reserveJson.data.id;
     assert.equal(reserveJson.data.status, "RESERVED");
@@ -262,8 +288,12 @@ async function runTests() {
       }),
     });
     assert.equal(idempotentRes.status, 201);
-    const idempotentJson = await idempotentRes.json() as any;
-    assert.equal(idempotentJson.data.id, reservationId, "Must return idempotent reservation ID");
+    const idempotentJson = (await idempotentRes.json()) as any;
+    assert.equal(
+      idempotentJson.data.id,
+      reservationId,
+      "Must return idempotent reservation ID",
+    );
     console.log("✓ Idempotent reservation check verified");
 
     // ------------------------------------------------------------
@@ -279,7 +309,7 @@ async function runTests() {
       },
     );
     assert.equal(commitRes.status, 200);
-    const commitJson = await commitRes.json() as any;
+    const commitJson = (await commitRes.json()) as any;
     assert.ok(commitJson.data?.id, "Redemption record must be created");
     assert.equal(commitJson.data.orderId, orderRef);
     assert.equal(commitJson.data.discountAmount, 24);
@@ -290,17 +320,20 @@ async function runTests() {
     // ------------------------------------------------------------
     console.log("\n[Test 10] Reservation Release Workflow");
     const cancelOrderRef = `order_cancel_${Date.now()}`;
-    const tempReserveRes = await app.request("/api/v1/promotions/reservations", {
-      method: "POST",
-      headers: USER_HEADERS,
-      body: JSON.stringify({
-        promotionId: createdPromoId,
-        couponCode: couponCodeStr,
-        orderId: cancelOrderRef,
-        discountAmount: 15,
-      }),
-    });
-    const tempResJson = await tempReserveRes.json() as any;
+    const tempReserveRes = await app.request(
+      "/api/v1/promotions/reservations",
+      {
+        method: "POST",
+        headers: USER_HEADERS,
+        body: JSON.stringify({
+          promotionId: createdPromoId,
+          couponCode: couponCodeStr,
+          orderId: cancelOrderRef,
+          discountAmount: 15,
+        }),
+      },
+    );
+    const tempResJson = (await tempReserveRes.json()) as any;
     const tempId = tempResJson.data.id;
 
     const releaseRes = await app.request(
@@ -312,7 +345,7 @@ async function runTests() {
       },
     );
     assert.equal(releaseRes.status, 200);
-    const releaseJson = await releaseRes.json() as any;
+    const releaseJson = (await releaseRes.json()) as any;
     assert.equal(releaseJson.data.status, "RELEASED");
     console.log("✓ Reservation released and budget returned");
 
@@ -328,17 +361,22 @@ async function runTests() {
       },
     );
     assert.equal(redemptionsRes.status, 200);
-    const redemptionsJson = await redemptionsRes.json() as any;
-    assert.ok(redemptionsJson.data.length >= 1, "Must have recorded redemptions");
+    const redemptionsJson = (await redemptionsRes.json()) as any;
+    assert.ok(
+      redemptionsJson.data.length >= 1,
+      "Must have recorded redemptions",
+    );
     assert.equal(redemptionsJson.data[0].orderId, orderRef);
-    console.log(`✓ Verified ${redemptionsJson.data.length} redemptions in audit history`);
+    console.log(
+      `✓ Verified ${redemptionsJson.data.length} redemptions in audit history`,
+    );
 
     const overviewRes = await app.request("/api/v1/admin/promotions/overview", {
       method: "GET",
       headers: ADMIN_HEADERS,
     });
     assert.equal(overviewRes.status, 200);
-    const overviewJson = await overviewRes.json() as any;
+    const overviewJson = (await overviewRes.json()) as any;
     assert.ok(overviewJson.data.totalPromotions >= 1);
     assert.ok(overviewJson.data.totalRedemptions >= 1);
     console.log("✓ Overview metrics retrieved successfully");

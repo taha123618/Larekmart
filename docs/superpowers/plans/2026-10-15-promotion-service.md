@@ -26,11 +26,13 @@
 ### Task 1: Shared Domain Contracts & Kafka Topics
 
 **Files:**
+
 - Create: `packages/types/src/promotion.ts`
 - Modify: `packages/types/src/index.ts`
 - Modify: `packages/kafka/src/init-topics.ts`
 
 **Interfaces:**
+
 - Produces: `Promotion`, `PromotionRule`, `PromotionTarget`, `CouponCode`, `PromotionReservation`, `PromotionRedemption`, `PromotionBudget`, `PromotionAuditLog`, `ValidateCouponInput`, `PromotionQuoteInput`, `PromotionQuoteResponse`, `CreateReservationInput`, `CommitReservationInput`, `ReleaseReservationInput`, `CreatePromotionInput`, `CreateCouponInput`.
 - Kafka Event Payloads: `PromotionCreatedEvent`, `PromotionActivatedEvent`, `PromotionDeactivatedEvent`, `PromotionReservedEvent`, `PromotionRedeemedEvent`, `PromotionReservationReleasedEvent`, `PromotionBudgetExhaustedEvent`.
 
@@ -45,6 +47,7 @@
 ### Task 2: Service Scaffolding, Drizzle Schema & Idempotent Migrations
 
 **Files:**
+
 - Create: `apps/promotion-service/package.json`
 - Create: `apps/promotion-service/tsconfig.json`
 - Create: `apps/promotion-service/drizzle.config.ts`
@@ -56,6 +59,7 @@
 - Create: `apps/promotion-service/src/db/migrate.ts`
 
 **Interfaces:**
+
 - Database Tables:
   - `promotions`: `id` (UUID pk), `name`, `description`, `status` (DRAFT, SCHEDULED, ACTIVE, PAUSED, EXPIRED, DEACTIVATED), `type` (PERCENTAGE, FIXED_AMOUNT, FREE_SHIPPING), `discount_value`, `max_discount_amount`, `start_date`, `end_date`, `priority`, `is_stackable`, `created_at`, `updated_at`.
   - `promotion_rules`: `id` (UUID pk), `promotion_id` (fk), `min_order_amount`, `customer_segment` (ALL, FIRST_TIME, VIP), `max_per_customer`, `global_limit`, `usage_count`.
@@ -77,12 +81,14 @@
 ### Task 3: Data Access Repositories with Atomic ACID Constraints
 
 **Files:**
+
 - Create: `apps/promotion-service/src/repositories/promotion.repository.ts`
 - Create: `apps/promotion-service/src/repositories/coupon.repository.ts`
 - Create: `apps/promotion-service/src/repositories/reservation.repository.ts`
 - Create: `apps/promotion-service/src/repositories/budget.repository.ts`
 
 **Interfaces:**
+
 - `PromotionRepository`: `create()`, `findById()`, `listActive()`, `updateStatus()`, `recordAudit()`
 - `CouponRepository`: `findByCode()`, `createCoupon()`, `incrementUsage()`, `decrementUsage()`
 - `ReservationRepository`: `createReservation()`, `getReservation()`, `commitReservation()`, `releaseReservation()`, `expireStaleReservations()`
@@ -100,10 +106,12 @@
 ### Task 4: Discount Quote Engine, Stacking Rules & Business Service
 
 **Files:**
+
 - Create: `apps/promotion-service/src/services/promotion-evaluator.ts`
 - Create: `apps/promotion-service/src/services/promotion.service.ts`
 
 **Interfaces:**
+
 - `PromotionEvaluator`: Evaluates eligibility conditions (minimum order value, customer segments, product/category/seller targets, date schedule, exclusions).
 - `PromotionService`:
   - `getActivePromotions()`
@@ -130,11 +138,13 @@
 ### Task 5: Kafka Event Integration (Producers & Order Consumers)
 
 **Files:**
+
 - Create: `apps/promotion-service/src/events/producers/promotion.producer.ts`
 - Create: `apps/promotion-service/src/events/consumers/order-events.consumer.ts`
 - Create: `apps/promotion-service/src/utils/kafka.ts`
 
 **Interfaces:**
+
 - Producers: `publishPromotionCreated`, `publishPromotionActivated`, `publishPromotionDeactivated`, `publishPromotionReserved`, `publishPromotionRedeemed`, `publishPromotionReservationReleased`, `publishPromotionBudgetExhausted`.
 - Consumers: Reads `order.completed` / `order.confirmed` to commit reservations; reads `order.cancelled` to release redemptions.
 
@@ -148,6 +158,7 @@
 ### Task 6: Hono 4 HTTP Application, Routes, Observability & RBAC
 
 **Files:**
+
 - Create: `apps/promotion-service/src/middleware/auth.middleware.ts`
 - Create: `apps/promotion-service/src/controllers/promotion.controller.ts`
 - Create: `apps/promotion-service/src/routes/promotion.routes.ts`
@@ -156,6 +167,7 @@
 - Create: `apps/promotion-service/src/index.ts`
 
 **Interfaces:**
+
 - Customer Endpoints:
   - `GET /api/v1/promotions/active`
   - `GET /api/v1/promotions/:promotionId`
@@ -186,10 +198,12 @@
 ### Task 7: Comprehensive Automated Test Suite
 
 **Files:**
+
 - Create: `apps/promotion-service/tests/promotion-service.test.ts`
 - Modify: `apps/promotion-service/package.json`
 
 **Interfaces:**
+
 - Test runner: `tsx --env-file-if-exists=.env tests/promotion-service.test.ts`
 - Test suites:
   1. Health Probes (`/health`, `/ready`) & Prometheus exposition (`/metrics`)
@@ -214,6 +228,7 @@
 ### Task 8: API Gateway Routing, Docker, Kubernetes & Monorepo Docs
 
 **Files:**
+
 - Modify: `apps/api-gateway/src/routing/admin.routes.ts`
 - Modify: `apps/api-gateway/src/index.ts`
 - Create: `apps/promotion-service/Dockerfile`

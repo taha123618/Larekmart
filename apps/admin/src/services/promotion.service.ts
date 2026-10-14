@@ -60,7 +60,8 @@ export async function fetchAdminPromotionOverview(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch promotion overview (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch promotion overview (HTTP ${res.status})`,
     );
   }
 
@@ -118,7 +119,8 @@ export async function fetchAdminPromotionDetails(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch promotion ${id} (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch promotion ${id} (HTTP ${res.status})`,
     );
   }
 
@@ -202,7 +204,8 @@ export async function deactivateAdminPromotion(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to deactivate promotion (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to deactivate promotion (HTTP ${res.status})`,
     );
   }
 
@@ -218,15 +221,18 @@ export async function createAdminCoupon(
   promotionId: string,
   input: Omit<CreateCouponInput, "promotionId">,
 ): Promise<CouponCode> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(promotionId)}/coupons`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${authToken}`,
-      "Content-Type": "application/json",
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(promotionId)}/coupons`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...input, promotionId }),
+      cache: "no-store",
     },
-    body: JSON.stringify({ ...input, promotionId }),
-    cache: "no-store",
-  });
+  );
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));

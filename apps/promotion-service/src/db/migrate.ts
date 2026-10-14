@@ -135,7 +135,9 @@ export async function runMigrations(): Promise<void> {
       CREATE INDEX IF NOT EXISTS promotion_audit_created_idx ON promotion_audit_logs(created_at);
     `);
 
-    console.log("promotion-service database migrations completed successfully.");
+    console.log(
+      "promotion-service database migrations completed successfully.",
+    );
   } catch (error) {
     console.error("Failed to run promotion-service migrations:", error);
     throw error;

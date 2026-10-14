@@ -55,7 +55,8 @@ export class PromotionEvaluator {
 
     // 2. Check rules (limits & customer segment)
     if (promotion.rules) {
-      const { globalLimit, usageCount, maxPerCustomer, customerSegment } = promotion.rules;
+      const { globalLimit, usageCount, maxPerCustomer, customerSegment } =
+        promotion.rules;
 
       if (globalLimit != null && usageCount >= globalLimit) {
         return {
@@ -99,9 +100,23 @@ export class PromotionEvaluator {
     for (const item of items) {
       // Check exclusions first
       const isExcluded = excludeTargets.some((t) => {
-        if (t.targetType === "PRODUCT" && t.targetId === item.productId.toString()) return true;
-        if (t.targetType === "CATEGORY" && item.categoryId && t.targetId === item.categoryId) return true;
-        if (t.targetType === "SELLER" && item.sellerId && t.targetId === item.sellerId) return true;
+        if (
+          t.targetType === "PRODUCT" &&
+          t.targetId === item.productId.toString()
+        )
+          return true;
+        if (
+          t.targetType === "CATEGORY" &&
+          item.categoryId &&
+          t.targetId === item.categoryId
+        )
+          return true;
+        if (
+          t.targetType === "SELLER" &&
+          item.sellerId &&
+          t.targetId === item.sellerId
+        )
+          return true;
         return false;
       });
 
@@ -113,9 +128,23 @@ export class PromotionEvaluator {
       if (includeTargets.length > 0) {
         const isIncluded = includeTargets.some((t) => {
           if (t.targetType === "ORDER") return true;
-          if (t.targetType === "PRODUCT" && t.targetId === item.productId.toString()) return true;
-          if (t.targetType === "CATEGORY" && item.categoryId && t.targetId === item.categoryId) return true;
-          if (t.targetType === "SELLER" && item.sellerId && t.targetId === item.sellerId) return true;
+          if (
+            t.targetType === "PRODUCT" &&
+            t.targetId === item.productId.toString()
+          )
+            return true;
+          if (
+            t.targetType === "CATEGORY" &&
+            item.categoryId &&
+            t.targetId === item.categoryId
+          )
+            return true;
+          if (
+            t.targetType === "SELLER" &&
+            item.sellerId &&
+            t.targetId === item.sellerId
+          )
+            return true;
           return false;
         });
 
@@ -162,7 +191,10 @@ export class PromotionEvaluator {
       discount = 0;
     } else if (promotion.type === "PERCENTAGE") {
       discount = eligibleSubtotal * (promotion.discountValue / 100);
-      if (promotion.maxDiscountAmount != null && promotion.maxDiscountAmount > 0) {
+      if (
+        promotion.maxDiscountAmount != null &&
+        promotion.maxDiscountAmount > 0
+      ) {
         discount = Math.min(discount, promotion.maxDiscountAmount);
       }
       discount = Math.min(discount, eligibleSubtotal);
@@ -211,7 +243,8 @@ export class PromotionEvaluator {
         if (code) {
           invalidCoupons.push({
             code,
-            reason: "Cannot combine with already applied non-stackable promotion",
+            reason:
+              "Cannot combine with already applied non-stackable promotion",
           });
         }
         continue;
@@ -228,7 +261,11 @@ export class PromotionEvaluator {
         continue;
       }
 
-      const evalResult = this.evaluatePromotion(promotion, items, customerContext);
+      const evalResult = this.evaluatePromotion(
+        promotion,
+        items,
+        customerContext,
+      );
 
       if (!evalResult.eligible) {
         if (code) {
@@ -242,7 +279,10 @@ export class PromotionEvaluator {
 
       // Check if discount exceeds remaining subtotal
       const remainingSubtotal = Math.max(0, subtotal - totalDiscount);
-      const effectiveDiscount = Math.min(evalResult.discountAmount, remainingSubtotal);
+      const effectiveDiscount = Math.min(
+        evalResult.discountAmount,
+        remainingSubtotal,
+      );
 
       if (effectiveDiscount > 0 || evalResult.freeShipping) {
         appliedDiscounts.push({
@@ -265,7 +305,10 @@ export class PromotionEvaluator {
       }
     }
 
-    const finalTotal = Math.max(0, Number((subtotal - totalDiscount).toFixed(2)));
+    const finalTotal = Math.max(
+      0,
+      Number((subtotal - totalDiscount).toFixed(2)),
+    );
 
     return {
       subtotal: Number(subtotal.toFixed(2)),

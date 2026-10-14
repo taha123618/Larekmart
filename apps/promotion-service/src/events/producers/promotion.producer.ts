@@ -49,7 +49,9 @@ export async function publishPromotionActivated(data: PromotionActivatedEvent) {
   await sendEvent("promotion.activated", "promotion.activated", data);
 }
 
-export async function publishPromotionDeactivated(data: PromotionDeactivatedEvent) {
+export async function publishPromotionDeactivated(
+  data: PromotionDeactivatedEvent,
+) {
   await sendEvent("promotion.deactivated", "promotion.deactivated", data);
 }
 

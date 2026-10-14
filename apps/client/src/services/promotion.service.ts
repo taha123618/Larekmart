@@ -66,7 +66,10 @@ export async function getPromotionQuote(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to calculate promotion quote (HTTP ${res.status})`);
+    throw new Error(
+      errorData.message ||
+        `Failed to calculate promotion quote (HTTP ${res.status})`,
+    );
   }
 
   return res.json();
@@ -88,7 +91,9 @@ export async function validateCouponCode(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to validate coupon (HTTP ${res.status})`);
+    throw new Error(
+      errorData.message || `Failed to validate coupon (HTTP ${res.status})`,
+    );
   }
 
   return res.json();
@@ -110,7 +115,9 @@ export async function reservePromotion(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to reserve promotion (HTTP ${res.status})`);
+    throw new Error(
+      errorData.message || `Failed to reserve promotion (HTTP ${res.status})`,
+    );
   }
 
   const data = await res.json();
@@ -125,15 +132,20 @@ export async function releasePromotionReservation(
   reason?: string,
   authToken?: string,
 ): Promise<void> {
-  const res = await fetch(`${BASE}/reservations/${encodeURIComponent(reservationId)}/release`, {
-    method: "POST",
-    headers: getHeaders(authToken),
-    body: JSON.stringify({ reason }),
-    cache: "no-store",
-  });
+  const res = await fetch(
+    `${BASE}/reservations/${encodeURIComponent(reservationId)}/release`,
+    {
+      method: "POST",
+      headers: getHeaders(authToken),
+      body: JSON.stringify({ reason }),
+      cache: "no-store",
+    },
+  );
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    console.warn(`Failed to release promotion reservation: ${errorData.message || res.statusText}`);
+    console.warn(
+      `Failed to release promotion reservation: ${errorData.message || res.statusText}`,
+    );
   }
 }

@@ -27,7 +27,10 @@ export class PromotionRepository {
   /**
    * Create a promotion along with its rules, targets, optional budget, and audit log.
    */
-  async create(input: CreatePromotionInput, actorId = "system"): Promise<Promotion> {
+  async create(
+    input: CreatePromotionInput,
+    actorId = "system",
+  ): Promise<Promotion> {
     return await db.transaction(async (tx) => {
       // 1. Insert promotion
       const [promo] = await tx
@@ -37,7 +40,10 @@ export class PromotionRepository {
           description: input.description,
           type: input.type,
           discountValue: input.discountValue.toFixed(2),
-          maxDiscountAmount: input.maxDiscountAmount != null ? input.maxDiscountAmount.toFixed(2) : null,
+          maxDiscountAmount:
+            input.maxDiscountAmount != null
+              ? input.maxDiscountAmount.toFixed(2)
+              : null,
           status: "DRAFT",
           priority: input.priority ?? 0,
           isStackable: input.isStackable ?? false,
@@ -57,7 +63,10 @@ export class PromotionRepository {
           .insert(promotionRules)
           .values({
             promotionId: promo.id,
-            minOrderAmount: input.rules.minOrderAmount != null ? input.rules.minOrderAmount.toFixed(2) : "0.00",
+            minOrderAmount:
+              input.rules.minOrderAmount != null
+                ? input.rules.minOrderAmount.toFixed(2)
+                : "0.00",
             customerSegment: input.rules.customerSegment ?? "ALL",
             maxPerCustomer: input.rules.maxPerCustomer ?? 1,
             globalLimit: input.rules.globalLimit,
@@ -127,7 +136,10 @@ export class PromotionRepository {
    * Find a promotion by ID with its details.
    */
   async findById(id: string): Promise<Promotion | null> {
-    const [promo] = await db.select().from(promotions).where(eq(promotions.id, id));
+    const [promo] = await db
+      .select()
+      .from(promotions)
+      .where(eq(promotions.id, id));
     if (!promo) return null;
 
     const [rule] = await db
@@ -205,7 +217,11 @@ export class PromotionRepository {
     return activePromos
       .filter((p) => {
         const rule = allRules.find((r) => r.promotionId === p.id);
-        if (rule && rule.globalLimit != null && rule.usageCount >= rule.globalLimit) {
+        if (
+          rule &&
+          rule.globalLimit != null &&
+          rule.usageCount >= rule.globalLimit
+        ) {
           return false;
         }
         return true;
@@ -247,20 +263,25 @@ export class PromotionRepository {
       };
 
       if (input.name !== undefined) updateData.name = input.name;
-      if (input.description !== undefined) updateData.description = input.description;
+      if (input.description !== undefined)
+        updateData.description = input.description;
       if (input.type !== undefined) updateData.type = input.type;
-      if (input.discountValue !== undefined) updateData.discountValue = input.discountValue.toFixed(2);
+      if (input.discountValue !== undefined)
+        updateData.discountValue = input.discountValue.toFixed(2);
       if (input.maxDiscountAmount !== undefined)
-        updateData.maxDiscountAmount = input.maxDiscountAmount != null ? input.maxDiscountAmount.toFixed(2) : null;
+        updateData.maxDiscountAmount =
+          input.maxDiscountAmount != null
+            ? input.maxDiscountAmount.toFixed(2)
+            : null;
       if (input.priority !== undefined) updateData.priority = input.priority;
-      if (input.isStackable !== undefined) updateData.isStackable = input.isStackable;
-      if (input.startDate !== undefined) updateData.startDate = new Date(input.startDate);
-      if (input.endDate !== undefined) updateData.endDate = new Date(input.endDate);
+      if (input.isStackable !== undefined)
+        updateData.isStackable = input.isStackable;
+      if (input.startDate !== undefined)
+        updateData.startDate = new Date(input.startDate);
+      if (input.endDate !== undefined)
+        updateData.endDate = new Date(input.endDate);
 
-      await tx
-        .update(promotions)
-        .set(updateData)
-        .where(eq(promotions.id, id));
+      await tx.update(promotions).set(updateData).where(eq(promotions.id, id));
 
       // Update rules if provided
       if (input.rules) {
@@ -273,10 +294,16 @@ export class PromotionRepository {
           updatedAt: new Date(),
         };
         if (input.rules.minOrderAmount !== undefined)
-          ruleData.minOrderAmount = input.rules.minOrderAmount != null ? input.rules.minOrderAmount.toFixed(2) : "0.00";
-        if (input.rules.customerSegment !== undefined) ruleData.customerSegment = input.rules.customerSegment;
-        if (input.rules.maxPerCustomer !== undefined) ruleData.maxPerCustomer = input.rules.maxPerCustomer;
-        if (input.rules.globalLimit !== undefined) ruleData.globalLimit = input.rules.globalLimit;
+          ruleData.minOrderAmount =
+            input.rules.minOrderAmount != null
+              ? input.rules.minOrderAmount.toFixed(2)
+              : "0.00";
+        if (input.rules.customerSegment !== undefined)
+          ruleData.customerSegment = input.rules.customerSegment;
+        if (input.rules.maxPerCustomer !== undefined)
+          ruleData.maxPerCustomer = input.rules.maxPerCustomer;
+        if (input.rules.globalLimit !== undefined)
+          ruleData.globalLimit = input.rules.globalLimit;
 
         if (existingRule) {
           await tx
@@ -286,7 +313,10 @@ export class PromotionRepository {
         } else {
           await tx.insert(promotionRules).values({
             promotionId: id,
-            minOrderAmount: input.rules.minOrderAmount != null ? input.rules.minOrderAmount.toFixed(2) : "0.00",
+            minOrderAmount:
+              input.rules.minOrderAmount != null
+                ? input.rules.minOrderAmount.toFixed(2)
+                : "0.00",
             customerSegment: input.rules.customerSegment ?? "ALL",
             maxPerCustomer: input.rules.maxPerCustomer ?? 1,
             globalLimit: input.rules.globalLimit,
@@ -487,7 +517,10 @@ export class PromotionRepository {
         discountGiven: sql<string>`coalesce(sum(${promotionRedemptions.discountAmount}), 0)`,
       })
       .from(promotionRedemptions)
-      .innerJoin(promotions, eq(promotionRedemptions.promotionId, promotions.id))
+      .innerJoin(
+        promotions,
+        eq(promotionRedemptions.promotionId, promotions.id),
+      )
       .groupBy(promotionRedemptions.promotionId, promotions.name)
       .orderBy(desc(sql`count(*)`))
       .limit(5);
@@ -517,7 +550,9 @@ export class PromotionRepository {
       status: p.status as Promotion["status"],
       type: p.type as Promotion["type"],
       discountValue: Number(p.discountValue),
-      maxDiscountAmount: p.maxDiscountAmount ? Number(p.maxDiscountAmount) : null,
+      maxDiscountAmount: p.maxDiscountAmount
+        ? Number(p.maxDiscountAmount)
+        : null,
       startDate: p.startDate.toISOString(),
       endDate: p.endDate.toISOString(),
       priority: p.priority,

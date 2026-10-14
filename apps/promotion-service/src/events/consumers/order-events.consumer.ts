@@ -29,7 +29,11 @@ interface OrderEventPayload {
 export async function handleOrderConfirmed(rawPayload: unknown): Promise<void> {
   try {
     const payload = rawPayload as OrderEventPayload;
-    const orderId = payload.orderId || payload.id || payload.data?.orderId || payload.data?.id;
+    const orderId =
+      payload.orderId ||
+      payload.id ||
+      payload.data?.orderId ||
+      payload.data?.id;
     const reservationId =
       payload.reservationId ||
       payload.promotionReservationId ||
@@ -43,10 +47,8 @@ export async function handleOrderConfirmed(rawPayload: unknown): Promise<void> {
       `[Kafka] Processing order confirmed for order ${orderId}, reservation ${reservationId}`,
     );
 
-    const { redemption, reservation, exhausted } = await reservationRepository.commitReservation(
-      reservationId,
-      orderId,
-    );
+    const { redemption, reservation, exhausted } =
+      await reservationRepository.commitReservation(reservationId, orderId);
 
     recordPromotionRedemption(reservation.promotionId);
 
@@ -67,7 +69,10 @@ export async function handleOrderConfirmed(rawPayload: unknown): Promise<void> {
       });
     }
   } catch (error) {
-    logger.error("Error processing order confirmed event in promotion-service:", { error });
+    logger.error(
+      "Error processing order confirmed event in promotion-service:",
+      { error },
+    );
   }
 }
 
@@ -87,7 +92,8 @@ export async function handleOrderCancelled(rawPayload: unknown): Promise<void> {
       `[Kafka] Processing order cancelled for reservation ${reservationId}`,
     );
 
-    const released = await reservationRepository.releaseReservation(reservationId);
+    const released =
+      await reservationRepository.releaseReservation(reservationId);
     if (released) {
       await publishPromotionReservationReleased({
         reservationId: released.id,
@@ -97,6 +103,9 @@ export async function handleOrderCancelled(rawPayload: unknown): Promise<void> {
       });
     }
   } catch (error) {
-    logger.error("Error processing order cancelled event in promotion-service:", { error });
+    logger.error(
+      "Error processing order cancelled event in promotion-service:",
+      { error },
+    );
   }
 }
