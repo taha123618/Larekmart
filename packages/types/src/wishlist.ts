@@ -48,7 +48,7 @@ export const CreateWishlistSchema = z.object({
     .default("PRIVATE"),
   isDefault: z.boolean().optional().default(false),
 });
-export type CreateWishlistInput = z.infer<typeof CreateWishlistSchema>;
+export type CreateWishlistInput = z.input<typeof CreateWishlistSchema>;
 
 export const UpdateWishlistSchema = z.object({
   name: z
@@ -59,7 +59,7 @@ export const UpdateWishlistSchema = z.object({
     .optional(),
   visibility: z.enum(["PRIVATE", "PUBLIC", "SHARED"]).optional(),
 });
-export type UpdateWishlistInput = z.infer<typeof UpdateWishlistSchema>;
+export type UpdateWishlistInput = z.input<typeof UpdateWishlistSchema>;
 
 export const AddWishlistItemSchema = z.object({
   productId: z.string().min(1, "productId is required"),
@@ -78,18 +78,18 @@ export const AddWishlistItemSchema = z.object({
     .optional()
     .default(0),
 });
-export type AddWishlistItemInput = z.infer<typeof AddWishlistItemSchema>;
+export type AddWishlistItemInput = z.input<typeof AddWishlistItemSchema>;
 
 export const UpdateWishlistItemSchema = z.object({
   note: z.string().max(500, "Note cannot exceed 500 characters").optional(),
   priority: z.number().int().min(0).max(5).optional(),
 });
-export type UpdateWishlistItemInput = z.infer<typeof UpdateWishlistItemSchema>;
+export type UpdateWishlistItemInput = z.input<typeof UpdateWishlistItemSchema>;
 
 export const MoveWishlistItemSchema = z.object({
   targetWishlistId: z.string().uuid("targetWishlistId must be a valid UUID"),
 });
-export type MoveWishlistItemInput = z.infer<typeof MoveWishlistItemSchema>;
+export type MoveWishlistItemInput = z.input<typeof MoveWishlistItemSchema>;
 
 export const MergeWishlistSchema = z.object({
   guestId: z.string().min(1, "guestId is required"),
@@ -98,7 +98,7 @@ export const MergeWishlistSchema = z.object({
     .optional()
     .default("KEEP_EXISTING"),
 });
-export type MergeWishlistInput = z.infer<typeof MergeWishlistSchema>;
+export type MergeWishlistInput = z.input<typeof MergeWishlistSchema>;
 
 export const CreateShareTokenSchema = z.object({
   permission: z.enum(["VIEW", "EDIT"]).optional().default("VIEW"),
@@ -109,7 +109,7 @@ export const CreateShareTokenSchema = z.object({
     .max(365, "Expiration cannot exceed 365 days")
     .optional(),
 });
-export type CreateShareTokenInput = z.infer<typeof CreateShareTokenSchema>;
+export type CreateShareTokenInput = z.input<typeof CreateShareTokenSchema>;
 
 export const BulkRemoveItemsSchema = z.object({
   itemIds: z
@@ -117,13 +117,13 @@ export const BulkRemoveItemsSchema = z.object({
     .min(1, "At least one itemId is required")
     .max(100, "Cannot remove more than 100 items at once"),
 });
-export type BulkRemoveItemsInput = z.infer<typeof BulkRemoveItemsSchema>;
+export type BulkRemoveItemsInput = z.input<typeof BulkRemoveItemsSchema>;
 
 export const WishlistQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 });
-export type WishlistQueryInput = z.infer<typeof WishlistQuerySchema>;
+export type WishlistQueryInput = z.input<typeof WishlistQuerySchema>;
 
 // ==============================================================================
 // Domain Models / Interfaces
@@ -161,6 +161,12 @@ export interface WishlistShare {
   permission: SharePermission;
   expiresAt: Date | null;
   createdAt: Date;
+}
+
+export interface SharedWishlistResponse {
+  wishlist: Wishlist;
+  items: WishlistItem[];
+  permission: SharePermission;
 }
 
 export interface WishlistEventRecord {

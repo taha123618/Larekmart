@@ -547,9 +547,7 @@ export class WishlistService {
    * Resolves a shared wishlist using an unguessable token.
    * Access control prevents exposing private wishlists by raw ID.
    */
-  async getSharedWishlist(
-    shareToken: string,
-  ): Promise<{
+  async getSharedWishlist(shareToken: string): Promise<{
     wishlist: Wishlist;
     items: WishlistItem[];
     permission: string;
@@ -576,6 +574,20 @@ export class WishlistService {
       items,
       permission: share.permission,
     };
+  }
+
+  /**
+   * Retrieves overall statistics for admin dashboards.
+   */
+  async getAdminOverview() {
+    return wishlistRepository.getAdminOverview();
+  }
+
+  /**
+   * Lists all wishlists with item count for admin review.
+   */
+  async listAllWishlists(page = 1, limit = 20, search?: string) {
+    return wishlistRepository.listAllWishlists(page, limit, search);
   }
 }
 

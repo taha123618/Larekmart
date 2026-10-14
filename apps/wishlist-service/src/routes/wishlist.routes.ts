@@ -3,6 +3,7 @@ import { wishlistController } from "../controllers/wishlist.controller.js";
 import {
   shouldBeUser,
   optionalUserOrGuest,
+  shouldBeAdmin,
 } from "../middleware/auth.middleware.js";
 
 export async function wishlistRoutes(fastify: FastifyInstance) {
@@ -76,5 +77,18 @@ export async function wishlistRoutes(fastify: FastifyInstance) {
     "/api/v1/me/wishlists/:wishlistId/share",
     { preHandler: shouldBeUser },
     wishlistController.createShareToken.bind(wishlistController),
+  );
+
+  // 7. Admin Endpoints
+  fastify.get(
+    "/api/v1/admin/wishlists/overview",
+    { preHandler: shouldBeAdmin },
+    wishlistController.getAdminOverview.bind(wishlistController),
+  );
+
+  fastify.get(
+    "/api/v1/admin/wishlists",
+    { preHandler: shouldBeAdmin },
+    wishlistController.listAllWishlists.bind(wishlistController),
   );
 }

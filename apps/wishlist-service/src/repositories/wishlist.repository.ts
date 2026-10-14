@@ -2,6 +2,7 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import {
   wishlists,
+  wishlistItems,
   wishlistEvents,
   type wishlists as WishlistsTable,
 } from "../db/schema.js";
@@ -153,6 +154,116 @@ export class WishlistRepository {
       actorId: data.actorId,
       payload: data.payload ?? {},
     });
+  }
+
+  async getAdminOverview(): Promise<{
+    totalWishlists: number;
+    totalSavedItems: number;
+    averageItemsPerWishlist: number;
+    priceDropAlertsCount: number;
+    restockAlertsCount: number;
+    topSavedProducts: { productId: string; count: number }[];
+  }> {
+    const totalWishlistsResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wishlists);
+    const totalWishlists = totalWishlistsResult[0]?.count ?? 0;
+
+    const totalSavedItemsResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wishlistItems);
+    const totalSavedItems = totalSavedItemsResult[0]?.count ?? 0;
+
+    const priceDropResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wishlistEvents)
+      .where(eq(wishlistEvents.eventType, "PRICE_DROP_ALERT"));
+    const priceDropAlertsCount = priceDropResult[0]?.count ?? 0;
+
+    const restockResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wishlistEvents)
+      .where(eq(wishlistEvents.eventType, "RESTOCK_ALERT"));
+    const restockAlertsCount = restockResult[0]?.count ?? 0;
+
+    const topProductsResult = await db
+      .select({
+        productId: wishlistItems.productId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(wishlistItems)
+      .groupBy(wishlistItems.productId)
+      .orderBy(sql`count(*) desc`)
+      .limit(6);
+
+    const averageItemsPerWishlist =
+      totalWishlists > 0
+        ? Number((totalSavedItems / totalWishlists).toFixed(1))
+        : 0;
+
+    return {
+      totalWishlists,
+      totalSavedItems,
+      averageItemsPerWishlist,
+      priceDropAlertsCount,
+      restockAlertsCount,
+      topSavedProducts: topProductsResult.map((p) => ({
+        productId: p.productId,
+        count: Number(p.count),
+      })),
+    };
+  }
+
+  async listAllWishlists(
+    page = 1,
+    limit = 20,
+    search?: string,
+  ): Promise<{
+    items: (Wishlist & { itemCount: number })[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+
+    let whereClause = undefined;
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      whereClause = sql`(${wishlists.name} ILIKE ${term} OR ${wishlists.userId} ILIKE ${term} OR ${wishlists.guestId} ILIKE ${term})`;
+    }
+
+    const itemsQuery = db
+      .select({
+        wishlist: wishlists,
+        itemCount: sql<number>`count(${wishlistItems.id})::int`,
+      })
+      .from(wishlists)
+      .leftJoin(wishlistItems, eq(wishlists.id, wishlistItems.wishlistId))
+      .where(whereClause)
+      .groupBy(wishlists.id)
+      .orderBy(desc(wishlists.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const countQuery = db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wishlists)
+      .where(whereClause);
+
+    const [rows, countRes] = await Promise.all([itemsQuery, countQuery]);
+    const total = countRes[0]?.count ?? 0;
+
+    return {
+      items: rows.map((r) => ({
+        ...this.mapWishlist(r.wishlist),
+        itemCount: r.itemCount ?? 0,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   private mapWishlist(row: typeof WishlistsTable.$inferSelect): Wishlist {

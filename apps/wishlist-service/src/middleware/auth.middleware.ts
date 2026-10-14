@@ -91,3 +91,46 @@ export const optionalUserOrGuest = async (
       .send({ message: "Authentication or guest identifier required" });
   }
 };
+
+export const shouldBeAdmin = async (
+  request: FastifyRequest,
+  reply: FastifyReply,
+) => {
+  const gatewayUserId = request.headers?.[GATEWAY_HEADERS.USER_ID] as
+    | string
+    | undefined;
+  const gatewayUserRole = request.headers?.[GATEWAY_HEADERS.USER_ROLE] as
+    | string
+    | undefined;
+
+  if (gatewayUserId) {
+    if (gatewayUserRole !== "admin") {
+      return reply
+        .status(403)
+        .send({ message: "Forbidden: Admin role required" });
+    }
+    request.userId = gatewayUserId;
+    request.userRole = gatewayUserRole;
+    return;
+  }
+
+  try {
+    const auth = getAuth(request);
+    if (!auth || !auth.userId) {
+      return reply.status(401).send({ message: "You are not logged in!" });
+    }
+
+    const claims = auth.sessionClaims as CustomJwtSessionClaims;
+    const role = claims?.metadata?.role;
+    if (role !== "admin") {
+      return reply
+        .status(403)
+        .send({ message: "Forbidden: Admin role required" });
+    }
+
+    request.userId = auth.userId;
+    request.userRole = role;
+  } catch {
+    return reply.status(401).send({ message: "You are not logged in!" });
+  }
+};

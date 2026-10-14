@@ -212,6 +212,28 @@ export class WishlistController {
 
     return reply.status(201).send(share);
   }
+
+  // 10. Admin Endpoints
+  async getAdminOverview(_request: FastifyRequest, reply: FastifyReply) {
+    const overview = await wishlistService.getAdminOverview();
+    return reply.status(200).send(overview);
+  }
+
+  async listAllWishlists(request: FastifyRequest, reply: FastifyReply) {
+    const query =
+      (request.query as {
+        page?: string;
+        limit?: string;
+        search?: string;
+      }) || {};
+
+    const page = Math.max(1, parseInt(query.page || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(query.limit || "20", 10)));
+    const search = query.search;
+
+    const result = await wishlistService.listAllWishlists(page, limit, search);
+    return reply.status(200).send(result);
+  }
 }
 
 export const wishlistController = new WishlistController();

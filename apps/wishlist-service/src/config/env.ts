@@ -8,7 +8,9 @@ const EnvSchema = z.object({
     .default("development"),
   DATABASE_URL: z
     .string()
-    .default("postgresql://postgres:password123@localhost:5432/wishlist_db"),
+    .default(
+      "postgresql://postgres:password123@localhost:5432/larekmart_wishlist_db",
+    ),
   REDIS_URL: z.string().default("redis://localhost:6379"),
   REDIS_KEY_PREFIX: z.string().default("wishlist:v1:"),
   KAFKA_BROKERS: z.string().default("localhost:9092"),
