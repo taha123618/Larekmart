@@ -14,6 +14,7 @@ metadata:
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization,X-Guest-Id"
 spec:
+  ingressClassName: nginx
   tls:
     - hosts:
         - larekmart.com
@@ -207,4 +208,3 @@ spec:
                 name: promotion-service
                 port:
                   number: 8016
-
