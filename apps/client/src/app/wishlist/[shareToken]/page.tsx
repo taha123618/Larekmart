@@ -12,7 +12,6 @@ import {
   Calendar,
   Lock,
   ArrowLeft,
-  Check,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-toastify";
@@ -41,8 +40,12 @@ export default function SharedWishlistPage({
         setIsLoading(true);
         const result = await fetchSharedWishlist(shareToken);
         setData(result);
-      } catch (err: any) {
-        setError(err.message || "Shared wishlist not found or has expired.");
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Shared wishlist not found or has expired.";
+        setError(msg);
       } finally {
         setIsLoading(false);
       }
