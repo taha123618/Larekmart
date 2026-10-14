@@ -76,6 +76,7 @@ def register_all_consumers() -> None:
     kafka_manager.register_handler("cart.item_added", handle_user_interaction_event)
     kafka_manager.register_handler("cart.item_removed", handle_user_interaction_event)
     kafka_manager.register_handler("wishlist.product_added", handle_user_interaction_event)
+    kafka_manager.register_handler("wishlist.item.added", handle_user_interaction_event)
     kafka_manager.register_handler("recommendation.interaction", handle_user_interaction_event)
 
     # Review topics

@@ -30,6 +30,7 @@ async def process_interaction_event(topic: str, payload: dict[str, Any], event_i
         "cart.item_added": "ADD_TO_CART",
         "cart.item_removed": "REMOVE_FROM_CART",
         "wishlist.product_added": "WISHLIST",
+        "wishlist.item.added": "WISHLIST",
     }
     raw_type = str(payload.get("eventType") or topic_type_map.get(topic, "VIEW")).upper()
     valid_types = {

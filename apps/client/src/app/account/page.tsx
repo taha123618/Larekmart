@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "react-toastify";
 import {
   User as UserIcon,
   MapPin,
   Bell,
   Shield,
+  Heart,
   Plus,
   Trash2,
   CheckCircle,
@@ -521,6 +523,14 @@ export default function AccountPage(): React.JSX.Element {
           <Shield className="w-4 h-4" />
           Security & Privacy
         </button>
+
+        <Link
+          href="/wishlist"
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 transition-all ml-auto"
+        >
+          <Heart className="w-4 h-4 text-rose-500" />
+          <span>My Wishlists</span>
+        </Link>
       </div>
 
       {/* Tab 1: Profile */}

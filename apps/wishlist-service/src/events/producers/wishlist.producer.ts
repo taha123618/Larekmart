@@ -47,6 +47,14 @@ export async function publishWishlistCreated(data: WishlistCreatedEvent) {
 
 export async function publishWishlistItemAdded(data: WishlistItemAddedEvent) {
   await sendEvent("wishlist.item.added", "wishlist.item.added", data);
+  if (data.userId) {
+    // Dual publish for recommendation engine user behavioral interactions
+    await sendEvent("wishlist.product_added", "wishlist.product_added", {
+      userId: data.userId,
+      productId: data.productId,
+      wishlistId: data.wishlistId,
+    });
+  }
 }
 
 export async function publishWishlistItemRemoved(
