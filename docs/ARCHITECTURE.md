@@ -197,6 +197,14 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Verified Purchases: Strictly enforces verified purchase status derived from consumed `order.delivered` and `shipment.delivered` Kafka events.
 - Events: Publishes `review.created`, `review.updated`, `review.deleted`, `review.approved`, `review.rejected`, `review.reported`, `product.rating-summary.updated`. Consumes `order.delivered`, `order.completed`, `shipment.delivered`, `product.deleted`, `user.deleted`.
 
+**`wishlist-service` (Fastify 5, :8015)** — saved products, multiple wishlists, guest-to-user merging, price drop & restock alerts.
+
+- Routes: `GET /api/v1/me/wishlists`, `POST /api/v1/me/wishlists`, `GET /api/v1/me/wishlists/:wishlistId`, `PATCH /api/v1/me/wishlists/:wishlistId`, `DELETE /api/v1/me/wishlists/:wishlistId`, `POST /api/v1/me/wishlists/:wishlistId/items`, `DELETE /api/v1/me/wishlists/:wishlistId/items/:itemId`, `DELETE /api/v1/me/wishlists/:wishlistId/items` (bulk), `POST /api/v1/me/wishlists/:wishlistId/items/move`, `POST /api/v1/me/wishlists/merge`, `POST /api/v1/me/wishlists/:wishlistId/share`, `GET /api/v1/shared-wishlists/:shareToken`, `/health`, `/ready`, `/metrics`.
+- Persistence: PostgreSQL via Drizzle ORM targeting `wishlist_db` (`wishlists`, `wishlist_items`, `wishlist_shares`, `wishlist_events`).
+- Caching: Redis (`wishlist:v1:*` namespace) through `@repo/redis` for unguessable share token caching, TTL verification, and rate limiting.
+- Deduplication & Merging: Unique index on `(wishlist_id, product_id, COALESCE(variant_id, ''))` strictly prevents duplicates. Guest wishlists are migrated idempotently to customer default wishlist upon authentication.
+- Events: Publishes `wishlist.created`, `wishlist.item.added`, `wishlist.item.removed`, `wishlist.item.moved`, `wishlist.merged`, `wishlist.price-drop`, `wishlist.restocked`. Consumes `product.updated`, `product.deleted`, `price.updated`, `inventory.availability.changed`, `inventory.adjusted`, `user.deleted`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                           |
@@ -211,6 +219,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events`  |
 | PostgreSQL | media-service                    | Drizzle (`pg`)                | `media`, `media_variants`, `media_uploads`, `media_processing_jobs`, `processed_events`                                                  |
 | PostgreSQL | review-service                   | Drizzle (`pg`)                | `reviews`, `review_media`, `review_votes`, `review_reports`, `review_moderation_actions`, `seller_responses`, `product_rating_summaries` |
+| PostgreSQL | wishlist-service                 | Drizzle (`pg`)                | `wishlists`, `wishlist_items`, `wishlist_shares`, `wishlist_events`                                                                      |
 | S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                   |
 | Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                    |
 | Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                                |
@@ -222,6 +231,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                    |
 | Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                             |
 | Redis      | review-service                   | `@repo/redis` (ioredis)       | `review:*` (product rating summary cache, anti-abuse vote/report limits)                                                                 |
+| Redis      | wishlist-service                 | `@repo/redis` (ioredis)       | `wishlist:v1:*` (share token cache, link verification)                                                                                   |
 | OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                    |
 | MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                  |
 | MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                 |

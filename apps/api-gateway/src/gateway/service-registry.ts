@@ -82,6 +82,11 @@ export const services = {
     url: env.REVIEW_SERVICE_URL,
     timeoutMs: 5000,
   },
+  wishlist: {
+    name: "wishlist-service",
+    url: env.WISHLIST_SERVICE_URL,
+    timeoutMs: 5000,
+  },
 } as const satisfies Record<string, ServiceTarget>;
 
 export const downstreamServices = services;

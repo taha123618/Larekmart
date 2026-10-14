@@ -17,6 +17,7 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 | `recommendation-service` | `8008` | Python 3.12+ / FastAPI | Public / User telemetry            | AI recommendations, embeddings & interactions          |
 | `media-service`          | `8013` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Media uploads, storage, variants & lifecycle           |
 | `review-service`         | `8014` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Customer reviews, ratings, verified gating, moderation |
+| `wishlist-service`       | `8015` | Fastify 5              | `shouldBeUser` / Public link token | Wishlists, saved products, guest merge, price-drop     |
 | `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                           |
 
 ---

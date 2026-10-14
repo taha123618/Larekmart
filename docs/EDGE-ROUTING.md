@@ -65,7 +65,7 @@ Larekmart uses **Traefik v3** as the single unified Edge Ingress Router for dyna
 
 ### Strictly Private Internal Services (Unreachable from Internet)
 
-- **15 Backend Microservices**: `product-service:8000`, `order-service:8001`, `payment-service:8002`, `auth-service:8003`, `analytic-service:8004`, `notification-service:8005`, `search-service:8006`, `inventory-service:8007`, `recommendation-service:8008`, `cart-service:8009`, `catalog-service:8010`, `shipping-service:8011`, `user-service:8012`, `media-service:8013`, `review-service:8014`.
+- **16 Backend Microservices**: `product-service:8000`, `order-service:8001`, `payment-service:8002`, `auth-service:8003`, `analytic-service:8004`, `notification-service:8005`, `search-service:8006`, `inventory-service:8007`, `recommendation-service:8008`, `cart-service:8009`, `catalog-service:8010`, `shipping-service:8011`, `user-service:8012`, `media-service:8013`, `review-service:8014`, `wishlist-service:8015`.
 - **Background Workers**: `email-service`, `media-worker`, `media-cleanup`.
 - **Datastores & Brokers**: `postgres:5432`, `mongo:27017`, `redis:6379`, `kafka:9092`, `opensearch:9200`.
 

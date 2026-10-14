@@ -1,0 +1,39 @@
+{
+  "name": "wishlist-service",
+  "version": "1.0.0",
+  "description": "Wishlists, saved products, guest merging, price drop & restock notifications microservice",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx --env-file=.env --watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "check-types": "tsc --noEmit",
+    "test": "tsx tests/wishlist-service.test.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=.env src/db/seed.ts"
+  },
+  "dependencies": {
+    "@clerk/fastify": "^2.4.30",
+    "@fastify/cors": "^10.0.2",
+    "@repo/kafka": "workspace:*",
+    "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "@repo/types": "workspace:*",
+    "drizzle-orm": "^0.44.2",
+    "fastify": "^5.5.0",
+    "pg": "^8.16.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^22.13.0",
+    "@types/pg": "^8.15.4",
+    "@types/uuid": "^10.0.0",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

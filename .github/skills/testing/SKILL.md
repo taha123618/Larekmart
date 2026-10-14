@@ -22,6 +22,7 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 | **`shipping-service`**       | Node.js Test Runner / `tsx` | Constant-time webhook verification, RBAC middleware, carrier integration smoke test                                                                                                                                                                                                                              |
 | **`media-service`**          | Node.js Test Runner / `tsx` | Six offline suites via `tests/index.test.ts`: unit validation, storage contract, HTTP API, Kafka messaging, workers, integration schema, plus the full lifecycle suite (`tests/media-service.test.ts`) — object keys, magic bytes, authorization, URL strategy, worker claim SQL, index strategy, cleanup sweeps |
 | **`review-service`**         | Node.js Test Runner / `tsx` | Five offline suites via `tests/index.test.ts`: domain unit validation, anti-abuse voting/reporting, Fastify API routes, Kafka messaging publishers & consumers, database schema & constraints (`tests/review-service.test.ts`)                                                                                   |
+| **`wishlist-service`**       | Node.js Test Runner / `tsx` | Nine suites via `tests/wishlist-service.test.ts`: health probes, auth guards, Zod contracts, default wishlist creation, item deduplication, named wishlists, item move, guest migration, and unguessable token shares                                                                                            |
 | **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle, recovery (`internal/*`)                                                                                                                                                                                                                      |
 | **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                  |
 | **`@repo/redis`**            | Integration Verifier        | Key namespacing, cache TTLs, rate limiter, degraded resilience (`src/scripts/verify-redis.ts`)                                                                                                                                                                                                                   |
@@ -42,6 +43,7 @@ pnpm --filter cart-service test
 pnpm --filter shipping-service test
 pnpm --filter media-service test
 pnpm --filter review-service test
+pnpm --filter wishlist-service test
 pnpm --filter notification-service test
 pnpm --filter recommendation-service test
 

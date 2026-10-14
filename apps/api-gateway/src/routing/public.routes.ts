@@ -120,4 +120,13 @@ export const publicRoutes: GatewayRouteConfig[] = [
     timeoutMs: services.review.timeoutMs,
     rewritePrefix: "/api/v1/reviews",
   },
+
+  // 11. Wishlist Service Shared Wishlists
+  {
+    prefix: "/api/v1/shared-wishlists",
+    target: services.wishlist.url,
+    serviceName: services.wishlist.name,
+    timeoutMs: services.wishlist.timeoutMs,
+    rewritePrefix: "/api/v1/shared-wishlists",
+  },
 ];
