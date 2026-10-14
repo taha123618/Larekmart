@@ -184,6 +184,14 @@ scrape_configs:
           service: wishlist-service
           runtime: nodejs
 
+  - job_name: promotion-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["promotion-service:8016"]
+        labels:
+          service: promotion-service
+          runtime: nodejs
+
   - job_name: api-gateway
     metrics_path: /metrics
     static_configs:
