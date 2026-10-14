@@ -47,6 +47,7 @@ const envSchema = z
     SHIPPING_SERVICE_URL: z.string().default("http://localhost:8011"),
     USER_SERVICE_URL: z.string().default("http://localhost:8012"),
     MEDIA_SERVICE_URL: z.string().default("http://localhost:8013"),
+    REVIEW_SERVICE_URL: z.string().default("http://localhost:8014"),
   })
   .superRefine((data, ctx) => {
     if (

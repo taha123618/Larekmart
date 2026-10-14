@@ -121,3 +121,71 @@ export async function uploadAvatar(
 
   return { mediaId: `media:${session.mediaId}` };
 }
+
+export interface ReviewMediaUploadResult {
+  mediaId: string;
+  mediaUrl: string;
+  mediaType: string;
+}
+
+/**
+ * Uploads a customer review attachment photo through the direct-to-storage flow.
+ */
+export async function uploadReviewPhoto(
+  file: File,
+  productId: string,
+  getToken: () => Promise<string | null>,
+): Promise<ReviewMediaUploadResult> {
+  const token = await getToken();
+
+  const createRes = await fetch(`${MEDIA_BASE}/api/v1/media/uploads`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      ownerType: "review",
+      ownerId: productId,
+      filename: file.name,
+      contentType: file.type,
+      size: file.size,
+      category: "review_attachment",
+      visibility: "PUBLIC",
+    }),
+  });
+
+  if (!createRes.ok) {
+    const detail = await createRes.json().catch(() => null);
+    throw new Error(detail?.message || "Failed to create upload session");
+  }
+
+  const session = (await createRes.json()) as {
+    mediaId: string;
+    uploadUrl: string;
+  };
+
+  const putRes = await fetch(session.uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": file.type },
+  });
+  if (!putRes.ok) {
+    throw new Error("Direct upload to storage failed");
+  }
+
+  const completeRes = await fetch(
+    `${MEDIA_BASE}/api/v1/media/${session.mediaId}/complete`,
+    { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!completeRes.ok) {
+    const detail = await completeRes.json().catch(() => null);
+    throw new Error(detail?.message || "Failed to complete upload");
+  }
+
+  return {
+    mediaId: session.mediaId,
+    mediaUrl: `${MEDIA_BASE}/api/v1/media/${session.mediaId}`,
+    mediaType: file.type,
+  };
+}

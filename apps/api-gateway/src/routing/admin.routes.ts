@@ -37,4 +37,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/media",
     requireAdmin: true,
   },
+
+  // 3. Review Service Admin Moderation & Reports
+  {
+    prefix: "/api/v1/admin/reviews",
+    target: services.review.url,
+    serviceName: services.review.name,
+    timeoutMs: services.review.timeoutMs,
+    rewritePrefix: "/api/v1/admin/reviews",
+    requireAdmin: true,
+  },
 ];

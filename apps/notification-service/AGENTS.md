@@ -10,7 +10,7 @@ It operates on **port 8005** with a lightweight Chi HTTP server, Go-native worke
 
 ## Architectural Boundaries
 
-- **Event-driven integration**: Consumes domain events (`user.created`, `order.created`, `payment.successful`, `notification.dispatch`) from Apache Kafka.
+- **Event-driven integration**: Consumes domain events (`user.created`, `order.created`, `payment.successful`, `review.reported`, `review.approved`, `notification.dispatch`) from Apache Kafka.
 - **Provider-agnostic channels**: Implements common `Channel` interface in `internal/channels/`. Business logic never hardcodes third-party provider dependencies.
 - **Email synergy**: Orchestrates email notifications and delegates delivery execution to `email-service` / Kafka topic `email.dispatch`.
 - **In-App WebSockets**: Exposes `GET /ws` for authenticated real-time notification streaming to storefront and admin frontends.

@@ -72,6 +72,12 @@ apps/media-service ────────┬─▶ drizzle-orm + pg ─▶ Pos
                            ├─▶ @aws-sdk/client-s3 + @aws-sdk/s3-request-presigner ─▶ S3/MinIO
                            └─▶ sharp (worker image processing)
 
+apps/review-service ────────┬─▶ drizzle-orm + pg ─▶ PostgreSQL (review_db)
+                           ├─▶ @repo/kafka
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           ├─▶ @repo/monitoring
+                           └─▶ @repo/types
+
 apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                            ├─▶ @repo/monitoring

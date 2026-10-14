@@ -290,6 +290,34 @@ export class ProductProjector {
 
     await this.markEventProcessed(eventId, "inventory.adjusted");
   }
+
+  async projectRatingSummaryUpdate(data: {
+    productId: string | number;
+    averageRating: number;
+    reviewCount: number;
+    eventId?: string;
+  }): Promise<void> {
+    const eventId = data.eventId;
+    if (await this.isEventProcessed(eventId)) return;
+
+    const productId = String(data.productId);
+    const updated = await prisma.catalogProduct.updateMany({
+      where: { productId },
+      data: {
+        rating: data.averageRating,
+        reviewCount: data.reviewCount,
+      },
+    });
+
+    if (updated.count > 0) {
+      await invalidateProductCache(productId);
+      logger.info(
+        `Projected rating summary update for product ${productId}: rating=${data.averageRating}, reviews=${data.reviewCount}`,
+      );
+    }
+
+    await this.markEventProcessed(eventId, "product.rating-summary.updated");
+  }
 }
 
 export const productProjector = new ProductProjector();

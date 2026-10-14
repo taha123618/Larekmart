@@ -13,6 +13,7 @@ import {
   recordInventoryEvent,
   recordCartEvent,
   recordMediaEvent,
+  recordReviewEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
 import type {
@@ -343,6 +344,42 @@ const start = async () => {
           const payload = message.value || message;
           if (payload) {
             await recordMediaEvent("media.quarantined", payload);
+          }
+        },
+      },
+      {
+        topicName: "review.created",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordReviewEvent("review.created", payload);
+          }
+        },
+      },
+      {
+        topicName: "review.approved",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordReviewEvent("review.approved", payload);
+          }
+        },
+      },
+      {
+        topicName: "review.reported",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordReviewEvent("review.reported", payload);
+          }
+        },
+      },
+      {
+        topicName: "product.rating-summary.updated",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordReviewEvent("product.rating-summary.updated", payload);
           }
         },
       },

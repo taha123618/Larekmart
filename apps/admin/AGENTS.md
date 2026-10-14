@@ -64,6 +64,7 @@ This app talks HTTP to:
 - `auth-service` — user admin (list, get, create, delete).
 - `shipping-service` (`NEXT_PUBLIC_SHIPPING_SERVICE_URL` :8011) — logistics dashboard, shipments, multi-carrier adapters, rates, label printing, and tracking.
 - `recommendation-service` (`NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL` :8008) — live health checks (`/health/live`), strategy metrics (`/api/v1/analytics/metrics`), interactive tester (`/api/v1/recommendations/*`), and overview popular product fallback (`/api/v1/recommendations/popular`).
+- `review-service` (`NEXT_PUBLIC_REVIEW_SERVICE_URL` :8014) — review moderation queue (`/api/v1/admin/reviews/pending`), approval/rejection actions (`/api/v1/admin/reviews/:id/moderate`), abuse reports, and rating summary recalibration.
 - every caching service — its `/metrics` endpoint, for the **Cache Performance** page
   (`/cache`). That page reads `cache_hits_total` / `cache_misses_total` / `cache_errors_total`
   from search-service, product-service, analytic-service, and order-service, and reports a

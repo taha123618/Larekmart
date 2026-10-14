@@ -39,6 +39,7 @@ Port: **8080**
 | `/api/v1/search`          | `search-service`         | 8006 | `""`              |
 | `/api/v1/recommendations` | `recommendation-service` | 8008 | `""`              |
 | `/api/v1/media`           | `media-service`          | 8013 | `""`              |
+| `/api/v1/reviews`         | `review-service`         | 8014 | `""`              |
 
 ## 3. Running & Verifying
 

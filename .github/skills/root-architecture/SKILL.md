@@ -14,7 +14,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   `client` (storefront, :3002) and `admin` (dashboard, :3003).
 - **One API Gateway**:
   - `api-gateway` (:8080 / :8090) — Fastify 5 single public entrypoint reverse proxy, request correlation, Clerk session authentication, Redis rate limiting, circuit breaker, home aggregation (`/api/v1/home`), client header stripping, and internal secret injection.
-- **Fourteen HTTP backend services & one headless worker** own business logic and each owns its data:
+- **Fifteen HTTP backend services & one headless worker** own business logic and each owns its data:
   - `product-service` (:8000) — catalog, PostgreSQL via Prisma.
   - `order-service` (:8001) — orders, MongoDB via Mongoose.
   - `payment-service` (:8002) — Stripe; stateless.
@@ -29,6 +29,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `shipping-service` (:8011) — Koa, shipment lifecycle, carrier adapters (TCS/Leopards/DHL/FedEx), tracking, labels; PostgreSQL.
   - `user-service` (:8012) — Fastify 5, customer profiles, addresses, preferences; PostgreSQL via `@repo/user-db`.
   - `media-service` (:8013) — Hono 4, S3/MinIO object storage behind an `ObjectStorage` interface, Drizzle/PostgreSQL metadata, Redis-cached resolve, Sharp processing + cleanup workers.
+  - `review-service` (:8014) — Fastify 5, product reviews, ratings, verified purchase checking, moderation, helpful voting, summary projections; PostgreSQL (`review_db`) via Drizzle ORM + Redis cache.
   - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).
@@ -55,6 +56,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Shipments, rates, tracking, carrier adapters               | `apps/shipping-service`                                |
 | Customer profiles, addresses, preferences                  | `apps/user-service`                                    |
 | Media uploads, variants, image processing                  | `apps/media-service`                                   |
+| Product reviews, ratings, verified purchases, moderation   | `apps/review-service`                                  |
 | Kafka client/producer/consumer helpers                     | `packages/kafka`                                       |
 | Shared types, Zod schemas, Kafka payload types             | `packages/types`                                       |
 | Telemetry, structured logging, health checks               | `packages/monitoring`                                  |

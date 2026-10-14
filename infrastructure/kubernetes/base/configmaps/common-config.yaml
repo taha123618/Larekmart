@@ -29,10 +29,10 @@ data:
   MONGODB_DATABASE: "larekmart_orders"
 
   # Internal Service Discovery URLs
-  AUTH_SERVICE_URL: "http://auth-service.larekmart.svc.cluster.local:8003"
   PRODUCT_SERVICE_URL: "http://product-service.larekmart.svc.cluster.local:8000"
   ORDER_SERVICE_URL: "http://order-service.larekmart.svc.cluster.local:8001"
   PAYMENT_SERVICE_URL: "http://payment-service.larekmart.svc.cluster.local:8002"
+  AUTH_SERVICE_URL: "http://auth-service.larekmart.svc.cluster.local:8003"
   ANALYTIC_SERVICE_URL: "http://analytic-service.larekmart.svc.cluster.local:8004"
   NOTIFICATION_SERVICE_URL: "http://notification-service.larekmart.svc.cluster.local:8005"
   SEARCH_SERVICE_URL: "http://search-service.larekmart.svc.cluster.local:8006"
@@ -43,3 +43,4 @@ data:
   SHIPPING_SERVICE_URL: "http://shipping-service.larekmart.svc.cluster.local:8011"
   USER_SERVICE_URL: "http://user-service.larekmart.svc.cluster.local:8012"
   MEDIA_SERVICE_URL: "http://media-service.larekmart.svc.cluster.local:8013"
+  REVIEW_SERVICE_URL: "http://review-service.larekmart.svc.cluster.local:8014"

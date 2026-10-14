@@ -4,11 +4,12 @@ This directory documents the significant architectural decisions made in Larekma
 
 ## Index of Records
 
-| ADR                                              | Title                                                             | Status   | Date       |
-| ------------------------------------------------ | ----------------------------------------------------------------- | -------- | ---------- |
-| [0001](./0001-asynchronous-kafka-integration.md) | Asynchronous Kafka Integration for Backend Services               | Accepted | 2025-01-15 |
-| [0002](./0002-polyglot-persistence.md)           | Polyglot Persistence (PostgreSQL for Catalog, MongoDB for Orders) | Accepted | 2025-01-20 |
-| [0003](./0003-clerk-authentication.md)           | Centralized Authentication and Role Management via Clerk          | Accepted | 2025-01-25 |
+| ADR                                                     | Title                                                               | Status   | Date       |
+| ------------------------------------------------------- | ------------------------------------------------------------------- | -------- | ---------- |
+| [0001](./0001-asynchronous-kafka-integration.md)        | Asynchronous Kafka Integration for Backend Services                 | Accepted | 2025-01-15 |
+| [0002](./0002-polyglot-persistence.md)                  | Polyglot Persistence (PostgreSQL for Catalog, MongoDB for Orders)   | Accepted | 2025-01-20 |
+| [0003](./0003-clerk-authentication.md)                  | Centralized Authentication and Role Management via Clerk            | Accepted | 2025-01-25 |
+| [0004](./0004-product-reviews-and-reputation-engine.md) | Product Reviews, Reputation Engine & Verified Purchase Architecture | Accepted | 2026-10-14 |
 
 ## Adding an ADR
 

@@ -46,8 +46,11 @@ Postgres, Mongo, or Kafka directly.
   - `NotificationBell.tsx` — Live notification bell with WebSocket status indicator and glassmorphic dropdown.
   - `ShippingForm.tsx` — Modern glassmorphic 2-column shipping form with live carrier quotes and COD toggle.
   - `CodConfirmationForm.tsx` — Cash on Delivery order confirmation modal and receipt summary.
+  - `ProductTabs.tsx` — Product details, specs, and live customer reviews with rating distribution breakdown, verified badges, helpful voting, report dialog, and photo lightbox.
+  - `WriteReviewModal.tsx` — Modal for composing and editing customer reviews with star ratings, text feedback, and media uploads via MinIO/S3.
   - `Footer.tsx` — Multi-column marketplace directory with newsletter signup and payment badges.
   - `common/ScrollToTop.tsx` — Viewport scroll progress bar and circular SVG progress floating action button.
+- `src/services/` — Frontend client services (`review.service.ts`, `media.service.ts`, `cart.service.ts`, `notification.service.ts`).
 - `src/hooks/` — Custom hooks (`use-lenis.ts` with cancelAnimationFrame and pathname listener).
 - `src/stores/` — Zustand stores (`cartStore.ts`, `wishlistStore.ts`, `uiStore.ts`).
 - `src/lib/utils.ts` — `cn(...)` utility helper (`clsx` + `tailwind-merge`).

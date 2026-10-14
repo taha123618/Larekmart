@@ -18,6 +18,7 @@ import {
   Sparkles,
   LayoutGrid,
   Truck,
+  Star,
 } from "lucide-react";
 import {
   Sidebar,
@@ -283,6 +284,21 @@ const AppSidebar = () => {
                   <Link href="/shipping">
                     <Truck />
                     Shipments & Carriers
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Customer Feedback</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/reviews">
+                    <Star />
+                    Customer Reviews
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -131,6 +131,7 @@ docker/
 | `shipping-service`       | `8011`                            | `127.0.0.1:8011`                     | **Internal Only**   | Carrier rate quote & dispatch                                           |
 | `user-service`           | `8012`                            | `127.0.0.1:8012`                     | **Internal Only**   | Customer profiles, addresses & preferences                              |
 | `media-service`          | `8013`                            | `127.0.0.1:8013`                     | **Internal Only**   | Media uploads, variants & lifecycle                                     |
+| `review-service`         | `8014`                            | `127.0.0.1:8014`                     | **Internal Only**   | Product reviews, ratings, verified purchases & moderation               |
 | `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                      |
 | `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                             |
 | `email-service`          | None (worker)                     | None                                 | **Internal Only**   | Consumes Kafka events, sends email notifications                        |
