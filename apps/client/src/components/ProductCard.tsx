@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import useCartStore from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -17,7 +17,7 @@ interface ProductCardProps {
   };
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+const ProductCard = React.memo(function ProductCard({ product }: ProductCardProps) {
   const defaultColor =
     (product.colors && product.colors[0]) ||
     (product.images ? Object.keys(product.images)[0] : "") ||
@@ -29,16 +29,18 @@ export default function ProductCard({ product }: ProductCardProps) {
     color: defaultColor,
   });
 
-  const { addToCart } = useCartStore();
-  const { toggleWishlist, isInWishlist } = useWishlistStore();
-  const { openQuickView } = useUIStore();
+  // Use selectors to prevent re-rendering when unrelated state changes
+  const addToCart = useCartStore((state) => state.addToCart);
+  const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
+  const isFavoritedStore = useWishlistStore((state) => state.isInWishlist(product.id));
+  const openQuickView = useUIStore((state) => state.openQuickView);
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  const isFavorited = isMounted ? isInWishlist(product.id) : false;
+  const isFavorited = isMounted ? isFavoritedStore : false;
 
   const handleProductType = ({
     type,
@@ -263,4 +265,6 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
     </div>
   );
-}
+});
+
+export default ProductCard;
