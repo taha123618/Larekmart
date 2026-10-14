@@ -1,0 +1,3 @@
+## 2026-10-14 - Zustand Hook Selectors Avoid Unnecessary Renders
+**Learning:** Using Zustand hooks like `useStore()` without a selector subscribes the component to the *entire* store's state. When a store like `cartStore` is destructured (e.g., `const { addToCart } = useCartStore()`), any change to the store (like adding a new item) causes every component calling that hook to re-render, leading to O(N) renders in lists.
+**Action:** Always pass a selector function (e.g., `const addToCart = useCartStore((state) => state.addToCart)`) so components only subscribe to the specific pieces of state they use, effectively dodging global re-renders.
