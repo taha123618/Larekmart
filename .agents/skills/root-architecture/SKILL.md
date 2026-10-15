@@ -14,7 +14,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   `client` (storefront, :3002) and `admin` (dashboard, :3003).
 - **One API Gateway**:
   - `api-gateway` (:8080 / :8090) — Fastify 5 single public entrypoint reverse proxy, request correlation, Clerk session authentication, Redis rate limiting, circuit breaker, home aggregation (`/api/v1/home`), client header stripping, and internal secret injection.
-- **Sixteen HTTP backend services & one headless worker** own business logic and each owns its data:
+- **Seventeen HTTP backend services & one headless worker** own business logic and each owns its data:
   - `product-service` (:8000) — catalog, PostgreSQL via Prisma.
   - `order-service` (:8001) — orders, MongoDB via Mongoose.
   - `payment-service` (:8002) — Stripe; stateless.
@@ -32,6 +32,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `review-service` (:8014) — Fastify 5, product reviews, ratings, verified purchase checking, moderation, helpful voting, summary projections; PostgreSQL (`review_db`) via Drizzle ORM + Redis cache.
   - `wishlist-service` (:8015) — Fastify 5, saved products, multiple wishlists, guest-to-user merging, price drop & restock alerts; PostgreSQL (`larekmart_wishlist_db`) via Drizzle ORM + Redis cache.
   - `promotion-service` (:8016) — Hono 4, centralized promotions, coupons, discount eligibility, budgets, checkout reservations, redemptions; PostgreSQL (`larekmart_promotion_db`) via Drizzle ORM + Redis cache.
+  - `tax-service` (:8017) — Fastify 5, jurisdiction-aware tax calculations, versioned tax rules, customer exemptions, checkout quotes, auditable snapshots, and provider adapters; MySQL (`tax_db`) via Drizzle ORM + Redis cache.
   - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).
@@ -61,6 +62,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Product reviews, ratings, verified purchases, moderation   | `apps/review-service`                                  |
 | Wishlists, saved products, guest merge, price-drop alerts  | `apps/wishlist-service`                                |
 | Promotions, campaigns, coupons, discounts, budget holds    | `apps/promotion-service`                               |
+| Tax calculation, rules, customer exemptions, audit logs    | `apps/tax-service`                                     |
 | Kafka client/producer/consumer helpers                     | `packages/kafka`                                       |
 | Shared types, Zod schemas, Kafka payload types             | `packages/types`                                       |
 | Telemetry, structured logging, health checks               | `packages/monitoring`                                  |
@@ -96,6 +98,7 @@ consistency). E.g. a product change in Postgres is mirrored to Stripe via
 4. **Storefront Personalization:** client queries `GET /api/v1/recommendations/home` (or category/recently-viewed) with Clerk `userId` → returns multi-strategy shelves → customer views/clicks dispatch zero-throw telemetry events.
 5. **Cash on Delivery (COD) & Multi-Carrier Shipping:** client queries `shipping-service` (`GET /rates?city=...`) for live courier quotes (TCS, Leopards, DHL) → submits `POST /orders/cod` directly to `order-service` → order-service persists the COD Order and publishes `order.created` → `shipping-service` provisions shipment tracking.
 6. **Promotion & Coupon Redemption:** client/cart queries `POST /api/v1/promotions/validate` or creates a hold via `POST /api/v1/promotions/reservations` → checkout submits with `reservationId` → on order creation (`order.created`) or payment (`payment.successful`), `promotion-service` commits redemption and emits `promotion.redeemed` → email-service sends notification, analytic-service aggregates discount KPIs.
+7. **Jurisdiction-Aware Tax Calculation & Auditable Snapshots:** client cart/checkout queries `POST /api/v1/tax/quote` for real-time estimated sales tax/VAT → on order placement, client calls `POST /api/v1/tax/calculate` or `order-service` consumes `order.created` → `tax-service` persists immutable calculation snapshots with line rates and rule versions (`tax.calculation.completed`) → on item returns, `POST /api/v1/tax/returns/quote` calculates exact proportional tax adjustments.
 
 ## Before changing anything
 

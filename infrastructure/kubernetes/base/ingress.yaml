@@ -208,3 +208,17 @@ spec:
                 name: promotion-service
                 port:
                   number: 8016
+          - path: /api/v1/tax
+            pathType: Prefix
+            backend:
+              service:
+                name: tax-service
+                port:
+                  number: 8017
+          - path: /api/v1/admin/tax
+            pathType: Prefix
+            backend:
+              service:
+                name: tax-service
+                port:
+                  number: 8017

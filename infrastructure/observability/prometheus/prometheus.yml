@@ -206,6 +206,14 @@ scrape_configs:
           service: promotion-service
           runtime: nodejs
 
+  - job_name: tax-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["tax-service:8017"]
+        labels:
+          service: tax-service
+          runtime: nodejs
+
   - job_name: api-gateway
     metrics_path: /metrics
     static_configs:

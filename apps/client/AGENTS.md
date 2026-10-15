@@ -50,7 +50,7 @@ Postgres, Mongo, or Kafka directly.
   - `WriteReviewModal.tsx` — Modal for composing and editing customer reviews with star ratings, text feedback, and media uploads via MinIO/S3.
   - `Footer.tsx` — Multi-column marketplace directory with newsletter signup and payment badges.
   - `common/ScrollToTop.tsx` — Viewport scroll progress bar and circular SVG progress floating action button.
-- `src/services/` — Frontend client services (`promotion.service.ts`, `review.service.ts`, `wishlist.service.ts`, `media.service.ts`, `cart.service.ts`, `notification.service.ts`).
+- `src/services/` — Frontend client services (`tax.service.ts`, `promotion.service.ts`, `review.service.ts`, `wishlist.service.ts`, `media.service.ts`, `shipping.service.ts`, `catalog.service.ts`, `recommendation.service.ts`, `cart.service.ts`, `notification.service.ts`).
 - `src/hooks/` — Custom hooks (`use-lenis.ts` with cancelAnimationFrame and pathname listener).
 - `src/stores/` — Zustand stores (`cartStore.ts`, `wishlistStore.ts`, `uiStore.ts`).
 - `src/lib/utils.ts` — `cn(...)` utility helper (`clsx` + `tailwind-merge`).
@@ -135,7 +135,9 @@ React 19 and Next.js 16 enforce strict hydration equality between server HTML an
 This app talks HTTP to `product-service`, `order-service`, `payment-service`,
 `search-service` (autocomplete only), `recommendation-service` (`NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL` :8008),
 `catalog-service` (`NEXT_PUBLIC_CATALOG_SERVICE_URL` :8010), `shipping-service` (`NEXT_PUBLIC_SHIPPING_SERVICE_URL` :8011),
-and `user-service` (`NEXT_PUBLIC_USER_SERVICE_URL` :8012). It never calls `auth-service` directly — Clerk handles user auth.
+`user-service` (`NEXT_PUBLIC_USER_SERVICE_URL` :8012), `review-service` (`NEXT_PUBLIC_REVIEW_SERVICE_URL` :8014),
+`wishlist-service` (`NEXT_PUBLIC_WISHLIST_SERVICE_URL` :8015), `promotion-service` (`NEXT_PUBLIC_PROMOTION_SERVICE_URL` :8016),
+and `tax-service` (`NEXT_PUBLIC_TAX_SERVICE_URL` :8017). It never calls `auth-service` directly — Clerk handles user auth.
 
 Shipping & tracking integration:
 
