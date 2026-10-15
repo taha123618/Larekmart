@@ -29,10 +29,10 @@
 - Modify: `packages/types/src/index.ts`
 - Test: `packages/types/tests/tax.test.ts`
 
-- [ ] **Step 1: Write the failing test for tax schemas**
-- [ ] **Step 2: Run test to verify it fails**
-- [ ] **Step 3: Implement Zod schemas and TypeScript types in `packages/types/src/tax.ts`**
-- [ ] **Step 4: Export from `packages/types/src/index.ts` and verify test passes**
+- [x] **Step 1: Write the failing test for tax schemas**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Implement Zod schemas and TypeScript types in `packages/types/src/tax.ts`**
+- [x] **Step 4: Export from `packages/types/src/index.ts` and verify test passes**
 
 ---
 
@@ -47,9 +47,9 @@
 - Create: `apps/tax-service/Dockerfile`
 - Create: `apps/tax-service/src/config/env.ts`
 
-- [ ] **Step 1: Create package.json and tsconfig.json**
-- [ ] **Step 2: Create environment configuration with Zod validation**
-- [ ] **Step 3: Run `pnpm install` and verify package resolves in monorepo**
+- [x] **Step 1: Create package.json and tsconfig.json**
+- [x] **Step 2: Create environment configuration with Zod validation**
+- [x] **Step 3: Run `pnpm install` and verify package resolves in monorepo**
 
 ---
 
@@ -65,9 +65,9 @@
 - Create: `apps/tax-service/src/repositories/tax-category.repository.ts`
 - Create: `apps/tax-service/src/repositories/tax-calculation.repository.ts`
 
-- [ ] **Step 1: Define Drizzle schema for 7 required tables**
-- [ ] **Step 2: Setup MySQL connection pool and Drizzle client**
-- [ ] **Step 3: Create repository implementations with CRUD and query capabilities**
+- [x] **Step 1: Define Drizzle schema for 7 required tables**
+- [x] **Step 2: Setup MySQL connection pool and Drizzle client**
+- [x] **Step 3: Create repository implementations with CRUD and query capabilities**
 
 ---
 
@@ -81,10 +81,10 @@
 - Create: `apps/tax-service/src/adapters/external-tax-provider.adapter.ts`
 - Create: `apps/tax-service/src/adapters/provider-factory.ts`
 
-- [ ] **Step 1: Implement `decimal.js` calculation engine (exclusive & inclusive tax, rounding, exemptions, line items)**
-- [ ] **Step 2: Implement refund/returns proportional tax adjustment calculation**
-- [ ] **Step 3: Implement provider adapter interface and standard rule engine adapter**
-- [ ] **Step 4: Implement external provider adapter stub with credential redaction & latency logging**
+- [x] **Step 1: Implement `decimal.js` calculation engine (exclusive & inclusive tax, rounding, exemptions, line items)**
+- [x] **Step 2: Implement refund/returns proportional tax adjustment calculation**
+- [x] **Step 3: Implement provider adapter interface and standard rule engine adapter**
+- [x] **Step 4: Implement external provider adapter stub with credential redaction & latency logging**
 
 ---
 
@@ -102,9 +102,9 @@
 - Create: `apps/tax-service/src/server.ts`
 - Create: `apps/tax-service/src/index.ts`
 
-- [ ] **Step 1: Implement timing-safe internal secret authentication and Clerk admin auth middleware**
-- [ ] **Step 2: Implement controllers and route handlers for quotes, calculations, snapshot lookup, returns, jurisdictions, categories, and admin rule management**
-- [ ] **Step 3: Wire Fastify application with CORS, logging, health probes, and error handling**
+- [x] **Step 1: Implement timing-safe internal secret authentication and Clerk admin auth middleware**
+- [x] **Step 2: Implement controllers and route handlers for quotes, calculations, snapshot lookup, returns, jurisdictions, categories, and admin rule management**
+- [x] **Step 3: Wire Fastify application with CORS, logging, health probes, and error handling**
 
 ---
 
@@ -117,9 +117,9 @@
 - Create: `apps/tax-service/src/events/consumers/product.consumer.ts`
 - Create: `apps/tax-service/src/events/index.ts`
 
-- [ ] **Step 1: Implement tax Kafka event producer with typed schemas**
-- [ ] **Step 2: Implement consumers for `order.created`, `product.tax-category.updated`, and `tax.rules.updated` with safe error trapping**
-- [ ] **Step 3: Connect event consumers on service start**
+- [x] **Step 1: Implement tax Kafka event producer with typed schemas**
+- [x] **Step 2: Implement consumers for `order.created`, `product.tax-category.updated`, and `tax.rules.updated` with safe error trapping**
+- [x] **Step 3: Connect event consumers on service start**
 
 ---
 
@@ -135,9 +135,9 @@
 - Modify: `AGENTS.md`
 - Modify: `docs/ARCHITECTURE.md`
 
-- [ ] **Step 1: Add tax service target and routes to API Gateway**
-- [ ] **Step 2: Add MySQL container and tax-service container to `docker-compose.yml`**
-- [ ] **Step 3: Update root `AGENTS.md` and `docs/ARCHITECTURE.md`**
+- [x] **Step 1: Add tax service target and routes to API Gateway**
+- [x] **Step 2: Add MySQL container and tax-service container to `docker-compose.yml`**
+- [x] **Step 3: Update root `AGENTS.md` and `docs/ARCHITECTURE.md`**
 
 ---
 
@@ -147,7 +147,25 @@
 
 - Create: `apps/tax-service/tests/tax-service.test.ts`
 
-- [ ] **Step 1: Write end-to-end and unit tests verifying quotes, calculations, inclusive/exclusive, exemptions, refund adjustments, admin rules, and security**
-- [ ] **Step 2: Run `pnpm --filter tax-service test`**
-- [ ] **Step 3: Run monorepo `pnpm check-types` and `pnpm test`**
-- [ ] **Step 4: Format and commit changes**
+- [x] **Step 1: Write end-to-end and unit tests verifying quotes, calculations, inclusive/exclusive, exemptions, refund adjustments, admin rules, and security**
+- [x] **Step 2: Run `pnpm --filter tax-service test`**
+- [x] **Step 3: Run monorepo `pnpm check-types` and `pnpm test`**
+- [x] **Step 4: Format and commit changes**
+
+---
+
+### Task 9: Frontend Integration (`apps/admin` & `apps/client`)
+
+**Files:**
+
+- Create: `apps/admin/src/app/(dashboard)/taxes/page.tsx`
+- Create: `apps/admin/src/services/tax.service.ts`
+- Modify: `apps/admin/src/components/AppSidebar.tsx`
+- Create: `apps/client/src/services/tax.service.ts`
+- Modify: `apps/client/src/components/ShippingForm.tsx`
+- Modify: `apps/client/src/app/cart/page.tsx`
+
+- [x] **Step 1: Build Executive Taxes & Compliance Dashboard in `apps/admin` (KPIs, Rules, Jurisdictions, Categories, Exemptions, Audits)**
+- [x] **Step 2: Implement dynamic real-time tax quote calculation and itemized breakdown in `apps/client` storefront checkout**
+- [x] **Step 3: Verify with `pnpm --filter admin check-types`, `pnpm --filter admin build`, `pnpm --filter client check-types`, `pnpm --filter client build`, and linters**
+- [x] **Step 4: Format and commit changes**

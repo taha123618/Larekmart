@@ -47,12 +47,18 @@ Node.js (TypeScript strict) + Fastify 5 tax calculation microservice: jurisdicti
   - `GET /api/v1/tax/jurisdictions` — list active tax jurisdictions.
   - `GET /api/v1/tax/categories` — list product tax categories.
 - Admin (`requireAdminOrInternal` required):
+  - `GET /api/v1/admin/tax/overview` — executive KPI dashboard metrics (rules, jurisdictions, exemptions, snapshots, collected tax).
+  - `GET /api/v1/admin/tax/rules` — list all tax rules (filter by jurisdiction, category, active status).
   - `POST /api/v1/admin/tax/rules` — creates a new versioned tax rule.
   - `PATCH /api/v1/admin/tax/rules/:ruleId` — updates tax rule conditions or rates.
+  - `DELETE /api/v1/admin/tax/rules/:ruleId` — deletes a tax rule.
   - `POST /api/v1/admin/tax/rules/:ruleId/activate` — activates a tax rule.
+  - `POST /api/v1/admin/tax/rules/:ruleId/deactivate` — deactivates a tax rule.
   - `POST /api/v1/admin/tax/jurisdictions` — adds a new tax jurisdiction.
   - `POST /api/v1/admin/tax/categories` — adds a new product tax category.
+  - `GET /api/v1/admin/tax/exemptions` — lists customer tax exemption certificates.
   - `POST /api/v1/admin/tax/exemptions` — grants a customer tax exemption certificate.
+  - `GET /api/v1/admin/tax/calculations` — lists historical calculation audit logs.
 - Health:
   - `GET /health` — liveness probe.
   - `GET /ready` — readiness probe (MySQL + Redis connectivity).
