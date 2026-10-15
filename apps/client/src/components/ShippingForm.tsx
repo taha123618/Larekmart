@@ -69,6 +69,9 @@ const ShippingForm = ({
   } = useForm<ShippingFormInputs>({
     resolver: zodResolver(shippingFormSchema),
     defaultValues: {
+      country: "US",
+      state: "CA",
+      postalCode: "90001",
       carrier: "custom",
       serviceType: "standard",
       shippingAmount: 200,
@@ -99,6 +102,9 @@ const ShippingForm = ({
       setValue("phone", addr.phone);
       setValue("address", addr.addressLine1);
       setValue("city", addr.city);
+      if (addr.state) setValue("state", addr.state);
+      if (addr.postalCode) setValue("postalCode", addr.postalCode);
+      if (addr.country) setValue("country", addr.country);
       if (clerkUser?.primaryEmailAddress?.emailAddress) {
         setValue("email", clerkUser.primaryEmailAddress.emailAddress);
       }
@@ -380,7 +386,7 @@ const ShippingForm = ({
             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs"
             type="text"
             id="city"
-            placeholder="Karachi, Lahore, Islamabad..."
+            placeholder="Karachi, Lahore, Islamabad, Los Angeles..."
             {...register("city")}
           />
           {errors.city && (
@@ -388,6 +394,61 @@ const ShippingForm = ({
               {errors.city.message}
             </p>
           )}
+        </div>
+      </div>
+
+      {/* Grid: Country, State & Postal Code for Tax & Carrier Calculation */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="country"
+            className="text-xs text-slate-700 dark:text-slate-300 font-bold"
+          >
+            Country
+          </label>
+          <select
+            id="country"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs"
+            {...register("country")}
+          >
+            <option value="US">United States (US)</option>
+            <option value="GB">United Kingdom (GB)</option>
+            <option value="PK">Pakistan (PK)</option>
+            <option value="CA">Canada (CA)</option>
+            <option value="DE">Germany (DE)</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="state"
+            className="text-xs text-slate-700 dark:text-slate-300 font-bold"
+          >
+            State / Region
+          </label>
+          <input
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs"
+            type="text"
+            id="state"
+            placeholder="e.g. CA, NY, TX"
+            {...register("state")}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="postalCode"
+            className="text-xs text-slate-700 dark:text-slate-300 font-bold"
+          >
+            Postal / ZIP Code
+          </label>
+          <input
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs"
+            type="text"
+            id="postalCode"
+            placeholder="e.g. 90001, 10001"
+            {...register("postalCode")}
+          />
         </div>
       </div>
 

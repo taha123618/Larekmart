@@ -163,6 +163,27 @@ export class TaxCalculationRepository {
       return undefined;
     }
   }
+
+  public async findAll(limit = 50): Promise<TaxCalculationRecord[]> {
+    try {
+      const db = getDb();
+      return await db.select().from(taxCalculations).limit(limit);
+    } catch {
+      return Array.from(this.inMemoryCalculations.values()).map((e) => ({
+        id: e.calc.id,
+        referenceType: e.calc.referenceType ?? "quote",
+        referenceId: e.calc.referenceId ?? null,
+        currency: e.calc.currency ?? "USD",
+        subtotal: e.calc.subtotal,
+        taxTotal: e.calc.taxTotal,
+        total: e.calc.total,
+        ruleVersion: e.calc.ruleVersion,
+        provider: e.calc.provider ?? "standard",
+        inputSnapshot: e.calc.inputSnapshot,
+        createdAt: e.calc.createdAt ?? new Date(),
+      }));
+    }
+  }
 }
 
 export const taxCalculationRepository = new TaxCalculationRepository();

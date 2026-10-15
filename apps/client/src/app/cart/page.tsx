@@ -31,6 +31,8 @@ import RecommendationSection from "@/components/RecommendationSection";
 import { useAuth } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchActivePromotions } from "@/services/promotion.service";
+import { getTaxQuote } from "@/services/tax.service";
+import type { TaxCalculationResponse } from "@repo/types";
 
 const defaultSteps = [
   {
@@ -59,6 +61,12 @@ const CartContent = () => {
     message: string;
   } | null>(null);
   const [activePromotions, setActivePromotions] = useState<Promotion[]>([]);
+  const [taxQuote, setTaxQuote] = useState<TaxCalculationResponse | null>(null);
+  const [isTaxLoading, setIsTaxLoading] = useState(false);
+
+  // Local optimistic store
+  const { cart, serverCart, removeFromCart, updateQuantity, mergeGuestCart } =
+    useCartStore();
 
   useEffect(() => {
     let mounted = true;
@@ -71,6 +79,64 @@ const CartContent = () => {
       mounted = false;
     };
   }, []);
+
+  // Dynamic real-time tax calculation based on destination jurisdiction & cart items
+  useEffect(() => {
+    if (cart.length === 0) {
+      setTaxQuote(null);
+      return;
+    }
+
+    let isMounted = true;
+    const calculateTax = async () => {
+      setIsTaxLoading(true);
+      try {
+        const token = await getToken();
+        const quote = await getTaxQuote(
+          {
+            currency: "USD",
+            destinationAddress: {
+              country: shippingForm?.country || "US",
+              region: shippingForm?.state || "CA",
+              city: shippingForm?.city || undefined,
+              postalCode: shippingForm?.postalCode || undefined,
+            },
+            lines: cart.map((item) => ({
+              lineId: String(item.id),
+              productId: String(item.id),
+              categoryCode: "standard",
+              quantity: item.quantity,
+              unitPrice: item.price.toFixed(2),
+              amount: (item.price * item.quantity).toFixed(2),
+              discountAmount: "0.00",
+              isInclusive: false,
+            })),
+            isInclusive: false,
+          },
+          token ?? undefined,
+        );
+        if (isMounted) {
+          setTaxQuote(quote);
+        }
+      } catch (err) {
+        console.warn("Could not calculate dynamic tax quote:", err);
+      } finally {
+        if (isMounted) setIsTaxLoading(false);
+      }
+    };
+
+    calculateTax();
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    cart,
+    shippingForm?.country,
+    shippingForm?.state,
+    shippingForm?.city,
+    shippingForm?.postalCode,
+    getToken,
+  ]);
 
   const availableCoupons = useMemo(() => {
     const list: Array<{ code: string; label: string }> = [];
@@ -96,10 +162,6 @@ const CartContent = () => {
   }, [activePromotions]);
 
   const activeStep = parseInt(searchParams.get("step") || "1");
-
-  // Local optimistic store
-  const { cart, serverCart, removeFromCart, updateQuantity, mergeGuestCart } =
-    useCartStore();
 
   // TanStack React Query + Axios hooks
   const { data: serverCartQueryData, isLoading: isCartLoading } =
@@ -211,7 +273,11 @@ const CartContent = () => {
           : 200;
   const codFee = shippingForm?.isCod ? (shippingForm.codFee ?? 30) : 0;
   const taxTotal =
-    activeServerCart?.pricing?.taxTotal ?? serverCart?.pricing?.taxTotal ?? 0;
+    taxQuote?.taxTotal !== undefined
+      ? parseFloat(taxQuote.taxTotal)
+      : (activeServerCart?.pricing?.taxTotal ??
+        serverCart?.pricing?.taxTotal ??
+        0);
   const grandTotal = Math.max(
     0,
     subtotal - discountTotal + shippingFee + codFee + taxTotal,
@@ -606,13 +672,46 @@ const CartContent = () => {
             )}
 
             {taxTotal > 0 && (
-              <div className="flex justify-between text-sm">
-                <p className="text-gray-500 dark:text-slate-400">
-                  Estimated Tax
-                </p>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  ${taxTotal.toFixed(2)}
-                </p>
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between text-sm">
+                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-slate-400">
+                    <span>Estimated Tax</span>
+                    {taxQuote?.lines && taxQuote.lines[0]?.jurisdictionCode && (
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300">
+                        {taxQuote.lines[0].jurisdictionCode}
+                      </span>
+                    )}
+                    {taxQuote?.lines && taxQuote.lines[0]?.isInclusive && (
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                        (VAT Included)
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                    {isTaxLoading && (
+                      <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
+                    )}
+                    ${taxTotal.toFixed(2)}
+                  </p>
+                </div>
+                {taxQuote?.lines &&
+                  taxQuote.lines[0]?.breakdown &&
+                  taxQuote.lines[0].breakdown.length > 1 && (
+                    <div className="pl-2 border-l-2 border-indigo-100 dark:border-indigo-950/80 text-[11px] text-slate-400 flex flex-col gap-0.5 mt-0.5">
+                      {taxQuote.lines[0].breakdown.map((b) => (
+                        <div
+                          key={b.jurisdictionCode}
+                          className="flex justify-between"
+                        >
+                          <span>
+                            {b.jurisdictionName} (
+                            {(parseFloat(b.rate) * 100).toFixed(1)}%)
+                          </span>
+                          <span>${parseFloat(b.taxAmount).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
               </div>
             )}
 

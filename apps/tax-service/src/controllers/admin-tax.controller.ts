@@ -11,7 +11,9 @@ import { taxRuleRepository } from "../repositories/tax-rule.repository.js";
 import { jurisdictionRepository } from "../repositories/jurisdiction.repository.js";
 import { taxCategoryRepository } from "../repositories/tax-category.repository.js";
 import { taxExemptionRepository } from "../repositories/tax-exemption.repository.js";
+import { taxCalculationRepository } from "../repositories/tax-calculation.repository.js";
 import { taxEventProducer } from "../events/producers/tax.producer.js";
+import { env } from "../config/env.js";
 
 export class AdminTaxController {
   /**
@@ -273,6 +275,141 @@ export class AdminTaxController {
       reply.status(500).send({
         message:
           err instanceof Error ? err.message : "Failed to create tax exemption",
+      });
+    }
+  }
+
+  /**
+   * GET /api/v1/admin/tax/overview
+   */
+  public static async getOverview(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const [jurisdictions, rules, categories, calculations] =
+        await Promise.all([
+          jurisdictionRepository.findAll(),
+          taxRuleRepository.findAll(),
+          taxCategoryRepository.findAll(),
+          taxCalculationRepository.findAll(100),
+        ]);
+
+      const activeRules = rules.filter((r) => r.isActive).length;
+
+      reply.status(200).send({
+        totalJurisdictions: jurisdictions.length,
+        activeRules,
+        totalCategories: categories.length,
+        totalCalculations: calculations.length,
+        provider: env.TAX_PROVIDER,
+      });
+    } catch (err) {
+      request.log.error(err, "Failed to fetch tax overview");
+      reply.status(500).send({
+        message:
+          err instanceof Error ? err.message : "Failed to fetch tax overview",
+      });
+    }
+  }
+
+  /**
+   * GET /api/v1/admin/tax/rules
+   */
+  public static async getRules(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const [rules, jurisdictions, categories] = await Promise.all([
+        taxRuleRepository.findAll(),
+        jurisdictionRepository.findAll(),
+        taxCategoryRepository.findAll(),
+      ]);
+
+      const jurMap = new Map(jurisdictions.map((j) => [j.id, j.name]));
+      const catMap = new Map(categories.map((c) => [c.id, c.name]));
+
+      const enrichedRules = rules.map((r) => ({
+        ...r,
+        jurisdictionName: jurMap.get(r.jurisdictionId) ?? r.jurisdictionId,
+        categoryName: catMap.get(r.categoryId) ?? r.categoryId,
+      }));
+
+      reply.status(200).send(enrichedRules);
+    } catch (err) {
+      request.log.error(err, "Failed to fetch tax rules");
+      reply.status(500).send({
+        message:
+          err instanceof Error ? err.message : "Failed to fetch tax rules",
+      });
+    }
+  }
+
+  /**
+   * DELETE /api/v1/admin/tax/rules/:ruleId
+   */
+  public static async deleteRule(
+    request: FastifyRequest<{ Params: { ruleId: string } }>,
+    reply: FastifyReply,
+  ): Promise<void> {
+    const { ruleId } = request.params;
+    try {
+      const updated = await taxRuleRepository.update(ruleId, {
+        isActive: false,
+      });
+      if (!updated) {
+        reply.status(404).send({ message: `Tax rule '${ruleId}' not found` });
+        return;
+      }
+      reply
+        .status(200)
+        .send({ message: "Tax rule deactivated successfully", ruleId });
+    } catch (err) {
+      request.log.error(err, "Failed to deactivate tax rule");
+      reply.status(500).send({
+        message:
+          err instanceof Error ? err.message : "Failed to deactivate tax rule",
+      });
+    }
+  }
+
+  /**
+   * GET /api/v1/admin/tax/exemptions
+   */
+  public static async getExemptions(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const exemptions = await taxExemptionRepository.findAll();
+      reply.status(200).send(exemptions);
+    } catch (err) {
+      request.log.error(err, "Failed to fetch tax exemptions");
+      reply.status(500).send({
+        message:
+          err instanceof Error ? err.message : "Failed to fetch tax exemptions",
+      });
+    }
+  }
+
+  /**
+   * GET /api/v1/admin/tax/calculations
+   */
+  public static async getCalculations(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const calculations = await taxCalculationRepository.findAll(50);
+      reply.status(200).send(calculations);
+    } catch (err) {
+      request.log.error(err, "Failed to fetch tax calculations");
+      reply.status(500).send({
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch tax calculations",
       });
     }
   }

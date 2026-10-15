@@ -277,3 +277,72 @@ export const TaxCalculationAdjustedEventPayloadSchema = z.object({
 export type TaxCalculationAdjustedEventPayload = z.infer<
   typeof TaxCalculationAdjustedEventPayloadSchema
 >;
+
+/**
+ * Domain Models for Admin Management & API Responses
+ */
+export interface TaxJurisdiction {
+  id: string;
+  countryCode: string;
+  regionCode: string | null;
+  municipality: string | null;
+  jurisdictionCode: string;
+  name: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TaxCategory {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TaxRule {
+  id: string;
+  jurisdictionId: string;
+  categoryId: string;
+  rate: string;
+  isInclusive: boolean;
+  priority: number;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  version: string;
+  calculationMethod: "percentage" | "flat";
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  jurisdictionName?: string;
+  categoryName?: string;
+}
+
+export interface TaxExemption {
+  id: string;
+  customerId: string | null;
+  exemptionCertificate: string;
+  exemptionType:
+    | "wholesale"
+    | "government"
+    | "diplomatic"
+    | "charity"
+    | "educational";
+  jurisdictionId: string | null;
+  validFrom: string;
+  validTo: string | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TaxOverviewResponse {
+  totalJurisdictions: number;
+  activeRules: number;
+  totalCategories: number;
+  totalCalculations: number;
+  provider: string;
+}
