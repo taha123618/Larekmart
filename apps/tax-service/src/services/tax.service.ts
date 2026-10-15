@@ -12,6 +12,7 @@ import { taxRuleRepository } from "../repositories/tax-rule.repository.js";
 import { taxExemptionRepository } from "../repositories/tax-exemption.repository.js";
 import { taxCalculationRepository } from "../repositories/tax-calculation.repository.js";
 import { TaxProviderFactory } from "../adapters/provider-factory.js";
+import { redis } from "../utils/redis.js";
 import type { CalculationContext } from "./calculator.js";
 
 export class TaxService {
@@ -121,10 +122,29 @@ export class TaxService {
         dest.city,
       );
 
-    // 2. Resolve product categories
+    // 2. Resolve product categories, checking product-level mappings if available
+    const resolvedLines = await Promise.all(
+      request.lines.map(async (line) => {
+        if (
+          (!line.categoryCode || line.categoryCode === "standard") &&
+          line.productId
+        ) {
+          try {
+            const mappedCode = await redis.client.get(
+              `tax:v1:product:${line.productId}:category`,
+            );
+            if (mappedCode) {
+              return { ...line, categoryCode: mappedCode };
+            }
+          } catch {}
+        }
+        return line;
+      }),
+    );
+
     const categoryCodes = Array.from(
       new Set(
-        request.lines.map((l) => (l.categoryCode || "standard").toLowerCase()),
+        resolvedLines.map((l) => (l.categoryCode || "standard").toLowerCase()),
       ),
     );
     // Ensure "standard" is always present for rule fallback
@@ -176,7 +196,7 @@ export class TaxService {
 
     // 5. Delegate to configured provider
     const provider = TaxProviderFactory.getProvider();
-    return provider.calculateTax(request, context);
+    return provider.calculateTax({ ...request, lines: resolvedLines }, context);
   }
 }
 

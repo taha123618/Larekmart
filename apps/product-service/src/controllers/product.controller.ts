@@ -46,6 +46,12 @@ export const createProduct = async (req: Request, res: Response) => {
   // id/name/price it needs to mirror the catalog into Stripe. The same mapper
   // drives the search backfill (`backfill:search`).
   publishEvent("product.created", toProductEventPayload(product));
+  if (req.body.taxCategoryCode) {
+    publishEvent("product.tax-category.updated", {
+      productId: String(product.id),
+      taxCategoryCode: String(req.body.taxCategoryCode),
+    });
+  }
   await invalidateCatalogCache();
   res.status(201).json(product);
 };
@@ -71,6 +77,12 @@ export const updateProduct = async (req: Request, res: Response) => {
 
   logger.info(`Product updated successfully with ID: ${productId}`);
   publishEvent("product.updated", updatedProduct);
+  if (req.body.taxCategoryCode) {
+    publishEvent("product.tax-category.updated", {
+      productId: String(productId),
+      taxCategoryCode: String(req.body.taxCategoryCode),
+    });
+  }
   await invalidateCatalogCache();
   return res.status(200).json(updatedProduct);
 };
