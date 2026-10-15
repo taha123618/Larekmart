@@ -14,8 +14,23 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 1
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "64Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "25m"
     target:
       kind: Deployment
+
+  # Set HPA minReplicas to 1 in development so pods are not duplicated
+  - patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+    target:
+      kind: HorizontalPodAutoscaler
+
 
   # Patch Ingress hostnames for development
   - patch: |-
