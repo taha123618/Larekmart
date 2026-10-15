@@ -31,6 +31,8 @@ const inMemoryMetrics = {
   totalMediaUploaded: 0,
   totalMediaProcessed: 0,
   totalMediaDeleted: 0,
+  totalTaxCollected: 0,
+  totalTaxCalculations: 0,
   lastEventTime: new Date().toISOString(),
 };
 
@@ -286,6 +288,83 @@ export const recordPromotionEvent = async (
     discountAmount: amount,
     userId,
   });
+};
+
+export const recordTaxEvent = async (
+  eventType:
+    | "tax.calculation.completed"
+    | "tax.calculation.failed"
+    | "tax.calculation.adjusted"
+    | "tax.rules.updated",
+  payload: any,
+) => {
+  const data = payload?.data || payload;
+  const userId = data?.referenceId || data?.calculationId || "system";
+  const taxAmount = parseFloat(data?.taxTotal || data?.taxRefundTotal || "0");
+
+  if (eventType === "tax.calculation.completed") {
+    inMemoryMetrics.totalTaxCalculations =
+      (inMemoryMetrics.totalTaxCalculations || 0) + 1;
+    inMemoryMetrics.totalTaxCollected = Number(
+      (
+        (inMemoryMetrics.totalTaxCollected || 0) +
+        (isNaN(taxAmount) ? 0 : taxAmount)
+      ).toFixed(2),
+    );
+  } else if (eventType === "tax.calculation.adjusted") {
+    inMemoryMetrics.totalTaxCollected = Number(
+      Math.max(
+        0,
+        (inMemoryMetrics.totalTaxCollected || 0) -
+          (isNaN(taxAmount) ? 0 : taxAmount),
+      ).toFixed(2),
+    );
+  }
+
+  inMemoryMetrics.lastEventTime = new Date().toISOString();
+
+  const memoryEvent: AnalyticsEventType = {
+    id: inMemoryEvents.length + 1,
+    event_type: eventType,
+    user_id: String(userId),
+    amount: isNaN(taxAmount) ? 0 : taxAmount,
+    metadata: (data || {}) as Record<string, unknown>,
+    created_at:
+      data?.completedAt ||
+      data?.adjustedAt ||
+      data?.failedAt ||
+      data?.timestamp ||
+      new Date().toISOString(),
+  };
+
+  inMemoryEvents.unshift(memoryEvent);
+  if (inMemoryEvents.length > 100) inMemoryEvents.pop();
+
+  if (getDbStatus()) {
+    try {
+      await pool.query(
+        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          eventType,
+          String(userId),
+          isNaN(taxAmount) ? null : taxAmount,
+          JSON.stringify(memoryEvent.metadata),
+          memoryEvent.created_at,
+        ],
+      );
+    } catch (err) {
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordTaxEvent.dbInsert",
+      });
+    }
+  }
+
+  logger.info(
+    `[Tax Event] ${eventType} for ${userId} (taxAmount: ${taxAmount})`,
+  );
 };
 
 export const recordCartEvent = async (

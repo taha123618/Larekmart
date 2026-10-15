@@ -511,10 +511,13 @@ const CartContent = () => {
                     grandTotal={grandTotal}
                     discountTotal={discountTotal}
                     taxTotal={taxTotal}
+                    taxCalculationId={taxQuote?.calculationId}
                   />
                 ) : (
                   <StripePaymentForm
                     shippingForm={shippingForm}
+                    taxCalculationId={taxQuote?.calculationId}
+                    taxAmount={taxTotal}
                     onSwitchToCod={() =>
                       setShippingForm((prev) =>
                         prev ? { ...prev, isCod: true } : undefined,

@@ -200,6 +200,8 @@ export const CreateCheckoutSessionSchema = z.object({
   reservationId: z.string().max(100).optional(),
   couponCode: z.string().max(50).optional(),
   discountAmount: z.number().nonnegative().optional(),
+  taxCalculationId: z.string().max(100).optional(),
+  taxAmount: z.number().nonnegative().optional(),
 });
 export type CreateCheckoutSessionInputType = z.infer<
   typeof CreateCheckoutSessionSchema

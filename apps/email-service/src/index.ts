@@ -50,16 +50,30 @@ const start = async () => {
       {
         topicName: "order.created",
         topicHandler: async (message) => {
-          const { email, amount, status } = message.value;
+          const { email, amount, status, taxAmount } = message.value;
 
           if (email) {
             logger.info(`Sending order confirmation receipt to ${email}`);
+            const taxDetail =
+              taxAmount && Number(taxAmount) > 0
+                ? `, Tax: $${(Number(taxAmount) / 100).toFixed(2)}`
+                : "";
             await sendMail({
               email,
               subject: "Order Confirmation - Larekmart",
-              text: `Hello! Your order: Amount: $${(amount / 100).toFixed(2)}, Status: ${status}`,
+              text: `Hello! Your order: Amount: $${(amount / 100).toFixed(2)}${taxDetail}, Status: ${status}`,
             });
           }
+        },
+      },
+      {
+        topicName: "tax.calculation.adjusted",
+        topicHandler: async (message) => {
+          const { referenceId, taxRefundTotal, returnCalculationId } =
+            message.value;
+          logger.info(
+            `[email-service] Tax refund adjustment for reference ${referenceId || returnCalculationId} (Refund: $${taxRefundTotal})`,
+          );
         },
       },
       {

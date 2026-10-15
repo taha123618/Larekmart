@@ -32,6 +32,8 @@ const fetchClientSecret = async (
   couponCode?: string,
   discountAmount?: number,
   reservationId?: string,
+  taxCalculationId?: string,
+  taxAmount?: number,
 ): Promise<string> => {
   const paymentServiceUrl =
     process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL ||
@@ -48,6 +50,8 @@ const fetchClientSecret = async (
         couponCode,
         discountAmount,
         reservationId,
+        taxCalculationId,
+        taxAmount,
       }),
       headers: {
         "Content-Type": "application/json",
@@ -72,11 +76,15 @@ const fetchClientSecret = async (
 interface StripePaymentFormProps {
   shippingForm: ShippingFormInputs;
   onSwitchToCod?: () => void;
+  taxCalculationId?: string;
+  taxAmount?: number;
 }
 
 const StripePaymentForm = ({
   shippingForm,
   onSwitchToCod,
+  taxCalculationId,
+  taxAmount,
 }: StripePaymentFormProps) => {
   const { cart, serverCart } = useCartStore();
   const [token, setToken] = useState<string | null>(null);
@@ -122,6 +130,9 @@ const StripePaymentForm = ({
           serverCart?.id,
           appliedCoupon,
           discountAmount,
+          undefined,
+          taxCalculationId,
+          taxAmount,
         );
         return secret;
       } catch (err: unknown) {

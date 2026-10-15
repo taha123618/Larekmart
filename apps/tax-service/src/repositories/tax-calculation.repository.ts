@@ -184,6 +184,26 @@ export class TaxCalculationRepository {
       }));
     }
   }
+
+  public async updateReference(
+    id: string,
+    referenceId: string,
+    referenceType: "order" | "quote" | "invoice" = "order",
+  ): Promise<void> {
+    try {
+      const db = getDb();
+      await db
+        .update(taxCalculations)
+        .set({ referenceId, referenceType })
+        .where(eq(taxCalculations.id, id));
+    } catch {
+      const entry = this.inMemoryCalculations.get(id);
+      if (entry) {
+        entry.calc.referenceId = referenceId;
+        entry.calc.referenceType = referenceType;
+      }
+    }
+  }
 }
 
 export const taxCalculationRepository = new TaxCalculationRepository();

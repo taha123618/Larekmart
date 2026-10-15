@@ -134,6 +134,10 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `promotion.reserved`              | promotion-service    | order-service, analytic-service                                                                  | `PromotionReservedEventPayload` (`reservationId`, `promotionId`, `orderId`, `userId`, `couponCode`, `discountAmount`, `expiresAt`)                                                                              |
 | `promotion.redeemed`              | promotion-service    | order-service, analytic-service, email-service                                                   | `PromotionRedeemedEventPayload` (`redemptionId`, `promotionId`, `orderId`, `userId`, `couponCode`, `discountAmount`)                                                                                            |
 | `promotion.released`              | promotion-service    | order-service, analytic-service                                                                  | `PromotionReleasedEventPayload` (`reservationId`, `promotionId`, `orderId`, `reason`)                                                                                                                           |
+| `tax.calculation.completed`       | tax-service          | analytic-service, order-service, notification-service                                            | `TaxCalculationCompletedEventPayload` (`calculationId`, `referenceId`, `referenceType`, `currency`, `subtotal`, `taxTotal`, `total`, `ruleVersion`)                                                             |
+| `tax.calculation.failed`          | tax-service          | analytic-service                                                                                 | `TaxCalculationFailedEventPayload` (`referenceId`, `referenceType`, `error`, `failedAt`)                                                                                                                        |
+| `tax.rules.updated`               | tax-service          | tax-service (cache eviction), analytic-service                                                   | `TaxRulesUpdatedEventPayload` (`version`, `ruleIds`, `timestamp`)                                                                                                                                               |
+| `tax.calculation.adjusted`        | tax-service          | analytic-service, email-service, order-service                                                   | `TaxCalculationAdjustedEventPayload` (`returnCalculationId`, `originalCalculationId`, `referenceId`, `taxRefundTotal`, `adjustedAt`)                                                                            |
 
 ### `product.created`
 
@@ -404,6 +408,67 @@ lifecycle transition, always with the repository envelope `{ value: payload }`:
   (`apps/media-service/src/messaging/consumers/domain-deletion.consumer.ts`).
   Producers without an `eventId` are deduplicated by a deterministic
   `<topic>:<ownerType>:<ownerId>` key.
+
+### `tax-service` events
+
+#### `tax.calculation.completed`
+
+Emitted after a tax quote or calculation is officially settled against an order or finalized transaction.
+
+```jsonc
+{
+  "value": {
+    "calculationId": "calc_9a1b2c3d-…",
+    "referenceId": "ord_67890",
+    "referenceType": "order",
+    "currency": "USD",
+    "subtotal": "120.00",
+    "taxTotal": "10.50",
+    "total": "130.50",
+    "ruleVersion": "2026-10",
+    "completedAt": "2026-10-16T03:00:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/tax-service/src/events/producers/tax.producer.ts`
+- **Consumers:** `analytic-service` (tracks tax revenue and calculation counts), `order-service` (records tax completion), `notification-service`.
+
+#### `tax.calculation.adjusted`
+
+Emitted after a return or refund causes proportional tax reimbursement to be calculated.
+
+```jsonc
+{
+  "value": {
+    "returnCalculationId": "ret_calc_12345",
+    "originalCalculationId": "calc_9a1b2c3d-…",
+    "referenceId": "ord_67890",
+    "taxRefundTotal": "3.50",
+    "adjustedAt": "2026-10-16T03:30:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/tax-service/src/events/producers/tax.producer.ts`
+- **Consumers:** `analytic-service` (adjusts tax revenue downwards), `email-service` (receipt notifications), `order-service`.
+
+#### `tax.rules.updated`
+
+Emitted when an administrator activates or modifies versioned tax rules, broadcasting cache invalidation across the cluster.
+
+```jsonc
+{
+  "value": {
+    "version": "2026-11",
+    "ruleIds": ["rule_ca_std_01", "rule_ny_dig_02"],
+    "timestamp": "2026-10-16T03:45:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/tax-service/src/events/producers/tax.producer.ts`
+- **Consumers:** `tax-service` (evicts local Redis rule caches), `analytic-service`.
 
 ## Adding or changing an event
 

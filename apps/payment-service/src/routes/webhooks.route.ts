@@ -50,6 +50,10 @@ webhookRoute.post("/stripe", async (c) => {
           cartId: session.metadata?.cartId || null,
           reservationId: session.metadata?.reservationId || null,
           couponCode: session.metadata?.couponCode || null,
+          taxCalculationId: session.metadata?.taxCalculationId || null,
+          taxAmount: session.metadata?.taxAmount
+            ? parseFloat(session.metadata.taxAmount)
+            : 0,
           userId: session.client_reference_id,
           email: session.customer_details?.email,
           amount: session.amount_total,

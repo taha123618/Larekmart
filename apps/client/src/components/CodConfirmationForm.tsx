@@ -19,12 +19,14 @@ export default function CodConfirmationForm({
   grandTotal,
   discountTotal,
   taxTotal,
+  taxCalculationId,
 }: {
   shippingForm: ShippingFormInputs;
   cart: CartItemType[];
   grandTotal: number;
   discountTotal: number;
   taxTotal: number;
+  taxCalculationId?: string;
 }) {
   const router = useRouter();
   const { getToken, userId } = useAuth();
@@ -75,6 +77,7 @@ export default function CodConfirmationForm({
           // the server-recomputed total (catalog prices + components below).
           discountTotal: Math.round((discountTotal ?? 0) * 100),
           taxTotal: Math.round((taxTotal ?? 0) * 100),
+          taxCalculationId,
           carrier: shippingForm.carrier,
           serviceType: shippingForm.serviceType,
           shippingRateAmount: Math.round(shippingAmount * 100),
