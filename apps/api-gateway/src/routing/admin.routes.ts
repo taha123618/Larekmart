@@ -75,4 +75,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/coupons",
     requireAdmin: true,
   },
+
+  // 6. Tax Service Admin Rules, Jurisdictions & Exemptions
+  {
+    prefix: "/api/v1/admin/tax",
+    target: services.tax.url,
+    serviceName: services.tax.name,
+    timeoutMs: services.tax.timeoutMs,
+    rewritePrefix: "/api/v1/admin/tax",
+    requireAdmin: true,
+  },
 ];

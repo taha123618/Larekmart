@@ -1,0 +1,39 @@
+{
+  "name": "tax-service",
+  "version": "1.0.0",
+  "description": "Larekmart Tax Calculation Service: jurisdiction-aware tax calculation, tax rules, exemptions, auditable quotes and adapters",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx --env-file=.env --watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "check-types": "tsc --noEmit",
+    "test": "tsx tests/tax-service.test.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=.env src/db/seed.ts"
+  },
+  "dependencies": {
+    "@clerk/fastify": "^2.4.30",
+    "@fastify/cors": "^10.0.2",
+    "@repo/kafka": "workspace:*",
+    "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "@repo/types": "workspace:*",
+    "decimal.js": "^10.5.0",
+    "drizzle-orm": "^0.45.4",
+    "fastify": "^5.5.0",
+    "mysql2": "^3.12.0",
+    "uuid": "^11.1.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^22.13.0",
+    "@types/uuid": "^10.0.0",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

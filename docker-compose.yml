@@ -48,6 +48,26 @@ services:
     networks:
       - larekmart-network
 
+  mysql:
+    image: mysql:8.4
+    container_name: larekmart-mysql
+    restart: unless-stopped
+    ports:
+      - "${DB_BIND_IP:-127.0.0.1}:3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-mysql_root_password_123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-tax_db}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD:-mysql_root_password_123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - larekmart-network
+
   mongo:
     build:
       context: ./docker/mongodb
@@ -812,6 +832,38 @@ services:
     networks:
       - larekmart-network
 
+  tax-service:
+    build:
+      context: .
+      dockerfile: apps/tax-service/Dockerfile
+    container_name: larekmart-tax-service
+    restart: unless-stopped
+    expose:
+      - "8017"
+    ports:
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8017:8017"
+    env_file:
+      - ./apps/tax-service/.env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8017/health || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
   # ============================================================================
   # API Gateway (Centralized API Gateway for the Application)
   # ============================================================================
@@ -872,6 +924,8 @@ services:
       wishlist-service:
         condition: service_healthy
       promotion-service:
+        condition: service_healthy
+      tax-service:
         condition: service_healthy
     networks:
       - larekmart-network
@@ -1016,6 +1070,8 @@ volumes:
     name: larekmart_kafka_data
   opensearch_data:
     name: larekmart_opensearch_data
+  mysql_data:
+    name: larekmart_mysql_data
 
 # ============================================================================
 # Networks
