@@ -49,7 +49,9 @@ services:
       - larekmart-network
 
   mysql:
-    image: mysql:8.4
+    build:
+      context: ./docker/mysql
+      dockerfile: Dockerfile
     container_name: larekmart-mysql
     restart: unless-stopped
     ports:
@@ -57,6 +59,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-mysql_root_password_123}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-tax_db}
+      MYSQL_MULTIPLE_DATABASES: ${MYSQL_MULTIPLE_DATABASES:-tax_db}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
