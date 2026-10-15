@@ -8,6 +8,8 @@ const OrderSchema = new Schema(
     userId: { type: String, required: true, index: true },
     email: { type: String, required: true },
     amount: { type: Number, required: true },
+    taxAmount: { type: Number, default: 0 },
+    taxCalculationId: { type: String, default: null },
     status: { type: String, required: true, enum: OrderStatus },
     paymentMethod: { type: String, default: "card" }, // "card" or "cod"
     isCod: { type: Boolean, default: false },

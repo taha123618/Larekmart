@@ -24,8 +24,15 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
     );
   }
 
-  const { cart, cartId, reservationId, couponCode, discountAmount } =
-    parsed.data;
+  const {
+    cart,
+    cartId,
+    reservationId,
+    couponCode,
+    discountAmount,
+    taxCalculationId,
+    taxAmount,
+  } = parsed.data;
   const userId = c.get("userId");
 
   try {
@@ -77,6 +84,8 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
             couponCode: couponCode || "",
             discountAmount:
               discountAmount !== undefined ? String(discountAmount) : "",
+            taxCalculationId: taxCalculationId || "",
+            taxAmount: taxAmount !== undefined ? String(taxAmount) : "",
           },
           return_url:
             "http://localhost:3002/return?session_id={CHECKOUT_SESSION_ID}",

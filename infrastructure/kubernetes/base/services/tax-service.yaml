@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tax-service
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: tax-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: larekmart
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tax-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tax-service
+        app.kubernetes.io/component: backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: tax-service
+          image: larekmart/tax-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8017
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: larekmart-common-config
+            - secretRef:
+                name: larekmart-secrets
+          env:
+            - name: PORT
+              value: "8017"
+            - name: MYSQL_HOST
+              value: "$(MYSQL_HOST)"
+            - name: MYSQL_PORT
+              value: "3306"
+            - name: MYSQL_USER
+              value: "root"
+            - name: MYSQL_PASSWORD
+              value: "$(MYSQL_PASSWORD)"
+            - name: MYSQL_DATABASE
+              value: "tax_db"
+            - name: MYSQL_URL
+              value: "mysql://root:$(MYSQL_PASSWORD)@$(MYSQL_HOST):3306/tax_db"
+            - name: REDIS_URL
+              value: "redis://$(REDIS_HOST):$(REDIS_PORT)"
+            - name: KAFKA_BROKERS
+              value: "$(KAFKA_BROKER)"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8017
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 20
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8017
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8017
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tax-service
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: tax-service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8017
+      targetPort: 8017
+  selector:
+    app.kubernetes.io/name: tax-service

@@ -118,6 +118,9 @@ jobs:
           - service: promotion-service
             context: .
             dockerfile: apps/promotion-service/Dockerfile
+          - service: tax-service
+            context: .
+            dockerfile: apps/tax-service/Dockerfile
           - service: email-service
             context: .
             dockerfile: apps/email-service/Dockerfile

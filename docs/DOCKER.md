@@ -89,6 +89,9 @@ docker/
 ├── nginx/
 │   ├── Dockerfile                  # Dozzle logs reverse proxy (100M upload & SSE)
 │   └── nginx.conf                  # Nginx configuration for Dozzle log viewer
+├── mysql/
+│   ├── Dockerfile                  # MySQL 8.0 engine for tax-service compliance
+│   └── init-multiple-databases.sh  # Automated multi-database provisioning (tax_db)
 └── mongodb/
     ├── Dockerfile                  # Official MongoDB engine
     └── init-db.js                  # Automated database & collection initializer
@@ -134,6 +137,8 @@ docker/
 | `review-service`         | `8014`                            | `127.0.0.1:8014`                     | **Internal Only**   | Product reviews, ratings, verified purchases & moderation               |
 | `wishlist-service`       | `8015`                            | `127.0.0.1:8015`                     | **Internal Only**   | Wishlists, saved items, guest merging, price-drop & restock alerts      |
 | `promotion-service`      | `8016`                            | `127.0.0.1:8016`                     | **Internal Only**   | Campaigns, coupons, discounts, budgets & checkout reservations          |
+| `tax-service`            | `8017`                            | `127.0.0.1:8017`                     | **Internal Only**   | Jurisdiction-aware tax calculations, rules, exemptions & snapshots      |
+| `mysql`                  | `3306`                            | `127.0.0.1:3306`                     | **Internal Only**   | MySQL 8.0 database engine for tax compliance & jurisdiction rules       |
 | `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                      |
 | `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                             |
 | `email-service`          | None (worker)                     | None                                 | **Internal Only**   | Consumes Kafka events, sends email notifications                        |

@@ -57,6 +57,19 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
 2. Use Mongo Express UI at `http://localhost:8081` (`mongoexpressuser` / `mongoexpresspass`) to visually inspect collections.
 3. Check `connectOrderDB()` or `connectCartDB()` service logs for connection or authentication errors.
 
+### MySQL (tax-service)
+
+1. Verify MySQL is running on port `3306`:
+   `MYSQL_URL="mysql://root:admin123@127.0.0.1:3306/tax_db"`
+2. Verify migrations are applied:
+   ```bash
+   pnpm --filter tax-service db:migrate
+   ```
+3. Test connectivity and schema tables (`tax_jurisdictions`, `tax_categories`, `tax_rules`):
+   ```bash
+   pnpm --filter tax-service db:seed
+   ```
+
 ## 4. Next.js Hydration & SSR Issues
 
 ### Issue: Hydration mismatch between server and client (React 19 / Next.js 16)

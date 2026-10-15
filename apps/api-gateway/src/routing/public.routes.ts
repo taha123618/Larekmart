@@ -138,4 +138,13 @@ export const publicRoutes: GatewayRouteConfig[] = [
     timeoutMs: services.promotion.timeoutMs,
     rewritePrefix: "/api/v1/promotions",
   },
+
+  // 13. Tax Service Public & Checkout Routes (Quotes, Calculates, Returns Quote, Jurisdictions, Categories)
+  {
+    prefix: "/api/v1/tax",
+    target: services.tax.url,
+    serviceName: services.tax.name,
+    timeoutMs: services.tax.timeoutMs,
+    rewritePrefix: "/api/v1/tax",
+  },
 ];

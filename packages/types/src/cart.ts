@@ -21,6 +21,9 @@ export const shippingFormSchema = z.object({
     .max(15, "Phone number cannot exceed 15 digits!"),
   address: z.string().min(1, "Address is required!"),
   city: z.string().min(1, "City is required!"),
+  country: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
   carrier: z.string().optional(),
   serviceType: z.string().optional(),
   shippingAmount: z.number().optional(),
@@ -197,6 +200,8 @@ export const CreateCheckoutSessionSchema = z.object({
   reservationId: z.string().max(100).optional(),
   couponCode: z.string().max(50).optional(),
   discountAmount: z.number().nonnegative().optional(),
+  taxCalculationId: z.string().max(100).optional(),
+  taxAmount: z.number().nonnegative().optional(),
 });
 export type CreateCheckoutSessionInputType = z.infer<
   typeof CreateCheckoutSessionSchema

@@ -19,6 +19,8 @@ export type PaymentSuccessfulType = {
   userId?: string | null;
   email?: string | null;
   amount: number;
+  taxAmount?: number | null;
+  taxCalculationId?: string | null;
   status: "success" | "failed";
   paymentMethod?: string | null;
   carrier?: string | null;
@@ -53,6 +55,8 @@ export type OrderCreatedType = {
   couponCode?: string | null;
   email: string;
   amount: number;
+  taxAmount?: number | null;
+  taxCalculationId?: string | null;
   status: "success" | "failed";
   paymentMethod?: string | null;
   carrier?: string | null;
@@ -87,6 +91,7 @@ export const CreateCodOrderSchema = z.object({
   amount: z.number().int().positive(),
   discountTotal: z.number().int().nonnegative().default(0),
   taxTotal: z.number().int().nonnegative().default(0),
+  taxCalculationId: z.string().optional(),
   reservationId: z.string().optional(),
   couponCode: z.string().optional(),
   carrier: z.string().optional(),

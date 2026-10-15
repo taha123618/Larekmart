@@ -213,6 +213,14 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Reservation Lifecycle: 15-minute transactional hold on promotional budgets and customer usage counts during checkout (`PENDING`), committed (`COMMITTED`) on order confirmation, and released (`RELEASED` / `EXPIRED`) on checkout failure or background worker sweep.
 - Events: Publishes `promotion.created`, `promotion.activated`, `promotion.deactivated`, `promotion.budget_exhausted`, `promotion.reserved`, `promotion.redeemed`, `promotion.released`. Consumes `order.created`, `order.confirmed`, `order.completed`, `order.cancelled`.
 
+**`tax-service` (Fastify 5, :8017)** — jurisdiction-aware tax calculation, configurable versioned tax rules, customer exemptions, auditable quotes, historical calculation snapshots, and replaceable external provider adapter pattern.
+
+- Routes: `POST /api/v1/tax/quote`, `POST /api/v1/tax/calculate`, `GET /api/v1/tax/calculations/:calculationId`, `POST /api/v1/tax/returns/quote`, `GET /api/v1/tax/jurisdictions`, `GET /api/v1/tax/categories`, `POST /api/v1/admin/tax/rules`, `PATCH /api/v1/admin/tax/rules/:ruleId`, `POST /api/v1/admin/tax/rules/:ruleId/activate`, `POST /api/v1/admin/tax/jurisdictions`, `POST /api/v1/admin/tax/categories`, `POST /api/v1/admin/tax/exemptions`, `/health`, `/ready`.
+- Persistence: MySQL via Drizzle ORM targeting `tax_db` (`tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`).
+- Caching: Redis (`tax:v1:*` namespace) through `@repo/redis` for rule caching and rate limiting.
+- Arithmetic Precision: Decimal-safe financial arithmetic (`decimal.js` with `ROUND_HALF_UP`) ensuring zero floating point inaccuracy across inclusive and exclusive calculations.
+- Events: Publishes `tax.calculation.completed`, `tax.calculation.failed`, `tax.rules.updated`, `tax.calculation.adjusted`. Consumes `order.created`, `product.tax-category.updated`, `tax.rules.updated`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                               |
@@ -229,6 +237,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | review-service                   | Drizzle (`pg`)                | `reviews`, `review_media`, `review_votes`, `review_reports`, `review_moderation_actions`, `seller_responses`, `product_rating_summaries`     |
 | PostgreSQL | wishlist-service                 | Drizzle (`pg`)                | `wishlists`, `wishlist_items`, `wishlist_shares`, `wishlist_events`                                                                          |
 | PostgreSQL | promotion-service                | Drizzle (`pg`)                | `promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets` |
+| MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`       |
 | S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                       |
 | Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                        |
 | Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                                    |
@@ -242,6 +251,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | review-service                   | `@repo/redis` (ioredis)       | `review:*` (product rating summary cache, anti-abuse vote/report limits)                                                                     |
 | Redis      | wishlist-service                 | `@repo/redis` (ioredis)       | `wishlist:v1:*` (share token cache, link verification)                                                                                       |
 | Redis      | promotion-service                | `@repo/redis` (ioredis)       | `promotion:v1:*` (active promotion cache, coupon fast-lookup, rate-limiting)                                                                 |
+| Redis      | tax-service                      | `@repo/redis` (ioredis)       | `tax:v1:*` (rule cache, jurisdiction lookup fast-path)                                                                                       |
 | OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                        |
 | MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                      |
 | MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                     |

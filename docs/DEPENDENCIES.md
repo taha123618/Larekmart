@@ -90,6 +90,12 @@ apps/promotion-service ─────┬─▶ drizzle-orm + pg ─▶ PostgreS
                            ├─▶ @repo/monitoring
                            └─▶ @repo/types
 
+apps/tax-service ───────────┬─▶ drizzle-orm + mysql2 ─▶ MySQL (tax_db)
+                           ├─▶ @repo/kafka
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           ├─▶ @repo/monitoring
+                           └─▶ @repo/types
+
 apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                            ├─▶ @repo/monitoring

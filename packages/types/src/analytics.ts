@@ -7,6 +7,8 @@ export type AnalyticsSummaryType = {
   totalCartsCreated?: number;
   totalCartsUpdated?: number;
   totalCartsExpired?: number;
+  totalTaxCollected?: number;
+  totalTaxCalculations?: number;
   lastEventTime: string;
   isDbConnected: boolean;
 };

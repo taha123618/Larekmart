@@ -21,6 +21,7 @@ import {
   Star,
   Heart,
   Tag,
+  Scale,
 } from "lucide-react";
 import {
   Sidebar,
@@ -255,6 +256,21 @@ const AppSidebar = () => {
                   <Link href="/promotions">
                     <Tag />
                     Campaigns & Coupons
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Taxes & Compliance</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/taxes">
+                    <Scale />
+                    Tax Rules & Jurisdictions
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

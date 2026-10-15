@@ -265,6 +265,118 @@ async function runSchemaTests() {
   assert.equal(GATEWAY_HEADERS.INTERNAL_SECRET, "x-internal-secret");
   console.log("✓ Gateway schemas and header contracts verified");
 
+  // 10. Tax Domain Schemas
+  console.log("10. Testing Tax Domain Schemas...");
+  const {
+    TaxQuoteRequestSchema,
+    TaxCalculationResponseSchema,
+    TaxReturnQuoteRequestSchema,
+    CreateTaxRuleSchema,
+  } = await import("../src/index.js");
+
+  const validTaxQuoteReq = {
+    currency: "USD",
+    destinationAddress: {
+      country: "US",
+      region: "CA",
+      city: "Los Angeles",
+      postalCode: "90001",
+    },
+    lines: [
+      {
+        lineId: "line_1",
+        productId: "prod_123",
+        categoryCode: "clothing",
+        quantity: 2,
+        unitPrice: "50.00",
+        amount: "100.00",
+        discountAmount: "10.00",
+      },
+    ],
+  };
+  const parsedQuoteReq = TaxQuoteRequestSchema.safeParse(validTaxQuoteReq);
+  assert.equal(
+    parsedQuoteReq.success,
+    true,
+    "Valid tax quote request should parse",
+  );
+
+  const validTaxCalcResp = {
+    calculationId: "tax_calc_123",
+    currency: "USD",
+    subtotal: "90.00",
+    taxTotal: "7.43",
+    total: "97.43",
+    lines: [
+      {
+        lineId: "line_1",
+        taxableAmount: "90.00",
+        taxAmount: "7.43",
+        rate: "0.0825",
+        jurisdictionCode: "US-CA",
+        isInclusive: false,
+        breakdown: [
+          {
+            jurisdictionCode: "US-CA",
+            jurisdictionName: "California State Tax",
+            jurisdictionType: "region",
+            rate: "0.0600",
+            taxAmount: "5.40",
+          },
+          {
+            jurisdictionCode: "US-CA-LA",
+            jurisdictionName: "Los Angeles County Tax",
+            jurisdictionType: "municipality",
+            rate: "0.0225",
+            taxAmount: "2.03",
+          },
+        ],
+      },
+    ],
+    ruleVersion: "2026-10",
+    provider: "standard",
+    isExempt: false,
+    calculatedAt: new Date().toISOString(),
+  };
+  const parsedCalcResp =
+    TaxCalculationResponseSchema.safeParse(validTaxCalcResp);
+  assert.equal(
+    parsedCalcResp.success,
+    true,
+    "Valid tax calculation response should parse",
+  );
+
+  const validReturnReq = {
+    originalCalculationId: "tax_calc_123",
+    returnedLines: [
+      {
+        lineId: "line_1",
+        quantity: 1,
+        returnAmount: "45.00",
+      },
+    ],
+  };
+  assert.equal(
+    TaxReturnQuoteRequestSchema.safeParse(validReturnReq).success,
+    true,
+  );
+
+  const validRule = {
+    jurisdictionId: "jur_ca",
+    categoryId: "cat_std",
+    rate: "0.0825",
+    isInclusive: false,
+    priority: 1,
+    effectiveFrom: new Date().toISOString(),
+    version: "2026-10",
+    calculationMethod: "percentage",
+    isActive: true,
+  };
+  assert.equal(CreateTaxRuleSchema.safeParse(validRule).success, true);
+  console.log(
+    "✓ Tax schemas (Quote, CalcResponse, ReturnQuote, Rules) verified",
+  );
+
   console.log("\n=======================================================");
   console.log(" All Domain Schema SQA Test Cases Passed Successfully! ");
   console.log("=======================================================\n");

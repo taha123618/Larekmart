@@ -56,7 +56,8 @@ jobs:
       REVIEW_DATABASE_URL: ${{ secrets.PROD_REVIEW_DATABASE_URL }}
       WISHLIST_DATABASE_URL: ${{ secrets.PROD_WISHLIST_DATABASE_URL }}
       PROMOTION_DATABASE_URL: ${{ secrets.PROD_PROMOTION_DATABASE_URL }}
-      
+      TAX_DATABASE_URL: ${{ secrets.PROD_TAX_DATABASE_URL }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -113,6 +114,10 @@ jobs:
       - name: Execute Non-Destructive Migrations (Promotion Service)
         if: env.PROMOTION_DATABASE_URL != ''
         run: pnpm --filter promotion-service db:migrate
+
+      - name: Execute Non-Destructive Migrations (Tax Service)
+        if: env.TAX_DATABASE_URL != ''
+        run: pnpm --filter tax-service db:migrate
 
   # ════════════════════════════════════════════════════════════════
   # STAGE 4: Zero-Downtime Kubernetes Rolling Update & Verification
@@ -172,12 +177,13 @@ jobs:
               larekmart/review-service=ghcr.io/${{ github.repository_owner }}/larekmart/review-service:${SHA_SHORT} \
               larekmart/wishlist-service=ghcr.io/${{ github.repository_owner }}/larekmart/wishlist-service:${SHA_SHORT} \
               larekmart/promotion-service=ghcr.io/${{ github.repository_owner }}/larekmart/promotion-service:${SHA_SHORT} \
+              larekmart/tax-service=ghcr.io/${{ github.repository_owner }}/larekmart/tax-service:${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:${SHA_SHORT}
 
             echo "Applying Production manifests to namespace larekmart..."
             kubectl apply -k .
 
-            echo "Tracking zero-downtime rolling updates across all 19 workloads..."
+            echo "Tracking zero-downtime rolling updates across all 20 workloads..."
             DEPLOYMENTS=(
               client
               admin
@@ -198,6 +204,7 @@ jobs:
               review-service
               wishlist-service
               promotion-service
+              tax-service
               email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do
@@ -255,6 +262,8 @@ jobs:
             media-service
             review-service
             wishlist-service
+            promotion-service
+            tax-service
             email-service
           )
           for dep in "${DEPLOYMENTS[@]}"; do

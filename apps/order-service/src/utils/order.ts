@@ -25,6 +25,12 @@ export const createOrder = async (order: OrderType) => {
         cartId: (order as any).cartId || null,
         reservationId: (order as any).reservationId || null,
         couponCode: (order as any).couponCode || null,
+        taxCalculationId:
+          (savedOrder as any).taxCalculationId ||
+          (order as any).taxCalculationId ||
+          null,
+        taxAmount:
+          (savedOrder as any).taxAmount ?? (order as any).taxAmount ?? 0,
         email: savedOrder.email,
         amount: savedOrder.amount,
         status: savedOrder.status,

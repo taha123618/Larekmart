@@ -16,6 +16,7 @@ import {
   recordReviewEvent,
   recordWishlistEvent,
   recordPromotionEvent,
+  recordTaxEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
 import type {
@@ -502,6 +503,42 @@ const start = async () => {
           const payload = message.value || message;
           if (payload) {
             await recordPromotionEvent("promotion.budget_exhausted", payload);
+          }
+        },
+      },
+      {
+        topicName: "tax.calculation.completed",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordTaxEvent("tax.calculation.completed", payload);
+          }
+        },
+      },
+      {
+        topicName: "tax.calculation.failed",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordTaxEvent("tax.calculation.failed", payload);
+          }
+        },
+      },
+      {
+        topicName: "tax.calculation.adjusted",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordTaxEvent("tax.calculation.adjusted", payload);
+          }
+        },
+      },
+      {
+        topicName: "tax.rules.updated",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordTaxEvent("tax.rules.updated", payload);
           }
         },
       },
