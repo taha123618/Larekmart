@@ -155,3 +155,77 @@ The test validates:
 - WebSocket upgrade route `/ws` on `notification-service`.
 - CORS preflight headers (`Access-Control-Allow-Origin`).
 - Defensive HTTP security headers (`X-Content-Type-Options`).
+
+---
+
+## 7. Infrastructure YAML & `apiVersion` Architecture Guide
+
+An audit of all 62 YAML files across `infrastructure/*` establishes `apiVersion` consistency across the entire repository.
+
+Here is the exact classification of where `apiVersion` is needed, where it was updated, and where it must **not** be added:
+
+### 1. Where `apiVersion` Was Needed & Updated
+
+In Kubernetes, custom resource versions graduate as operators mature. The following files were updated to the current production API version:
+
+| File | Resource Kind | Previous `apiVersion` | Updated `apiVersion` | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `infrastructure/kubernetes/base/secrets/external-secrets.yaml` | `ExternalSecret` | `external-secrets.io/v1beta1` | `external-secrets.io/v1` | Updated & Verified |
+| `infrastructure/kubernetes/base/secrets/secret-store.yaml` | `SecretStore` | `external-secrets.io/v1beta1` | `external-secrets.io/v1` | Updated & Verified |
+| `infrastructure/kubernetes/base/secrets/secret-store.yaml` | `ClusterSecretStore` | `external-secrets.io/v1beta1` | `external-secrets.io/v1` | Updated & Verified |
+
+### 2. Kubernetes Manifests Specifying Proper `apiVersion`
+
+Every single Kubernetes manifest in `infrastructure/kubernetes/` and GitOps application in `infrastructure/argocd/` specifies the exact production `apiVersion`:
+
+- **Microservice & Frontend Deployments** (19 services): `apiVersion: apps/v1`
+- **Cluster Services, Namespaces, Secrets, ConfigMaps**: `apiVersion: v1`
+- **Ingress & Network Policies**: `apiVersion: networking.k8s.io/v1`
+- **Horizontal Pod Autoscalers (HPAs)**: `apiVersion: autoscaling/v2`
+- **Pod Disruption Budgets (PDBs)**: `apiVersion: policy/v1`
+- **KEDA Autoscaling** (`TriggerAuthentication`, `ScaledObject`): `apiVersion: keda.sh/v1alpha1`
+- **Kustomize Assemblers** (`kustomization.yaml`): `apiVersion: kustomize.config.k8s.io/v1beta1`
+- **Argo CD** (`Application`, `ApplicationSet`, `AppProject`): `apiVersion: argoproj.io/v1alpha1`
+
+### 3. Files Where `apiVersion` Must NOT Be Added (And Why `kubectl` Complained)
+
+When running `kubectl apply -R -f <dir>`, `kubectl` recursively attempts to parse every single `.yaml` / `.yml` file as a Kubernetes API server resource. The following files fail with `[apiVersion not set, kind not set]` if run with `kubectl apply -f` because they are **not** Kubernetes manifests:
+
+#### A. Helm Values Files
+- `infrastructure/kubernetes/ingress-controller/ingress-nginx-values.yaml`
+- `infrastructure/argocd/values.yaml`
+- **Why**: These are parameter files for the `helm upgrade --install` command. Helm expects a plain key-value dictionary (e.g. `controller.replicaCount: 2`). Adding `apiVersion` or `kind` breaks Helm chart parameter parsing.
+- **How to deploy**:
+  - Local Minikube: `minikube addons enable ingress`
+  - Cloud / Staging: `helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -f infrastructure/kubernetes/ingress-controller/ingress-nginx-values.yaml`
+
+#### B. Observability Daemon Configurations
+- `infrastructure/observability/alertmanager/alertmanager.yml` (Alertmanager configuration)
+- `infrastructure/observability/prometheus/prometheus.yml` (Prometheus scraper configuration)
+- `infrastructure/observability/prometheus/rules/alerts.yml` (Prometheus alert rules)
+- `infrastructure/observability/loki/loki.yml` (Loki log storage configuration)
+- `infrastructure/observability/promtail/promtail.yml` (Promtail log collector configuration)
+- `infrastructure/observability/grafana/provisioning/*/*.yml` (Grafana provider definitions)
+- **Why**: These are mounted directly by the container engines in `docker-compose.observability.yml`. Adding `apiVersion: ...` causes Prometheus, Loki, and Alertmanager binaries to crash on startup with YAML unmarshaling errors.
+- **How to deploy**:
+  - Locally: `docker compose -f docker-compose.observability.yml up -d`
+  - On Kubernetes: Via `helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring`
+
+#### C. Ansible Playbooks & Roles
+- `infrastructure/ansible/**/*.yml` (Playbooks, task lists, inventories)
+- **Why**: These are executed by the Ansible automation engine (`ansible-playbook`), not Kubernetes.
+
+---
+
+### Summary of Correct Deployment Commands
+
+| Target Component | Correct Command (Never run `kubectl apply -R -f` across mixed directories) |
+| :--- | :--- |
+| **Larekmart Workloads (Local/Dev)** | `kubectl apply -k infrastructure/kubernetes/overlays/development` |
+| **Larekmart Workloads (Staging)** | `kubectl apply -k infrastructure/kubernetes/overlays/staging` |
+| **Larekmart Workloads (Production)** | `kubectl apply -k infrastructure/kubernetes/overlays/production` |
+| **Ingress Controller (Minikube)** | `minikube addons enable ingress` |
+| **Ingress Controller (Helm)** | `helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -f infrastructure/kubernetes/ingress-controller/ingress-nginx-values.yaml -n ingress-nginx --create-namespace` |
+| **Observability (Docker)** | `docker compose -f docker-compose.observability.yml up -d` |
+| **Observability (Kubernetes)** | `helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --create-namespace` |
+
