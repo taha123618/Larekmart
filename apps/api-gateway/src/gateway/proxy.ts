@@ -74,20 +74,24 @@ export async function registerProxyRoutes(
             [GATEWAY_HEADERS.INTERNAL_SECRET]: env.INTERNAL_SERVICE_SECRET,
           };
 
+          // Explicitly strip untrusted client-supplied identity & internal headers
+          delete rewritten[GATEWAY_HEADERS.USER_ID];
+          delete rewritten[GATEWAY_HEADERS.USER_ROLE];
+          delete rewritten["x-user-id"];
+          delete rewritten["x-user-role"];
+          delete rewritten["x-internal-secret"];
+          delete rewritten["x-user-permissions"];
+
           // Forward W3C traceparent if present
           if (originalReq.headers["traceparent"]) {
             rewritten["traceparent"] = originalReq.headers["traceparent"];
           }
 
-          if (originalReq.headers[GATEWAY_HEADERS.USER_ID]) {
-            rewritten[GATEWAY_HEADERS.USER_ID] = originalReq.headers[
-              GATEWAY_HEADERS.USER_ID
-            ] as string;
-          }
-          if (originalReq.headers[GATEWAY_HEADERS.USER_ROLE]) {
-            rewritten[GATEWAY_HEADERS.USER_ROLE] = originalReq.headers[
-              GATEWAY_HEADERS.USER_ROLE
-            ] as string;
+          // Inject user identity ONLY if authenticated by verified Clerk claims
+          if (originalReq.authUserId) {
+            rewritten[GATEWAY_HEADERS.USER_ID] = originalReq.authUserId;
+            rewritten[GATEWAY_HEADERS.USER_ROLE] =
+              originalReq.userRole || "user";
           }
 
           return rewritten;

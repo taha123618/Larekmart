@@ -97,11 +97,12 @@ async function runTests() {
       `Expected unauthenticated ${ep.method} ${ep.url} to return 401`,
     );
 
-    // Authenticated as standard user (non-admin)
+    // Authenticated as standard user via trusted gateway headers (non-admin)
     const userRes = await app.inject({
       method: ep.method,
       url: ep.url,
       headers: {
+        "x-internal-secret": "dev-shared-internal-secret-larekmart",
         "x-user-id": "user_customer_123",
         "x-user-role": "user",
       },
@@ -112,8 +113,26 @@ async function runTests() {
       403,
       `Expected customer ${ep.method} ${ep.url} to be forbidden with 403`,
     );
+
+    // Forged gateway header without valid internal secret must be rejected
+    const forgedRes = await app.inject({
+      method: ep.method,
+      url: ep.url,
+      headers: {
+        "x-user-id": "user_customer_123",
+        "x-user-role": "admin",
+      },
+      payload: { action: "APPROVE", reason: "Audit check" },
+    });
+    assert.equal(
+      forgedRes.statusCode,
+      401,
+      `Expected forged header ${ep.method} ${ep.url} to be rejected with 401`,
+    );
   }
-  console.log("✓ Admin endpoints strictly require admin role");
+  console.log(
+    "✓ Admin endpoints strictly require admin role and reject forged gateway headers",
+  );
 
   // ────────────────────────────────────────────────────────────
   // Test 4: Zod Validation Contracts

@@ -40,15 +40,13 @@ export const homeAggregationRoutes: FastifyPluginAsync = async (fastify) => {
       "Content-Type": "application/json",
     };
 
-    if (request.headers[GATEWAY_HEADERS.USER_ID]) {
-      outboundHeaders[GATEWAY_HEADERS.USER_ID] = request.headers[
-        GATEWAY_HEADERS.USER_ID
-      ] as string;
+    const userId = request.authUserId;
+    if (userId) {
+      outboundHeaders[GATEWAY_HEADERS.USER_ID] = userId;
+      if (request.userRole) {
+        outboundHeaders[GATEWAY_HEADERS.USER_ROLE] = request.userRole;
+      }
     }
-
-    const userId = request.headers[GATEWAY_HEADERS.USER_ID] as
-      | string
-      | undefined;
 
     // Concurrent read aggregation with 2.5s bounded timeout to prevent fan-out latency
     const [featuredProductsResult, categoriesResult, recommendationsResult] =

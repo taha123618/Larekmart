@@ -9,6 +9,7 @@ import {
   CreateShareTokenSchema,
   BulkRemoveItemsSchema,
   WishlistQuerySchema,
+  GATEWAY_HEADERS,
 } from "@repo/types";
 
 async function runTests() {
@@ -89,8 +90,21 @@ async function runTests() {
       `Expected ${ep.method} ${ep.url} to reject unauthenticated request with 401`,
     );
   }
+  // Forged gateway header without valid internal secret must be rejected
+  const forgedRes = await app.inject({
+    method: "GET",
+    url: "/api/v1/me/wishlists",
+    headers: {
+      "x-user-id": "hacker-user-id",
+    },
+  });
+  assert.equal(
+    forgedRes.statusCode,
+    401,
+    "Expected forged x-user-id without internal secret to be rejected with 401",
+  );
   console.log(
-    "✓ All customer-authenticated endpoints strictly reject unauthenticated requests",
+    "✓ All customer-authenticated endpoints strictly reject unauthenticated requests and forged headers",
   );
 
   // ────────────────────────────────────────────────────────────
@@ -141,13 +155,15 @@ async function runTests() {
   // ────────────────────────────────────────────────────────────
   console.log("\n[Test 4] Default Wishlist Auto-Creation");
   const testUserId = `test_usr_${Date.now()}`;
+  const authHeaders = {
+    [GATEWAY_HEADERS.INTERNAL_SECRET]: "dev-shared-internal-secret-larekmart",
+    [GATEWAY_HEADERS.USER_ID]: testUserId,
+  };
 
   const listRes = await app.inject({
     method: "GET",
     url: "/api/v1/me/wishlists",
-    headers: {
-      "x-user-id": testUserId,
-    },
+    headers: authHeaders,
   });
 
   assert.equal(listRes.statusCode, 200);
@@ -168,9 +184,7 @@ async function runTests() {
   const addItemRes = await app.inject({
     method: "POST",
     url: `/api/v1/me/wishlists/${defaultWishlist.id}/items`,
-    headers: {
-      "x-user-id": testUserId,
-    },
+    headers: authHeaders,
     payload: {
       productId: "prod_macbook_pro_16",
       addedPrice: 2499.0,
@@ -190,9 +204,7 @@ async function runTests() {
   const dupItemRes = await app.inject({
     method: "POST",
     url: `/api/v1/me/wishlists/${defaultWishlist.id}/items`,
-    headers: {
-      "x-user-id": testUserId,
-    },
+    headers: authHeaders,
     payload: {
       productId: "prod_macbook_pro_16",
       addedPrice: 2499.0,
@@ -212,9 +224,7 @@ async function runTests() {
   const createNamedRes = await app.inject({
     method: "POST",
     url: "/api/v1/me/wishlists",
-    headers: {
-      "x-user-id": testUserId,
-    },
+    headers: authHeaders,
     payload: {
       name: "Office Setup Ideas",
       visibility: "PRIVATE",
@@ -229,9 +239,7 @@ async function runTests() {
   const moveRes = await app.inject({
     method: "POST",
     url: `/api/v1/me/wishlists/${defaultWishlist.id}/items/move`,
-    headers: {
-      "x-user-id": testUserId,
-    },
+    headers: authHeaders,
     payload: {
       itemId: createdItemId,
       targetWishlistId: namedWishlist.id,
@@ -278,9 +286,7 @@ async function runTests() {
   const mergeRes = await app.inject({
     method: "POST",
     url: "/api/v1/me/wishlists/merge",
-    headers: {
-      "x-user-id": testUserId,
-    },
+    headers: authHeaders,
     payload: {
       guestId,
       conflictStrategy: "KEEP_EXISTING",
@@ -297,9 +303,7 @@ async function runTests() {
   const shareRes = await app.inject({
     method: "POST",
     url: `/api/v1/me/wishlists/${namedWishlist.id}/share`,
-    headers: {
-      "x-user-id": testUserId,
-    },
+    headers: authHeaders,
     payload: {
       permission: "VIEW",
       expiresInDays: 7,
@@ -341,9 +345,7 @@ async function runTests() {
   const bulkDelRes = await app.inject({
     method: "DELETE",
     url: `/api/v1/me/wishlists/${namedWishlist.id}/items`,
-    headers: {
-      "x-user-id": testUserId,
-    },
+    headers: authHeaders,
     payload: {
       itemIds: [createdItemId],
     },

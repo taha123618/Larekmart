@@ -1,6 +1,8 @@
+import crypto from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { getAuth } from "@clerk/fastify";
 import { type CustomJwtSessionClaims, GATEWAY_HEADERS } from "@repo/types";
+import { env } from "../config/env.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -11,11 +13,24 @@ declare module "fastify" {
   }
 }
 
+function safeTimingCompare(a: string, b: string): boolean {
+  try {
+    const hashA = crypto.createHash("sha256").update(a).digest();
+    const hashB = crypto.createHash("sha256").update(b).digest();
+    return crypto.timingSafeEqual(hashA, hashB);
+  } catch {
+    return false;
+  }
+}
+
 export const shouldBeUser = async (
   request: FastifyRequest,
   reply: FastifyReply,
 ) => {
-  // 1. Gateway header propagation (from API gateway or test harnesses)
+  // 1. Gateway header propagation (only trusted if valid internal secret matches)
+  const internalSecret = request.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
   const gatewayUserId = request.headers?.[GATEWAY_HEADERS.USER_ID] as
     | string
     | undefined;
@@ -23,7 +38,12 @@ export const shouldBeUser = async (
     | string
     | undefined;
 
-  if (gatewayUserId) {
+  if (
+    internalSecret &&
+    env.INTERNAL_SERVICE_SECRET &&
+    safeTimingCompare(internalSecret, env.INTERNAL_SERVICE_SECRET) &&
+    gatewayUserId
+  ) {
     request.userId = gatewayUserId;
     request.userRole = gatewayUserRole || "user";
     request.userName =
@@ -52,11 +72,20 @@ export const optionalUserOrGuest = async (
   request: FastifyRequest,
   reply: FastifyReply,
 ) => {
-  // 1. Gateway or direct user resolution
+  // 1. Gateway header propagation (only trusted if valid internal secret matches)
+  const internalSecret = request.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
   const gatewayUserId = request.headers?.[GATEWAY_HEADERS.USER_ID] as
     | string
     | undefined;
-  if (gatewayUserId) {
+
+  if (
+    internalSecret &&
+    env.INTERNAL_SERVICE_SECRET &&
+    safeTimingCompare(internalSecret, env.INTERNAL_SERVICE_SECRET) &&
+    gatewayUserId
+  ) {
     request.userId = gatewayUserId;
     request.userRole =
       (request.headers?.[GATEWAY_HEADERS.USER_ROLE] as string) || "user";
@@ -96,6 +125,10 @@ export const shouldBeAdmin = async (
   request: FastifyRequest,
   reply: FastifyReply,
 ) => {
+  // 1. Gateway header propagation (only trusted if valid internal secret matches)
+  const internalSecret = request.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
   const gatewayUserId = request.headers?.[GATEWAY_HEADERS.USER_ID] as
     | string
     | undefined;
@@ -103,7 +136,12 @@ export const shouldBeAdmin = async (
     | string
     | undefined;
 
-  if (gatewayUserId) {
+  if (
+    internalSecret &&
+    env.INTERNAL_SERVICE_SECRET &&
+    safeTimingCompare(internalSecret, env.INTERNAL_SERVICE_SECRET) &&
+    gatewayUserId
+  ) {
     if (gatewayUserRole !== "admin") {
       return reply
         .status(403)
