@@ -264,7 +264,10 @@ export async function seedPromotionData(): Promise<void> {
   console.log("Promotion seeding completed successfully!");
 }
 
-if (process.argv[1]?.endsWith("seed.ts") || process.argv[1]?.endsWith("seed.js")) {
+if (
+  process.argv[1]?.endsWith("seed.ts") ||
+  process.argv[1]?.endsWith("seed.js")
+) {
   seedPromotionData()
     .then(async () => {
       await pool.end();

@@ -438,6 +438,23 @@ export class PromotionService {
     return await promotionRepository.getOverview();
   }
 
+  async getAllPromotions(params: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    type?: string;
+    search?: string;
+  }): Promise<{
+    items: Promotion[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    recordPromotionOperation("admin_list_promotions");
+    return await promotionRepository.findWithFilters(params);
+  }
+
   private async invalidateActiveCache(): Promise<void> {
     try {
       await cacheDel(redis.client, ACTIVE_PROMOTIONS_CACHE_KEY);

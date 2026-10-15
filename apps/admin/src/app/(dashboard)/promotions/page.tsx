@@ -7,6 +7,7 @@ import {
   fetchAdminPromotionOverview,
   fetchAdminPromotions,
   createAdminPromotion,
+  activateAdminPromotion,
   deactivateAdminPromotion,
   createAdminCoupon,
   type AdminPromotionsResponse,
@@ -151,6 +152,20 @@ export default function PromotionsAdminDashboardPage() {
     onSuccess: () => {
       setIsCreateOpen(false);
       resetPromoForm();
+      queryClient.invalidateQueries({ queryKey: ["admin-promotions-list"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-promotions-overview"],
+      });
+    },
+  });
+
+  const activatePromoMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      return activateAdminPromotion(token, id);
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-promotions-list"] });
       queryClient.invalidateQueries({
         queryKey: ["admin-promotions-overview"],
@@ -805,7 +820,7 @@ export default function PromotionsAdminDashboardPage() {
                               Add Code
                             </Button>
 
-                            {row.status === "ACTIVE" && (
+                            {row.status === "ACTIVE" ? (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -816,6 +831,18 @@ export default function PromotionsAdminDashboardPage() {
                                 disabled={deactivatePromoMutation.isPending}
                               >
                                 Deactivate
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                                onClick={() =>
+                                  activatePromoMutation.mutate(row.id)
+                                }
+                                disabled={activatePromoMutation.isPending}
+                              >
+                                Activate
                               </Button>
                             )}
                           </div>

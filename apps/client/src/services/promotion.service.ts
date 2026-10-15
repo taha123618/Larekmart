@@ -37,17 +37,22 @@ function getHeaders(authToken?: string): Record<string, string> {
  * Fetch all currently active campaigns and promotions.
  */
 export async function fetchActivePromotions(): Promise<Promotion[]> {
-  const res = await fetch(`${BASE}/active`, {
-    headers: getHeaders(),
-    next: { revalidate: 60 },
-  });
+  try {
+    const res = await fetch(`${BASE}/active`, {
+      headers: getHeaders(),
+      next: { revalidate: 60 },
+    });
 
-  if (!res.ok) {
-    throw new Error(`Failed to fetch active promotions (HTTP ${res.status})`);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch active promotions (HTTP ${res.status})`);
+    }
+
+    const data = await res.json();
+    return data.data ?? data.promotions ?? [];
+  } catch (err) {
+    console.warn("fetchActivePromotions error:", err);
+    return [];
   }
-
-  const data = await res.json();
-  return data.promotions ?? [];
 }
 
 /**
@@ -72,7 +77,8 @@ export async function getPromotionQuote(
     );
   }
 
-  return res.json();
+  const data = await res.json();
+  return (data.data || data) as PromotionQuoteResponse;
 }
 
 /**
@@ -82,7 +88,7 @@ export async function validateCouponCode(
   input: ValidateCouponInput,
   authToken?: string,
 ): Promise<ValidateCouponResponse> {
-  const res = await fetch(`${BASE}/validate-coupon`, {
+  const res = await fetch(`${BASE}/validate`, {
     method: "POST",
     headers: getHeaders(authToken),
     body: JSON.stringify(input),
@@ -121,7 +127,7 @@ export async function reservePromotion(
   }
 
   const data = await res.json();
-  return data.reservation;
+  return data.data || data.reservation;
 }
 
 /**

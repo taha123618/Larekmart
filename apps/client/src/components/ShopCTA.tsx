@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -13,14 +13,48 @@ import {
   Zap,
   ShoppingBag,
 } from "lucide-react";
+import { fetchActivePromotions } from "@/services/promotion.service";
 
 export default function ShopCTA() {
   const [copied, setCopied] = useState(false);
-  const couponCode = "LAREK20";
+  const [activePromo, setActivePromo] = useState<{
+    code: string;
+    label: string;
+  }>({
+    code: "WELCOME10",
+    label: "Instant 10% Voucher",
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchActivePromotions()
+      .then((promos) => {
+        if (!isMounted || !promos || promos.length === 0) return;
+        const withCoupon = promos.find(
+          (p) => p.coupons && p.coupons.length > 0 && p.status === "ACTIVE",
+        );
+        if (withCoupon && withCoupon.coupons?.[0]) {
+          const coupon = withCoupon.coupons[0];
+          const discountText =
+            withCoupon.type === "PERCENTAGE"
+              ? `${withCoupon.discountValue}% OFF`
+              : `$${withCoupon.discountValue} OFF`;
+          setActivePromo({
+            code: coupon.code,
+            label: `Instant ${discountText} Voucher`,
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleCopy = () => {
     if (typeof window !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(couponCode);
+      navigator.clipboard.writeText(activePromo.code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     }
@@ -65,10 +99,10 @@ export default function ShopCTA() {
               </div>
               <div>
                 <div className="text-[10px] text-slate-300 uppercase tracking-wider font-semibold">
-                  Instant $20 Voucher
+                  {activePromo.label}
                 </div>
                 <div className="text-sm font-mono font-black text-amber-300 tracking-wider">
-                  {couponCode}
+                  {activePromo.code}
                 </div>
               </div>
             </div>

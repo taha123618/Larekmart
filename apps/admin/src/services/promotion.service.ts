@@ -65,7 +65,8 @@ export async function fetchAdminPromotionOverview(
     );
   }
 
-  return res.json();
+  const data = await res.json();
+  return (data.data || data) as PromotionOverviewResponse;
 }
 
 /**
@@ -98,7 +99,8 @@ export async function fetchAdminPromotions(
     );
   }
 
-  return res.json();
+  const data = await res.json();
+  return (data.data || data) as AdminPromotionsResponse;
 }
 
 /**
@@ -125,7 +127,7 @@ export async function fetchAdminPromotionDetails(
   }
 
   const data = await res.json();
-  return data.promotion;
+  return (data.data || data.promotion || data) as Promotion;
 }
 
 /**
@@ -153,7 +155,7 @@ export async function createAdminPromotion(
   }
 
   const data = await res.json();
-  return data.promotion;
+  return (data.data || data.promotion || data) as Promotion;
 }
 
 /**
@@ -182,7 +184,34 @@ export async function updateAdminPromotion(
   }
 
   const data = await res.json();
-  return data.promotion;
+  return (data.data || data.promotion || data) as Promotion;
+}
+
+/**
+ * Activate a promotion campaign immediately.
+ */
+export async function activateAdminPromotion(
+  authToken: string,
+  id: string,
+): Promise<Promotion> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}/activate`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || `Failed to activate promotion (HTTP ${res.status})`,
+    );
+  }
+
+  const data = await res.json();
+  return (data.data || data.promotion || data) as Promotion;
 }
 
 /**
@@ -210,7 +239,7 @@ export async function deactivateAdminPromotion(
   }
 
   const data = await res.json();
-  return data.promotion;
+  return (data.data || data.promotion || data) as Promotion;
 }
 
 /**
@@ -242,7 +271,7 @@ export async function createAdminCoupon(
   }
 
   const data = await res.json();
-  return data.coupon;
+  return (data.data || data.coupon || data) as CouponCode;
 }
 
 /**
@@ -275,5 +304,15 @@ export async function fetchAdminRedemptions(
     );
   }
 
-  return res.json();
+  const data = await res.json();
+  if (data.data && data.pagination) {
+    return {
+      items: data.data,
+      total: data.pagination.total,
+      page: Math.floor(data.pagination.offset / data.pagination.limit) + 1,
+      limit: data.pagination.limit,
+      totalPages: Math.ceil(data.pagination.total / data.pagination.limit) || 1,
+    };
+  }
+  return data;
 }

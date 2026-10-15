@@ -49,6 +49,8 @@ export type OrderCreatedType = {
   orderId?: string;
   userId?: string | null;
   cartId?: string | null;
+  reservationId?: string | null;
+  couponCode?: string | null;
   email: string;
   amount: number;
   status: "success" | "failed";
@@ -85,6 +87,8 @@ export const CreateCodOrderSchema = z.object({
   amount: z.number().int().positive(),
   discountTotal: z.number().int().nonnegative().default(0),
   taxTotal: z.number().int().nonnegative().default(0),
+  reservationId: z.string().optional(),
+  couponCode: z.string().optional(),
   carrier: z.string().optional(),
   serviceType: z.string().optional(),
   shippingRateAmount: z.number().nonnegative().optional(),

@@ -179,6 +179,8 @@ export const orderRoute = async (fastify: FastifyInstance) => {
         value: {
           orderId: saved._id.toString(),
           userId: saved.userId,
+          reservationId: body.reservationId || null,
+          couponCode: body.couponCode || null,
           email: saved.email,
           amount: saved.amount,
           status: saved.status,

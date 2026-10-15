@@ -192,6 +192,91 @@ promotionRoutes.post("/promotions/reservations/:id/release", async (c) => {
 // ==============================================================================
 
 /**
+ * GET /api/v1/admin/promotions
+ * List all promotions with pagination, status, type, and search filters.
+ */
+promotionRoutes.get("/admin/promotions", shouldBeAdmin, async (c) => {
+  const page = Math.max(1, Number(c.req.query("page") ?? 1));
+  const limit = Math.min(100, Math.max(1, Number(c.req.query("limit") ?? 20)));
+  const status = c.req.query("status");
+  const type = c.req.query("type");
+  const search = c.req.query("search");
+
+  const result = await promotionService.getAllPromotions({
+    page,
+    limit,
+    status,
+    type,
+    search,
+  });
+
+  return c.json({
+    data: result,
+    items: result.items,
+    total: result.total,
+    page: result.page,
+    limit: result.limit,
+    totalPages: result.totalPages,
+  });
+});
+
+/**
+ * GET /api/v1/admin/promotions/overview
+ * Overview metrics for promotion analytics.
+ */
+promotionRoutes.get("/admin/promotions/overview", shouldBeAdmin, async (c) => {
+  const overview = await promotionService.getOverview();
+  return c.json({ data: overview });
+});
+
+/**
+ * GET /api/v1/admin/promotions/:promotionId
+ * Get single promotion details for admin.
+ */
+promotionRoutes.get(
+  "/admin/promotions/:promotionId",
+  shouldBeAdmin,
+  async (c) => {
+    const promotionId = c.req.param("promotionId");
+    const promo = await promotionService.getPromotionById(promotionId);
+    if (!promo) {
+      return c.json({ message: "Promotion not found" }, 404);
+    }
+    return c.json({ data: promo, promotion: promo });
+  },
+);
+
+/**
+ * POST /api/v1/admin/promotions/:promotionId/coupons
+ * Create a new coupon code under a specific promotion.
+ */
+promotionRoutes.post(
+  "/admin/promotions/:promotionId/coupons",
+  shouldBeAdmin,
+  async (c) => {
+    const promotionId = c.req.param("promotionId");
+    const body = await c.req.json().catch(() => ({}));
+    const parseResult = CreateCouponSchema.safeParse({ ...body, promotionId });
+    if (!parseResult.success) {
+      return c.json(
+        { message: "Validation error", errors: parseResult.error.format() },
+        400,
+      );
+    }
+
+    try {
+      const coupon = await promotionService.createCoupon(parseResult.data);
+      return c.json({ data: coupon, coupon }, 201);
+    } catch (error: any) {
+      return c.json(
+        { message: error.message || "Failed to create coupon" },
+        400,
+      );
+    }
+  },
+);
+
+/**
  * POST /api/v1/admin/promotions
  * Create a new campaign promotion.
  */
@@ -354,12 +439,3 @@ promotionRoutes.get(
     });
   },
 );
-
-/**
- * GET /api/v1/admin/promotions/overview
- * Overview metrics for promotion analytics.
- */
-promotionRoutes.get("/admin/promotions/overview", shouldBeAdmin, async (c) => {
-  const overview = await promotionService.getOverview();
-  return c.json({ data: overview });
-});

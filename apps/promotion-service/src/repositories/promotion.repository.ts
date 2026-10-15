@@ -244,6 +244,106 @@ export class PromotionRepository {
   }
 
   /**
+   * Find promotions with pagination, search, status, and type filtering for admin.
+   */
+  async findWithFilters(params: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    type?: string;
+    search?: string;
+  }): Promise<{
+    items: Promotion[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const page = Math.max(1, Number(params.page ?? 1));
+    const limit = Math.min(100, Math.max(1, Number(params.limit ?? 20)));
+    const offset = (page - 1) * limit;
+
+    const conditions = [];
+
+    if (params.status && params.status !== "ALL") {
+      conditions.push(eq(promotions.status, params.status));
+    }
+    if (params.type && params.type !== "ALL") {
+      conditions.push(eq(promotions.type, params.type));
+    }
+    if (params.search && params.search.trim()) {
+      const term = `%${params.search.trim()}%`;
+      conditions.push(
+        or(
+          sql`${promotions.name} ILIKE ${term}`,
+          sql`${promotions.description} ILIKE ${term}`,
+        ),
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(promotions)
+      .where(whereClause);
+
+    const total = countResult?.count ?? 0;
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    const promoRows = await db
+      .select()
+      .from(promotions)
+      .where(whereClause)
+      .orderBy(desc(promotions.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    if (promoRows.length === 0) {
+      return { items: [], total, page, limit, totalPages };
+    }
+
+    const promoIds = promoRows.map((p) => p.id);
+
+    const [allRules, allTargets, allCoupons, allBudgets] = await Promise.all([
+      db
+        .select()
+        .from(promotionRules)
+        .where(sql`${promotionRules.promotionId} IN ${promoIds}`),
+      db
+        .select()
+        .from(promotionTargets)
+        .where(sql`${promotionTargets.promotionId} IN ${promoIds}`),
+      db
+        .select()
+        .from(couponCodes)
+        .where(sql`${couponCodes.promotionId} IN ${promoIds}`),
+      db
+        .select()
+        .from(promotionBudgets)
+        .where(sql`${promotionBudgets.promotionId} IN ${promoIds}`),
+    ]);
+
+    const items: Promotion[] = promoRows.map((p) => ({
+      ...this.mapPromotion(p),
+      rules: allRules.find((r) => r.promotionId === p.id)
+        ? this.mapRule(allRules.find((r) => r.promotionId === p.id)!)
+        : undefined,
+      targets: allTargets
+        .filter((t) => t.promotionId === p.id)
+        .map((t) => this.mapTarget(t)),
+      coupons: allCoupons
+        .filter((c) => c.promotionId === p.id)
+        .map((c) => this.mapCoupon(c)),
+      budget: allBudgets.find((b) => b.promotionId === p.id)
+        ? this.mapBudget(allBudgets.find((b) => b.promotionId === p.id)!)
+        : null,
+    }));
+
+    return { items, total, page, limit, totalPages };
+  }
+
+  /**
    * Update promotion properties, rules, and log changes.
    */
   async update(
