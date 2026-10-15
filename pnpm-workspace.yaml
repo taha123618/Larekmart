@@ -1,3 +1,20 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+overrides:
+  proxy-addr: "^2.0.8"
+  fast-xml-parser: "^5.11.2"
+  drizzle-orm: "^0.45.4"
+  effect: "3.22.2"
+  "@prisma/config>effect": "3.22.2"
+  deepmerge-ts: "8.0.2"
+  "@prisma/config>deepmerge-ts": "8.0.2"
+  nodemailer: "^10.1.1"
+  uuid: "^11.1.1"
+  postcss: "8.5.30"
+  "next>postcss": "8.5.30"
+  esbuild: "0.25.0"
+  "@esbuild-kit/core-utils>esbuild": "0.25.0"
+  source-map-js: "^1.2.2"
+  sharp: "^0.35.5"
