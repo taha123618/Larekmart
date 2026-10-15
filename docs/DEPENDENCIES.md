@@ -84,6 +84,12 @@ apps/wishlist-service ──────┬─▶ drizzle-orm + pg ─▶ Postgr
                            ├─▶ @repo/monitoring
                            └─▶ @repo/types
 
+apps/promotion-service ─────┬─▶ drizzle-orm + pg ─▶ PostgreSQL (larekmart_promotion_db)
+                           ├─▶ @repo/kafka
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           ├─▶ @repo/monitoring
+                           └─▶ @repo/types
+
 apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                            ├─▶ @repo/monitoring

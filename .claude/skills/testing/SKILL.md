@@ -23,6 +23,7 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 | **`media-service`**          | Node.js Test Runner / `tsx` | Six offline suites via `tests/index.test.ts`: unit validation, storage contract, HTTP API, Kafka messaging, workers, integration schema, plus the full lifecycle suite (`tests/media-service.test.ts`) — object keys, magic bytes, authorization, URL strategy, worker claim SQL, index strategy, cleanup sweeps |
 | **`review-service`**         | Node.js Test Runner / `tsx` | Five offline suites via `tests/index.test.ts`: domain unit validation, anti-abuse voting/reporting, Fastify API routes, Kafka messaging publishers & consumers, database schema & constraints (`tests/review-service.test.ts`)                                                                                   |
 | **`wishlist-service`**       | Node.js Test Runner / `tsx` | Nine suites via `tests/wishlist-service.test.ts`: health probes, auth guards, Zod contracts, default wishlist creation, item deduplication, named wishlists, item move, guest migration, and unguessable token shares                                                                                            |
+| **`promotion-service`**      | Node.js Test Runner / `tsx` | Eleven suites via `tests/promotion-service.test.ts`: health probes, auth guards, campaign lifecycle, coupon validation, evaluation quotes, budget tracking, ACID reservations, commit/release, worker expiry, and event emission                                                                                 |
 | **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle, recovery (`internal/*`)                                                                                                                                                                                                                      |
 | **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                  |
 | **`@repo/redis`**            | Integration Verifier        | Key namespacing, cache TTLs, rate limiter, degraded resilience (`src/scripts/verify-redis.ts`)                                                                                                                                                                                                                   |
@@ -44,10 +45,11 @@ pnpm --filter shipping-service test
 pnpm --filter media-service test
 pnpm --filter review-service test
 pnpm --filter wishlist-service test
+pnpm --filter promotion-service test
 pnpm --filter notification-service test
 pnpm --filter recommendation-service test
 
-# 3. Static type-check across all 31 workspaces
+# 3. Static type-check across all 33 workspaces
 pnpm check-types
 
 # 4. Monorepo code style and formatting checks
@@ -89,7 +91,7 @@ When adding or updating tests, adhere to these quality engineering principles:
 Before submitting code changes:
 
 - [ ] `pnpm test` passes across all target workspaces.
-- [ ] `pnpm check-types` reports 0 TypeScript errors across 31 workspaces.
+- [ ] `pnpm check-types` reports 0 TypeScript errors across 33 workspaces.
 - [ ] Test files are strict-mode clean: tsconfig `include` covers `src/` only, so
       `pnpm check-types` does not typecheck tests — run
       `npx tsc --noEmit --strict tests/<file>.ts` directly when hardening a test file,

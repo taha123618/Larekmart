@@ -115,6 +115,9 @@ jobs:
           - service: wishlist-service
             context: .
             dockerfile: apps/wishlist-service/Dockerfile
+          - service: promotion-service
+            context: .
+            dockerfile: apps/promotion-service/Dockerfile
           - service: email-service
             context: .
             dockerfile: apps/email-service/Dockerfile

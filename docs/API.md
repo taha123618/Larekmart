@@ -4,21 +4,22 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ## Service Ports & Protocols
 
-| Service                  | Port   | Framework              | Auth Guard                         | Owner                                                  |
-| ------------------------ | ------ | ---------------------- | ---------------------------------- | ------------------------------------------------------ |
-| `product-service`        | `8000` | Express 5              | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog                             |
-| `order-service`          | `8001` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics                           |
-| `payment-service`        | `8002` | Hono 4                 | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks                             |
-| `auth-service`           | `8003` | Express 5              | `shouldBeAdmin`                    | Admin User Management Proxy                            |
-| `analytic-service`       | `8004` | Express 5              | `shouldBeAdmin`                    | Analytics & KPI Aggregations                           |
-| `notification-service`   | `8005` | Go / Chi               | User token / public probes         | Notifications, WebSockets & delivery                   |
-| `search-service`         | `8006` | Fastify 5              | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete                |
-| `inventory-service`      | `8007` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory              |
-| `recommendation-service` | `8008` | Python 3.12+ / FastAPI | Public / User telemetry            | AI recommendations, embeddings & interactions          |
-| `media-service`          | `8013` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Media uploads, storage, variants & lifecycle           |
-| `review-service`         | `8014` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Customer reviews, ratings, verified gating, moderation |
-| `wishlist-service`       | `8015` | Fastify 5              | `shouldBeUser` / Public link token | Wishlists, saved products, guest merge, price-drop     |
-| `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                           |
+| Service                  | Port   | Framework              | Auth Guard                         | Owner                                                                     |
+| ------------------------ | ------ | ---------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| `product-service`        | `8000` | Express 5              | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog                                                |
+| `order-service`          | `8001` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics                                              |
+| `payment-service`        | `8002` | Hono 4                 | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks                                                |
+| `auth-service`           | `8003` | Express 5              | `shouldBeAdmin`                    | Admin User Management Proxy                                               |
+| `analytic-service`       | `8004` | Express 5              | `shouldBeAdmin`                    | Analytics & KPI Aggregations                                              |
+| `notification-service`   | `8005` | Go / Chi               | User token / public probes         | Notifications, WebSockets & delivery                                      |
+| `search-service`         | `8006` | Fastify 5              | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete                                   |
+| `inventory-service`      | `8007` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory                                 |
+| `recommendation-service` | `8008` | Python 3.12+ / FastAPI | Public / User telemetry            | AI recommendations, embeddings & interactions                             |
+| `media-service`          | `8013` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Media uploads, storage, variants & lifecycle                              |
+| `review-service`         | `8014` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Customer reviews, ratings, verified gating, moderation                    |
+| `wishlist-service`       | `8015` | Fastify 5              | `shouldBeUser` / Public link token | Wishlists, saved products, guest merge, price-drop                        |
+| `promotion-service`      | `8016` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Campaigns, coupons, discount eligibility, budgets & checkout reservations |
+| `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                                              |
 
 ---
 
@@ -776,3 +777,101 @@ only a best-effort availability cache.
 
 - **Auth**: Public / Scraper
 - **Response**: Liveness probe, readiness probe (verifies PostgreSQL `larekmart_wishlist_db` and Redis connectivity), and Prometheus metrics exposition.
+
+---
+
+## 13. Promotion Service (`:8016`)
+
+### `GET /api/v1/promotions/active`
+
+- **Auth**: Public / Optional User or Guest
+- **Query Params**: `type` (`CAMPAIGN` | `COUPON` | `FLASH_SALE` | `AUTOMATIC`), `scope` (`ORDER` | `PRODUCT` | `CATEGORY` | `SHIPPING`)
+- **Response**: `{ promotions: PromotionWithDetails[] }`
+- **Caching**: Cached in Redis (`promotion:v1:active:*`) with 60-second TTL.
+
+### `POST /api/v1/promotions/quote`
+
+- **Auth**: Optional User or Guest
+- **Body**: `PromotionEvaluationContextSchema` (`cartItems`, `subtotal`, `shippingFee`, `couponCode?`, `customerSegment?`, `currency?`)
+- **Response**: `PromotionQuoteResult` (`eligiblePromotions`, `totalDiscount`, `netSubtotal`, `shippingDiscount`, `freeShipping`, `appliedCouponCode`, `breakdown`)
+- **Evaluation**: Validates minimum order amounts, target product/category matching, coupon validity, usage limits, and stacking rules.
+
+### `POST /api/v1/promotions/validate-coupon`
+
+- **Auth**: Optional User or Guest
+- **Body**: `{ code: string, cartTotal?: number }`
+- **Response**: `{ valid: boolean, message?: string, coupon?: CouponCode, promotion?: PromotionWithDetails }`
+
+### `POST /api/v1/promotions/reserve`
+
+- **Auth**: Authenticated User or Internal Service (`shouldBeUser`)
+- **Body**: `ReservePromotionInputSchema` (`orderId`, `promotionId`, `couponCode?`, `discountAmount`, `currency?`, `ttlSeconds?`)
+- **Response**: `201 Created` — `{ success: true, reservation: PromotionReservation }`
+- **Lifecycle**: Creates a transactional 15-minute `PENDING` hold on campaign budget and customer redemption limit. Idempotent by `orderId`.
+
+### `POST /api/v1/promotions/commit`
+
+- **Auth**: Authenticated User or Internal Service (`shouldBeUser`)
+- **Body**: `CommitPromotionInputSchema` (`orderId`, `finalDiscountAmount?`)
+- **Response**: `{ success: true, redemptions: PromotionRedemption[] }`
+- **Lifecycle**: Transitions `PENDING` reservations to `COMMITTED`, records immutable redemption audit logs, and increments lifetime campaign redemptions.
+
+### `POST /api/v1/promotions/release`
+
+- **Auth**: Authenticated User or Internal Service (`shouldBeUser`)
+- **Body**: `ReleasePromotionInputSchema` (`orderId`, `reason?`)
+- **Response**: `{ success: true, message: "Promotion reservations released" }`
+- **Lifecycle**: Marks reservations `RELEASED`, releasing budget holds and customer usage counters.
+
+### `GET /api/v1/admin/promotions`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `page`, `limit`, `status`, `type`
+- **Response**: `{ promotions: PromotionWithDetails[], pagination: PaginationMeta }`
+
+### `POST /api/v1/admin/promotions`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `CreatePromotionInputSchema` (`name`, `description`, `type`, `discountType`, `discountValue`, `scope`, `rules`, `targets`, `budget`, `startDate`, `endDate`)
+- **Response**: `201 Created` — `{ promotion: PromotionWithDetails }`
+- **Side Effect**: Emits `promotion.created` Kafka event and invalidates active promotions cache.
+
+### `GET /api/v1/admin/promotions/:id`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ promotion: PromotionWithDetails }`
+
+### `PATCH /api/v1/admin/promotions/:id`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `UpdatePromotionInputSchema`
+- **Response**: `{ promotion: PromotionWithDetails }`
+- **Side Effect**: Emits `promotion.activated` / updated events and updates cache.
+
+### `POST /api/v1/admin/promotions/:id/deactivate`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ success: true, promotion: PromotionWithDetails }`
+- **Side Effect**: Sets status to `DEACTIVATED`, emits `promotion.deactivated` Kafka event.
+
+### `POST /api/v1/admin/promotions/:id/coupons`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `CreateCouponInputSchema` (`code`, `maxUsesPerCustomer?`, `maxTotalUses?`, `expiresAt?`)
+- **Response**: `201 Created` — `{ coupon: CouponCode }`
+
+### `GET /api/v1/admin/promotions/:id/redemptions`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `page`, `limit`
+- **Response**: `{ redemptions: PromotionRedemption[], pagination: PaginationMeta }`
+
+### `GET /api/v1/admin/promotions/overview`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ totalActivePromotions: number, totalCouponsIssued: number, totalDiscountsAwarded: number, totalRedemptions: number }`
+
+### `GET /health`, `GET /health/live`, `GET /health/ready`, `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Liveness probe, readiness probe (verifying PostgreSQL `larekmart_promotion_db` and Redis connectivity), and Prometheus metrics exposition.

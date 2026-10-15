@@ -81,6 +81,10 @@ spec:
           port: 8013
         - protocol: TCP
           port: 8014
+        - protocol: TCP
+          port: 8015
+        - protocol: TCP
+          port: 8016
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -127,3 +131,8 @@ spec:
           port: 8013
         - protocol: TCP
           port: 8014
+        - protocol: TCP
+          port: 8015
+        - protocol: TCP
+          port: 8016
+

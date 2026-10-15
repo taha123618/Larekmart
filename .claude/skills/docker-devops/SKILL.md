@@ -34,12 +34,12 @@ infrastructure/
 │   │   ├── configmaps/         # common-config.yaml
 │   │   ├── secrets/            # secret-templates.yaml, secret-store.yaml, external-secrets.yaml (ESO)
 │   │   ├── frontends/          # client.yaml, admin.yaml
-│   │   ├── services/           # 15 backend service Deployments + ClusterIP Services (including user, media & review)
+│   │   ├── services/           # 16 backend service Deployments + ClusterIP Services (including promotion-service)
 │   │   ├── workers/            # email-service.yaml (headless Kafka consumer)
 │   │   ├── autoscaling/        # hpa.yaml (resource HPA) + keda-scaledobjects.yaml (Kafka lag autoscaling)
 │   │   ├── pdb/                # pod-disruption-budgets.yaml
 │   │   ├── network-policies/   # Zero-trust isolation rules
-│   │   ├── ingress.yaml        # NGINX Ingress with TLS, CORS, WebSocket (routes all 15 backend services + 2 frontends)
+│   │   ├── ingress.yaml        # NGINX Ingress with TLS, CORS, WebSocket (routes all 16 backend services + 2 frontends)
 │   │   └── kustomization.yaml
 │   ├── ingress-controller/     # ingress-nginx-values.yaml (Tuned Helm values for staging & prod)
 │   └── overlays/
@@ -324,6 +324,7 @@ pnpm --filter @repo/shipping-db db:migrate
 pnpm --filter media-service db:migrate        # Drizzle migrations (media_db)
 pnpm --filter review-service db:migrate       # Drizzle migrations (review_db)
 pnpm --filter wishlist-service db:migrate     # Drizzle migrations (larekmart_wishlist_db)
+pnpm --filter promotion-service db:migrate    # Drizzle migrations (larekmart_promotion_db)
 ```
 
 ### Production

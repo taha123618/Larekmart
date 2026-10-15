@@ -37,7 +37,7 @@ Postgres, Mongo, or Kafka directly.
   - `MarketplaceCategories.tsx` — Visual category cards with micro-hover interactions and `FALLBACK_CATEGORIES`.
   - `TrustBadges.tsx` — Buyer protection, shipping, and payment confidence indicators.
   - `FeaturedSection.tsx` — High-velocity showcase with `FALLBACK_PRODUCTS` for featured, new arrivals, and best sellers.
-  - `ShopCTA.tsx` — VIP Shopping Club promotional banner with 1-click copy coupon code (`LAREK20`) and category shortcuts.
+  - `ShopCTA.tsx` — Dynamic promotional banner fetching from `promotion.service.ts` (`GET /api/v1/promotions/active`), 1-click copy coupon codes, fallback VIP discounts (`LAREK20`), and category shortcuts.
   - `Testimonials.tsx` — Verified customer reviews section with 45k+ reviews summary and spotlight reviews.
   - `ProductCard.tsx` — High-performance card with discount badges, color swatches, rating stars, wishlist toggle, and quick add.
   - `CartDrawer.tsx` — Slide-over cart drawer with live subtotal and direct checkout links.
@@ -50,7 +50,7 @@ Postgres, Mongo, or Kafka directly.
   - `WriteReviewModal.tsx` — Modal for composing and editing customer reviews with star ratings, text feedback, and media uploads via MinIO/S3.
   - `Footer.tsx` — Multi-column marketplace directory with newsletter signup and payment badges.
   - `common/ScrollToTop.tsx` — Viewport scroll progress bar and circular SVG progress floating action button.
-- `src/services/` — Frontend client services (`review.service.ts`, `media.service.ts`, `cart.service.ts`, `notification.service.ts`).
+- `src/services/` — Frontend client services (`promotion.service.ts`, `review.service.ts`, `wishlist.service.ts`, `media.service.ts`, `cart.service.ts`, `notification.service.ts`).
 - `src/hooks/` — Custom hooks (`use-lenis.ts` with cancelAnimationFrame and pathname listener).
 - `src/stores/` — Zustand stores (`cartStore.ts`, `wishlistStore.ts`, `uiStore.ts`).
 - `src/lib/utils.ts` — `cn(...)` utility helper (`clsx` + `tailwind-merge`).

@@ -45,3 +45,4 @@ data:
   MEDIA_SERVICE_URL: "http://media-service.larekmart.svc.cluster.local:8013"
   REVIEW_SERVICE_URL: "http://review-service.larekmart.svc.cluster.local:8014"
   WISHLIST_SERVICE_URL: "http://wishlist-service.larekmart.svc.cluster.local:8015"
+  PROMOTION_SERVICE_URL: "http://promotion-service.larekmart.svc.cluster.local:8016"

@@ -12,7 +12,7 @@ import {
   useUpdateCartItemMutation,
   useRemoveCartItemMutation,
 } from "@/hooks/useCartQuery";
-import { ShippingFormInputs, CartItemType } from "@repo/types";
+import { ShippingFormInputs, CartItemType, Promotion } from "@repo/types";
 import {
   ArrowRight,
   Trash2,
@@ -23,12 +23,14 @@ import {
   X,
   CheckCircle2,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState, useRef, useMemo } from "react";
 import RecommendationSection from "@/components/RecommendationSection";
 import { useAuth } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
+import { fetchActivePromotions } from "@/services/promotion.service";
 
 const defaultSteps = [
   {
@@ -56,6 +58,42 @@ const CartContent = () => {
     type: "success" | "error";
     message: string;
   } | null>(null);
+  const [activePromotions, setActivePromotions] = useState<Promotion[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchActivePromotions()
+      .then((promos) => {
+        if (mounted && promos) setActivePromotions(promos);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const availableCoupons = useMemo(() => {
+    const list: Array<{ code: string; label: string }> = [];
+    for (const promo of activePromotions) {
+      if (promo.status === "ACTIVE" && promo.coupons) {
+        for (const c of promo.coupons) {
+          if (
+            c.isActive &&
+            !list.some((existing) => existing.code === c.code)
+          ) {
+            const label =
+              promo.type === "PERCENTAGE"
+                ? `${promo.discountValue}% OFF`
+                : promo.type === "FREE_SHIPPING"
+                  ? "Free Shipping"
+                  : `$${promo.discountValue} OFF`;
+            list.push({ code: c.code, label });
+          }
+        }
+      }
+    }
+    return list;
+  }, [activePromotions]);
 
   const activeStep = parseInt(searchParams.get("step") || "1");
 
@@ -478,6 +516,32 @@ const CartContent = () => {
                     <AlertCircle className="w-3.5 h-3.5" />
                   )}
                   <span>{couponFeedback.message}</span>
+                </div>
+              )}
+
+              {/* AVAILABLE PROMOTION BADGES */}
+              {availableCoupons.length > 0 && (
+                <div className="flex flex-col gap-1.5 mt-2">
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    Available promo codes:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {availableCoupons.map((c) => (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => setCouponCode(c.code)}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition cursor-pointer"
+                        title={c.label}
+                      >
+                        <Sparkles className="w-2.5 h-2.5 text-indigo-500" />
+                        <span>{c.code}</span>
+                        <span className="text-[9px] font-sans font-normal opacity-75">
+                          ({c.label})
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 

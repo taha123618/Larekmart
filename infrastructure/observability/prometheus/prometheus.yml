@@ -53,6 +53,20 @@ scrape_configs:
     static_configs:
       - targets: ["opensearch:9200"]
 
+  - job_name: cadvisor
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["cadvisor:8087"]
+        labels:
+          component: container-metrics
+
+  - job_name: otel-collector
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["otel-collector:8889"]
+        labels:
+          component: otel-collector
+
   # ──────────────────────────────────────────
   # Node.js / TypeScript microservices
   # These expose /metrics via @repo/monitoring
@@ -182,6 +196,14 @@ scrape_configs:
       - targets: ["wishlist-service:8015"]
         labels:
           service: wishlist-service
+          runtime: nodejs
+
+  - job_name: promotion-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["promotion-service:8016"]
+        labels:
+          service: promotion-service
           runtime: nodejs
 
   - job_name: api-gateway

@@ -29,6 +29,9 @@ const fetchClientSecret = async (
   cart: CartItemsType,
   token: string,
   cartId?: string,
+  couponCode?: string,
+  discountAmount?: number,
+  reservationId?: string,
 ): Promise<string> => {
   const paymentServiceUrl =
     process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL ||
@@ -42,6 +45,9 @@ const fetchClientSecret = async (
       body: JSON.stringify({
         cart,
         cartId,
+        couponCode,
+        discountAmount,
+        reservationId,
       }),
       headers: {
         "Content-Type": "application/json",
@@ -108,7 +114,15 @@ const StripePaymentForm = ({
       }
       try {
         setInitError(null);
-        const secret = await fetchClientSecret(cart, token, serverCart?.id);
+        const appliedCoupon = serverCart?.coupons?.[0]?.code;
+        const discountAmount = serverCart?.pricing?.discountTotal;
+        const secret = await fetchClientSecret(
+          cart,
+          token,
+          serverCart?.id,
+          appliedCoupon,
+          discountAmount,
+        );
         return secret;
       } catch (err: unknown) {
         const errorMsg =
@@ -120,7 +134,13 @@ const StripePaymentForm = ({
         throw err instanceof Error ? err : new Error(errorMsg);
       }
     };
-  }, [cart, token, serverCart?.id]);
+  }, [
+    cart,
+    token,
+    serverCart?.id,
+    serverCart?.coupons,
+    serverCart?.pricing?.discountTotal,
+  ]);
 
   // Case 1: Stripe Publishable Key not configured in environment
   if (!isStripeConfigured || !stripePromise) {

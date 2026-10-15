@@ -129,4 +129,13 @@ export const publicRoutes: GatewayRouteConfig[] = [
     timeoutMs: services.wishlist.timeoutMs,
     rewritePrefix: "/api/v1/shared-wishlists",
   },
+
+  // 12. Promotion Service Public & Customer Routes (Quotes, Validations, Active, Reservations)
+  {
+    prefix: "/api/v1/promotions",
+    target: services.promotion.url,
+    serviceName: services.promotion.name,
+    timeoutMs: services.promotion.timeoutMs,
+    rewritePrefix: "/api/v1/promotions",
+  },
 ];

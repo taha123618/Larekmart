@@ -28,7 +28,7 @@ export default function CodConfirmationForm({
 }) {
   const router = useRouter();
   const { getToken, userId } = useAuth();
-  const { clearCart } = useCartStore();
+  const { clearCart, serverCart } = useCartStore();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +70,7 @@ export default function CodConfirmationForm({
         headers,
         body: JSON.stringify({
           email: shippingForm.email,
+          couponCode: serverCart?.coupons?.[0]?.code || undefined,
           amount: Math.round(grandTotal * 100), // in paisa — verified against
           // the server-recomputed total (catalog prices + components below).
           discountTotal: Math.round((discountTotal ?? 0) * 100),

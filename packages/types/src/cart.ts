@@ -194,6 +194,9 @@ export const CreateCheckoutSessionSchema = z.object({
     )
     .min(1, "Cart must contain at least one item"),
   cartId: z.string().max(100).optional(),
+  reservationId: z.string().max(100).optional(),
+  couponCode: z.string().max(50).optional(),
+  discountAmount: z.number().nonnegative().optional(),
 });
 export type CreateCheckoutSessionInputType = z.infer<
   typeof CreateCheckoutSessionSchema

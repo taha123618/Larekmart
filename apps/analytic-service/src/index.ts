@@ -15,6 +15,7 @@ import {
   recordMediaEvent,
   recordReviewEvent,
   recordWishlistEvent,
+  recordPromotionEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
 import type {
@@ -435,6 +436,72 @@ const start = async () => {
           const payload = message.value || message;
           if (payload) {
             await recordWishlistEvent("wishlist.restock.alert", payload);
+          }
+        },
+      },
+      {
+        topicName: "promotion.created",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordPromotionEvent("promotion.created", payload);
+          }
+        },
+      },
+      {
+        topicName: "promotion.activated",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordPromotionEvent("promotion.activated", payload);
+          }
+        },
+      },
+      {
+        topicName: "promotion.deactivated",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordPromotionEvent("promotion.deactivated", payload);
+          }
+        },
+      },
+      {
+        topicName: "promotion.reserved",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordPromotionEvent("promotion.reserved", payload);
+          }
+        },
+      },
+      {
+        topicName: "promotion.redeemed",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordPromotionEvent("promotion.redeemed", payload);
+          }
+        },
+      },
+      {
+        topicName: "promotion.reservation.released",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordPromotionEvent(
+              "promotion.reservation.released",
+              payload,
+            );
+          }
+        },
+      },
+      {
+        topicName: "promotion.budget_exhausted",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordPromotionEvent("promotion.budget_exhausted", payload);
           }
         },
       },

@@ -133,6 +133,7 @@ docker/
 | `media-service`          | `8013`                            | `127.0.0.1:8013`                     | **Internal Only**   | Media uploads, variants & lifecycle                                     |
 | `review-service`         | `8014`                            | `127.0.0.1:8014`                     | **Internal Only**   | Product reviews, ratings, verified purchases & moderation               |
 | `wishlist-service`       | `8015`                            | `127.0.0.1:8015`                     | **Internal Only**   | Wishlists, saved items, guest merging, price-drop & restock alerts      |
+| `promotion-service`      | `8016`                            | `127.0.0.1:8016`                     | **Internal Only**   | Campaigns, coupons, discounts, budgets & checkout reservations          |
 | `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                      |
 | `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                             |
 | `email-service`          | None (worker)                     | None                                 | **Internal Only**   | Consumes Kafka events, sends email notifications                        |
@@ -242,6 +243,10 @@ pnpm --filter @repo/product-db db:deploy
 pnpm --filter @repo/inventory-db db:deploy
 pnpm --filter @repo/catalog-db db:deploy
 pnpm --filter @repo/shipping-db db:deploy
+pnpm --filter media-service db:migrate
+pnpm --filter review-service db:migrate
+pnpm --filter wishlist-service db:migrate
+pnpm --filter promotion-service db:migrate
 ```
 
 To seed initial catalog data:
@@ -291,21 +296,25 @@ pnpm monitoring:up
 
 ### Dashboard URLs
 
-| Tool         | URL                   | Default Credentials          |
-| ------------ | --------------------- | ---------------------------- |
-| Grafana      | http://localhost:3001 | admin / grafana_admin_secret |
-| Prometheus   | http://localhost:9090 | —                            |
-| Alertmanager | http://localhost:9093 | —                            |
-| Loki         | http://localhost:3100 | —                            |
+| Tool           | URL                   | Default Credentials          |
+| -------------- | --------------------- | ---------------------------- |
+| Grafana        | http://localhost:3001 | admin / grafana_admin_secret |
+| Prometheus     | http://localhost:9090 | —                            |
+| Alertmanager   | http://localhost:9093 | —                            |
+| Loki           | http://localhost:3100 | —                            |
+| cAdvisor       | http://localhost:8087 | —                            |
+| OTel Collector | http://localhost:4318 | —                            |
 
-### Exporters
+### Exporters & Collectors
 
-| Exporter          | Port | Purpose                              |
-| ----------------- | ---- | ------------------------------------ |
-| Node Exporter     | 9100 | Host CPU, memory, disk, network      |
-| Redis Exporter    | 9121 | Redis memory, connections, evictions |
-| Postgres Exporter | 9187 | Connections, query stats             |
-| MongoDB Exporter  | 9216 | Connections, replica set health      |
+| Exporter / Collector    | Port        | Purpose                                            |
+| ----------------------- | ----------- | -------------------------------------------------- |
+| Node Exporter           | 9100        | Host CPU, memory, disk, network                    |
+| cAdvisor                | 8087 (8080) | Per-container CPU, RAM limits, network & disk I/O  |
+| OpenTelemetry Collector | 4317 / 4318 | Distributed traces & metrics ingestion (gRPC/HTTP) |
+| Redis Exporter          | 9121        | Redis memory, connections, evictions               |
+| Postgres Exporter       | 9187        | Connections, query stats                           |
+| MongoDB Exporter        | 9216        | Connections, replica set health                    |
 
 ### Alert Rules
 
@@ -407,6 +416,9 @@ Every single container image used in the Larekmart platform is cataloged below, 
 | **catalog-service**        | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **shipping-service**       | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **media-service**          | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
+| **review-service**         | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
+| **wishlist-service**       | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
+| **promotion-service**      | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **email-service**          | Node Worker            | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **client**                 | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |
 | **admin**                  | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |

@@ -97,6 +97,15 @@ const start = async () => {
           );
         },
       },
+      {
+        topicName: "promotion.redeemed",
+        topicHandler: async (message) => {
+          const { orderId, discountAmount, userId } = message.value || {};
+          logger.info(
+            `[email-service] Promotion savings applied for order ${orderId} (Discount: $${Number(discountAmount || 0).toFixed(2)}, User: ${userId || "guest"})`,
+          );
+        },
+      },
     ]);
   } catch (error) {
     logger.fatal("Email service consumer error", error);

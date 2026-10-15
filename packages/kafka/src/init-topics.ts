@@ -56,6 +56,15 @@ export const ALL_LAREKMART_TOPICS = [
   "wishlist.price-drop.alert",
   "wishlist.restock.alert",
 
+  // Promotion Events
+  "promotion.created",
+  "promotion.activated",
+  "promotion.deactivated",
+  "promotion.reserved",
+  "promotion.redeemed",
+  "promotion.reservation.released",
+  "promotion.budget.exhausted",
+
   // Shipping & Logistics
   "shipment.created",
   "shipment.label_created",

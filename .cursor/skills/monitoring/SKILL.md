@@ -9,7 +9,7 @@ Use this skill when implementing, debugging, or reviewing monitoring, health che
 
 ## 1. Centralized Observability Policy
 
-Larekmart standardizes all observability across its 8 applications and 7 packages through `@repo/monitoring`.
+Larekmart standardizes all observability across its microservices, frontends, and shared packages through `@repo/monitoring`.
 
 - **Structured Logging**: Always use `createLogger(serviceName)` instead of bare `console.log` for service backends.
 - **Health Checks**: Every backend service must expose `GET /health` powered by `createHealthRegistry(serviceName)`.

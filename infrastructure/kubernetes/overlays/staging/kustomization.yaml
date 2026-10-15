@@ -60,5 +60,8 @@ images:
     newTag: staging
   - name: larekmart/wishlist-service
     newTag: staging
+  - name: larekmart/promotion-service
+    newTag: staging
   - name: larekmart/email-service
     newTag: staging
+
