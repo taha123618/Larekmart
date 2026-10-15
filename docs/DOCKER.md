@@ -296,21 +296,25 @@ pnpm monitoring:up
 
 ### Dashboard URLs
 
-| Tool         | URL                   | Default Credentials          |
-| ------------ | --------------------- | ---------------------------- |
-| Grafana      | http://localhost:3001 | admin / grafana_admin_secret |
-| Prometheus   | http://localhost:9090 | —                            |
-| Alertmanager | http://localhost:9093 | —                            |
-| Loki         | http://localhost:3100 | —                            |
+| Tool           | URL                   | Default Credentials          |
+| -------------- | --------------------- | ---------------------------- |
+| Grafana        | http://localhost:3001 | admin / grafana_admin_secret |
+| Prometheus     | http://localhost:9090 | —                            |
+| Alertmanager   | http://localhost:9093 | —                            |
+| Loki           | http://localhost:3100 | —                            |
+| cAdvisor       | http://localhost:8087 | —                            |
+| OTel Collector | http://localhost:4318 | —                            |
 
-### Exporters
+### Exporters & Collectors
 
-| Exporter          | Port | Purpose                              |
-| ----------------- | ---- | ------------------------------------ |
-| Node Exporter     | 9100 | Host CPU, memory, disk, network      |
-| Redis Exporter    | 9121 | Redis memory, connections, evictions |
-| Postgres Exporter | 9187 | Connections, query stats             |
-| MongoDB Exporter  | 9216 | Connections, replica set health      |
+| Exporter / Collector    | Port        | Purpose                                            |
+| ----------------------- | ----------- | -------------------------------------------------- |
+| Node Exporter           | 9100        | Host CPU, memory, disk, network                    |
+| cAdvisor                | 8087 (8080) | Per-container CPU, RAM limits, network & disk I/O  |
+| OpenTelemetry Collector | 4317 / 4318 | Distributed traces & metrics ingestion (gRPC/HTTP) |
+| Redis Exporter          | 9121        | Redis memory, connections, evictions               |
+| Postgres Exporter       | 9187        | Connections, query stats                           |
+| MongoDB Exporter        | 9216        | Connections, replica set health                    |
 
 ### Alert Rules
 

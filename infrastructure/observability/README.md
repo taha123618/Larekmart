@@ -9,8 +9,9 @@ This directory contains configuration files, alert rules, and dashboards for the
 ## Directory Overview
 
 - **`alertmanager/alertmanager.yml`**: Routing, inhibition rules, and Slack/PagerDuty notification receivers for cluster alerts.
-- **`prometheus/prometheus.yml`**: Scrape targets and scrape intervals for all 16 microservices, backing datastores (PostgreSQL, MongoDB, Redis, Kafka, OpenSearch), and system exporters.
+- **`prometheus/prometheus.yml`**: Scrape targets and scrape intervals for all 16 microservices, backing datastores (PostgreSQL, MongoDB, Redis, Kafka, OpenSearch), system exporters, cAdvisor, and OpenTelemetry Collector.
 - **`prometheus/rules/alerts.yml`**: Production alert definitions covering service downtime (`ServiceDown`), 5xx error spikes (`HighErrorRate`), p99 latency (`HighLatencyP99`), pod crash loops, resource saturation, and Kafka lag.
+- **`otel-collector/otel-collector-config.yml`**: OpenTelemetry Collector pipeline configuration with OTLP gRPC (`4317`) and HTTP (`4318`) receivers, memory limiter, batch processor, and Prometheus exporter.
 - **`grafana/dashboards/`**: Pre-built Grafana JSON dashboards (`infrastructure.json`, `service-health.json`).
 - **`grafana/provisioning/`**: Automated datasource and dashboard provider configurations.
 - **`loki/loki.yml`**: Loki log storage and chunk engine configuration.
@@ -34,6 +35,8 @@ Access services locally:
 - **Prometheus**: http://localhost:9090
 - **Alertmanager**: http://localhost:9093
 - **Loki**: http://localhost:3100
+- **cAdvisor**: http://localhost:8087
+- **OTel Collector OTLP**: gRPC `localhost:4317` / HTTP `http://localhost:4318`
 
 ---
 

@@ -18,12 +18,16 @@ name: larekmart-observability
 #   - Grafana: Unified dashboards & visualization (port 3001)
 #   - Alertmanager: Alert routing & deduplication (port 9093)
 #   - Loki + Promtail: LogQL stream aggregation (port 3100)
+#   - cAdvisor: Per-container resource utilization (port 8087)
+#   - OpenTelemetry Collector: Distributed traces & metrics ingestion (ports 4317/4318)
 #   - Exporters: Node (9100), Redis (9121), Postgres (9187), Mongo (9216)
 #
 # Access:
 #   - Grafana UI:           http://localhost:3001 (admin / grafana_admin_secret)
 #   - Prometheus UI:        http://localhost:9090
 #   - Alertmanager UI:      http://localhost:9093
+#   - cAdvisor UI:          http://localhost:8087
+#   - OTel Collector:       http://localhost:4318 (HTTP) / localhost:4317 (gRPC)
 #   - Traefik Domain:       http://monitoring.localhost
 #
 # Usage:
@@ -220,6 +224,52 @@ services:
       - "9216:9216"
     networks:
       - larekmart-network
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # cAdvisor — Per-container CPU, memory, network & I/O metrics → Prometheus
+  # ────────────────────────────────────────────────────────────────────────────
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: larekmart-cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - "${CADVISOR_PORT:-8087}:8087"
+    networks:
+      - larekmart-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8087/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # OpenTelemetry Collector — Distributed traces, metrics & logs ingestion
+  # ────────────────────────────────────────────────────────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    container_name: larekmart-otel-collector
+    restart: unless-stopped
+    command:
+      - --config=/etc/otel-collector-config.yml
+    volumes:
+      - ./infrastructure/observability/otel-collector/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    ports:
+      - "${OTEL_GRPC_PORT:-4317}:4317" # OTLP gRPC receiver
+      - "${OTEL_HTTP_PORT:-4318}:4318" # OTLP HTTP receiver
+      - "8889:8889" # Prometheus metrics exporter
+    networks:
+      - larekmart-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:13133/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
 # ────────────────────────────────────────────────────────────────────────────
 # Named volumes for observability stack data persistence

@@ -71,14 +71,17 @@ _(Configured in `docker-compose.observability.yml`)_
 ### Stack C: CNCF Observability Stack (`docker-compose.observability.yml`)
 
 - **How it works:**
-  - **Prometheus (v2.53.0):** Pulls metrics from all 15 microservices and infrastructure exporters every 15 seconds.
+  - **Prometheus (v2.53.0):** Pulls metrics from all 16 microservices, backing datastores, exporters, and telemetry collectors every 15 seconds.
   - **Node Exporter & DB Exporters:** Scrapes Redis (9121), PostgreSQL (9187), MongoDB (9216), Kafka, and host OS (9100).
-  - **Loki & Promtail (v3.1.0):** Shiphers and indexes container logs using label-based indexing (LogQL).
+  - **cAdvisor (v0.49.1):** Captures real-time per-container CPU limits, throttling, memory working sets, and network/disk I/O on port 8087 (8080 internal).
+  - **OpenTelemetry Collector (v0.104.0):** Ingests distributed traces and metrics over OTLP gRPC (:4317) and HTTP (:4318) with memory limiting and Prometheus metrics export (:8889).
+  - **Loki & Promtail (v3.1.0):** Ships and indexes container logs using label-based indexing (LogQL).
   - **Grafana (v11.2.0):** Unified dashboards visualizing metrics, logs, and alerts in one interface.
   - **Alertmanager (v0.27.0):** Groups, silences, and routes critical alerts to notification channels.
 - **Strengths:**
-  - Complete visibility into health, performance, saturation, and errors.
+  - Complete visibility into health, performance, saturation, distributed traces, and errors.
   - Traces Kafka queue lag before messages fail or back up.
+  - Granular container-level performance monitoring preventing silent OOM kills.
   - Pre-configured production alert rules (`ServiceDown`, `HighErrorRate`, `HighLatencyP99`, `KafkaBrokerDown`).
 - **When to use:** Core production operations, staging performance verification, and SRE monitoring.
 
