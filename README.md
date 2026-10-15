@@ -153,7 +153,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`media-service`**          | Hono 4, Drizzle, PostgreSQL, S3/MinIO, Redis, Kafka, Clerk, Sharp                     | `8013` | Presigned direct uploads, media metadata, image variants, lifecycle events, and processing/cleanup workers.                                     |
 | **`review-service`**         | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk                                   | `8014` | Customer reviews, ratings, verified purchase gating, moderation queue, helpful voting, seller replies, and rating summary projections.          |
 | **`wishlist-service`**       | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk                                   | `8015` | Customer wishlists, multiple lists, guest-to-user migration, unguessable sharing tokens, price-drop and restock notification alerts.            |
-| **`promotion-service`**      | Hono 4, Drizzle, PostgreSQL, Redis, Kafka, Clerk                                      | `8016` | Centralized promotions, campaigns, coupons, discount eligibility, budgets, checkout reservations, and redemptions.                               |
+| **`promotion-service`**      | Hono 4, Drizzle, PostgreSQL, Redis, Kafka, Clerk                                      | `8016` | Centralized promotions, campaigns, coupons, discount eligibility, budgets, checkout reservations, and redemptions.                              |
 
 ---
 

@@ -73,43 +73,43 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 
 ## 4. Repository map
 
-| Workspace                 | Path                          | Runtime                 | Port | Purpose                                                                             |
-| ------------------------- | ----------------------------- | ----------------------- | ---- | ----------------------------------------------------------------------------------- |
-| `client`                  | `apps/client`                 | Next.js 16 (App Router) | 3002 | Storefront: browse, cart, Stripe checkout, orders                                   |
-| `admin`                   | `apps/admin`                  | Next.js 15 (App Router) | 3003 | Admin dashboard: products, categories, users, orders                                |
-| `api-gateway`             | `apps/api-gateway`            | Fastify 5               | 8080 | Single entrypoint reverse proxy, auth, rate limiting, and request correlation       |
-| `product-service`         | `apps/product-service`        | Express 5               | 8000 | Product + category CRUD (Prisma/Postgres)                                           |
-| `order-service`           | `apps/order-service`          | Fastify 5               | 8001 | Orders (Mongoose/MongoDB) + analytics                                               |
-| `payment-service`         | `apps/payment-service`        | Hono                    | 8002 | Stripe checkout sessions, webhooks, Stripe product sync                             |
-| `auth-service`            | `apps/auth-service`           | Express 5               | 8003 | Admin user management proxying Clerk                                                |
-| `email-service`           | `apps/email-service`          | Node worker             | —    | Consumes Kafka events, sends email (no HTTP)                                        |
-| `analytic-service`        | `apps/analytic-service`       | Express 5               | 8004 | Consumes Kafka events, aggregates metrics & REST API                                |
-| `notification-service`    | `apps/notification-service`   | Go 1.22 (Chi)           | 8005 | Multi-channel notifications, worker pool & WebSockets                               |
-| `search-service`          | `apps/search-service`         | Fastify 5               | 8006 | OpenSearch product search, filtering, autocomplete & indexing                       |
-| `inventory-service`       | `apps/inventory-service`      | Hono 4                  | 8007 | PostgreSQL stock, reservations, warehouse inventory, and inventory events           |
-| `recommendation-service`  | `apps/recommendation-service` | Python 3.12+ (FastAPI)  | 8008 | Collaborative, content, pgvector hybrid recommendation engine & Celery worker       |
-| `cart-service`            | `apps/cart-service`           | Express 5               | 8009 | Authoritative MongoDB carts, guest/user merge, pricing estimates & TTL worker       |
-| `catalog-service`         | `apps/catalog-service`        | Fastify 5               | 8010 | Read-optimized product discovery, categories, brands, collections & storefront      |
-| `shipping-service`        | `apps/shipping-service`       | Koa (Node.js)           | 8011 | Shipment lifecycle, rates, carrier adapters (TCS/Leopards/DHL/FedEx), tracking      |
-| `user-service`            | `apps/user-service`           | Fastify 5               | 8012 | Customer profiles, saved addresses, preferences, and account domain                 |
-| `media-service`           | `apps/media-service`          | Hono 4                  | 8013 | Media uploads, object storage, image variants & lifecycle events                    |
-| `review-service`          | `apps/review-service`         | Fastify 5               | 8014 | Product reviews, ratings, verified purchases, moderation, helpful votes & summaries |
-| `wishlist-service`        | `apps/wishlist-service`       | Fastify 5               | 8015 | Saved products, wishlists, guest-to-user merge, price drops & restock alerts        |
+| Workspace                 | Path                          | Runtime                 | Port | Purpose                                                                                                                               |
+| ------------------------- | ----------------------------- | ----------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `client`                  | `apps/client`                 | Next.js 16 (App Router) | 3002 | Storefront: browse, cart, Stripe checkout, orders                                                                                     |
+| `admin`                   | `apps/admin`                  | Next.js 15 (App Router) | 3003 | Admin dashboard: products, categories, users, orders                                                                                  |
+| `api-gateway`             | `apps/api-gateway`            | Fastify 5               | 8080 | Single entrypoint reverse proxy, auth, rate limiting, and request correlation                                                         |
+| `product-service`         | `apps/product-service`        | Express 5               | 8000 | Product + category CRUD (Prisma/Postgres)                                                                                             |
+| `order-service`           | `apps/order-service`          | Fastify 5               | 8001 | Orders (Mongoose/MongoDB) + analytics                                                                                                 |
+| `payment-service`         | `apps/payment-service`        | Hono                    | 8002 | Stripe checkout sessions, webhooks, Stripe product sync                                                                               |
+| `auth-service`            | `apps/auth-service`           | Express 5               | 8003 | Admin user management proxying Clerk                                                                                                  |
+| `email-service`           | `apps/email-service`          | Node worker             | —    | Consumes Kafka events, sends email (no HTTP)                                                                                          |
+| `analytic-service`        | `apps/analytic-service`       | Express 5               | 8004 | Consumes Kafka events, aggregates metrics & REST API                                                                                  |
+| `notification-service`    | `apps/notification-service`   | Go 1.22 (Chi)           | 8005 | Multi-channel notifications, worker pool & WebSockets                                                                                 |
+| `search-service`          | `apps/search-service`         | Fastify 5               | 8006 | OpenSearch product search, filtering, autocomplete & indexing                                                                         |
+| `inventory-service`       | `apps/inventory-service`      | Hono 4                  | 8007 | PostgreSQL stock, reservations, warehouse inventory, and inventory events                                                             |
+| `recommendation-service`  | `apps/recommendation-service` | Python 3.12+ (FastAPI)  | 8008 | Collaborative, content, pgvector hybrid recommendation engine & Celery worker                                                         |
+| `cart-service`            | `apps/cart-service`           | Express 5               | 8009 | Authoritative MongoDB carts, guest/user merge, pricing estimates & TTL worker                                                         |
+| `catalog-service`         | `apps/catalog-service`        | Fastify 5               | 8010 | Read-optimized product discovery, categories, brands, collections & storefront                                                        |
+| `shipping-service`        | `apps/shipping-service`       | Koa (Node.js)           | 8011 | Shipment lifecycle, rates, carrier adapters (TCS/Leopards/DHL/FedEx), tracking                                                        |
+| `user-service`            | `apps/user-service`           | Fastify 5               | 8012 | Customer profiles, saved addresses, preferences, and account domain                                                                   |
+| `media-service`           | `apps/media-service`          | Hono 4                  | 8013 | Media uploads, object storage, image variants & lifecycle events                                                                      |
+| `review-service`          | `apps/review-service`         | Fastify 5               | 8014 | Product reviews, ratings, verified purchases, moderation, helpful votes & summaries                                                   |
+| `wishlist-service`        | `apps/wishlist-service`       | Fastify 5               | 8015 | Saved products, wishlists, guest-to-user merge, price drops & restock alerts                                                          |
 | `promotion-service`       | `apps/promotion-service`      | Hono 4                  | 8016 | Centralized promotion engine: campaigns, coupons, discount eligibility, usage limits, budgets, checkout reservations, and redemptions |
-| `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                               |
-| `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                       |
-| `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                         |
-| `@repo/opensearch`        | `packages/opensearch`         | Library                 | —    | OpenSearch client factory, product index mappings, query builders, bulk indexing    |
-| `@repo/redis`             | `packages/redis`              | Library                 | —    | ioredis client factory, typed cache helpers, namespace invalidation, rate limiter   |
-| `@repo/product-db`        | `packages/product-db`         | Library                 | —    | Prisma client + schema (PostgreSQL)                                                 |
-| `@repo/inventory-db`      | `packages/inventory-db`       | Library                 | —    | Prisma inventory schema, reservations, and stock ledger (PostgreSQL)                |
-| `@repo/order-db`          | `packages/order-db`           | Library                 | —    | Mongoose connection + Order model (MongoDB)                                         |
-| `@repo/cart-db`           | `packages/cart-db`            | Library                 | —    | Mongoose connection + Cart models (MongoDB)                                         |
-| `@repo/catalog-db`        | `packages/catalog-db`         | Library                 | —    | Prisma catalog read-model schema (PostgreSQL) for catalog-service                   |
-| `@repo/shipping-db`       | `packages/shipping-db`        | Library                 | —    | Prisma shipping schema, shipments, packages, tracking events & labels (PostgreSQL)  |
-| `@repo/user-db`           | `packages/user-db`            | Library                 | —    | Prisma user schema, profiles, addresses, preferences & settings (PostgreSQL)        |
-| `@repo/eslint-config`     | `packages/eslint-config`      | Config                  | —    | Shared ESLint flat configs                                                          |
-| `@repo/typescript-config` | `packages/typescript-config`  | Config                  | —    | Shared tsconfig bases                                                               |
+| `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                                                                                 |
+| `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                                                                         |
+| `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                                                                           |
+| `@repo/opensearch`        | `packages/opensearch`         | Library                 | —    | OpenSearch client factory, product index mappings, query builders, bulk indexing                                                      |
+| `@repo/redis`             | `packages/redis`              | Library                 | —    | ioredis client factory, typed cache helpers, namespace invalidation, rate limiter                                                     |
+| `@repo/product-db`        | `packages/product-db`         | Library                 | —    | Prisma client + schema (PostgreSQL)                                                                                                   |
+| `@repo/inventory-db`      | `packages/inventory-db`       | Library                 | —    | Prisma inventory schema, reservations, and stock ledger (PostgreSQL)                                                                  |
+| `@repo/order-db`          | `packages/order-db`           | Library                 | —    | Mongoose connection + Order model (MongoDB)                                                                                           |
+| `@repo/cart-db`           | `packages/cart-db`            | Library                 | —    | Mongoose connection + Cart models (MongoDB)                                                                                           |
+| `@repo/catalog-db`        | `packages/catalog-db`         | Library                 | —    | Prisma catalog read-model schema (PostgreSQL) for catalog-service                                                                     |
+| `@repo/shipping-db`       | `packages/shipping-db`        | Library                 | —    | Prisma shipping schema, shipments, packages, tracking events & labels (PostgreSQL)                                                    |
+| `@repo/user-db`           | `packages/user-db`            | Library                 | —    | Prisma user schema, profiles, addresses, preferences & settings (PostgreSQL)                                                          |
+| `@repo/eslint-config`     | `packages/eslint-config`      | Config                  | —    | Shared ESLint flat configs                                                                                                            |
+| `@repo/typescript-config` | `packages/typescript-config`  | Config                  | —    | Shared tsconfig bases                                                                                                                 |
 
 ## 5. Golden rules
 

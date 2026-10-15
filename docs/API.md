@@ -4,22 +4,22 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ## Service Ports & Protocols
 
-| Service                  | Port   | Framework              | Auth Guard                         | Owner                                                  |
-| ------------------------ | ------ | ---------------------- | ---------------------------------- | ------------------------------------------------------ |
-| `product-service`        | `8000` | Express 5              | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog                             |
-| `order-service`          | `8001` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics                           |
-| `payment-service`        | `8002` | Hono 4                 | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks                             |
-| `auth-service`           | `8003` | Express 5              | `shouldBeAdmin`                    | Admin User Management Proxy                            |
-| `analytic-service`       | `8004` | Express 5              | `shouldBeAdmin`                    | Analytics & KPI Aggregations                           |
-| `notification-service`   | `8005` | Go / Chi               | User token / public probes         | Notifications, WebSockets & delivery                   |
-| `search-service`         | `8006` | Fastify 5              | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete                |
-| `inventory-service`      | `8007` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory              |
-| `recommendation-service` | `8008` | Python 3.12+ / FastAPI | Public / User telemetry            | AI recommendations, embeddings & interactions          |
-| `media-service`          | `8013` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Media uploads, storage, variants & lifecycle           |
-| `review-service`         | `8014` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Customer reviews, ratings, verified gating, moderation |
-| `wishlist-service`       | `8015` | Fastify 5              | `shouldBeUser` / Public link token | Wishlists, saved products, guest merge, price-drop     |
+| Service                  | Port   | Framework              | Auth Guard                         | Owner                                                                     |
+| ------------------------ | ------ | ---------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| `product-service`        | `8000` | Express 5              | `shouldBeUser` / `shouldBeAdmin`   | Product & Category Catalog                                                |
+| `order-service`          | `8001` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics                                              |
+| `payment-service`        | `8002` | Hono 4                 | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks                                                |
+| `auth-service`           | `8003` | Express 5              | `shouldBeAdmin`                    | Admin User Management Proxy                                               |
+| `analytic-service`       | `8004` | Express 5              | `shouldBeAdmin`                    | Analytics & KPI Aggregations                                              |
+| `notification-service`   | `8005` | Go / Chi               | User token / public probes         | Notifications, WebSockets & delivery                                      |
+| `search-service`         | `8006` | Fastify 5              | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete                                   |
+| `inventory-service`      | `8007` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory                                 |
+| `recommendation-service` | `8008` | Python 3.12+ / FastAPI | Public / User telemetry            | AI recommendations, embeddings & interactions                             |
+| `media-service`          | `8013` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Media uploads, storage, variants & lifecycle                              |
+| `review-service`         | `8014` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Customer reviews, ratings, verified gating, moderation                    |
+| `wishlist-service`       | `8015` | Fastify 5              | `shouldBeUser` / Public link token | Wishlists, saved products, guest merge, price-drop                        |
 | `promotion-service`      | `8016` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Campaigns, coupons, discount eligibility, budgets & checkout reservations |
-| `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                           |
+| `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                                              |
 
 ---
 
@@ -875,4 +875,3 @@ only a best-effort availability cache.
 
 - **Auth**: Public / Scraper
 - **Response**: Liveness probe, readiness probe (verifying PostgreSQL `larekmart_promotion_db` and Redis connectivity), and Prometheus metrics exposition.
-

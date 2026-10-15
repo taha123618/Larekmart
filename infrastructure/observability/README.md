@@ -29,6 +29,7 @@ docker compose -f docker-compose.observability.yml up -d
 ```
 
 Access services locally:
+
 - **Grafana**: http://localhost:3001 (Credentials: `admin` / `admin`)
 - **Prometheus**: http://localhost:9090
 - **Alertmanager**: http://localhost:9093

@@ -168,11 +168,11 @@ Here is the exact classification of where `apiVersion` is needed, where it was u
 
 In Kubernetes, custom resource versions graduate as operators mature. The following files were updated to the current production API version:
 
-| File | Resource Kind | Previous `apiVersion` | Updated `apiVersion` | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| `infrastructure/kubernetes/base/secrets/external-secrets.yaml` | `ExternalSecret` | `external-secrets.io/v1beta1` | `external-secrets.io/v1` | Updated & Verified |
-| `infrastructure/kubernetes/base/secrets/secret-store.yaml` | `SecretStore` | `external-secrets.io/v1beta1` | `external-secrets.io/v1` | Updated & Verified |
-| `infrastructure/kubernetes/base/secrets/secret-store.yaml` | `ClusterSecretStore` | `external-secrets.io/v1beta1` | `external-secrets.io/v1` | Updated & Verified |
+| File                                                           | Resource Kind        | Previous `apiVersion`         | Updated `apiVersion`     | Status             |
+| :------------------------------------------------------------- | :------------------- | :---------------------------- | :----------------------- | :----------------- |
+| `infrastructure/kubernetes/base/secrets/external-secrets.yaml` | `ExternalSecret`     | `external-secrets.io/v1beta1` | `external-secrets.io/v1` | Updated & Verified |
+| `infrastructure/kubernetes/base/secrets/secret-store.yaml`     | `SecretStore`        | `external-secrets.io/v1beta1` | `external-secrets.io/v1` | Updated & Verified |
+| `infrastructure/kubernetes/base/secrets/secret-store.yaml`     | `ClusterSecretStore` | `external-secrets.io/v1beta1` | `external-secrets.io/v1` | Updated & Verified |
 
 ### 2. Kubernetes Manifests Specifying Proper `apiVersion`
 
@@ -192,6 +192,7 @@ Every single Kubernetes manifest in `infrastructure/kubernetes/` and GitOps appl
 When running `kubectl apply -R -f <dir>`, `kubectl` recursively attempts to parse every single `.yaml` / `.yml` file as a Kubernetes API server resource. The following files fail with `[apiVersion not set, kind not set]` if run with `kubectl apply -f` because they are **not** Kubernetes manifests:
 
 #### A. Helm Values Files
+
 - `infrastructure/kubernetes/ingress-controller/ingress-nginx-values.yaml`
 - `infrastructure/argocd/values.yaml`
 - **Why**: These are parameter files for the `helm upgrade --install` command. Helm expects a plain key-value dictionary (e.g. `controller.replicaCount: 2`). Adding `apiVersion` or `kind` breaks Helm chart parameter parsing.
@@ -200,6 +201,7 @@ When running `kubectl apply -R -f <dir>`, `kubectl` recursively attempts to pars
   - Cloud / Staging: `helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -f infrastructure/kubernetes/ingress-controller/ingress-nginx-values.yaml`
 
 #### B. Observability Daemon Configurations
+
 - `infrastructure/observability/alertmanager/alertmanager.yml` (Alertmanager configuration)
 - `infrastructure/observability/prometheus/prometheus.yml` (Prometheus scraper configuration)
 - `infrastructure/observability/prometheus/rules/alerts.yml` (Prometheus alert rules)
@@ -212,6 +214,7 @@ When running `kubectl apply -R -f <dir>`, `kubectl` recursively attempts to pars
   - On Kubernetes: Via `helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring`
 
 #### C. Ansible Playbooks & Roles
+
 - `infrastructure/ansible/**/*.yml` (Playbooks, task lists, inventories)
 - **Why**: These are executed by the Ansible automation engine (`ansible-playbook`), not Kubernetes.
 
@@ -219,13 +222,12 @@ When running `kubectl apply -R -f <dir>`, `kubectl` recursively attempts to pars
 
 ### Summary of Correct Deployment Commands
 
-| Target Component | Correct Command (Never run `kubectl apply -R -f` across mixed directories) |
-| :--- | :--- |
-| **Larekmart Workloads (Local/Dev)** | `kubectl apply -k infrastructure/kubernetes/overlays/development` |
-| **Larekmart Workloads (Staging)** | `kubectl apply -k infrastructure/kubernetes/overlays/staging` |
-| **Larekmart Workloads (Production)** | `kubectl apply -k infrastructure/kubernetes/overlays/production` |
-| **Ingress Controller (Minikube)** | `minikube addons enable ingress` |
-| **Ingress Controller (Helm)** | `helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -f infrastructure/kubernetes/ingress-controller/ingress-nginx-values.yaml -n ingress-nginx --create-namespace` |
-| **Observability (Docker)** | `docker compose -f docker-compose.observability.yml up -d` |
-| **Observability (Kubernetes)** | `helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --create-namespace` |
-
+| Target Component                     | Correct Command (Never run `kubectl apply -R -f` across mixed directories)                                                                                                       |
+| :----------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Larekmart Workloads (Local/Dev)**  | `kubectl apply -k infrastructure/kubernetes/overlays/development`                                                                                                                |
+| **Larekmart Workloads (Staging)**    | `kubectl apply -k infrastructure/kubernetes/overlays/staging`                                                                                                                    |
+| **Larekmart Workloads (Production)** | `kubectl apply -k infrastructure/kubernetes/overlays/production`                                                                                                                 |
+| **Ingress Controller (Minikube)**    | `minikube addons enable ingress`                                                                                                                                                 |
+| **Ingress Controller (Helm)**        | `helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -f infrastructure/kubernetes/ingress-controller/ingress-nginx-values.yaml -n ingress-nginx --create-namespace` |
+| **Observability (Docker)**           | `docker compose -f docker-compose.observability.yml up -d`                                                                                                                       |
+| **Observability (Kubernetes)**       | `helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --create-namespace`                                                                  |
