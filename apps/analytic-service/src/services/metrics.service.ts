@@ -223,6 +223,71 @@ export const recordWishlistEvent = async (
   );
 };
 
+export const recordPromotionEvent = async (
+  eventType:
+    | "promotion.created"
+    | "promotion.activated"
+    | "promotion.deactivated"
+    | "promotion.reserved"
+    | "promotion.redeemed"
+    | "promotion.reservation.released"
+    | "promotion.budget_exhausted",
+  payload: any,
+) => {
+  const data = payload?.data || payload;
+  const userId = data?.userId || data?.guestId || "system";
+  const amount = Number(data?.discountAmount || 0);
+
+  const memoryEvent: AnalyticsEventType = {
+    id: inMemoryEvents.length + 1,
+    event_type: eventType,
+    user_id: String(userId),
+    amount,
+    metadata: {
+      promotionId: data?.promotionId,
+      reservationId: data?.reservationId,
+      redemptionId: data?.redemptionId,
+      orderId: data?.orderId,
+      discountAmount: data?.discountAmount,
+      name: data?.name,
+      type: data?.type,
+      status: data?.status,
+    },
+    created_at: payload?.timestamp || new Date().toISOString(),
+  };
+
+  inMemoryEvents.unshift(memoryEvent);
+  if (inMemoryEvents.length > 100) inMemoryEvents.pop();
+
+  if (getDbStatus()) {
+    try {
+      await pool.query(
+        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          eventType,
+          String(userId),
+          amount,
+          JSON.stringify(memoryEvent.metadata),
+          memoryEvent.created_at,
+        ],
+      );
+    } catch (err) {
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordPromotionEvent.dbInsert",
+      });
+    }
+  }
+
+  logger.info(`[Promotion Event] ${eventType} recorded`, {
+    promotionId: data?.promotionId,
+    discountAmount: amount,
+    userId,
+  });
+};
+
 export const recordCartEvent = async (
   eventType:
     | "cart.created"

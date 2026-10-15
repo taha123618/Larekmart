@@ -25,6 +25,24 @@ export const VALID_PROMOTIONS: Record<string, CouponRule> = {
     discountValue: 20,
     minOrderAmount: 5000,
   },
+  SUMMER20: {
+    code: "SUMMER20",
+    discountType: "percentage",
+    discountValue: 20,
+    minOrderAmount: 3000,
+  },
+  SAVE15: {
+    code: "SAVE15",
+    discountType: "percentage",
+    discountValue: 15,
+    minOrderAmount: 2000,
+  },
+  FREESHIP: {
+    code: "FREESHIP",
+    discountType: "fixed",
+    discountValue: 250,
+    minOrderAmount: 1500,
+  },
 };
 
 export const calculateCouponDiscount = (

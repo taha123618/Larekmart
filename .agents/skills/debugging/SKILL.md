@@ -111,3 +111,23 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
    uv run celery -A app.workers.celery inspect active
    ```
 6. Inspect Prometheus metrics at `http://localhost:8008/metrics` (`recommendation_requests_total`, `recommendation_latency_seconds`, `recommendation_cache_hits_total`).
+
+## 7. Promotion Service (Hono :8016)
+
+### Issue: Coupon code rejection or reservation failure
+
+1. **Validation & Budget Checks**:
+   - Verify campaign status is `ACTIVE` and within `startDate` and `endDate`.
+   - Check if usage limits (`maxRedemptionsTotal`, `maxRedemptionsPerUser`) or budget caps (`budgetLimit`) are exhausted.
+   - Verify cart subtotal meets `minSubtotal` threshold.
+2. **Reservation Lifecycle & Expiration**:
+   - Reservations hold budget for 15 minutes in `larekmart_promotion_db` and Redis.
+   - On checkout completion, order-service passes `reservationId`, which triggers redemption commit upon `order.created`.
+   - Verify expired reservations are reclaimed by background TTL reaper.
+3. **Database & Migrations**:
+   - Database name: `larekmart_promotion_db` on PostgreSQL (:5432).
+   - Run migrations: `pnpm --filter promotion-service db:migrate`.
+   - Seed sample campaigns: `pnpm --filter promotion-service db:seed`.
+4. **Kafka Consumers & Producers**:
+   - Verify `order-events.consumer` is actively subscribed to `order.created`.
+   - Confirm producer emits `promotion.redeemed` and `promotion.created` events.

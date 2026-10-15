@@ -35,6 +35,13 @@ A hybrid Kafka consumer worker and Express HTTP API service that listens to all 
   - `review.approved`
   - `review.reported`
   - `product.rating-summary.updated`
+  - `promotion.created`
+  - `promotion.activated`
+  - `promotion.deactivated`
+  - `promotion.budget_exhausted`
+  - `promotion.reserved`
+  - `promotion.redeemed`
+  - `promotion.released`
 - If modifying topic contracts, update the producer, all consumers, `@repo/types`, and `docs/EVENT-DRIVEN-ARCHITECTURE.md` together.
 
 ## Database & Persistence

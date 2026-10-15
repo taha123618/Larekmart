@@ -10,7 +10,7 @@ Node.js (TypeScript strict) + Hono 4 promotion engine microservice: centralized 
 
 - PostgreSQL (`larekmart_promotion_db`, Drizzle ORM) — authoritative for campaign usage, row-level locks, atomic ACID transactions on budgets and redemptions (`promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets`, `promotion_audit_logs`).
 - Redis (`@repo/redis`, `promotion:v1:*`) — active promotion cache with TTL, coupon lookup fast path, and rate limits. Outages degrade performance, never data correctness.
-- Kafka — asynchronously consumes order lifecycle events (`order.confirmed`, `order.completed`, `order.cancelled`) to commit or release promotion reservations; publishes lifecycle events (`promotion.created`, `promotion.activated`, `promotion.deactivated`, `promotion.reserved`, `promotion.redeemed`, `promotion.reservation.released`, `promotion.budget.exhausted`) using the repository envelope `producer.send(topic, { value: payload })`.
+- Kafka — asynchronously consumes order lifecycle events (`order.created`, `order.confirmed`, `order.completed`, `order.cancelled`) to commit or release promotion reservations; publishes lifecycle events (`promotion.created`, `promotion.activated`, `promotion.deactivated`, `promotion.reserved`, `promotion.redeemed`, `promotion.reservation.released`, `promotion.budget.exhausted`) using the repository envelope `producer.send(topic, { value: payload })`.
 
 ## Architecture & Layers
 
@@ -40,6 +40,7 @@ Node.js (TypeScript strict) + Hono 4 promotion engine microservice: centralized 
   - `POST /api/v1/promotions/reservations/:id/commit` — commits a reservation upon order finalization.
   - `POST /api/v1/promotions/reservations/:id/release` — releases a reserved promotion upon checkout abandonment or cancellation.
 - Admin (`shouldBeAdmin` required):
+  - `GET /api/v1/admin/promotions` — paginated list of all campaigns with status, search, and type filters.
   - `POST /api/v1/admin/promotions` — creates a new campaign promotion.
   - `PATCH /api/v1/admin/promotions/:promotionId` — updates campaign rules, budget, or dates.
   - `POST /api/v1/admin/promotions/:promotionId/activate` — activates a promotion.

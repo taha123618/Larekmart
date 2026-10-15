@@ -12,7 +12,7 @@ infrastructure/kubernetes/
 │   ├── secrets/                   # Template secret references
 │   ├── ingress.yaml               # SSL-terminated Ingress with CORS & WebSocket support
 │   ├── frontends/                 # Storefront & Admin dashboard
-│   ├── services/                  # 12 microservices deployments & services
+│   ├── services/                  # 16 microservices deployments & services (including promotion-service)
 │   ├── workers/                   # Headless Kafka consumers (email-service)
 │   ├── autoscaling/               # Horizontal Pod Autoscalers (HPA)
 │   ├── pdb/                       # Pod Disruption Budgets (minAvailable: 1)
@@ -151,7 +151,7 @@ pnpm test:staging:traffic http://localhost:80
 The test validates:
 
 - Next.js Storefront (`client`) and Admin Portal (`admin`) HTTP 200/30x resolution.
-- All 14 microservice health endpoints (`/api/v1/*/health`).
+- All microservice health endpoints (`/api/v1/*/health`, including `/api/v1/promotions/health`).
 - WebSocket upgrade route `/ws` on `notification-service`.
 - CORS preflight headers (`Access-Control-Allow-Origin`).
 - Defensive HTTP security headers (`X-Content-Type-Options`).

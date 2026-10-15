@@ -47,7 +47,7 @@ boundary/contract/security rule), **should-fix**, or **nit**.
 - [ ] ESM `.js` import extensions follow the file's existing style.
 - [ ] Errors return `{ message }` with an appropriate status; async Kafka handlers
       catch errors so the consumer survives.
-- [ ] DB access goes through `@repo/product-db` / `@repo/order-db`.
+- [ ] DB access goes through the designated package or service ORM schema (e.g. `@repo/product-db`, `@repo/order-db`, `@repo/cart-db`, Drizzle).
 - [ ] Env vars added to the workspace `.env.example`.
 
 ### Quality & verification

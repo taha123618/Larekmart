@@ -49,7 +49,7 @@ pnpm --filter promotion-service test
 pnpm --filter notification-service test
 pnpm --filter recommendation-service test
 
-# 3. Static type-check across all 32 workspaces
+# 3. Static type-check across all 33 workspaces
 pnpm check-types
 
 # 4. Monorepo code style and formatting checks
@@ -91,7 +91,7 @@ When adding or updating tests, adhere to these quality engineering principles:
 Before submitting code changes:
 
 - [ ] `pnpm test` passes across all target workspaces.
-- [ ] `pnpm check-types` reports 0 TypeScript errors across 31 workspaces.
+- [ ] `pnpm check-types` reports 0 TypeScript errors across 33 workspaces.
 - [ ] Test files are strict-mode clean: tsconfig `include` covers `src/` only, so
       `pnpm check-types` does not typecheck tests — run
       `npx tsc --noEmit --strict tests/<file>.ts` directly when hardening a test file,

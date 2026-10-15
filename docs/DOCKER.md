@@ -133,6 +133,7 @@ docker/
 | `media-service`          | `8013`                            | `127.0.0.1:8013`                     | **Internal Only**   | Media uploads, variants & lifecycle                                     |
 | `review-service`         | `8014`                            | `127.0.0.1:8014`                     | **Internal Only**   | Product reviews, ratings, verified purchases & moderation               |
 | `wishlist-service`       | `8015`                            | `127.0.0.1:8015`                     | **Internal Only**   | Wishlists, saved items, guest merging, price-drop & restock alerts      |
+| `promotion-service`      | `8016`                            | `127.0.0.1:8016`                     | **Internal Only**   | Campaigns, coupons, discounts, budgets & checkout reservations          |
 | `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                      |
 | `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                             |
 | `email-service`          | None (worker)                     | None                                 | **Internal Only**   | Consumes Kafka events, sends email notifications                        |
@@ -242,6 +243,10 @@ pnpm --filter @repo/product-db db:deploy
 pnpm --filter @repo/inventory-db db:deploy
 pnpm --filter @repo/catalog-db db:deploy
 pnpm --filter @repo/shipping-db db:deploy
+pnpm --filter media-service db:migrate
+pnpm --filter review-service db:migrate
+pnpm --filter wishlist-service db:migrate
+pnpm --filter promotion-service db:migrate
 ```
 
 To seed initial catalog data:
@@ -407,6 +412,9 @@ Every single container image used in the Larekmart platform is cataloged below, 
 | **catalog-service**        | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **shipping-service**       | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **media-service**          | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
+| **review-service**         | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
+| **wishlist-service**       | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
+| **promotion-service**      | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **email-service**          | Node Worker            | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **client**                 | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |
 | **admin**                  | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |

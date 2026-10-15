@@ -10,6 +10,12 @@ export async function startKafkaConsumers(): Promise<void> {
     await consumer.connect();
     await consumer.subscribe([
       {
+        topicName: "order.created",
+        topicHandler: async (msg) => {
+          if (msg.value) await handleOrderConfirmed(msg.value);
+        },
+      },
+      {
         topicName: "order.confirmed",
         topicHandler: async (msg) => {
           if (msg.value) await handleOrderConfirmed(msg.value);

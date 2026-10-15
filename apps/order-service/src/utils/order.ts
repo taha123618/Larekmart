@@ -23,6 +23,7 @@ export const createOrder = async (order: OrderType) => {
         orderId: savedOrder._id.toString(),
         userId: savedOrder.userId,
         cartId: (order as any).cartId || null,
+        reservationId: (order as any).reservationId || null,
         email: savedOrder.email,
         amount: savedOrder.amount,
         status: savedOrder.status,

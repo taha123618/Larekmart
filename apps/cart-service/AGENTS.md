@@ -23,7 +23,7 @@ Express 5 microservice on port `:8009` owning server-side cart persistence, anon
 - `PATCH /api/v1/cart/items/:item_id` — Update item quantity (0 removes item)
 - `DELETE /api/v1/cart/items/:item_id` — Remove item from cart
 - `POST /api/v1/cart/merge` — Transactionally merge guest cart into user cart upon login
-- `POST /api/v1/cart/coupons` — Apply coupon code
+- `POST /api/v1/cart/coupons` — Apply coupon code (synced with `promotion-service` active campaigns: `SUMMER20`, `SAVE15`, `FREESHIP`)
 - `DELETE /api/v1/cart/coupons/:code` — Remove coupon code
 - `DELETE /api/v1/cart` — Clear all items and coupons
 - `POST /api/v1/cart/refresh-pricing` — Revalidate product prices against catalog
@@ -38,5 +38,6 @@ Express 5 microservice on port `:8009` owning server-side cart persistence, anon
 ## Verification
 
 ```bash
+pnpm --filter cart-service test
 pnpm --filter cart-service check-types
 ```

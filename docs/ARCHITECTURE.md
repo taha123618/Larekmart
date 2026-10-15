@@ -39,7 +39,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 
 **`admin` (dashboard, :3003)** — Next.js App Router, shadcn/ui, Tailwind v4.
 
-- Sections: dashboard (charts, cards, todo), products, categories, users, orders, and cache
+- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, and cache
   performance (Redis hit/miss rates per service, scraped live from each service's `/metrics`).
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
@@ -211,7 +211,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Persistence: PostgreSQL via Drizzle ORM targeting `larekmart_promotion_db` (`promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets`, `promotion_audit_logs`).
 - Caching: Redis (`promotion:v1:*` namespace) through `@repo/redis` for cached active campaigns, coupon lookups, and rate limiting.
 - Reservation Lifecycle: 15-minute transactional hold on promotional budgets and customer usage counts during checkout (`PENDING`), committed (`COMMITTED`) on order confirmation, and released (`RELEASED` / `EXPIRED`) on checkout failure or background worker sweep.
-- Events: Publishes `promotion.created`, `promotion.activated`, `promotion.deactivated`, `promotion.budget_exhausted`, `promotion.reserved`, `promotion.redeemed`, `promotion.released`. Consumes `order.confirmed`, `order.completed`, `order.cancelled`.
+- Events: Publishes `promotion.created`, `promotion.activated`, `promotion.deactivated`, `promotion.budget_exhausted`, `promotion.reserved`, `promotion.redeemed`, `promotion.released`. Consumes `order.created`, `order.confirmed`, `order.completed`, `order.cancelled`.
 
 ## Data ownership
 

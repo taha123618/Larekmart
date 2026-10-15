@@ -163,7 +163,7 @@ pnpm --filter wishlist-service db:migrate    # wishlist-service Drizzle migratio
 pnpm --filter promotion-service db:migrate   # promotion-service Drizzle migrations (larekmart_promotion_db)
 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
-docker compose up -d --build                 # start entire microservices stack (17 services + backing DBs)
+docker compose up -d --build                 # start entire microservices stack (19 services + backing DBs)
 docker compose down                          # stop all containers preserving volumes
 docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui # backing infra only
 # See docs/DOCKER.md for complete operations manual

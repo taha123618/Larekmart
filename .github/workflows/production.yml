@@ -56,6 +56,7 @@ jobs:
       REVIEW_DATABASE_URL: ${{ secrets.PROD_REVIEW_DATABASE_URL }}
       WISHLIST_DATABASE_URL: ${{ secrets.PROD_WISHLIST_DATABASE_URL }}
       PROMOTION_DATABASE_URL: ${{ secrets.PROD_PROMOTION_DATABASE_URL }}
+      
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -170,12 +171,13 @@ jobs:
               larekmart/media-service=ghcr.io/${{ github.repository_owner }}/larekmart/media-service:${SHA_SHORT} \
               larekmart/review-service=ghcr.io/${{ github.repository_owner }}/larekmart/review-service:${SHA_SHORT} \
               larekmart/wishlist-service=ghcr.io/${{ github.repository_owner }}/larekmart/wishlist-service:${SHA_SHORT} \
+              larekmart/promotion-service=ghcr.io/${{ github.repository_owner }}/larekmart/promotion-service:${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:${SHA_SHORT}
 
             echo "Applying Production manifests to namespace larekmart..."
             kubectl apply -k .
 
-            echo "Tracking zero-downtime rolling updates across all 18 workloads..."
+            echo "Tracking zero-downtime rolling updates across all 19 workloads..."
             DEPLOYMENTS=(
               client
               admin
@@ -195,6 +197,7 @@ jobs:
               media-service
               review-service
               wishlist-service
+              promotion-service
               email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do
