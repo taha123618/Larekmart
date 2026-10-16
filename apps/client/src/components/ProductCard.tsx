@@ -29,9 +29,13 @@ export default function ProductCard({ product }: ProductCardProps) {
     color: defaultColor,
   });
 
-  const { addToCart } = useCartStore();
-  const { toggleWishlist, isInWishlist } = useWishlistStore();
-  const { openQuickView } = useUIStore();
+  // ⚡ Bolt Performance Optimization:
+  // Use fine-grained selectors for Zustand to prevent all cards from re-rendering
+  // whenever any unrelated state (like the cart array) changes.
+  const addToCart = useCartStore((state) => state.addToCart);
+  const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
+  const isInWishlist = useWishlistStore((state) => state.isInWishlist);
+  const openQuickView = useUIStore((state) => state.openQuickView);
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
