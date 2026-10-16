@@ -85,8 +85,10 @@ const FALLBACK_FLASH_PRODUCTS: ProductType[] = [
 ];
 
 export default function FlashDeals({ products = [] }: FlashDealsProps) {
-  const { addToCart } = useCartStore();
-  const { openQuickView } = useUIStore();
+  // ⚡ Bolt Performance Optimization:
+  // Use fine-grained selectors for Zustand to prevent unnecessary re-renders
+  const addToCart = useCartStore((state) => state.addToCart);
+  const openQuickView = useUIStore((state) => state.openQuickView);
 
   // Countdown timer state
   const [timeLeft, setTimeLeft] = useState({
