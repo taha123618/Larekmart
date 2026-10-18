@@ -35,7 +35,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
           │                                                     │
    ┌──────▼───────┐                                      ┌──────▼───────┐
    │   client     │                                      │    admin     │
-   │  Next.js 15  │                                      │  Next.js 15  │
+   │  Next.js 16  │                                      │  Next.js 15  │
    │   :3002      │                                      │   :3003      │
    └──────┬───────┘                                      └──────┬───────┘
           │                                                     │
@@ -176,7 +176,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`@repo/shipping-db`**       | PostgreSQL shipping persistence via Prisma: shipments, packages, tracking events, labels.                    | `shipping-service`                                  |
 | **`@repo/user-db`**           | PostgreSQL user-domain persistence via Prisma: profiles, addresses, preferences, settings.                   | `user-service`                                      |
 | **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                     | `admin`, `client`                                   |
-| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 33 workspaces                                   |
+| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 36 workspaces                                   |
 
 ---
 
@@ -188,7 +188,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 - **UI & Design System**: Tailwind CSS v4, shadcn/ui, Radix UI primitives, Lucide React, Recharts
 - **State Management & Forms**: Zustand (persisted), TanStack React Query v5, TanStack Table v8, React Hook Form + Zod
 - **Backend & Gateway Frameworks**: Fastify 5 (`@fastify/http-proxy`, `@fastify/helmet`, Opossum circuit breaker), Express 5, Hono 4, Koa, Go 1.22 (Chi), Python 3.12+ (FastAPI)
-- **Databases & Persistence**: PostgreSQL (via Prisma ORM, Drizzle ORM & pg), MongoDB (via Mongoose)
+- **Databases & Persistence**: PostgreSQL (via Prisma ORM, Drizzle ORM & pg), MongoDB (via Mongoose), MySQL 8.0 (via Drizzle ORM)
 - **Message Broker**: Apache Kafka (KafkaJS, 3-broker cluster with ZooKeeper and Kafka UI)
 - **Authentication**: Clerk (`@clerk/nextjs`, `@clerk/express`, `@clerk/fastify`, `@hono/clerk-auth`)
 - **Payments**: Stripe (Custom Checkout Element + Webhooks)
@@ -206,6 +206,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 - **OpenSearch**: Local or containerized on port `9200` (search index owned by search-service)
 - **PostgreSQL**: Local or containerized on port `5432`
 - **MongoDB**: Local or containerized on port `27017`
+- **MySQL**: Local or containerized on port `3306` (tax jurisdictions, versioned rules, customer exemptions, and calculation snapshots owned by `tax-service`)
 
 ### 2. Installation & Setup
 
@@ -213,8 +214,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 # ==============================================================================
 # Option A: Full Docker Compose Environment (Recommended)
 # ==============================================================================
-# Spins up backing databases (Postgres with pgvector, MongoDB replica set, Redis,
-# Kafka KRaft broker, OpenSearch), Kafka UI, all 16 backend services, and both Next.js frontends:
+# Spins up backing databases (Postgres with pgvector, MongoDB replica set, MySQL 8.0, Redis,
+# Kafka KRaft broker, OpenSearch), Kafka UI, all 17 backend services, and both Next.js frontends:
 docker compose up -d --build
 
 # View logs:
@@ -229,8 +230,8 @@ docker compose down
 # 1. Automated monorepo setup (dependencies, .env files, AI skills sync)
 pnpm run setup
 
-# 2. Start backing infrastructure in Docker (PostgreSQL, MongoDB, Mongo-Express, Redis, Kafka, OpenSearch, Kafka UI)
-docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui
+# 2. Start backing infrastructure in Docker (PostgreSQL, MongoDB, Mongo-Express, MySQL, Redis, Kafka, OpenSearch, Kafka UI)
+docker compose up -d postgres mongo mongo-express mysql redis kafka opensearch kafka-ui
 
 # 3. Generate Prisma Clients & apply database migrations
 pnpm --filter @repo/product-db db:generate
@@ -241,6 +242,7 @@ pnpm --filter media-service db:migrate
 pnpm --filter review-service db:migrate
 pnpm --filter wishlist-service db:migrate
 pnpm --filter promotion-service db:migrate
+pnpm --filter tax-service db:migrate
 
 # 4. Start all workspaces concurrently in development mode
 pnpm dev
@@ -253,7 +255,7 @@ pnpm dev
 | **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                        |
 | **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                 |
 | **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                            |
-| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet`) across all 33 workspaces                       |
+| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet` / `pytest`) across all 36 workspaces            |
 | **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                      |
 | **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                         |
 | **Build**           | `pnpm build`                                                | Run configured builds for the Next.js apps, Node services, packages, and Go service |
@@ -352,7 +354,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
   - `docker-devops`: Docker, Compose, Kubernetes, CI/CD, and production operations.
   - `security-audit`: Vulnerability review workflow for codebases, APIs, and services.
   - `monitoring`: Telemetry, structured logging, health checks, and metrics via `@repo/monitoring`.
-- **Workspace-specific rules**: Each app and package has a scoped `AGENTS.md`. There are currently no workspace-local `.agents/skills` directories; root skills are mirrored with `pnpm run skills:sync`.
+- **Workspace-specific rules & skills**: Each app and package has a scoped `AGENTS.md`. Specialized workspace skills live in `<workspace>/.agents/skills/` (e.g. `tax-engine` in `apps/tax-service`, `review-lifecycle` in `apps/review-service`). Canonical root skills are mirrored across `.cursor/`, `.claude/`, `.gemini/`, and `.github/` via `pnpm run skills:sync`.
 
 ---
 
