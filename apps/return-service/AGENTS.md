@@ -141,6 +141,17 @@ All Kafka event publishing goes through the `return_outbox` table (written in th
 | `POST /api/v1/admin/returns/:returnId/inspect` | `POST /api/admin/returns/:returnId/inspect` | Admin |
 | `POST /api/v1/admin/returns/:returnId/refund/retry` | `POST /api/admin/returns/:returnId/refund/retry` | Admin |
 
+### Frontend Consumers
+- **Storefront (`apps/client`)**:
+  - `apps/client/src/services/return.service.ts`: Client API SDK with media-service evidence upload.
+  - `apps/client/src/app/account/returns/page.tsx`: Self-service returns hub, tracking submission, status tracking, and label download.
+  - `apps/client/src/components/returns/RequestReturnModal.tsx`: Order return request modal with partial quantity selector, condition picker, and real-time refund estimation.
+  - `apps/client/src/app/orders/page.tsx`: "Return Items" action button on order items.
+- **Admin Dashboard (`apps/admin`)**:
+  - `apps/admin/src/services/return.service.ts`: Admin operations API client.
+  - `apps/admin/src/app/(dashboard)/returns/page.tsx`: Return Operations Center with KPI cards and TanStack operations table.
+  - `apps/admin/src/components/returns/`: Approve/Reject modal, warehouse inspection form with item disposition, and return detail audit views.
+
 ## 8. Commands
 
 ```bash
