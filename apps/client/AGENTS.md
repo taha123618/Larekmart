@@ -138,7 +138,7 @@ This app talks HTTP to `product-service`, `order-service`, `payment-service`,
 `catalog-service` (`NEXT_PUBLIC_CATALOG_SERVICE_URL` :8010), `shipping-service` (`NEXT_PUBLIC_SHIPPING_SERVICE_URL` :8011),
 `user-service` (`NEXT_PUBLIC_USER_SERVICE_URL` :8012), `review-service` (`NEXT_PUBLIC_REVIEW_SERVICE_URL` :8014),
 `wishlist-service` (`NEXT_PUBLIC_WISHLIST_SERVICE_URL` :8015), `promotion-service` (`NEXT_PUBLIC_PROMOTION_SERVICE_URL` :8016),
-and `tax-service` (`NEXT_PUBLIC_TAX_SERVICE_URL` :8017). It never calls `auth-service` directly — Clerk handles user auth.
+`tax-service` (`NEXT_PUBLIC_TAX_SERVICE_URL` :8017), and `return-service` (`NEXT_PUBLIC_RETURN_SERVICE_URL` :8018). It never calls `auth-service` directly — Clerk handles user auth.
 
 Shipping & tracking integration:
 

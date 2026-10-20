@@ -13,7 +13,9 @@ import type {
 } from "@repo/types";
 
 const GATEWAY_BASE =
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090";
+  process.env.NEXT_PUBLIC_RETURN_SERVICE_URL ||
+  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+  "http://localhost:8090";
 
 const MEDIA_BASE =
   process.env.NEXT_PUBLIC_MEDIA_SERVICE_URL ||
@@ -136,7 +138,9 @@ export async function fetchReturnById(
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || `Failed to fetch return details: ${res.status}`);
+    throw new Error(
+      error.message || `Failed to fetch return details: ${res.status}`,
+    );
   }
 
   const data = (await res.json()) as { return: CustomerReturnRecord };
@@ -231,7 +235,9 @@ export async function attachReturnEvidence(
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || `Failed to attach evidence: ${res.status}`);
+    throw new Error(
+      error.message || `Failed to attach evidence: ${res.status}`,
+    );
   }
 
   return (await res.json()) as CustomerReturnEvidence;
@@ -262,7 +268,9 @@ export async function submitReturnTracking(
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || `Failed to submit tracking: ${res.status}`);
+    throw new Error(
+      error.message || `Failed to submit tracking: ${res.status}`,
+    );
   }
 
   return (await res.json()) as CustomerReturnRecord;
