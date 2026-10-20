@@ -25,7 +25,7 @@ async function testProration() {
       originalQuantity: 2,
       unitPrice: "50.00",
       itemDiscount: "10.00", // total order-level discount across 2 units → 5 per unit
-      taxAmount: "8.00",     // total tax across 2 units → 4 per unit
+      taxAmount: "8.00", // total tax across 2 units → 4 per unit
       reason: "DEFECTIVE",
       condition: "UNOPENED",
     },
@@ -37,7 +37,11 @@ async function testProration() {
   assert.equal(result.taxRefund, "4.00", "tax refund should be 4.00");
   // Total: 45 + 4 = 49
   assert.equal(result.totalRefund, "49.00", "total refund should be 49.00");
-  assert.equal(result.shippingDeduction, "0.00", "no shipping deduction by default");
+  assert.equal(
+    result.shippingDeduction,
+    "0.00",
+    "no shipping deduction by default",
+  );
 
   console.log("  ✓ single item proration");
 
@@ -56,7 +60,11 @@ async function testProration() {
     },
   ]);
   // 2 * 20 = 40
-  assert.equal(r2.subtotalRefund, "40.00", "partial qty subtotal should be 40.00");
+  assert.equal(
+    r2.subtotalRefund,
+    "40.00",
+    "partial qty subtotal should be 40.00",
+  );
   assert.equal(r2.totalRefund, "40.00");
 
   console.log("  ✓ partial quantity return");
@@ -99,7 +107,11 @@ async function testProration() {
     ],
     "10.00", // bigger deduction than subtotal
   );
-  assert.equal(r4.totalRefund, "0.00", "total should floor to 0 when deduction > subtotal");
+  assert.equal(
+    r4.totalRefund,
+    "0.00",
+    "total should floor to 0 when deduction > subtotal",
+  );
   console.log("  ✓ negative total floors to 0.00");
 
   console.log("  ✓ ProrationService: all cases passed\n");
@@ -113,33 +125,115 @@ async function testStateMachine() {
   console.log("2. ReturnStateMachine transitions ...");
 
   // Valid forward transitions
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.REQUESTED, ReturnStatusEnum.APPROVED), true);
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.APPROVED, ReturnStatusEnum.AWAITING_RETURN_SHIPMENT), true);
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.IN_TRANSIT, ReturnStatusEnum.RECEIVED), true);
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.RECEIVED, ReturnStatusEnum.INSPECTION), true);
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.INSPECTION, ReturnStatusEnum.REFUND_PENDING), true);
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.REFUND_PENDING, ReturnStatusEnum.COMPLETED), true);
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.REFUND_FAILED, ReturnStatusEnum.REFUND_PENDING), true);
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.REQUESTED,
+      ReturnStatusEnum.APPROVED,
+    ),
+    true,
+  );
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.APPROVED,
+      ReturnStatusEnum.AWAITING_RETURN_SHIPMENT,
+    ),
+    true,
+  );
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.IN_TRANSIT,
+      ReturnStatusEnum.RECEIVED,
+    ),
+    true,
+  );
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.RECEIVED,
+      ReturnStatusEnum.INSPECTION,
+    ),
+    true,
+  );
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.INSPECTION,
+      ReturnStatusEnum.REFUND_PENDING,
+    ),
+    true,
+  );
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.REFUND_PENDING,
+      ReturnStatusEnum.COMPLETED,
+    ),
+    true,
+  );
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.REFUND_FAILED,
+      ReturnStatusEnum.REFUND_PENDING,
+    ),
+    true,
+  );
 
   // Invalid / backwards transitions
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.COMPLETED, ReturnStatusEnum.REQUESTED), false);
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.REJECTED, ReturnStatusEnum.APPROVED), false);
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.CANCELLED, ReturnStatusEnum.IN_TRANSIT), false);
-  assert.equal(ReturnStateMachine.canTransition(ReturnStatusEnum.REFUND_PENDING, ReturnStatusEnum.REQUESTED), false);
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.COMPLETED,
+      ReturnStatusEnum.REQUESTED,
+    ),
+    false,
+  );
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.REJECTED,
+      ReturnStatusEnum.APPROVED,
+    ),
+    false,
+  );
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.CANCELLED,
+      ReturnStatusEnum.IN_TRANSIT,
+    ),
+    false,
+  );
+  assert.equal(
+    ReturnStateMachine.canTransition(
+      ReturnStatusEnum.REFUND_PENDING,
+      ReturnStatusEnum.REQUESTED,
+    ),
+    false,
+  );
   console.log("  ✓ valid transitions accepted");
 
   // assertTransition throws on invalid
   assert.throws(
-    () => ReturnStateMachine.assertTransition(ReturnStatusEnum.COMPLETED, ReturnStatusEnum.REQUESTED),
+    () =>
+      ReturnStateMachine.assertTransition(
+        ReturnStatusEnum.COMPLETED,
+        ReturnStatusEnum.REQUESTED,
+      ),
     /Invalid return state transition/,
   );
   console.log("  ✓ assertTransition throws on invalid");
 
   // Terminal state check
-  assert.equal(ReturnStateMachine.isTerminalState(ReturnStatusEnum.COMPLETED), true);
-  assert.equal(ReturnStateMachine.isTerminalState(ReturnStatusEnum.REJECTED), true);
-  assert.equal(ReturnStateMachine.isTerminalState(ReturnStatusEnum.CANCELLED), true);
-  assert.equal(ReturnStateMachine.isTerminalState(ReturnStatusEnum.REFUND_PENDING), false);
+  assert.equal(
+    ReturnStateMachine.isTerminalState(ReturnStatusEnum.COMPLETED),
+    true,
+  );
+  assert.equal(
+    ReturnStateMachine.isTerminalState(ReturnStatusEnum.REJECTED),
+    true,
+  );
+  assert.equal(
+    ReturnStateMachine.isTerminalState(ReturnStatusEnum.CANCELLED),
+    true,
+  );
+  assert.equal(
+    ReturnStateMachine.isTerminalState(ReturnStatusEnum.REFUND_PENDING),
+    false,
+  );
   console.log("  ✓ isTerminalState correct\n");
 }
 
@@ -223,12 +317,40 @@ async function testSchemas() {
   console.log("  ✓ SubmitReturnTrackingSchema\n");
 }
 
+// ─── Test: Health & Metrics endpoints ─────────────────────────────────────────
+import { healthController } from "../src/controllers/health.controller.js";
+import type { Context } from "koa";
+
+async function testHealthAndMetrics() {
+  console.log("4. HealthController & Prometheus metrics ...");
+
+  // Test ready probe
+  const readyCtx = {} as Context;
+  healthController.ready(readyCtx);
+  assert.deepEqual(readyCtx.body, {
+    status: "ready",
+    service: "return-service",
+  });
+  console.log("  ✓ ready probe");
+
+  // Test metrics probe
+  const metricsCtx = {} as Context;
+  healthController.metrics(metricsCtx);
+  assert.equal(metricsCtx.type, "text/plain; version=0.0.4");
+  assert.ok(
+    typeof metricsCtx.body === "string",
+    "metrics body should be a prometheus string",
+  );
+  console.log("  ✓ metrics endpoint returns prometheus format\n");
+}
+
 // ─── Runner ───────────────────────────────────────────────────────────────────
 async function run() {
   console.log("=== return-service test suite ===\n");
   await testProration();
   await testStateMachine();
   await testSchemas();
+  await testHealthAndMetrics();
   console.log("==========================================");
   console.log(" All return-service tests passed! ✓");
   console.log("==========================================");

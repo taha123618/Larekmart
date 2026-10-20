@@ -1,6 +1,9 @@
 import type { Context } from "koa";
 import { getDb } from "../db/connection.js";
 import { sql } from "drizzle-orm";
+import { createMetricsRegistry } from "@repo/monitoring";
+
+export const metricsRegistry = createMetricsRegistry("return-service");
 
 export class HealthController {
   async health(ctx: Context): Promise<void> {
@@ -25,6 +28,11 @@ export class HealthController {
 
   ready(ctx: Context): void {
     ctx.body = { status: "ready", service: "return-service" };
+  }
+
+  metrics(ctx: Context): void {
+    ctx.type = "text/plain; version=0.0.4";
+    ctx.body = metricsRegistry.toPrometheus();
   }
 }
 

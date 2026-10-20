@@ -15,4 +15,10 @@ router.get("/health", healthController.health.bind(healthController));
  */
 router.get("/ready", healthController.ready.bind(healthController));
 
+/**
+ * GET /metrics
+ * Prometheus metrics snapshot.
+ */
+router.get("/metrics", healthController.metrics.bind(healthController));
+
 export { router as healthRoutes };

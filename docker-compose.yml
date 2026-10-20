@@ -59,11 +59,21 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-mysql_root_password_123}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-tax_db}
-      MYSQL_MULTIPLE_DATABASES: ${MYSQL_MULTIPLE_DATABASES:-tax_db}
+      MYSQL_MULTIPLE_DATABASES: ${MYSQL_MULTIPLE_DATABASES:-tax_db,return_db}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD:-mysql_root_password_123}"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p$${MYSQL_ROOT_PASSWORD:-mysql_root_password_123}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5

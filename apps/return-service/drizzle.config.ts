@@ -8,6 +8,6 @@ export default defineConfig({
   dbCredentials: {
     url:
       process.env.DATABASE_URL ||
-      "mysql://root:rootpassword@localhost:3306/return_db",
+      "mysql://root:mysql_root_password_123@localhost:3306/return_db",
   },
 });
