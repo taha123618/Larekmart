@@ -109,6 +109,26 @@
           "refId": "C"
         }
       ]
+    },
+    {
+      "id": 5,
+      "title": "Application Logs (Loki)",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 20 },
+      "datasource": "Loki",
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true,
+        "dedupStrategy": "none"
+      },
+      "targets": [
+        {
+          "expr": "{job=\"larekmart\"}",
+          "refId": "A"
+        }
+      ]
     }
   ]
 }

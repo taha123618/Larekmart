@@ -30,11 +30,17 @@ name: larekmart-observability
 #   - OTel Collector:       http://localhost:4318 (HTTP) / localhost:4317 (gRPC)
 #   - Traefik Domain:       http://monitoring.localhost
 #
-# Usage:
-#   docker compose -f docker-compose.observability.yml up -d
+# ⚠️  HOW TO START THIS STACK:
+#   This file is pulled in by the `include:` block at the top of
+#   docker-compose.yml. It starts automatically as part of the root
+#   `docker compose up -d` under the single project "larekmart".
 #
-# This file uses the same larekmart-network as docker-compose.yml so that
-# Prometheus can scrape microservices that are already running there.
+#   Do NOT start it separately with `pnpm monitoring:up` or
+#   `docker compose -f docker-compose.observability.yml up -d`.
+#   That creates a SECOND compose project ("larekmart-observability")
+#   whose services claim the same container_names (larekmart-grafana,
+#   larekmart-loki, larekmart-promtail, ...), so one of the two copies
+#   fails to start and Grafana can show "No data".
 # ============================================================================
 
 services:
@@ -156,6 +162,10 @@ services:
       - ./infrastructure/observability/promtail/promtail.yml:/etc/promtail/config.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      # Named volume so /tmp/positions.yaml survives container recreation.
+      # Without it Promtail re-reads every container log from the beginning
+      # and Loki rejects the old backlog with HTTP 400 (reject_old_samples).
+      - promtail_positions:/tmp
     networks:
       - larekmart-network
     depends_on:
@@ -283,6 +293,8 @@ volumes:
     name: larekmart_grafana_data
   loki_data:
     name: larekmart_loki_data
+  promtail_positions:
+    name: larekmart_promtail_positions
 
 # ────────────────────────────────────────────────────────────────────────────
 # Uses the same bridge network as main docker-compose.yml for service discovery
