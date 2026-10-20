@@ -120,6 +120,43 @@ const start = async () => {
           );
         },
       },
+      {
+        topicName: "return.requested",
+        topicHandler: async (message) => {
+          const { returnId, orderId, customerId } = message.value || {};
+          logger.info(
+            `[email-service] Return requested for RMA #${returnId} on order #${orderId} (Customer: ${customerId})`,
+          );
+        },
+      },
+      {
+        topicName: "return.approved",
+        topicHandler: async (message) => {
+          const { returnId, orderId, providePrepaidLabel } =
+            message.value || {};
+          logger.info(
+            `[email-service] Return approved for RMA #${returnId} on order #${orderId} (Prepaid: ${providePrepaidLabel})`,
+          );
+        },
+      },
+      {
+        topicName: "return.rejected",
+        topicHandler: async (message) => {
+          const { returnId, orderId, rejectionReason } = message.value || {};
+          logger.info(
+            `[email-service] Return rejected for RMA #${returnId} on order #${orderId} (Reason: ${rejectionReason})`,
+          );
+        },
+      },
+      {
+        topicName: "return.completed",
+        topicHandler: async (message) => {
+          const { returnId, orderId, amount, currency } = message.value || {};
+          logger.info(
+            `[email-service] Return refund completed for RMA #${returnId} on order #${orderId} (Refund: ${amount} ${currency || "USD"})`,
+          );
+        },
+      },
     ]);
   } catch (error) {
     logger.fatal("Email service consumer error", error);

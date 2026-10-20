@@ -1,6 +1,7 @@
 import { consumer } from "../utils/kafka.js";
 import { orderTopicHandlers } from "./order.consumer.js";
 import { paymentTopicHandlers } from "./payment.consumer.js";
+import { returnTopicHandlers } from "./return.consumer.js";
 
 /**
  * Starts all shipping-service event consumers in a single atomic subscription.
@@ -9,7 +10,11 @@ import { paymentTopicHandlers } from "./payment.consumer.js";
  * "KafkaJSNonRetriableError: Cannot subscribe to topic while consumer is running".
  */
 export const startShippingConsumers = async () => {
-  const allHandlers = [...orderTopicHandlers, ...paymentTopicHandlers];
+  const allHandlers = [
+    ...orderTopicHandlers,
+    ...paymentTopicHandlers,
+    ...returnTopicHandlers,
+  ];
   console.log(
     `[ShippingConsumers] Subscribing to ${allHandlers.length} Kafka topics:`,
     allHandlers.map((h) => h.topicName),

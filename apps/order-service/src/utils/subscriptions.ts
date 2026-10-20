@@ -30,5 +30,27 @@ export const runKafkaSubscriptions = async () => {
         }
       },
     },
+    {
+      topicName: "return.completed",
+      topicHandler: async (message) => {
+        try {
+          const { Order } = await import("@repo/order-db");
+          const payload = message.value;
+          if (payload?.orderId) {
+            await Order.findByIdAndUpdate(payload.orderId, {
+              status: "refunded",
+            });
+            console.log(
+              `[order-service] Order ${payload.orderId} marked refunded via return.completed`,
+            );
+          }
+        } catch (err) {
+          console.warn(
+            "[order-service] Failed to update order on return.completed:",
+            err,
+          );
+        }
+      },
+    },
   ]);
 };

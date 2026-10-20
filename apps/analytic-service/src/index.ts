@@ -17,6 +17,7 @@ import {
   recordWishlistEvent,
   recordPromotionEvent,
   recordTaxEvent,
+  recordReturnEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
 import type {
@@ -539,6 +540,60 @@ const start = async () => {
           const payload = message.value || message;
           if (payload) {
             await recordTaxEvent("tax.rules.updated", payload);
+          }
+        },
+      },
+      {
+        topicName: "return.requested",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordReturnEvent("return.requested", payload);
+          }
+        },
+      },
+      {
+        topicName: "return.approved",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordReturnEvent("return.approved", payload);
+          }
+        },
+      },
+      {
+        topicName: "return.rejected",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordReturnEvent("return.rejected", payload);
+          }
+        },
+      },
+      {
+        topicName: "return.cancelled",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordReturnEvent("return.cancelled", payload);
+          }
+        },
+      },
+      {
+        topicName: "return.inspection.completed",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordReturnEvent("return.inspection.completed", payload);
+          }
+        },
+      },
+      {
+        topicName: "return.completed",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordReturnEvent("return.completed", payload);
           }
         },
       },
