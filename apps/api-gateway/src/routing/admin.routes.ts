@@ -85,4 +85,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/tax",
     requireAdmin: true,
   },
+
+  // 7. Return Service Admin — Approvals, Rejections & Inspections
+  {
+    prefix: "/api/v1/admin/returns",
+    target: services.return.url,
+    serviceName: services.return.name,
+    timeoutMs: services.return.timeoutMs,
+    rewritePrefix: "/api/admin/returns",
+    requireAdmin: true,
+  },
 ];

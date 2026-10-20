@@ -18,7 +18,7 @@
 
 ---
 
-**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **seventeen backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, and promotions; MongoDB for orders and carts; MySQL for tax rules, calculations, and jurisdictions).
+**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **eighteen backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, and promotions; MongoDB for orders and carts; MySQL for tax rules, calculations, jurisdictions, and return/refund management).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node, Go, and Python services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 
@@ -106,7 +106,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── review-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis reviews, ratings, moderation & reputation (:8014)
 │   ├── wishlist-service/      # Fastify 5 + PostgreSQL + Drizzle + Redis wishlists, guest migration & price/stock alerts (:8015)
 │   ├── promotion-service/     # Hono 4 + PostgreSQL + Drizzle + Redis promotions, coupons, budget holds & discounts (:8016)
-│   └── tax-service/           # Fastify 5 + MySQL + Drizzle + Redis tax rules, calculations, exemptions & quotes (:8017)
+│   ├── tax-service/           # Fastify 5 + MySQL + Drizzle + Redis tax rules, calculations, exemptions & quotes (:8017)
+│   └── return-service/        # Koa 2 + MySQL + Drizzle + Redis return requests, eligibility, inspection & refund coordination (:8018)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -156,6 +157,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`wishlist-service`**       | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk                                   | `8015` | Customer wishlists, multiple lists, guest-to-user migration, unguessable sharing tokens, price-drop and restock notification alerts.            |
 | **`promotion-service`**      | Hono 4, Drizzle, PostgreSQL, Redis, Kafka, Clerk                                      | `8016` | Centralized promotions, campaigns, coupons, discount eligibility, budgets, checkout reservations, and redemptions.                              |
 | **`tax-service`**            | Fastify 5, Drizzle, MySQL, Redis, Kafka, Clerk                                        | `8017` | Jurisdiction-aware tax calculations, versioned tax rules, customer exemptions, checkout quotes, auditable snapshots, and provider adapters.     |
+| **`return-service`**         | Koa 2, Drizzle, MySQL, Redis, Kafka, Clerk                                            | `8018` | Complete return & refund lifecycle: eligibility checks, partial-quantity returns, evidence attachments, inspection dispositions, return-shipment tracking, and Stripe refund SAGA coordination. |
 
 ---
 
@@ -215,7 +217,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 # Option A: Full Docker Compose Environment (Recommended)
 # ==============================================================================
 # Spins up backing databases (Postgres with pgvector, MongoDB replica set, MySQL 8.0, Redis,
-# Kafka KRaft broker, OpenSearch), Kafka UI, all 17 backend services, and both Next.js frontends:
+# Kafka KRaft broker, OpenSearch), Kafka UI, all 18 backend services, and both Next.js frontends:
 docker compose up -d --build
 
 # View logs:
@@ -243,6 +245,7 @@ pnpm --filter review-service db:migrate
 pnpm --filter wishlist-service db:migrate
 pnpm --filter promotion-service db:migrate
 pnpm --filter tax-service db:migrate
+pnpm --filter return-service db:migrate
 
 # 4. Start all workspaces concurrently in development mode
 pnpm dev

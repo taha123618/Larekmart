@@ -97,6 +97,11 @@ export const services = {
     url: env.TAX_SERVICE_URL,
     timeoutMs: 5000,
   },
+  return: {
+    name: "return-service",
+    url: env.RETURN_SERVICE_URL,
+    timeoutMs: 10000,
+  },
 } as const satisfies Record<string, ServiceTarget>;
 
 export const downstreamServices = services;
