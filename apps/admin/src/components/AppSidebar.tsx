@@ -22,6 +22,7 @@ import {
   Heart,
   Tag,
   Scale,
+  RotateCcw,
 } from "lucide-react";
 import {
   Sidebar,
@@ -218,6 +219,14 @@ const AppSidebar = () => {
                   <Link href="/orders">
                     <ShoppingBasket />
                     See All Transactions
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/returns">
+                    <RotateCcw />
+                    Returns & Refunds
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

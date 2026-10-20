@@ -138,4 +138,22 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     timeoutMs: services.wishlist.timeoutMs,
     rewritePrefix: "/api/v1/me/wishlists",
   },
+
+  // 11. Return Service — Customer returns
+  {
+    prefix: "/api/v1/returns",
+    target: services.return.url,
+    serviceName: services.return.name,
+    timeoutMs: services.return.timeoutMs,
+    rewritePrefix: "/api/returns",
+    requireAuth: true,
+  },
+  {
+    prefix: "/api/v1/returns/orders",
+    target: services.return.url,
+    serviceName: services.return.name,
+    timeoutMs: services.return.timeoutMs,
+    rewritePrefix: "/api/returns/orders",
+    requireAuth: true,
+  },
 ];

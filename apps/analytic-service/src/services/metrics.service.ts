@@ -33,6 +33,9 @@ const inMemoryMetrics = {
   totalMediaDeleted: 0,
   totalTaxCollected: 0,
   totalTaxCalculations: 0,
+  totalReturnsRequested: 0,
+  totalReturnsCompleted: 0,
+  totalRefundedAmount: 0,
   lastEventTime: new Date().toISOString(),
 };
 
@@ -365,6 +368,81 @@ export const recordTaxEvent = async (
   logger.info(
     `[Tax Event] ${eventType} for ${userId} (taxAmount: ${taxAmount})`,
   );
+};
+
+export const recordReturnEvent = async (
+  eventType:
+    | "return.requested"
+    | "return.approved"
+    | "return.rejected"
+    | "return.cancelled"
+    | "return.inspection.completed"
+    | "return.completed",
+  payload: any,
+) => {
+  const data = payload?.data || payload;
+  const userId = data?.customerId || data?.inspectorId || "system";
+  const amount = parseFloat(data?.totalRefund || data?.amount || "0");
+
+  if (eventType === "return.requested") {
+    inMemoryMetrics.totalReturnsRequested =
+      (inMemoryMetrics.totalReturnsRequested || 0) + 1;
+  } else if (eventType === "return.completed") {
+    inMemoryMetrics.totalReturnsCompleted =
+      (inMemoryMetrics.totalReturnsCompleted || 0) + 1;
+    inMemoryMetrics.totalRefundedAmount = Number(
+      (
+        (inMemoryMetrics.totalRefundedAmount || 0) +
+        (isNaN(amount) ? 0 : amount)
+      ).toFixed(2),
+    );
+  }
+
+  inMemoryMetrics.lastEventTime = new Date().toISOString();
+
+  const memoryEvent: AnalyticsEventType = {
+    id: inMemoryEvents.length + 1,
+    event_type: eventType,
+    user_id: String(userId),
+    amount: isNaN(amount) ? 0 : amount,
+    metadata: (data || {}) as Record<string, unknown>,
+    created_at:
+      data?.requestedAt ||
+      data?.approvedAt ||
+      data?.rejectedAt ||
+      data?.cancelledAt ||
+      data?.inspectedAt ||
+      data?.completedAt ||
+      data?.timestamp ||
+      new Date().toISOString(),
+  };
+
+  inMemoryEvents.unshift(memoryEvent);
+  if (inMemoryEvents.length > 100) inMemoryEvents.pop();
+
+  if (getDbStatus()) {
+    try {
+      await pool.query(
+        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          eventType,
+          String(userId),
+          isNaN(amount) ? null : amount,
+          JSON.stringify(memoryEvent.metadata),
+          memoryEvent.created_at,
+        ],
+      );
+    } catch (err) {
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordReturnEvent.dbInsert",
+      });
+    }
+  }
+
+  logger.info(`[Return Event] ${eventType} for ${userId} (amount: ${amount})`);
 };
 
 export const recordCartEvent = async (

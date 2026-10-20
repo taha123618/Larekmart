@@ -17,3 +17,4 @@ export * from "./review";
 export * from "./wishlist";
 export * from "./promotion";
 export * from "./tax";
+export * from "./returns";

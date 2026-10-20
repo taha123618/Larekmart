@@ -57,17 +57,20 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
 2. Use Mongo Express UI at `http://localhost:8081` (`mongoexpressuser` / `mongoexpresspass`) to visually inspect collections.
 3. Check `connectOrderDB()` or `connectCartDB()` service logs for connection or authentication errors.
 
-### MySQL (tax-service)
+### MySQL (tax-service & return-service)
 
 1. Verify MySQL is running on port `3306`:
-   `MYSQL_URL="mysql://root:admin123@127.0.0.1:3306/tax_db"`
+   `MYSQL_URL="mysql://root:admin123@127.0.0.1:3306/tax_db"` (tax-service)
+   `MYSQL_URL="mysql://root:admin123@127.0.0.1:3306/return_db"` (return-service)
 2. Verify migrations are applied:
    ```bash
    pnpm --filter tax-service db:migrate
+   pnpm --filter return-service db:migrate
    ```
-3. Test connectivity and schema tables (`tax_jurisdictions`, `tax_categories`, `tax_rules`):
+3. Test connectivity and schema tables:
    ```bash
    pnpm --filter tax-service db:seed
+   pnpm --filter return-service test
    ```
 
 ## 4. Next.js Hydration & SSR Issues
@@ -144,3 +147,34 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
 4. **Kafka Consumers & Producers**:
    - Verify `order-events.consumer` is actively subscribed to `order.created`.
    - Confirm producer emits `promotion.redeemed` and `promotion.created` events.
+
+## 8. Return Service (Koa :8018)
+
+### Issue: Return eligibility rejection, reverse shipment failure, or refund SAGA stalling
+
+1. **Eligibility & Policy Constraints**:
+   - Verify order status is `DELIVERED` before initiating a return (`order-service`).
+   - Check if the delivery timestamp falls within the 14-day policy window (`return_policy_versions`).
+   - Confirm returned quantity does not exceed unreturned delivered items (`return_items`).
+   - Verify item is not in an exempt/final-sale category.
+
+2. **State Machine Transitions**:
+   - Allowed lifecycle: `REQUESTED` → `APPROVED` → `AWAITING_RETURN_SHIPMENT` → `IN_TRANSIT` → `RECEIVED` → `INSPECTION` → `REFUND_PENDING` → `COMPLETED`.
+   - Terminal states: `REJECTED`, `CANCELLED`, `REFUND_FAILED`.
+   - Transitions are strictly audited in `return_state_transitions`; check logs for invalid state transition rejections (`InvalidStateTransitionError`).
+
+3. **Reverse Logistics & Carrier Tracking**:
+   - When return is approved, `return-service` emits `return.shipment.requested`.
+   - `shipping-service` generates return label and emits `shipping.label.created` / `return.shipment.created`.
+   - If shipping tracking fails to update, check `shipping-service` carrier credentials (TCS/Leopards/DHL/FedEx) or verify customer tracking submission via `POST /api/v1/returns/:returnId/tracking`.
+
+4. **Stripe Refund SAGA Coordination**:
+   - On warehouse inspection completion (`POST /api/v1/admin/returns/:id/inspect`), `return-service` calculates prorated discount and tax adjustments, then emits `return.refund.requested`.
+   - `payment-service` executes the Stripe refund and emits `payment.refund.succeeded` or `payment.refund.failed`.
+   - If a refund fails, return status transitions to `REFUND_FAILED`. Trigger manual recovery via `POST /api/v1/admin/returns/:id/refund/retry`.
+
+5. **Transactional Outbox & Database**:
+   - MySQL database `return_db` on port 3306.
+   - Run migrations: `pnpm --filter return-service db:migrate`.
+   - Inspect pending outbox events: verify `return_outbox` table where `status = 'PENDING'` is being processed by the outbox worker loop.
+   - Metrics: inspect Prometheus metrics at `http://localhost:8018/metrics` (`returns_total`, `refunds_processed_total`, `outbox_published_total`).

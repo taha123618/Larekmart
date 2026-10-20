@@ -1,5 +1,12 @@
-import { confirmReservationsByReference } from "@repo/inventory-db";
-import { PaymentSuccessfulType } from "@repo/types";
+import {
+  confirmReservationsByReference,
+  listInventoryItems,
+  restockInventory,
+} from "@repo/inventory-db";
+import {
+  PaymentSuccessfulType,
+  ReturnInspectionCompletedPayload,
+} from "@repo/types";
 import { invalidateInventoryCache } from "../cache/inventory-cache.js";
 import { inventoryMetrics, logger } from "../observability/metrics.js";
 import { consumer, producer } from "../utils/kafka.js";
@@ -99,6 +106,82 @@ export async function startInventoryEventConsumer(): Promise<void> {
         } catch (error) {
           logger.error(
             "Error processing payment.successful Kafka message in inventory-service",
+            error,
+          );
+        }
+      },
+    },
+    {
+      topicName: "return.inspection.completed",
+      topicHandler: async (message) => {
+        try {
+          const payload = message.value as ReturnInspectionCompletedPayload;
+          if (
+            !payload ||
+            !payload.restockableItems ||
+            payload.restockableItems.length === 0
+          ) {
+            return;
+          }
+
+          logger.info(
+            `Processing return.inspection.completed for return: ${payload.returnId} (${payload.restockableItems.length} restockable items)`,
+          );
+
+          let restockedCount = 0;
+          for (const item of payload.restockableItems) {
+            const numericProductId = parseInt(item.productId, 10);
+            if (isNaN(numericProductId) || item.quantity <= 0) continue;
+
+            const existingItems = await listInventoryItems({
+              productId: numericProductId,
+            });
+            if (existingItems.length > 0) {
+              const invItem = existingItems[0]!;
+              await restockInventory(
+                {
+                  productId: invItem.productId,
+                  variantId: invItem.variantId,
+                  warehouseId: invItem.warehouseId,
+                },
+                item.quantity,
+                {
+                  referenceType: "RETURN",
+                  referenceId: payload.returnId,
+                  reason: `Warehouse return inspection restock (RMA #${payload.returnId})`,
+                },
+              );
+              restockedCount++;
+
+              try {
+                await producer.send("inventory.restocked", {
+                  value: {
+                    productId: invItem.productId,
+                    variantId: invItem.variantId,
+                    warehouseId: invItem.warehouseId,
+                    quantity: item.quantity,
+                    returnId: payload.returnId,
+                    occurredAt: new Date().toISOString(),
+                  },
+                });
+              } catch (pubErr) {
+                logger.warn("Failed to publish inventory.restocked event", {
+                  error:
+                    pubErr instanceof Error ? pubErr.message : String(pubErr),
+                });
+              }
+            }
+          }
+
+          if (restockedCount > 0) {
+            await invalidateInventoryCache();
+            logger.info(
+              `Successfully restocked ${restockedCount} item(s) for return: ${payload.returnId}`,
+            );
+          }
+        } catch (error) {
+          logger.error(
+            "Error processing return.inspection.completed Kafka message in inventory-service",
             error,
           );
         }

@@ -875,3 +875,150 @@ only a best-effort availability cache.
 
 - **Auth**: Public / Scraper
 - **Response**: Liveness probe, readiness probe (verifying PostgreSQL `larekmart_promotion_db` and Redis connectivity), and Prometheus metrics exposition.
+
+---
+
+## tax-service (:8017)
+
+### `POST /api/v1/tax/quote`
+
+- **Auth**: Public / Guest or Authenticated User
+- **Body**: `TaxQuoteRequestSchema` (`jurisdiction`, `items`: `[{ id, categoryId, amount, quantity }]`, `customerId?`)
+- **Response**: `{ subtotal: string, taxTotal: string, grandTotal: string, lines: TaxLineQuote[] }` — estimated sales tax / VAT without persisting calculation snapshot
+
+### `POST /api/v1/tax/calculate`
+
+- **Auth**: User or Internal Service (`order.created` consumer or direct call)
+- **Body**: `TaxCalculateRequestSchema` (`orderId`, `jurisdiction`, `items`, `customerId?`, `exemptionCertificateId?`)
+- **Response**: `201 Created` — `{ calculationId: string, orderId: string, taxTotal: string, status: "COMMITTED" }` — immutable calculation snapshot persisted in MySQL `tax_db`
+- **Side Effect**: Emits `tax.calculation.completed` Kafka event
+
+### `GET /api/v1/tax/calculations/:calculationId`
+
+- **Auth**: User (order owner) or Admin
+- **Response**: Full auditable tax calculation record with rule version and jurisdiction breakdown
+
+### `POST /api/v1/tax/returns/quote`
+
+- **Auth**: Authenticated User or Internal Service (`return-service`)
+- **Body**: `{ calculationId: string, returnedItems: [{ itemId: string, quantity: number }] }`
+- **Response**: `{ proportionalTaxRefund: string, lines: TaxReturnLineQuote[] }` — exact decimal proportional tax adjustment for partial returns
+
+### `GET /api/v1/tax/jurisdictions`
+
+- **Auth**: Public
+- **Response**: Supported jurisdictions (e.g., `US-CA`, `US-NY`, `PK-ISB`, `GB`)
+
+### `GET /api/v1/tax/categories`
+
+- **Auth**: Public
+- **Response**: Configured product tax categories (standard, apparel, digital, food, exempt)
+
+### `POST /api/v1/admin/tax/rules`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `CreateTaxRuleSchema` (`jurisdictionId`, `categoryId`, `rate`, `effectiveFrom`, `effectiveTo?`, `description`)
+- **Response**: `201 Created` — `{ rule: TaxRule }`
+- **Side Effect**: Emits `tax.rules.updated` Kafka event and invalidates Redis rule cache
+
+### `PATCH /api/v1/admin/tax/rules/:ruleId`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `UpdateTaxRuleSchema`
+- **Response**: `{ rule: TaxRule }`
+
+### `POST /api/v1/admin/tax/exemptions`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `CreateTaxExemptionSchema` (`customerId`, `jurisdictionId`, `certificateNumber`, `expiresAt`)
+- **Response**: `201 Created` — `{ exemption: TaxExemption }`
+
+---
+
+## return-service (:8018)
+
+All requests route through `api-gateway` on port `8080`.
+
+### `POST /api/v1/returns/orders/:orderId`
+
+- **Auth**: Authenticated User (`shouldBeUser`)
+- **Body**: `CreateReturnRequestSchema` (`items`: `[{ orderItemId, quantity, reason, condition? }]`, `customerNotes?`, `evidenceMediaIds?`)
+- **Response**: `201 Created` — `{ success: true, return: ReturnWithDetails }`
+- **Verification**: Enforces 14-day return window from `order.delivered`, validates delivered quantities, checks final-sale exclusions, and calculates prorated refund estimates
+- **Side Effect**: Emits `return.requested` via transactional outbox
+
+### `GET /api/v1/returns`
+
+- **Auth**: Authenticated User (`shouldBeUser`)
+- **Query Params**: `page` (default 1), `limit` (default 20), `status?`
+- **Response**: `{ items: ReturnSummary[], pagination: PaginationMeta }` — caller's returns scoped strictly by `x-user-id`
+
+### `GET /api/v1/returns/:returnId`
+
+- **Auth**: Authenticated User (owner) or Admin
+- **Response**: `{ return: ReturnWithDetails }` — comprehensive return details including items, tracking, inspections, and refund status
+
+### `DELETE /api/v1/returns/:returnId`
+
+- **Auth**: Authenticated User (owner)
+- **Response**: `{ success: true, message: "Return cancelled" }`
+- **Condition**: Only returns in `REQUESTED` status can be cancelled by customers
+- **Side Effect**: Emits `return.cancelled` via transactional outbox
+
+### `POST /api/v1/returns/:returnId/evidence`
+
+- **Auth**: Authenticated User (owner)
+- **Body**: `AttachEvidenceSchema` (`mediaId`: string, `mediaUrl`: string, `mediaType`: "IMAGE" | "VIDEO", `description?`: string)
+- **Response**: `201 Created` — `{ success: true, evidence: ReturnMedia }`
+
+### `POST /api/v1/returns/:returnId/tracking`
+
+- **Auth**: Authenticated User (owner)
+- **Body**: `SubmitTrackingSchema` (`carrier`: string, `trackingNumber`: string, `shippedAt?`: string)
+- **Response**: `{ success: true, shipment: ReturnShipment }`
+- **Side Effect**: Transitions return status to `IN_TRANSIT`
+
+### `GET /api/v1/admin/returns`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `page`, `limit`, `status`, `orderId`, `customerId`, `startDate`, `endDate`
+- **Response**: `{ items: ReturnWithDetails[], pagination: PaginationMeta, statistics: ReturnKPIs }`
+
+### `GET /api/v1/admin/returns/:returnId`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ return: ReturnWithDetails }`
+
+### `POST /api/v1/admin/returns/:returnId/approve`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `ApproveReturnSchema` (`rmaNumber?`, `instructions?`, `estimatedRefundAmount?`)
+- **Response**: `{ success: true, return: ReturnWithDetails }`
+- **Side Effect**: Generates formal RMA, transitions to `APPROVED`, emits `return.approved` and `return.shipment.requested` (triggering `shipping-service` return label)
+
+### `POST /api/v1/admin/returns/:returnId/reject`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `RejectReturnSchema` (`reason`: string, `notes?`: string)
+- **Response**: `{ success: true, return: ReturnWithDetails }`
+- **Side Effect**: Transitions to `REJECTED`, emits `return.rejected` (triggering customer notification email)
+
+### `POST /api/v1/admin/returns/:returnId/inspect`
+
+- **Auth**: Admin or Warehouse Inspector (`shouldBeAdmin`)
+- **Body**: `RecordInspectionSchema` (`items`: `[{ returnItemId, condition, disposition, restockQuantity, scrapQuantity, notes? }]`)
+- **Response**: `{ success: true, return: ReturnWithDetails, inspection: ReturnInspection }`
+- **Disposition Options**: `RESTOCK_SELLABLE`, `RESTOCK_REFURBISHED`, `DAMAGED_SCRAP`, `RETURN_TO_VENDOR`
+- **Side Effect**: Emits `return.inspection.completed` (restocking in `inventory-service`) and `return.refund.requested` (triggering Stripe refund SAGA in `payment-service`)
+
+### `POST /api/v1/admin/returns/:returnId/refund/retry`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ success: true, message: "Refund retry initiated", return: ReturnWithDetails }`
+- **Condition**: Permitted when return status is `REFUND_FAILED`
+- **Side Effect**: Re-emits `return.refund.requested` to re-execute Stripe refund SAGA
+
+### `GET /health`, `GET /ready`, `GET /metrics`
+
+- **Auth**: Public / Scraper
+- **Response**: Liveness probe, readiness probe (verifying MySQL `return_db` and Redis connectivity), and Prometheus metrics exposition.

@@ -1,7 +1,7 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { ShoppingBag, User } from "lucide-react";
+import { ShoppingBag, User, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const ProfileButton = () => {
@@ -18,6 +18,11 @@ const ProfileButton = () => {
           label="See Orders"
           labelIcon={<ShoppingBag className="w-4 h-4" />}
           onClick={() => router.push("/orders")}
+        />
+        <UserButton.Action
+          label="My Returns & Refunds"
+          labelIcon={<RotateCcw className="w-4 h-4" />}
+          onClick={() => router.push("/account/returns")}
         />
       </UserButton.MenuItems>
     </UserButton>

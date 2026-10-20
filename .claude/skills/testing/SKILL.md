@@ -24,7 +24,8 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 | **`review-service`**         | Node.js Test Runner / `tsx` | Five offline suites via `tests/index.test.ts`: domain unit validation, anti-abuse voting/reporting, Fastify API routes, Kafka messaging publishers & consumers, database schema & constraints (`tests/review-service.test.ts`)                                                                                   |
 | **`wishlist-service`**       | Node.js Test Runner / `tsx` | Nine suites via `tests/wishlist-service.test.ts`: health probes, auth guards, Zod contracts, default wishlist creation, item deduplication, named wishlists, item move, guest migration, and unguessable token shares                                                                                            |
 | **`promotion-service`**      | Node.js Test Runner / `tsx` | Eleven suites via `tests/promotion-service.test.ts`: health probes, auth guards, campaign lifecycle, coupon validation, evaluation quotes, budget tracking, ACID reservations, commit/release, worker expiry, and event emission                                                                                 |
-| **`tax-service`**            | Node.js Test Runner / `tsx` | Nine suites via `tests/tax-service.test.ts`: health probes, auth guards, decimal arithmetic precision, standard rule evaluation, exemption certificate verification, calculation snapshot persistence, proportional return refunds, adapter factory, and event emission                                         |
+| **`tax-service`**            | Node.js Test Runner / `tsx` | Nine suites via `tests/tax-service.test.ts`: health probes, auth guards, decimal arithmetic precision, standard rule evaluation, exemption certificate verification, calculation snapshot persistence, proportional return refunds, adapter factory, and event emission                                          |
+| **`return-service`**         | Node.js Test Runner / `tsx` | Fourteen suites via `tests/return-service.test.ts`: health probes, auth guards, return policy evaluation, eligibility verification, evidence validation, state machine transitions, warehouse inspections, carrier reverse-shipping, decimal refund proration, outbox event persistence, and event emission      |
 | **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle, recovery (`internal/*`)                                                                                                                                                                                                                      |
 | **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                  |
 | **`@repo/redis`**            | Integration Verifier        | Key namespacing, cache TTLs, rate limiter, degraded resilience (`src/scripts/verify-redis.ts`)                                                                                                                                                                                                                   |
@@ -48,10 +49,11 @@ pnpm --filter review-service test
 pnpm --filter wishlist-service test
 pnpm --filter promotion-service test
 pnpm --filter tax-service test
+pnpm --filter return-service test
 pnpm --filter notification-service test
 pnpm --filter recommendation-service test
 
-# 3. Static type-check across all 33 workspaces
+# 3. Static type-check across all 35 workspaces
 pnpm check-types
 
 # 4. Monorepo code style and formatting checks

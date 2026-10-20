@@ -35,11 +35,12 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Cart: `zustand` store persisted to `localStorage` (`src/stores/cartStore.ts`) with optimistic sync to `cart-service`.
 - Checkout: `ShippingForm` (carrier rate calculations & COD) → `StripePaymentForm` (Stripe `CheckoutProvider`, custom UI) / `CodConfirmationForm` →
   return page polls the session status → `/orders`.
+- Customer Returns Hub: `/account/returns` real-time return tracking, status badges, RMA details, carrier tracking links, and printable return label slips. Returns can be initiated directly from `/orders` via `RequestReturnModal`.
 - Auth: Clerk; server components fetch orders with `auth().getToken()`.
 
 **`admin` (dashboard, :3003)** — Next.js App Router, shadcn/ui, Tailwind v4.
 
-- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, and cache
+- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), and cache
   performance (Redis hit/miss rates per service, scraped live from each service's `/metrics`).
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
@@ -58,7 +59,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
   authorization context injection (`x-user-id`, `x-user-role`, `x-internal-secret`), rate limiting
   via Redis token bucket, request correlation (`x-request-id`, `x-correlation-id`), W3C traceparent
   propagation, circuit breaking, safe retries (GET/HEAD), and bounded timeouts.
-- **Routing**: Centralized declarative route registry mapping all 14 downstream microservices.
+- **Routing**: Centralized declarative route registry mapping all 18 downstream microservices.
 - **Aggregation**: `GET /api/v1/home` fans out concurrently to `catalog-service` and
   `recommendation-service` with graceful partial degradation.
 - **Security**: Strips client-supplied internal headers before routing; enforces role gates
@@ -221,42 +222,52 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Arithmetic Precision: Decimal-safe financial arithmetic (`decimal.js` with `ROUND_HALF_UP`) ensuring zero floating point inaccuracy across inclusive and exclusive calculations.
 - Events: Publishes `tax.calculation.completed`, `tax.calculation.failed`, `tax.rules.updated`, `tax.calculation.adjusted`. Consumes `order.created`, `product.tax-category.updated`, `tax.rules.updated`.
 
+**`return-service` (Koa 2, :8018)** — multi-seller return & refund lifecycle orchestration: customer return requests, partial-quantity returns, eligibility verification, evidence media, warehouse inspections, return shipments, refund SAGA coordination, and transactional outbox.
+
+- Routes: `POST /api/v1/returns/orders/:orderId`, `GET /api/v1/returns`, `GET /api/v1/returns/:returnId`, `DELETE /api/v1/returns/:returnId`, `POST /api/v1/returns/:returnId/evidence`, `POST /api/v1/returns/:returnId/tracking`, `GET /api/v1/admin/returns`, `GET /api/v1/admin/returns/:returnId`, `POST /api/v1/admin/returns/:returnId/approve`, `POST /api/v1/admin/returns/:returnId/reject`, `POST /api/v1/admin/returns/:returnId/inspect`, `POST /api/v1/admin/returns/:returnId/refund/retry`, `/health`, `/ready`, `/metrics`.
+- Persistence: MySQL via Drizzle ORM targeting `return_db` (`returns`, `return_items`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_policy_versions`, `return_reasons`, `return_outbox`).
+- Caching: Redis (`return:v1:*` namespace) through `@repo/redis` for policy cache, eligibility verification TTLs, and rate limiting.
+- Arithmetic Precision: Decimal-safe financial arithmetic (`decimal.js` with `ROUND_HALF_UP`) ensuring zero floating-point inaccuracy across partial quantity refunds, prorated item discounts, and sales tax refunds.
+- Events: Publishes `return.requested`, `return.approved`, `return.rejected`, `return.cancelled`, `return.shipment.requested`, `return.inspection.completed`, `return.refund.requested`, `return.completed`. Consumes `order.delivered`, `payment.refund.succeeded`, `payment.refund.failed`, `shipping.label.created`.
+
 ## Data ownership
 
-| Store      | Owner                            | Accessed via                  | Notable models                                                                                                                               |
-| ---------- | -------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL | product-service                  | `@repo/product-db` (Prisma)   | `Product`, `Category`                                                                                                                        |
-| PostgreSQL | inventory-service                | `@repo/inventory-db` (Prisma) | `inventory_items`, `inventory_reservations`, `inventory_movements`                                                                           |
-| PostgreSQL | catalog-service                  | `@repo/catalog-db` (Prisma)   | `catalog_products`, `catalog_categories`, `catalog_brands`, `catalog_collections`                                                            |
-| PostgreSQL | shipping-service                 | `@repo/shipping-db` (Prisma)  | `shipments`, `shipment_items`, `shipment_packages`, `shipping_methods`, `tracking_events`, `shipping_labels`                                 |
-| PostgreSQL | user-service                     | `@repo/user-db` (Prisma)      | `users`, `user_profiles`, `user_addresses`, `user_preferences`, `user_settings`, `processed_events`                                          |
-| PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`        |
-| PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                                |
-| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events`      |
-| PostgreSQL | media-service                    | Drizzle (`pg`)                | `media`, `media_variants`, `media_uploads`, `media_processing_jobs`, `processed_events`                                                      |
-| PostgreSQL | review-service                   | Drizzle (`pg`)                | `reviews`, `review_media`, `review_votes`, `review_reports`, `review_moderation_actions`, `seller_responses`, `product_rating_summaries`     |
-| PostgreSQL | wishlist-service                 | Drizzle (`pg`)                | `wishlists`, `wishlist_items`, `wishlist_shares`, `wishlist_events`                                                                          |
-| PostgreSQL | promotion-service                | Drizzle (`pg`)                | `promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets` |
-| MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`       |
-| S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                       |
-| Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                        |
-| Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                                    |
-| Redis      | product-service                  | `@repo/redis` (ioredis)       | `product:v1:*` (catalog read-through cache)                                                                                                  |
-| Redis      | catalog-service                  | `@repo/redis` (ioredis)       | `catalog:v1:*` (storefront product & collection cache)                                                                                       |
-| Redis      | shipping-service                 | `@repo/redis` (ioredis)       | `shipping:v1:*` (shipping rate cache, tracking cache, webhook idempotency)                                                                   |
-| Redis      | user-service                     | `@repo/redis` (ioredis)       | `user:v1:*` (profile, address, preference, settings read-through cache)                                                                      |
-| Redis      | analytic-service                 | `@repo/redis` (ioredis)       | `analytics:v1:*` (dashboard read-through cache)                                                                                              |
-| Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                        |
-| Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                                 |
-| Redis      | review-service                   | `@repo/redis` (ioredis)       | `review:*` (product rating summary cache, anti-abuse vote/report limits)                                                                     |
-| Redis      | wishlist-service                 | `@repo/redis` (ioredis)       | `wishlist:v1:*` (share token cache, link verification)                                                                                       |
-| Redis      | promotion-service                | `@repo/redis` (ioredis)       | `promotion:v1:*` (active promotion cache, coupon fast-lookup, rate-limiting)                                                                 |
-| Redis      | tax-service                      | `@repo/redis` (ioredis)       | `tax:v1:*` (rule cache, jurisdiction lookup fast-path)                                                                                       |
-| OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                        |
-| MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                      |
-| MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                     |
-| Clerk      | auth-service (and all frontends) | Clerk SDKs                    | users, session claims                                                                                                                        |
-| Stripe     | payment-service                  | `stripe` SDK                  | products, prices, sessions                                                                                                                   |
+| Store      | Owner                            | Accessed via                  | Notable models                                                                                                                                     |
+| ---------- | -------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL | product-service                  | `@repo/product-db` (Prisma)   | `Product`, `Category`                                                                                                                              |
+| PostgreSQL | inventory-service                | `@repo/inventory-db` (Prisma) | `inventory_items`, `inventory_reservations`, `inventory_movements`                                                                                 |
+| PostgreSQL | catalog-service                  | `@repo/catalog-db` (Prisma)   | `catalog_products`, `catalog_categories`, `catalog_brands`, `catalog_collections`                                                                  |
+| PostgreSQL | shipping-service                 | `@repo/shipping-db` (Prisma)  | `shipments`, `shipment_items`, `shipment_packages`, `shipping_methods`, `tracking_events`, `shipping_labels`                                       |
+| PostgreSQL | user-service                     | `@repo/user-db` (Prisma)      | `users`, `user_profiles`, `user_addresses`, `user_preferences`, `user_settings`, `processed_events`                                                |
+| PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`              |
+| PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                                      |
+| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events`            |
+| PostgreSQL | media-service                    | Drizzle (`pg`)                | `media`, `media_variants`, `media_uploads`, `media_processing_jobs`, `processed_events`                                                            |
+| PostgreSQL | review-service                   | Drizzle (`pg`)                | `reviews`, `review_media`, `review_votes`, `review_reports`, `review_moderation_actions`, `seller_responses`, `product_rating_summaries`           |
+| PostgreSQL | wishlist-service                 | Drizzle (`pg`)                | `wishlists`, `wishlist_items`, `wishlist_shares`, `wishlist_events`                                                                                |
+| PostgreSQL | promotion-service                | Drizzle (`pg`)                | `promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets`       |
+| MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`             |
+| MySQL      | return-service                   | Drizzle (`mysql2`)            | `returns`, `return_items`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_outbox` |
+| S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                             |
+| Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                              |
+| Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                                          |
+| Redis      | product-service                  | `@repo/redis` (ioredis)       | `product:v1:*` (catalog read-through cache)                                                                                                        |
+| Redis      | catalog-service                  | `@repo/redis` (ioredis)       | `catalog:v1:*` (storefront product & collection cache)                                                                                             |
+| Redis      | shipping-service                 | `@repo/redis` (ioredis)       | `shipping:v1:*` (shipping rate cache, tracking cache, webhook idempotency)                                                                         |
+| Redis      | user-service                     | `@repo/redis` (ioredis)       | `user:v1:*` (profile, address, preference, settings read-through cache)                                                                            |
+| Redis      | analytic-service                 | `@repo/redis` (ioredis)       | `analytics:v1:*` (dashboard read-through cache)                                                                                                    |
+| Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                              |
+| Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                                       |
+| Redis      | review-service                   | `@repo/redis` (ioredis)       | `review:*` (product rating summary cache, anti-abuse vote/report limits)                                                                           |
+| Redis      | wishlist-service                 | `@repo/redis` (ioredis)       | `wishlist:v1:*` (share token cache, link verification)                                                                                             |
+| Redis      | promotion-service                | `@repo/redis` (ioredis)       | `promotion:v1:*` (active promotion cache, coupon fast-lookup, rate-limiting)                                                                       |
+| Redis      | tax-service                      | `@repo/redis` (ioredis)       | `tax:v1:*` (rule cache, jurisdiction lookup fast-path)                                                                                             |
+| Redis      | return-service                   | `@repo/redis` (ioredis)       | `return:v1:*` (policy cache, return window cache, anti-abuse rate limits)                                                                          |
+| OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                              |
+| MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                            |
+| MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                           |
+| Clerk      | auth-service (and all frontends) | Clerk SDKs                    | users, session claims                                                                                                                              |
+| Stripe     | payment-service                  | `stripe` SDK                  | products, prices, sessions                                                                                                                         |
 
 `@repo/types` re-exports the persistence-derived types (`Product`, `Category`, `Order`, `Shipment`, `ShippingRate`)
 so consumers can type against the catalog/order shapes without importing the DB clients
@@ -324,6 +335,31 @@ admin ── POST /users ──▶ auth-service ── clerkClient.users.createU
                               └── user.created ──▶ email-service ── sendMail
 ```
 
+### Return & Refund SAGA Lifecycle
+
+```
+client (Request Return) ── POST /api/v1/returns/orders/:orderId ──▶ return-service ── MySQL (returns)
+                                                                            │
+                                                                            └── return.requested ──▶ email-service / notification-service
+admin (Approve / Reject) ── POST /api/v1/admin/returns/:id/approve ──▶ return-service
+                                                                            │
+                                                                            ├── return.approved ──▶ email-service
+                                                                            └── return.shipment.requested ──▶ shipping-service ──▶ return.shipment.created
+warehouse (Inspect Items) ── POST /api/v1/admin/returns/:id/inspect ──▶ return-service
+                                                                            │
+                                                                            ├── return.inspection.completed ──▶ inventory-service ──▶ inventory.restocked
+                                                                            └── return.refund.requested ──▶ payment-service (Stripe Refund)
+                                                                                                                   │
+                                                                                                                   ├── payment.refund.succeeded
+                                                                                                                   │         │
+                                                                                                                   │         ▼
+                                                                                                                   │   return-service (mark COMPLETED)
+                                                                                                                   │         │
+                                                                                                                   │         ├── return.completed ──▶ order-service (mark REFUNDED)
+                                                                                                                   │         └── return.completed ──▶ analytic-service & email-service
+                                                                                                                   └── payment.refund.failed ──▶ return-service (mark REFUND_FAILED)
+```
+
 ## Cross-cutting concerns
 
 - **Auth:** Clerk everywhere. Backends guard with `shouldBeUser`/`shouldBeAdmin`;
@@ -362,5 +398,3 @@ admin ── POST /users ──▶ auth-service ── clerkClient.users.createU
 - Kafka broker addresses are hardcoded in `@repo/kafka` for local development; there is
   no configuration layer for clustered/managed Kafka yet.
 - `email-service` has no health endpoint or HTTP server.
-- There is no API gateway; frontends address services directly.
-- No automated tests or CI/CD exist.

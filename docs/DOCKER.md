@@ -90,8 +90,8 @@ docker/
 │   ├── Dockerfile                  # Dozzle logs reverse proxy (100M upload & SSE)
 │   └── nginx.conf                  # Nginx configuration for Dozzle log viewer
 ├── mysql/
-│   ├── Dockerfile                  # MySQL 8.0 engine for tax-service compliance
-│   └── init-multiple-databases.sh  # Automated multi-database provisioning (tax_db)
+│   ├── Dockerfile                  # MySQL 8.0 engine for tax-service & return-service compliance
+│   └── init-multiple-databases.sh  # Automated multi-database provisioning (tax_db, return_db)
 └── mongodb/
     ├── Dockerfile                  # Official MongoDB engine
     └── init-db.js                  # Automated database & collection initializer
@@ -103,45 +103,46 @@ docker/
 
 > **Security Hardening Standard:** Only Traefik publishes ports to `0.0.0.0` (public network). All internal microservices, datastores, and development admin tools bind to `127.0.0.1` (loopback) via environment variables (`INTERNAL_SERVICE_BIND_IP`, `DB_BIND_IP`, `API_GATEWAY_BIND_IP`) to prevent perimeter scanning.
 
-| Service / Container      | Container Port                    | Host Port (Dev / Local)              | Production Exposure | Protocol / Purpose                                                      |
-| ------------------------ | --------------------------------- | ------------------------------------ | ------------------- | ----------------------------------------------------------------------- |
-| **`traefik`**            | `80`, `443`, `8088`               | `80:80`, `443:443`, `127.0.0.1:8088` | **Public**          | Edge router, automated Let's Encrypt TLS, dynamic container discovery   |
-| **`client`**             | `3002`                            | `127.0.0.1:3002`                     | Traefik Ingress     | Next.js 15 Storefront UI (`shop.localhost`)                             |
-| **`admin`**              | `3003`                            | `127.0.0.1:3003`                     | Traefik Ingress     | Next.js 15 Admin Dashboard UI (`admin.localhost`)                       |
-| **`dozzle`** (Nginx)     | `80` (proxy) / `8888` (dozzle)    | `127.0.0.1:8085`                     | Traefik Ingress     | Real-time container log streaming (`logs.localhost` / `:8085`)          |
-| **`rootprint`**          | `8282`                            | `127.0.0.1:8282`                     | Traefik Ingress     | Distributed log analytics & search UI (`rootprint.localhost` / `:8282`) |
-| **`minio`** (Rootprint)  | `9000` (API), `9001` (Console)    | `127.0.0.1:9000`, `127.0.0.1:9001`   | **Internal Only**   | S3-compatible index storage & web console for Quickwit/Rootprint        |
-| **`quickwit`**           | `7280`                            | `127.0.0.1:7280`                     | **Internal Only**   | Fast distributed search & indexing engine for Rootprint logs            |
-| **`caddy`** (profile)    | `80`, `443`                       | `127.0.0.1:8086`, `127.0.0.1:8443`   | Optional Ingress    | Standalone HTTP/2 & HTTP/3 reverse proxy (run via `--profile caddy`)    |
-| **`kafka-ui`**           | `8080`                            | `127.0.0.1:8080`                     | Traefik Ingress     | Topic & consumer monitoring UI (`kafka.localhost`)                      |
-| `postgres`               | `5432`                            | `127.0.0.1:5432`                     | **Internal Only**   | PostgreSQL + pgvector databases                                         |
-| `mongo`                  | `27017`                           | `127.0.0.1:27017`                    | **Internal Only**   | MongoDB Database                                                        |
-| `mongo-express`          | `8081`                            | `127.0.0.1:8081`                     | **Internal Only**   | Mongo-Express Web Admin UI                                              |
-| `redis`                  | `6379`                            | `127.0.0.1:6379`                     | **Internal Only**   | In-memory cache & pub/sub                                               |
-| `kafka`                  | `9092` (internal) / `9094` (host) | `127.0.0.1:9092, 127.0.0.1:9094`     | **Internal Only**   | Apache Kafka KRaft event broker                                         |
-| `opensearch`             | `9200`, `9600`                    | `127.0.0.1:9200, 127.0.0.1:9600`     | **Internal Only**   | Product search & autocomplete engine                                    |
-| `product-service`        | `8000`                            | `127.0.0.1:8000`                     | **Internal Only**   | Product catalog CRUD & sync                                             |
-| `order-service`          | `8001`                            | `127.0.0.1:8001`                     | **Internal Only**   | Order lifecycle & MongoDB storage                                       |
-| `payment-service`        | `8002`                            | `127.0.0.1:8002`                     | **Internal Only**   | Stripe payments & webhook processing                                    |
-| `auth-service`           | `8003`                            | `127.0.0.1:8003`                     | **Internal Only**   | Clerk user & admin gateway                                              |
-| `analytic-service`       | `8004`                            | `127.0.0.1:8004`                     | **Internal Only**   | Event stream metrics aggregator                                         |
-| `notification-service`   | `8005`                            | `127.0.0.1:8005`                     | **Internal Only**   | Multi-channel alerts & Go Chi WebSocket hub                             |
-| `search-service`         | `8006`                            | `127.0.0.1:8006`                     | **Internal Only**   | OpenSearch query engine                                                 |
-| `inventory-service`      | `8007`                            | `127.0.0.1:8007`                     | **Internal Only**   | Stock ledgers & reservations                                            |
-| `recommendation-service` | `8008`                            | `127.0.0.1:8008`                     | **Internal Only**   | Hybrid pgvector recommendations                                         |
-| `cart-service`           | `8009`                            | `127.0.0.1:8009`                     | **Internal Only**   | Authoritative shopping carts                                            |
-| `catalog-service`        | `8010`                            | `127.0.0.1:8010`                     | **Internal Only**   | Read-optimized storefront catalog                                       |
-| `shipping-service`       | `8011`                            | `127.0.0.1:8011`                     | **Internal Only**   | Carrier rate quote & dispatch                                           |
-| `user-service`           | `8012`                            | `127.0.0.1:8012`                     | **Internal Only**   | Customer profiles, addresses & preferences                              |
-| `media-service`          | `8013`                            | `127.0.0.1:8013`                     | **Internal Only**   | Media uploads, variants & lifecycle                                     |
-| `review-service`         | `8014`                            | `127.0.0.1:8014`                     | **Internal Only**   | Product reviews, ratings, verified purchases & moderation               |
-| `wishlist-service`       | `8015`                            | `127.0.0.1:8015`                     | **Internal Only**   | Wishlists, saved items, guest merging, price-drop & restock alerts      |
-| `promotion-service`      | `8016`                            | `127.0.0.1:8016`                     | **Internal Only**   | Campaigns, coupons, discounts, budgets & checkout reservations          |
-| `tax-service`            | `8017`                            | `127.0.0.1:8017`                     | **Internal Only**   | Jurisdiction-aware tax calculations, rules, exemptions & snapshots      |
-| `mysql`                  | `3306`                            | `127.0.0.1:3306`                     | **Internal Only**   | MySQL 8.0 database engine for tax compliance & jurisdiction rules       |
-| `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                      |
-| `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                             |
-| `email-service`          | None (worker)                     | None                                 | **Internal Only**   | Consumes Kafka events, sends email notifications                        |
+| Service / Container      | Container Port                    | Host Port (Dev / Local)              | Production Exposure | Protocol / Purpose                                                       |
+| ------------------------ | --------------------------------- | ------------------------------------ | ------------------- | ------------------------------------------------------------------------ |
+| **`traefik`**            | `80`, `443`, `8088`               | `80:80`, `443:443`, `127.0.0.1:8088` | **Public**          | Edge router, automated Let's Encrypt TLS, dynamic container discovery    |
+| **`client`**             | `3002`                            | `127.0.0.1:3002`                     | Traefik Ingress     | Next.js 15 Storefront UI (`shop.localhost`)                              |
+| **`admin`**              | `3003`                            | `127.0.0.1:3003`                     | Traefik Ingress     | Next.js 15 Admin Dashboard UI (`admin.localhost`)                        |
+| **`dozzle`** (Nginx)     | `80` (proxy) / `8888` (dozzle)    | `127.0.0.1:8085`                     | Traefik Ingress     | Real-time container log streaming (`logs.localhost` / `:8085`)           |
+| **`rootprint`**          | `8282`                            | `127.0.0.1:8282`                     | Traefik Ingress     | Distributed log analytics & search UI (`rootprint.localhost` / `:8282`)  |
+| **`minio`** (Rootprint)  | `9000` (API), `9001` (Console)    | `127.0.0.1:9000`, `127.0.0.1:9001`   | **Internal Only**   | S3-compatible index storage & web console for Quickwit/Rootprint         |
+| **`quickwit`**           | `7280`                            | `127.0.0.1:7280`                     | **Internal Only**   | Fast distributed search & indexing engine for Rootprint logs             |
+| **`caddy`** (profile)    | `80`, `443`                       | `127.0.0.1:8086`, `127.0.0.1:8443`   | Optional Ingress    | Standalone HTTP/2 & HTTP/3 reverse proxy (run via `--profile caddy`)     |
+| **`kafka-ui`**           | `8080`                            | `127.0.0.1:8080`                     | Traefik Ingress     | Topic & consumer monitoring UI (`kafka.localhost`)                       |
+| `postgres`               | `5432`                            | `127.0.0.1:5432`                     | **Internal Only**   | PostgreSQL + pgvector databases                                          |
+| `mongo`                  | `27017`                           | `127.0.0.1:27017`                    | **Internal Only**   | MongoDB Database                                                         |
+| `mongo-express`          | `8081`                            | `127.0.0.1:8081`                     | **Internal Only**   | Mongo-Express Web Admin UI                                               |
+| `redis`                  | `6379`                            | `127.0.0.1:6379`                     | **Internal Only**   | In-memory cache & pub/sub                                                |
+| `kafka`                  | `9092` (internal) / `9094` (host) | `127.0.0.1:9092, 127.0.0.1:9094`     | **Internal Only**   | Apache Kafka KRaft event broker                                          |
+| `opensearch`             | `9200`, `9600`                    | `127.0.0.1:9200, 127.0.0.1:9600`     | **Internal Only**   | Product search & autocomplete engine                                     |
+| `product-service`        | `8000`                            | `127.0.0.1:8000`                     | **Internal Only**   | Product catalog CRUD & sync                                              |
+| `order-service`          | `8001`                            | `127.0.0.1:8001`                     | **Internal Only**   | Order lifecycle & MongoDB storage                                        |
+| `payment-service`        | `8002`                            | `127.0.0.1:8002`                     | **Internal Only**   | Stripe payments & webhook processing                                     |
+| `auth-service`           | `8003`                            | `127.0.0.1:8003`                     | **Internal Only**   | Clerk user & admin gateway                                               |
+| `analytic-service`       | `8004`                            | `127.0.0.1:8004`                     | **Internal Only**   | Event stream metrics aggregator                                          |
+| `notification-service`   | `8005`                            | `127.0.0.1:8005`                     | **Internal Only**   | Multi-channel alerts & Go Chi WebSocket hub                              |
+| `search-service`         | `8006`                            | `127.0.0.1:8006`                     | **Internal Only**   | OpenSearch query engine                                                  |
+| `inventory-service`      | `8007`                            | `127.0.0.1:8007`                     | **Internal Only**   | Stock ledgers & reservations                                             |
+| `recommendation-service` | `8008`                            | `127.0.0.1:8008`                     | **Internal Only**   | Hybrid pgvector recommendations                                          |
+| `cart-service`           | `8009`                            | `127.0.0.1:8009`                     | **Internal Only**   | Authoritative shopping carts                                             |
+| `catalog-service`        | `8010`                            | `127.0.0.1:8010`                     | **Internal Only**   | Read-optimized storefront catalog                                        |
+| `shipping-service`       | `8011`                            | `127.0.0.1:8011`                     | **Internal Only**   | Carrier rate quote & dispatch                                            |
+| `user-service`           | `8012`                            | `127.0.0.1:8012`                     | **Internal Only**   | Customer profiles, addresses & preferences                               |
+| `media-service`          | `8013`                            | `127.0.0.1:8013`                     | **Internal Only**   | Media uploads, variants & lifecycle                                      |
+| `review-service`         | `8014`                            | `127.0.0.1:8014`                     | **Internal Only**   | Product reviews, ratings, verified purchases & moderation                |
+| `wishlist-service`       | `8015`                            | `127.0.0.1:8015`                     | **Internal Only**   | Wishlists, saved items, guest merging, price-drop & restock alerts       |
+| `promotion-service`      | `8016`                            | `127.0.0.1:8016`                     | **Internal Only**   | Campaigns, coupons, discounts, budgets & checkout reservations           |
+| `tax-service`            | `8017`                            | `127.0.0.1:8017`                     | **Internal Only**   | Jurisdiction-aware tax calculations, rules, exemptions & snapshots       |
+| `return-service`         | `8018`                            | `127.0.0.1:8018`                     | **Internal Only**   | Multi-seller return & refund lifecycle, inspection, shipment & proration |
+| `mysql`                  | `3306`                            | `127.0.0.1:3306`                     | **Internal Only**   | MySQL 8.0 database engine for tax compliance, rules & return tracking    |
+| `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                       |
+| `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                              |
+| `email-service`          | None (worker)                     | None                                 | **Internal Only**   | Consumes Kafka events, sends email notifications                         |
 
 ---
 

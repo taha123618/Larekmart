@@ -138,6 +138,14 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `tax.calculation.failed`          | tax-service          | analytic-service                                                                                 | `TaxCalculationFailedEventPayload` (`referenceId`, `referenceType`, `error`, `failedAt`)                                                                                                                        |
 | `tax.rules.updated`               | tax-service          | tax-service (cache eviction), analytic-service                                                   | `TaxRulesUpdatedEventPayload` (`version`, `ruleIds`, `timestamp`)                                                                                                                                               |
 | `tax.calculation.adjusted`        | tax-service          | analytic-service, email-service, order-service                                                   | `TaxCalculationAdjustedEventPayload` (`returnCalculationId`, `originalCalculationId`, `referenceId`, `taxRefundTotal`, `adjustedAt`)                                                                            |
+| `return.requested`                | return-service       | order-service, notification-service, analytic-service                                            | `ReturnRequestedEventPayload` (`returnId`, `orderId`, `customerId`, `sellerId`, `totalRefund`, `currency`, `itemsCount`)                                                                                        |
+| `return.approved`                 | return-service       | shipping-service, notification-service, email-service                                            | `ReturnApprovedEventPayload` (`returnId`, `orderId`, `customerId`, `approvedAt`, `autoApproved`)                                                                                                                |
+| `return.rejected`                 | return-service       | notification-service, email-service                                                              | `ReturnRejectedEventPayload` (`returnId`, `orderId`, `customerId`, `rejectedAt`, `reason`)                                                                                                                      |
+| `return.cancelled`                | return-service       | notification-service, analytic-service                                                           | `ReturnCancelledEventPayload` (`returnId`, `orderId`, `customerId`, `cancelledAt`)                                                                                                                              |
+| `return.shipment.requested`       | return-service       | shipping-service                                                                                 | `ReturnShipmentRequestedEventPayload` (`returnId`, `orderId`, `customerId`, `sellerId`, `items`)                                                                                                                |
+| `return.inspection.completed`     | return-service       | inventory-service, analytic-service                                                              | `ReturnInspectionCompletedEventPayload` (`returnId`, `orderId`, `overallCondition`, `disposition`)                                                                                                              |
+| `return.refund.requested`         | return-service       | payment-service                                                                                  | `ReturnRefundRequestedEventPayload` (`returnId`, `orderId`, `paymentIntentId`, `amount`, `currency`, `idempotencyKey`)                                                                                          |
+| `return.completed`                | return-service       | order-service, notification-service, email-service, analytic-service                             | `ReturnCompletedEventPayload` (`returnId`, `orderId`, `customerId`, `paymentIntentId`, `amount`, `currency`, `refundedAt`)                                                                                      |
 
 ### `product.created`
 
@@ -469,6 +477,88 @@ Emitted when an administrator activates or modifies versioned tax rules, broadca
 
 - **Producer:** `apps/tax-service/src/events/producers/tax.producer.ts`
 - **Consumers:** `tax-service` (evicts local Redis rule caches), `analytic-service`.
+
+#### `return.requested`
+
+Emitted when a customer submits a valid return request.
+
+```jsonc
+{
+  "value": {
+    "returnId": "ret_9a1c8f3e-2b4a-4d9f-9231-1e9a4f783241",
+    "orderId": "order_789123",
+    "customerId": "user_2aBcDeFgHiJkLmNoPqRsTuVwX",
+    "sellerId": "seller_abc123",
+    "totalRefund": "89.50",
+    "currency": "USD",
+    "itemsCount": 2,
+    "requestedAt": "2026-10-21T01:30:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/return-service/src/services/return.service.ts` (via outbox)
+- **Consumers:** `order-service`, `notification-service`, `analytic-service`.
+
+#### `return.approved`
+
+Emitted when an authorized admin (or automated policy) approves a return request.
+
+```jsonc
+{
+  "value": {
+    "returnId": "ret_9a1c8f3e-2b4a-4d9f-9231-1e9a4f783241",
+    "orderId": "order_789123",
+    "customerId": "user_2aBcDeFgHiJkLmNoPqRsTuVwX",
+    "approvedAt": "2026-10-21T01:35:00.000Z",
+    "autoApproved": false,
+  },
+}
+```
+
+- **Producer:** `apps/return-service/src/services/admin-return.service.ts` (via outbox)
+- **Consumers:** `shipping-service`, `notification-service`, `email-service`.
+
+#### `return.refund.requested`
+
+Emitted to request payment-service to process an asynchronous Stripe refund.
+
+```jsonc
+{
+  "value": {
+    "returnId": "ret_9a1c8f3e-2b4a-4d9f-9231-1e9a4f783241",
+    "orderId": "order_789123",
+    "paymentIntentId": "pi_3MtwBwLkdIwHu7ix28a3tqPa",
+    "amount": "89.50",
+    "currency": "USD",
+    "idempotencyKey": "refund_ret_9a1c8f3e_1729474500",
+  },
+}
+```
+
+- **Producer:** `apps/return-service/src/services/admin-return.service.ts` (via outbox)
+- **Consumers:** `payment-service`.
+
+#### `return.completed`
+
+Emitted after Stripe confirms successful refund execution and the return lifecycle concludes.
+
+```jsonc
+{
+  "value": {
+    "returnId": "ret_9a1c8f3e-2b4a-4d9f-9231-1e9a4f783241",
+    "orderId": "order_789123",
+    "customerId": "user_2aBcDeFgHiJkLmNoPqRsTuVwX",
+    "paymentIntentId": "pi_3MtwBwLkdIwHu7ix28a3tqPa",
+    "amount": "89.50",
+    "currency": "USD",
+    "refundedAt": "2026-10-21T01:40:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/return-service/src/workers/consumers.ts` (via outbox)
+- **Consumers:** `order-service`, `notification-service`, `email-service`, `analytic-service`.
 
 ## Adding or changing an event
 

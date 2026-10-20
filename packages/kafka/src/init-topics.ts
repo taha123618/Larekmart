@@ -119,6 +119,26 @@ export const ALL_LAREKMART_TOPICS = [
   "media.processing_failed",
   "media.deleted",
   "media.quarantined",
+
+  // Tax Events
+  "tax.calculation.completed",
+  "tax.calculation.failed",
+  "tax.rules.updated",
+  "tax.calculation.adjusted",
+
+  // Return & Refund Events
+  "return.requested",
+  "return.approved",
+  "return.rejected",
+  "return.cancelled",
+  "return.shipment.requested",
+  "return.inspection.completed",
+  "return.refund.requested",
+  "return.completed",
+  "payment.refund.succeeded",
+  "payment.refund.failed",
+  "shipping.label.created",
+  "order.delivered",
 ] as const;
 
 export async function initializeTopics(): Promise<void> {

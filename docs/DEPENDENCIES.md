@@ -96,6 +96,12 @@ apps/tax-service ───────────┬─▶ drizzle-orm + mysql2
                            ├─▶ @repo/monitoring
                            └─▶ @repo/types
 
+apps/return-service ────────┬─▶ drizzle-orm + mysql2 ─▶ MySQL (return_db)
+                           ├─▶ @repo/kafka
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           ├─▶ @repo/monitoring
+                           └─▶ @repo/types
+
 apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                            ├─▶ @repo/monitoring

@@ -31,7 +31,6 @@ patches:
     target:
       kind: HorizontalPodAutoscaler
 
-
   # Patch Ingress hostnames for development
   - patch: |-
       - op: replace
@@ -88,4 +87,3 @@ images:
     newTag: dev
   - name: larekmart/email-service
     newTag: dev
-

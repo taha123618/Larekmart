@@ -84,6 +84,23 @@ export class ShippingPublisher {
     await this.safeSend("shipment.label_created", payload);
   }
 
+  static async publishReturnLabelCreated(data: {
+    returnId: string;
+    shipmentId: string;
+    trackingNumber: string;
+    carrierName: string;
+    labelUrl: string;
+  }): Promise<void> {
+    await this.safeSend("shipping.label.created", {
+      returnId: data.returnId,
+      shipmentId: data.shipmentId,
+      trackingNumber: data.trackingNumber,
+      carrierName: data.carrierName,
+      labelUrl: data.labelUrl,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
   static async publishShipped(data: {
     shipmentId: string;
     orderId: string;

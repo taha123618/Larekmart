@@ -34,5 +34,22 @@ export const runKafkaSubscriptions = async () => {
         await deleteStripeProduct(productId);
       },
     },
+    {
+      topicName: "return.refund.requested",
+      topicHandler: async (message) => {
+        const payload = message.value;
+        console.log(
+          "Received message: return.refund.requested",
+          payload?.returnId,
+        );
+
+        if (payload) {
+          const { handleReturnRefundRequest } = await import(
+            "./refund.handler.js"
+          );
+          await handleReturnRefundRequest(payload);
+        }
+      },
+    },
   ]);
 };

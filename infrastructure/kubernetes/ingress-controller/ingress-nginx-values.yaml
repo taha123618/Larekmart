@@ -7,7 +7,7 @@ controller:
     repository: registry.k8s.io/ingress-nginx/controller
     tag: "v1.11.2"
     digest: ""
-  
+
   replicaCount: 2
   minAvailable: 1
 

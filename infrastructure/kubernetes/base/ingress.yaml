@@ -222,3 +222,17 @@ spec:
                 name: tax-service
                 port:
                   number: 8017
+          - path: /api/v1/returns
+            pathType: Prefix
+            backend:
+              service:
+                name: return-service
+                port:
+                  number: 8018
+          - path: /api/v1/admin/returns
+            pathType: Prefix
+            backend:
+              service:
+                name: return-service
+                port:
+                  number: 8018

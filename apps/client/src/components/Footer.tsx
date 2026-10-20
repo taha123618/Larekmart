@@ -35,6 +35,7 @@ const STATIC_NAV_LINKS: readonly NavItem[] = [
   { label: "All Products", href: "/products", count: "[SHOP]" },
   { label: "Track Shipment", href: "/track" },
   { label: "My Orders", href: "/orders" },
+  { label: "Returns & Refunds", href: "/account/returns" },
   { label: "Customer Care", href: "/return" },
 ];
 

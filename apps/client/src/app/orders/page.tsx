@@ -10,7 +10,9 @@ import {
   Calendar,
   CreditCard,
   Banknote,
+  RotateCcw,
 } from "lucide-react";
+import OrderReturnAction from "@/components/returns/OrderReturnAction";
 
 const fetchOrders = async () => {
   const { getToken } = await auth();
@@ -86,13 +88,22 @@ const OrdersPage = async (): Promise<React.JSX.Element> => {
             order receipts
           </p>
         </div>
-        <Link
-          href="/track"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-xs shrink-0 self-start sm:self-auto"
-        >
-          <Truck className="w-4 h-4" />
-          Track Any Package
-        </Link>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Link
+            href="/account/returns"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition shadow-xs shrink-0"
+          >
+            <RotateCcw className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            My Returns
+          </Link>
+          <Link
+            href="/track"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-xs shrink-0"
+          >
+            <Truck className="w-4 h-4" />
+            Track Any Package
+          </Link>
+        </div>
       </div>
 
       {!orders || orders.length === 0 ? (
@@ -184,7 +195,8 @@ const OrdersPage = async (): Promise<React.JSX.Element> => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-slate-800">
+                <div className="flex items-center gap-2.5 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-slate-800 flex-wrap">
+                  <OrderReturnAction order={order} />
                   <Link
                     href={`/track?number=${encodeURIComponent(trackQuery)}`}
                     className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-xs"

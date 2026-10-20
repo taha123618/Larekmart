@@ -53,6 +53,7 @@ jobs:
       WISHLIST_DATABASE_URL: ${{ secrets.STAGING_WISHLIST_DATABASE_URL }}
       PROMOTION_DATABASE_URL: ${{ secrets.STAGING_PROMOTION_DATABASE_URL }}
       TAX_DATABASE_URL: ${{ secrets.STAGING_TAX_DATABASE_URL }}
+      RETURN_DATABASE_URL: ${{ secrets.STAGING_RETURN_DATABASE_URL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -114,6 +115,10 @@ jobs:
         if: env.TAX_DATABASE_URL != ''
         run: pnpm --filter tax-service db:migrate
 
+      - name: Run Drizzle Migration Deploy (Return Service)
+        if: env.RETURN_DATABASE_URL != ''
+        run: pnpm --filter return-service db:migrate
+
   # ════════════════════════════════════════════════════════════════
   # STAGE 4: Kubernetes Deployment, Rollout Probes & Synthetic Verification
   # ════════════════════════════════════════════════════════════════
@@ -173,12 +178,13 @@ jobs:
               larekmart/wishlist-service=ghcr.io/${{ github.repository_owner }}/larekmart/wishlist-service:staging-${SHA_SHORT} \
               larekmart/promotion-service=ghcr.io/${{ github.repository_owner }}/larekmart/promotion-service:staging-${SHA_SHORT} \
               larekmart/tax-service=ghcr.io/${{ github.repository_owner }}/larekmart/tax-service:staging-${SHA_SHORT} \
+              larekmart/return-service=ghcr.io/${{ github.repository_owner }}/larekmart/return-service:staging-${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:staging-${SHA_SHORT}
 
             echo "Applying Staging manifests to namespace larekmart-staging..."
             kubectl apply -k .
 
-            echo "Tracking rollout status across all 20 microservice workloads..."
+            echo "Tracking rollout status across all 21 microservice workloads..."
             DEPLOYMENTS=(
               staging-client
               staging-admin
@@ -200,6 +206,7 @@ jobs:
               staging-wishlist-service
               staging-promotion-service
               staging-tax-service
+              staging-return-service
               staging-email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do
@@ -252,6 +259,7 @@ jobs:
             staging-wishlist-service
             staging-promotion-service
             staging-tax-service
+            staging-return-service
             staging-email-service
           )
           for dep in "${DEPLOYMENTS[@]}"; do

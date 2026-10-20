@@ -66,6 +66,9 @@ export default function Navbar() {
             <Link href="/orders" className="hover:text-white transition">
               My Orders
             </Link>
+            <Link href="/account/returns" className="hover:text-white transition">
+              Returns
+            </Link>
             <span className="hidden sm:inline text-slate-700">|</span>
             <div className="hidden sm:flex items-center gap-1 text-slate-300 cursor-pointer hover:text-white">
               <span>USD $</span>
