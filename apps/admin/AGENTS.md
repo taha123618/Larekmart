@@ -67,6 +67,7 @@ This app talks HTTP to:
 - `review-service` (`NEXT_PUBLIC_REVIEW_SERVICE_URL` :8014) — review moderation queue (`/api/v1/admin/reviews/pending`), approval/rejection actions (`/api/v1/admin/reviews/:id/moderate`), abuse reports, and rating summary recalibration.
 - `promotion-service` (`NEXT_PUBLIC_PROMOTION_SERVICE_URL` :8016) — promotional campaigns dashboard (`/promotions`), coupon code generation, promotion activation/deactivation, and redemption history.
 - `tax-service` (`NEXT_PUBLIC_TAX_SERVICE_URL` :8017 / `/taxes`) — executive tax compliance dashboard, configurable versioned tax rules, tax jurisdictions, customer exemptions, and calculation audit logs.
+- `return-service` (`NEXT_PUBLIC_RETURN_SERVICE_URL` :8018 / `/returns`) — multi-seller returns management dashboard (`/returns`), RMA review, approval/rejection dialogs, warehouse item inspection modal (disposition and restock decisions), return shipment tracking, and Stripe refund retry execution.
 - every caching service — its `/metrics` endpoint, for the **Cache Performance** page
   (`/cache`). That page reads `cache_hits_total` / `cache_misses_total` / `cache_errors_total`
   from search-service, product-service, analytic-service, and order-service, and reports a

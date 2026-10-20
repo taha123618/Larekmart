@@ -48,9 +48,10 @@ Postgres, Mongo, or Kafka directly.
   - `CodConfirmationForm.tsx` — Cash on Delivery order confirmation modal and receipt summary.
   - `ProductTabs.tsx` — Product details, specs, and live customer reviews with rating distribution breakdown, verified badges, helpful voting, report dialog, and photo lightbox.
   - `WriteReviewModal.tsx` — Modal for composing and editing customer reviews with star ratings, text feedback, and media uploads via MinIO/S3.
+  - `returns/RequestReturnModal.tsx` — Self-service customer return modal with item multi-selection, partial quantities, reason picker, and evidence image/video upload.
   - `Footer.tsx` — Multi-column marketplace directory with newsletter signup and payment badges.
   - `common/ScrollToTop.tsx` — Viewport scroll progress bar and circular SVG progress floating action button.
-- `src/services/` — Frontend client services (`tax.service.ts`, `promotion.service.ts`, `review.service.ts`, `wishlist.service.ts`, `media.service.ts`, `shipping.service.ts`, `catalog.service.ts`, `recommendation.service.ts`, `cart.service.ts`, `notification.service.ts`).
+- `src/services/` — Frontend client services (`return.service.ts`, `tax.service.ts`, `promotion.service.ts`, `review.service.ts`, `wishlist.service.ts`, `media.service.ts`, `shipping.service.ts`, `catalog.service.ts`, `recommendation.service.ts`, `cart.service.ts`, `notification.service.ts`).
 - `src/hooks/` — Custom hooks (`use-lenis.ts` with cancelAnimationFrame and pathname listener).
 - `src/stores/` — Zustand stores (`cartStore.ts`, `wishlistStore.ts`, `uiStore.ts`).
 - `src/lib/utils.ts` — `cn(...)` utility helper (`clsx` + `tailwind-merge`).
@@ -156,6 +157,12 @@ Recommendation integration:
 - `recommendation.service.ts` provides client/server fetch helpers for `getHomeRecommendations`, `getCategoryRecommendations`, `getRecentlyViewedRecommendations`, `getPersonalizedRecommendations`, and telemetry helpers `sendInteraction` and `sendAnalyticsEvent`.
 - `RecommendationSection.tsx` dynamically resolves Clerk `useAuth().userId` and renders personalized, trending, category, and recently-viewed shelves.
 - `ProductInteraction.tsx` dispatches zero-throw interaction telemetry (`VIEW`, `ADD_TO_CART`) so user affinity models stay continuously updated.
+
+Customer Returns & RMA Hub:
+
+- `return.service.ts` provides typed client SDK helpers for submitting return requests (`createReturnRequest`), fetching customer returns (`getCustomerReturns`, `getReturnDetails`), attaching media evidence (`attachEvidence`), and tracking reverse shipments (`submitTracking`).
+- `/account/returns` provides a dedicated returns center with real-time status badges, tracking summaries, and printable return label slips.
+- Returns can be triggered directly from delivered orders on `/orders` via `RequestReturnModal`.
 
 Product listing and search:
 

@@ -35,11 +35,12 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Cart: `zustand` store persisted to `localStorage` (`src/stores/cartStore.ts`) with optimistic sync to `cart-service`.
 - Checkout: `ShippingForm` (carrier rate calculations & COD) → `StripePaymentForm` (Stripe `CheckoutProvider`, custom UI) / `CodConfirmationForm` →
   return page polls the session status → `/orders`.
+- Customer Returns Hub: `/account/returns` real-time return tracking, status badges, RMA details, carrier tracking links, and printable return label slips. Returns can be initiated directly from `/orders` via `RequestReturnModal`.
 - Auth: Clerk; server components fetch orders with `auth().getToken()`.
 
 **`admin` (dashboard, :3003)** — Next.js App Router, shadcn/ui, Tailwind v4.
 
-- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, and cache
+- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), and cache
   performance (Redis hit/miss rates per service, scraped live from each service's `/metrics`).
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
@@ -58,7 +59,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
   authorization context injection (`x-user-id`, `x-user-role`, `x-internal-secret`), rate limiting
   via Redis token bucket, request correlation (`x-request-id`, `x-correlation-id`), W3C traceparent
   propagation, circuit breaking, safe retries (GET/HEAD), and bounded timeouts.
-- **Routing**: Centralized declarative route registry mapping all 14 downstream microservices.
+- **Routing**: Centralized declarative route registry mapping all 18 downstream microservices.
 - **Aggregation**: `GET /api/v1/home` fans out concurrently to `catalog-service` and
   `recommendation-service` with graceful partial degradation.
 - **Security**: Strips client-supplied internal headers before routing; enforces role gates
@@ -334,6 +335,31 @@ admin ── POST /users ──▶ auth-service ── clerkClient.users.createU
                               └── user.created ──▶ email-service ── sendMail
 ```
 
+### Return & Refund SAGA Lifecycle
+
+```
+client (Request Return) ── POST /api/v1/returns/orders/:orderId ──▶ return-service ── MySQL (returns)
+                                                                            │
+                                                                            └── return.requested ──▶ email-service / notification-service
+admin (Approve / Reject) ── POST /api/v1/admin/returns/:id/approve ──▶ return-service
+                                                                            │
+                                                                            ├── return.approved ──▶ email-service
+                                                                            └── return.shipment.requested ──▶ shipping-service ──▶ return.shipment.created
+warehouse (Inspect Items) ── POST /api/v1/admin/returns/:id/inspect ──▶ return-service
+                                                                            │
+                                                                            ├── return.inspection.completed ──▶ inventory-service ──▶ inventory.restocked
+                                                                            └── return.refund.requested ──▶ payment-service (Stripe Refund)
+                                                                                                                   │
+                                                                                                                   ├── payment.refund.succeeded
+                                                                                                                   │         │
+                                                                                                                   │         ▼
+                                                                                                                   │   return-service (mark COMPLETED)
+                                                                                                                   │         │
+                                                                                                                   │         ├── return.completed ──▶ order-service (mark REFUNDED)
+                                                                                                                   │         └── return.completed ──▶ analytic-service & email-service
+                                                                                                                   └── payment.refund.failed ──▶ return-service (mark REFUND_FAILED)
+```
+
 ## Cross-cutting concerns
 
 - **Auth:** Clerk everywhere. Backends guard with `shouldBeUser`/`shouldBeAdmin`;
@@ -372,5 +398,3 @@ admin ── POST /users ──▶ auth-service ── clerkClient.users.createU
 - Kafka broker addresses are hardcoded in `@repo/kafka` for local development; there is
   no configuration layer for clustered/managed Kafka yet.
 - `email-service` has no health endpoint or HTTP server.
-- There is no API gateway; frontends address services directly.
-- No automated tests or CI/CD exist.

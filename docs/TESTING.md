@@ -17,6 +17,7 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `wishlist-service`: Wishlist operations, item deduplication, guest-to-user migration, token shares, price drop and restock alert tests (`pnpm --filter wishlist-service test`).
    - `promotion-service`: Eleven suites covering campaign lifecycle, coupon codes, evaluation quotes, budget tracking, ACID reservations, worker sweeps, and event emission (`pnpm --filter promotion-service test`).
    - `tax-service`: Nine suites covering health probes, auth guards, decimal arithmetic precision, standard rule evaluation, exemption certificate verification, calculation snapshot persistence, proportional return refunds, adapter factory, and event emission (`pnpm --filter tax-service test`).
+   - `return-service`: Fourteen suites covering return eligibility, 14-day return window validation, partial quantities, evidence validation, state machine transitions, warehouse inspections, carrier reverse-shipping, decimal refund proration, outbox event persistence, and event emission (`pnpm --filter return-service test`).
    - `notification-service`: Native Go test suite for workers, templates, dispatchers, and WebSockets (`go test ./...`).
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
    - `@repo/redis`: Opt-in Redis integration verifier (`pnpm --filter @repo/redis verify:redis`).

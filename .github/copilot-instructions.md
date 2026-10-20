@@ -7,12 +7,14 @@ with this summary.
 ## Repository Architecture
 
 pnpm 9 + Turborepo monorepo for **Larekmart**, a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . Two
-Next.js apps (`client` :3002, `admin` :3003), ten backend services (`product-service` :8000,
+Next.js apps (`client` :3002, `admin` :3003), 20 backend services (`product-service` :8000,
 `order-service` :8001, `payment-service` :8002, `auth-service` :8003, `analytic-service` :8004,
 `notification-service` :8005, `search-service` :8006, `inventory-service` :8007,
-`recommendation-service` :8008, `email-service` worker), and shared packages (`@repo/kafka`, `@repo/types`,
+`recommendation-service` :8008, `cart-service` :8009, `catalog-service` :8010, `shipping-service` :8011,
+`user-service` :8012, `media-service` :8013, `review-service` :8014, `wishlist-service` :8015,
+`promotion-service` :8016, `tax-service` :8017, `return-service` :8018, `email-service` worker), `api-gateway` (:8080), and shared packages (`@repo/kafka`, `@repo/types`,
 `@repo/monitoring`, `@repo/redis`, `@repo/opensearch`, `@repo/product-db`, `@repo/inventory-db`,
-`@repo/order-db`, `@repo/eslint-config`, `@repo/typescript-config`).
+`@repo/order-db`, `@repo/cart-db`, `@repo/catalog-db`, `@repo/shipping-db`, `@repo/user-db`, `@repo/eslint-config`, `@repo/typescript-config`).
 
 ## AI Agent Lifecycle
 

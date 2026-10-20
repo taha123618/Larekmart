@@ -45,5 +45,9 @@ images:
     newTag: v1.0.0
   - name: larekmart/promotion-service
     newTag: v1.0.0
+  - name: larekmart/tax-service
+    newTag: v1.0.0
+  - name: larekmart/return-service
+    newTag: v1.0.0
   - name: larekmart/email-service
     newTag: v1.0.0

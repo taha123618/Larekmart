@@ -37,6 +37,7 @@ jobs:
       WISHLIST_DATABASE_URL: ${{ secrets.WISHLIST_DATABASE_URL }}
       PROMOTION_DATABASE_URL: ${{ secrets.PROMOTION_DATABASE_URL }}
       TAX_DATABASE_URL: ${{ secrets.TAX_DATABASE_URL }}
+      RETURN_DATABASE_URL: ${{ secrets.RETURN_DATABASE_URL }}
 
     steps:
       - name: Checkout Code
@@ -132,3 +133,9 @@ jobs:
         run: pnpm --filter tax-service db:migrate
         env:
           MYSQL_URL: ${{ env.TAX_DATABASE_URL }}
+
+      - name: Run return-service (MySQL Drizzle) migrations
+        if: github.event.inputs.action == 'deploy' && env.RETURN_DATABASE_URL != ''
+        run: pnpm --filter return-service db:migrate
+        env:
+          MYSQL_URL: ${{ env.RETURN_DATABASE_URL }}
