@@ -12,15 +12,199 @@
 
 **A production-grade, distributed microservices e-commerce platform built for high-throughput marketplace scale (like Amazon, AliExpress, and Daraz).**
 
-[Features](#system-architecture) • [Quick Start](#quick-start) • [Architecture](#system-architecture) • [Documentation](#documentation-index) • [Contributing](CONTRIBUTING.md)
+[Features](#system-architecture) • [Storefront Tour](#-storefront-visual-showcase) • [Quick Start](#quick-start) • [Architecture](#system-architecture) • [Documentation](#documentation-index) • [Contributing](CONTRIBUTING.md)
 
 </div>
 
 ---
 
-**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **eighteen backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, and promotions; MongoDB for orders and carts; MySQL for tax rules, calculations, jurisdictions, and return/refund management).
+**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, and promotions; MongoDB for orders and carts; MySQL for tax rules, calculations, jurisdictions, and return/refund management).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node, Go, and Python services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
+
+---
+
+## 🖼️ Storefront Visual Showcase
+
+<div align="center">
+
+> **A modern, responsive, high-converting customer shopping experience built with Next.js 16 (App Router), Tailwind CSS v4, Zustand, Framer Motion, and Stripe.**
+
+| [🏠 Homepage Tour](#-1-storefront-homepage-walkthrough-8-slides) | [🛍️ Product Detail](#-2-product-discovery--shopping-cart) | [🛒 Smart Cart](#-2-product-discovery--shopping-cart) | [💳 4-Step Checkout Flow](#-3-streamlined-4-step-checkout-flow) | [🚚 Order Tracking](#-4-post-purchase--real-time-order-tracking) |
+| :--------------------------------------------------------------: | :-------------------------------------------------------: | :---------------------------------------------------: | :-------------------------------------------------------------: | :--------------------------------------------------------------: |
+
+<br/>
+
+<p align="center">
+  <a href="./public/images/client/home/home-01.png">
+    <img src="./public/images/client/home/home-01.png" alt="Larekmart Customer Storefront Homepage Preview" width="100%" />
+  </a>
+  <br/>
+  <em>✨ High-converting customer storefront featuring responsive category discovery, dynamic hero carousels, and flash deals.</em>
+</p>
+
+</div>
+
+<br/>
+
+### 🏠 1. Storefront Homepage Walkthrough (8 Slides)
+
+<details open>
+<summary><b>▶ Click to expand / collapse the Homepage Walkthrough (8 sections)</b></summary>
+<br/>
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <b>Slide 1/8: Hero Showcase & Dynamic Categories</b><br/>
+      <sub>Interactive hero banner with promotional carousels, instant search bar, and marketplace navigation.</sub><br/><br/>
+      <a href="./public/images/client/home/home-01.png">
+        <img src="./public/images/client/home/home-01.png" alt="Slide 1 - Storefront Hero & Top Categories" width="100%" />
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <b>Slide 2/8: Flash Deals & Limited-Time Offers</b><br/>
+      <sub>Real-time countdown counters, dynamic percentage-off badges, and quick-add actions.</sub><br/><br/>
+      <a href="./public/images/client/home/home-02.png">
+        <img src="./public/images/client/home/home-02.png" alt="Slide 2 - Flash Sales & Deal Counters" width="100%" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>Slide 3/8: Popular Categories & Trending Grid</b><br/>
+      <sub>Curated category tiles, trending product grids, and catalog discovery entrypoints.</sub><br/><br/>
+      <a href="./public/images/client/home/home-03.png">
+        <img src="./public/images/client/home/home-03.png" alt="Slide 3 - Popular Categories & Trending Grid" width="100%" />
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <b>Slide 4/8: Promotional Campaigns & Spotlight Banners</b><br/>
+      <sub>Seasonal promotional highlights, coupon announcements, and partner campaigns.</sub><br/><br/>
+      <a href="./public/images/client/home/home-04.png">
+        <img src="./public/images/client/home/home-04.png" alt="Slide 4 - Promotional Campaigns & Marketing Highlights" width="100%" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>Slide 5/8: Personalized Recommendations & Best Sellers</b><br/>
+      <sub>Recommendation engine suggestions, verified customer review ratings, and price tags.</sub><br/><br/>
+      <a href="./public/images/client/home/home-05.png">
+        <img src="./public/images/client/home/home-05.png" alt="Slide 5 - Recommended For You & Best Sellers" width="100%" />
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <b>Slide 6/8: Official Brands & Curated Stores</b><br/>
+      <sub>Marketplace brand spotlights, seller storefront links, and seasonal lookbooks.</sub><br/><br/>
+      <a href="./public/images/client/home/home-06.png">
+        <img src="./public/images/client/home/home-06.png" alt="Slide 6 - Official Brands & Curated Collections" width="100%" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>Slide 7/8: Value Propositions & Newsletter</b><br/>
+      <sub>Buyer protection guarantees, global shipping terms, 24/7 support & VIP membership signup.</sub><br/><br/>
+      <a href="./public/images/client/home/home-07.png">
+        <img src="./public/images/client/home/home-07.png" alt="Slide 7 - Buyer Protection & Newsletter Subscription" width="100%" />
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <b>Slide 8/8: Global Footer & Marketplace Directory</b><br/>
+      <sub>Payment provider badges, legal/security policies, currency selector, and site navigation.</sub><br/><br/>
+      <a href="./public/images/client/home/home-08.png">
+        <img src="./public/images/client/home/home-08.png" alt="Slide 8 - Storefront Footer & Marketplace Directory" width="100%" />
+      </a>
+    </td>
+  </tr>
+</table>
+
+</details>
+
+<br/>
+
+### 🛍️ 2. Product Discovery & Shopping Cart
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <b>📦 Rich Product Detail Experience</b><br/>
+      <sub>Multi-angle image gallery, color/variant selectors, real-time inventory checks, verified purchase reviews, and wishlist alerts.</sub><br/><br/>
+      <a href="./public/images/client/product-detail.png">
+        <img src="./public/images/client/product-detail.png" alt="Product Detail Page" width="100%" />
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <b>🛒 Authoritative Cart & Real-Time Estimates</b><br/>
+      <sub>MongoDB-backed persistent cart, promotional coupon discounts, real-time tax estimation, and estimated shipping fees.</sub><br/><br/>
+      <a href="./public/images/client/cart.png">
+        <img src="./public/images/client/cart.png" alt="Shopping Cart Page" width="100%" />
+      </a>
+    </td>
+  </tr>
+</table>
+
+<br/>
+
+### 💳 3. Streamlined 4-Step Checkout Flow
+
+<details open>
+<summary><b>▶ Click to expand / collapse the 4-Step Checkout Flow</b></summary>
+<br/>
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <b>Step 1: Shipping Address & Recipient Details</b><br/>
+      <sub>Saved user addresses, interactive address validation, and delivery instructions.</sub><br/><br/>
+      <a href="./public/images/client/checkout-01.png">
+        <img src="./public/images/client/checkout-01.png" alt="Checkout Step 1 - Shipping Address" width="100%" />
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <b>Step 2: Shipping Methods & Live Carrier Rates</b><br/>
+      <sub>Multi-carrier delivery estimates (Standard, Express, Overnight) and carrier selection.</sub><br/><br/>
+      <a href="./public/images/client/checkout-02.png">
+        <img src="./public/images/client/checkout-02.png" alt="Checkout Step 2 - Shipping Method" width="100%" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>Step 3: Secure Payment Methods</b><br/>
+      <sub>Stripe payment elements, credit/debit card processing, Klarna installments, and Cash on Delivery (COD).</sub><br/><br/>
+      <a href="./public/images/client/checkout-03.png">
+        <img src="./public/images/client/checkout-03.png" alt="Checkout Step 3 - Payment Method" width="100%" />
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <b>Step 4: Final Review & Order Placement</b><br/>
+      <sub>Transparent itemized totals, tax audit quotes, shipping insurance options, and one-click order confirmation.</sub><br/><br/>
+      <a href="./public/images/client/checkout-04.png">
+        <img src="./public/images/client/checkout-04.png" alt="Checkout Step 4 - Order Review" width="100%" />
+      </a>
+    </td>
+  </tr>
+</table>
+
+</details>
+
+<br/>
+
+### 🚚 4. Post-Purchase & Real-Time Order Tracking
+
+<table>
+  <tr>
+    <td align="center" width="100%">
+      <b>📋 Order Confirmation & Live Checkpoint Tracking</b><br/>
+      <sub>Instant invoice generation, order lifecycle states (Created ➔ Confirmed ➔ Dispatched ➔ Delivered), carrier tracking checkpoint timeline, and self-service return request initiator.</sub><br/><br/>
+      <a href="./public/images/client/order.png">
+        <img src="./public/images/client/order.png" alt="Order Confirmation and Tracking Page" width="90%" />
+      </a>
+    </td>
+  </tr>
+</table>
 
 ---
 
