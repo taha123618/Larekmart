@@ -107,10 +107,17 @@ async function runOrderSecurityTests() {
   console.log("5. Testing IDOR Ownership Logic Invariants...");
 
   function checkOrderAccess(
-    order: { userId: string },
+    order: { userId: string; sellerId?: string; products?: Array<{ sellerId?: string }> },
     request: { userId?: string; userRole?: string },
   ) {
-    if (order.userId !== request.userId && request.userRole !== "admin") {
+    const isOwner = order.userId === request.userId;
+    const isAdmin = request.userRole === "admin";
+    const isAssignedSeller =
+      request.userRole === "seller" &&
+      (order.sellerId === request.userId ||
+        (order.products && order.products.some((p) => p.sellerId === request.userId)));
+
+    if (!isOwner && !isAdmin && !isAssignedSeller) {
       return {
         allowed: false,
         statusCode: 403,
@@ -120,7 +127,12 @@ async function runOrderSecurityTests() {
     return { allowed: true, statusCode: 200 };
   }
 
-  const orderA = { id: "ord_100", userId: "usr_alice_123" };
+  const orderA = {
+    id: "ord_100",
+    userId: "usr_alice_123",
+    sellerId: "sel_electronics",
+    products: [{ sellerId: "sel_electronics" }],
+  };
 
   // Case A: Alice accesses her own order
   const aliceAccess = checkOrderAccess(orderA, {
@@ -155,8 +167,32 @@ async function runOrderSecurityTests() {
     true,
     "Admin accessing any order must be permitted",
   );
+
+  // Case D: Assigned seller accesses order containing their products
+  const sellerAccess = checkOrderAccess(orderA, {
+    userId: "sel_electronics",
+    userRole: "seller",
+  });
+  assert.equal(
+    sellerAccess.allowed,
+    true,
+    "Assigned seller accessing their store order must be permitted",
+  );
+
+  // Case E: Different seller attempts to access order (unauthorized seller)
+  const otherSellerAccess = checkOrderAccess(orderA, {
+    userId: "sel_apparel",
+    userRole: "seller",
+  });
+  assert.equal(
+    otherSellerAccess.allowed,
+    false,
+    "Unrelated seller accessing another store's order must be blocked",
+  );
+  assert.equal(otherSellerAccess.statusCode, 403);
+
   console.log(
-    "✓ IDOR ownership rules verified under all user and admin permutations",
+    "✓ IDOR ownership rules verified under all user, seller, and admin permutations",
   );
 
   console.log("\n=======================================================");

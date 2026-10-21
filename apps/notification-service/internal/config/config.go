@@ -82,7 +82,7 @@ func LoadFromEnv() *Config {
 		KafkaBrokers:        getEnvSlice("KAFKA_BROKERS", []string{"localhost:9094", "localhost:9095", "localhost:9096"}),
 		KafkaGroupID:        getEnv("KAFKA_GROUP_ID", "notification-service-group"),
 		KafkaTopicPrefix:    getEnv("KAFKA_TOPIC_PREFIX", ""),
-		KafkaConsumerTopics: getEnvSlice("KAFKA_CONSUMER_TOPICS", []string{"user.created", "order.created", "payment.successful", "notification.dispatch", "inventory.low_stock", "review.reported", "review.approved"}),
+		KafkaConsumerTopics: getEnvSlice("KAFKA_CONSUMER_TOPICS", []string{"user.created", "order.created", "payment.successful", "notification.dispatch", "inventory.low_stock", "review.reported", "review.approved", "vendor.registered", "vendor.verified", "vendor.rejected", "seller.created", "seller.activated"}),
 
 		EmailServiceEnabled: getEnvBool("EMAIL_SERVICE_ENABLED", true),
 		EmailKafkaDispatch:  getEnvBool("EMAIL_KAFKA_DISPATCH", true),

@@ -122,8 +122,15 @@ export const orderRoute = async (fastify: FastifyInstance) => {
         return reply.status(404).send({ message: "Order not found" });
       }
 
-      // Prevent IDOR: Ensure only the owning user or an administrator can access this order
-      if (order.userId !== request.userId && request.userRole !== "admin") {
+      // Prevent IDOR: Ensure only the owning user, assigned seller, or an administrator can access this order
+      const isOwner = order.userId === request.userId;
+      const isAdmin = request.userRole === "admin";
+      const isAssignedSeller =
+        request.userRole === "seller" &&
+        (order.sellerId === request.userId ||
+          order.products.some((p: any) => p.sellerId === request.userId));
+
+      if (!isOwner && !isAdmin && !isAssignedSeller) {
         return reply
           .status(403)
           .send({ message: "Access forbidden: order does not belong to you" });
