@@ -909,6 +909,38 @@ services:
     networks:
       - larekmart-network
 
+  pricing-service:
+    build:
+      context: .
+      dockerfile: apps/pricing-service/Dockerfile
+    container_name: larekmart-pricing-service
+    restart: unless-stopped
+    expose:
+      - "8019"
+    ports:
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:${PRICING_SERVICE_PORT:-8019}:8019"
+    env_file:
+      - ./apps/pricing-service/.env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8019/health || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
   # ============================================================================
   # API Gateway (Centralized API Gateway for the Application)
   # ============================================================================
@@ -973,6 +1005,8 @@ services:
       tax-service:
         condition: service_healthy
       return-service:
+        condition: service_healthy
+      pricing-service:
         condition: service_healthy
     networks:
       - larekmart-network

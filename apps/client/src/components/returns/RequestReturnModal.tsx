@@ -59,9 +59,12 @@ export default function RequestReturnModal({
 }: RequestReturnModalProps): React.JSX.Element | null {
   const { getToken } = useAuth();
 
-  const [reasonCategory, setReasonCategory] = useState<ReturnReason>("DEFECTIVE");
+  const [reasonCategory, setReasonCategory] =
+    useState<ReturnReason>("DEFECTIVE");
   const [customerComments, setCustomerComments] = useState("");
-  const [itemStates, setItemStates] = useState<Record<string, SelectedItemState>>({});
+  const [itemStates, setItemStates] = useState<
+    Record<string, SelectedItemState>
+  >({});
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [uploadedMediaIds, setUploadedMediaIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -165,7 +168,8 @@ export default function RequestReturnModal({
       setUploadedMediaIds((prev) => [...prev, ...newIds]);
       toast.success(`${newFiles.length} photo(s) attached successfully`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to upload photo evidence";
+      const msg =
+        err instanceof Error ? err.message : "Failed to upload photo evidence";
       toast.error(msg);
     } finally {
       setUploadingPhotos(false);
@@ -237,7 +241,9 @@ export default function RequestReturnModal({
         evidenceMediaIds: uploadedMediaIds,
       });
 
-      toast.success("Return request submitted successfully! Our team will review it.");
+      toast.success(
+        "Return request submitted successfully! Our team will review it.",
+      );
       onSuccess();
       onClose();
     } catch (err: unknown) {
@@ -272,7 +278,8 @@ export default function RequestReturnModal({
                 Request Return & Refund
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Order #{order._id.slice(-8).toUpperCase()} • 30-Day Buyer Protection
+                Order #{order._id.slice(-8).toUpperCase()} • 30-Day Buyer
+                Protection
               </p>
             </div>
           </div>
@@ -292,7 +299,9 @@ export default function RequestReturnModal({
             </label>
             <select
               value={reasonCategory}
-              onChange={(e) => setReasonCategory(e.target.value as ReturnReason)}
+              onChange={(e) =>
+                setReasonCategory(e.target.value as ReturnReason)
+              }
               className="w-full text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
             >
               {RETURN_REASONS.map((r) => (
@@ -351,7 +360,8 @@ export default function RequestReturnModal({
                             {p.name}
                           </label>
                           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            Purchased: {p.quantity} unit(s) • ${((p.price || 0) / 100).toFixed(2)} each
+                            Purchased: {p.quantity} unit(s) • $
+                            {((p.price || 0) / 100).toFixed(2)} each
                           </div>
                         </div>
                       </div>
@@ -372,13 +382,14 @@ export default function RequestReturnModal({
                             }
                             className="text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-900 dark:text-white"
                           >
-                            {Array.from({ length: maxQty }, (_, i) => i + 1).map(
-                              (num) => (
-                                <option key={num} value={num}>
-                                  {num}
-                                </option>
-                              ),
-                            )}
+                            {Array.from(
+                              { length: maxQty },
+                              (_, i) => i + 1,
+                            ).map((num) => (
+                              <option key={num} value={num}>
+                                {num}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       )}
@@ -444,7 +455,8 @@ export default function RequestReturnModal({
             <div className="p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex flex-col items-center justify-center text-center">
               <Upload className="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2" />
               <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                Upload photos of item defects, package condition, or incorrect items
+                Upload photos of item defects, package condition, or incorrect
+                items
               </p>
               <label className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs transition">
                 <FileImage className="w-4 h-4" />
@@ -510,7 +522,9 @@ export default function RequestReturnModal({
                 <CheckCircle2 className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs text-slate-400">Estimated Refund Subtotal</p>
+                <p className="text-xs text-slate-400">
+                  Estimated Refund Subtotal
+                </p>
                 <p className="text-lg font-black tracking-tight text-white">
                   ${(estimatedSubtotal / 100).toFixed(2)}
                 </p>

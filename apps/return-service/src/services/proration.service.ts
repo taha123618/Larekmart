@@ -50,18 +50,28 @@ export class ProrationService {
       const origTax = new Decimal(item.taxAmount || 0);
 
       // Prorated discount for the returned quantity: (origDiscount / origQty) * qty
-      const discountPerUnit = origQty.isZero() ? new Decimal(0) : origDiscount.div(origQty);
-      const proratedItemDiscount = discountPerUnit.mul(qty).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+      const discountPerUnit = origQty.isZero()
+        ? new Decimal(0)
+        : origDiscount.div(origQty);
+      const proratedItemDiscount = discountPerUnit
+        .mul(qty)
+        .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
       // Gross total for returned quantity
       const grossSubtotal = unitPrice.mul(qty);
 
       // Net refund subtotal after discount
-      const refundSubtotal = grossSubtotal.minus(proratedItemDiscount).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+      const refundSubtotal = grossSubtotal
+        .minus(proratedItemDiscount)
+        .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
       // Prorated tax for returned quantity
-      const taxPerUnit = origQty.isZero() ? new Decimal(0) : origTax.div(origQty);
-      const proratedTax = taxPerUnit.mul(qty).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+      const taxPerUnit = origQty.isZero()
+        ? new Decimal(0)
+        : origTax.div(origQty);
+      const proratedTax = taxPerUnit
+        .mul(qty)
+        .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
       totalSubtotal = totalSubtotal.plus(refundSubtotal);
       totalTax = totalTax.plus(proratedTax);

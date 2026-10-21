@@ -25,11 +25,13 @@
 ### Task 1: Shared Domain Types & Contracts in `@repo/types`
 
 **Files:**
+
 - Create: `packages/types/src/returns.ts`
 - Modify: `packages/types/src/index.ts`
 - Test: `packages/types/tests/returns.test.ts`
 
 **Interfaces:**
+
 - Produces: `ReturnStatus`, `ReturnReason`, `ReturnItemCondition`, `ReturnInspectionDisposition`, `ReturnRefundStatus`, `ReturnItemSchema`, `CreateReturnRequestSchema`, `AdminApproveReturnSchema`, `AdminRejectReturnSchema`, `RecordInspectionSchema`, `ReturnEvidenceSchema`, `ReturnStateTransitionSchema`, Kafka payload interfaces (`ReturnRequestedPayload`, `ReturnApprovedPayload`, `ReturnRejectedPayload`, `ReturnShipmentRequestedPayload`, `ReturnReceivedPayload`, `ReturnInspectionCompletedPayload`, `ReturnRefundRequestedPayload`, `ReturnCompletedPayload`, `ReturnCancelledPayload`).
 
 - [ ] **Step 1: Write the test for return domain contracts**
@@ -60,6 +62,7 @@ Expected: PASS.
 ### Task 2: Scaffold `apps/return-service` Workspace & Configuration
 
 **Files:**
+
 - Create: `apps/return-service/package.json`
 - Create: `apps/return-service/tsconfig.json`
 - Create: `apps/return-service/.env.example`
@@ -69,6 +72,7 @@ Expected: PASS.
 - Create: `apps/return-service/src/config/env.ts`
 
 **Interfaces:**
+
 - Produces: Typed, validated `config` object with port 8018, MySQL URL, Redis URL, Kafka brokers, and Clerk secret keys.
 
 - [ ] **Step 1: Create package.json and tsconfig.json**
@@ -89,12 +93,14 @@ Expected: PASS.
 ### Task 3: Drizzle MySQL Database Schema, Connection & Migrations
 
 **Files:**
+
 - Create: `apps/return-service/src/db/schema.ts`
 - Create: `apps/return-service/src/db/connection.ts`
 - Create: `apps/return-service/src/db/migrate.ts`
 - Create: `apps/return-service/src/db/seed.ts`
 
 **Interfaces:**
+
 - Produces: MySQL tables (`returns`, `return_items`, `return_reasons`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_policy_versions`, `return_outbox`), connection pool export `db`, migration runner, and initial policy/reasons seed script.
 
 - [ ] **Step 1: Write Drizzle MySQL schema in `src/db/schema.ts`**
@@ -119,6 +125,7 @@ Expected: PASS.
 ### Task 4: Repositories & Data Access Layer
 
 **Files:**
+
 - Create: `apps/return-service/src/repositories/return.repository.ts`
 - Create: `apps/return-service/src/repositories/policy.repository.ts`
 - Create: `apps/return-service/src/repositories/shipment.repository.ts`
@@ -127,6 +134,7 @@ Expected: PASS.
 - Create: `apps/return-service/src/repositories/outbox.repository.ts`
 
 **Interfaces:**
+
 - Produces: Strongly typed data access methods for returns, items, policy checks, shipments, inspections, refunds, and transactional outbox.
 
 - [ ] **Step 1: Implement `ReturnRepository`**
@@ -151,6 +159,7 @@ Expected: PASS.
 ### Task 5: Core Domain Services & Business Logic
 
 **Files:**
+
 - Create: `apps/return-service/src/services/state-machine.ts`
 - Create: `apps/return-service/src/services/eligibility.service.ts`
 - Create: `apps/return-service/src/services/proration.service.ts`
@@ -158,6 +167,7 @@ Expected: PASS.
 - Create: `apps/return-service/src/services/admin-return.service.ts`
 
 **Interfaces:**
+
 - Produces: Explicit state transition guard (`canTransition`, `transitionTo`), eligibility validation against order delivery date and item rules, decimal-safe refund calculation engine, customer workflow service, and admin/seller operational service.
 
 - [ ] **Step 1: Implement `state-machine.ts`**
@@ -186,6 +196,7 @@ Expected: PASS.
 ### Task 6: Koa Application, Middleware, Controllers & REST Routes
 
 **Files:**
+
 - Create: `apps/return-service/src/middleware/auth.middleware.ts`
 - Create: `apps/return-service/src/middleware/error.middleware.ts`
 - Create: `apps/return-service/src/controllers/customer-return.controller.ts`
@@ -198,6 +209,7 @@ Expected: PASS.
 - Create: `apps/return-service/src/index.ts`
 
 **Interfaces:**
+
 - Produces: Koa 2 HTTP server with CORS, body parser, error handler, Clerk customer auth (`shouldBeUser`), admin auth (`shouldBeAdmin`), timing-safe internal secret comparison (`safeTimingCompare`), and registered endpoints.
 
 - [ ] **Step 1: Implement authentication & error middleware**
@@ -226,6 +238,7 @@ Expected: PASS.
 ### Task 7: Kafka Producers, Consumers & Transactional Outbox Worker
 
 **Files:**
+
 - Create: `apps/return-service/src/events/producers/return.producer.ts`
 - Create: `apps/return-service/src/events/consumers/order.consumer.ts`
 - Create: `apps/return-service/src/events/consumers/shipment.consumer.ts`
@@ -234,6 +247,7 @@ Expected: PASS.
 - Create: `apps/return-service/src/events/outbox-worker.ts`
 
 **Interfaces:**
+
 - Produces: Kafka producers publishing `return.*` events with the `{ value: payload }` envelope; consumers handling `order.delivered`, `order.cancelled`, `shipment.return.received`, `shipment.return.updated`, `payment.refund.completed`, `payment.refund.failed`, `inventory.restock.completed`; outbox poller.
 
 - [ ] **Step 1: Implement `ReturnEventProducer`**
@@ -258,9 +272,11 @@ Expected: PASS.
 ### Task 8: Comprehensive Test Suite (`tests/return-service.test.ts`)
 
 **Files:**
+
 - Create: `apps/return-service/tests/return-service.test.ts`
 
 **Interfaces:**
+
 - Produces: Standalone executable test suite using Node `assert` and Koa request injection.
 
 - [ ] **Step 1: Write state machine tests**
@@ -289,6 +305,7 @@ Expected: PASS with all test groups green.
 ### Task 9: Monorepo Integration & Infrastructure (`api-gateway`, Docker, K8s, Prometheus, CI/CD, Docs)
 
 **Files:**
+
 - Modify: `apps/api-gateway/src/gateway/service-registry.ts`
 - Modify: `apps/api-gateway/src/routing/public.routes.ts`
 - Modify: `apps/api-gateway/src/routing/admin.routes.ts`

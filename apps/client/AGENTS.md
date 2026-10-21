@@ -51,7 +51,7 @@ Postgres, Mongo, or Kafka directly.
   - `returns/RequestReturnModal.tsx` — Self-service customer return modal with item multi-selection, partial quantities, reason picker, and evidence image/video upload.
   - `Footer.tsx` — Multi-column marketplace directory with newsletter signup and payment badges.
   - `common/ScrollToTop.tsx` — Viewport scroll progress bar and circular SVG progress floating action button.
-- `src/services/` — Frontend client services (`return.service.ts`, `tax.service.ts`, `promotion.service.ts`, `review.service.ts`, `wishlist.service.ts`, `media.service.ts`, `shipping.service.ts`, `catalog.service.ts`, `recommendation.service.ts`, `cart.service.ts`, `notification.service.ts`).
+- `src/services/` — Frontend client services (`pricing.service.ts`, `return.service.ts`, `tax.service.ts`, `promotion.service.ts`, `review.service.ts`, `wishlist.service.ts`, `media.service.ts`, `shipping.service.ts`, `catalog.service.ts`, `recommendation.service.ts`, `cart.service.ts`, `notification.service.ts`).
 - `src/hooks/` — Custom hooks (`use-lenis.ts` with cancelAnimationFrame and pathname listener).
 - `src/stores/` — Zustand stores (`cartStore.ts`, `wishlistStore.ts`, `uiStore.ts`).
 - `src/lib/utils.ts` — `cn(...)` utility helper (`clsx` + `tailwind-merge`).

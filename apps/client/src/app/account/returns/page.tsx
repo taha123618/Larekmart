@@ -30,7 +30,12 @@ import {
 
 const STATUS_BADGES: Record<
   string,
-  { label: string; bg: string; text: string; icon: React.ComponentType<{ className?: string }> }
+  {
+    label: string;
+    bg: string;
+    text: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }
 > = {
   REQUESTED: {
     label: "Under Review",
@@ -146,7 +151,9 @@ export default function CustomerReturnsPage(): React.JSX.Element {
   }, [loadReturns]);
 
   const handleCancelReturn = async (returnId: string) => {
-    if (!window.confirm("Are you sure you want to cancel this return request?")) {
+    if (
+      !window.confirm("Are you sure you want to cancel this return request?")
+    ) {
       return;
     }
 
@@ -154,11 +161,16 @@ export default function CustomerReturnsPage(): React.JSX.Element {
     try {
       const token = await getToken();
       if (!token) throw new Error("Please log in to cancel");
-      await cancelReturnRequest(token, returnId, "Cancelled by customer request");
+      await cancelReturnRequest(
+        token,
+        returnId,
+        "Cancelled by customer request",
+      );
       toast.success("Return request cancelled successfully");
       await loadReturns();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to cancel return";
+      const msg =
+        err instanceof Error ? err.message : "Failed to cancel return";
       toast.error(msg);
     } finally {
       setCancellingId(null);
@@ -185,7 +197,8 @@ export default function CustomerReturnsPage(): React.JSX.Element {
       setTrackingNumber("");
       await loadReturns();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to submit tracking";
+      const msg =
+        err instanceof Error ? err.message : "Failed to submit tracking";
       toast.error(msg);
     } finally {
       setIsSubmittingTracking(false);
@@ -224,7 +237,8 @@ export default function CustomerReturnsPage(): React.JSX.Element {
             <span>My Returns & Refunds</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Track return authorization statuses, prepaid labels, carrier tracking, and automated Stripe refunds
+            Track return authorization statuses, prepaid labels, carrier
+            tracking, and automated Stripe refunds
           </p>
         </div>
 
@@ -347,19 +361,28 @@ export default function CustomerReturnsPage(): React.JSX.Element {
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" />
                           Requested:{" "}
-                          {new Date(ret.requestedAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {new Date(ret.requestedAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )}
                         </span>
                         <span>•</span>
                         <span className="font-medium text-slate-700 dark:text-slate-300">
-                          Reason: <span className="capitalize">{ret.reasonCategory.replace(/_/g, " ")}</span>
+                          Reason:{" "}
+                          <span className="capitalize">
+                            {ret.reasonCategory.replace(/_/g, " ")}
+                          </span>
                         </span>
                         <span>•</span>
                         <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                          Est. Refund: ${parseFloat(ret.totalEstimatedRefund || "0").toFixed(2)}
+                          Est. Refund: $
+                          {parseFloat(ret.totalEstimatedRefund || "0").toFixed(
+                            2,
+                          )}
                         </span>
                       </div>
 
@@ -373,7 +396,8 @@ export default function CustomerReturnsPage(): React.JSX.Element {
                         <div className="mt-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2">
                           <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
                           <div>
-                            <strong>Rejection Reason:</strong> {ret.rejectionReason}
+                            <strong>Rejection Reason:</strong>{" "}
+                            {ret.rejectionReason}
                           </div>
                         </div>
                       )}
@@ -395,14 +419,17 @@ export default function CustomerReturnsPage(): React.JSX.Element {
                       )}
 
                       {/* Submit Tracking Button (if approved / awaiting return shipment) */}
-                      {(ret.status === "APPROVED" || ret.status === "AWAITING_RETURN_SHIPMENT") && (
+                      {(ret.status === "APPROVED" ||
+                        ret.status === "AWAITING_RETURN_SHIPMENT") && (
                         <button
                           onClick={() => setTrackingReturnId(ret.id)}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition"
                         >
                           <Truck className="w-3.5 h-3.5" />
                           <span>
-                            {ret.returnTrackingNumber ? "Update Tracking" : "Submit Tracking"}
+                            {ret.returnTrackingNumber
+                              ? "Update Tracking"
+                              : "Submit Tracking"}
                           </span>
                         </button>
                       )}
@@ -426,7 +453,9 @@ export default function CustomerReturnsPage(): React.JSX.Element {
                         }
                         className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
                       >
-                        <span>{isExpanded ? "Hide Details" : "View Items"}</span>
+                        <span>
+                          {isExpanded ? "Hide Details" : "View Items"}
+                        </span>
                         {isExpanded ? (
                           <ChevronUp className="w-3.5 h-3.5" />
                         ) : (
@@ -489,10 +518,14 @@ export default function CustomerReturnsPage(): React.JSX.Element {
                             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 font-medium"
                           >
                             <option value="TCS Express">TCS Express</option>
-                            <option value="Leopards Courier">Leopards Courier</option>
+                            <option value="Leopards Courier">
+                              Leopards Courier
+                            </option>
                             <option value="DHL Express">DHL Express</option>
                             <option value="FedEx">FedEx</option>
-                            <option value="Direct Courier">Direct Courier</option>
+                            <option value="Direct Courier">
+                              Direct Courier
+                            </option>
                           </select>
                         </div>
                         <div>
@@ -522,7 +555,9 @@ export default function CustomerReturnsPage(): React.JSX.Element {
                           disabled={isSubmittingTracking}
                           className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition disabled:opacity-50"
                         >
-                          {isSubmittingTracking ? "Saving..." : "Confirm Shipment"}
+                          {isSubmittingTracking
+                            ? "Saving..."
+                            : "Confirm Shipment"}
                         </button>
                       </div>
                     </form>
@@ -543,23 +578,39 @@ export default function CustomerReturnsPage(): React.JSX.Element {
                           >
                             <div>
                               <p className="font-bold text-slate-900 dark:text-white">
-                                {item.productName || `Product (${item.productId})`}
+                                {item.productName ||
+                                  `Product (${item.productId})`}
                               </p>
                               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 space-x-2">
-                                <span>Condition: <strong className="text-slate-700 dark:text-slate-300">{item.condition}</strong></span>
+                                <span>
+                                  Condition:{" "}
+                                  <strong className="text-slate-700 dark:text-slate-300">
+                                    {item.condition}
+                                  </strong>
+                                </span>
                                 <span>•</span>
-                                <span>Qty: <strong className="text-slate-700 dark:text-slate-300">{item.quantity}</strong></span>
+                                <span>
+                                  Qty:{" "}
+                                  <strong className="text-slate-700 dark:text-slate-300">
+                                    {item.quantity}
+                                  </strong>
+                                </span>
                                 {item.customerNote && (
                                   <>
                                     <span>•</span>
-                                    <span className="italic">&ldquo;{item.customerNote}&rdquo;</span>
+                                    <span className="italic">
+                                      &ldquo;{item.customerNote}&rdquo;
+                                    </span>
                                   </>
                                 )}
                               </div>
                             </div>
                             <div className="text-right shrink-0">
                               <p className="font-bold text-slate-900 dark:text-white">
-                                ${parseFloat(item.refundSubtotal || item.unitPrice || "0").toFixed(2)}
+                                $
+                                {parseFloat(
+                                  item.refundSubtotal || item.unitPrice || "0",
+                                ).toFixed(2)}
                               </p>
                               {item.inspectionDisposition && (
                                 <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
@@ -576,27 +627,38 @@ export default function CustomerReturnsPage(): React.JSX.Element {
                         <div className="flex justify-between text-slate-600 dark:text-slate-400">
                           <span>Refund Subtotal:</span>
                           <span className="font-medium text-slate-900 dark:text-white">
-                            ${parseFloat(ret.estimatedRefundSubtotal || "0").toFixed(2)}
+                            $
+                            {parseFloat(
+                              ret.estimatedRefundSubtotal || "0",
+                            ).toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between text-slate-600 dark:text-slate-400">
                           <span>Prorated Sales Tax:</span>
                           <span className="font-medium text-slate-900 dark:text-white">
-                            +${parseFloat(ret.estimatedRefundTax || "0").toFixed(2)}
+                            +$
+                            {parseFloat(ret.estimatedRefundTax || "0").toFixed(
+                              2,
+                            )}
                           </span>
                         </div>
                         {parseFloat(ret.shippingFeeDeduction || "0") > 0 && (
                           <div className="flex justify-between text-rose-600 dark:text-rose-400">
                             <span>Return Shipping Deduction:</span>
                             <span className="font-medium">
-                              -${parseFloat(ret.shippingFeeDeduction).toFixed(2)}
+                              -$
+                              {parseFloat(ret.shippingFeeDeduction).toFixed(2)}
                             </span>
                           </div>
                         )}
                         <div className="flex justify-between text-sm font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
                           <span>Total Authorized Refund:</span>
                           <span className="text-emerald-600 dark:text-emerald-400">
-                            ${parseFloat(ret.totalEstimatedRefund || "0").toFixed(2)} {ret.currency}
+                            $
+                            {parseFloat(
+                              ret.totalEstimatedRefund || "0",
+                            ).toFixed(2)}{" "}
+                            {ret.currency}
                           </span>
                         </div>
                       </div>

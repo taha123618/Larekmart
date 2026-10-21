@@ -1,7 +1,10 @@
 import { ReturnStatus, ReturnStatusEnum } from "@repo/types";
 
 export class ReturnStateMachine {
-  private static readonly ALLOWED_TRANSITIONS: Record<ReturnStatus, readonly ReturnStatus[]> = {
+  private static readonly ALLOWED_TRANSITIONS: Record<
+    ReturnStatus,
+    readonly ReturnStatus[]
+  > = {
     [ReturnStatusEnum.REQUESTED]: [
       ReturnStatusEnum.PENDING_REVIEW,
       ReturnStatusEnum.APPROVED,
@@ -26,9 +29,7 @@ export class ReturnStateMachine {
       ReturnStatusEnum.RECEIVED,
       ReturnStatusEnum.DISPUTED,
     ],
-    [ReturnStatusEnum.RECEIVED]: [
-      ReturnStatusEnum.INSPECTION,
-    ],
+    [ReturnStatusEnum.RECEIVED]: [ReturnStatusEnum.INSPECTION],
     [ReturnStatusEnum.INSPECTION]: [
       ReturnStatusEnum.REFUND_PENDING,
       ReturnStatusEnum.DISPUTED,
@@ -52,13 +53,19 @@ export class ReturnStateMachine {
     [ReturnStatusEnum.CANCELLED]: [],
   };
 
-  static canTransition(currentStatus: ReturnStatus, nextStatus: ReturnStatus): boolean {
+  static canTransition(
+    currentStatus: ReturnStatus,
+    nextStatus: ReturnStatus,
+  ): boolean {
     const allowed = this.ALLOWED_TRANSITIONS[currentStatus];
     if (!allowed) return false;
     return (allowed as readonly string[]).includes(nextStatus);
   }
 
-  static assertTransition(currentStatus: ReturnStatus, nextStatus: ReturnStatus): void {
+  static assertTransition(
+    currentStatus: ReturnStatus,
+    nextStatus: ReturnStatus,
+  ): void {
     if (!this.canTransition(currentStatus, nextStatus)) {
       throw new Error(
         `Invalid return state transition from '${currentStatus}' to '${nextStatus}'.`,

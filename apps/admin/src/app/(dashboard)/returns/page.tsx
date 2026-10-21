@@ -26,15 +26,20 @@ export default function ReturnsPage() {
   const queryClient = useQueryClient();
 
   // State
-  const [selectedRecord, setSelectedRecord] = useState<AdminReturnRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] =
+    useState<AdminReturnRecord | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Approve / Reject state
   const [actionReturnId, setActionReturnId] = useState<string | null>(null);
-  const [actionMode, setActionMode] = useState<"APPROVE" | "REJECT" | null>(null);
+  const [actionMode, setActionMode] = useState<"APPROVE" | "REJECT" | null>(
+    null,
+  );
 
   // Inspection state
-  const [inspectRecord, setInspectRecord] = useState<AdminReturnRecord | null>(null);
+  const [inspectRecord, setInspectRecord] = useState<AdminReturnRecord | null>(
+    null,
+  );
   const [isInspectOpen, setIsInspectOpen] = useState(false);
 
   // Active status filter
@@ -68,10 +73,16 @@ export default function ReturnsPage() {
       notes?: string;
     }) => {
       const token = await getToken();
-      return approveReturn(returnId, { providePrepaidLabel, notes }, token || undefined);
+      return approveReturn(
+        returnId,
+        { providePrepaidLabel, notes },
+        token || undefined,
+      );
     },
     onSuccess: (data) => {
-      toast.success(`Return #${data.returnId.slice(0, 8)} approved successfully!`);
+      toast.success(
+        `Return #${data.returnId.slice(0, 8)} approved successfully!`,
+      );
       queryClient.invalidateQueries({ queryKey: ["admin-returns"] });
       if (selectedRecord?.id === data.returnId) {
         setIsDetailsOpen(false);
@@ -128,7 +139,9 @@ export default function ReturnsPage() {
       return recordReturnInspection(returnId, payload, token || undefined);
     },
     onSuccess: (data) => {
-      toast.success(`Inspection recorded! Return #${data.returnId.slice(0, 8)} moved to REFUND_PENDING`);
+      toast.success(
+        `Inspection recorded! Return #${data.returnId.slice(0, 8)} moved to REFUND_PENDING`,
+      );
       queryClient.invalidateQueries({ queryKey: ["admin-returns"] });
       if (selectedRecord?.id === data.returnId) {
         setIsDetailsOpen(false);
@@ -146,7 +159,9 @@ export default function ReturnsPage() {
       return retryReturnRefund(returnId, token || undefined);
     },
     onSuccess: (data) => {
-      toast.success(`Refund SAGA re-triggered for return #${data.returnId.slice(0, 8)}`);
+      toast.success(
+        `Refund SAGA re-triggered for return #${data.returnId.slice(0, 8)}`,
+      );
       queryClient.invalidateQueries({ queryKey: ["admin-returns"] });
     },
     onError: (err: Error) => {
@@ -158,7 +173,10 @@ export default function ReturnsPage() {
   const handleViewDetails = async (record: AdminReturnRecord) => {
     try {
       const token = await getToken();
-      const detailed = await fetchAdminReturnDetails(record.id, token || undefined);
+      const detailed = await fetchAdminReturnDetails(
+        record.id,
+        token || undefined,
+      );
       setSelectedRecord(detailed);
       setIsDetailsOpen(true);
     } catch {
@@ -182,7 +200,10 @@ export default function ReturnsPage() {
     if (record) {
       try {
         const token = await getToken();
-        const detailed = await fetchAdminReturnDetails(returnId, token || undefined);
+        const detailed = await fetchAdminReturnDetails(
+          returnId,
+          token || undefined,
+        );
         setInspectRecord(detailed);
       } catch {
         setInspectRecord(record);
@@ -192,7 +213,11 @@ export default function ReturnsPage() {
   };
 
   const handleRetryRefund = (returnId: string) => {
-    if (confirm("Are you sure you want to retry the Stripe refund for this return?")) {
+    if (
+      confirm(
+        "Are you sure you want to retry the Stripe refund for this return?",
+      )
+    ) {
       retryRefundMutation.mutate(returnId);
     }
   };
@@ -210,7 +235,8 @@ export default function ReturnsPage() {
               Return & Refund Operations
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Review customer return requests, inspect received shipments, and coordinate refund disbursements.
+              Review customer return requests, inspect received shipments, and
+              coordinate refund disbursements.
             </p>
           </div>
         </div>
@@ -220,7 +246,9 @@ export default function ReturnsPage() {
           disabled={isFetching}
           className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer shadow-xs self-start sm:self-auto"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-indigo-500" : ""}`} />
+          <RefreshCw
+            className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-indigo-500" : ""}`}
+          />
           <span>Refresh Operations</span>
         </button>
       </div>

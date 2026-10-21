@@ -16,6 +16,7 @@ import { connectKafka, disconnectKafka } from "./publishers/cart.publisher.js";
 import {
   handleProductUpdated,
   handleProductDeleted,
+  handlePriceUpdated,
 } from "./consumers/product.consumer.js";
 import { handleInventoryAdjusted } from "./consumers/inventory.consumer.js";
 import {
@@ -115,6 +116,12 @@ export const startServer = async (): Promise<void> => {
           topicName: "product.updated",
           topicHandler: async (msg) => {
             if (msg.value) await handleProductUpdated(msg.value);
+          },
+        },
+        {
+          topicName: "pricing.price.updated",
+          topicHandler: async (msg) => {
+            if (msg.value) await handlePriceUpdated(msg.value);
           },
         },
         {

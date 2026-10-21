@@ -49,7 +49,12 @@ export class ReturnRepository {
   async createReturn(
     data: CreateReturnData,
     items: ReturnItemData[],
-    evidenceMedia?: Array<{ mediaId: string; url: string; mediaType?: string; caption?: string }>,
+    evidenceMedia?: Array<{
+      mediaId: string;
+      url: string;
+      mediaType?: string;
+      caption?: string;
+    }>,
   ): Promise<string> {
     const returnId = uuidv4();
 
@@ -136,11 +141,26 @@ export class ReturnRepository {
 
     const [items, media, shipments, inspections, refunds, transitions] =
       await Promise.all([
-        this.db.select().from(returnItems).where(eq(returnItems.returnId, returnId)),
-        this.db.select().from(returnMedia).where(eq(returnMedia.returnId, returnId)),
-        this.db.select().from(returnShipments).where(eq(returnShipments.returnId, returnId)),
-        this.db.select().from(returnInspections).where(eq(returnInspections.returnId, returnId)),
-        this.db.select().from(returnRefunds).where(eq(returnRefunds.returnId, returnId)),
+        this.db
+          .select()
+          .from(returnItems)
+          .where(eq(returnItems.returnId, returnId)),
+        this.db
+          .select()
+          .from(returnMedia)
+          .where(eq(returnMedia.returnId, returnId)),
+        this.db
+          .select()
+          .from(returnShipments)
+          .where(eq(returnShipments.returnId, returnId)),
+        this.db
+          .select()
+          .from(returnInspections)
+          .where(eq(returnInspections.returnId, returnId)),
+        this.db
+          .select()
+          .from(returnRefunds)
+          .where(eq(returnRefunds.returnId, returnId)),
         this.db
           .select()
           .from(returnStateTransitions)
@@ -178,7 +198,11 @@ export class ReturnRepository {
   }
 
   async listReturns(
-    filters: { status?: string; sellerId?: string; requiresManualReview?: boolean },
+    filters: {
+      status?: string;
+      sellerId?: string;
+      requiresManualReview?: boolean;
+    },
     limit = 50,
     offset = 0,
   ) {
@@ -191,7 +215,9 @@ export class ReturnRepository {
       conditions.push(eq(returns.sellerId, filters.sellerId));
     }
     if (filters.requiresManualReview !== undefined) {
-      conditions.push(eq(returns.requiresManualReview, filters.requiresManualReview));
+      conditions.push(
+        eq(returns.requiresManualReview, filters.requiresManualReview),
+      );
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

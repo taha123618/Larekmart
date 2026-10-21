@@ -236,3 +236,24 @@ spec:
                 name: return-service
                 port:
                   number: 8018
+          - path: /api/v1/prices
+            pathType: Prefix
+            backend:
+              service:
+                name: pricing-service
+                port:
+                  number: 8019
+          - path: /api/v1/admin/prices
+            pathType: Prefix
+            backend:
+              service:
+                name: pricing-service
+                port:
+                  number: 8019
+          - path: /api/v1/admin/price-lists
+            pathType: Prefix
+            backend:
+              service:
+                name: pricing-service
+                port:
+                  number: 8019

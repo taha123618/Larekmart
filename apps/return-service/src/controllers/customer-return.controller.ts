@@ -1,5 +1,9 @@
 import type { Context } from "koa";
-import { CreateReturnRequestSchema, SubmitReturnTrackingSchema, ReturnEvidenceSchema } from "@repo/types";
+import {
+  CreateReturnRequestSchema,
+  SubmitReturnTrackingSchema,
+  ReturnEvidenceSchema,
+} from "@repo/types";
 import { returnService } from "../services/return.service.js";
 
 export class CustomerReturnController {
@@ -23,7 +27,11 @@ export class CustomerReturnController {
     const limit = Math.min(Number(ctx.query.limit) || 20, 100);
     const offset = Number(ctx.query.offset) || 0;
 
-    const returns = await returnService.getCustomerReturns(customerId, limit, offset);
+    const returns = await returnService.getCustomerReturns(
+      customerId,
+      limit,
+      offset,
+    );
     ctx.body = { returns };
   }
 
@@ -40,7 +48,11 @@ export class CustomerReturnController {
     const returnId = ctx.params.returnId;
     const body = (ctx.request.body as { reason?: string }) || {};
 
-    const result = await returnService.cancelReturn(returnId, customerId, body.reason);
+    const result = await returnService.cancelReturn(
+      returnId,
+      customerId,
+      body.reason,
+    );
     ctx.body = result;
   }
 
@@ -54,7 +66,11 @@ export class CustomerReturnController {
       returnId,
     });
 
-    const result = await returnService.attachEvidence(returnId, customerId, parsed);
+    const result = await returnService.attachEvidence(
+      returnId,
+      customerId,
+      parsed,
+    );
     ctx.status = 201;
     ctx.body = result;
   }

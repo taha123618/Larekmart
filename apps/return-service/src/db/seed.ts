@@ -35,7 +35,8 @@ export async function seedDatabase(): Promise<void> {
     {
       id: "NOT_AS_DESCRIBED",
       title: "Not as Described",
-      description: "Product materially deviates from website images and specifications",
+      description:
+        "Product materially deviates from website images and specifications",
       requiresEvidence: true,
       isSellerFault: true,
       isActive: true,
@@ -43,7 +44,8 @@ export async function seedDatabase(): Promise<void> {
     {
       id: "CHANGED_MIND",
       title: "Changed Mind / Unwanted",
-      description: "Customer no longer needs the product (standard return window)",
+      description:
+        "Customer no longer needs the product (standard return window)",
       requiresEvidence: false,
       isSellerFault: false,
       isActive: true,
@@ -78,7 +80,9 @@ export async function seedDatabase(): Promise<void> {
     await db
       .insert(returnReasons)
       .values(reason)
-      .onDuplicateKeyUpdate({ set: { title: reason.title, isSellerFault: reason.isSellerFault } });
+      .onDuplicateKeyUpdate({
+        set: { title: reason.title, isSellerFault: reason.isSellerFault },
+      });
   }
 
   // 2. Seed default 14-day policy version

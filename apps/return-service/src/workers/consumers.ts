@@ -23,7 +23,9 @@ async function handleOrderDelivered(message: {
 }): Promise<void> {
   // This is a signal — we store nothing but log for observability.
   // Actual eligibility check happens at request time from DB order state.
-  console.log(`[return-service:consumer] order.delivered received for order ${message.orderId}`);
+  console.log(
+    `[return-service:consumer] order.delivered received for order ${message.orderId}`,
+  );
 }
 
 // ─── Handler: payment.refund.succeeded ───────────────────────────────────────
@@ -36,7 +38,9 @@ async function handleRefundSucceeded(message: {
   refundedAt: string;
 }): Promise<void> {
   if (!message.returnId) {
-    console.warn("[return-service:consumer] payment.refund.succeeded missing returnId — skipping");
+    console.warn(
+      "[return-service:consumer] payment.refund.succeeded missing returnId — skipping",
+    );
     return;
   }
   const ret = await returnRepository.findById(message.returnId);
@@ -80,7 +84,9 @@ async function handleRefundFailed(message: {
   failedAt: string;
 }): Promise<void> {
   if (!message.returnId) {
-    console.warn("[return-service:consumer] payment.refund.failed missing returnId — skipping");
+    console.warn(
+      "[return-service:consumer] payment.refund.failed missing returnId — skipping",
+    );
     return;
   }
   const ret = await returnRepository.findById(message.returnId);
@@ -111,7 +117,9 @@ async function handleShippingLabelCreated(message: {
   createdAt?: string;
 }): Promise<void> {
   if (!message.returnId || !message.trackingNumber || !message.carrierName) {
-    console.warn("[return-service:consumer] shipping.label.created missing fields — skipping");
+    console.warn(
+      "[return-service:consumer] shipping.label.created missing fields — skipping",
+    );
     return;
   }
 
@@ -160,25 +168,33 @@ export async function startConsumers(): Promise<() => Promise<void>> {
     {
       topicName: "order.delivered",
       topicHandler: async (msg: unknown) => {
-        await handleOrderDelivered(msg as Parameters<typeof handleOrderDelivered>[0]);
+        await handleOrderDelivered(
+          msg as Parameters<typeof handleOrderDelivered>[0],
+        );
       },
     },
     {
       topicName: "payment.refund.succeeded",
       topicHandler: async (msg: unknown) => {
-        await handleRefundSucceeded(msg as Parameters<typeof handleRefundSucceeded>[0]);
+        await handleRefundSucceeded(
+          msg as Parameters<typeof handleRefundSucceeded>[0],
+        );
       },
     },
     {
       topicName: "payment.refund.failed",
       topicHandler: async (msg: unknown) => {
-        await handleRefundFailed(msg as Parameters<typeof handleRefundFailed>[0]);
+        await handleRefundFailed(
+          msg as Parameters<typeof handleRefundFailed>[0],
+        );
       },
     },
     {
       topicName: "shipping.label.created",
       topicHandler: async (msg: unknown) => {
-        await handleShippingLabelCreated(msg as Parameters<typeof handleShippingLabelCreated>[0]);
+        await handleShippingLabelCreated(
+          msg as Parameters<typeof handleShippingLabelCreated>[0],
+        );
       },
     },
   ]);

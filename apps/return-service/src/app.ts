@@ -28,7 +28,13 @@ export function createApp(): Koa {
         return allowed[0] ?? "*";
       },
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization", "x-user-id", "x-user-role", "x-internal-secret"],
+      allowHeaders: [
+        "Content-Type",
+        "Authorization",
+        "x-user-id",
+        "x-user-role",
+        "x-internal-secret",
+      ],
       credentials: true,
     }),
   );

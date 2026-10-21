@@ -65,3 +65,28 @@ export async function handleRatingSummaryUpdated(payload: any): Promise<void> {
     );
   }
 }
+
+export async function handlePriceUpdated(payload: any): Promise<void> {
+  try {
+    if (!payload) return;
+    const target = payload.value !== undefined ? payload.value : payload;
+    const productId = target.productId || target.id;
+    const newPrice = target.newPrice ?? target.basePrice ?? target.price;
+
+    if (
+      productId !== undefined &&
+      typeof newPrice === "number" &&
+      !isNaN(newPrice)
+    ) {
+      await productProjector.projectPriceUpdated({
+        productId,
+        price: newPrice,
+        compareAtPrice: target.compareAtPrice,
+      });
+    }
+  } catch (error) {
+    logger.error("Error handling pricing.price.updated in catalog-service", {
+      error: String(error),
+    });
+  }
+}

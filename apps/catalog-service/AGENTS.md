@@ -129,15 +129,15 @@ never creates one, so without the publisher the category tree, category pages, a
 
 ### Topics with NO producer in the monorepo (cannot fire)
 
-| Topic                | Gap                                                                                                                                                            |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `brand.created`      | No producer — `product-service` has no brand entity, and `product.created` carries no `brandId`, so `CatalogBrand` and `CatalogProduct.brandId` have no source |
-| `brand.updated`      | No producer — same as above                                                                                                                                    |
-| `collection.created` | No producer — nothing writes `CatalogCollection`, so `/collections` and the storefront hero sections stay empty                                                |
-| `collection.updated` | No producer — same as above                                                                                                                                    |
-| `collection.deleted` | No producer — same as above                                                                                                                                    |
-| `pricing.updated`    | No producer — price changes only arrive via `product.updated`                                                                                                  |
-| `review.created`     | No producer — `recommendation-service` registers a handler for it, but nothing publishes it; rating/review count only move via `product.updated`               |
+| Topic                   | Gap                                                                                                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `brand.created`         | No producer — `product-service` has no brand entity, and `product.created` carries no `brandId`, so `CatalogBrand` and `CatalogProduct.brandId` have no source |
+| `brand.updated`         | No producer — same as above                                                                                                                                    |
+| `collection.created`    | No producer — nothing writes `CatalogCollection`, so `/collections` and the storefront hero sections stay empty                                                |
+| `collection.updated`    | No producer — same as above                                                                                                                                    |
+| `collection.deleted`    | No producer — same as above                                                                                                                                    |
+| `pricing.price.updated` | **Produced by `pricing-service`** — consumed by `catalog-service` to update `CatalogProduct.price` & `compareAtPrice` and invalidate Redis caches              |
+| `review.created`        | No producer — `recommendation-service` registers a handler for it, but nothing publishes it; rating/review count only move via `product.updated`               |
 
 ## 6. Idempotency
 

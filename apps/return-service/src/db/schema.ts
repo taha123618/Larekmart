@@ -17,7 +17,10 @@ export const returnPolicyVersions = mysqlTable("return_policy_versions", {
   version: varchar("version", { length: 32 }).notNull().unique(),
   returnWindowDays: int("return_window_days").notNull().default(14),
   warrantyGraceDays: int("warranty_grace_days").notNull().default(30),
-  restockingFeePercentage: decimal("restocking_fee_percentage", { precision: 5, scale: 2 })
+  restockingFeePercentage: decimal("restocking_fee_percentage", {
+    precision: 5,
+    scale: 2,
+  })
     .notNull()
     .default("0.00"),
   requiresReceipt: boolean("requires_receipt").notNull().default(true),
@@ -65,8 +68,12 @@ export const returns = mysqlTable("returns", {
     .notNull()
     .default("0.00"),
   currency: varchar("currency", { length: 10 }).notNull().default("USD"),
-  policyVersion: varchar("policy_version", { length: 32 }).notNull().default("1.0.0"),
-  requiresManualReview: boolean("requires_manual_review").notNull().default(false),
+  policyVersion: varchar("policy_version", { length: 32 })
+    .notNull()
+    .default("1.0.0"),
+  requiresManualReview: boolean("requires_manual_review")
+    .notNull()
+    .default(false),
   autoApproved: boolean("auto_approved").notNull().default(false),
   deliveredAt: timestamp("delivered_at"),
   requestedAt: timestamp("requested_at").defaultNow().notNull(),
@@ -97,7 +104,10 @@ export const returnItems = mysqlTable("return_items", {
   proratedTax: decimal("prorated_tax", { precision: 12, scale: 2 })
     .notNull()
     .default("0.00"),
-  refundSubtotal: decimal("refund_subtotal", { precision: 12, scale: 2 }).notNull(),
+  refundSubtotal: decimal("refund_subtotal", {
+    precision: 12,
+    scale: 2,
+  }).notNull(),
   reason: varchar("reason", { length: 64 }).notNull(),
   condition: varchar("condition", { length: 64 }).notNull().default("UNOPENED"),
   customerNote: text("customer_note"),
@@ -114,7 +124,9 @@ export const returnMedia = mysqlTable("return_media", {
   mediaId: varchar("media_id", { length: 128 }).notNull(),
   url: varchar("url", { length: 512 }).notNull(),
   mediaType: varchar("media_type", { length: 32 }).notNull().default("PHOTO"),
-  uploaderRole: varchar("uploader_role", { length: 32 }).notNull().default("CUSTOMER"),
+  uploaderRole: varchar("uploader_role", { length: 32 })
+    .notNull()
+    .default("CUSTOMER"),
   caption: text("caption"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -166,7 +178,9 @@ export const returnRefunds = mysqlTable("return_refunds", {
   id: varchar("id", { length: 36 }).primaryKey(),
   returnId: varchar("return_id", { length: 36 }).notNull(),
   paymentIntentId: varchar("payment_intent_id", { length: 128 }).notNull(),
-  idempotencyKey: varchar("idempotency_key", { length: 128 }).notNull().unique(),
+  idempotencyKey: varchar("idempotency_key", { length: 128 })
+    .notNull()
+    .unique(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   taxAmount: decimal("tax_amount", { precision: 12, scale: 2 })
     .notNull()

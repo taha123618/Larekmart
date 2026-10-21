@@ -12,12 +12,19 @@ import {
   XCircle,
   Zap,
   Heart,
+  Tag,
+  Coins,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "@clerk/nextjs";
 import { sendInteraction } from "@/services/recommendation.service";
+import {
+  fetchProductPrice,
+  type ProductPricingDetails,
+} from "@/services/pricing.service";
+import { useCurrencyStore } from "@/stores/currencyStore";
 
 interface InventoryAvailabilityResponse {
   data?: {
@@ -56,6 +63,7 @@ const ProductInteraction = ({
   const { addToCart } = useCartStore();
   const { openCartDrawer } = useUIStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
+  const { currentCurrency, formatPrice } = useCurrencyStore();
   const isFavorited = isInWishlist(product.id);
 
   const variantId = `${selectedSize}-${selectedColor}`;
@@ -109,6 +117,53 @@ const ProductInteraction = ({
   const isOutOfStock = inventory !== null && inventory <= 0;
   const isLowStock = inventory !== null && inventory > 0 && inventory <= 5;
 
+  const [pricingDetails, setPricingDetails] =
+    useState<ProductPricingDetails | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchProductPrice(String(product.id), currentCurrency)
+      .then((data) => {
+        if (isMounted && data) {
+          setPricingDetails(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [product.id, currentCurrency]);
+
+  // Active volume tier discount calculation
+  const baseUnitPrice = pricingDetails
+    ? Number(pricingDetails.basePrice)
+    : product.price;
+
+  const applicableRule = pricingDetails?.rules
+    ?.filter(
+      (r) =>
+        r.isActive &&
+        quantity >= r.minQuantity &&
+        (!r.maxQuantity || quantity <= r.maxQuantity),
+    )
+    ?.sort((a, b) => b.minQuantity - a.minQuantity)[0];
+
+  let effectiveUnitPrice = baseUnitPrice;
+  let savingsPerUnit = 0;
+  if (applicableRule) {
+    if (applicableRule.discountType === "percentage") {
+      savingsPerUnit =
+        (baseUnitPrice * Number(applicableRule.discountValue)) / 100;
+      effectiveUnitPrice = Math.max(0, baseUnitPrice - savingsPerUnit);
+    } else if (applicableRule.discountType === "fixed_amount") {
+      savingsPerUnit = Number(applicableRule.discountValue);
+      effectiveUnitPrice = Math.max(0, baseUnitPrice - savingsPerUnit);
+    } else if (applicableRule.discountType === "override_price") {
+      effectiveUnitPrice = Number(applicableRule.discountValue);
+      savingsPerUnit = Math.max(0, baseUnitPrice - effectiveUnitPrice);
+    }
+  }
+
   const handleTypeChange = (type: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set(type, value);
@@ -137,6 +192,7 @@ const ProductInteraction = ({
 
     addToCart({
       ...product,
+      price: effectiveUnitPrice,
       quantity,
       selectedColor,
       selectedSize,
@@ -152,6 +208,7 @@ const ProductInteraction = ({
         color: selectedColor,
         quantity,
         categorySlug: product.categorySlug,
+        effectivePrice: effectiveUnitPrice,
       },
     });
 
@@ -271,6 +328,59 @@ const ProductInteraction = ({
           </button>
         </div>
       </div>
+
+      {/* AUTHORITATIVE PRICING & VOLUME DISCOUNT TIERS */}
+      {pricingDetails && (
+        <div className="flex flex-col gap-2 p-3 bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 rounded-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+              <Coins className="w-3.5 h-3.5" />
+              Authoritative Price:
+            </span>
+            <div className="flex items-baseline gap-2">
+              {savingsPerUnit > 0 && (
+                <span className="text-xs text-slate-400 line-through">
+                  {formatPrice(baseUnitPrice)}
+                </span>
+              )}
+              <span className="text-sm font-bold text-slate-900 dark:text-white">
+                {formatPrice(effectiveUnitPrice)}{" "}
+                <span className="text-[10px] text-slate-500">/ unit</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Active Savings Alert */}
+          {savingsPerUnit > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-1 rounded-lg">
+              <Tag className="w-3.5 h-3.5" />
+              Volume tier unlocked! You save{" "}
+              {formatPrice(savingsPerUnit * quantity)} on this order
+            </div>
+          )}
+
+          {/* Available Tier Rules Pills */}
+          {pricingDetails.rules && pricingDetails.rules.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {pricingDetails.rules.map((rule) => (
+                <span
+                  key={rule.id}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
+                    quantity >= rule.minQuantity
+                      ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-semibold"
+                      : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                  }`}
+                >
+                  Buy {rule.minQuantity}+{": "}
+                  {rule.discountType === "percentage"
+                    ? `${rule.discountValue}% OFF`
+                    : `${formatPrice(Number(rule.discountValue))} OFF`}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* BUTTONS */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2">

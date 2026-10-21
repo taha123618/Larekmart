@@ -20,7 +20,8 @@ export const ReturnStatusEnum = {
   CANCELLED: "CANCELLED",
 } as const;
 
-export type ReturnStatus = (typeof ReturnStatusEnum)[keyof typeof ReturnStatusEnum];
+export type ReturnStatus =
+  (typeof ReturnStatusEnum)[keyof typeof ReturnStatusEnum];
 
 export const ReturnStatusSchema = z.nativeEnum(ReturnStatusEnum);
 
@@ -35,7 +36,8 @@ export const ReturnReasonEnum = {
   OTHER: "OTHER",
 } as const;
 
-export type ReturnReason = (typeof ReturnReasonEnum)[keyof typeof ReturnReasonEnum];
+export type ReturnReason =
+  (typeof ReturnReasonEnum)[keyof typeof ReturnReasonEnum];
 
 export const ReturnReasonSchema = z.nativeEnum(ReturnReasonEnum);
 
@@ -47,7 +49,8 @@ export const ReturnItemConditionEnum = {
   MISSING_PARTS: "MISSING_PARTS",
 } as const;
 
-export type ReturnItemCondition = (typeof ReturnItemConditionEnum)[keyof typeof ReturnItemConditionEnum];
+export type ReturnItemCondition =
+  (typeof ReturnItemConditionEnum)[keyof typeof ReturnItemConditionEnum];
 
 export const ReturnItemConditionSchema = z.nativeEnum(ReturnItemConditionEnum);
 
@@ -61,7 +64,9 @@ export const ReturnInspectionDispositionEnum = {
 export type ReturnInspectionDisposition =
   (typeof ReturnInspectionDispositionEnum)[keyof typeof ReturnInspectionDispositionEnum];
 
-export const ReturnInspectionDispositionSchema = z.nativeEnum(ReturnInspectionDispositionEnum);
+export const ReturnInspectionDispositionSchema = z.nativeEnum(
+  ReturnInspectionDispositionEnum,
+);
 
 export const ReturnRefundStatusEnum = {
   PENDING: "PENDING",
@@ -71,7 +76,8 @@ export const ReturnRefundStatusEnum = {
   CANCELLED: "CANCELLED",
 } as const;
 
-export type ReturnRefundStatus = (typeof ReturnRefundStatusEnum)[keyof typeof ReturnRefundStatusEnum];
+export type ReturnRefundStatus =
+  (typeof ReturnRefundStatusEnum)[keyof typeof ReturnRefundStatusEnum];
 
 export const ReturnRefundStatusSchema = z.nativeEnum(ReturnRefundStatusEnum);
 
@@ -85,7 +91,9 @@ export const ReturnItemSchema = z.object({
   variantId: z.string().optional(),
   quantity: z.number().int().positive("Quantity must be positive"),
   reason: ReturnReasonSchema,
-  condition: ReturnItemConditionSchema.default(ReturnItemConditionEnum.UNOPENED),
+  condition: ReturnItemConditionSchema.default(
+    ReturnItemConditionEnum.UNOPENED,
+  ),
   customerNote: z.string().max(1000).optional(),
 });
 
@@ -116,7 +124,9 @@ export const AdminRejectReturnSchema = z.object({
   returnId: z.string().min(1, "Return ID is required"),
   sellerId: z.string().optional(),
   reviewerRole: z.enum(["SELLER", "ADMIN", "SUPPORT"]).default("ADMIN"),
-  rejectionReason: z.string().min(5, "Rejection reason must be at least 5 characters"),
+  rejectionReason: z
+    .string()
+    .min(5, "Rejection reason must be at least 5 characters"),
 });
 
 export type AdminRejectReturn = z.infer<typeof AdminRejectReturnSchema>;
@@ -133,8 +143,12 @@ export type InspectedItem = z.infer<typeof InspectedItemSchema>;
 export const RecordInspectionSchema = z.object({
   returnId: z.string().min(1, "Return ID is required"),
   inspectorId: z.string().min(1, "Inspector ID is required"),
-  overallCondition: z.string().min(1, "Overall condition description is required"),
-  items: z.array(InspectedItemSchema).min(1, "At least one item must be inspected"),
+  overallCondition: z
+    .string()
+    .min(1, "Overall condition description is required"),
+  items: z
+    .array(InspectedItemSchema)
+    .min(1, "At least one item must be inspected"),
   notes: z.string().max(2000).optional(),
 });
 
@@ -165,7 +179,9 @@ export type ReturnStateTransition = z.infer<typeof ReturnStateTransitionSchema>;
 export const SubmitReturnTrackingSchema = z.object({
   returnId: z.string().min(1, "Return ID is required"),
   carrierName: z.string().min(1, "Carrier name is required"),
-  trackingNumber: z.string().min(3, "Tracking number must be at least 3 characters"),
+  trackingNumber: z
+    .string()
+    .min(3, "Tracking number must be at least 3 characters"),
 });
 
 export type SubmitReturnTracking = z.infer<typeof SubmitReturnTrackingSchema>;
@@ -191,7 +207,9 @@ export const ReturnRequestedPayloadSchema = z.object({
   requestedAt: z.string(),
 });
 
-export type ReturnRequestedPayload = z.infer<typeof ReturnRequestedPayloadSchema>;
+export type ReturnRequestedPayload = z.infer<
+  typeof ReturnRequestedPayloadSchema
+>;
 
 export const ReturnApprovedPayloadSchema = z.object({
   returnId: z.string().min(1),
@@ -288,7 +306,9 @@ export const ReturnCompletedPayloadSchema = z.object({
   completedAt: z.string(),
 });
 
-export type ReturnCompletedPayload = z.infer<typeof ReturnCompletedPayloadSchema>;
+export type ReturnCompletedPayload = z.infer<
+  typeof ReturnCompletedPayloadSchema
+>;
 
 export const ReturnCancelledPayloadSchema = z.object({
   returnId: z.string().min(1),
@@ -299,4 +319,6 @@ export const ReturnCancelledPayloadSchema = z.object({
   cancelledAt: z.string(),
 });
 
-export type ReturnCancelledPayload = z.infer<typeof ReturnCancelledPayloadSchema>;
+export type ReturnCancelledPayload = z.infer<
+  typeof ReturnCancelledPayloadSchema
+>;

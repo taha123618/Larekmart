@@ -230,6 +230,15 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Arithmetic Precision: Decimal-safe financial arithmetic (`decimal.js` with `ROUND_HALF_UP`) ensuring zero floating-point inaccuracy across partial quantity refunds, prorated item discounts, and sales tax refunds.
 - Events: Publishes `return.requested`, `return.approved`, `return.rejected`, `return.cancelled`, `return.shipment.requested`, `return.inspection.completed`, `return.refund.requested`, `return.completed`. Consumes `order.delivered`, `payment.refund.succeeded`, `payment.refund.failed`, `shipping.label.created`.
 
+**`pricing-service` (Fastify 5, :8019)** — authoritative merchandise pricing, multi-currency conversion, tiered volume rules, promotional discount composition, immutable quote snapshots, and audit history.
+
+- Routes: `POST /api/v1/prices/calculate`, `POST /api/v1/prices/quote`, `GET /api/v1/prices/quotes/:quoteId`, `GET /api/v1/prices/products/:productId`, `GET /api/v1/prices/rates`, `POST /api/v1/admin/price-lists`, `GET /api/v1/admin/price-lists`, `POST /api/v1/admin/prices`, `POST /api/v1/admin/prices/rules`, `POST /api/v1/admin/prices/rates`, `GET /api/v1/admin/prices/history/:productId`, `/health`, `/ready`, `/metrics`.
+- Persistence: PostgreSQL via Drizzle ORM targeting `pricing_db` (`price_lists`, `product_prices`, `variant_prices`, `price_rules`, `price_history`, `price_quotes`, `currency_rates`).
+- Caching: Redis (`pricing:v1:*` namespace) through `@repo/redis` for active exchange rates, cached quotes, and rate limiting.
+- Arithmetic Precision: Decimal-safe financial arithmetic (`decimal.js` with `ROUND_HALF_UP` and 20-digit precision) ensuring zero floating-point drift across multi-currency conversions and tiered volume computations.
+- Negative Price Guard: Strict zero-floor clamping ensuring discounts and promotions never produce negative totals.
+- Events: Publishes `pricing.price.created`, `pricing.price.updated`, `pricing.price.expired`, `pricing.quote.created`. Consumes `product.created`, `product.deleted`, `order.created`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                                     |
@@ -246,6 +255,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | review-service                   | Drizzle (`pg`)                | `reviews`, `review_media`, `review_votes`, `review_reports`, `review_moderation_actions`, `seller_responses`, `product_rating_summaries`           |
 | PostgreSQL | wishlist-service                 | Drizzle (`pg`)                | `wishlists`, `wishlist_items`, `wishlist_shares`, `wishlist_events`                                                                                |
 | PostgreSQL | promotion-service                | Drizzle (`pg`)                | `promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets`       |
+| PostgreSQL | pricing-service                  | Drizzle (`pg`)                | `price_lists`, `product_prices`, `variant_prices`, `price_rules`, `price_history`, `price_quotes`, `currency_rates`                                |
 | MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`             |
 | MySQL      | return-service                   | Drizzle (`mysql2`)            | `returns`, `return_items`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_outbox` |
 | S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                             |
@@ -263,6 +273,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | promotion-service                | `@repo/redis` (ioredis)       | `promotion:v1:*` (active promotion cache, coupon fast-lookup, rate-limiting)                                                                       |
 | Redis      | tax-service                      | `@repo/redis` (ioredis)       | `tax:v1:*` (rule cache, jurisdiction lookup fast-path)                                                                                             |
 | Redis      | return-service                   | `@repo/redis` (ioredis)       | `return:v1:*` (policy cache, return window cache, anti-abuse rate limits)                                                                          |
+| Redis      | pricing-service                  | `@repo/redis` (ioredis)       | `pricing:v1:*` (exchange rate cache, active quote cache, rate-limiting)                                                                            |
 | OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                              |
 | MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                            |
 | MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                           |

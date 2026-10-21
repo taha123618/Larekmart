@@ -16,7 +16,9 @@ export interface EligibilityResult {
 }
 
 export class EligibilityService {
-  async evaluateEligibility(input: EligibilityInput): Promise<EligibilityResult> {
+  async evaluateEligibility(
+    input: EligibilityInput,
+  ): Promise<EligibilityResult> {
     const policy = await policyRepository.getActivePolicy();
     const policyVersion = policy?.version || "1.0.0";
     const returnWindowDays = policy?.returnWindowDays ?? 14;
@@ -50,7 +52,9 @@ export class EligibilityService {
     const daysSinceDelivery = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     // Defective/damaged seller-fault items get warrantyGraceDays (30 days); buyer remorse gets returnWindowDays (14 days)
-    const allowedDays = reason.isSellerFault ? warrantyGraceDays : returnWindowDays;
+    const allowedDays = reason.isSellerFault
+      ? warrantyGraceDays
+      : returnWindowDays;
 
     if (daysSinceDelivery > allowedDays) {
       return {

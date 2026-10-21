@@ -23,6 +23,7 @@ import {
   Tag,
   Scale,
   RotateCcw,
+  Coins,
 } from "lucide-react";
 import {
   Sidebar,
@@ -265,6 +266,21 @@ const AppSidebar = () => {
                   <Link href="/promotions">
                     <Tag />
                     Campaigns & Coupons
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Merchandise & Pricing</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/pricing">
+                    <Coins />
+                    Pricing & Currencies
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

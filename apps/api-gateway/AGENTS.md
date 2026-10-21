@@ -6,7 +6,7 @@
 
 It handles cross-cutting concerns:
 
-- Reverse proxying to 14 backend microservices via `@fastify/http-proxy`
+- Reverse proxying to 20 backend microservices via `@fastify/http-proxy`
 - Centralized CORS and defensive security headers (`@fastify/cors`, `@fastify/helmet`)
 - Request correlation and client untrusted header stripping (`x-request-id`)
 - Clerk JWT authentication and session claim extraction (`@clerk/fastify`)
@@ -40,6 +40,11 @@ Port: **8080**
 | `/api/v1/recommendations` | `recommendation-service` | 8008 | `""`              |
 | `/api/v1/media`           | `media-service`          | 8013 | `""`              |
 | `/api/v1/reviews`         | `review-service`         | 8014 | `""`              |
+| `/api/v1/me/wishlists`    | `wishlist-service`       | 8015 | `""`              |
+| `/api/v1/promotions`      | `promotion-service`      | 8016 | `""`              |
+| `/api/v1/tax`             | `tax-service`            | 8017 | `""`              |
+| `/api/v1/returns`         | `return-service`         | 8018 | `""`              |
+| `/api/v1/prices`          | `pricing-service`        | 8019 | `""`              |
 
 ## 3. Running & Verifying
 

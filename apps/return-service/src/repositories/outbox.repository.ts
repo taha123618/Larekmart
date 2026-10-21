@@ -6,7 +6,11 @@ import { returnOutbox } from "../db/schema.js";
 export class OutboxRepository {
   private db = getDb();
 
-  async insertMessage(topic: string, eventKey: string | null, payload: unknown): Promise<string> {
+  async insertMessage(
+    topic: string,
+    eventKey: string | null,
+    payload: unknown,
+  ): Promise<string> {
     const id = uuidv4();
     await this.db.insert(returnOutbox).values({
       id,

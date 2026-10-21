@@ -9,6 +9,7 @@ import { ShoppingCart, Heart, Eye, Star } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import MediaImage from "./MediaImage";
+import { useCurrencyStore } from "@/stores/currencyStore";
 
 interface ProductCardProps {
   product: ProductType & {
@@ -32,6 +33,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
   const { openQuickView } = useUIStore();
+  const { formatPrice } = useCurrencyStore();
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
@@ -236,10 +238,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                ${product.price.toFixed(2)}
+                {formatPrice(product.price)}
               </span>
               <span className="text-xs text-slate-400 dark:text-slate-500 line-through">
-                ${originalPrice.toFixed(2)}
+                {formatPrice(originalPrice)}
               </span>
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
