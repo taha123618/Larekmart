@@ -318,6 +318,52 @@ export class ProductProjector {
 
     await this.markEventProcessed(eventId, "product.rating-summary.updated");
   }
+
+  async projectPriceUpdated(data: {
+    productId: string | number;
+    price: number;
+    compareAtPrice?: number | null;
+  }): Promise<void> {
+    const productId = String(data.productId);
+    const existing = await prisma.catalogProduct.findUnique({
+      where: { productId },
+    });
+    if (!existing) return;
+
+    const price = data.price;
+    const compareAtPrice =
+      data.compareAtPrice !== undefined
+        ? data.compareAtPrice
+        : existing.compareAtPrice
+          ? Number(existing.compareAtPrice)
+          : null;
+
+    let discountPercentage = 0;
+    if (compareAtPrice && compareAtPrice > price) {
+      discountPercentage = Math.round(
+        ((compareAtPrice - price) / compareAtPrice) * 100,
+      );
+    }
+
+    const updated = await prisma.catalogProduct.update({
+      where: { productId },
+      data: {
+        price,
+        compareAtPrice,
+        discountPercentage,
+        updatedAt: new Date(),
+      },
+    });
+
+    await invalidateProductCache(
+      productId,
+      updated.primaryCategoryId,
+      updated.brandId,
+    );
+    logger.info(
+      `Projected price updated in catalog: ${productId} -> $${price}`,
+    );
+  }
 }
 
 export const productProjector = new ProductProjector();

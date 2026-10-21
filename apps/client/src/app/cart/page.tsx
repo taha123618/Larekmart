@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   Loader2,
   Sparkles,
+  Coins,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, useRef, useMemo } from "react";
@@ -32,7 +33,9 @@ import { useAuth } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchActivePromotions } from "@/services/promotion.service";
 import { getTaxQuote } from "@/services/tax.service";
-import type { TaxCalculationResponse } from "@repo/types";
+import { fetchPriceQuote } from "@/services/pricing.service";
+import { useCurrencyStore } from "@/stores/currencyStore";
+import type { TaxCalculationResponse, PriceQuote } from "@repo/types";
 
 const defaultSteps = [
   {
@@ -63,6 +66,9 @@ const CartContent = () => {
   const [activePromotions, setActivePromotions] = useState<Promotion[]>([]);
   const [taxQuote, setTaxQuote] = useState<TaxCalculationResponse | null>(null);
   const [isTaxLoading, setIsTaxLoading] = useState(false);
+  const [pricingQuote, setPricingQuote] = useState<PriceQuote | null>(null);
+  const [isPricingLoading, setIsPricingLoading] = useState(false);
+  const { currentCurrency, formatPrice } = useCurrencyStore();
 
   // Local optimistic store
   const { cart, serverCart, removeFromCart, updateQuantity, mergeGuestCart } =
@@ -137,6 +143,45 @@ const CartContent = () => {
     shippingForm?.postalCode,
     getToken,
   ]);
+
+  // Dynamic authoritative price quote calculation from pricing-service (volume tiers & discount composition)
+  useEffect(() => {
+    if (cart.length === 0) {
+      setPricingQuote(null);
+      return;
+    }
+
+    let isMounted = true;
+    const calculatePricing = async () => {
+      setIsPricingLoading(true);
+      try {
+        const token = await getToken();
+        const quote = await fetchPriceQuote(
+          {
+            currency: currentCurrency,
+            items: cart.map((item) => ({
+              productId: String(item.id),
+              quantity: item.quantity,
+            })),
+            promotionDiscount: serverCart?.pricing?.discountTotal || 0,
+          },
+          token ?? undefined,
+        );
+        if (isMounted) {
+          setPricingQuote(quote);
+        }
+      } catch (err) {
+        console.warn("Could not calculate dynamic pricing quote:", err);
+      } finally {
+        if (isMounted) setIsPricingLoading(false);
+      }
+    };
+
+    calculatePricing();
+    return () => {
+      isMounted = false;
+    };
+  }, [cart, currentCurrency, serverCart?.pricing?.discountTotal, getToken]);
 
   const availableCoupons = useMemo(() => {
     const list: Array<{ code: string; label: string }> = [];
@@ -246,21 +291,26 @@ const CartContent = () => {
     }
   };
 
-  // Pricing values from authoritative serverCart or fallback to client calculation
+  // Pricing values from authoritative pricing-service quote, serverCart, or client calculation
   const fallbackSubtotal = cart.reduce(
     (acc, item) => acc + item.price * item.quantity,
     0,
   );
   const subtotal =
-    activeServerCart?.pricing?.subtotal && activeServerCart.pricing.subtotal > 0
-      ? activeServerCart.pricing.subtotal
-      : serverCart?.pricing?.subtotal && serverCart.pricing.subtotal > 0
-        ? serverCart.pricing.subtotal
-        : fallbackSubtotal;
+    pricingQuote?.subtotal !== undefined
+      ? pricingQuote.subtotal
+      : activeServerCart?.pricing?.subtotal &&
+          activeServerCart.pricing.subtotal > 0
+        ? activeServerCart.pricing.subtotal
+        : serverCart?.pricing?.subtotal && serverCart.pricing.subtotal > 0
+          ? serverCart.pricing.subtotal
+          : fallbackSubtotal;
   const discountTotal =
-    activeServerCart?.pricing?.discountTotal ??
-    serverCart?.pricing?.discountTotal ??
-    0;
+    pricingQuote?.totalDiscount !== undefined && pricingQuote.totalDiscount > 0
+      ? pricingQuote.totalDiscount
+      : (activeServerCart?.pricing?.discountTotal ??
+        serverCart?.pricing?.discountTotal ??
+        0);
   const shippingFee =
     shippingForm?.shippingAmount !== undefined
       ? shippingForm.shippingAmount
@@ -642,16 +692,30 @@ const CartContent = () => {
           {/* FINANCIAL TOTALS */}
           <div className="flex flex-col gap-3">
             <div className="flex justify-between text-sm">
-              <p className="text-gray-500 dark:text-slate-400">Subtotal</p>
-              <p className="font-medium text-gray-900 dark:text-white">
-                ${subtotal.toFixed(2)}
+              <p className="text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+                <span>Subtotal</span>
+                {pricingQuote && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-semibold flex items-center gap-1">
+                    <Coins className="w-2.5 h-2.5" />
+                    pricing-service
+                  </span>
+                )}
+              </p>
+              <p className="font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                {isPricingLoading && (
+                  <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                )}
+                {formatPrice(subtotal)}
               </p>
             </div>
 
             {discountTotal > 0 && (
               <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                <p>Discounts Applied</p>
-                <p>-${discountTotal.toFixed(2)}</p>
+                <p className="flex items-center gap-1">
+                  <Tag className="w-3.5 h-3.5" />
+                  Discounts & Volume Tiers
+                </p>
+                <p>-{formatPrice(discountTotal)}</p>
               </div>
             )}
 
@@ -663,14 +727,14 @@ const CartContent = () => {
                   : "Estimate"}
               </p>
               <p className="font-medium text-gray-900 dark:text-white">
-                {shippingFee === 0 ? "Free" : `$${shippingFee.toFixed(2)}`}
+                {shippingFee === 0 ? "Free" : formatPrice(shippingFee)}
               </p>
             </div>
 
             {codFee > 0 && (
               <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400 font-medium">
                 <p>COD Handling Fee</p>
-                <p>+${codFee.toFixed(2)}</p>
+                <p>+{formatPrice(codFee)}</p>
               </div>
             )}
 
@@ -694,7 +758,7 @@ const CartContent = () => {
                     {isTaxLoading && (
                       <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
                     )}
-                    ${taxTotal.toFixed(2)}
+                    {formatPrice(taxTotal)}
                   </p>
                 </div>
                 {taxQuote?.lines &&
@@ -710,7 +774,7 @@ const CartContent = () => {
                             {b.jurisdictionName} (
                             {(parseFloat(b.rate) * 100).toFixed(1)}%)
                           </span>
-                          <span>${parseFloat(b.taxAmount).toFixed(2)}</span>
+                          <span>{formatPrice(parseFloat(b.taxAmount))}</span>
                         </div>
                       ))}
                     </div>
@@ -725,7 +789,7 @@ const CartContent = () => {
                 Estimated Total
               </p>
               <p className="font-bold text-lg text-gray-900 dark:text-white">
-                ${grandTotal.toFixed(2)}
+                {formatPrice(grandTotal)}
               </p>
             </div>
           </div>

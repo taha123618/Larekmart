@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { motion, Variants } from "framer-motion";
 import {
   Wrench,
@@ -24,7 +23,6 @@ export function MaintenanceContent({
   message,
   estimatedCompletion,
 }: MaintenanceContentProps) {
-  const router = useRouter();
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -206,7 +204,7 @@ export function MaintenanceContent({
                 { label: "Hours", value: timeLeft.hours },
                 { label: "Mins", value: timeLeft.minutes },
                 { label: "Secs", value: timeLeft.seconds },
-              ].map((unit, index) => (
+              ].map((unit) => (
                 <div
                   key={unit.label}
                   className="relative flex flex-col items-center"

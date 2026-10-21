@@ -18,14 +18,18 @@ export async function startServer(): Promise<void> {
 
   await new Promise<void>((resolve, reject) => {
     const server = app.listen(env.PORT, env.HOST, () => {
-      console.log(`[return-service] Listening on http://${env.HOST}:${env.PORT}`);
+      console.log(
+        `[return-service] Listening on http://${env.HOST}:${env.PORT}`,
+      );
       resolve();
     });
     server.on("error", reject);
 
     // Graceful shutdown
     const shutdown = async (signal: string) => {
-      console.log(`[return-service] Received ${signal}. Shutting down gracefully…`);
+      console.log(
+        `[return-service] Received ${signal}. Shutting down gracefully…`,
+      );
       server.close(() => {
         console.log("[return-service] HTTP server closed.");
         process.exit(0);

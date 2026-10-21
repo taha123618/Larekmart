@@ -151,6 +151,8 @@ const StripePaymentForm = ({
     serverCart?.id,
     serverCart?.coupons,
     serverCart?.pricing?.discountTotal,
+    taxCalculationId,
+    taxAmount,
   ]);
 
   // Case 1: Stripe Publishable Key not configured in environment

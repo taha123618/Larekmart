@@ -34,6 +34,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `promotion-service` (:8016) — Hono 4, centralized promotions, coupons, discount eligibility, budgets, checkout reservations, redemptions; PostgreSQL (`larekmart_promotion_db`) via Drizzle ORM + Redis cache.
   - `tax-service` (:8017) — Fastify 5, jurisdiction-aware tax calculations, versioned tax rules, customer exemptions, checkout quotes, auditable snapshots, and provider adapters; MySQL (`tax_db`) via Drizzle ORM + Redis cache.
   - `return-service` (:8018) — Koa 2, multi-seller return & refund lifecycle orchestration: eligibility checks, partial-quantity returns, evidence media, warehouse inspection dispositions, return-shipment tracking, Stripe refund SAGA coordination, and transactional outbox; MySQL (`return_db`) via Drizzle ORM + Redis cache.
+  - `pricing-service` (:8019) — Fastify 5, authoritative merchandise pricing, seller price lists (B2B & B2C), multi-currency conversion, tiered volume pricing, promotional discount composition, immutable quote snapshots, zero-drift Decimal.js engine, and audit history; PostgreSQL (`pricing_db`) via Drizzle ORM + Redis cache.
   - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).
@@ -65,6 +66,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Promotions, campaigns, coupons, discounts, budget holds    | `apps/promotion-service`                               |
 | Tax calculation, rules, customer exemptions, audit logs    | `apps/tax-service`                                     |
 | Returns, RMA, warehouse inspection, refund SAGA            | `apps/return-service`                                  |
+| Merchandise pricing, price lists, multi-currency, quotes   | `apps/pricing-service`                                 |
 | Kafka client/producer/consumer helpers                     | `packages/kafka`                                       |
 | Shared types, Zod schemas, Kafka payload types             | `packages/types`                                       |
 | Telemetry, structured logging, health checks               | `packages/monitoring`                                  |

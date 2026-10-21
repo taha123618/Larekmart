@@ -31,6 +31,7 @@ resources:
   - services/promotion-service.yaml
   - services/tax-service.yaml
   - services/return-service.yaml
+  - services/pricing-service.yaml
   - workers/email-service.yaml
   - autoscaling/hpa.yaml
   - autoscaling/keda-scaledobjects.yaml

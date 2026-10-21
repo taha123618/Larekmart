@@ -5,6 +5,7 @@ import {
   handleProductUpdated,
   handleProductDeleted,
   handleRatingSummaryUpdated,
+  handlePriceUpdated,
 } from "./product.consumer.js";
 import {
   handleCategoryCreated,
@@ -27,6 +28,12 @@ export async function startKafkaConsumers(): Promise<void> {
         topicName: "product.updated",
         topicHandler: async (msg) => {
           if (msg.value) await handleProductUpdated(msg.value);
+        },
+      },
+      {
+        topicName: "pricing.price.updated",
+        topicHandler: async (msg) => {
+          if (msg.value) await handlePriceUpdated(msg.value);
         },
       },
       {

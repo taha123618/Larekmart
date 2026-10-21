@@ -22,6 +22,7 @@ import CartHeaderButton from "./CartHeaderButton";
 import ThemeToggleAnimated from "./common/ThemeToggleAnimated";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import ProfileButton from "./ProfileButton";
+import CurrencySelector from "./CurrencySelector";
 
 const CATEGORY_LINKS = [
   { label: "Super Deals", href: "/#flash-deals", icon: Flame, highlight: true },
@@ -66,15 +67,14 @@ export default function Navbar() {
             <Link href="/orders" className="hover:text-white transition">
               My Orders
             </Link>
-            <Link href="/account/returns" className="hover:text-white transition">
+            <Link
+              href="/account/returns"
+              className="hover:text-white transition"
+            >
               Returns
             </Link>
             <span className="hidden sm:inline text-slate-700">|</span>
-            <div className="hidden sm:flex items-center gap-1 text-slate-300 cursor-pointer hover:text-white">
-              <span>USD $</span>
-              <span className="text-slate-500">•</span>
-              <span>EN</span>
-            </div>
+            <CurrencySelector />
           </div>
         </div>
       </div>

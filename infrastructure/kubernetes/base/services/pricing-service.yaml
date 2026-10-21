@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pricing-service
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: pricing-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: larekmart
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pricing-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pricing-service
+        app.kubernetes.io/component: backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: pricing-service
+          image: larekmart/pricing-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8019
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: larekmart-common-config
+            - secretRef:
+                name: larekmart-secrets
+          env:
+            - name: PORT
+              value: "8019"
+            - name: NODE_ENV
+              value: "production"
+            - name: DATABASE_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):5432/pricing_db?sslmode=disable"
+            - name: REDIS_URL
+              value: "redis://$(REDIS_HOST):$(REDIS_PORT)"
+            - name: KAFKA_BROKERS
+              value: "$(KAFKA_BROKER)"
+            - name: KAFKA_CLIENT_ID
+              value: "pricing-service"
+            - name: KAFKA_GROUP_ID
+              value: "pricing-service-group"
+            - name: INTERNAL_SERVICE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: larekmart-secrets
+                  key: INTERNAL_SERVICE_SECRET
+                  optional: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8019
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 20
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8019
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8019
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pricing-service
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: pricing-service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8019
+      targetPort: 8019
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: pricing-service

@@ -2,10 +2,7 @@
  * return.service.ts — Admin service for managing customer returns, inspections, approvals, rejections, and refund retries.
  */
 
-import {
-  ReturnStatus,
-  ReturnStatusEnum,
-} from "@repo/types";
+import { ReturnStatus, ReturnStatusEnum } from "@repo/types";
 
 export interface AdminReturnItem {
   id: string;
@@ -164,7 +161,8 @@ export async function fetchAdminReturns(
   },
 ): Promise<AdminReturnRecord[]> {
   const query = new URLSearchParams();
-  if (params?.status && params.status !== "ALL") query.set("status", params.status);
+  if (params?.status && params.status !== "ALL")
+    query.set("status", params.status);
   if (params?.sellerId) query.set("sellerId", params.sellerId);
   if (params?.requiresManualReview !== undefined)
     query.set("requiresManualReview", String(params.requiresManualReview));
@@ -179,7 +177,9 @@ export async function fetchAdminReturns(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to fetch returns (HTTP ${res.status})`);
+    throw new Error(
+      errorData.message || `Failed to fetch returns (HTTP ${res.status})`,
+    );
   }
 
   const data = await res.json();
@@ -200,7 +200,10 @@ export async function fetchAdminReturnDetails(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to fetch return details (HTTP ${res.status})`);
+    throw new Error(
+      errorData.message ||
+        `Failed to fetch return details (HTTP ${res.status})`,
+    );
   }
 
   const data = await res.json();
@@ -223,7 +226,9 @@ export async function approveReturn(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to approve return (HTTP ${res.status})`);
+    throw new Error(
+      errorData.message || `Failed to approve return (HTTP ${res.status})`,
+    );
   }
 
   return res.json();
@@ -245,7 +250,9 @@ export async function rejectReturn(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to reject return (HTTP ${res.status})`);
+    throw new Error(
+      errorData.message || `Failed to reject return (HTTP ${res.status})`,
+    );
   }
 
   return res.json();
@@ -267,7 +274,12 @@ export async function recordReturnInspection(
     notes?: string;
   },
   authToken?: string,
-): Promise<{ success: boolean; returnId: string; inspectionId: string; status: ReturnStatus }> {
+): Promise<{
+  success: boolean;
+  returnId: string;
+  inspectionId: string;
+  status: ReturnStatus;
+}> {
   const res = await fetch(`${ADMIN_RETURN_BASE}/${returnId}/inspect`, {
     method: "POST",
     headers: getAuthHeaders(authToken),
@@ -276,7 +288,9 @@ export async function recordReturnInspection(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to record inspection (HTTP ${res.status})`);
+    throw new Error(
+      errorData.message || `Failed to record inspection (HTTP ${res.status})`,
+    );
   }
 
   return res.json();
@@ -296,7 +310,9 @@ export async function retryReturnRefund(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to retry refund (HTTP ${res.status})`);
+    throw new Error(
+      errorData.message || `Failed to retry refund (HTTP ${res.status})`,
+    );
   }
 
   return res.json();
@@ -305,7 +321,9 @@ export async function retryReturnRefund(
 /**
  * Compute KPI stats over returns list
  */
-export function calculateReturnOverviewKPIs(returns: AdminReturnRecord[]): ReturnOverviewKPIs {
+export function calculateReturnOverviewKPIs(
+  returns: AdminReturnRecord[],
+): ReturnOverviewKPIs {
   const kpis: ReturnOverviewKPIs = {
     totalReturns: returns.length,
     pendingReview: 0,

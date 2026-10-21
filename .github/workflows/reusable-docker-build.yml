@@ -124,6 +124,9 @@ jobs:
           - service: return-service
             context: .
             dockerfile: apps/return-service/Dockerfile
+          - service: pricing-service
+            context: .
+            dockerfile: apps/pricing-service/Dockerfile
           - service: email-service
             context: .
             dockerfile: apps/email-service/Dockerfile

@@ -102,6 +102,11 @@ export const services = {
     url: env.RETURN_SERVICE_URL,
     timeoutMs: 10000,
   },
+  pricing: {
+    name: "pricing-service",
+    url: env.PRICING_SERVICE_URL,
+    timeoutMs: 5000,
+  },
 } as const satisfies Record<string, ServiceTarget>;
 
 export const downstreamServices = services;

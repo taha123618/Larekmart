@@ -24,6 +24,12 @@ export async function startKafkaConsumers(): Promise<void> {
         },
       },
       {
+        topicName: "pricing.price.updated",
+        topicHandler: async (msg) => {
+          if (msg.value) await handlePriceUpdated(msg.value);
+        },
+      },
+      {
         topicName: "product.deleted",
         topicHandler: async (msg) => {
           if (msg.value) await handleProductDeleted(msg.value);

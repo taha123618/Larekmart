@@ -89,6 +89,8 @@ spec:
           port: 8017
         - protocol: TCP
           port: 8018
+        - protocol: TCP
+          port: 8019
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -118,8 +120,6 @@ spec:
         - protocol: TCP
           port: 8005
         - protocol: TCP
-          port: 8005
-        - protocol: TCP
           port: 8006
         - protocol: TCP
           port: 8007
@@ -145,3 +145,5 @@ spec:
           port: 8017
         - protocol: TCP
           port: 8018
+        - protocol: TCP
+          port: 8019

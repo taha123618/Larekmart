@@ -8,7 +8,11 @@ interface ApproveRejectDialogProps {
   mode: "APPROVE" | "REJECT" | null;
   isOpen: boolean;
   onClose: () => void;
-  onConfirmApprove: (returnId: string, providePrepaidLabel: boolean, notes?: string) => Promise<void>;
+  onConfirmApprove: (
+    returnId: string,
+    providePrepaidLabel: boolean,
+    notes?: string,
+  ) => Promise<void>;
   onConfirmReject: (returnId: string, reason: string) => Promise<void>;
 }
 
@@ -37,7 +41,11 @@ export function ApproveRejectDialog({
 
     try {
       if (isApprove) {
-        await onConfirmApprove(returnId, providePrepaidLabel, notes || undefined);
+        await onConfirmApprove(
+          returnId,
+          providePrepaidLabel,
+          notes || undefined,
+        );
       } else {
         if (!rejectionReason.trim()) {
           setError("A rejection reason is required.");
@@ -110,7 +118,8 @@ export function ApproveRejectDialog({
                   <strong className="block text-slate-900 dark:text-white font-bold">
                     Generate Prepaid Shipping Label
                   </strong>
-                  Triggers shipping-service to emit carrier label and email customer return instructions.
+                  Triggers shipping-service to emit carrier label and email
+                  customer return instructions.
                 </label>
               </div>
 
@@ -164,8 +173,8 @@ export function ApproveRejectDialog({
               {isSubmitting
                 ? "Processing..."
                 : isApprove
-                ? "Approve Request"
-                : "Reject Request"}
+                  ? "Approve Request"
+                  : "Reject Request"}
             </button>
           </div>
         </form>

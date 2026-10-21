@@ -120,3 +120,76 @@ export const handleProductDeleted = async (
     );
   }
 };
+
+export const handlePriceUpdated = async (payload: {
+  productId?: string | number;
+  newPrice?: number;
+  price?: number;
+  [key: string]: unknown;
+}): Promise<void> => {
+  const targetId = String(payload.productId || payload.id || "");
+  const priceValue = payload.newPrice ?? payload.price;
+
+  if (
+    !targetId ||
+    typeof priceValue !== "number" ||
+    isNaN(priceValue) ||
+    priceValue < 0
+  ) {
+    return;
+  }
+
+  const eventId = `price_upd_${targetId}_${Date.now()}`;
+  const existing = await ProcessedEvent.findOne({ eventId });
+  if (existing) return;
+
+  try {
+    const affectedCarts = await Cart.find(
+      { status: "active", "items.productId": targetId },
+      { userId: 1, guestToken: 1 },
+    );
+
+    if (affectedCarts.length > 0) {
+      const updatedResult = await Cart.updateMany(
+        { status: "active", "items.productId": targetId },
+        {
+          $set: {
+            "items.$[elem].unitPrice": priceValue,
+            "items.$[elem].subtotal": {
+              $multiply: ["$items.$[elem].quantity", priceValue],
+            },
+          },
+        },
+        { arrayFilters: [{ "elem.productId": targetId }] },
+      );
+
+      for (const c of affectedCarts) {
+        await invalidateCartCache({
+          userId: c.userId,
+          guestToken: c.guestToken,
+        });
+      }
+
+      logger.info(
+        "Refreshed cart prices following pricing.price.updated from pricing-service",
+        {
+          targetId,
+          price: priceValue,
+          modifiedCarts: updatedResult.modifiedCount,
+        },
+      );
+    }
+
+    await ProcessedEvent.create({
+      eventId,
+      eventType: "pricing.price.updated",
+      aggregateId: targetId,
+    });
+  } catch (err) {
+    logger.error(
+      "Error processing pricing.price.updated event in cart-service",
+      err as Error,
+      { targetId },
+    );
+  }
+};

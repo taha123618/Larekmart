@@ -39,10 +39,10 @@ export function ReturnTable({
       r.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.customerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (r.sellerId && r.sellerId.toLowerCase().includes(searchQuery.toLowerCase()));
+      (r.sellerId &&
+        r.sellerId.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    const matchesStatus =
-      statusFilter === "ALL" || r.status === statusFilter;
+    const matchesStatus = statusFilter === "ALL" || r.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -148,7 +148,10 @@ export function ReturnTable({
                   className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition group"
                 >
                   <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-white">
-                    <span className="cursor-pointer hover:underline" onClick={() => onViewDetails(r)}>
+                    <span
+                      className="cursor-pointer hover:underline"
+                      onClick={() => onViewDetails(r)}
+                    >
                       #{r.id.slice(0, 8)}...
                     </span>
                   </td>
@@ -191,7 +194,8 @@ export function ReturnTable({
                         <Eye className="w-4 h-4" />
                       </button>
 
-                      {(r.status === "REQUESTED" || r.status === "PENDING_REVIEW") && (
+                      {(r.status === "REQUESTED" ||
+                        r.status === "PENDING_REVIEW") && (
                         <>
                           <button
                             onClick={() => onApprove(r.id)}

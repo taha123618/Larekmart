@@ -37,6 +37,7 @@ export const config = {
     topics: {
       productCreated: "product.created",
       productUpdated: "product.updated",
+      pricingPriceUpdated: "pricing.price.updated",
       productDeleted: "product.deleted",
       ratingSummaryUpdated: "product.rating-summary.updated",
     },

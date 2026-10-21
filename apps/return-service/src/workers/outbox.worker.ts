@@ -40,7 +40,9 @@ export async function startOutboxWorker(): Promise<void> {
     }
 
     try {
-      const messages = await outboxRepository.getPendingMessages(env.OUTBOX_BATCH_SIZE);
+      const messages = await outboxRepository.getPendingMessages(
+        env.OUTBOX_BATCH_SIZE,
+      );
 
       for (const msg of messages) {
         try {

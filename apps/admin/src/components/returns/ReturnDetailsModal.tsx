@@ -1,9 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  AdminReturnRecord,
-} from "@/services/return.service";
+import { AdminReturnRecord } from "@/services/return.service";
 import {
   X,
   Package,
@@ -208,7 +206,10 @@ export function ReturnDetailsModal({
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {returnRecord.items && returnRecord.items.length > 0 ? (
                     returnRecord.items.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                      <tr
+                        key={item.id}
+                        className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
+                      >
                         <td className="py-2 px-3 font-mono text-slate-900 dark:text-white">
                           {item.productId}
                         </td>
@@ -232,7 +233,10 @@ export function ReturnDetailsModal({
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-4 text-center text-slate-400">
+                      <td
+                        colSpan={7}
+                        className="py-4 text-center text-slate-400"
+                      >
                         No item breakdown available.
                       </td>
                     </tr>

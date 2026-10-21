@@ -560,6 +560,71 @@ Emitted after Stripe confirms successful refund execution and the return lifecyc
 - **Producer:** `apps/return-service/src/workers/consumers.ts` (via outbox)
 - **Consumers:** `order-service`, `notification-service`, `email-service`, `analytic-service`.
 
+#### `pricing.price.created`
+
+Emitted when a new base product price or variant price is established in pricing-service.
+
+```jsonc
+{
+  "value": {
+    "priceId": "d3b07384-d113-460b-8d82-0199d690a789",
+    "priceListId": "b1a07384-d113-460b-8d82-0199d690a123",
+    "productId": "42",
+    "basePrice": 49.99,
+    "currency": "USD",
+    "timestamp": "2026-10-21T18:00:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/pricing-service/src/services/pricing.service.ts`, `apps/pricing-service/src/kafka/consumer.ts`
+- **Consumers:** `catalog-service`, `search-service`.
+
+#### `pricing.price.updated`
+
+Emitted when a product or variant's base price or compare-at price is changed in pricing-service.
+
+```jsonc
+{
+  "value": {
+    "priceId": "d3b07384-d113-460b-8d82-0199d690a789",
+    "productId": "42",
+    "oldPrice": 49.99,
+    "newPrice": 39.99,
+    "compareAtPrice": 59.99,
+    "currency": "USD",
+    "changeReason": "Holiday Flash Sale",
+    "timestamp": "2026-10-21T18:30:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/pricing-service/src/services/pricing.service.ts`
+- **Consumers:** `cart-service` (recalculates active cart lines), `catalog-service` (updates read model & Redis cache), `search-service` (updates OpenSearch document partial), `wishlist-service` (triggers price drop alerts).
+
+#### `pricing.quote.created`
+
+Emitted when an authoritative pricing quote is generated and persisted for checkout or order creation.
+
+```jsonc
+{
+  "value": {
+    "quoteId": "quote_1792604000_abc123",
+    "currency": "USD",
+    "subtotal": 89.99,
+    "totalDiscount": 10.0,
+    "promotionDiscount": 5.0,
+    "finalTotal": 74.99,
+    "customerGroup": "registered_user",
+    "itemCount": 2,
+    "timestamp": "2026-10-21T18:45:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/pricing-service/src/services/quote.service.ts`
+- **Consumers:** `analytic-service`.
+
 ## Adding or changing an event
 
 1. Decide whether the change is additive (new optional field) or breaking (rename,

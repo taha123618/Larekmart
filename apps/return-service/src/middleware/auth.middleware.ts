@@ -30,7 +30,10 @@ export async function shouldBeUser(ctx: Context, next: Next): Promise<void> {
   const userIdHeader = ctx.headers["x-user-id"];
   if (typeof userIdHeader === "string" && userIdHeader.trim()) {
     ctx.state.userId = userIdHeader.trim();
-    ctx.state.userRole = typeof ctx.headers["x-user-role"] === "string" ? ctx.headers["x-user-role"] : "user";
+    ctx.state.userRole =
+      typeof ctx.headers["x-user-role"] === "string"
+        ? ctx.headers["x-user-role"]
+        : "user";
     return next();
   }
 
@@ -41,7 +44,9 @@ export async function shouldBeUser(ctx: Context, next: Next): Promise<void> {
     const parts = token.split(".");
     if (parts.length === 3) {
       try {
-        const payloadJson = Buffer.from(parts[1]!, "base64url").toString("utf8");
+        const payloadJson = Buffer.from(parts[1]!, "base64url").toString(
+          "utf8",
+        );
         const claims = JSON.parse(payloadJson);
         if (claims.sub) {
           ctx.state.userId = claims.sub;
@@ -80,7 +85,9 @@ export async function shouldBeAdmin(ctx: Context, next: Next): Promise<void> {
     const parts = token.split(".");
     if (parts.length === 3) {
       try {
-        const payloadJson = Buffer.from(parts[1]!, "base64url").toString("utf8");
+        const payloadJson = Buffer.from(parts[1]!, "base64url").toString(
+          "utf8",
+        );
         const claims = JSON.parse(payloadJson);
         const role = claims?.metadata?.role || claims?.role;
         if (role === "admin") {

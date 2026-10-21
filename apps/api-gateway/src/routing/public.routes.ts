@@ -147,4 +147,13 @@ export const publicRoutes: GatewayRouteConfig[] = [
     timeoutMs: services.tax.timeoutMs,
     rewritePrefix: "/api/v1/tax",
   },
+
+  // 14. Pricing Service Public & Checkout Routes (Prices, Quotes, Bulk-Quotes)
+  {
+    prefix: "/api/v1/prices",
+    target: services.pricing.url,
+    serviceName: services.pricing.name,
+    timeoutMs: services.pricing.timeoutMs,
+    rewritePrefix: "/api/v1/prices",
+  },
 ];

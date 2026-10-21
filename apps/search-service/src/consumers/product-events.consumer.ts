@@ -108,6 +108,43 @@ export async function registerProductEventSubscriptions(
       },
     },
     {
+      topicName: config.kafka.topics.pricingPriceUpdated,
+      topicHandler: async (message: any) => {
+        const payload = message.value || message;
+        logger.info("Received pricing.price.updated event", { payload });
+
+        try {
+          const productId = payload.productId || payload.id;
+          const newPrice =
+            payload.newPrice ?? payload.basePrice ?? payload.price;
+
+          if (
+            productId !== undefined &&
+            typeof newPrice === "number" &&
+            !isNaN(newPrice)
+          ) {
+            await indexingService.updateProductPartial(productId, {
+              price: newPrice,
+              compareAtPrice: payload.compareAtPrice,
+            });
+            searchMetrics.kafkaEventsProcessedTotal.inc({
+              topic: config.kafka.topics.pricingPriceUpdated,
+              status: "success",
+            });
+          }
+        } catch (error: any) {
+          searchMetrics.kafkaEventsProcessedTotal.inc({
+            topic: config.kafka.topics.pricingPriceUpdated,
+            status: "error",
+          });
+          logger.error("Failed to process pricing.price.updated event", {
+            error: error.message,
+            payload,
+          });
+        }
+      },
+    },
+    {
       topicName: config.kafka.topics.productDeleted,
       topicHandler: async (message: any) => {
         const payload = message.value || message;

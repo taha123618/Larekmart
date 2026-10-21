@@ -95,4 +95,22 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/admin/returns",
     requireAdmin: true,
   },
+
+  // 8. Pricing Service Admin — Price Lists, Product/Variant Prices, Price History
+  {
+    prefix: "/api/v1/admin/prices",
+    target: services.pricing.url,
+    serviceName: services.pricing.name,
+    timeoutMs: services.pricing.timeoutMs,
+    rewritePrefix: "/api/v1/admin/prices",
+    requireAdmin: true,
+  },
+  {
+    prefix: "/api/v1/admin/price-lists",
+    target: services.pricing.url,
+    serviceName: services.pricing.name,
+    timeoutMs: services.pricing.timeoutMs,
+    rewritePrefix: "/api/v1/admin/price-lists",
+    requireAdmin: true,
+  },
 ];

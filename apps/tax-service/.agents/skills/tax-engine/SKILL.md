@@ -19,28 +19,28 @@ This playbook covers the authoritative standards and execution patterns for `app
 
 ## 2. API Routes
 
-| Method   | Path                                        | Auth           | Purpose                                                                 |
-| :------- | :------------------------------------------ | :------------- | :---------------------------------------------------------------------- |
-| `POST`   | `/api/v1/tax/quote`                         | Public         | Calculates ephemeral tax quote for cart/order items without persistence |
-| `POST`   | `/api/v1/tax/calculate`                     | Public/User    | Calculates and persists an authoritative calculation snapshot for order |
-| `GET`    | `/api/v1/tax/calculations/:calculationId`   | Public/User    | Retrieves historical calculation snapshot and line details              |
-| `POST`   | `/api/v1/tax/returns/quote`                 | Public/User    | Calculates proportional tax adjustments for returned order lines        |
-| `GET`    | `/api/v1/tax/jurisdictions`                 | Public         | Lists active jurisdictions (country, state, municipality)               |
-| `GET`    | `/api/v1/tax/categories`                    | Public         | Lists tax categories (`STANDARD`, `REDUCED`, `ZERO`, `EXEMPT`)          |
-| `GET`    | `/api/v1/admin/tax/overview`                | Admin          | Executive tax dashboard KPIs, active rules, snapshot counts             |
-| `GET`    | `/api/v1/admin/tax/rules`                   | Admin          | Lists configurable versioned tax rules with filters                     |
-| `POST`   | `/api/v1/admin/tax/rules`                   | Admin          | Creates new tax rule version                                            |
-| `PATCH`  | `/api/v1/admin/tax/rules/:ruleId`           | Admin          | Modifies tax rule properties or rates                                   |
-| `DELETE` | `/api/v1/admin/tax/rules/:ruleId`           | Admin          | Deletes inactive tax rule                                               |
-| `POST`   | `/api/v1/admin/tax/rules/:ruleId/activate`  | Admin          | Activates tax rule and evicts Redis caches                              |
-| `POST`   | `/api/v1/admin/tax/rules/:ruleId/deactivate`| Admin          | Deactivates tax rule and evicts Redis caches                            |
-| `POST`   | `/api/v1/admin/tax/jurisdictions`           | Admin          | Registers a new jurisdiction                                            |
-| `POST`   | `/api/v1/admin/tax/categories`              | Admin          | Registers a new product tax category                                    |
-| `GET`    | `/api/v1/admin/tax/exemptions`              | Admin          | Lists customer exemption certificates                                   |
-| `POST`   | `/api/v1/admin/tax/exemptions`              | Admin          | Grants customer exemption certificate                                   |
-| `GET`    | `/api/v1/admin/tax/calculations`            | Admin          | Paginated calculation audit history                                     |
-| `GET`    | `/health` / `/ready`                        | Public         | Health probes (MySQL + Redis connectivity)                              |
-| `GET`    | `/metrics`                                  | Public         | Prometheus scrape endpoint                                              |
+| Method   | Path                                         | Auth        | Purpose                                                                 |
+| :------- | :------------------------------------------- | :---------- | :---------------------------------------------------------------------- |
+| `POST`   | `/api/v1/tax/quote`                          | Public      | Calculates ephemeral tax quote for cart/order items without persistence |
+| `POST`   | `/api/v1/tax/calculate`                      | Public/User | Calculates and persists an authoritative calculation snapshot for order |
+| `GET`    | `/api/v1/tax/calculations/:calculationId`    | Public/User | Retrieves historical calculation snapshot and line details              |
+| `POST`   | `/api/v1/tax/returns/quote`                  | Public/User | Calculates proportional tax adjustments for returned order lines        |
+| `GET`    | `/api/v1/tax/jurisdictions`                  | Public      | Lists active jurisdictions (country, state, municipality)               |
+| `GET`    | `/api/v1/tax/categories`                     | Public      | Lists tax categories (`STANDARD`, `REDUCED`, `ZERO`, `EXEMPT`)          |
+| `GET`    | `/api/v1/admin/tax/overview`                 | Admin       | Executive tax dashboard KPIs, active rules, snapshot counts             |
+| `GET`    | `/api/v1/admin/tax/rules`                    | Admin       | Lists configurable versioned tax rules with filters                     |
+| `POST`   | `/api/v1/admin/tax/rules`                    | Admin       | Creates new tax rule version                                            |
+| `PATCH`  | `/api/v1/admin/tax/rules/:ruleId`            | Admin       | Modifies tax rule properties or rates                                   |
+| `DELETE` | `/api/v1/admin/tax/rules/:ruleId`            | Admin       | Deletes inactive tax rule                                               |
+| `POST`   | `/api/v1/admin/tax/rules/:ruleId/activate`   | Admin       | Activates tax rule and evicts Redis caches                              |
+| `POST`   | `/api/v1/admin/tax/rules/:ruleId/deactivate` | Admin       | Deactivates tax rule and evicts Redis caches                            |
+| `POST`   | `/api/v1/admin/tax/jurisdictions`            | Admin       | Registers a new jurisdiction                                            |
+| `POST`   | `/api/v1/admin/tax/categories`               | Admin       | Registers a new product tax category                                    |
+| `GET`    | `/api/v1/admin/tax/exemptions`               | Admin       | Lists customer exemption certificates                                   |
+| `POST`   | `/api/v1/admin/tax/exemptions`               | Admin       | Grants customer exemption certificate                                   |
+| `GET`    | `/api/v1/admin/tax/calculations`             | Admin       | Paginated calculation audit history                                     |
+| `GET`    | `/health` / `/ready`                         | Public      | Health probes (MySQL + Redis connectivity)                              |
+| `GET`    | `/metrics`                                   | Public      | Prometheus scrape endpoint                                              |
 
 ## 3. Testing & Verification
 

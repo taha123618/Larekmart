@@ -222,6 +222,15 @@ scrape_configs:
           service: return-service
           runtime: nodejs
 
+  - job_name: pricing-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["pricing-service:8019"]
+        labels:
+          service: pricing-service
+          runtime: nodejs
+
+
   - job_name: api-gateway
     metrics_path: /metrics
     static_configs:

@@ -35,7 +35,10 @@ async function runReturnContractTests() {
   console.log("1. Testing Return Status & Reason Enums...");
   assert.equal(ReturnStatusEnum.REQUESTED, "REQUESTED");
   assert.equal(ReturnStatusEnum.APPROVED, "APPROVED");
-  assert.equal(ReturnStatusEnum.AWAITING_RETURN_SHIPMENT, "AWAITING_RETURN_SHIPMENT");
+  assert.equal(
+    ReturnStatusEnum.AWAITING_RETURN_SHIPMENT,
+    "AWAITING_RETURN_SHIPMENT",
+  );
   assert.equal(ReturnStatusEnum.IN_TRANSIT, "IN_TRANSIT");
   assert.equal(ReturnStatusEnum.RECEIVED, "RECEIVED");
   assert.equal(ReturnStatusEnum.INSPECTION, "INSPECTION");
@@ -74,7 +77,11 @@ async function runReturnContractTests() {
     customerComments: "Package arrived damaged, unit dead",
   };
   const parsedReq = CreateReturnRequestSchema.safeParse(validRequest);
-  assert.equal(parsedReq.success, true, "Valid create return request should parse");
+  assert.equal(
+    parsedReq.success,
+    true,
+    "Valid create return request should parse",
+  );
 
   const invalidReq = {
     orderId: "order-999",
@@ -141,7 +148,10 @@ async function runReturnContractTests() {
     ],
     requestedAt: new Date().toISOString(),
   };
-  assert.equal(ReturnRequestedPayloadSchema.safeParse(returnRequestedPayload).success, true);
+  assert.equal(
+    ReturnRequestedPayloadSchema.safeParse(returnRequestedPayload).success,
+    true,
+  );
 
   const returnInspectionCompletedPayload = {
     returnId: "ret-123",
@@ -159,7 +169,9 @@ async function runReturnContractTests() {
     inspectedAt: new Date().toISOString(),
   };
   assert.equal(
-    ReturnInspectionCompletedPayloadSchema.safeParse(returnInspectionCompletedPayload).success,
+    ReturnInspectionCompletedPayloadSchema.safeParse(
+      returnInspectionCompletedPayload,
+    ).success,
     true,
   );
 
@@ -177,7 +189,8 @@ async function runReturnContractTests() {
     requestedAt: new Date().toISOString(),
   };
   assert.equal(
-    ReturnRefundRequestedPayloadSchema.safeParse(returnRefundRequestedPayload).success,
+    ReturnRefundRequestedPayloadSchema.safeParse(returnRefundRequestedPayload)
+      .success,
     true,
   );
   console.log("✓ Kafka event payload schemas validated");

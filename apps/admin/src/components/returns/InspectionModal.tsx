@@ -100,7 +100,9 @@ export function InspectionModal({
 
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to record inspection");
+      setError(
+        err instanceof Error ? err.message : "Failed to record inspection",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -150,12 +152,20 @@ export function InspectionModal({
               onChange={(e) => setOverallCondition(e.target.value)}
               className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-purple-500"
             >
-              <option value="UNOPENED_PERFECT">Unopened - Pristine / Like New</option>
-              <option value="OPEN_BOX_FUNCTIONAL">Open Box - Fully Functional</option>
+              <option value="UNOPENED_PERFECT">
+                Unopened - Pristine / Like New
+              </option>
+              <option value="OPEN_BOX_FUNCTIONAL">
+                Open Box - Fully Functional
+              </option>
               <option value="MINOR_WEAR">Minor Cosmetic Wear</option>
-              <option value="DEFECTIVE_FUNCTIONAL">Defective - Hardware Failure</option>
+              <option value="DEFECTIVE_FUNCTIONAL">
+                Defective - Hardware Failure
+              </option>
               <option value="DAMAGED">Damaged in Transit / By Customer</option>
-              <option value="MISSING_PARTS">Missing Critical Parts or Accessories</option>
+              <option value="MISSING_PARTS">
+                Missing Critical Parts or Accessories
+              </option>
             </select>
           </div>
 
@@ -181,7 +191,10 @@ export function InspectionModal({
                         {item.productId}
                       </span>
                       <span className="text-slate-500">
-                        Qty: <strong className="text-slate-900 dark:text-white">{item.quantity}</strong>
+                        Qty:{" "}
+                        <strong className="text-slate-900 dark:text-white">
+                          {item.quantity}
+                        </strong>
                       </span>
                     </div>
 
@@ -216,10 +229,16 @@ export function InspectionModal({
                           }
                           className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white"
                         >
-                          <option value="RESTOCK_SELLABLE">Restock Sellable</option>
-                          <option value="RESTOCK_REFURBISHED">Restock Refurbished</option>
+                          <option value="RESTOCK_SELLABLE">
+                            Restock Sellable
+                          </option>
+                          <option value="RESTOCK_REFURBISHED">
+                            Restock Refurbished
+                          </option>
                           <option value="DAMAGED_SCRAP">Damaged Scrap</option>
-                          <option value="RETURN_TO_VENDOR">Return to Vendor (RTV)</option>
+                          <option value="RETURN_TO_VENDOR">
+                            Return to Vendor (RTV)
+                          </option>
                         </select>
                       </div>
                     </div>

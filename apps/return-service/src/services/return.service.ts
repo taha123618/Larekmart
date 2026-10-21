@@ -24,7 +24,12 @@ export interface CreateReturnInput {
     customerNote?: string;
   }>;
   evidenceMediaIds?: string[];
-  evidenceMedia?: Array<{ mediaId: string; url: string; mediaType?: string; caption?: string }>;
+  evidenceMedia?: Array<{
+    mediaId: string;
+    url: string;
+    mediaType?: string;
+    caption?: string;
+  }>;
   reasonCategory: string;
   customerComments?: string;
   deliveredAt?: Date | string | null;
@@ -45,7 +50,9 @@ export class ReturnService {
     });
 
     if (!eligibility.eligible && !eligibility.requiresManualReview) {
-      throw new Error(eligibility.rejectionReason || "Order is not eligible for return.");
+      throw new Error(
+        eligibility.rejectionReason || "Order is not eligible for return.",
+      );
     }
 
     // 2. Prorate refund amounts
@@ -86,7 +93,9 @@ export class ReturnService {
         requiresManualReview: eligibility.requiresManualReview,
         autoApproved: eligibility.autoApprove,
         status,
-        deliveredAt: input.deliveredAt ? new Date(input.deliveredAt) : new Date(),
+        deliveredAt: input.deliveredAt
+          ? new Date(input.deliveredAt)
+          : new Date(),
       },
       proration.items,
       input.evidenceMedia,
@@ -142,7 +151,9 @@ export class ReturnService {
       throw new Error(`Return '${returnId}' not found.`);
     }
     if (customerId && ret.customerId !== customerId) {
-      throw new Error("Access denied: You do not have permission to view this return request.");
+      throw new Error(
+        "Access denied: You do not have permission to view this return request.",
+      );
     }
     return ret;
   }
@@ -179,7 +190,12 @@ export class ReturnService {
   async attachEvidence(
     returnId: string,
     customerId: string,
-    evidence: { mediaId: string; url: string; mediaType?: string; caption?: string },
+    evidence: {
+      mediaId: string;
+      url: string;
+      mediaType?: string;
+      caption?: string;
+    },
   ) {
     const ret = await this.getReturnById(returnId, customerId);
     const mediaId = await returnRepository.attachEvidence(
