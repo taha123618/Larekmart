@@ -113,4 +113,24 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/price-lists",
     requireAdmin: true,
   },
+
+  // 9. Vendor Service Admin Compliance & Verification
+  {
+    prefix: "/api/v1/admin/vendors",
+    target: services.vendor.url,
+    serviceName: services.vendor.name,
+    timeoutMs: services.vendor.timeoutMs,
+    rewritePrefix: "/api/v1/admin/vendors",
+    requireAdmin: true,
+  },
+
+  // 10. Seller Service Admin Management
+  {
+    prefix: "/api/v1/admin/sellers",
+    target: services.seller.url,
+    serviceName: services.seller.name,
+    timeoutMs: services.seller.timeoutMs,
+    rewritePrefix: "/api/v1/admin/sellers",
+    requireAdmin: true,
+  },
 ];

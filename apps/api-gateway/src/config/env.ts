@@ -53,6 +53,8 @@ const envSchema = z
     TAX_SERVICE_URL: z.string().default("http://localhost:8017"),
     RETURN_SERVICE_URL: z.string().default("http://localhost:8018"),
     PRICING_SERVICE_URL: z.string().default("http://localhost:8019"),
+    VENDOR_SERVICE_URL: z.string().default("http://localhost:8020"),
+    SELLER_SERVICE_URL: z.string().default("http://localhost:8021"),
   })
   .superRefine((data, ctx) => {
     if (

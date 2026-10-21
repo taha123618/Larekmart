@@ -8,7 +8,7 @@ and the relevant scoped `AGENTS.md`.
 ## 1. What this is
 
 **Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . It is a
-**pnpm + Turborepo monorepo** with two Next.js frontends, 21 backend services, and
+**pnpm + Turborepo monorepo** with two Next.js frontends, 23 backend services, and
 shared internal packages. Cross-service communication is **asynchronous via Kafka**;
 there are no service-to-service HTTP calls.
 
@@ -33,8 +33,8 @@ Workspace Skills (<workspace>/.agents/skills/*)
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`, `apps/api-gateway/AGENTS.md`
-   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`
-   - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `typescript-config`
+   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`
+   - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `vendor-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.
 
@@ -99,6 +99,8 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `tax-service`             | `apps/tax-service`            | Fastify 5               | 8017 | Jurisdiction-aware tax calculation, tax rules, exemptions, auditable quotes, adapter pattern & snapshot verification                  |
 | `return-service`          | `apps/return-service`         | Koa 2                   | 8018 | Return & refund lifecycle: eligibility, partial-quantity returns, evidence, inspection, return-shipment tracking, and refund SAGA     |
 | `pricing-service`         | `apps/pricing-service`        | Fastify 5               | 8019 | Authoritative merchandise pricing, multi-currency conversion, tiered rules, promotional quote composition & immutable snapshots       |
+| `vendor-service`          | `apps/vendor-service`         | NestJS 10 (Fastify)     | 8020 | Legal business entities, merchant onboarding, KYB verification, documents & lifecycle state management                                |
+| `seller-service`          | `apps/seller-service`         | Fastify 5               | 8021 | Marketplace storefront configuration, staff & permissions, operational settings, performance snapshots & seller events                |
 | `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                                                                                 |
 | `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                                                                         |
 | `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                                                                           |
@@ -111,6 +113,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `@repo/catalog-db`        | `packages/catalog-db`         | Library                 | —    | Prisma catalog read-model schema (PostgreSQL) for catalog-service                                                                     |
 | `@repo/shipping-db`       | `packages/shipping-db`        | Library                 | —    | Prisma shipping schema, shipments, packages, tracking events & labels (PostgreSQL)                                                    |
 | `@repo/user-db`           | `packages/user-db`            | Library                 | —    | Prisma user schema, profiles, addresses, preferences & settings (PostgreSQL)                                                          |
+| `@repo/vendor-db`         | `packages/vendor-db`          | Library                 | —    | Prisma vendor schema, business profiles, KYB documents & verification workflow (PostgreSQL)                                           |
 | `@repo/eslint-config`     | `packages/eslint-config`      | Config                  | —    | Shared ESLint flat configs                                                                                                            |
 | `@repo/typescript-config` | `packages/typescript-config`  | Config                  | —    | Shared tsconfig bases                                                                                                                 |
 
@@ -167,9 +170,10 @@ pnpm --filter promotion-service db:migrate   # promotion-service Drizzle migrati
 pnpm --filter tax-service db:migrate         # tax-service Drizzle migrations (tax_db)
 pnpm --filter return-service db:migrate      # return-service Drizzle migrations (return_db)
 pnpm --filter pricing-service db:migrate     # pricing-service Drizzle migrations (larekmart_pricing_db)
+pnpm --filter seller-service db:migrate      # seller-service Drizzle migrations (seller_db)
 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
-docker compose up -d --build                 # start entire microservices stack (21 services + backing DBs)
+docker compose up -d --build                 # start entire microservices stack (23 services + backing DBs)
 docker compose down                          # stop all containers preserving volumes
 docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui mysql # backing infra only
 # See docs/DOCKER.md for complete operations manual

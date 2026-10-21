@@ -1,0 +1,181 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+enum OrganizationType {
+  CORPORATION
+  LLC
+  PARTNERSHIP
+  SOLE_PROPRIETORSHIP
+}
+
+enum VendorStatus {
+  DRAFT
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+  SUSPENDED
+  TERMINATED
+  DEACTIVATED
+}
+
+enum DocumentType {
+  BUSINESS_REGISTRATION
+  TAX_CERTIFICATE
+  PROOF_OF_ADDRESS
+  ARTICLES_OF_INCORPORATION
+  DIRECTOR_ID
+  BANK_STATEMENT
+}
+
+enum DocumentVerificationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum VerificationWorkflowType {
+  MANUAL_ADMIN
+  AUTOMATED_KYB
+  EXTERNAL_PROVIDER
+}
+
+enum VerificationStatus {
+  INITIATED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  COMPLIANCE_OFFICER
+  MEMBER
+}
+
+enum MemberStatus {
+  INVITED
+  ACTIVE
+  REVOKED
+}
+
+model Vendor {
+  id                 String                  @id @default(uuid())
+  legalName          String
+  tradeName          String?
+  organizationType   OrganizationType
+  registrationNumber String                  @unique
+  taxIdentifier      String
+  country            String                  // ISO 3166-1 alpha-2 or alpha-3
+  status             VendorStatus            @default(DRAFT)
+  ownerUserId        String                  // Clerk User ID
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  businessProfile    VendorBusinessProfile?
+  documents          VendorDocument[]
+  verifications      VendorVerification[]
+  members            VendorMember[]
+  statusHistory      VendorStatusHistory[]
+
+  @@map("vendors")
+}
+
+model VendorBusinessProfile {
+  id                            String   @id @default(uuid())
+  vendorId                      String   @unique
+  industryCategory              String
+  websiteUrl                    String?
+  businessEmail                 String
+  businessPhone                 String
+  registeredAddressLine1        String
+  registeredAddressLine2        String?
+  city                          String
+  state                         String
+  postalCode                    String
+  country                       String   // ISO country code
+  authorizedRepresentativeName  String
+  authorizedRepresentativeEmail String
+  authorizedRepresentativePhone String
+  authorizedRepresentativeRole  String
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_business_profiles")
+}
+
+model VendorDocument {
+  id                 String                     @id @default(uuid())
+  vendorId           String
+  documentType       DocumentType
+  mediaFileId        String                     // UUID from media-service
+  fileName           String
+  fileSize           Int
+  mimeType           String
+  uploadedByUserId   String
+  verificationStatus DocumentVerificationStatus @default(PENDING)
+  rejectionReason    String?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_documents")
+}
+
+model VendorVerification {
+  id                 String                   @id @default(uuid())
+  vendorId           String
+  workflowType       VerificationWorkflowType @default(MANUAL_ADMIN)
+  status             VerificationStatus       @default(INITIATED)
+  reviewedByAdminId  String?
+  reviewNotes        String?
+  verificationScores Json?                    // Automated scoring breakdown
+  submittedAt        DateTime                 @default(now())
+  decidedAt          DateTime?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_verifications")
+}
+
+model VendorMember {
+  id          String       @id @default(uuid())
+  vendorId    String
+  userId      String       // Clerk User ID
+  role        MemberRole   @default(MEMBER)
+  permissions String[]     @default([])
+  status      MemberStatus @default(ACTIVE)
+  joinedAt    DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, userId])
+  @@map("vendor_members")
+}
+
+model VendorStatusHistory {
+  id              String       @id @default(uuid())
+  vendorId        String
+  fromStatus      VendorStatus
+  toStatus        VendorStatus
+  changedByUserId String       // Clerk User ID or Admin ID
+  changeReason    String
+  notes           String?
+  createdAt       DateTime     @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_status_history")
+}

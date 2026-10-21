@@ -145,6 +145,21 @@ export const ALL_LAREKMART_TOPICS = [
   "pricing.price.updated",
   "pricing.price.expired",
   "pricing.quote.created",
+
+  // Vendor Events
+  "vendor.registered",
+  "vendor.verification.requested",
+  "vendor.verified",
+  "vendor.rejected",
+  "vendor.suspended",
+  "vendor.reactivated",
+
+  // Seller Events
+  "seller.created",
+  "seller.activated",
+  "seller.updated",
+  "seller.suspended",
+  "seller.storefront.updated",
 ] as const;
 
 export async function initializeTopics(): Promise<void> {

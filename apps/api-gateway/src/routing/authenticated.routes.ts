@@ -156,4 +156,24 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/returns/orders",
     requireAuth: true,
   },
+
+  // 12. Vendor Service Merchant Routes
+  {
+    prefix: "/api/v1/vendors",
+    target: services.vendor.url,
+    serviceName: services.vendor.name,
+    timeoutMs: services.vendor.timeoutMs,
+    rewritePrefix: "/api/v1/vendors",
+    requireAuth: true,
+  },
+
+  // 13. Seller Service Merchant & Storefront Routes
+  {
+    prefix: "/api/v1/sellers",
+    target: services.seller.url,
+    serviceName: services.seller.name,
+    timeoutMs: services.seller.timeoutMs,
+    rewritePrefix: "/api/v1/sellers",
+    requireAuth: true,
+  },
 ];
