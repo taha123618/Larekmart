@@ -231,6 +231,118 @@ async function runTests() {
 
   await app.close();
 
+  // ────────────────────────────────────────────────────────────
+  // Test 5: Date Validity & Rule Priority Hierarchy
+  // ────────────────────────────────────────────────────────────
+  console.log("\n[Test 5] Rule Evaluation & Time-Window Constraints");
+
+  const pastDate = new Date(Date.now() - 86400000 * 2); // 2 days ago
+  const yesterday = new Date(Date.now() - 86400000);
+  const futureDate = new Date(Date.now() + 86400000 * 2); // 2 days in future
+
+  const expiredRule: PriceRule = {
+    id: "rule_expired",
+    priceListId: "pl_1",
+    ruleType: "tier",
+    minQuantity: 1,
+    discountType: "percentage",
+    discountValue: 50,
+    validFrom: pastDate,
+    validTo: yesterday, // Expired yesterday
+    priority: 10,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const futureRule: PriceRule = {
+    id: "rule_future",
+    priceListId: "pl_1",
+    ruleType: "tier",
+    minQuantity: 1,
+    discountType: "percentage",
+    discountValue: 40,
+    validFrom: futureDate,
+    priority: 9,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const activeTier1: PriceRule = {
+    id: "rule_t1",
+    priceListId: "pl_1",
+    ruleType: "tier",
+    minQuantity: 5,
+    maxQuantity: 9,
+    discountType: "percentage",
+    discountValue: 10,
+    priority: 1,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const activeTier2: PriceRule = {
+    id: "rule_t2",
+    priceListId: "pl_1",
+    ruleType: "tier",
+    minQuantity: 10,
+    discountType: "percentage",
+    discountValue: 20,
+    priority: 1,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const rules = [expiredRule, futureRule, activeTier1, activeTier2];
+
+  // At qty 2 -> no matching active rule
+  assert.equal(evaluateBestRule(2, rules), null);
+  console.log("  ✓ Expired & future rules are strictly disregarded");
+
+  // At qty 7 -> activeTier1 matches
+  const match7 = evaluateBestRule(7, rules);
+  assert.equal(match7?.id, "rule_t1");
+  console.log("  ✓ Lower tier rule selected for intermediate volume");
+
+  // At qty 12 -> activeTier2 matches (higher discount & higher minQuantity)
+  const match12 = evaluateBestRule(12, rules);
+  assert.equal(match12?.id, "rule_t2");
+  console.log("  ✓ Upper tier rule selected for larger volume");
+
+  // ────────────────────────────────────────────────────────────
+  // Test 6: Override Price Rule Computation
+  // ────────────────────────────────────────────────────────────
+  console.log("\n[Test 6] Override Price Rule Engine");
+
+  const overrideRule: PriceRule = {
+    id: "rule_override",
+    priceListId: "pl_1",
+    ruleType: "tier",
+    minQuantity: 3,
+    discountType: "override_price",
+    discountValue: 75, // Flat $75 instead of base $100
+    priority: 1,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const overrideItem = calculateItemPrice(
+    "100.00",
+    3,
+    overrideRule,
+    "prod_1",
+    null,
+  );
+  assert.equal(overrideItem.unitBasePrice, 100);
+  assert.equal(overrideItem.unitFinalPrice, 75);
+  assert.equal(overrideItem.unitDiscount, 25);
+  assert.equal(overrideItem.lineTotal, 225);
+  console.log("  ✓ Override price rule calculated accurately");
+
   console.log("\n==================================================");
   console.log("  ALL PRICING-SERVICE TESTS PASSED SUCCESSFULLY!  ");
   console.log("==================================================\n");
