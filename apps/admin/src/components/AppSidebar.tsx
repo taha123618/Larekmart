@@ -24,6 +24,8 @@ import {
   Scale,
   RotateCcw,
   Coins,
+  Building2,
+  Store,
 } from "lucide-react";
 import {
   Sidebar,
@@ -252,6 +254,29 @@ const AppSidebar = () => {
                     </SheetTrigger>
                     <AddOrder />
                   </Sheet>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Marketplace & Merchants</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/vendors">
+                    <Building2 />
+                    Vendors & KYB
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/sellers">
+                    <Store />
+                    Sellers & Stores
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

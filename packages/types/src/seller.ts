@@ -89,6 +89,99 @@ export const PolicyTypeSchema = z.enum([
   PolicyTypeEnum.TERMS,
 ]);
 
+export interface SellerStore {
+  id: string;
+  sellerId: string;
+  name: string;
+  slug: string;
+  headline?: string | null;
+  description?: string | null;
+  logoMediaId?: string | null;
+  bannerMediaId?: string | null;
+  vacationMode?: boolean;
+  vacationMessage?: string | null;
+  vacationEndDate?: string | null;
+  status: StorefrontStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SellerPolicy {
+  id: string;
+  sellerId: string;
+  policyType: PolicyType;
+  title: string;
+  content: string;
+  version: number;
+  effectiveFrom: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SellerStaff {
+  id: string;
+  sellerId: string;
+  userId: string;
+  email: string;
+  name?: string | null;
+  role: StaffRole;
+  permissions: string[];
+  status: StaffStatus;
+  joinedAt: string;
+  updatedAt: string;
+}
+
+export interface SellerSettings {
+  id: string;
+  sellerId: string;
+  defaultCurrency: string;
+  shippingOriginPostalCode?: string | null;
+  autoAcceptOrders: boolean;
+  lowStockThreshold: number;
+  supportEmail?: string | null;
+  supportPhone?: string | null;
+  notificationPreferences?: Record<string, boolean> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SellerPerformanceSnapshot {
+  id: string;
+  sellerId: string;
+  periodStart: string;
+  periodEnd: string;
+  totalOrders: number;
+  fulfilledOrders: number;
+  cancelledOrders: number;
+  returnedOrders: number;
+  grossMerchandiseValue: number;
+  averageRating: number;
+  fulfillmentRate: number;
+  onTimeDeliveryRate: number;
+  cancellationRate: number;
+  returnRate: number;
+  sellerScore: number;
+  calculatedAt: string;
+}
+
+export interface Seller {
+  id: string;
+  vendorId: string;
+  ownerUserId: string;
+  status: SellerStatus;
+  primaryCurrency: string;
+  onboardedAt?: string | null;
+  suspendedAt?: string | null;
+  suspensionReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  store?: SellerStore | null;
+  policies?: SellerPolicy[];
+  staff?: SellerStaff[];
+  settings?: SellerSettings | null;
+  latestPerformance?: SellerPerformanceSnapshot | null;
+}
+
 // ==============================================================================
 // 2. Schemas & Input DTOs
 // ==============================================================================

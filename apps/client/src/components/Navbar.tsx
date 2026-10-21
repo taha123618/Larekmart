@@ -58,6 +58,13 @@ export default function Navbar() {
           {/* Utility Links */}
           <div className="flex items-center gap-2.5 sm:gap-4 text-[11px] sm:text-xs shrink-0">
             <Link
+              href="/become-a-seller"
+              className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
+            >
+              <span>Sell on Larekmart</span>
+            </Link>
+            <span className="hidden sm:inline text-slate-700">|</span>
+            <Link
               href="/track"
               className="hover:text-white transition flex items-center gap-1"
             >
