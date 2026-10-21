@@ -7,6 +7,7 @@ import type {
   AnalyticsSummaryType,
   AnalyticsDailyChartType,
   AnalyticsEventType,
+  MerchantAnalyticsMetricsType,
 } from "@repo/types";
 import { createLogger, captureError } from "@repo/monitoring";
 import {
@@ -36,11 +37,122 @@ const inMemoryMetrics = {
   totalReturnsRequested: 0,
   totalReturnsCompleted: 0,
   totalRefundedAmount: 0,
+  totalVendorsRegistered: 0,
+  totalVendorsVerified: 0,
+  totalVendorsSuspended: 0,
+  totalSellersCreated: 0,
+  totalSellersActive: 0,
+  totalSellersSuspended: 0,
   lastEventTime: new Date().toISOString(),
 };
 
 // In-memory event stream buffer (last 100 events)
 const inMemoryEvents: AnalyticsEventType[] = [];
+
+export const recordVendorEvent = async (
+  eventType: string,
+  payload: any,
+) => {
+  if (eventType === "vendor.registered") inMemoryMetrics.totalVendorsRegistered += 1;
+  else if (eventType === "vendor.verified") inMemoryMetrics.totalVendorsVerified += 1;
+  else if (eventType === "vendor.suspended") inMemoryMetrics.totalVendorsSuspended += 1;
+
+  inMemoryMetrics.lastEventTime = new Date().toISOString();
+  const userId = payload?.userId || payload?.vendorId || "merchant";
+
+  const memoryEvent: AnalyticsEventType = {
+    id: inMemoryEvents.length + 1,
+    event_type: eventType,
+    user_id: String(userId),
+    amount: 0,
+    metadata: {
+      vendorId: payload?.vendorId,
+      legalName: payload?.legalName,
+      status: payload?.status,
+    },
+    created_at: payload?.timestamp || new Date().toISOString(),
+  };
+
+  inMemoryEvents.unshift(memoryEvent);
+  if (inMemoryEvents.length > 100) inMemoryEvents.pop();
+
+  if (getDbStatus()) {
+    try {
+      await pool.query(
+        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          eventType,
+          String(userId),
+          0,
+          JSON.stringify(memoryEvent.metadata),
+          memoryEvent.created_at,
+        ],
+      );
+    } catch (err) {
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordVendorEvent.dbInsert",
+      });
+    }
+  }
+
+  logger.info(`[Vendor Event] ${eventType} for ${payload?.legalName || userId}`);
+};
+
+export const recordSellerEvent = async (
+  eventType: string,
+  payload: any,
+) => {
+  if (eventType === "seller.created") inMemoryMetrics.totalSellersCreated += 1;
+  else if (eventType === "seller.activated") inMemoryMetrics.totalSellersActive += 1;
+  else if (eventType === "seller.suspended") inMemoryMetrics.totalSellersSuspended += 1;
+
+  inMemoryMetrics.lastEventTime = new Date().toISOString();
+  const userId = payload?.userId || payload?.sellerId || "seller";
+
+  const memoryEvent: AnalyticsEventType = {
+    id: inMemoryEvents.length + 1,
+    event_type: eventType,
+    user_id: String(userId),
+    amount: 0,
+    metadata: {
+      sellerId: payload?.sellerId,
+      storeName: payload?.storeName,
+      slug: payload?.slug,
+      status: payload?.status,
+    },
+    created_at: payload?.timestamp || new Date().toISOString(),
+  };
+
+  inMemoryEvents.unshift(memoryEvent);
+  if (inMemoryEvents.length > 100) inMemoryEvents.pop();
+
+  if (getDbStatus()) {
+    try {
+      await pool.query(
+        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          eventType,
+          String(userId),
+          0,
+          JSON.stringify(memoryEvent.metadata),
+          memoryEvent.created_at,
+        ],
+      );
+    } catch (err) {
+      captureError(err, {
+        serviceName: "analytic-service",
+        logger,
+        context: "recordSellerEvent.dbInsert",
+      });
+    }
+  }
+
+  logger.info(`[Seller Event] ${eventType} for ${payload?.storeName || userId}`);
+};
 
 export const recordMediaEvent = async (
   eventType:
@@ -782,6 +894,16 @@ export const recordInventoryEvent = async (
 export const getMetricsSnapshot = (): AnalyticsSummaryType => ({
   ...inMemoryMetrics,
   isDbConnected: getDbStatus(),
+});
+
+export const getMerchantMetricsSnapshot = (): MerchantAnalyticsMetricsType => ({
+  totalVendorsRegistered: inMemoryMetrics.totalVendorsRegistered,
+  totalVendorsVerified: inMemoryMetrics.totalVendorsVerified,
+  totalVendorsSuspended: inMemoryMetrics.totalVendorsSuspended,
+  totalSellersCreated: inMemoryMetrics.totalSellersCreated,
+  totalSellersActive: inMemoryMetrics.totalSellersActive,
+  totalSellersSuspended: inMemoryMetrics.totalSellersSuspended,
+  lastEventTime: inMemoryMetrics.lastEventTime,
 });
 
 /**

@@ -625,6 +625,106 @@ Emitted when an authoritative pricing quote is generated and persisted for check
 - **Producer:** `apps/pricing-service/src/services/quote.service.ts`
 - **Consumers:** `analytic-service`.
 
+#### `vendor.registered`
+
+Emitted when a new business entity registers and submits initial information.
+
+```jsonc
+{
+  "value": {
+    "vendorId": "vnd_8492049102",
+    "legalName": "Apex Technologies LLC",
+    "taxId": "XX-XXXXXXX",
+    "country": "US",
+    "status": "PENDING_VERIFICATION",
+    "contactEmail": "admin@apextech.com",
+    "timestamp": "2026-10-22T02:00:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/vendor-service/src/modules/vendors/vendors.service.ts`
+- **Consumers:** `notification-service` (alerts admin of new submission), `email-service` (sends confirmation email), `analytic-service` (increments registration KPIs).
+
+#### `vendor.verified`
+
+Emitted when an administrator or verification provider completes KYB approval.
+
+```jsonc
+{
+  "value": {
+    "vendorId": "vnd_8492049102",
+    "legalName": "Apex Technologies LLC",
+    "status": "VERIFIED",
+    "contactEmail": "admin@apextech.com",
+    "verifiedAt": "2026-10-22T02:15:00.000Z",
+    "reviewedBy": "admin_clerk_id",
+  },
+}
+```
+
+- **Producer:** `apps/vendor-service/src/modules/admin/admin-vendors.service.ts`
+- **Consumers:** `notification-service`, `email-service`, `analytic-service`.
+
+#### `vendor.rejected`
+
+Emitted when KYB documentation is rejected or requires correction.
+
+```jsonc
+{
+  "value": {
+    "vendorId": "vnd_8492049102",
+    "legalName": "Apex Technologies LLC",
+    "status": "REJECTED",
+    "reason": "Business registration document expired",
+    "contactEmail": "admin@apextech.com",
+    "reviewedBy": "admin_clerk_id",
+  },
+}
+```
+
+- **Producer:** `apps/vendor-service/src/modules/admin/admin-vendors.service.ts`
+- **Consumers:** `notification-service`, `email-service`.
+
+#### `seller.created`
+
+Emitted when a new storefront profile is initialized under a verified vendor entity.
+
+```jsonc
+{
+  "value": {
+    "sellerId": "sel_019a2b3c4d5e",
+    "vendorId": "vnd_8492049102",
+    "storeName": "Apex Gadgets Official",
+    "slug": "apex-gadgets",
+    "contactEmail": "store@apextech.com",
+    "createdAt": "2026-10-22T02:20:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/seller-service/src/routes/seller.routes.ts`
+- **Consumers:** `notification-service`, `email-service`, `analytic-service`.
+
+#### `seller.activated`
+
+Emitted when a storefront becomes active and eligible to receive customer orders.
+
+```jsonc
+{
+  "value": {
+    "sellerId": "sel_019a2b3c4d5e",
+    "storeName": "Apex Gadgets Official",
+    "slug": "apex-gadgets",
+    "status": "ACTIVE",
+    "activatedAt": "2026-10-22T02:25:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/seller-service/src/routes/admin.routes.ts`
+- **Consumers:** `notification-service`, `email-service`, `analytic-service`.
+
 ## Adding or changing an event
 
 1. Decide whether the change is additive (new optional field) or breaking (rename,

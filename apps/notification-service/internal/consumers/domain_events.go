@@ -140,6 +140,16 @@ func (h *DomainEventHandler) dispatchDomainNotification(ctx context.Context, top
 		return h.handleReviewReported(ctx, payload)
 	case "review.approved":
 		return h.handleReviewApproved(ctx, payload)
+	case "vendor.registered":
+		return h.handleVendorRegistered(ctx, payload)
+	case "vendor.verified":
+		return h.handleVendorVerified(ctx, payload)
+	case "vendor.rejected":
+		return h.handleVendorRejected(ctx, payload)
+	case "seller.created":
+		return h.handleSellerCreated(ctx, payload)
+	case "seller.activated":
+		return h.handleSellerActivated(ctx, payload)
 	case "notification.dispatch":
 		return h.handleDirectDispatch(ctx, payload)
 	default:
@@ -334,6 +344,99 @@ func (h *DomainEventHandler) handleDirectDispatch(ctx context.Context, payload m
 	return err
 }
 
+func (h *DomainEventHandler) handleVendorRegistered(ctx context.Context, payload map[string]interface{}) error {
+	legalName := payload["legalName"]
+	vendorID := payload["vendorId"]
+	title := "New Merchant KYB Submission"
+	body := fmt.Sprintf("Vendor '%v' (ID: %v) submitted business documents for KYB review.", legalName, vendorID)
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   "admin",
+		Type:     "vendor_registered",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityHigh,
+	})
+	return err
+}
+
+func (h *DomainEventHandler) handleVendorVerified(ctx context.Context, payload map[string]interface{}) error {
+	legalName := payload["legalName"]
+	userID, ok := payload["userId"].(string)
+	if !ok || userID == "" {
+		userID = "admin"
+	}
+	title := "KYB Verification Approved"
+	body := fmt.Sprintf("Your business '%v' has been verified! You may now open seller storefronts.", legalName)
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   userID,
+		Type:     "vendor_verified",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityNormal,
+	})
+	return err
+}
+
+func (h *DomainEventHandler) handleVendorRejected(ctx context.Context, payload map[string]interface{}) error {
+	legalName := payload["legalName"]
+	reason := payload["reason"]
+	userID, ok := payload["userId"].(string)
+	if !ok || userID == "" {
+		userID = "admin"
+	}
+	title := "KYB Verification Action Required"
+	body := fmt.Sprintf("KYB review for '%v' requires attention: %v", legalName, reason)
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   userID,
+		Type:     "vendor_rejected",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityHigh,
+	})
+	return err
+}
+
+func (h *DomainEventHandler) handleSellerCreated(ctx context.Context, payload map[string]interface{}) error {
+	storeName := payload["storeName"]
+	userID, ok := payload["userId"].(string)
+	if !ok || userID == "" {
+		userID = "admin"
+	}
+	title := "Storefront Created"
+	body := fmt.Sprintf("Your store '%v' has been successfully created.", storeName)
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   userID,
+		Type:     "seller_created",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityNormal,
+	})
+	return err
+}
+
+func (h *DomainEventHandler) handleSellerActivated(ctx context.Context, payload map[string]interface{}) error {
+	storeName := payload["storeName"]
+	userID, ok := payload["userId"].(string)
+	if !ok || userID == "" {
+		userID = "admin"
+	}
+	title := "Storefront is Live"
+	body := fmt.Sprintf("Congratulations! Your store '%v' is now active on Larekmart.", storeName)
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   userID,
+		Type:     "seller_activated",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityNormal,
+	})
+	return err
+}
+
 func extractOrComputeEventID(topic string, key, rawValue []byte, payload map[string]interface{}) string {
 	if id, ok := payload["eventId"].(string); ok && id != "" {
 		return id
@@ -360,6 +463,10 @@ func extractSourceService(topic string) string {
 		return "product-service"
 	case "inventory.low_stock", "inventory.created", "inventory.restocked":
 		return "inventory-service"
+	case "vendor.registered", "vendor.verification.requested", "vendor.verified", "vendor.rejected", "vendor.suspended", "vendor.reactivated":
+		return "vendor-service"
+	case "seller.created", "seller.activated", "seller.updated", "seller.suspended", "seller.storefront.updated":
+		return "seller-service"
 	default:
 		return "unknown"
 	}

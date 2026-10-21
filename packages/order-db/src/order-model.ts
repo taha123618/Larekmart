@@ -13,6 +13,8 @@ const OrderSchema = new Schema(
     status: { type: String, required: true, enum: OrderStatus },
     paymentMethod: { type: String, default: "card" }, // "card" or "cod"
     isCod: { type: Boolean, default: false },
+    sellerId: { type: String, default: null, index: true },
+    vendorId: { type: String, default: null },
     carrier: { type: String, default: "custom" },
     trackingNumber: { type: String, default: null },
     shippingAddress: {
@@ -34,6 +36,7 @@ const OrderSchema = new Schema(
           name: { type: String, required: true },
           quantity: { type: Number, required: true },
           price: { type: Number, required: true },
+          sellerId: { type: String, default: null },
         },
       ],
       required: true,

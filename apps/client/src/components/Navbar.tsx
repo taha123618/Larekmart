@@ -15,6 +15,7 @@ import {
   Tag,
   ShieldCheck,
   Layers,
+  Store,
 } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import WishlistButton from "./WishlistButton";
@@ -27,6 +28,7 @@ import CurrencySelector from "./CurrencySelector";
 const CATEGORY_LINKS = [
   { label: "Super Deals", href: "/#flash-deals", icon: Flame, highlight: true },
   { label: "All Products", href: "/products", icon: Tag },
+  { label: "Featured Stores", href: "/stores/demo-tech-store", icon: Store },
   { label: "Trending", href: "/#trending", icon: Sparkles },
   { label: "New Arrivals", href: "/#new-arrivals", icon: Layers },
   { label: "Track Shipment", href: "/track", icon: Truck },

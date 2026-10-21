@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { shouldBeAdmin, shouldBeUser } from "../middleware/authMiddleware";
+import { shouldBeAdmin, shouldBeSeller, shouldBeUser } from "../middleware/authMiddleware";
 import { Order, mongoose } from "@repo/order-db";
 import { startOfMonth, subMonths } from "date-fns";
 import {
@@ -79,6 +79,30 @@ export const orderRoute = async (fastify: FastifyInstance) => {
           return await Order.find({ userId: request.userId }).sort({
             createdAt: -1,
           });
+        },
+      );
+      return reply.send(orders);
+    },
+  );
+
+  fastify.get(
+    "/seller-orders",
+    { preHandler: shouldBeSeller },
+    async (request, reply) => {
+      const { sellerId, limit } = request.query as {
+        sellerId?: string;
+        limit?: number;
+      };
+      const query: Record<string, unknown> = {};
+      if (sellerId) {
+        query.$or = [{ sellerId }, { "products.sellerId": sellerId }];
+      }
+      const { result: orders } = await measureAsync(
+        "db.order.findSellerOrders",
+        async () => {
+          return await Order.find(query)
+            .limit(limit ? Number(limit) : 50)
+            .sort({ createdAt: -1 });
         },
       );
       return reply.send(orders);

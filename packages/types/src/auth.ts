@@ -2,7 +2,7 @@ import z from "zod";
 
 export interface CustomJwtSessionClaims {
   metadata?: {
-    role?: "user" | "admin";
+    role?: "user" | "admin" | "seller";
   };
 }
 

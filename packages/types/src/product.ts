@@ -29,6 +29,8 @@ export type ProductCreatedPayload = {
   sizes: string[];
   colors: string[];
   images: Record<string, string>;
+  sellerId?: string;
+  sellerName?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -138,6 +140,7 @@ export const ProductFormSchema = z
     images: z.record(z.string(), z.string(), {
       message: "Image for each color is required!",
     }),
+    sellerId: z.string().optional(),
   })
   .refine(
     (data) => {
