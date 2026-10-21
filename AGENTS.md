@@ -170,7 +170,9 @@ pnpm --filter promotion-service db:migrate   # promotion-service Drizzle migrati
 pnpm --filter tax-service db:migrate         # tax-service Drizzle migrations (tax_db)
 pnpm --filter return-service db:migrate      # return-service Drizzle migrations (return_db)
 pnpm --filter pricing-service db:migrate     # pricing-service Drizzle migrations (larekmart_pricing_db)
-pnpm --filter seller-service db:migrate      # seller-service Drizzle migrations (seller_db)
+pnpm --filter seller-service db:migrate      # seller-service Drizzle migrations (larekmart_seller_db)
+pnpm --filter @repo/vendor-db db:generate    # generate vendor Prisma client
+pnpm --filter @repo/vendor-db db:migrate     # vendor migration in development (larekmart_vendor_db)
 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
 docker compose up -d --build                 # start entire microservices stack (23 services + backing DBs)
