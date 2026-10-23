@@ -348,7 +348,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`return-service`**         | Koa 2, Drizzle, MySQL, Redis, Kafka, Clerk                                            | `8018` | Complete return & refund lifecycle: eligibility checks, partial-quantity returns, evidence attachments, inspection dispositions, return-shipment tracking, and Stripe refund SAGA coordination.    |
 | **`pricing-service`**        | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk, Decimal.js                       | `8019` | Authoritative merchandise pricing, seller price lists (B2B & B2C), multi-currency conversion, tiered volume rules, promotional discount composition, immutable quote snapshots, and audit history. |
 | **`vendor-service`**         | NestJS 10 (Fastify), Prisma, PostgreSQL, Redis, Kafka, Clerk, Zod                     | `8020` | Marketplace vendor registration, legal entities, KYB verification workflows, verification documents, authorized representatives & lifecycle states.                                                |
-| **`seller-service`**         | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk, Zod                               | `8021` | Marketplace storefront configuration, custom slugs & branding, seller staff & permissions, marketplace operational settings, policies, performance snapshots & seller events.                    |
+| **`seller-service`**         | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk, Zod                              | `8021` | Marketplace storefront configuration, custom slugs & branding, seller staff & permissions, marketplace operational settings, policies, performance snapshots & seller events.                      |
 
 ---
 
@@ -368,7 +368,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`@repo/catalog-db`**        | PostgreSQL catalog read-model persistence via Prisma schema and generated client.                            | `catalog-service`                                   |
 | **`@repo/shipping-db`**       | PostgreSQL shipping persistence via Prisma: shipments, packages, tracking events, labels.                    | `shipping-service`                                  |
 | **`@repo/user-db`**           | PostgreSQL user-domain persistence via Prisma: profiles, addresses, preferences, settings.                   | `user-service`                                      |
-| **`@repo/vendor-db`**         | PostgreSQL vendor-domain persistence via Prisma: legal entities, business profiles, KYB documents & history.  | `vendor-service`                                    |
+| **`@repo/vendor-db`**         | PostgreSQL vendor-domain persistence via Prisma: legal entities, business profiles, KYB documents & history. | `vendor-service`                                    |
 | **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                     | `admin`, `client`                                   |
 | **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 37 workspaces                                   |
 
@@ -439,6 +439,9 @@ pnpm --filter promotion-service db:migrate
 pnpm --filter tax-service db:migrate
 pnpm --filter return-service db:migrate
 pnpm --filter pricing-service db:migrate
+pnpm --filter seller-service db:migrate
+pnpm --filter @repo/vendor-db db:generate
+pnpm --filter @repo/vendor-db db:migrate
 
 # 4. Start all workspaces concurrently in development mode
 pnpm dev
@@ -451,7 +454,7 @@ pnpm dev
 | **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                        |
 | **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                 |
 | **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                            |
-| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet` / `pytest`) across all 37 workspaces            |
+| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet` / `pytest`) across all 39 workspaces            |
 | **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                      |
 | **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                         |
 | **Build**           | `pnpm build`                                                | Run configured builds for the Next.js apps, Node services, packages, and Go service |

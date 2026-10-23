@@ -191,9 +191,9 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
   Follow the extension style of the file you are editing.
 - **Type-check before you finish.** Run `pnpm check-types` (or the workspace filter)
   and `pnpm build` for changes that affect a Next.js app or payment-service.
-- **Testing strategy.** Fifteen workspaces ship real test suites run by `pnpm test`
+- **Testing strategy.** Seventeen workspaces ship real test suites run by `pnpm test`
   (Turborepo): `@repo/types`, `user-service`, `cart-service`, `shipping-service`,
-  `order-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, and `pricing-service` use standalone tsx-run test files under
+  `order-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, and `seller-service` use standalone tsx-run test files under
   `tests/` (follow the file's internal runner convention, e.g.
   `media-service/tests/index.test.ts`); `notification-service` uses `go test ./...`;
   `recommendation-service` uses pytest via `uv`. There is **no Vitest/Jest anywhere** —

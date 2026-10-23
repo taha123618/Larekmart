@@ -59,7 +59,7 @@ pnpm --filter seller-service test
 pnpm --filter notification-service test
 pnpm --filter recommendation-service test
 
-# 3. Static type-check across all 35 workspaces
+# 3. Static type-check across all 39 workspaces
 pnpm check-types
 
 # 4. Monorepo code style and formatting checks

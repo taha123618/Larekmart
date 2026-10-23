@@ -30,17 +30,16 @@ exposes a read-only OpenSearch-backed search endpoint (`GET /products/search`) t
   are editing rather than mixing styles inside one file.
 - Route shape mirrors existing files: `router.get/post/put/delete` on a `Router`, then mount
   it on the app.
-- Shared auth middleware names are fixed: `shouldBeUser` and `shouldBeAdmin`. Do not invent
-  new guard names.
+- Shared auth middleware names are fixed: `shouldBeUser`, `shouldBeAdmin`, and `shouldBeSellerOrAdmin`.
 
 ## Auth and authorization
 
 - Clerk via `@clerk/express`: `getAuth` for token validation, `clerkMiddleware` for session
   setup.
-- Admin-only mutations use `shouldBeAdmin`: `PUT /products/:id`, `DELETE /products/:id`,
+- Marketplace mutations use `shouldBeSellerOrAdmin`: `POST /products`, `PUT /products/:id`,
+  `DELETE /products/:id`.
+- Admin-only operations use `shouldBeAdmin`: `POST /products/backfill-search`,
   `POST/PUT/DELETE /categories/...`.
-- **Known gap:** `POST /products` is currently unguarded. If you touch product creation,
-  review whether it should become admin-only and align with the rest of the mutation routes.
 
 ## Persistence
 

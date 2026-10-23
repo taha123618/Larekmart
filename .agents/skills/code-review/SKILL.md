@@ -28,8 +28,8 @@ boundary/contract/security rule), **should-fix**, or **nit**.
 
 ### Auth & security
 
-- [ ] Mutating routes are guarded (`shouldBeUser` / `shouldBeAdmin`); non-admins can't
-      reach admin functionality.
+- [ ] Mutating routes are guarded (`shouldBeUser` / `shouldBeAdmin` / `shouldBeSellerOrAdmin` / `requireSellerStaffOrAdmin`); non-admins and unauthorized roles can't
+      reach privileged functionality.
 - [ ] `userId` is derived from the session, never from the request body.
 - [ ] Stripe webhooks still verify the signature; no secrets or `.env` files leaked.
 - [ ] `NEXT_PUBLIC_*` used only for non-secret values.

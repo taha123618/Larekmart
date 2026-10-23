@@ -146,6 +146,17 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `return.inspection.completed`     | return-service       | inventory-service, analytic-service                                                              | `ReturnInspectionCompletedEventPayload` (`returnId`, `orderId`, `overallCondition`, `disposition`)                                                                                                              |
 | `return.refund.requested`         | return-service       | payment-service                                                                                  | `ReturnRefundRequestedEventPayload` (`returnId`, `orderId`, `paymentIntentId`, `amount`, `currency`, `idempotencyKey`)                                                                                          |
 | `return.completed`                | return-service       | order-service, notification-service, email-service, analytic-service                             | `ReturnCompletedEventPayload` (`returnId`, `orderId`, `customerId`, `paymentIntentId`, `amount`, `currency`, `refundedAt`)                                                                                      |
+| `vendor.registered`               | vendor-service       | notification-service, email-service, analytic-service                                            | `VendorRegisteredEvent` (`vendorId`, `ownerUserId`, `legalName`, `country`, `status`, `registeredAt`)                                                                                                           |
+| `vendor.verification.requested`   | vendor-service       | notification-service, analytic-service                                                           | `VendorVerificationRequestedEvent` (`vendorId`, `workflowType`, `requestedAt`)                                                                                                                                  |
+| `vendor.verified`                 | vendor-service       | notification-service, email-service, analytic-service                                            | `VendorVerifiedEvent` (`vendorId`, `verifiedAt`, `reviewerAdminId`)                                                                                                                                             |
+| `vendor.rejected`                 | vendor-service       | notification-service, email-service, analytic-service                                            | `VendorRejectedEvent` (`vendorId`, `rejectedAt`, `reason`, `deficiencies`)                                                                                                                                      |
+| `vendor.suspended`                | vendor-service       | notification-service, email-service, analytic-service                                            | `VendorSuspendedEvent` (`vendorId`, `suspendedAt`, `reason`)                                                                                                                                                    |
+| `vendor.reactivated`              | vendor-service       | notification-service, email-service, analytic-service                                            | `VendorReactivatedEvent` (`vendorId`, `reactivatedAt`)                                                                                                                                                          |
+| `seller.created`                  | seller-service       | notification-service, email-service, analytic-service                                            | `SellerCreatedEvent` (`sellerId`, `vendorId`, `primaryUserId`, `storeName`, `slug`, `status`, `createdAt`)                                                                                                      |
+| `seller.activated`                | seller-service       | notification-service, email-service, analytic-service                                            | `SellerActivatedEvent` (`sellerId`, `vendorId`, `activatedAt`, `activatedByUserId`)                                                                                                                             |
+| `seller.updated`                  | seller-service       | notification-service, analytic-service                                                           | `SellerUpdatedEvent` (`sellerId`, `updatedFields`, `updatedAt`)                                                                                                                                                 |
+| `seller.suspended`                | seller-service       | notification-service, email-service, analytic-service                                            | `SellerSuspendedEvent` (`sellerId`, `vendorId`, `reason`, `suspendedAt`)                                                                                                                                        |
+| `seller.storefront.updated`       | seller-service       | notification-service, analytic-service                                                           | `SellerStorefrontUpdatedEvent` (`sellerId`, `storeId`, `storeName`, `slug`, `vacationMode`, `status`, `updatedAt`)                                                                                              |
 
 ### `product.created`
 
@@ -724,6 +735,62 @@ Emitted when a storefront becomes active and eligible to receive customer orders
 
 - **Producer:** `apps/seller-service/src/routes/admin.routes.ts`
 - **Consumers:** `notification-service`, `email-service`, `analytic-service`.
+
+#### `seller.updated`
+
+Emitted when seller account status or primary contact properties are modified.
+
+```jsonc
+{
+  "value": {
+    "sellerId": "sel_019a2b3c4d5e",
+    "updatedFields": ["status"],
+    "updatedAt": "2026-10-22T02:26:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/seller-service/src/routes/seller.routes.ts`, `apps/seller-service/src/routes/admin.routes.ts`
+- **Consumers:** `notification-service`, `analytic-service`.
+
+#### `seller.suspended`
+
+Emitted when a marketplace seller is suspended for compliance or operational policy violations.
+
+```jsonc
+{
+  "value": {
+    "sellerId": "sel_019a2b3c4d5e",
+    "vendorId": "vnd_8492049102",
+    "reason": "Repeated order fulfillment delays beyond SLA",
+    "suspendedAt": "2026-10-22T02:27:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/seller-service/src/routes/admin.routes.ts`, `apps/seller-service/src/routes/seller.routes.ts`
+- **Consumers:** `email-service`, `notification-service`, `analytic-service`.
+
+#### `seller.storefront.updated`
+
+Emitted when a seller modifies store branding, tagline, or toggles vacation mode.
+
+```jsonc
+{
+  "value": {
+    "sellerId": "sel_019a2b3c4d5e",
+    "storeId": "str_019a2b3c4d5e",
+    "storeName": "Apex Gadgets Flagship",
+    "slug": "apex-gadgets",
+    "vacationMode": false,
+    "status": "ACTIVE",
+    "updatedAt": "2026-10-22T02:28:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/seller-service/src/routes/seller.routes.ts`
+- **Consumers:** `notification-service`, `analytic-service`.
 
 ## Adding or changing an event
 

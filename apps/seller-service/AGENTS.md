@@ -30,7 +30,7 @@ It provides storefront configuration (store name, slug, tagline, banner, logo, b
   - `health.routes.ts`: `/health`, `/ready`, `/metrics`, `/api/v1/sellers/health`.
   - `storefront.routes.ts`: Public `/api/v1/storefronts/:slug` and `/api/v1/sellers/:sellerId/storefront`.
   - `seller.routes.ts`: Merchant `/api/v1/sellers`, `/api/v1/sellers/me`, `/api/v1/sellers/:sellerId`, `/api/v1/sellers/:sellerId/storefront`, `/api/v1/sellers/:sellerId/staff`, `/api/v1/sellers/:sellerId/settings`, `/api/v1/sellers/:sellerId/policies`, `/api/v1/sellers/:sellerId/performance`.
-  - `admin.routes.ts`: `/api/v1/admin/sellers`, `/api/v1/admin/sellers/:sellerId/activate`, `/api/v1/admin/sellers/:sellerId/suspend`.
+  - `admin.routes.ts`: `/api/v1/admin/sellers`, `/api/v1/admin/sellers/:sellerId`, `/api/v1/admin/sellers/:sellerId/status`, `/api/v1/admin/sellers/:sellerId/activate`, `/api/v1/admin/sellers/:sellerId/suspend`, `/api/v1/admin/sellers/:sellerId/performance`.
 
 ## API Endpoints
 
@@ -51,9 +51,12 @@ It provides storefront configuration (store name, slug, tagline, banner, logo, b
   - `GET /api/v1/sellers/:sellerId/performance` — view seller performance metrics and ratings.
 
 - Admin Endpoints (`requireAdmin`):
-  - `GET /api/v1/admin/sellers` — list all sellers across marketplace.
+  - `GET /api/v1/admin/sellers` — list all sellers across marketplace (filterable by `?status=`).
+  - `GET /api/v1/admin/sellers/:sellerId` — get complete seller profile including store, staff, policies, and latest performance.
+  - `POST /api/v1/admin/sellers/:sellerId/status` — transition seller status (`ACTIVE`, `SUSPENDED`, `INACTIVE`, `ONBOARDING`) with reason recording and Kafka event publishing.
   - `POST /api/v1/admin/sellers/:sellerId/activate` — activate seller account.
   - `POST /api/v1/admin/sellers/:sellerId/suspend` — suspend seller account with reason.
+  - `GET /api/v1/admin/sellers/:sellerId/performance` — view seller performance metrics.
 
 ## Kafka Events
 

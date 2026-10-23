@@ -5,7 +5,7 @@ Scope: `apps/email-service` only. Root rules still apply — start there.
 ## What this service is
 
 A headless Kafka consumer worker with no HTTP surface. It consumes `user.created`,
-`order.created`, and `promotion.redeemed` and sends email via nodemailer (Gmail OAuth2).
+`order.created`, `promotion.redeemed`, and `seller.suspended` and sends email via nodemailer (Gmail OAuth2).
 
 ## Where things live
 
@@ -25,7 +25,7 @@ A headless Kafka consumer worker with no HTTP surface. It consumes `user.created
 - One consumer group for this service.
 - Subscriptions use `fromBeginning: true`; handlers must be tolerant of re-processing.
 - Use the `{ value: payload }` envelope and read `message.value` in handlers.
-- Current topics consumed: `user.created`, `order.created`, `promotion.redeemed`.
+- Current topics consumed: `user.created`, `order.created`, `promotion.redeemed`, `seller.suspended`.
 - If you change a payload, update the producer, every consumer, `@repo/types`, and
   `docs/EVENT-DRIVEN-ARCHITECTURE.md` together.
 
