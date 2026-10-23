@@ -50,7 +50,12 @@ function getHeaders(authToken?: string): Record<string, string> {
  * Fetch all sellers with optional status/vendor filtering
  */
 export async function fetchAdminSellers(
-  params?: { status?: string; vendorId?: string; limit?: number; offset?: number },
+  params?: {
+    status?: string;
+    vendorId?: string;
+    limit?: number;
+    offset?: number;
+  },
   authToken?: string,
 ): Promise<{ sellers: AdminSellerListItem[]; total: number }> {
   const query = new URLSearchParams();
@@ -69,7 +74,11 @@ export async function fetchAdminSellers(
   if (!res.ok) {
     throw new Error(`Failed to fetch sellers (HTTP ${res.status})`);
   }
-  return res.json();
+  const data = await res.json();
+  if (Array.isArray(data)) {
+    return { sellers: data, total: data.length };
+  }
+  return data;
 }
 
 /**
@@ -111,7 +120,8 @@ export async function updateAdminSellerStatus(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to update seller status (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to update seller status (HTTP ${res.status})`,
     );
   }
   const data = await res.json();

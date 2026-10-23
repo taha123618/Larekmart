@@ -1,11 +1,14 @@
 import type { FastifyPluginAsync } from "fastify";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { db } from "../db/connection.js";
 import {
   sellers,
   sellerStores,
+  sellerStaff,
+  sellerSettings,
+  sellerPolicies,
   sellerStatusHistory,
   sellerPerformanceSnapshots,
 } from "../db/schema.js";
@@ -16,19 +19,28 @@ const SuspendSellerSchema = z.object({
   reason: z.string().min(3),
 });
 
+const UpdateStatusSchema = z.object({
+  status: z.enum(["ACTIVE", "SUSPENDED", "INACTIVE", "ONBOARDING"]),
+  reason: z.string().optional(),
+});
+
 export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
   // 1. List all marketplace sellers (Admin only)
   app.get(
     "/api/v1/admin/sellers",
     { preHandler: [requireAdmin] },
     async (request, reply) => {
-      const allSellers = await db
+      const query = request.query as { status?: string };
+
+      let dbQuery = db
         .select({
           id: sellers.id,
           vendorId: sellers.vendorId,
           primaryUserId: sellers.primaryUserId,
+          ownerUserId: sellers.primaryUserId,
           status: sellers.status,
           createdAt: sellers.createdAt,
+          updatedAt: sellers.updatedAt,
           storeName: sellerStores.name,
           slug: sellerStores.slug,
           vacationMode: sellerStores.vacationMode,
@@ -37,11 +49,152 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
         .leftJoin(sellerStores, eq(sellers.id, sellerStores.sellerId))
         .orderBy(desc(sellers.createdAt));
 
-      return reply.send(allSellers);
-    }
+      if (query.status && query.status !== "ALL") {
+        // @ts-expect-error Drizzle dynamic where condition
+        dbQuery = dbQuery.where(eq(sellers.status, query.status));
+      }
+
+      const allSellers = await dbQuery;
+
+      return reply.send({
+        sellers: allSellers,
+        total: allSellers.length,
+      });
+    },
   );
 
-  // 2. Activate a seller account
+  // 2. Get single seller details (Admin drawer / view)
+  app.get(
+    "/api/v1/admin/sellers/:sellerId",
+    { preHandler: [requireAdmin] },
+    async (request, reply) => {
+      const { sellerId } = request.params as { sellerId: string };
+
+      const sellerRows = await db
+        .select()
+        .from(sellers)
+        .where(eq(sellers.id, sellerId))
+        .limit(1);
+
+      if (sellerRows.length === 0) {
+        return reply.status(404).send({ message: "Seller not found" });
+      }
+
+      const [storeRows, settingsRows, policyRows, staffRows, perfRows] =
+        await Promise.all([
+          db
+            .select()
+            .from(sellerStores)
+            .where(eq(sellerStores.sellerId, sellerId))
+            .limit(1),
+          db
+            .select()
+            .from(sellerSettings)
+            .where(eq(sellerSettings.sellerId, sellerId))
+            .limit(1),
+          db
+            .select()
+            .from(sellerPolicies)
+            .where(eq(sellerPolicies.sellerId, sellerId)),
+          db
+            .select()
+            .from(sellerStaff)
+            .where(eq(sellerStaff.sellerId, sellerId)),
+          db
+            .select()
+            .from(sellerPerformanceSnapshots)
+            .where(eq(sellerPerformanceSnapshots.sellerId, sellerId))
+            .orderBy(desc(sellerPerformanceSnapshots.calculatedAt))
+            .limit(1),
+        ]);
+
+      return reply.send({
+        seller: {
+          ...sellerRows[0],
+          ownerUserId: sellerRows[0]!.primaryUserId,
+          store: storeRows[0] || null,
+          settings: settingsRows[0] || null,
+          policies: policyRows,
+          staff: staffRows,
+          latestPerformance: perfRows[0] || null,
+        },
+      });
+    },
+  );
+
+  // 3. Update seller status (Unified status transition)
+  app.post(
+    "/api/v1/admin/sellers/:sellerId/status",
+    { preHandler: [requireAdmin] },
+    async (request, reply) => {
+      const { sellerId } = request.params as { sellerId: string };
+      const adminId = getUserId(request) || "system-admin";
+      const body = UpdateStatusSchema.parse(request.body);
+
+      const sellerRows = await db
+        .select()
+        .from(sellers)
+        .where(eq(sellers.id, sellerId))
+        .limit(1);
+
+      if (sellerRows.length === 0) {
+        return reply.status(404).send({ message: "Seller not found" });
+      }
+
+      const prevStatus = sellerRows[0]!.status;
+      await db
+        .update(sellers)
+        .set({ status: body.status, updatedAt: new Date() })
+        .where(eq(sellers.id, sellerId));
+
+      await db.insert(sellerStatusHistory).values({
+        id: `h_${uuidv4()}`,
+        sellerId,
+        previousStatus: prevStatus,
+        newStatus: body.status,
+        reason: body.reason || `Status updated to ${body.status} by Admin`,
+        changedByUserId: adminId,
+      });
+
+      if (body.status === "ACTIVE") {
+        await sellerEventProducer.publishSellerActivated({
+          sellerId,
+          vendorId: sellerRows[0]!.vendorId,
+          activatedAt: new Date().toISOString(),
+          activatedByUserId: adminId,
+        });
+      } else if (body.status === "SUSPENDED") {
+        await sellerEventProducer.publishSellerSuspended({
+          sellerId,
+          vendorId: sellerRows[0]!.vendorId,
+          reason: body.reason || "Suspended by Administrator",
+          suspendedAt: new Date().toISOString(),
+          suspendedByUserId: adminId,
+        });
+      }
+
+      await sellerEventProducer.publishSellerUpdated({
+        sellerId,
+        updatedFields: ["status"],
+        updatedAt: new Date().toISOString(),
+      });
+
+      const refreshed = await db
+        .select()
+        .from(sellers)
+        .where(eq(sellers.id, sellerId))
+        .limit(1);
+
+      return reply.send({
+        seller: {
+          ...refreshed[0],
+          ownerUserId: refreshed[0]!.primaryUserId,
+        },
+      });
+    },
+  );
+
+  // 4. Activate a seller account
   app.post(
     "/api/v1/admin/sellers/:sellerId/activate",
     { preHandler: [requireAdmin] },
@@ -82,10 +235,10 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
       });
 
       return reply.send({ sellerId, status: "ACTIVE" });
-    }
+    },
   );
 
-  // 3. Suspend a seller account
+  // 5. Suspend a seller account
   app.post(
     "/api/v1/admin/sellers/:sellerId/suspend",
     { preHandler: [requireAdmin] },
@@ -128,6 +281,25 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
       });
 
       return reply.send({ sellerId, status: "SUSPENDED", reason: body.reason });
-    }
+    },
+  );
+
+  // 6. Historical performance metrics
+  app.get(
+    "/api/v1/admin/sellers/:sellerId/performance",
+    { preHandler: [requireAdmin] },
+    async (request, reply) => {
+      const { sellerId } = request.params as { sellerId: string };
+      const query = request.query as { limit?: string };
+
+      const snapshots = await db
+        .select()
+        .from(sellerPerformanceSnapshots)
+        .where(eq(sellerPerformanceSnapshots.sellerId, sellerId))
+        .orderBy(desc(sellerPerformanceSnapshots.calculatedAt))
+        .limit(Number(query.limit) || 10);
+
+      return reply.send({ snapshots });
+    },
   );
 };

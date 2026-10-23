@@ -22,6 +22,7 @@ import {
   Globe,
   DollarSign,
   Loader2,
+  Store,
 } from "lucide-react";
 import {
   fetchCurrentUser,
@@ -530,6 +531,14 @@ export default function AccountPage(): React.JSX.Element {
         >
           <Heart className="w-4 h-4 text-rose-500" />
           <span>My Wishlists</span>
+        </Link>
+
+        <Link
+          href="/become-a-seller"
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all font-semibold"
+        >
+          <Store className="w-4 h-4 text-indigo-500" />
+          <span>Seller Portal</span>
         </Link>
       </div>
 

@@ -37,6 +37,7 @@ const STATIC_NAV_LINKS: readonly NavItem[] = [
   { label: "My Orders", href: "/orders" },
   { label: "Returns & Refunds", href: "/account/returns" },
   { label: "Customer Care", href: "/return" },
+  { label: "Become a Seller", href: "/become-a-seller", count: "[SELL]" },
 ];
 
 const STATIC_DEPARTMENT_LINKS: readonly NavItem[] = [
