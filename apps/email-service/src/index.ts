@@ -183,7 +183,8 @@ const start = async () => {
           if (contactEmail) {
             await sendMail({
               email: contactEmail,
-              subject: "Congratulations! Your KYB Application is Approved - Larekmart",
+              subject:
+                "Congratulations! Your KYB Application is Approved - Larekmart",
               text: `Dear ${legalName || "Merchant"},\n\nYour business organization has passed verification. You can now launch active seller storefronts on Larekmart.\n\nVisit your dashboard to get started.`,
             });
           }
@@ -192,7 +193,8 @@ const start = async () => {
       {
         topicName: "vendor.rejected",
         topicHandler: async (message) => {
-          const { legalName, contactEmail, vendorId, reason } = message.value || {};
+          const { legalName, contactEmail, vendorId, reason } =
+            message.value || {};
           logger.info(
             `[email-service] Vendor rejected: '${legalName}' (${vendorId}) - Reason: ${reason}`,
           );
@@ -233,6 +235,23 @@ const start = async () => {
               email: contactEmail,
               subject: `Your Storefront '${storeName}' is Now Live!`,
               text: `Great news! Your storefront '${storeName}' is now active on the Larekmart marketplace. Customers can now browse and purchase your catalog.`,
+            });
+          }
+        },
+      },
+      {
+        topicName: "seller.suspended",
+        topicHandler: async (message) => {
+          const { sellerId, reason, contactEmail } = message.value || {};
+          logger.warn(
+            `[email-service] Storefront suspended: '${sellerId}', reason: '${reason}'`,
+          );
+          if (contactEmail) {
+            await sendMail({
+              email: contactEmail,
+              subject:
+                "Notice: Your Larekmart Seller Storefront Has Been Suspended",
+              text: `Dear Merchant,\n\nYour marketplace storefront has been suspended.\n\nReason: ${reason || "Marketplace policy violation"}\n\nPlease contact merchant support or review your seller dashboard for resolution.`,
             });
           }
         },
