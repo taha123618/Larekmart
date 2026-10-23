@@ -14,7 +14,10 @@ export async function startServer() {
   try {
     await runMigrations();
   } catch (err) {
-    console.warn("[SellerService] Database migration skipped or deferred:", err);
+    console.warn(
+      "[SellerService] Database migration skipped or deferred:",
+      err,
+    );
   }
 
   // 2. Initialize Kafka Producer
@@ -28,7 +31,9 @@ export async function startServer() {
       port: env.PORT,
       host: "0.0.0.0",
     });
-    console.log(`[SellerService] Server listening on ${address} (port: ${env.PORT})`);
+    console.log(
+      `[SellerService] Server listening on ${address} (port: ${env.PORT})`,
+    );
   } catch (err) {
     console.error("[SellerService] Fatal server error:", err);
     process.exit(1);
@@ -38,7 +43,9 @@ export async function startServer() {
   const signals = ["SIGINT", "SIGTERM"];
   for (const signal of signals) {
     process.on(signal, async () => {
-      console.log(`[SellerService] Received ${signal}. Initiating graceful shutdown...`);
+      console.log(
+        `[SellerService] Received ${signal}. Initiating graceful shutdown...`,
+      );
       try {
         await app.close();
         await closeDatabase();

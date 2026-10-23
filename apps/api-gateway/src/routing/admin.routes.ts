@@ -133,4 +133,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/sellers",
     requireAdmin: true,
   },
+
+  // 11. Platform System Settings (Admin / Super Admin Management)
+  {
+    prefix: "/api/v1/admin/system-settings",
+    target: services.seller.url,
+    serviceName: services.seller.name,
+    timeoutMs: services.seller.timeoutMs,
+    rewritePrefix: "/api/v1/admin/system-settings",
+    requireAdmin: true,
+  },
 ];

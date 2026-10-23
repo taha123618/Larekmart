@@ -1,5 +1,16 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
-import { createRedisService, cacheRead, cacheSet, cacheDel, type RedisService as SharedRedisService } from "@repo/redis";
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from "@nestjs/common";
+import {
+  createRedisService,
+  cacheRead,
+  cacheSet,
+  cacheDel,
+  type RedisService as SharedRedisService,
+} from "@repo/redis";
 import { env } from "../config/env.js";
 
 @Injectable()
@@ -33,7 +44,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async get<T>(key: string): Promise<T | null> {
     if (!this.redisInstance) return null;
-    const result = await cacheRead<T>(this.redisInstance.client, this.redisInstance.keys.simple(key));
+    const result = await cacheRead<T>(
+      this.redisInstance.client,
+      this.redisInstance.keys.simple(key),
+    );
     if (result.status === "hit") {
       return result.value;
     }
@@ -42,11 +56,19 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async set<T>(key: string, value: T, ttlSeconds = 300): Promise<void> {
     if (!this.redisInstance) return;
-    await cacheSet(this.redisInstance.client, this.redisInstance.keys.simple(key), value, ttlSeconds);
+    await cacheSet(
+      this.redisInstance.client,
+      this.redisInstance.keys.simple(key),
+      value,
+      ttlSeconds,
+    );
   }
 
   async del(key: string): Promise<void> {
     if (!this.redisInstance) return;
-    await cacheDel(this.redisInstance.client, this.redisInstance.keys.simple(key));
+    await cacheDel(
+      this.redisInstance.client,
+      this.redisInstance.keys.simple(key),
+    );
   }
 }

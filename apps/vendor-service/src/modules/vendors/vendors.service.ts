@@ -60,8 +60,10 @@ export class VendorsService {
                   websiteUrl: input.businessProfile.websiteUrl,
                   businessEmail: input.businessProfile.businessEmail,
                   businessPhone: input.businessProfile.businessPhone,
-                  registeredAddressLine1: input.businessProfile.registeredAddressLine1,
-                  registeredAddressLine2: input.businessProfile.registeredAddressLine2,
+                  registeredAddressLine1:
+                    input.businessProfile.registeredAddressLine1,
+                  registeredAddressLine2:
+                    input.businessProfile.registeredAddressLine2,
                   city: input.businessProfile.city,
                   state: input.businessProfile.state,
                   postalCode: input.businessProfile.postalCode,
@@ -142,22 +144,34 @@ export class VendorsService {
     return vendor;
   }
 
-  async updateVendor(vendorId: string, userId: string, rawInput: UpdateVendorInput) {
+  async updateVendor(
+    vendorId: string,
+    userId: string,
+    rawInput: UpdateVendorInput,
+  ) {
     const input = UpdateVendorSchema.parse(rawInput);
 
     const vendor = await this.getVendorById(vendorId);
 
     if (vendor.status === VendorStatusEnum.TERMINATED) {
-      throw new BadRequestException("Terminated vendor organizations cannot be modified");
+      throw new BadRequestException(
+        "Terminated vendor organizations cannot be modified",
+      );
     }
 
     const updated = await this.prisma.vendor.update({
       where: { id: vendorId },
       data: {
         ...(input.legalName ? { legalName: input.legalName } : {}),
-        ...(input.tradeName !== undefined ? { tradeName: input.tradeName } : {}),
-        ...(input.organizationType ? { organizationType: input.organizationType } : {}),
-        ...(input.registrationNumber ? { registrationNumber: input.registrationNumber } : {}),
+        ...(input.tradeName !== undefined
+          ? { tradeName: input.tradeName }
+          : {}),
+        ...(input.organizationType
+          ? { organizationType: input.organizationType }
+          : {}),
+        ...(input.registrationNumber
+          ? { registrationNumber: input.registrationNumber }
+          : {}),
         ...(input.taxIdentifier ? { taxIdentifier: input.taxIdentifier } : {}),
         ...(input.country ? { country: input.country } : {}),
         ...(input.businessProfile
@@ -165,29 +179,40 @@ export class VendorsService {
               businessProfile: {
                 upsert: {
                   create: {
-                    industryCategory: input.businessProfile.industryCategory || "General",
+                    industryCategory:
+                      input.businessProfile.industryCategory || "General",
                     websiteUrl: input.businessProfile.websiteUrl,
-                    businessEmail: input.businessProfile.businessEmail || "info@example.com",
-                    businessPhone: input.businessProfile.businessPhone || "+1000000000",
+                    businessEmail:
+                      input.businessProfile.businessEmail || "info@example.com",
+                    businessPhone:
+                      input.businessProfile.businessPhone || "+1000000000",
                     registeredAddressLine1:
                       input.businessProfile.registeredAddressLine1 || "Address",
-                    registeredAddressLine2: input.businessProfile.registeredAddressLine2,
+                    registeredAddressLine2:
+                      input.businessProfile.registeredAddressLine2,
                     city: input.businessProfile.city || "City",
                     state: input.businessProfile.state || "State",
                     postalCode: input.businessProfile.postalCode || "00000",
                     country: input.businessProfile.country || vendor.country,
                     authorizedRepresentativeName:
-                      input.businessProfile.authorizedRepresentativeName || "Authorized Rep",
+                      input.businessProfile.authorizedRepresentativeName ||
+                      "Authorized Rep",
                     authorizedRepresentativeEmail:
-                      input.businessProfile.authorizedRepresentativeEmail || "rep@example.com",
+                      input.businessProfile.authorizedRepresentativeEmail ||
+                      "rep@example.com",
                     authorizedRepresentativePhone:
-                      input.businessProfile.authorizedRepresentativePhone || "+1000000000",
+                      input.businessProfile.authorizedRepresentativePhone ||
+                      "+1000000000",
                     authorizedRepresentativeRole:
-                      input.businessProfile.authorizedRepresentativeRole || "Representative",
+                      input.businessProfile.authorizedRepresentativeRole ||
+                      "Representative",
                   },
                   update: {
                     ...(input.businessProfile.industryCategory
-                      ? { industryCategory: input.businessProfile.industryCategory }
+                      ? {
+                          industryCategory:
+                            input.businessProfile.industryCategory,
+                        }
                       : {}),
                     ...(input.businessProfile.websiteUrl !== undefined
                       ? { websiteUrl: input.businessProfile.websiteUrl }
@@ -199,13 +224,24 @@ export class VendorsService {
                       ? { businessPhone: input.businessProfile.businessPhone }
                       : {}),
                     ...(input.businessProfile.registeredAddressLine1
-                      ? { registeredAddressLine1: input.businessProfile.registeredAddressLine1 }
+                      ? {
+                          registeredAddressLine1:
+                            input.businessProfile.registeredAddressLine1,
+                        }
                       : {}),
-                    ...(input.businessProfile.registeredAddressLine2 !== undefined
-                      ? { registeredAddressLine2: input.businessProfile.registeredAddressLine2 }
+                    ...(input.businessProfile.registeredAddressLine2 !==
+                    undefined
+                      ? {
+                          registeredAddressLine2:
+                            input.businessProfile.registeredAddressLine2,
+                        }
                       : {}),
-                    ...(input.businessProfile.city ? { city: input.businessProfile.city } : {}),
-                    ...(input.businessProfile.state ? { state: input.businessProfile.state } : {}),
+                    ...(input.businessProfile.city
+                      ? { city: input.businessProfile.city }
+                      : {}),
+                    ...(input.businessProfile.state
+                      ? { state: input.businessProfile.state }
+                      : {}),
                     ...(input.businessProfile.postalCode
                       ? { postalCode: input.businessProfile.postalCode }
                       : {}),

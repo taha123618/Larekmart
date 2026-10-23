@@ -4,7 +4,9 @@ import type { CustomJwtSessionClaims } from "@repo/types";
 
 export interface AuthenticatedUser {
   userId: string;
-  role: "admin" | "seller" | "customer";
+  role: "admin" | "seller" | "customer" | "super_admin";
+  isSuperAdmin: boolean;
+  isSeller: boolean;
   claims?: CustomJwtSessionClaims;
 }
 
@@ -18,12 +20,26 @@ export function extractAuthClaims(
     }
 
     const claims = auth.sessionClaims as CustomJwtSessionClaims | undefined;
-    const role =
-      (claims?.metadata?.role as "admin" | "seller" | "customer") || "customer";
+    const rawRole = claims?.metadata?.role;
+    const isSuperAdmin =
+      rawRole === "super_admin" || claims?.metadata?.isSuperAdmin === true;
+    const isSeller =
+      rawRole === "seller" || claims?.metadata?.isSeller === true;
+
+    let role: "admin" | "seller" | "customer" | "super_admin" = "customer";
+    if (isSuperAdmin) {
+      role = "super_admin";
+    } else if (rawRole === "admin") {
+      role = "admin";
+    } else if (isSeller) {
+      role = "seller";
+    }
 
     return {
       userId: auth.userId,
       role,
+      isSuperAdmin,
+      isSeller,
       claims,
     };
   } catch {

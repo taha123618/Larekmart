@@ -34,17 +34,25 @@ class CacheService {
   public async setStorefrontBySlug<T>(
     slug: string,
     value: T,
-    ttlSeconds = 300
+    ttlSeconds = 300,
   ): Promise<void> {
     try {
       const redis = this.getRedis();
-      await cacheSet(redis.client, `storefront:slug:${slug}`, value, ttlSeconds);
+      await cacheSet(
+        redis.client,
+        `storefront:slug:${slug}`,
+        value,
+        ttlSeconds,
+      );
     } catch {
       // cache write failures shouldn't throw to caller
     }
   }
 
-  public async invalidateStorefront(slug: string, sellerId: string): Promise<void> {
+  public async invalidateStorefront(
+    slug: string,
+    sellerId: string,
+  ): Promise<void> {
     try {
       const redis = this.getRedis();
       await cacheDel(redis.client, `storefront:slug:${slug}`);

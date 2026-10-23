@@ -1,6 +1,12 @@
-import { fetchStorefront, type PublicStorefrontResponse } from "@/services/seller.service";
+import {
+  fetchStorefront,
+  fetchSystemSettings,
+  type PublicStorefrontResponse,
+} from "@/services/seller.service";
 import { StorefrontView } from "@/components/seller/StorefrontView";
 import type { ProductType } from "@repo/types";
+import Link from "next/link";
+import { Store } from "lucide-react";
 
 // Fallback demo storefront for instant exploration if database is newly initialized
 function getFallbackStorefront(slug: string): PublicStorefrontResponse {
@@ -15,7 +21,8 @@ function getFallbackStorefront(slug: string): PublicStorefrontResponse {
       sellerId: "demo-seller-001",
       name: formattedName || "Larekmart Prime Merchant",
       slug,
-      headline: "Official Flagship Store • Premium Electronics & Lifestyle Goods",
+      headline:
+        "Official Flagship Store • Premium Electronics & Lifestyle Goods",
       description: `${formattedName} is an authorized flagship merchant on Larekmart. We deliver certified authentic merchandise, expedited carrier shipping, and seamless customer service across the country.`,
       status: "ACTIVE",
       vacationMode: false,
@@ -72,7 +79,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const storefront = (await fetchStorefront(slug)) || getFallbackStorefront(slug);
+  const storefront =
+    (await fetchStorefront(slug)) || getFallbackStorefront(slug);
 
   return {
     title: `${storefront.store.name} - Larekmart Merchant Storefront`,
@@ -88,6 +96,35 @@ export default async function StorefrontPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  const settings = await fetchSystemSettings();
+  if (!settings.isSellerEnabled) {
+    return (
+      <main className="min-h-[60vh] flex items-center justify-center px-4 py-16">
+        <div className="max-w-md w-full text-center space-y-4 p-8 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 shadow-sm">
+          <div className="w-12 h-12 mx-auto rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-amber-600 dark:text-amber-400">
+            <Store className="w-6 h-6" />
+          </div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            Marketplace Stores Temporarily Unavailable
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Marketplace storefronts and independent merchant stores are
+            currently disabled across Larekmart. Please check back later or
+            continue exploring our catalog.
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/products"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition"
+            >
+              Browse All Products
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   let storefront = await fetchStorefront(slug);
 

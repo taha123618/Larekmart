@@ -97,12 +97,34 @@ async function runSellerServiceTests() {
     // ────────────────────────────────────────────────────────────
     console.log("\n[Test 3] Input Validation & Boundary Invariants");
 
-    // Validation error: invalid slug format and missing vendorId
+    // Non-qualified user (isSeller !== true) rejected with 403 SELLER_NOT_AUTHORIZED
+    const nonQualifiedRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/sellers",
+      headers: {
+        "x-user-id": "usr-regular-customer",
+        "x-user-role": "customer",
+      },
+      payload: {
+        vendorId: "vnd-test-1",
+        storeName: "Test Store",
+        slug: "test-store",
+      },
+    });
+    assert.equal(nonQualifiedRes.statusCode, 403);
+    const nonQualJson = JSON.parse(nonQualifiedRes.payload);
+    assert.equal(nonQualJson.code, "SELLER_NOT_AUTHORIZED");
+    console.log(
+      "  ✓ Unqualified user rejected from POST /api/v1/sellers with 403 SELLER_NOT_AUTHORIZED",
+    );
+
+    // Validation error: invalid slug format and missing vendorId when qualified
     const invalidCreateRes = await app.inject({
       method: "POST",
       url: "/api/v1/sellers",
       headers: {
         "x-user-id": "usr-12345",
+        "x-user-is-seller": "true",
       },
       payload: {
         vendorId: "",
@@ -171,6 +193,130 @@ async function runSellerServiceTests() {
 
     console.log(
       "  ✓ Kafka event producer safely operates in disconnected / dev mode",
+    );
+
+    // ────────────────────────────────────────────────────────────
+    // Test 5: Super Admin System Controls & Feature Toggling
+    // ────────────────────────────────────────────────────────────
+    console.log("\n[Test 5] Super Admin Governance & Feature Toggling");
+
+    // 5.1 Public system settings endpoint
+    const pubSettingsRes = await app.inject({
+      method: "GET",
+      url: "/api/v1/system-settings",
+    });
+    assert.equal(pubSettingsRes.statusCode, 200);
+    const pubSettings = JSON.parse(pubSettingsRes.payload);
+    assert.equal(pubSettings.id, "marketplace");
+    assert.equal(typeof pubSettings.isSellerEnabled, "boolean");
+    console.log(
+      "  ✓ Public GET /api/v1/system-settings returns marketplace settings",
+    );
+
+    // 5.2 Admin read system settings
+    const adminReadSettingsRes = await app.inject({
+      method: "GET",
+      url: "/api/v1/admin/system-settings",
+      headers: {
+        "x-user-id": "admin-1",
+        "x-user-role": "admin",
+      },
+    });
+    assert.equal(adminReadSettingsRes.statusCode, 200);
+    console.log(
+      "  ✓ Admin GET /api/v1/admin/system-settings succeeds with admin role",
+    );
+
+    // 5.3 Unauthorized admin cannot mutate system settings
+    const unauthorizedAdminPatchRes = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/admin/system-settings",
+      headers: {
+        "x-user-id": "regular-admin-1",
+        "x-user-role": "admin",
+        // Notice: lacks x-user-is-super-admin or role !== super_admin
+      },
+      payload: {
+        isSellerEnabled: false,
+      },
+    });
+    assert.equal(unauthorizedAdminPatchRes.statusCode, 403);
+    const unauthBody = JSON.parse(unauthorizedAdminPatchRes.payload);
+    assert.equal(unauthBody.code, "SUPER_ADMIN_REQUIRED");
+    console.log(
+      "  ✓ Regular admin strictly forbidden from mutating system settings (403 SUPER_ADMIN_REQUIRED)",
+    );
+
+    // 5.4 Super Admin toggles isSellerEnabled to false
+    const superAdminDisableRes = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/admin/system-settings",
+      headers: {
+        "x-user-id": "super-admin-root",
+        "x-user-role": "admin",
+        "x-user-is-super-admin": "true",
+      },
+      payload: {
+        isSellerEnabled: false,
+      },
+    });
+    assert.equal(superAdminDisableRes.statusCode, 200);
+    const disabledResult = JSON.parse(superAdminDisableRes.payload);
+    assert.equal(disabledResult.settings.isSellerEnabled, false);
+    console.log(
+      "  ✓ Super Admin successfully disabled seller feature (isSellerEnabled: false)",
+    );
+
+    // 5.5 When disabled: seller creation blocked with 403 SELLER_FEATURE_DISABLED
+    const blockedCreateRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/sellers",
+      headers: {
+        "x-user-id": "usr-qualified-seller",
+        "x-user-is-seller": "true",
+      },
+      payload: {
+        vendorId: "vnd-test-1",
+        storeName: "Blocked Store",
+        slug: "blocked-store",
+      },
+    });
+    assert.equal(blockedCreateRes.statusCode, 403);
+    const blockedCreateJson = JSON.parse(blockedCreateRes.payload);
+    assert.equal(blockedCreateJson.code, "SELLER_FEATURE_DISABLED");
+    console.log(
+      "  ✓ Seller creation blocked when feature disabled (403 SELLER_FEATURE_DISABLED)",
+    );
+
+    // 5.6 When disabled: public storefront lookup blocked with 403 SELLER_FEATURE_DISABLED
+    const blockedStorefrontRes = await app.inject({
+      method: "GET",
+      url: "/api/v1/storefronts/any-store-slug",
+    });
+    assert.equal(blockedStorefrontRes.statusCode, 403);
+    const blockedStorefrontJson = JSON.parse(blockedStorefrontRes.payload);
+    assert.equal(blockedStorefrontJson.code, "SELLER_FEATURE_DISABLED");
+    console.log(
+      "  ✓ Public storefront routes blocked when feature disabled (403 SELLER_FEATURE_DISABLED)",
+    );
+
+    // 5.7 Super Admin re-enables seller functionality
+    const superAdminReEnableRes = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/admin/system-settings",
+      headers: {
+        "x-user-id": "super-admin-root",
+        "x-user-role": "super_admin",
+      },
+      payload: {
+        isSellerEnabled: true,
+      },
+    });
+    assert.equal(superAdminReEnableRes.statusCode, 200);
+    const reEnabledResult = JSON.parse(superAdminReEnableRes.payload);
+    assert.equal(reEnabledResult.settings.isSellerEnabled, true);
+    console.log(
+      "  ✓ Super Admin successfully re-enabled seller feature (isSellerEnabled: true)",
     );
 
     console.log("\n==================================================");

@@ -2,10 +2,7 @@
  * vendor.service.ts — Admin client for vendor-service (:8020) via API Gateway (:8090).
  */
 
-import type {
-  VendorBusinessProfile,
-  VendorStatus,
-} from "@repo/types";
+import type { VendorBusinessProfile, VendorStatus } from "@repo/types";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_VENDOR_SERVICE_URL ||
@@ -95,7 +92,12 @@ function getHeaders(authToken?: string): Record<string, string> {
  * Fetch all vendors with optional filtering by status and country
  */
 export async function fetchAdminVendors(
-  params?: { status?: string; country?: string; limit?: number; offset?: number },
+  params?: {
+    status?: string;
+    country?: string;
+    limit?: number;
+    offset?: number;
+  },
   authToken?: string,
 ): Promise<{ vendors: AdminVendorListItem[]; total: number }> {
   const query = new URLSearchParams();
@@ -185,7 +187,8 @@ export async function updateAdminVendorStatus(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to update vendor status (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to update vendor status (HTTP ${res.status})`,
     );
   }
   const data = await res.json();
@@ -235,7 +238,9 @@ export async function fetchPendingVerifications(
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to fetch pending verifications (HTTP ${res.status})`);
+    throw new Error(
+      `Failed to fetch pending verifications (HTTP ${res.status})`,
+    );
   }
   const data = await res.json();
   return data.verifications || [];

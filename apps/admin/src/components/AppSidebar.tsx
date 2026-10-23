@@ -1,3 +1,7 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { fetchSystemSettings } from "@/services/seller.service";
 import {
   Home,
   Inbox,
@@ -79,12 +83,20 @@ const items = [
   },
   {
     title: "Settings",
-    url: "#",
+    url: "/settings",
     icon: Settings,
   },
 ];
 
 const AppSidebar = () => {
+  const { data: systemSettings } = useQuery({
+    queryKey: ["marketplace-system-settings"],
+    queryFn: () => fetchSystemSettings().catch(() => null),
+    staleTime: 30000,
+  });
+
+  const isSellerEnabled = systemSettings?.isSellerEnabled ?? true;
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="py-4">
@@ -260,7 +272,14 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Marketplace & Merchants</SidebarGroupLabel>
+          <div className="flex items-center justify-between pr-2">
+            <SidebarGroupLabel>Marketplace & Merchants</SidebarGroupLabel>
+            {!isSellerEnabled && (
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                Disabled
+              </span>
+            )}
+          </div>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>

@@ -263,7 +263,31 @@ async function runSchemaTests() {
 
   assert.equal(GATEWAY_HEADERS.REQUEST_ID, "x-request-id");
   assert.equal(GATEWAY_HEADERS.INTERNAL_SECRET, "x-internal-secret");
-  console.log("✓ Gateway schemas and header contracts verified");
+  assert.equal(GATEWAY_HEADERS.IS_SUPER_ADMIN, "x-user-is-super-admin");
+  assert.equal(GATEWAY_HEADERS.IS_SELLER, "x-user-is-seller");
+
+  const { SystemSettingsSchema, UpdateSystemSettingsSchema } = await import(
+    "../src/index.js"
+  );
+  const validSysSettings = {
+    id: "marketplace",
+    isSellerEnabled: true,
+    updatedAt: new Date().toISOString(),
+    updatedBy: "user_super_admin",
+  };
+  assert.equal(SystemSettingsSchema.safeParse(validSysSettings).success, true);
+  assert.equal(
+    UpdateSystemSettingsSchema.safeParse({ isSellerEnabled: false }).success,
+    true,
+  );
+  assert.equal(
+    UpdateSystemSettingsSchema.safeParse({ isSellerEnabled: "invalid" })
+      .success,
+    false,
+  );
+  console.log(
+    "✓ Gateway schemas, header contracts, and SystemSettings schemas verified",
+  );
 
   // 10. Tax Domain Schemas
   console.log("10. Testing Tax Domain Schemas...");

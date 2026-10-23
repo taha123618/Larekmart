@@ -14,6 +14,7 @@
 `vendor-service` provides enterprise-grade merchant onboarding, legal organization management, KYB (Know Your Business) verification workflows, authorized representative management, and lifecycle state management (active, suspended, rejected, terminated).
 
 ### Separation of Concerns:
+
 - **`vendor-service`**: Owns the legal/business entity, registration credentials, business profiles, KYB documents, compliance verification, and representative access controls.
 - **`seller-service`**: Owns marketplace selling operations, storefront configuration, shipping settings, and seller product listings. A verified vendor may operate one or more seller accounts.
 
@@ -213,6 +214,7 @@ model VendorStatusHistory {
 ## 3. NestJS Architecture (`apps/vendor-service`)
 
 ### Directory Structure:
+
 ```
 apps/vendor-service/
 ├── src/
@@ -256,6 +258,7 @@ apps/vendor-service/
 ## 4. REST Endpoints & Contracts
 
 ### Public / Merchant Endpoints:
+
 - `POST /api/v1/vendors`
   - Body: Legal name, organization type, registration number, tax ID, country, business profile, authorized representative.
   - Creates Vendor in `DRAFT` status and assigns creator as `OWNER`.
@@ -273,6 +276,7 @@ apps/vendor-service/
   - Returns list of organizations associated with current Clerk user.
 
 ### Admin Backoffice Endpoints:
+
 - `GET /api/v1/admin/vendors`
   - Query parameters: `status`, `country`, `search`, `page`, `limit`.
 - `GET /api/v1/admin/vendors/:vendorId`
@@ -291,6 +295,7 @@ apps/vendor-service/
 ## 5. Event-Driven Architecture (`@repo/kafka`)
 
 ### Topics:
+
 - `vendor.registered`
 - `vendor.verification.requested`
 - `vendor.verified`
@@ -303,6 +308,7 @@ All payloads implement the `{ value: T }` envelope pattern and are typed in `@re
 ---
 
 ## 6. Monorepo Integration Checklist
+
 1. **`packages/types`**: Export vendor schemas, DTOs, and event payloads.
 2. **`packages/vendor-db`**: Prisma schema, migration scripts, and generated Prisma client.
 3. **`packages/kafka`**: Topic definitions in `init-topics.ts`.

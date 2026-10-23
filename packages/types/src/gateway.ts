@@ -8,6 +8,8 @@ export const GATEWAY_HEADERS = {
   INTERNAL_SECRET: "x-internal-secret",
   USER_ID: "x-user-id",
   USER_ROLE: "x-user-role",
+  IS_SUPER_ADMIN: "x-user-is-super-admin",
+  IS_SELLER: "x-user-is-seller",
   GUEST_TOKEN: "x-guest-token",
   FORWARDED_FOR: "x-forwarded-for",
   IDEMPOTENCY_KEY: "idempotency-key",

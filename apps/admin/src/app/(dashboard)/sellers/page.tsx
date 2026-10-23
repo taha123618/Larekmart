@@ -7,15 +7,11 @@ import {
   fetchAdminSellers,
   fetchAdminSellerDetails,
   updateAdminSellerStatus,
+  fetchSystemSettings,
   type AdminSellerListItem,
 } from "@/services/seller.service";
 import type { SellerStatus } from "@repo/types";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +56,9 @@ export default function SellersAdminPage() {
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
 
   // Status Change Sheet state
-  const [statusSeller, setStatusSeller] = useState<AdminSellerListItem | null>(null);
+  const [statusSeller, setStatusSeller] = useState<AdminSellerListItem | null>(
+    null,
+  );
   const [newStatus, setNewStatus] = useState<SellerStatus>("ACTIVE");
   const [statusReason, setStatusReason] = useState("");
 
@@ -81,18 +79,25 @@ export default function SellersAdminPage() {
   });
 
   // 2. Query selected seller details
-  const {
-    data: selectedSellerDetails,
-    isLoading: isLoadingDetails,
-  } = useQuery({
-    queryKey: ["admin-seller-details", selectedSellerId],
-    queryFn: async () => {
-      if (!selectedSellerId) return null;
-      const token = await getToken();
-      return fetchAdminSellerDetails(selectedSellerId, token || undefined);
+  const { data: selectedSellerDetails, isLoading: isLoadingDetails } = useQuery(
+    {
+      queryKey: ["admin-seller-details", selectedSellerId],
+      queryFn: async () => {
+        if (!selectedSellerId) return null;
+        const token = await getToken();
+        return fetchAdminSellerDetails(selectedSellerId, token || undefined);
+      },
+      enabled: !!selectedSellerId,
     },
-    enabled: !!selectedSellerId,
+  );
+
+  // 3. Query system settings to detect if seller functionality is enabled
+  const { data: systemSettings } = useQuery({
+    queryKey: ["marketplace-system-settings"],
+    queryFn: () => fetchSystemSettings().catch(() => null),
   });
+
+  const isSellerEnabled = systemSettings?.isSellerEnabled ?? true;
 
   const statusMutation = useMutation({
     mutationFn: async ({
@@ -105,7 +110,11 @@ export default function SellersAdminPage() {
       reason: string;
     }) => {
       const token = await getToken();
-      return updateAdminSellerStatus(id, { status, reason }, token || undefined);
+      return updateAdminSellerStatus(
+        id,
+        { status, reason },
+        token || undefined,
+      );
     },
     onSuccess: () => {
       toast.success("Seller account status updated successfully");
@@ -131,14 +140,20 @@ export default function SellersAdminPage() {
     const storeName = s.store?.name?.toLowerCase() || "";
     const storeSlug = s.store?.slug?.toLowerCase() || "";
     const vendorId = s.vendorId?.toLowerCase() || "";
-    return storeName.includes(q) || storeSlug.includes(q) || vendorId.includes(q);
+    return (
+      storeName.includes(q) || storeSlug.includes(q) || vendorId.includes(q)
+    );
   });
 
   // Counts
   const totalSellers = allSellers.length;
   const activeCount = allSellers.filter((s) => s.status === "ACTIVE").length;
-  const onboardingCount = allSellers.filter((s) => s.status === "ONBOARDING").length;
-  const suspendedCount = allSellers.filter((s) => s.status === "SUSPENDED").length;
+  const onboardingCount = allSellers.filter(
+    (s) => s.status === "ONBOARDING",
+  ).length;
+  const suspendedCount = allSellers.filter(
+    (s) => s.status === "SUSPENDED",
+  ).length;
 
   const getSellerStatusBadge = (status: SellerStatus | string) => {
     switch (status) {
@@ -158,11 +173,26 @@ export default function SellersAdminPage() {
   const getStoreStatusBadge = (status?: string | null) => {
     switch (status) {
       case "ACTIVE":
-        return <Badge variant="outline" className="border-emerald-600 text-emerald-600">STORE OPEN</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="border-emerald-600 text-emerald-600"
+          >
+            STORE OPEN
+          </Badge>
+        );
       case "VACATION":
-        return <Badge variant="outline" className="border-amber-500 text-amber-500">VACATION</Badge>;
+        return (
+          <Badge variant="outline" className="border-amber-500 text-amber-500">
+            VACATION
+          </Badge>
+        );
       case "MAINTENANCE":
-        return <Badge variant="outline" className="border-blue-500 text-blue-500">MAINTENANCE</Badge>;
+        return (
+          <Badge variant="outline" className="border-blue-500 text-blue-500">
+            MAINTENANCE
+          </Badge>
+        );
       case "CLOSED":
         return <Badge variant="destructive">CLOSED</Badge>;
       default:
@@ -180,20 +210,48 @@ export default function SellersAdminPage() {
             Seller & Storefront Management
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Marketplace seller storefronts, staff permissions, operational policies, and performance ratings.
+            Marketplace seller storefronts, staff permissions, operational
+            policies, and performance ratings.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetchSellers()}
-          >
+          <Button variant="outline" size="sm" onClick={() => refetchSellers()}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
         </div>
       </div>
+
+      {!isSellerEnabled && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-900 dark:text-amber-200">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                Marketplace & Seller Operations are Currently Disabled
+              </h3>
+              <p className="mt-1 text-xs text-amber-700/90 dark:text-amber-400/90">
+                A Super Admin has toggled{" "}
+                <code className="font-mono bg-amber-500/20 px-1 py-0.5 rounded">
+                  isSellerEnabled = false
+                </code>
+                . Public storefronts and seller onboarding routes are blocked
+                across the platform. All existing seller accounts and store
+                configurations remain securely preserved in read-only audit
+                mode. To resume operations, a Super Admin can toggle the feature
+                on in{" "}
+                <a
+                  href="/settings"
+                  className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-100"
+                >
+                  Platform Settings
+                </a>
+                .
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -208,7 +266,9 @@ export default function SellersAdminPage() {
             <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               {totalSellers}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">Merchant storefront accounts</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              Merchant storefront accounts
+            </p>
           </CardContent>
         </Card>
 
@@ -223,7 +283,9 @@ export default function SellersAdminPage() {
             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {activeCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">Accepting customer orders</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              Accepting customer orders
+            </p>
           </CardContent>
         </Card>
 
@@ -238,7 +300,9 @@ export default function SellersAdminPage() {
             <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               {onboardingCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">Setting up store & policies</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              Setting up store & policies
+            </p>
           </CardContent>
         </Card>
 
@@ -253,7 +317,9 @@ export default function SellersAdminPage() {
             <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">
               {suspendedCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">Policy violations or reviews</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              Policy violations or reviews
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -273,16 +339,18 @@ export default function SellersAdminPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-neutral-500">Filter status:</span>
-              {["ALL", "ACTIVE", "ONBOARDING", "SUSPENDED", "INACTIVE"].map((st) => (
-                <Button
-                  key={st}
-                  variant={statusFilter === st ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStatusFilter(st)}
-                >
-                  {st === "ALL" ? "All" : st}
-                </Button>
-              ))}
+              {["ALL", "ACTIVE", "ONBOARDING", "SUSPENDED", "INACTIVE"].map(
+                (st) => (
+                  <Button
+                    key={st}
+                    variant={statusFilter === st ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setStatusFilter(st)}
+                  >
+                    {st === "ALL" ? "All" : st}
+                  </Button>
+                ),
+              )}
             </div>
           </div>
         </CardHeader>
@@ -323,12 +391,18 @@ export default function SellersAdminPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-xs">{seller.vendorId.slice(0, 8)}...</span>
+                      <span className="font-mono text-xs">
+                        {seller.vendorId.slice(0, 8)}...
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <span className="font-semibold text-xs">{seller.primaryCurrency}</span>
+                      <span className="font-semibold text-xs">
+                        {seller.primaryCurrency}
+                      </span>
                     </TableCell>
-                    <TableCell>{getStoreStatusBadge(seller.store?.status)}</TableCell>
+                    <TableCell>
+                      {getStoreStatusBadge(seller.store?.status)}
+                    </TableCell>
                     <TableCell>{getSellerStatusBadge(seller.status)}</TableCell>
                     <TableCell className="text-xs text-neutral-500">
                       {new Date(seller.createdAt).toLocaleDateString()}
@@ -347,7 +421,11 @@ export default function SellersAdminPage() {
                         size="sm"
                         onClick={() => {
                           setStatusSeller(seller);
-                          setNewStatus(seller.status === "SUSPENDED" ? "ACTIVE" : "SUSPENDED");
+                          setNewStatus(
+                            seller.status === "SUSPENDED"
+                              ? "ACTIVE"
+                              : "SUSPENDED",
+                          );
                           setStatusReason("");
                         }}
                         title="Update Seller Status"
@@ -368,7 +446,10 @@ export default function SellersAdminPage() {
       </Card>
 
       {/* SELLER DETAILS & PERFORMANCE SHEET */}
-      <Sheet open={!!selectedSellerId} onOpenChange={(open) => !open && setSelectedSellerId(null)}>
+      <Sheet
+        open={!!selectedSellerId}
+        onOpenChange={(open) => !open && setSelectedSellerId(null)}
+      >
         <SheetContent className="sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
@@ -376,7 +457,8 @@ export default function SellersAdminPage() {
               Seller Profile & Storefront
             </SheetTitle>
             <SheetDescription>
-              Storefront configuration, policies, staff, and live performance metrics.
+              Storefront configuration, policies, staff, and live performance
+              metrics.
             </SheetDescription>
           </SheetHeader>
 
@@ -390,11 +472,15 @@ export default function SellersAdminPage() {
               <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div>
                   <div className="text-xs text-neutral-500">Account Status</div>
-                  <div className="mt-1">{getSellerStatusBadge(selectedSellerDetails.status)}</div>
+                  <div className="mt-1">
+                    {getSellerStatusBadge(selectedSellerDetails.status)}
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-neutral-500">Store Status</div>
-                  <div className="mt-1">{getStoreStatusBadge(selectedSellerDetails.store?.status)}</div>
+                  <div className="mt-1">
+                    {getStoreStatusBadge(selectedSellerDetails.store?.status)}
+                  </div>
                 </div>
               </div>
 
@@ -420,17 +506,22 @@ export default function SellersAdminPage() {
                     </div>
                     <div>
                       <span className="text-neutral-400">Currency:</span>
-                      <p className="font-semibold">{selectedSellerDetails.primaryCurrency}</p>
+                      <p className="font-semibold">
+                        {selectedSellerDetails.primaryCurrency}
+                      </p>
                     </div>
                     <div>
                       <span className="text-neutral-400">Clerk Owner ID:</span>
-                      <p className="font-mono truncate">{selectedSellerDetails.ownerUserId}</p>
+                      <p className="font-mono truncate">
+                        {selectedSellerDetails.ownerUserId}
+                      </p>
                     </div>
                   </div>
                   <div>
                     <span className="text-neutral-400">Description:</span>
                     <p className="font-normal mt-0.5 text-neutral-600 dark:text-neutral-300">
-                      {selectedSellerDetails.store?.description || "No description provided."}
+                      {selectedSellerDetails.store?.description ||
+                        "No description provided."}
                     </p>
                   </div>
                 </div>
@@ -449,19 +540,30 @@ export default function SellersAdminPage() {
                     <div className="p-2.5 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-center">
                       <div className="text-neutral-400">Seller Score</div>
                       <div className="text-lg font-bold text-emerald-600">
-                        {selectedSellerDetails.latestPerformance.sellerScore.toFixed(1)}/100
+                        {selectedSellerDetails.latestPerformance.sellerScore.toFixed(
+                          1,
+                        )}
+                        /100
                       </div>
                     </div>
                     <div className="p-2.5 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-center">
                       <div className="text-neutral-400">Fulfillment</div>
                       <div className="text-lg font-bold text-indigo-600">
-                        {(selectedSellerDetails.latestPerformance.fulfillmentRate * 100).toFixed(0)}%
+                        {(
+                          selectedSellerDetails.latestPerformance
+                            .fulfillmentRate * 100
+                        ).toFixed(0)}
+                        %
                       </div>
                     </div>
                     <div className="p-2.5 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-center">
                       <div className="text-neutral-400">On-Time Rate</div>
                       <div className="text-lg font-bold text-blue-600">
-                        {(selectedSellerDetails.latestPerformance.onTimeDeliveryRate * 100).toFixed(0)}%
+                        {(
+                          selectedSellerDetails.latestPerformance
+                            .onTimeDeliveryRate * 100
+                        ).toFixed(0)}
+                        %
                       </div>
                     </div>
                   </div>
@@ -477,7 +579,8 @@ export default function SellersAdminPage() {
                 <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
                   Store Policies ({selectedSellerDetails.policies?.length || 0})
                 </h3>
-                {selectedSellerDetails.policies && selectedSellerDetails.policies.length > 0 ? (
+                {selectedSellerDetails.policies &&
+                selectedSellerDetails.policies.length > 0 ? (
                   <div className="space-y-2">
                     {selectedSellerDetails.policies.map((p) => (
                       <div
@@ -486,7 +589,9 @@ export default function SellersAdminPage() {
                       >
                         <div className="flex items-center justify-between font-semibold">
                           <span>{p.policyType} Policy</span>
-                          <span className="text-neutral-400 text-[10px]">v{p.version}</span>
+                          <span className="text-neutral-400 text-[10px]">
+                            v{p.version}
+                          </span>
                         </div>
                         <p className="text-neutral-600 dark:text-neutral-300 line-clamp-2">
                           {p.content}
@@ -495,7 +600,9 @@ export default function SellersAdminPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-neutral-400 italic">No custom policies configured.</p>
+                  <p className="text-xs text-neutral-400 italic">
+                    No custom policies configured.
+                  </p>
                 )}
               </div>
 
@@ -505,7 +612,8 @@ export default function SellersAdminPage() {
                   <Users className="h-4 w-4 text-neutral-500" />
                   Staff Members ({selectedSellerDetails.staff?.length || 0})
                 </h3>
-                {selectedSellerDetails.staff && selectedSellerDetails.staff.length > 0 ? (
+                {selectedSellerDetails.staff &&
+                selectedSellerDetails.staff.length > 0 ? (
                   <div className="space-y-1.5">
                     {selectedSellerDetails.staff.map((member) => (
                       <div
@@ -513,7 +621,9 @@ export default function SellersAdminPage() {
                         className="flex items-center justify-between p-2 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs"
                       >
                         <div>
-                          <span className="font-mono text-xs">{member.userId}</span>
+                          <span className="font-mono text-xs">
+                            {member.userId}
+                          </span>
                           <div className="text-[10px] text-neutral-400">
                             Role: {member.role}
                           </div>
@@ -523,19 +633,27 @@ export default function SellersAdminPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-neutral-400 italic">No additional staff members.</p>
+                  <p className="text-xs text-neutral-400 italic">
+                    No additional staff members.
+                  </p>
                 )}
               </div>
 
               {/* Actions */}
               <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
                 <Button
-                  variant={selectedSellerDetails.status === "SUSPENDED" ? "default" : "destructive"}
+                  variant={
+                    selectedSellerDetails.status === "SUSPENDED"
+                      ? "default"
+                      : "destructive"
+                  }
                   className="w-full"
                   onClick={() => {
                     setStatusSeller(selectedSellerDetails);
                     setNewStatus(
-                      selectedSellerDetails.status === "SUSPENDED" ? "ACTIVE" : "SUSPENDED",
+                      selectedSellerDetails.status === "SUSPENDED"
+                        ? "ACTIVE"
+                        : "SUSPENDED",
                     );
                     setStatusReason("");
                   }}
@@ -559,7 +677,10 @@ export default function SellersAdminPage() {
       </Sheet>
 
       {/* STATUS CHANGE DIALOG / SHEET */}
-      <Sheet open={!!statusSeller} onOpenChange={(open) => !open && setStatusSeller(null)}>
+      <Sheet
+        open={!!statusSeller}
+        onOpenChange={(open) => !open && setStatusSeller(null)}
+      >
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Update Seller Status</SheetTitle>
@@ -567,7 +688,8 @@ export default function SellersAdminPage() {
               Change status for storefront{" "}
               <span className="font-semibold">
                 {statusSeller?.store?.name || statusSeller?.id}
-              </span>.
+              </span>
+              .
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-4 pt-4">
@@ -576,17 +698,19 @@ export default function SellersAdminPage() {
                 Target Status
               </label>
               <div className="grid grid-cols-3 gap-2 mt-1">
-                {(["ACTIVE", "SUSPENDED", "INACTIVE"] as SellerStatus[]).map((st) => (
-                  <Button
-                    key={st}
-                    type="button"
-                    variant={newStatus === st ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setNewStatus(st)}
-                  >
-                    {st}
-                  </Button>
-                ))}
+                {(["ACTIVE", "SUSPENDED", "INACTIVE"] as SellerStatus[]).map(
+                  (st) => (
+                    <Button
+                      key={st}
+                      type="button"
+                      variant={newStatus === st ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setNewStatus(st)}
+                    >
+                      {st}
+                    </Button>
+                  ),
+                )}
               </div>
             </div>
 

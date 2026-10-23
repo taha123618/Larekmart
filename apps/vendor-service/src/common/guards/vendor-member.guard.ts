@@ -54,6 +54,8 @@ export class VendorMemberGuard implements CanActivate {
       return true;
     }
 
-    throw new ForbiddenException("You are not an authorized member of this vendor organization");
+    throw new ForbiddenException(
+      "You are not an authorized member of this vendor organization",
+    );
   }
 }

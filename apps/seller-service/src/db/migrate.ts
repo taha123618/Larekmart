@@ -103,6 +103,17 @@ export async function runMigrations(): Promise<void> {
         calculated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
       );
       CREATE INDEX IF NOT EXISTS seller_perf_seller_id_idx ON seller_performance_snapshots(seller_id);
+
+      CREATE TABLE IF NOT EXISTS system_settings (
+        id VARCHAR(64) PRIMARY KEY,
+        is_seller_enabled BOOLEAN DEFAULT TRUE NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+        updated_by VARCHAR(128)
+      );
+
+      INSERT INTO system_settings (id, is_seller_enabled, updated_at)
+      VALUES ('marketplace', TRUE, NOW())
+      ON CONFLICT (id) DO NOTHING;
     `);
 
     console.log("[SellerService] Migrations completed successfully.");

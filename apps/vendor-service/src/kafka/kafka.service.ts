@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from "@nestjs/common";
 import { createKafkaClient, createProducer } from "@repo/kafka";
 import { env } from "../config/env.js";
 
@@ -10,7 +15,9 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     if (env.NODE_ENV === "test") {
-      this.logger.log("Kafka running in test mode - real broker connection skipped");
+      this.logger.log(
+        "Kafka running in test mode - real broker connection skipped",
+      );
       return;
     }
 
@@ -39,7 +46,9 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
   async emitEvent(topic: string, payload: object): Promise<void> {
     if (!this.isConnected || !this.producer) {
-      this.logger.warn(`Kafka not connected. Emitting mock event for topic: ${topic}`);
+      this.logger.warn(
+        `Kafka not connected. Emitting mock event for topic: ${topic}`,
+      );
       return;
     }
 

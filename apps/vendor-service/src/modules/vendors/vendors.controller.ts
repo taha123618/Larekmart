@@ -13,7 +13,11 @@ import {
 import { VendorsService } from "./vendors.service.js";
 import { AuthGuard } from "../../common/guards/auth.guard.js";
 import { VendorMemberGuard } from "../../common/guards/vendor-member.guard.js";
-import type { CreateVendorInput, UpdateVendorInput, SubmitVerificationInput } from "@repo/types";
+import type {
+  CreateVendorInput,
+  UpdateVendorInput,
+  SubmitVerificationInput,
+} from "@repo/types";
 
 @Controller("api/v1/vendors")
 @UseGuards(AuthGuard)

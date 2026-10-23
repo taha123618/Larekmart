@@ -12,6 +12,7 @@ import {
   fetchPendingVerifications,
   type AdminVendorListItem,
 } from "@/services/vendor.service";
+import { fetchSystemSettings } from "@/services/seller.service";
 import type { VendorStatus } from "@repo/types";
 import {
   Card,
@@ -70,11 +71,15 @@ export default function VendorsAdminPage() {
 
   // KYB Verification Sheet state
   const [kybVendor, setKybVendor] = useState<AdminVendorListItem | null>(null);
-  const [kybDecision, setKybDecision] = useState<"APPROVED" | "REJECTED">("APPROVED");
+  const [kybDecision, setKybDecision] = useState<"APPROVED" | "REJECTED">(
+    "APPROVED",
+  );
   const [kybNotes, setKybNotes] = useState("");
 
   // Status Change Sheet state
-  const [statusVendor, setStatusVendor] = useState<AdminVendorListItem | null>(null);
+  const [statusVendor, setStatusVendor] = useState<AdminVendorListItem | null>(
+    null,
+  );
   const [newStatus, setNewStatus] = useState<VendorStatus>("SUSPENDED");
   const [statusReason, setStatusReason] = useState("");
 
@@ -108,18 +113,25 @@ export default function VendorsAdminPage() {
   });
 
   // 3. Query selected vendor details
-  const {
-    data: selectedVendorDetails,
-    isLoading: isLoadingDetails,
-  } = useQuery({
-    queryKey: ["admin-vendor-details", selectedVendorId],
-    queryFn: async () => {
-      if (!selectedVendorId) return null;
-      const token = await getToken();
-      return fetchAdminVendorDetails(selectedVendorId, token || undefined);
+  const { data: selectedVendorDetails, isLoading: isLoadingDetails } = useQuery(
+    {
+      queryKey: ["admin-vendor-details", selectedVendorId],
+      queryFn: async () => {
+        if (!selectedVendorId) return null;
+        const token = await getToken();
+        return fetchAdminVendorDetails(selectedVendorId, token || undefined);
+      },
+      enabled: !!selectedVendorId,
     },
-    enabled: !!selectedVendorId,
+  );
+
+  // 4. Query system settings to detect if seller/vendor functionality is enabled
+  const { data: systemSettings } = useQuery({
+    queryKey: ["marketplace-system-settings"],
+    queryFn: () => fetchSystemSettings().catch(() => null),
   });
+
+  const isSellerEnabled = systemSettings?.isSellerEnabled ?? true;
 
   // Mutations
   const verifyMutation = useMutation({
@@ -144,7 +156,9 @@ export default function VendorsAdminPage() {
       setKybVendor(null);
       setKybNotes("");
       queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-pending-verifications"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-pending-verifications"],
+      });
       if (selectedVendorId) {
         queryClient.invalidateQueries({
           queryKey: ["admin-vendor-details", selectedVendorId],
@@ -238,11 +252,15 @@ export default function VendorsAdminPage() {
 
   // Calculate high-level summary counts
   const totalVendors = allVendors.length;
-  const verifiedCount = allVendors.filter((v) => v.status === "VERIFIED").length;
+  const verifiedCount = allVendors.filter(
+    (v) => v.status === "VERIFIED",
+  ).length;
   const pendingCount = allVendors.filter(
     (v) => v.status === "PENDING_VERIFICATION" || v.status === "DRAFT",
   ).length;
-  const suspendedCount = allVendors.filter((v) => v.status === "SUSPENDED").length;
+  const suspendedCount = allVendors.filter(
+    (v) => v.status === "SUSPENDED",
+  ).length;
 
   const getStatusBadge = (status: VendorStatus | string) => {
     switch (status) {
@@ -273,7 +291,8 @@ export default function VendorsAdminPage() {
             Vendor & Business KYB Management
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Authoritative legal business entities, merchant KYB compliance, and verification workflows.
+            Authoritative legal business entities, merchant KYB compliance, and
+            verification workflows.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -291,6 +310,36 @@ export default function VendorsAdminPage() {
         </div>
       </div>
 
+      {!isSellerEnabled && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-900 dark:text-amber-200">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                Marketplace & Vendor Operations are Currently Disabled
+              </h3>
+              <p className="mt-1 text-xs text-amber-700/90 dark:text-amber-400/90">
+                A Super Admin has toggled{" "}
+                <code className="font-mono bg-amber-500/20 px-1 py-0.5 rounded">
+                  isSellerEnabled = false
+                </code>
+                . Merchant onboarding and seller storefronts are suspended
+                across the platform. Legal vendor organizations, business
+                profiles, and KYB documents remain intact in read-only audit
+                mode. A Super Admin can reactivate operations anytime in{" "}
+                <a
+                  href="/settings"
+                  className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-100"
+                >
+                  Platform Settings
+                </a>
+                .
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="border-neutral-200 dark:border-neutral-800">
@@ -304,7 +353,9 @@ export default function VendorsAdminPage() {
             <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               {totalVendors}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">Across all jurisdictions</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              Across all jurisdictions
+            </p>
           </CardContent>
         </Card>
 
@@ -319,7 +370,9 @@ export default function VendorsAdminPage() {
             <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               {pendingCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">Awaiting compliance review</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              Awaiting compliance review
+            </p>
           </CardContent>
         </Card>
 
@@ -334,7 +387,9 @@ export default function VendorsAdminPage() {
             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {verifiedCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">Fully approved businesses</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              Fully approved businesses
+            </p>
           </CardContent>
         </Card>
 
@@ -349,7 +404,9 @@ export default function VendorsAdminPage() {
             <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">
               {suspendedCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">Flagged or suspended</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              Flagged or suspended
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -390,18 +447,22 @@ export default function VendorsAdminPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-neutral-500">Filter status:</span>
-                {["ALL", "PENDING_VERIFICATION", "VERIFIED", "SUSPENDED", "DRAFT"].map(
-                  (st) => (
-                    <Button
-                      key={st}
-                      variant={statusFilter === st ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStatusFilter(st)}
-                    >
-                      {st === "ALL" ? "All" : st.replace("_", " ")}
-                    </Button>
-                  ),
-                )}
+                {[
+                  "ALL",
+                  "PENDING_VERIFICATION",
+                  "VERIFIED",
+                  "SUSPENDED",
+                  "DRAFT",
+                ].map((st) => (
+                  <Button
+                    key={st}
+                    variant={statusFilter === st ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setStatusFilter(st)}
+                  >
+                    {st === "ALL" ? "All" : st.replace("_", " ")}
+                  </Button>
+                ))}
               </div>
             </div>
           </CardHeader>
@@ -441,8 +502,12 @@ export default function VendorsAdminPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="font-mono text-xs">{vendor.registrationNumber}</div>
-                        <div className="text-xs text-neutral-400">Tax: {vendor.taxIdentifier}</div>
+                        <div className="font-mono text-xs">
+                          {vendor.registrationNumber}
+                        </div>
+                        <div className="text-xs text-neutral-400">
+                          Tax: {vendor.taxIdentifier}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <span className="text-xs font-medium px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800">
@@ -450,7 +515,9 @@ export default function VendorsAdminPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="font-semibold text-xs">{vendor.country}</span>
+                        <span className="font-semibold text-xs">
+                          {vendor.country}
+                        </span>
                       </TableCell>
                       <TableCell>{getStatusBadge(vendor.status)}</TableCell>
                       <TableCell className="text-xs text-neutral-500">
@@ -483,7 +550,9 @@ export default function VendorsAdminPage() {
                           onClick={() => {
                             setStatusVendor(vendor);
                             setNewStatus(
-                              vendor.status === "SUSPENDED" ? "VERIFIED" : "SUSPENDED",
+                              vendor.status === "SUSPENDED"
+                                ? "VERIFIED"
+                                : "SUSPENDED",
                             );
                             setStatusReason("");
                           }}
@@ -507,7 +576,8 @@ export default function VendorsAdminPage() {
           <CardHeader>
             <CardTitle>Pending KYB Verification Queue</CardTitle>
             <CardDescription>
-              Review business registration certificates, tax identifiers, and compliance dossiers.
+              Review business registration certificates, tax identifiers, and
+              compliance dossiers.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
@@ -518,7 +588,9 @@ export default function VendorsAdminPage() {
             ) : pendingVerifications.length === 0 ? (
               <div className="p-12 text-center text-neutral-500">
                 <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500 mb-2" />
-                <p className="font-medium">No pending KYB verifications in queue!</p>
+                <p className="font-medium">
+                  No pending KYB verifications in queue!
+                </p>
                 <p className="text-xs text-neutral-400 mt-1">
                   All submitted business profiles have been reviewed.
                 </p>
@@ -538,13 +610,19 @@ export default function VendorsAdminPage() {
                 <TableBody>
                   {pendingVerifications.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-mono text-xs">{item.id.slice(0, 8)}...</TableCell>
-                      <TableCell className="font-mono text-xs">{item.vendorId}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {item.id.slice(0, 8)}...
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {item.vendorId}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">{item.workflowType}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-amber-500 text-white">{item.status}</Badge>
+                        <Badge className="bg-amber-500 text-white">
+                          {item.status}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-neutral-500">
                         {new Date(item.submittedAt).toLocaleString()}
@@ -556,7 +634,8 @@ export default function VendorsAdminPage() {
                             setSelectedVendorId(item.vendorId);
                           }}
                         >
-                          Review Dossier <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                          Review Dossier{" "}
+                          <ArrowRight className="ml-1 h-3.5 w-3.5" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -569,7 +648,10 @@ export default function VendorsAdminPage() {
       )}
 
       {/* VENDOR DETAILS SHEET */}
-      <Sheet open={!!selectedVendorId} onOpenChange={(open) => !open && setSelectedVendorId(null)}>
+      <Sheet
+        open={!!selectedVendorId}
+        onOpenChange={(open) => !open && setSelectedVendorId(null)}
+      >
         <SheetContent className="sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
@@ -577,7 +659,8 @@ export default function VendorsAdminPage() {
               Vendor Entity Profile
             </SheetTitle>
             <SheetDescription>
-              Legal organization record, compliance documents, and authorization structure.
+              Legal organization record, compliance documents, and authorization
+              structure.
             </SheetDescription>
           </SheetHeader>
 
@@ -591,10 +674,14 @@ export default function VendorsAdminPage() {
               <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div>
                   <div className="text-xs text-neutral-500">Current Status</div>
-                  <div className="mt-1">{getStatusBadge(selectedVendorDetails.status)}</div>
+                  <div className="mt-1">
+                    {getStatusBadge(selectedVendorDetails.status)}
+                  </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-neutral-500">Organization Type</div>
+                  <div className="text-xs text-neutral-500">
+                    Organization Type
+                  </div>
                   <div className="text-sm font-semibold mt-1">
                     {selectedVendorDetails.organizationType}
                   </div>
@@ -610,27 +697,41 @@ export default function VendorsAdminPage() {
                 <div className="grid grid-cols-2 gap-2 text-xs p-3 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                   <div>
                     <span className="text-neutral-400">Legal Name:</span>
-                    <p className="font-semibold">{selectedVendorDetails.legalName}</p>
+                    <p className="font-semibold">
+                      {selectedVendorDetails.legalName}
+                    </p>
                   </div>
                   <div>
                     <span className="text-neutral-400">Trade Name (DBA):</span>
-                    <p className="font-semibold">{selectedVendorDetails.tradeName || "None"}</p>
+                    <p className="font-semibold">
+                      {selectedVendorDetails.tradeName || "None"}
+                    </p>
                   </div>
                   <div>
                     <span className="text-neutral-400">Registration #:</span>
-                    <p className="font-mono font-semibold">{selectedVendorDetails.registrationNumber}</p>
+                    <p className="font-mono font-semibold">
+                      {selectedVendorDetails.registrationNumber}
+                    </p>
                   </div>
                   <div>
                     <span className="text-neutral-400">Tax Identifier:</span>
-                    <p className="font-mono font-semibold">{selectedVendorDetails.taxIdentifier}</p>
+                    <p className="font-mono font-semibold">
+                      {selectedVendorDetails.taxIdentifier}
+                    </p>
                   </div>
                   <div>
-                    <span className="text-neutral-400">Country of Registration:</span>
-                    <p className="font-semibold">{selectedVendorDetails.country}</p>
+                    <span className="text-neutral-400">
+                      Country of Registration:
+                    </span>
+                    <p className="font-semibold">
+                      {selectedVendorDetails.country}
+                    </p>
                   </div>
                   <div>
                     <span className="text-neutral-400">Clerk Owner ID:</span>
-                    <p className="font-mono">{selectedVendorDetails.ownerUserId}</p>
+                    <p className="font-mono">
+                      {selectedVendorDetails.ownerUserId}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -646,47 +747,77 @@ export default function VendorsAdminPage() {
                       <div>
                         <span className="text-neutral-400">Industry:</span>
                         <p className="font-semibold">
-                          {selectedVendorDetails.businessProfile.industryCategory}
+                          {
+                            selectedVendorDetails.businessProfile
+                              .industryCategory
+                          }
                         </p>
                       </div>
                       <div>
                         <span className="text-neutral-400">Website:</span>
                         <p className="font-semibold truncate">
-                          {selectedVendorDetails.businessProfile.websiteUrl || "N/A"}
+                          {selectedVendorDetails.businessProfile.websiteUrl ||
+                            "N/A"}
                         </p>
                       </div>
                       <div>
-                        <span className="text-neutral-400">Business Email:</span>
+                        <span className="text-neutral-400">
+                          Business Email:
+                        </span>
                         <p className="font-semibold">
                           {selectedVendorDetails.businessProfile.businessEmail}
                         </p>
                       </div>
                       <div>
-                        <span className="text-neutral-400">Business Phone:</span>
+                        <span className="text-neutral-400">
+                          Business Phone:
+                        </span>
                         <p className="font-semibold">
                           {selectedVendorDetails.businessProfile.businessPhone}
                         </p>
                       </div>
                     </div>
                     <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800">
-                      <span className="text-neutral-400">Registered Office Address:</span>
+                      <span className="text-neutral-400">
+                        Registered Office Address:
+                      </span>
                       <p className="font-medium">
-                        {selectedVendorDetails.businessProfile.registeredAddressLine1},{" "}
-                        {selectedVendorDetails.businessProfile.city},{" "}
+                        {
+                          selectedVendorDetails.businessProfile
+                            .registeredAddressLine1
+                        }
+                        , {selectedVendorDetails.businessProfile.city},{" "}
                         {selectedVendorDetails.businessProfile.state}{" "}
                         {selectedVendorDetails.businessProfile.postalCode},{" "}
                         {selectedVendorDetails.businessProfile.country}
                       </p>
                     </div>
                     <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800">
-                      <span className="text-neutral-400">Authorized Representative:</span>
+                      <span className="text-neutral-400">
+                        Authorized Representative:
+                      </span>
                       <p className="font-semibold">
-                        {selectedVendorDetails.businessProfile.authorizedRepresentativeName} (
-                        {selectedVendorDetails.businessProfile.authorizedRepresentativeRole})
+                        {
+                          selectedVendorDetails.businessProfile
+                            .authorizedRepresentativeName
+                        }{" "}
+                        (
+                        {
+                          selectedVendorDetails.businessProfile
+                            .authorizedRepresentativeRole
+                        }
+                        )
                       </p>
                       <p className="text-neutral-500">
-                        {selectedVendorDetails.businessProfile.authorizedRepresentativeEmail} •{" "}
-                        {selectedVendorDetails.businessProfile.authorizedRepresentativePhone}
+                        {
+                          selectedVendorDetails.businessProfile
+                            .authorizedRepresentativeEmail
+                        }{" "}
+                        •{" "}
+                        {
+                          selectedVendorDetails.businessProfile
+                            .authorizedRepresentativePhone
+                        }
                       </p>
                     </div>
                   </div>
@@ -696,9 +827,13 @@ export default function VendorsAdminPage() {
               {/* Compliance Documents */}
               <div className="space-y-2">
                 <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 flex items-center justify-between">
-                  <span>Compliance Documents ({selectedVendorDetails.documents?.length || 0})</span>
+                  <span>
+                    Compliance Documents (
+                    {selectedVendorDetails.documents?.length || 0})
+                  </span>
                 </h3>
-                {selectedVendorDetails.documents && selectedVendorDetails.documents.length > 0 ? (
+                {selectedVendorDetails.documents &&
+                selectedVendorDetails.documents.length > 0 ? (
                   <div className="space-y-2">
                     {selectedVendorDetails.documents.map((doc) => (
                       <div
@@ -706,9 +841,12 @@ export default function VendorsAdminPage() {
                         className="flex items-center justify-between p-2.5 rounded border border-neutral-200 dark:border-neutral-800 text-xs"
                       >
                         <div>
-                          <div className="font-semibold">{doc.documentType.replace(/_/g, " ")}</div>
+                          <div className="font-semibold">
+                            {doc.documentType.replace(/_/g, " ")}
+                          </div>
                           <div className="text-neutral-500">
-                            {doc.fileName} • {(doc.fileSize / 1024).toFixed(1)} KB
+                            {doc.fileName} • {(doc.fileSize / 1024).toFixed(1)}{" "}
+                            KB
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -717,8 +855,8 @@ export default function VendorsAdminPage() {
                               doc.verificationStatus === "ACCEPTED"
                                 ? "bg-emerald-600 text-white"
                                 : doc.verificationStatus === "REJECTED"
-                                ? "bg-rose-600 text-white"
-                                : "bg-amber-500 text-white"
+                                  ? "bg-rose-600 text-white"
+                                  : "bg-amber-500 text-white"
                             }
                           >
                             {doc.verificationStatus}
@@ -748,7 +886,8 @@ export default function VendorsAdminPage() {
                                     vendorId: selectedVendorDetails.id,
                                     docId: doc.id,
                                     status: "REJECTED",
-                                    rejectionReason: "Incomplete or unreadable document",
+                                    rejectionReason:
+                                      "Incomplete or unreadable document",
                                   })
                                 }
                               >
@@ -761,7 +900,9 @@ export default function VendorsAdminPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-neutral-400 italic">No documents uploaded yet.</p>
+                  <p className="text-xs text-neutral-400 italic">
+                    No documents uploaded yet.
+                  </p>
                 )}
               </div>
 
@@ -797,7 +938,10 @@ export default function VendorsAdminPage() {
       </Sheet>
 
       {/* KYB VERIFICATION DECISION DIALOG / SHEET */}
-      <Sheet open={!!kybVendor} onOpenChange={(open) => !open && setKybVendor(null)}>
+      <Sheet
+        open={!!kybVendor}
+        onOpenChange={(open) => !open && setKybVendor(null)}
+      >
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
             <SheetTitle>
@@ -825,7 +969,9 @@ export default function VendorsAdminPage() {
                 </Button>
                 <Button
                   type="button"
-                  variant={kybDecision === "REJECTED" ? "destructive" : "outline"}
+                  variant={
+                    kybDecision === "REJECTED" ? "destructive" : "outline"
+                  }
                   onClick={() => setKybDecision("REJECTED")}
                 >
                   <XCircle className="mr-1.5 h-4 w-4" />
@@ -872,7 +1018,10 @@ export default function VendorsAdminPage() {
       </Sheet>
 
       {/* STATUS CHANGE SHEET */}
-      <Sheet open={!!statusVendor} onOpenChange={(open) => !open && setStatusVendor(null)}>
+      <Sheet
+        open={!!statusVendor}
+        onOpenChange={(open) => !open && setStatusVendor(null)}
+      >
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Update Operational Status</SheetTitle>
@@ -887,7 +1036,9 @@ export default function VendorsAdminPage() {
                 Select Target Status
               </label>
               <div className="grid grid-cols-3 gap-2 mt-1">
-                {(["VERIFIED", "SUSPENDED", "TERMINATED"] as VendorStatus[]).map((st) => (
+                {(
+                  ["VERIFIED", "SUSPENDED", "TERMINATED"] as VendorStatus[]
+                ).map((st) => (
                   <Button
                     key={st}
                     type="button"

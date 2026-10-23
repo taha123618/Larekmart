@@ -12,8 +12,14 @@ import {
   sellerStatusHistory,
   sellerPerformanceSnapshots,
 } from "../db/schema.js";
-import { requireAdmin, getUserId } from "../middleware/auth.middleware.js";
+import {
+  requireAdmin,
+  requireSuperAdmin,
+  getUserId,
+} from "../middleware/auth.middleware.js";
 import { sellerEventProducer } from "../kafka/producer.js";
+import { settingsService } from "../services/settings.service.js";
+import { UpdateSystemSettingsSchema } from "@repo/types";
 
 const SuspendSellerSchema = z.object({
   reason: z.string().min(3),
@@ -300,6 +306,48 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
         .limit(Number(query.limit) || 10);
 
       return reply.send({ snapshots });
+    },
+  );
+
+  // 7. System Settings — Public status query
+  app.get("/api/v1/system-settings", async (_request, reply) => {
+    const settings = await settingsService.getSystemSettings();
+    return reply.send(settings);
+  });
+
+  // 8. System Settings — Admin inspect
+  app.get(
+    "/api/v1/admin/system-settings",
+    { preHandler: [requireAdmin] },
+    async (_request, reply) => {
+      const settings = await settingsService.getSystemSettings();
+      return reply.send(settings);
+    },
+  );
+
+  // 9. System Settings — Super Admin update (strictly gated to Super Admin)
+  app.patch(
+    "/api/v1/admin/system-settings",
+    { preHandler: [requireSuperAdmin] },
+    async (request, reply) => {
+      const parseResult = UpdateSystemSettingsSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          message: "Invalid system settings payload",
+          errors: parseResult.error.flatten(),
+        });
+      }
+
+      const adminId = getUserId(request);
+      const updated = await settingsService.updateSystemSettings(
+        parseResult.data.isSellerEnabled,
+        adminId,
+      );
+
+      return reply.send({
+        message: `Seller/Vendor platform feature successfully ${updated.isSellerEnabled ? "enabled" : "disabled"}`,
+        settings: updated,
+      });
     },
   );
 };

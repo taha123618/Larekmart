@@ -172,3 +172,35 @@ export async function updateSellerStore(
   const data = await res.json();
   return data.store;
 }
+
+/**
+ * Public discovery endpoint: Fetch platform-wide marketplace system settings
+ */
+export async function fetchSystemSettings(): Promise<{
+  id: string;
+  isSellerEnabled: boolean;
+  updatedAt: string;
+  updatedBy?: string | null;
+}> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/system-settings`, {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 30 },
+    });
+    if (!res.ok) {
+      return {
+        id: "marketplace",
+        isSellerEnabled: true,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    return res.json();
+  } catch (err) {
+    console.warn("fetchSystemSettings error:", err);
+    return {
+      id: "marketplace",
+      isSellerEnabled: true,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+}

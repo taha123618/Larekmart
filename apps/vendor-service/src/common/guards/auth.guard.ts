@@ -23,11 +23,14 @@ export class AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
     const userId = request.headers["x-user-id"] as string | undefined;
-    const role = (request.headers["x-user-role"] as string | undefined) || "user";
+    const role =
+      (request.headers["x-user-role"] as string | undefined) || "user";
     const email = request.headers["x-user-email"] as string | undefined;
 
     if (!userId) {
-      throw new UnauthorizedException("Authentication required: Missing x-user-id header");
+      throw new UnauthorizedException(
+        "Authentication required: Missing x-user-id header",
+      );
     }
 
     request.user = {

@@ -97,6 +97,11 @@ export class AdminVendorsController {
     @Headers("x-user-id") adminId: string,
     @Body() body: AdminReviewDocumentInput,
   ) {
-    return this.adminVendorsService.reviewDocument(vendorId, documentId, adminId, body);
+    return this.adminVendorsService.reviewDocument(
+      vendorId,
+      documentId,
+      adminId,
+      body,
+    );
   }
 }

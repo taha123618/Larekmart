@@ -10,6 +10,7 @@ KYB (Know Your Business) verification workflows, business verification documents
 authorized representative access, and lifecycle state management (DRAFT, PENDING_VERIFICATION, VERIFIED, REJECTED, SUSPENDED, TERMINATED, DEACTIVATED).
 
 **Crucial Separation of Concerns:**
+
 - `vendor-service`: Owns legal/business organization identity, registration credentials, business profiles, KYB documents, compliance verification, and representative access controls.
 - `seller-service`: Owns marketplace storefronts, store name/logo/banner, selling operations, seller staff, and marketplace settings. A single verified vendor organization may own one or more seller accounts.
 

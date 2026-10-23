@@ -107,7 +107,11 @@ async function runOrderSecurityTests() {
   console.log("5. Testing IDOR Ownership Logic Invariants...");
 
   function checkOrderAccess(
-    order: { userId: string; sellerId?: string; products?: Array<{ sellerId?: string }> },
+    order: {
+      userId: string;
+      sellerId?: string;
+      products?: Array<{ sellerId?: string }>;
+    },
     request: { userId?: string; userRole?: string },
   ) {
     const isOwner = order.userId === request.userId;
@@ -115,7 +119,8 @@ async function runOrderSecurityTests() {
     const isAssignedSeller =
       request.userRole === "seller" &&
       (order.sellerId === request.userId ||
-        (order.products && order.products.some((p) => p.sellerId === request.userId)));
+        (order.products &&
+          order.products.some((p) => p.sellerId === request.userId)));
 
     if (!isOwner && !isAdmin && !isAssignedSeller) {
       return {

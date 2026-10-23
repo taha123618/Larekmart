@@ -3,8 +3,16 @@
 import { useState, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { registerVendor, getMyVendor, submitVendorVerification } from "@/services/vendor.service";
-import { createSeller, getMySeller } from "@/services/seller.service";
+import {
+  registerVendor,
+  getMyVendor,
+  submitVendorVerification,
+} from "@/services/vendor.service";
+import {
+  createSeller,
+  getMySeller,
+  fetchSystemSettings,
+} from "@/services/seller.service";
 import type { OrganizationType } from "@repo/types";
 import {
   Store,
@@ -16,6 +24,7 @@ import {
   Clock,
   Sparkles,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -32,11 +41,27 @@ export default function BecomeASellerPage() {
     status?: string;
   } | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState(true);
+  const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+
+  useEffect(() => {
+    fetchSystemSettings()
+      .then((settings) => setIsSellerEnabled(settings.isSellerEnabled))
+      .catch(() => setIsSellerEnabled(true))
+      .finally(() => setIsLoadingSettings(false));
+  }, []);
+
+  const userIsSeller = Boolean(
+    user?.publicMetadata?.isSeller ||
+      user?.unsafeMetadata?.isSeller ||
+      user?.publicMetadata?.role === "seller",
+  );
 
   // Form State - Step 1: Legal Business Entity (Vendor)
   const [legalName, setLegalName] = useState("");
   const [tradeName, setTradeName] = useState("");
-  const [organizationType, setOrganizationType] = useState<OrganizationType>("LLC");
+  const [organizationType, setOrganizationType] =
+    useState<OrganizationType>("LLC");
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [taxIdentifier, setTaxIdentifier] = useState("");
   const [country, setCountry] = useState("US");
@@ -120,7 +145,8 @@ export default function BecomeASellerPage() {
     setIsSubmitting(true);
     try {
       const token = await getToken();
-      if (!token) throw new Error("Authentication token expired. Please refresh.");
+      if (!token)
+        throw new Error("Authentication token expired. Please refresh.");
 
       // 1. Register Legal Business Entity (Vendor Service)
       const vendorResult = await registerVendor(
@@ -140,7 +166,8 @@ export default function BecomeASellerPage() {
             state: "State",
             postalCode: "10001",
             country,
-            authorizedRepresentativeName: representativeName || "Authorized Manager",
+            authorizedRepresentativeName:
+              representativeName || "Authorized Manager",
             authorizedRepresentativeEmail: businessEmail,
             authorizedRepresentativePhone: businessPhone,
             authorizedRepresentativeRole: "Principal Officer",
@@ -165,18 +192,27 @@ export default function BecomeASellerPage() {
       try {
         await submitVendorVerification(
           vendorResult.id,
-          { workflowType: "MANUAL_ADMIN", notes: "Self-service onboarding application" },
+          {
+            workflowType: "MANUAL_ADMIN",
+            notes: "Self-service onboarding application",
+          },
           token,
         );
       } catch (verificationErr) {
-        console.warn("Non-fatal verification queue submission warning:", verificationErr);
+        console.warn(
+          "Non-fatal verification queue submission warning:",
+          verificationErr,
+        );
       }
 
       setCreatedSlug(sellerResult.store?.slug || slug);
       setStep(3);
       toast.success("Merchant application submitted successfully!");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to submit registration. Please check input.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to submit registration. Please check input.";
       toast.error(msg);
     } finally {
       setIsSubmitting(false);
@@ -202,26 +238,36 @@ export default function BecomeASellerPage() {
           </h1>
 
           <p className="mt-4 text-base sm:text-lg text-neutral-300 max-w-2xl mx-auto">
-            Open your digital storefront on Larekmart. Take advantage of automated KYB verification, multi-carrier shipping labels, and real-time sales analytics.
+            Open your digital storefront on Larekmart. Take advantage of
+            automated KYB verification, multi-carrier shipping labels, and
+            real-time sales analytics.
           </p>
 
           {/* Quick Metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto mt-12 text-left">
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
               <div className="text-2xl font-black text-indigo-400">0%</div>
-              <div className="text-xs text-neutral-300 mt-0.5">Listing fees to start</div>
+              <div className="text-xs text-neutral-300 mt-0.5">
+                Listing fees to start
+              </div>
             </div>
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
               <div className="text-2xl font-black text-purple-400">2M+</div>
-              <div className="text-xs text-neutral-300 mt-0.5">Active shoppers</div>
+              <div className="text-xs text-neutral-300 mt-0.5">
+                Active shoppers
+              </div>
             </div>
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
               <div className="text-2xl font-black text-pink-400">Daily</div>
-              <div className="text-xs text-neutral-300 mt-0.5">Automated payouts</div>
+              <div className="text-xs text-neutral-300 mt-0.5">
+                Automated payouts
+              </div>
             </div>
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
               <div className="text-2xl font-black text-emerald-400">24/7</div>
-              <div className="text-xs text-neutral-300 mt-0.5">Seller protection</div>
+              <div className="text-xs text-neutral-300 mt-0.5">
+                Seller protection
+              </div>
             </div>
           </div>
         </div>
@@ -229,10 +275,59 @@ export default function BecomeASellerPage() {
 
       {/* REGISTRATION & DASHBOARD CONTAINER */}
       <div className="max-w-3xl mx-auto px-4 -mt-8 relative z-10">
-        {isLoadingAccount ? (
+        {isLoadingAccount || isLoadingSettings ? (
           <div className="p-12 text-center rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xl">
             <Loader2 className="mx-auto h-8 w-8 animate-spin text-indigo-500 mb-2" />
-            <p className="text-sm text-neutral-500">Checking your merchant account status...</p>
+            <p className="text-sm text-neutral-500">
+              Checking marketplace and account status...
+            </p>
+          </div>
+        ) : !isSellerEnabled ? (
+          /* FEATURE DISABLED CALLOUT */
+          <div className="p-8 sm:p-10 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl text-center space-y-4">
+            <div className="h-14 w-14 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <AlertTriangle className="h-7 w-7" />
+            </div>
+            <h2 className="text-xl font-bold">
+              Seller & Vendor Registration Unavailable
+            </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
+              The marketplace seller program is currently paused by platform
+              administrators. Please check back later.
+            </p>
+
+            {existingMerchant && (
+              <div className="mt-4 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 text-left text-sm space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                    Preserved Merchant Account
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    Paused
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">Store Name:</span>
+                  <span className="font-semibold">
+                    {existingMerchant.storeName || "Pending Storefront"}
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-500">
+                  Your store and organization records remain safely preserved in
+                  our system and will automatically reactivate once the program
+                  resumes.
+                </p>
+              </div>
+            )}
+
+            <div className="pt-2">
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 font-semibold text-sm transition-colors"
+              >
+                Return to Homepage
+              </Link>
+            </div>
           </div>
         ) : !isSignedIn ? (
           /* NOT SIGNED IN CALLOUT */
@@ -240,9 +335,13 @@ export default function BecomeASellerPage() {
             <div className="h-14 w-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
               <Lock className="h-7 w-7" />
             </div>
-            <h2 className="text-xl font-bold">Sign In to Register Your Business</h2>
+            <h2 className="text-xl font-bold">
+              Sign In to Register Your Business
+            </h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
-              Your merchant storefront will be securely linked to your authenticated Clerk identity. Sign in or create a free account to begin.
+              Your merchant storefront will be securely linked to your
+              authenticated Clerk identity. Sign in or create a free account to
+              begin.
             </p>
             <div className="pt-2">
               <Link
@@ -261,7 +360,9 @@ export default function BecomeASellerPage() {
                 <Store className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">You are a Registered Merchant</h2>
+                <h2 className="text-xl font-bold">
+                  You are a Registered Merchant
+                </h2>
                 <p className="text-xs text-neutral-500">
                   {existingMerchant.vendorName || "Merchant Organization"}
                 </p>
@@ -271,7 +372,9 @@ export default function BecomeASellerPage() {
             <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 text-sm space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-neutral-500">Store Name:</span>
-                <span className="font-semibold">{existingMerchant.storeName || "Pending Storefront"}</span>
+                <span className="font-semibold">
+                  {existingMerchant.storeName || "Pending Storefront"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-neutral-500">Account Status:</span>
@@ -317,12 +420,16 @@ export default function BecomeASellerPage() {
               <div className="flex items-center gap-2">
                 <div
                   className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                    step >= 1 ? "bg-indigo-600 text-white" : "bg-neutral-200 dark:bg-neutral-800 text-neutral-400"
+                    step >= 1
+                      ? "bg-indigo-600 text-white"
+                      : "bg-neutral-200 dark:bg-neutral-800 text-neutral-400"
                   }`}
                 >
                   1
                 </div>
-                <span className="text-xs sm:text-sm font-medium">Business Identity (KYB)</span>
+                <span className="text-xs sm:text-sm font-medium">
+                  Business Identity (KYB)
+                </span>
               </div>
 
               <div className="h-0.5 w-8 bg-neutral-200 dark:bg-neutral-800" />
@@ -330,12 +437,16 @@ export default function BecomeASellerPage() {
               <div className="flex items-center gap-2">
                 <div
                   className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                    step >= 2 ? "bg-indigo-600 text-white" : "bg-neutral-200 dark:bg-neutral-800 text-neutral-400"
+                    step >= 2
+                      ? "bg-indigo-600 text-white"
+                      : "bg-neutral-200 dark:bg-neutral-800 text-neutral-400"
                   }`}
                 >
                   2
                 </div>
-                <span className="text-xs sm:text-sm font-medium">Storefront Profile</span>
+                <span className="text-xs sm:text-sm font-medium">
+                  Storefront Profile
+                </span>
               </div>
 
               <div className="h-0.5 w-8 bg-neutral-200 dark:bg-neutral-800" />
@@ -343,21 +454,53 @@ export default function BecomeASellerPage() {
               <div className="flex items-center gap-2">
                 <div
                   className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                    step === 3 ? "bg-emerald-600 text-white" : "bg-neutral-200 dark:bg-neutral-800 text-neutral-400"
+                    step === 3
+                      ? "bg-emerald-600 text-white"
+                      : "bg-neutral-200 dark:bg-neutral-800 text-neutral-400"
                   }`}
                 >
                   3
                 </div>
-                <span className="text-xs sm:text-sm font-medium">Confirmation</span>
+                <span className="text-xs sm:text-sm font-medium">
+                  Confirmation
+                </span>
               </div>
             </div>
+
+            {!userIsSeller && (
+              <div className="mb-6 p-4 rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-900 dark:text-blue-200">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                  <div>
+                    <h3 className="text-xs font-semibold text-blue-800 dark:text-blue-300">
+                      Seller Qualification Requirement
+                    </h3>
+                    <p className="mt-0.5 text-xs text-blue-700/90 dark:text-blue-400/90">
+                      Your current customer profile has not yet been designated
+                      with seller credentials (
+                      <code className="font-mono bg-blue-500/10 px-1 py-0.5 rounded">
+                        isSeller: true
+                      </code>
+                      ). You may prepare your business registration below;
+                      server approval and merchant activation will be granted
+                      following Super Admin or automated KYB compliance review.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* STEP 1: LEGAL BUSINESS ENTITY */}
             {step === 1 && (
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (!legalName || !registrationNumber || !taxIdentifier || !businessEmail) {
+                  if (
+                    !legalName ||
+                    !registrationNumber ||
+                    !taxIdentifier ||
+                    !businessEmail
+                  ) {
                     toast.error("Please fill in all required business fields");
                     return;
                   }
@@ -371,7 +514,8 @@ export default function BecomeASellerPage() {
                     Legal Organization Details
                   </h2>
                   <p className="text-xs text-neutral-500 mt-0.5">
-                    Required for merchant compliance, KYB verification, and lawful tax reporting.
+                    Required for merchant compliance, KYB verification, and
+                    lawful tax reporting.
                   </p>
                 </div>
 
@@ -409,12 +553,20 @@ export default function BecomeASellerPage() {
                     </label>
                     <select
                       value={organizationType}
-                      onChange={(e) => setOrganizationType(e.target.value as OrganizationType)}
+                      onChange={(e) =>
+                        setOrganizationType(e.target.value as OrganizationType)
+                      }
                       className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                     >
-                      <option value="LLC">Limited Liability Company (LLC)</option>
-                      <option value="CORPORATION">Corporation (Inc / Corp)</option>
-                      <option value="SOLE_PROPRIETORSHIP">Sole Proprietorship</option>
+                      <option value="LLC">
+                        Limited Liability Company (LLC)
+                      </option>
+                      <option value="CORPORATION">
+                        Corporation (Inc / Corp)
+                      </option>
+                      <option value="SOLE_PROPRIETORSHIP">
+                        Sole Proprietorship
+                      </option>
                       <option value="PARTNERSHIP">Partnership</option>
                     </select>
                   </div>
@@ -513,7 +665,8 @@ export default function BecomeASellerPage() {
                     type="submit"
                     className="inline-flex items-center px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-colors shadow-lg shadow-indigo-600/20"
                   >
-                    Next: Storefront Setup <ArrowRight className="ml-2 h-4 w-4" />
+                    Next: Storefront Setup{" "}
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </button>
                 </div>
               </form>
@@ -528,7 +681,8 @@ export default function BecomeASellerPage() {
                     Public Storefront Profile
                   </h2>
                   <p className="text-xs text-neutral-500 mt-0.5">
-                    This is how customers will discover your brand, catalog, and policies.
+                    This is how customers will discover your brand, catalog, and
+                    policies.
                   </p>
                 </div>
 
@@ -559,7 +713,13 @@ export default function BecomeASellerPage() {
                         type="text"
                         required
                         value={slug}
-                        onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                        onChange={(e) =>
+                          setSlug(
+                            e.target.value
+                              .toLowerCase()
+                              .replace(/[^a-z0-9-]/g, ""),
+                          )
+                        }
                         className="flex-1 px-3 py-2 text-sm font-mono rounded-r-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
@@ -628,7 +788,8 @@ export default function BecomeASellerPage() {
                       </>
                     ) : (
                       <>
-                        Submit Application <ShieldCheck className="ml-2 h-4 w-4" />
+                        Submit Application{" "}
+                        <ShieldCheck className="ml-2 h-4 w-4" />
                       </>
                     )}
                   </button>
@@ -648,7 +809,8 @@ export default function BecomeASellerPage() {
                 </h2>
 
                 <p className="text-sm text-neutral-600 dark:text-neutral-300 max-w-md mx-auto">
-                  Your merchant profile and legal entity have been created and queued for KYB compliance review.
+                  Your merchant profile and legal entity have been created and
+                  queued for KYB compliance review.
                 </p>
 
                 <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 text-xs text-left max-w-md mx-auto space-y-2 mt-4">
@@ -657,14 +819,18 @@ export default function BecomeASellerPage() {
                     <span className="font-semibold">{storeName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-neutral-400">Verification Status:</span>
+                    <span className="text-neutral-400">
+                      Verification Status:
+                    </span>
                     <span className="text-amber-500 font-semibold flex items-center gap-1">
                       <Clock className="h-3 w-3" /> Under Review
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-400">Storefront URL:</span>
-                    <span className="font-mono text-indigo-500">/stores/{createdSlug}</span>
+                    <span className="font-mono text-indigo-500">
+                      /stores/{createdSlug}
+                    </span>
                   </div>
                 </div>
 

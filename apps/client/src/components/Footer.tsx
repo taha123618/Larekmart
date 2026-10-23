@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
+import { fetchSystemSettings } from "@/services/seller.service";
 
 // Static constants hoisted outside of component scope to eliminate re-allocation overhead
 const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
@@ -187,8 +188,22 @@ function FooterComponent() {
     [],
   );
 
+  const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+
+  useEffect(() => {
+    fetchSystemSettings()
+      .then((settings) => setIsSellerEnabled(settings.isSellerEnabled))
+      .catch(() => setIsSellerEnabled(true));
+  }, []);
+
   // Memoized navigation, department, and social lists
-  const navLinks = useMemo(() => STATIC_NAV_LINKS, []);
+  const navLinks = useMemo(
+    () =>
+      STATIC_NAV_LINKS.filter(
+        (item) => isSellerEnabled || item.href !== "/become-a-seller",
+      ),
+    [isSellerEnabled],
+  );
   const departmentLinks = useMemo(() => STATIC_DEPARTMENT_LINKS, []);
   const socialLinks = useMemo(() => STATIC_SOCIAL_LINKS, []);
 

@@ -72,7 +72,9 @@ export async function registerVendor(
 /**
  * Retrieve the current authenticated user's vendor organization
  */
-export async function getMyVendor(authToken?: string): Promise<ClientVendor | null> {
+export async function getMyVendor(
+  authToken?: string,
+): Promise<ClientVendor | null> {
   try {
     const res = await fetch(`${VENDORS_BASE}/me`, {
       headers: getHeaders(authToken),

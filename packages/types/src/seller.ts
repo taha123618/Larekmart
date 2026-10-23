@@ -338,3 +338,26 @@ export const SellerStorefrontUpdatedEventSchema = z.object({
 export type SellerStorefrontUpdatedEvent = z.infer<
   typeof SellerStorefrontUpdatedEventSchema
 >;
+
+// ==============================================================================
+// 8. Platform System Settings (Project-Wide Super Admin Controls)
+// ==============================================================================
+
+export const SystemSettingsSchema = z.object({
+  id: z.string(),
+  isSellerEnabled: z.boolean(),
+  updatedAt: z.string(),
+  updatedBy: z.string().nullable().optional(),
+});
+
+export type SystemSettings = z.infer<typeof SystemSettingsSchema>;
+
+export const UpdateSystemSettingsSchema = z.object({
+  isSellerEnabled: z.boolean({
+    message: "isSellerEnabled is required",
+  }),
+});
+
+export type UpdateSystemSettingsInput = z.infer<
+  typeof UpdateSystemSettingsSchema
+>;

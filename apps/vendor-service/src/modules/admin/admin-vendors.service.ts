@@ -146,7 +146,8 @@ export class AdminVendorsService {
           data: {
             status: VerificationStatusEnum.APPROVED,
             reviewedByAdminId: adminId,
-            reviewNotes: input.notes || input.reason || "Approved by administrator",
+            reviewNotes:
+              input.notes || input.reason || "Approved by administrator",
             decidedAt: new Date(),
           },
         });
@@ -170,7 +171,8 @@ export class AdminVendorsService {
           fromStatus: vendor.status,
           toStatus: VendorStatusEnum.VERIFIED,
           changedByUserId: adminId,
-          changeReason: input.reason || "Administrative compliance verification approval",
+          changeReason:
+            input.reason || "Administrative compliance verification approval",
           notes: input.notes,
         },
       });

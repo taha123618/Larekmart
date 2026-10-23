@@ -22,16 +22,21 @@ import {
 import {
   requireUser,
   requireSellerStaffOrAdmin,
+  requireSellerEnabled,
+  requireSellerQualification,
   getUserId,
 } from "../middleware/auth.middleware.js";
 import { sellerEventProducer } from "../kafka/producer.js";
 import { cacheService } from "../services/cache.service.js";
 
 export const sellerRoutes: FastifyPluginAsync = async (app) => {
+  // Enforce project-wide seller feature enablement across all merchant seller operations
+  app.addHook("preHandler", requireSellerEnabled);
+
   // 1. Create a new seller linked to verified vendor
   app.post(
     "/api/v1/sellers",
-    { preHandler: [requireUser] },
+    { preHandler: [requireUser, requireSellerQualification] },
     async (request, reply) => {
       const userId = getUserId(request)!;
       const body = CreateSellerSchema.parse(request.body);

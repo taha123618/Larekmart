@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SearchBar from "./SearchBar";
+import { fetchSystemSettings } from "@/services/seller.service";
 import {
   Truck,
   User,
@@ -36,6 +37,17 @@ const CATEGORY_LINKS = [
 
 export default function Navbar() {
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+
+  useEffect(() => {
+    fetchSystemSettings()
+      .then((settings) => setIsSellerEnabled(settings.isSellerEnabled))
+      .catch(() => setIsSellerEnabled(true));
+  }, []);
+
+  const visibleCategoryLinks = CATEGORY_LINKS.filter(
+    (item) => isSellerEnabled || item.label !== "Featured Stores",
+  );
 
   return (
     <header className="w-full bg-white/95 dark:bg-[#0b0f19]/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 shadow-xs dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] transition-colors duration-200">
@@ -59,13 +71,17 @@ export default function Navbar() {
 
           {/* Utility Links */}
           <div className="flex items-center gap-2.5 sm:gap-4 text-[11px] sm:text-xs shrink-0">
-            <Link
-              href="/become-a-seller"
-              className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
-            >
-              <span>Sell on Larekmart</span>
-            </Link>
-            <span className="hidden sm:inline text-slate-700">|</span>
+            {isSellerEnabled && (
+              <>
+                <Link
+                  href="/become-a-seller"
+                  className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
+                >
+                  <span>Sell on Larekmart</span>
+                </Link>
+                <span className="hidden sm:inline text-slate-700">|</span>
+              </>
+            )}
             <Link
               href="/track"
               className="hover:text-white transition flex items-center gap-1"
@@ -219,7 +235,7 @@ export default function Navbar() {
 
             {/* Ribbon Links */}
             <nav className="flex items-center gap-1 pl-3">
-              {CATEGORY_LINKS.map((item) => {
+              {visibleCategoryLinks.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link
@@ -258,7 +274,7 @@ export default function Navbar() {
       {/* 4. MOBILE CATEGORIES HORIZONTAL SCROLL STRIP (Under 640px) */}
       <div className="sm:hidden bg-slate-50 dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800/80 px-3 py-2 overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold">
-          {CATEGORY_LINKS.map((item) => {
+          {visibleCategoryLinks.map((item) => {
             const Icon = item.icon;
             return (
               <Link

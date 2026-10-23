@@ -2,7 +2,10 @@ import type { FastifyPluginAsync } from "fastify";
 import { checkDatabaseConnection } from "../db/connection.js";
 
 export const healthRoutes: FastifyPluginAsync = async (app) => {
-  const handler = async (_req: unknown, reply: { status: (code: number) => { send: (body: unknown) => void } }) => {
+  const handler = async (
+    _req: unknown,
+    reply: { status: (code: number) => { send: (body: unknown) => void } },
+  ) => {
     const dbStatus = await checkDatabaseConnection();
     if (!dbStatus.healthy) {
       reply.status(503).send({
@@ -24,6 +27,10 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
   app.get("/api/v1/sellers/health", handler);
 
   app.get("/metrics", async (_req, reply) => {
-    reply.header("Content-Type", "text/plain").send("# HELP seller_service_up Status\n# TYPE seller_service_up gauge\nseller_service_up 1\n");
+    reply
+      .header("Content-Type", "text/plain")
+      .send(
+        "# HELP seller_service_up Status\n# TYPE seller_service_up gauge\nseller_service_up 1\n",
+      );
   });
 };

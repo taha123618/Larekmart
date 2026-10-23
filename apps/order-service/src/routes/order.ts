@@ -1,5 +1,9 @@
 import { FastifyInstance } from "fastify";
-import { shouldBeAdmin, shouldBeSeller, shouldBeUser } from "../middleware/authMiddleware";
+import {
+  shouldBeAdmin,
+  shouldBeSeller,
+  shouldBeUser,
+} from "../middleware/authMiddleware";
 import { Order, mongoose } from "@repo/order-db";
 import { startOfMonth, subMonths } from "date-fns";
 import {

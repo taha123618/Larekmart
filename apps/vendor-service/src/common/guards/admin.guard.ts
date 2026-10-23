@@ -12,9 +12,17 @@ export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
     const role = request.headers["x-user-role"] as string | undefined;
-    const internalSecret = request.headers["x-internal-secret"] as string | undefined;
+    const isSuper = request.headers["x-user-is-super-admin"] === "true";
+    const internalSecret = request.headers["x-internal-secret"] as
+      | string
+      | undefined;
 
-    if (role === "admin" || (internalSecret && internalSecret === env.GATEWAY_INTERNAL_SECRET)) {
+    if (
+      role === "admin" ||
+      role === "super_admin" ||
+      isSuper ||
+      (internalSecret && internalSecret === env.GATEWAY_INTERNAL_SECRET)
+    ) {
       return true;
     }
 

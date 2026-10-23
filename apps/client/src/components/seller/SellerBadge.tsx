@@ -28,7 +28,9 @@ export function SellerBadge({
 
       <div className="flex flex-col">
         <div className="flex items-center gap-1">
-          <span className="text-[11px] text-neutral-500 dark:text-neutral-400">Sold by</span>
+          <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
+            Sold by
+          </span>
           <Link
             href={`/stores/${storeSlug}`}
             className="font-semibold text-neutral-900 dark:text-neutral-100 hover:text-indigo-600 dark:hover:text-indigo-400 underline-offset-2 hover:underline"
@@ -48,7 +50,9 @@ export function SellerBadge({
             {rating.toFixed(1)}
           </span>
           <span>•</span>
-          <span className="text-emerald-600 dark:text-emerald-400 font-medium">98% Positive</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+            98% Positive
+          </span>
         </div>
       </div>
     </div>

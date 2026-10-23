@@ -34,6 +34,7 @@ import {
   updateUserSettings,
 } from "@/services/user.service";
 import { uploadAvatar, resolveMediaUrls } from "@/services/media.service";
+import { fetchSystemSettings } from "@/services/seller.service";
 import type {
   UserDetailResponse,
   AddressResponse,
@@ -98,6 +99,20 @@ export default function AccountPage(): React.JSX.Element {
   const [avatarMediaId, setAvatarMediaId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+
+  useEffect(() => {
+    fetchSystemSettings()
+      .then((settings) => setIsSellerEnabled(settings.isSellerEnabled))
+      .catch(() => setIsSellerEnabled(true));
+  }, []);
+
+  const isSeller = Boolean(
+    clerkUser?.publicMetadata?.isSeller ||
+      clerkUser?.unsafeMetadata?.isSeller ||
+      clerkUser?.publicMetadata?.role === "seller",
+  );
 
   const [isSaving, startSaving] = useTransition();
 
@@ -533,13 +548,17 @@ export default function AccountPage(): React.JSX.Element {
           <span>My Wishlists</span>
         </Link>
 
-        <Link
-          href="/become-a-seller"
-          className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all font-semibold"
-        >
-          <Store className="w-4 h-4 text-indigo-500" />
-          <span>Seller Portal</span>
-        </Link>
+        {isSellerEnabled && (
+          <Link
+            href="/become-a-seller"
+            className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all font-semibold"
+          >
+            <Store className="w-4 h-4 text-indigo-500" />
+            <span>
+              {isSeller ? "Seller Portal (Active)" : "Become a Seller"}
+            </span>
+          </Link>
+        )}
       </div>
 
       {/* Tab 1: Profile */}

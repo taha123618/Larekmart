@@ -34,9 +34,23 @@ export function getUserRole(request: FastifyRequest): string | null {
   return null;
 }
 
+export function isSuperAdmin(request: FastifyRequest): boolean {
+  if (isInternalService(request)) return true;
+  const role = getUserRole(request);
+  const isSuper = request.headers["x-user-is-super-admin"] === "true";
+  return role === "super_admin" || isSuper;
+}
+
+export function isSeller(request: FastifyRequest): boolean {
+  if (isInternalService(request) || isSuperAdmin(request)) return true;
+  const role = getUserRole(request);
+  const isSellerFlag = request.headers["x-user-is-seller"] === "true";
+  return isSellerFlag || role === "seller" || role === "admin";
+}
+
 export async function requireUser(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ): Promise<void> {
   const userId = getUserId(request);
   if (!userId) {
@@ -46,20 +60,65 @@ export async function requireUser(
 
 export async function requireAdmin(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ): Promise<void> {
   if (isInternalService(request)) {
     return;
   }
   const role = getUserRole(request);
-  if (role !== "admin") {
+  if (role !== "admin" && role !== "super_admin" && !isSuperAdmin(request)) {
     reply.status(403).send({ message: "Admin access required" });
+  }
+}
+
+export async function requireSuperAdmin(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  if (!isSuperAdmin(request)) {
+    reply.status(403).send({
+      message: "Super Admin privileges required to manage marketplace settings",
+      code: "SUPER_ADMIN_REQUIRED",
+    });
+  }
+}
+
+export async function requireSellerQualification(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  if (!isSeller(request)) {
+    reply.status(403).send({
+      message:
+        "User is not authorized as a seller (isSeller qualification required)",
+      code: "SELLER_NOT_AUTHORIZED",
+    });
+  }
+}
+
+export async function requireSellerEnabled(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  // Allow internal service calls and super admin operations through
+  if (isInternalService(request) || isSuperAdmin(request)) {
+    return;
+  }
+
+  const { settingsService } = await import("../services/settings.service.js");
+  const isEnabled = await settingsService.isSellerFeatureEnabled();
+  if (!isEnabled) {
+    reply.status(403).send({
+      message:
+        "Seller and vendor functionality is currently disabled by the platform administrator.",
+      code: "SELLER_FEATURE_DISABLED",
+    });
   }
 }
 
 export async function requireSellerStaffOrAdmin(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ): Promise<void> {
   if (isInternalService(request)) {
     return;
@@ -100,12 +159,14 @@ export async function requireSellerStaffOrAdmin(
       and(
         eq(sellerStaff.sellerId, sellerId),
         eq(sellerStaff.userId, userId),
-        eq(sellerStaff.status, "ACTIVE")
-      )
+        eq(sellerStaff.status, "ACTIVE"),
+      ),
     )
     .limit(1);
 
   if (staffRows.length === 0) {
-    reply.status(403).send({ message: "Access forbidden: Not authorized for this seller" });
+    reply
+      .status(403)
+      .send({ message: "Access forbidden: Not authorized for this seller" });
   }
 }

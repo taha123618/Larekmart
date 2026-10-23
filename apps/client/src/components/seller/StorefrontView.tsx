@@ -32,9 +32,13 @@ export function StorefrontView({
 }: StorefrontViewProps) {
   const { store, policies, seller } = storefront;
 
-  const [activeTab, setActiveTab] = useState<"products" | "about" | "policies">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "about" | "policies">(
+    "products",
+  );
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"featured" | "price_asc" | "price_desc">("featured");
+  const [sortBy, setSortBy] = useState<"featured" | "price_asc" | "price_desc">(
+    "featured",
+  );
 
   const filteredProducts = initialProducts
     .filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -145,30 +149,33 @@ export function StorefrontView({
           <div className="flex gap-4">
             <button
               onClick={() => setActiveTab("products")}
-              className={`pb-2 text-sm font-semibold transition-colors border-b-2 flex items-center gap-2 ${activeTab === "products"
+              className={`pb-2 text-sm font-semibold transition-colors border-b-2 flex items-center gap-2 ${
+                activeTab === "products"
                   ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400"
                   : "border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-                }`}
+              }`}
             >
               <Store className="h-4 w-4" />
               Products ({filteredProducts.length})
             </button>
             <button
               onClick={() => setActiveTab("about")}
-              className={`pb-2 text-sm font-semibold transition-colors border-b-2 flex items-center gap-2 ${activeTab === "about"
+              className={`pb-2 text-sm font-semibold transition-colors border-b-2 flex items-center gap-2 ${
+                activeTab === "about"
                   ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400"
                   : "border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-                }`}
+              }`}
             >
               <Building className="h-4 w-4" />
               About Store
             </button>
             <button
               onClick={() => setActiveTab("policies")}
-              className={`pb-2 text-sm font-semibold transition-colors border-b-2 flex items-center gap-2 ${activeTab === "policies"
+              className={`pb-2 text-sm font-semibold transition-colors border-b-2 flex items-center gap-2 ${
+                activeTab === "policies"
                   ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400"
                   : "border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-                }`}
+              }`}
             >
               <ShieldCheck className="h-4 w-4" />
               Policies & Shipping ({policies.length})
@@ -198,7 +205,9 @@ export function StorefrontView({
                 <select
                   value={sortBy}
                   onChange={(e) =>
-                    setSortBy(e.target.value as "featured" | "price_asc" | "price_desc")
+                    setSortBy(
+                      e.target.value as "featured" | "price_asc" | "price_desc",
+                    )
                   }
                   className="px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
@@ -253,7 +262,8 @@ export function StorefrontView({
                       100% Genuine Guaranteed
                     </span>
                     <p className="text-neutral-500 mt-0.5">
-                      All inventory is verified and directly sourced from registered manufacturers.
+                      All inventory is verified and directly sourced from
+                      registered manufacturers.
                     </p>
                   </div>
                   <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700">
@@ -261,7 +271,8 @@ export function StorefrontView({
                       Buyer Protection Included
                     </span>
                     <p className="text-neutral-500 mt-0.5">
-                      Every order is backed by Larekmart&apos;s secure checkout and dispute resolution.
+                      Every order is backed by Larekmart&apos;s secure checkout
+                      and dispute resolution.
                     </p>
                   </div>
                 </div>
@@ -280,7 +291,9 @@ export function StorefrontView({
                 </div>
                 <div>
                   <span className="text-neutral-400">Primary Currency</span>
-                  <div className="font-semibold mt-0.5">{seller.primaryCurrency}</div>
+                  <div className="font-semibold mt-0.5">
+                    {seller.primaryCurrency}
+                  </div>
                 </div>
                 <div>
                   <span className="text-neutral-400">Storefront URL</span>
@@ -299,9 +312,13 @@ export function StorefrontView({
             {policies.length === 0 ? (
               <div className="p-8 text-center rounded-2xl bg-white dark:bg-neutral-900/30 border border-neutral-200 dark:border-neutral-800">
                 <ShieldCheck className="mx-auto h-10 w-10 text-emerald-500 mb-2" />
-                <h3 className="font-bold">Standard Marketplace Policies Apply</h3>
+                <h3 className="font-bold">
+                  Standard Marketplace Policies Apply
+                </h3>
                 <p className="text-xs text-neutral-500 mt-1 max-w-md mx-auto">
-                  This seller adheres to Larekmart&apos;s standard 30-day hassle-free return policy and standard carrier delivery timelines.
+                  This seller adheres to Larekmart&apos;s standard 30-day
+                  hassle-free return policy and standard carrier delivery
+                  timelines.
                 </p>
               </div>
             ) : (

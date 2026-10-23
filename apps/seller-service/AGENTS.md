@@ -57,6 +57,13 @@ It provides storefront configuration (store name, slug, tagline, banner, logo, b
   - `POST /api/v1/admin/sellers/:sellerId/activate` — activate seller account.
   - `POST /api/v1/admin/sellers/:sellerId/suspend` — suspend seller account with reason.
   - `GET /api/v1/admin/sellers/:sellerId/performance` — view seller performance metrics.
+  - `GET /api/v1/system-settings` — public discovery endpoint returning platform-wide marketplace settings (`isSellerEnabled`).
+  - `GET /api/v1/admin/system-settings` — read system governance settings (`requireAdmin`).
+  - `PATCH /api/v1/admin/system-settings` — mutate project-wide seller functionality (`isSellerEnabled`). Strictly restricted to **Super Admin** (`requireSuperAdmin` / `x-user-is-super-admin`). Regular admins receive HTTP 403 `SUPER_ADMIN_REQUIRED`.
+
+- Feature Guards & Access Control:
+  - `requireSellerEnabled`: preHandler hook across all seller and public storefront routes. When `isSellerEnabled = false`, requests are halted immediately with HTTP 403 `SELLER_FEATURE_DISABLED`.
+  - `requireSellerQualification`: verifies that the authenticated user has seller eligibility (`isSeller === true` or role `seller`). Non-qualified users receive HTTP 403 `SELLER_NOT_AUTHORIZED`.
 
 ## Kafka Events
 

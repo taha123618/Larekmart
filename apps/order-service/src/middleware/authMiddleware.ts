@@ -127,7 +127,9 @@ export const shouldBeSeller = async (
     gatewayUserId
   ) {
     if (gatewayUserRole !== "seller" && gatewayUserRole !== "admin") {
-      return reply.status(403).send({ message: "Seller or Admin role required!" });
+      return reply
+        .status(403)
+        .send({ message: "Seller or Admin role required!" });
     }
     request.userId = gatewayUserId;
     request.userRole = gatewayUserRole;
@@ -144,7 +146,9 @@ export const shouldBeSeller = async (
   const role = claims?.metadata?.role;
 
   if (role !== "seller" && role !== "admin") {
-    return reply.status(403).send({ message: "Seller or Admin role required!" });
+    return reply
+      .status(403)
+      .send({ message: "Seller or Admin role required!" });
   }
 
   request.userId = auth.userId;

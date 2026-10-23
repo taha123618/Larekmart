@@ -49,13 +49,13 @@ const inMemoryMetrics = {
 // In-memory event stream buffer (last 100 events)
 const inMemoryEvents: AnalyticsEventType[] = [];
 
-export const recordVendorEvent = async (
-  eventType: string,
-  payload: any,
-) => {
-  if (eventType === "vendor.registered") inMemoryMetrics.totalVendorsRegistered += 1;
-  else if (eventType === "vendor.verified") inMemoryMetrics.totalVendorsVerified += 1;
-  else if (eventType === "vendor.suspended") inMemoryMetrics.totalVendorsSuspended += 1;
+export const recordVendorEvent = async (eventType: string, payload: any) => {
+  if (eventType === "vendor.registered")
+    inMemoryMetrics.totalVendorsRegistered += 1;
+  else if (eventType === "vendor.verified")
+    inMemoryMetrics.totalVendorsVerified += 1;
+  else if (eventType === "vendor.suspended")
+    inMemoryMetrics.totalVendorsSuspended += 1;
 
   inMemoryMetrics.lastEventTime = new Date().toISOString();
   const userId = payload?.userId || payload?.vendorId || "merchant";
@@ -98,16 +98,17 @@ export const recordVendorEvent = async (
     }
   }
 
-  logger.info(`[Vendor Event] ${eventType} for ${payload?.legalName || userId}`);
+  logger.info(
+    `[Vendor Event] ${eventType} for ${payload?.legalName || userId}`,
+  );
 };
 
-export const recordSellerEvent = async (
-  eventType: string,
-  payload: any,
-) => {
+export const recordSellerEvent = async (eventType: string, payload: any) => {
   if (eventType === "seller.created") inMemoryMetrics.totalSellersCreated += 1;
-  else if (eventType === "seller.activated") inMemoryMetrics.totalSellersActive += 1;
-  else if (eventType === "seller.suspended") inMemoryMetrics.totalSellersSuspended += 1;
+  else if (eventType === "seller.activated")
+    inMemoryMetrics.totalSellersActive += 1;
+  else if (eventType === "seller.suspended")
+    inMemoryMetrics.totalSellersSuspended += 1;
 
   inMemoryMetrics.lastEventTime = new Date().toISOString();
   const userId = payload?.userId || payload?.sellerId || "seller";
@@ -151,7 +152,9 @@ export const recordSellerEvent = async (
     }
   }
 
-  logger.info(`[Seller Event] ${eventType} for ${payload?.storeName || userId}`);
+  logger.info(
+    `[Seller Event] ${eventType} for ${payload?.storeName || userId}`,
+  );
 };
 
 export const recordMediaEvent = async (

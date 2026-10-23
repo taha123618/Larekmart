@@ -33,28 +33,39 @@ export class SellerEventProducer {
     try {
       await kafkaProducer.send(topic, { value: payload });
     } catch (err) {
-      console.warn(`[Kafka] Warning: Failed to publish event to topic '${topic}':`, err);
+      console.warn(
+        `[Kafka] Warning: Failed to publish event to topic '${topic}':`,
+        err,
+      );
     }
   }
 
-  public async publishSellerCreated(payload: SellerCreatedEvent): Promise<void> {
+  public async publishSellerCreated(
+    payload: SellerCreatedEvent,
+  ): Promise<void> {
     await this.send(SELLER_TOPICS.CREATED, payload);
   }
 
-  public async publishSellerActivated(payload: SellerActivatedEvent): Promise<void> {
+  public async publishSellerActivated(
+    payload: SellerActivatedEvent,
+  ): Promise<void> {
     await this.send(SELLER_TOPICS.ACTIVATED, payload);
   }
 
-  public async publishSellerUpdated(payload: SellerUpdatedEvent): Promise<void> {
+  public async publishSellerUpdated(
+    payload: SellerUpdatedEvent,
+  ): Promise<void> {
     await this.send(SELLER_TOPICS.UPDATED, payload);
   }
 
-  public async publishSellerSuspended(payload: SellerSuspendedEvent): Promise<void> {
+  public async publishSellerSuspended(
+    payload: SellerSuspendedEvent,
+  ): Promise<void> {
     await this.send(SELLER_TOPICS.SUSPENDED, payload);
   }
 
   public async publishSellerStorefrontUpdated(
-    payload: SellerStorefrontUpdatedEvent
+    payload: SellerStorefrontUpdatedEvent,
   ): Promise<void> {
     await this.send(SELLER_TOPICS.STOREFRONT_UPDATED, payload);
   }

@@ -185,3 +185,56 @@ export async function recordAdminSellerPerformance(
   const data = await res.json();
   return data.snapshot;
 }
+
+/**
+ * Fetch platform-wide marketplace system settings (Public or Admin)
+ */
+export async function fetchSystemSettings(
+  authToken?: string,
+): Promise<{
+  id: string;
+  isSellerEnabled: boolean;
+  updatedAt: string;
+  updatedBy?: string | null;
+}> {
+  const url = `${API_BASE}/api/v1/system-settings`;
+  const res = await fetch(url, {
+    headers: getHeaders(authToken),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch system settings (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+/**
+ * Update platform-wide marketplace system settings (Super Admin only)
+ */
+export async function updateSystemSettings(
+  isSellerEnabled: boolean,
+  authToken?: string,
+): Promise<{
+  message: string;
+  settings: {
+    id: string;
+    isSellerEnabled: boolean;
+    updatedAt: string;
+    updatedBy?: string | null;
+  };
+}> {
+  const url = `${API_BASE}/api/v1/admin/system-settings`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: getHeaders(authToken),
+    body: JSON.stringify({ isSellerEnabled }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(
+      errorBody.message ||
+        `Failed to update system settings (HTTP ${res.status})`,
+    );
+  }
+  return res.json();
+}

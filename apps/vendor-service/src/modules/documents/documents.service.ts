@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service.js";
 import {
   type AttachDocumentInput,
@@ -11,7 +15,11 @@ import {
 export class DocumentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async attachDocument(vendorId: string, userId: string, rawInput: AttachDocumentInput) {
+  async attachDocument(
+    vendorId: string,
+    userId: string,
+    rawInput: AttachDocumentInput,
+  ) {
     const input = AttachDocumentSchema.parse(rawInput);
 
     const vendor = await this.prisma.vendor.findUnique({
@@ -23,7 +31,9 @@ export class DocumentsService {
     }
 
     if (vendor.status === VendorStatusEnum.TERMINATED) {
-      throw new BadRequestException("Cannot attach documents to a terminated vendor organization");
+      throw new BadRequestException(
+        "Cannot attach documents to a terminated vendor organization",
+      );
     }
 
     const document = await this.prisma.vendorDocument.create({

@@ -68,12 +68,18 @@ async function runVendorServiceTests() {
     // ────────────────────────────────────────────────────────────
     // Test 2: Auth Gating Verification (Missing x-user-id header)
     // ────────────────────────────────────────────────────────────
-    console.log("\n[Test 2] Auth Gating (Reject unauthenticated requests with 401)");
+    console.log(
+      "\n[Test 2] Auth Gating (Reject unauthenticated requests with 401)",
+    );
     const protectedEndpoints = [
       { method: "POST" as const, url: "/api/v1/vendors", payload: {} },
       { method: "GET" as const, url: "/api/v1/vendors/user/me" },
       { method: "GET" as const, url: "/api/v1/vendors/vnd-test-123" },
-      { method: "PATCH" as const, url: "/api/v1/vendors/vnd-test-123", payload: {} },
+      {
+        method: "PATCH" as const,
+        url: "/api/v1/vendors/vnd-test-123",
+        payload: {},
+      },
       {
         method: "POST" as const,
         url: "/api/v1/vendors/vnd-test-123/submit-verification",
@@ -106,7 +112,9 @@ async function runVendorServiceTests() {
     // ────────────────────────────────────────────────────────────
     // Test 3: Admin Authorization Protection (Reject non-admin with 403)
     // ────────────────────────────────────────────────────────────
-    console.log("\n[Test 3] Admin Authorization (Reject non-admin requests with 403)");
+    console.log(
+      "\n[Test 3] Admin Authorization (Reject non-admin requests with 403)",
+    );
     const adminEndpoints = [
       { method: "GET" as const, url: "/api/v1/admin/vendors" },
       { method: "GET" as const, url: "/api/v1/admin/vendors/vnd-123" },
@@ -202,7 +210,10 @@ async function runVendorServiceTests() {
     const validApprove = AdminApproveVendorSchema.parse({
       reason: "All KYB documents verified successfully",
     });
-    assert.equal(validApprove.reason, "All KYB documents verified successfully");
+    assert.equal(
+      validApprove.reason,
+      "All KYB documents verified successfully",
+    );
     console.log("  ✓ Valid admin approval schema parsed cleanly");
 
     // ────────────────────────────────────────────────────────────
