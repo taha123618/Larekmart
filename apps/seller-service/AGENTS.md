@@ -8,6 +8,7 @@ Fastify 5 microservice running on port 8021 using Drizzle ORM backed by PostgreS
 It provides storefront configuration (store name, slug, tagline, banner, logo, bio, policies), seller staff members and delegated permissions, marketplace operational settings, performance snapshots, and seller lifecycle state management.
 
 **Crucial Separation of Concerns:**
+
 - `vendor-service`: Owns legal/business organization identity, registration credentials, business profiles, KYB documents, compliance verification, and representative access controls.
 - `seller-service`: Owns marketplace storefronts, store name/logo/banner, selling operations, seller staff, and marketplace settings. A single verified vendor organization may own one or more seller accounts.
 
@@ -41,6 +42,7 @@ It provides storefront configuration (store name, slug, tagline, banner, logo, b
   - `POST /api/v1/sellers` — register seller storefront linked to verified `vendorId`.
   - `GET /api/v1/sellers/me` — list all seller storefronts owned by current user or where user is a staff member.
   - `GET /api/v1/sellers/:sellerId` — get seller overview and operational status.
+  - `PATCH /api/v1/sellers/:sellerId` — update seller account details (status, primary user).
   - `PATCH /api/v1/sellers/:sellerId/storefront` — update storefront name, slug, headline, banner, logo, vacation mode.
   - `POST /api/v1/sellers/:sellerId/staff` — add staff member with role and permissions.
   - `GET /api/v1/sellers/:sellerId/staff` — list staff members.

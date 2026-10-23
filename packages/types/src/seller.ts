@@ -212,6 +212,7 @@ export type CreateSellerInput = z.infer<typeof CreateSellerSchema>;
 export const UpdateSellerSchema = z.object({
   status: SellerStatusSchema.optional(),
   reason: z.string().max(500).optional(),
+  primaryUserId: z.string().min(1).optional(),
 });
 
 export type UpdateSellerInput = z.infer<typeof UpdateSellerSchema>;

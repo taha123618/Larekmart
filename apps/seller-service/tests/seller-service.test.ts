@@ -153,6 +153,12 @@ async function runSellerServiceTests() {
       suspendedAt: new Date().toISOString(),
     });
 
+    await sellerEventProducer.publishSellerUpdated({
+      sellerId: "sel-test-1",
+      updatedFields: ["status"],
+      updatedAt: new Date().toISOString(),
+    });
+
     await sellerEventProducer.publishSellerStorefrontUpdated({
       sellerId: "sel-test-1",
       storeId: "str-test-1",
@@ -163,7 +169,9 @@ async function runSellerServiceTests() {
       updatedAt: new Date().toISOString(),
     });
 
-    console.log("  ✓ Kafka event producer safely operates in disconnected / dev mode");
+    console.log(
+      "  ✓ Kafka event producer safely operates in disconnected / dev mode",
+    );
 
     console.log("\n==================================================");
     console.log("  ALL SELLER-SERVICE TESTS PASSED SUCCESSFULLY!   ");
