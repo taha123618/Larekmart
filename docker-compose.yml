@@ -36,7 +36,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
       POSTGRES_DB: ${POSTGRES_DB:-product_db}
-      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,analytics_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,vendor_db,seller_db}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,analytics_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
