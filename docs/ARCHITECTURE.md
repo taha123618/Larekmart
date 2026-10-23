@@ -36,11 +36,12 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Checkout: `ShippingForm` (carrier rate calculations & COD) → `StripePaymentForm` (Stripe `CheckoutProvider`, custom UI) / `CodConfirmationForm` →
   return page polls the session status → `/orders`.
 - Customer Returns Hub: `/account/returns` real-time return tracking, status badges, RMA details, carrier tracking links, and printable return label slips. Returns can be initiated directly from `/orders` via `RequestReturnModal`.
+- Merchant Storefronts & Onboarding: `/become-a-seller` merchant onboarding flow with KYB organization details, `/stores/[slug]` dedicated seller storefront profile and catalog showcase, and `SellerBadge` trust tags on marketplace product cards.
 - Auth: Clerk; server components fetch orders with `auth().getToken()`.
 
 **`admin` (dashboard, :3003)** — Next.js App Router, shadcn/ui, Tailwind v4.
 
-- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), and cache
+- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), vendors (`/vendors` legal business entity and KYB verification approval dashboard), sellers (`/sellers` marketplace seller account and commission oversight), and cache
   performance (Redis hit/miss rates per service, scraped live from each service's `/metrics`).
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
@@ -239,6 +240,22 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Negative Price Guard: Strict zero-floor clamping ensuring discounts and promotions never produce negative totals.
 - Events: Publishes `pricing.price.created`, `pricing.price.updated`, `pricing.price.expired`, `pricing.quote.created`. Consumes `product.created`, `product.deleted`, `order.created`.
 
+**`vendor-service` (NestJS 10 / Fastify, :8020)** — legal business entities, merchant onboarding, KYB verification, documents, and lifecycle state management.
+
+- Routes: `POST /api/v1/vendors`, `GET /api/v1/vendors`, `GET /api/v1/vendors/:id`, `PATCH /api/v1/vendors/:id`, `GET /api/v1/vendors/:id/business-profile`, `PUT /api/v1/vendors/:id/business-profile`, `POST /api/v1/vendors/:id/documents`, `GET /api/v1/vendors/:id/documents`, `POST /api/v1/vendors/:id/verifications`, `GET /api/v1/vendors/:id/verifications`, `POST /api/v1/vendors/:id/members`, `GET /api/v1/vendors/:id/members`, `POST /api/v1/admin/vendors/:id/approve`, `POST /api/v1/admin/vendors/:id/reject`, `POST /api/v1/admin/vendors/:id/suspend`, `POST /api/v1/admin/vendors/:id/reactivate`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
+- Persistence: PostgreSQL via `@repo/vendor-db` (Prisma) targeting `larekmart_vendor_db` (`vendors`, `vendor_business_profiles`, `vendor_documents`, `vendor_verifications`, `vendor_members`, `vendor_status_history`).
+- Caching: Redis (`vendor:v1:*` namespace) through `@repo/redis` for vendor entity lookups, verification status cache, and rate limiting.
+- KYB & Media: Coordinates business verification documents using media-service presigned uploads and Clerk identity context.
+- Events: Publishes `vendor.created`, `vendor.updated`, `vendor.verified`, `vendor.rejected`, `vendor.suspended`, `vendor.reactivated`, `vendor.document_uploaded`, `vendor.verification_submitted`. Consumes `media.uploaded`, `user.deleted`.
+
+**`seller-service` (Fastify 5, :8021)** — marketplace storefront configuration, staff & permissions, operational settings, performance snapshots, and seller lifecycle.
+
+- Routes: `POST /api/v1/sellers`, `GET /api/v1/sellers`, `GET /api/v1/sellers/me`, `GET /api/v1/sellers/:id`, `PATCH /api/v1/sellers/:id`, `GET /api/v1/sellers/slug/:slug`, `GET /api/v1/sellers/:id/settings`, `PATCH /api/v1/sellers/:id/settings`, `POST /api/v1/sellers/:id/staff`, `GET /api/v1/sellers/:id/staff`, `PATCH /api/v1/sellers/:id/staff/:userId`, `DELETE /api/v1/sellers/:id/staff/:userId`, `GET /api/v1/sellers/:id/performance`, `GET /api/v1/sellers/:id/summary`, `GET /api/v1/admin/sellers`, `POST /api/v1/admin/sellers/:id/suspend`, `POST /api/v1/admin/sellers/:id/reactivate`, `/health`, `/ready`, `/metrics`.
+- Persistence: PostgreSQL via Drizzle ORM targeting `larekmart_seller_db` (`sellers`, `seller_settings`, `seller_staff`, `seller_metrics`, `processed_events`).
+- Caching: Redis (`seller:v1:*` namespace) through `@repo/redis` for storefront public profiles, staff permission lookups, and rate limiting.
+- Marketplace Multi-Tenancy: Bridges verified legal vendors with one or more customer-facing storefronts, enforcing role-based permissions (owner, manager, staff).
+- Events: Publishes `seller.created`, `seller.updated`, `seller.suspended`, `seller.reactivated`, `seller.staff_added`, `seller.staff_removed`, `seller.metrics_updated`. Consumes `vendor.verified`, `vendor.suspended`, `order.created`, `order.delivered`, `review.created`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                                     |
@@ -256,6 +273,8 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | wishlist-service                 | Drizzle (`pg`)                | `wishlists`, `wishlist_items`, `wishlist_shares`, `wishlist_events`                                                                                |
 | PostgreSQL | promotion-service                | Drizzle (`pg`)                | `promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets`       |
 | PostgreSQL | pricing-service                  | Drizzle (`pg`)                | `price_lists`, `product_prices`, `variant_prices`, `price_rules`, `price_history`, `price_quotes`, `currency_rates`                                |
+| PostgreSQL | vendor-service                   | `@repo/vendor-db` (Prisma)    | `vendors`, `vendor_business_profiles`, `vendor_documents`, `vendor_verifications`, `vendor_members`, `vendor_status_history`                     |
+| PostgreSQL | seller-service                   | Drizzle (`pg`)                | `sellers`, `seller_settings`, `seller_staff`, `seller_metrics`, `processed_events`                                                                |
 | MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`             |
 | MySQL      | return-service                   | Drizzle (`mysql2`)            | `returns`, `return_items`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_outbox` |
 | S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                             |
@@ -274,6 +293,8 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | tax-service                      | `@repo/redis` (ioredis)       | `tax:v1:*` (rule cache, jurisdiction lookup fast-path)                                                                                             |
 | Redis      | return-service                   | `@repo/redis` (ioredis)       | `return:v1:*` (policy cache, return window cache, anti-abuse rate limits)                                                                          |
 | Redis      | pricing-service                  | `@repo/redis` (ioredis)       | `pricing:v1:*` (exchange rate cache, active quote cache, rate-limiting)                                                                            |
+| Redis      | vendor-service                   | `@repo/redis` (ioredis)       | `vendor:v1:*` (vendor profile cache, verification status cache, rate limits)                                                                       |
+| Redis      | seller-service                   | `@repo/redis` (ioredis)       | `seller:v1:*` (storefront profile cache, staff permission cache, rate limits)                                                                      |
 | OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                              |
 | MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                            |
 | MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                           |
@@ -369,6 +390,23 @@ warehouse (Inspect Items) ── POST /api/v1/admin/returns/:id/inspect ──�
                                                                                                                    │         ├── return.completed ──▶ order-service (mark REFUNDED)
                                                                                                                    │         └── return.completed ──▶ analytic-service & email-service
                                                                                                                    └── payment.refund.failed ──▶ return-service (mark REFUND_FAILED)
+```
+
+### Merchant Onboarding, KYB Verification & Seller Storefront Flow
+
+```
+client (Become a Seller) ── POST /api/v1/vendors ──▶ vendor-service ── Prisma ──▶ PostgreSQL (larekmart_vendor_db)
+       │                                                    │
+       ├── Presigned doc upload ──▶ media-service           └── vendor.created ──▶ notification-service & email-service
+       │                                  │
+       │                                  └── media.uploaded ──▶ vendor-service ──▶ vendor.verification_submitted
+admin (Review & Approve KYB) ── POST /api/v1/admin/vendors/:id/approve ──▶ vendor-service
+                                                                                │
+                                                                                └── vendor.verified ──▶ seller-service (unlock seller creation)
+seller (Create Storefront) ── POST /api/v1/sellers ──▶ seller-service ── Drizzle ──▶ PostgreSQL (larekmart_seller_db)
+       │                                                   │
+       │                                                   └── seller.created ──▶ analytic-service & notification-service
+buyer (Browse Seller Store) ── GET /api/v1/sellers/slug/:slug ──▶ seller-service ── Redis (seller:v1:*) / DB
 ```
 
 ## Cross-cutting concerns

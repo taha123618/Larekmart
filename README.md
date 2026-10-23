@@ -18,7 +18,7 @@
 
 ---
 
-**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-two backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, and vendors; MongoDB for orders and carts; MySQL for tax rules, calculations, jurisdictions, and return/refund management).
+**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-three backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, and sellers; MongoDB for orders and carts; MySQL for tax rules, calculations, jurisdictions, and return/refund management).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node, Go, and Python services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 

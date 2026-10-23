@@ -93,6 +93,8 @@ spec:
           port: 8019
         - protocol: TCP
           port: 8020
+        - protocol: TCP
+          port: 8021
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

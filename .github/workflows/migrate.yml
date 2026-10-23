@@ -39,6 +39,8 @@ jobs:
       TAX_DATABASE_URL: ${{ secrets.TAX_DATABASE_URL }}
       RETURN_DATABASE_URL: ${{ secrets.RETURN_DATABASE_URL }}
       PRICING_DATABASE_URL: ${{ secrets.PRICING_DATABASE_URL }}
+      VENDOR_DATABASE_URL: ${{ secrets.VENDOR_DATABASE_URL }}
+      SELLER_DATABASE_URL: ${{ secrets.SELLER_DATABASE_URL }}
 
     steps:
       - name: Checkout Code
@@ -74,6 +76,8 @@ jobs:
           DATABASE_URL="${SHIPPING_DATABASE_URL}" pnpm --filter @repo/shipping-db exec prisma migrate status || true
           echo "=== User DB Migration Status ==="
           DATABASE_URL="${USER_DATABASE_URL}" pnpm --filter @repo/user-db exec prisma migrate status || true
+          echo "=== Vendor DB Migration Status ==="
+          DATABASE_URL="${VENDOR_DATABASE_URL}" pnpm --filter @repo/vendor-db exec prisma migrate status || true
 
       - name: Run product-db migrations
         if: github.event.inputs.action == 'deploy'
@@ -146,4 +150,16 @@ jobs:
         run: pnpm --filter pricing-service db:migrate
         env:
           DATABASE_URL: ${{ env.PRICING_DATABASE_URL }}
+
+      - name: Run vendor-db (Prisma) migrations
+        if: github.event.inputs.action == 'deploy' && env.VENDOR_DATABASE_URL != ''
+        run: pnpm --filter @repo/vendor-db db:deploy
+        env:
+          DATABASE_URL: ${{ env.VENDOR_DATABASE_URL }}
+
+      - name: Run seller-service (PostgreSQL Drizzle) migrations
+        if: github.event.inputs.action == 'deploy' && env.SELLER_DATABASE_URL != ''
+        run: pnpm --filter seller-service db:migrate
+        env:
+          DATABASE_URL: ${{ env.SELLER_DATABASE_URL }}
 

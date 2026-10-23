@@ -230,6 +230,22 @@ scrape_configs:
           service: pricing-service
           runtime: nodejs
 
+  - job_name: vendor-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["vendor-service:8020"]
+        labels:
+          service: vendor-service
+          runtime: nestjs
+
+  - job_name: seller-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["seller-service:8021"]
+        labels:
+          service: seller-service
+          runtime: nodejs
+
 
   - job_name: api-gateway
     metrics_path: /metrics

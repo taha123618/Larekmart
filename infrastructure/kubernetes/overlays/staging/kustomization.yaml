@@ -68,5 +68,9 @@ images:
     newTag: staging
   - name: larekmart/pricing-service
     newTag: staging
+  - name: larekmart/vendor-service
+    newTag: staging
+  - name: larekmart/seller-service
+    newTag: staging
   - name: larekmart/email-service
     newTag: staging

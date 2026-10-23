@@ -127,6 +127,12 @@ jobs:
           - service: pricing-service
             context: .
             dockerfile: apps/pricing-service/Dockerfile
+          - service: vendor-service
+            context: .
+            dockerfile: apps/vendor-service/Dockerfile
+          - service: seller-service
+            context: .
+            dockerfile: apps/seller-service/Dockerfile
           - service: email-service
             context: .
             dockerfile: apps/email-service/Dockerfile

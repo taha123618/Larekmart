@@ -19,6 +19,8 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `tax-service`: Nine suites covering health probes, auth guards, decimal arithmetic precision, standard rule evaluation, exemption certificate verification, calculation snapshot persistence, proportional return refunds, adapter factory, and event emission (`pnpm --filter tax-service test`).
    - `return-service`: Fourteen suites covering return eligibility, 14-day return window validation, partial quantities, evidence validation, state machine transitions, warehouse inspections, carrier reverse-shipping, decimal refund proration, outbox event persistence, and event emission (`pnpm --filter return-service test`).
    - `pricing-service`: Ten suites covering decimal financial precision, volume tiered pricing, multi-currency conversion, negative price prevention, quote snapshot persistence, Fastify endpoints, timing-safe authentication, and event emission (`pnpm --filter pricing-service test`).
+   - `vendor-service`: Legal entity registration, KYB document verification, member access, status transitions, and lifecycle event emission (`pnpm --filter vendor-service test`).
+   - `seller-service`: Marketplace storefront profiles, multi-staff permissions, operational settings, metrics snapshots, and Fastify endpoints (`pnpm --filter seller-service test`).
    - `notification-service`: Native Go test suite for workers, templates, dispatchers, and WebSockets (`go test ./...`).
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
    - `@repo/redis`: Opt-in Redis integration verifier (`pnpm --filter @repo/redis verify:redis`).
