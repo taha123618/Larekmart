@@ -10,6 +10,8 @@ import {
   GatewayHealthResponseSchema,
   GatewayErrorResponseSchema,
   GATEWAY_HEADERS,
+  AdminUpdateUserStatusSchema,
+  UserDetailResponseSchema,
 } from "../src/index.js";
 
 async function runSchemaTests() {
@@ -420,6 +422,75 @@ async function runSchemaTests() {
   assert.equal(CreateTaxRuleSchema.safeParse(validRule).success, true);
   console.log(
     "✓ Tax schemas (Quote, CalcResponse, ReturnQuote, Rules) verified",
+  );
+
+  // 11. User isSeller Domain Contracts & Admin Schemas
+  console.log("11. Testing User isSeller Domain Contracts & Admin Schemas...");
+  // A. AdminUpdateUserStatusSchema valid cases
+  const validStatusOnly = AdminUpdateUserStatusSchema.safeParse({
+    status: "ACTIVE",
+  });
+  assert.equal(validStatusOnly.success, true);
+
+  const validSellerOnly = AdminUpdateUserStatusSchema.safeParse({
+    isSeller: true,
+  });
+  assert.equal(validSellerOnly.success, true);
+  if (validSellerOnly.success) {
+    assert.equal(validSellerOnly.data.isSeller, true);
+  }
+
+  const validStatusAndSeller = AdminUpdateUserStatusSchema.safeParse({
+    status: "SUSPENDED",
+    isSeller: false,
+  });
+  assert.equal(validStatusAndSeller.success, true);
+
+  // B. Invariant: invalid non-boolean isSeller must be rejected
+  const invalidSellerType = AdminUpdateUserStatusSchema.safeParse({
+    isSeller: "true",
+  });
+  assert.equal(
+    invalidSellerType.success,
+    false,
+    "String isSeller must be rejected",
+  );
+
+  // C. UserDetailResponseSchema default and explicit isSeller
+  const minimalUser = {
+    id: "usr_123",
+    authUserId: "auth_123",
+    email: "seller@larekmart.com",
+    phone: null,
+    status: "ACTIVE",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  const parsedDefault = UserDetailResponseSchema.safeParse(minimalUser);
+  assert.equal(parsedDefault.success, true);
+  if (parsedDefault.success) {
+    assert.equal(
+      parsedDefault.data.isSeller,
+      false,
+      "Default isSeller must be false",
+    );
+  }
+
+  const verifiedSellerUser = {
+    ...minimalUser,
+    isSeller: true,
+  };
+  const parsedSeller = UserDetailResponseSchema.safeParse(verifiedSellerUser);
+  assert.equal(parsedSeller.success, true);
+  if (parsedSeller.success) {
+    assert.equal(
+      parsedSeller.data.isSeller,
+      true,
+      "Explicit isSeller must be preserved as true",
+    );
+  }
+  console.log(
+    "✓ User isSeller contracts, default values, and admin status schemas verified",
   );
 
   console.log("\n=======================================================");

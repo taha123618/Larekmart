@@ -6,6 +6,8 @@ import {
   UpdatePreferencesSchema,
   UpdateSettingsSchema,
   UserEventPayloadSchema,
+  AdminUpdateUserStatusSchema,
+  UserDetailResponseSchema,
 } from "@repo/types";
 import { UserCacheKeys } from "../src/cache/user-cache.js";
 
@@ -173,6 +175,66 @@ async function runTests() {
   };
   assert.ok(UserEventPayloadSchema.safeParse(testPayload).success);
   console.log("✓ Kafka domain event payloads conform to shared event contract");
+
+  // 8. User isSeller Privilege & Database Synchronization
+  console.log("\n[Test 8] User isSeller Privilege & Database Synchronization");
+
+  // A. Admin update user status schema with isSeller
+  const validStatusUpdate = {
+    status: "ACTIVE" as const,
+    isSeller: true,
+  };
+  const parsedStatus = AdminUpdateUserStatusSchema.safeParse(validStatusUpdate);
+  assert.ok(parsedStatus.success);
+  assert.equal(parsedStatus.data?.isSeller, true);
+
+  const toggleSellerFalse = AdminUpdateUserStatusSchema.safeParse({
+    isSeller: false,
+  });
+  assert.ok(toggleSellerFalse.success);
+  assert.equal(toggleSellerFalse.data?.isSeller, false);
+
+  // Non-boolean isSeller rejected
+  assert.ok(
+    !AdminUpdateUserStatusSchema.safeParse({ isSeller: "true" as any }).success,
+  );
+
+  // B. UserDetailResponseSchema isSeller defaults to false and supports true
+  const defaultUserDetail = UserDetailResponseSchema.safeParse({
+    id: "usr_abc",
+    authUserId: "auth_abc",
+    email: "customer@larekmart.com",
+    phone: null,
+    status: "ACTIVE",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  assert.ok(defaultUserDetail.success);
+  assert.equal(defaultUserDetail.data?.isSeller, false);
+
+  const verifiedSellerDetail = UserDetailResponseSchema.safeParse({
+    id: "usr_abc",
+    authUserId: "auth_abc",
+    email: "seller@larekmart.com",
+    phone: null,
+    status: "ACTIVE",
+    isSeller: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  assert.ok(verifiedSellerDetail.success);
+  assert.equal(verifiedSellerDetail.data?.isSeller, true);
+
+  // C. Test consumer safety for seller privilege events
+  const { handleSellerPrivilegeGranted } = await import(
+    "../src/consumers/auth.consumer.js"
+  );
+  // Graceful no-op when user not found or empty payload
+  await handleSellerPrivilegeGranted(null);
+  await handleSellerPrivilegeGranted({});
+  await handleSellerPrivilegeGranted({ primaryUserId: "non_existent_auth_id" });
+
+  console.log("✓ isSeller schemas, defaults, and consumer handlers verified");
 
   await app.close();
   console.log("\n=== ALL USER SERVICE TESTS PASSED SUCCESSFULLY! ===\n");
