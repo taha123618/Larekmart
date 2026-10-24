@@ -119,6 +119,9 @@ export const shouldBeSeller = async (
   const gatewayUserRole = request.headers?.[GATEWAY_HEADERS.USER_ROLE] as
     | string
     | undefined;
+  const gatewayIsSeller =
+    request.headers?.[GATEWAY_HEADERS.IS_SELLER] === "true" ||
+    request.headers?.["x-user-is-seller"] === "true";
 
   if (
     internalSecret &&
@@ -126,13 +129,17 @@ export const shouldBeSeller = async (
     safeTimingCompare(internalSecret, configuredSecret) &&
     gatewayUserId
   ) {
-    if (gatewayUserRole !== "seller" && gatewayUserRole !== "admin") {
+    if (
+      gatewayUserRole !== "seller" &&
+      gatewayUserRole !== "admin" &&
+      !gatewayIsSeller
+    ) {
       return reply
         .status(403)
         .send({ message: "Seller or Admin role required!" });
     }
     request.userId = gatewayUserId;
-    request.userRole = gatewayUserRole;
+    request.userRole = gatewayUserRole || (gatewayIsSeller ? "seller" : "user");
     return;
   }
 
@@ -144,13 +151,14 @@ export const shouldBeSeller = async (
 
   const claims = auth.sessionClaims as CustomJwtSessionClaims;
   const role = claims?.metadata?.role;
+  const isSeller = claims?.metadata?.isSeller === true || role === "seller";
 
-  if (role !== "seller" && role !== "admin") {
+  if (role !== "admin" && !isSeller) {
     return reply
       .status(403)
       .send({ message: "Seller or Admin role required!" });
   }
 
   request.userId = auth.userId;
-  request.userRole = role;
+  request.userRole = role || (isSeller ? "seller" : "user");
 };

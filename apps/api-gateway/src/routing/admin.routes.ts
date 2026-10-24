@@ -143,4 +143,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/system-settings",
     requireAdmin: true,
   },
+
+  // 12. Super Admin Delegations Management
+  {
+    prefix: "/api/v1/admin/delegations",
+    target: services.seller.url,
+    serviceName: services.seller.name,
+    timeoutMs: services.seller.timeoutMs,
+    rewritePrefix: "/api/v1/admin/delegations",
+    requireAdmin: true,
+  },
 ];
