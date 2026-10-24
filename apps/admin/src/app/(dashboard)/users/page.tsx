@@ -44,6 +44,12 @@ const getData = async (): Promise<{
             [key: string]: unknown;
           }>) || [],
         userServiceStatus: su?.status || null,
+        isSeller:
+          su?.isSeller ??
+          Boolean(
+            (cu.publicMetadata as Record<string, unknown> | undefined)
+              ?.isSeller,
+          ),
         phone: su?.phone || null,
       };
     });

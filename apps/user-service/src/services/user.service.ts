@@ -120,6 +120,7 @@ export class UserService {
     page?: number;
     limit?: number;
     status?: UserStatus;
+    isSeller?: boolean;
     search?: string;
   }) {
     const page = params.page || 1;
@@ -130,6 +131,7 @@ export class UserService {
       skip,
       take: limit,
       status: params.status,
+      isSeller: params.isSeller,
       search: params.search,
     });
 
@@ -150,7 +152,10 @@ export class UserService {
     return userRepository.findByAuthUserId(id);
   }
 
-  async adminUpdateUserStatus(id: string, status: UserStatus) {
+  async adminUpdateUserStatus(
+    id: string,
+    data: { status?: UserStatus; isSeller?: boolean } | UserStatus,
+  ) {
     let user = await userRepository.findById(id);
     if (!user) {
       user = await userRepository.findByAuthUserId(id);
@@ -159,14 +164,14 @@ export class UserService {
       throw new Error("User not found");
     }
 
-    const updated = await userRepository.updateStatus(user.id, status);
+    const updated = await userRepository.updateStatus(user.id, data);
     await invalidateUserCache(user.id, user.authUserId);
 
     await publishUserEvent(
       "user.updated",
       user.id,
       {
-        status,
+        ...(typeof data === "string" ? { status: data } : data),
         updatedBy: "admin",
       },
       user.authUserId,

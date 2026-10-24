@@ -31,6 +31,13 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
       null;
     const firstName = data.firstName || data.first_name || null;
     const lastName = data.lastName || data.last_name || null;
+    const isSeller = Boolean(
+      data.isSeller ||
+        data.public_metadata?.isSeller ||
+        data.publicMetadata?.isSeller ||
+        data.public_metadata?.role === "seller" ||
+        data.publicMetadata?.role === "seller",
+    );
 
     if (!authUserId || !email) {
       logger.warn("Received user creation event without authUserId or email", {
@@ -48,6 +55,7 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
         phone,
         firstName,
         lastName,
+        isSeller,
       });
       logger.info(
         `Created user-service account for authUserId: ${authUserId}, userId: ${user.id}`,

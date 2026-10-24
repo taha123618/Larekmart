@@ -13,6 +13,7 @@ export interface AdminUserListItem {
   email: string;
   phone: string | null;
   status: "ACTIVE" | "SUSPENDED" | "DEACTIVATED" | "PENDING_VERIFICATION";
+  isSeller?: boolean;
   createdAt: string;
   updatedAt: string;
   profile?: {
@@ -35,13 +36,21 @@ export interface AdminUsersListResponse {
 
 export async function fetchAdminUsers(
   token: string,
-  query?: { page?: number; limit?: number; search?: string; status?: string },
+  query?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    isSeller?: boolean;
+  },
 ): Promise<AdminUsersListResponse | null> {
   const params = new URLSearchParams();
   if (query?.page) params.set("page", String(query.page));
   if (query?.limit) params.set("limit", String(query.limit));
   if (query?.search) params.set("search", query.search);
   if (query?.status) params.set("status", query.status);
+  if (query?.isSeller !== undefined)
+    params.set("isSeller", String(query.isSeller));
 
   try {
     const res = await fetch(`${BASE}?${params.toString()}`, {
@@ -82,8 +91,21 @@ export async function fetchAdminUserDetail(
 export async function updateAdminUserStatus(
   token: string,
   id: string,
-  status: "ACTIVE" | "SUSPENDED" | "DEACTIVATED" | "PENDING_VERIFICATION",
+  data:
+    | {
+        status?:
+          | "ACTIVE"
+          | "SUSPENDED"
+          | "DEACTIVATED"
+          | "PENDING_VERIFICATION";
+        isSeller?: boolean;
+      }
+    | "ACTIVE"
+    | "SUSPENDED"
+    | "DEACTIVATED"
+    | "PENDING_VERIFICATION",
 ): Promise<boolean> {
+  const payload = typeof data === "string" ? { status: data } : data;
   try {
     const res = await fetch(`${BASE}/${id}/status`, {
       method: "PATCH",
@@ -91,7 +113,7 @@ export async function updateAdminUserStatus(
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(payload),
     });
     return res.ok;
   } catch (err) {

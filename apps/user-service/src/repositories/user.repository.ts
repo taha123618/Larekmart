@@ -46,6 +46,7 @@ export class UserRepository {
     email: string;
     phone?: string | null;
     status?: UserStatus;
+    isSeller?: boolean;
     firstName?: string | null;
     lastName?: string | null;
   }) {
@@ -55,6 +56,7 @@ export class UserRepository {
         email: data.email,
         phone: data.phone,
         status: data.status || "ACTIVE",
+        isSeller: data.isSeller ?? false,
         profile: {
           create: {
             firstName: data.firstName || null,
@@ -103,10 +105,20 @@ export class UserRepository {
     });
   }
 
-  async updateStatus(id: string, status: UserStatus) {
+  async updateStatus(
+    id: string,
+    data: { status?: UserStatus; isSeller?: boolean } | UserStatus,
+  ) {
+    const updateData: Prisma.UserUpdateInput = {};
+    if (typeof data === "string") {
+      updateData.status = data;
+    } else {
+      if (data.status) updateData.status = data.status;
+      if (data.isSeller !== undefined) updateData.isSeller = data.isSeller;
+    }
     return prisma.user.update({
       where: { id },
-      data: { status },
+      data: updateData,
     });
   }
 
@@ -120,12 +132,17 @@ export class UserRepository {
     skip?: number;
     take?: number;
     status?: UserStatus;
+    isSeller?: boolean;
     search?: string;
   }) {
     const where: Prisma.UserWhereInput = {};
 
     if (params.status) {
       where.status = params.status;
+    }
+
+    if (params.isSeller !== undefined) {
+      where.isSeller = params.isSeller;
     }
 
     if (params.search) {
