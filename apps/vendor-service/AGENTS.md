@@ -45,11 +45,11 @@ authorized representative access, and lifecycle state management (DRAFT, PENDING
 - Admin Endpoints (`AuthGuard`, `AdminGuard`):
   - `GET /api/v1/admin/vendors` — search and list vendors with pagination.
   - `GET /api/v1/admin/vendors/:vendorId` — full compliance view including history and documents.
-  - `POST /api/v1/admin/vendors/:vendorId/approve` — approve verification and mark VERIFIED.
-  - `POST /api/v1/admin/vendors/:vendorId/reject` — reject verification.
-  - `POST /api/v1/admin/vendors/:vendorId/suspend` — suspend vendor account.
-  - `POST /api/v1/admin/vendors/:vendorId/reactivate` — reactivate suspended vendor.
-  - `PATCH /api/v1/admin/vendors/:vendorId/documents/:documentId` — review and accept/reject document.
+  - `POST /api/v1/admin/vendors/:vendorId/approve` — approve verification and mark VERIFIED (`ManageAdminGuard`). Standard admins without delegation receive HTTP 403 `MANAGE_ADMIN_REQUIRED`.
+  - `POST /api/v1/admin/vendors/:vendorId/reject` — reject verification (`ManageAdminGuard`).
+  - `POST /api/v1/admin/vendors/:vendorId/suspend` — suspend vendor account (`ManageAdminGuard`).
+  - `POST /api/v1/admin/vendors/:vendorId/reactivate` — reactivate suspended vendor (`ManageAdminGuard`).
+  - `PATCH /api/v1/admin/vendors/:vendorId/documents/:documentId` — review and accept/reject document (`ManageAdminGuard`).
 
 ## Kafka Events
 

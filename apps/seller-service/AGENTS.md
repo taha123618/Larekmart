@@ -53,17 +53,21 @@ It provides storefront configuration (store name, slug, tagline, banner, logo, b
 - Admin Endpoints (`requireAdmin`):
   - `GET /api/v1/admin/sellers` — list all sellers across marketplace (filterable by `?status=`).
   - `GET /api/v1/admin/sellers/:sellerId` — get complete seller profile including store, staff, policies, and latest performance.
-  - `POST /api/v1/admin/sellers/:sellerId/status` — transition seller status (`ACTIVE`, `SUSPENDED`, `INACTIVE`, `ONBOARDING`) with reason recording and Kafka event publishing.
-  - `POST /api/v1/admin/sellers/:sellerId/activate` — activate seller account.
-  - `POST /api/v1/admin/sellers/:sellerId/suspend` — suspend seller account with reason.
+  - `POST /api/v1/admin/sellers/:sellerId/status` — transition seller status (`ACTIVE`, `SUSPENDED`, `INACTIVE`, `ONBOARDING`) with reason recording and Kafka event publishing. Restricted to **Super Admin** or **Manage Admin** (`requireManageAdmin`). Standard admins receive HTTP 403 `MANAGE_ADMIN_REQUIRED`.
+  - `POST /api/v1/admin/sellers/:sellerId/activate` — activate seller account (`requireManageAdmin`).
+  - `POST /api/v1/admin/sellers/:sellerId/suspend` — suspend seller account with reason (`requireManageAdmin`).
   - `GET /api/v1/admin/sellers/:sellerId/performance` — view seller performance metrics.
   - `GET /api/v1/system-settings` — public discovery endpoint returning platform-wide marketplace settings (`isSellerEnabled`).
   - `GET /api/v1/admin/system-settings` — read system governance settings (`requireAdmin`).
   - `PATCH /api/v1/admin/system-settings` — mutate project-wide seller functionality (`isSellerEnabled`). Strictly restricted to **Super Admin** (`requireSuperAdmin` / `x-user-is-super-admin`). Regular admins receive HTTP 403 `SUPER_ADMIN_REQUIRED`.
+  - `GET /api/v1/admin/delegations` — list active admin verification delegations (`requireSuperAdmin`).
+  - `POST /api/v1/admin/delegations` — grant `manage_sellers` authority to an admin (`requireSuperAdmin`).
+  - `DELETE /api/v1/admin/delegations/:adminUserId` — revoke `manage_sellers` authority (`requireSuperAdmin`).
 
 - Feature Guards & Access Control:
   - `requireSellerEnabled`: preHandler hook across all seller and public storefront routes. When `isSellerEnabled = false`, requests are halted immediately with HTTP 403 `SELLER_FEATURE_DISABLED`.
   - `requireSellerQualification`: verifies that the authenticated user has seller eligibility (`isSeller === true` or role `seller`). Non-qualified users receive HTTP 403 `SELLER_NOT_AUTHORIZED`.
+  - `requireManageAdmin`: verifies that the caller is a Super Admin or has delegated `manage_sellers` authority (`x-user-can-manage-sellers: true`). Returns HTTP 403 `MANAGE_ADMIN_REQUIRED` to standard admins.
 
 ## Kafka Events
 
