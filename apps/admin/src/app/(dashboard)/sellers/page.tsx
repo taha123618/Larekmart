@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import {
   fetchAdminSellers,
   fetchAdminSellerDetails,
@@ -47,6 +47,7 @@ import { toast } from "react-toastify";
 
 export default function SellersAdminPage() {
   const { getToken } = useAuth();
+  const { user } = useUser();
   const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,6 +62,16 @@ export default function SellersAdminPage() {
   );
   const [newStatus, setNewStatus] = useState<SellerStatus>("ACTIVE");
   const [statusReason, setStatusReason] = useState("");
+
+  // Super Admin & Manage Admin permissions
+  const userRole = user?.publicMetadata?.role as string | undefined;
+  const isSuperAdmin =
+    userRole === "super_admin" || user?.publicMetadata?.isSuperAdmin === true;
+  const canManageSellers =
+    isSuperAdmin ||
+    user?.publicMetadata?.canManageSellers === true ||
+    (Array.isArray(user?.publicMetadata?.permissions) &&
+      user.publicMetadata.permissions.includes("manage_sellers"));
 
   // 1. Query all sellers
   const {
@@ -208,6 +219,18 @@ export default function SellersAdminPage() {
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
             <Store className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
             Seller & Storefront Management
+            {canManageSellers ? (
+              <Badge className="bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-normal">
+                {isSuperAdmin ? "Super Admin" : "Manage Admin (Verification)"}
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="text-amber-600 border-amber-500/20 text-xs font-normal"
+              >
+                Auditor (Read-Only)
+              </Badge>
+            )}
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Marketplace seller storefronts, staff permissions, operational
@@ -419,6 +442,7 @@ export default function SellersAdminPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        disabled={!canManageSellers}
                         onClick={() => {
                           setStatusSeller(seller);
                           setNewStatus(
@@ -428,7 +452,11 @@ export default function SellersAdminPage() {
                           );
                           setStatusReason("");
                         }}
-                        title="Update Seller Status"
+                        title={
+                          canManageSellers
+                            ? "Update Seller Status"
+                            : "Manage Admin or Super Admin delegation required to update seller status"
+                        }
                       >
                         {seller.status === "SUSPENDED" ? (
                           <CheckCircle2 className="h-4 w-4 text-emerald-600" />
@@ -648,6 +676,7 @@ export default function SellersAdminPage() {
                       : "destructive"
                   }
                   className="w-full"
+                  disabled={!canManageSellers}
                   onClick={() => {
                     setStatusSeller(selectedSellerDetails);
                     setNewStatus(
@@ -658,16 +687,20 @@ export default function SellersAdminPage() {
                     setStatusReason("");
                   }}
                 >
-                  {selectedSellerDetails.status === "SUSPENDED" ? (
-                    <>
-                      <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                      Reactivate Seller Account
-                    </>
+                  {canManageSellers ? (
+                    selectedSellerDetails.status === "SUSPENDED" ? (
+                      <>
+                        <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                        Reactivate Seller Account
+                      </>
+                    ) : (
+                      <>
+                        <Ban className="mr-1.5 h-4 w-4" />
+                        Suspend Seller Account
+                      </>
+                    )
                   ) : (
-                    <>
-                      <Ban className="mr-1.5 h-4 w-4" />
-                      Suspend Seller Account
-                    </>
+                    "Manage Admin or Super Admin Access Required"
                   )}
                 </Button>
               </div>

@@ -361,3 +361,23 @@ export const UpdateSystemSettingsSchema = z.object({
 export type UpdateSystemSettingsInput = z.infer<
   typeof UpdateSystemSettingsSchema
 >;
+
+// ==============================================================================
+// 9. Admin Delegation & Verification Permissions (Manage Admin Access)
+// ==============================================================================
+
+export const AdminDelegationSchema = z.object({
+  id: z.string(),
+  adminUserId: z.string(),
+  permission: z.literal("manage_sellers"),
+  grantedByUserId: z.string(),
+  createdAt: z.string(),
+});
+
+export type AdminDelegation = z.infer<typeof AdminDelegationSchema>;
+
+export const GrantDelegationSchema = z.object({
+  adminUserId: z.string().min(1, { message: "Admin user ID is required" }),
+});
+
+export type GrantDelegationInput = z.infer<typeof GrantDelegationSchema>;

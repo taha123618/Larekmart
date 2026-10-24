@@ -83,6 +83,24 @@ export async function requireSuperAdmin(
   }
 }
 
+export function isManageAdmin(request: FastifyRequest): boolean {
+  if (isInternalService(request) || isSuperAdmin(request)) return true;
+  return request.headers["x-user-can-manage-sellers"] === "true";
+}
+
+export async function requireManageAdmin(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  if (!isManageAdmin(request)) {
+    reply.status(403).send({
+      message:
+        "Super Admin or delegated Manage Admin access required for seller verification",
+      code: "MANAGE_ADMIN_REQUIRED",
+    });
+  }
+}
+
 export async function requireSellerQualification(
   request: FastifyRequest,
   reply: FastifyReply,

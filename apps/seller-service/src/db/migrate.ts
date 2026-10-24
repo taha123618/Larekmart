@@ -111,6 +111,15 @@ export async function runMigrations(): Promise<void> {
         updated_by VARCHAR(128)
       );
 
+      CREATE TABLE IF NOT EXISTS admin_delegations (
+        id VARCHAR(64) PRIMARY KEY,
+        admin_user_id VARCHAR(128) NOT NULL,
+        permission VARCHAR(64) DEFAULT 'manage_sellers' NOT NULL,
+        granted_by_user_id VARCHAR(128) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS admin_delegations_user_idx ON admin_delegations(admin_user_id);
+
       INSERT INTO system_settings (id, is_seller_enabled, updated_at)
       VALUES ('marketplace', TRUE, NOW())
       ON CONFLICT (id) DO NOTHING;

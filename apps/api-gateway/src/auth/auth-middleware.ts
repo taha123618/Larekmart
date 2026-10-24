@@ -10,6 +10,7 @@ declare module "fastify" {
     userRole?: string;
     isSuperAdmin?: boolean;
     isSeller?: boolean;
+    canManageSellers?: boolean;
     userPermissions?: string[];
   }
 }
@@ -29,6 +30,7 @@ export async function registerAuthMiddleware(
       request.userRole = auth.role;
       request.isSuperAdmin = auth.isSuperAdmin;
       request.isSeller = auth.isSeller;
+      request.canManageSellers = auth.canManageSellers;
 
       // Attach internal trusted headers for downstream proxy propagation
       request.headers[GATEWAY_HEADERS.USER_ID] = auth.userId;
@@ -38,6 +40,9 @@ export async function registerAuthMiddleware(
       }
       if (auth.isSeller) {
         request.headers[GATEWAY_HEADERS.IS_SELLER] = "true";
+      }
+      if (auth.canManageSellers) {
+        request.headers[GATEWAY_HEADERS.CAN_MANAGE_SELLERS] = "true";
       }
       request.headers[GATEWAY_HEADERS.INTERNAL_SECRET] =
         env.INTERNAL_SERVICE_SECRET;

@@ -11,15 +11,17 @@ import {
   sellerPolicies,
   sellerStatusHistory,
   sellerPerformanceSnapshots,
+  adminDelegations,
 } from "../db/schema.js";
 import {
   requireAdmin,
   requireSuperAdmin,
+  requireManageAdmin,
   getUserId,
 } from "../middleware/auth.middleware.js";
 import { sellerEventProducer } from "../kafka/producer.js";
 import { settingsService } from "../services/settings.service.js";
-import { UpdateSystemSettingsSchema } from "@repo/types";
+import { UpdateSystemSettingsSchema, GrantDelegationSchema } from "@repo/types";
 
 const SuspendSellerSchema = z.object({
   reason: z.string().min(3),
@@ -128,10 +130,10 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  // 3. Update seller status (Unified status transition)
+  // 3. Update seller status (Unified status transition - Super Admin or Manage Admin)
   app.post(
     "/api/v1/admin/sellers/:sellerId/status",
-    { preHandler: [requireAdmin] },
+    { preHandler: [requireManageAdmin] },
     async (request, reply) => {
       const { sellerId } = request.params as { sellerId: string };
       const adminId = getUserId(request) || "system-admin";
@@ -200,10 +202,10 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  // 4. Activate a seller account
+  // 4. Activate a seller account (Super Admin or Manage Admin)
   app.post(
     "/api/v1/admin/sellers/:sellerId/activate",
-    { preHandler: [requireAdmin] },
+    { preHandler: [requireManageAdmin] },
     async (request, reply) => {
       const { sellerId } = request.params as { sellerId: string };
       const adminId = getUserId(request) || "system-admin";
@@ -244,10 +246,10 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  // 5. Suspend a seller account
+  // 5. Suspend a seller account (Super Admin or Manage Admin)
   app.post(
     "/api/v1/admin/sellers/:sellerId/suspend",
-    { preHandler: [requireAdmin] },
+    { preHandler: [requireManageAdmin] },
     async (request, reply) => {
       const { sellerId } = request.params as { sellerId: string };
       const adminId = getUserId(request) || "system-admin";
@@ -347,6 +349,94 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({
         message: `Seller/Vendor platform feature successfully ${updated.isSellerEnabled ? "enabled" : "disabled"}`,
         settings: updated,
+      });
+    },
+  );
+
+  // 10. Admin Delegations — List all active Manage Admins (Super Admin only)
+  app.get(
+    "/api/v1/admin/delegations",
+    { preHandler: [requireSuperAdmin] },
+    async (_request, reply) => {
+      const delegations = await db
+        .select()
+        .from(adminDelegations)
+        .orderBy(desc(adminDelegations.createdAt));
+      return reply.send({ delegations });
+    },
+  );
+
+  // 11. Admin Delegations — Grant Manage Admin delegation (Super Admin only)
+  app.post(
+    "/api/v1/admin/delegations",
+    { preHandler: [requireSuperAdmin] },
+    async (request, reply) => {
+      const parseResult = GrantDelegationSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          message: "Invalid delegation payload",
+          errors: parseResult.error.flatten(),
+        });
+      }
+
+      const superAdminId = getUserId(request) || "system-super-admin";
+      const { adminUserId } = parseResult.data;
+
+      // Check if already delegated
+      const existing = await db
+        .select()
+        .from(adminDelegations)
+        .where(
+          and(
+            eq(adminDelegations.adminUserId, adminUserId),
+            eq(adminDelegations.permission, "manage_sellers"),
+          ),
+        )
+        .limit(1);
+
+      if (existing.length > 0) {
+        return reply.send({
+          message: "Admin already has manage_sellers delegation",
+          delegation: existing[0],
+        });
+      }
+
+      const id = `del_${uuidv4()}`;
+      await db.insert(adminDelegations).values({
+        id,
+        adminUserId,
+        permission: "manage_sellers",
+        grantedByUserId: superAdminId,
+      });
+
+      const [newDelegation] = await db
+        .select()
+        .from(adminDelegations)
+        .where(eq(adminDelegations.id, id))
+        .limit(1);
+
+      return reply.status(201).send({
+        message: "Manage Admin verification delegation granted successfully",
+        delegation: newDelegation,
+      });
+    },
+  );
+
+  // 12. Admin Delegations — Revoke Manage Admin delegation (Super Admin only)
+  app.delete(
+    "/api/v1/admin/delegations/:adminUserId",
+    { preHandler: [requireSuperAdmin] },
+    async (request, reply) => {
+      const { adminUserId } = request.params as { adminUserId: string };
+
+      await db
+        .delete(adminDelegations)
+        .where(eq(adminDelegations.adminUserId, adminUserId));
+
+      return reply.send({
+        success: true,
+        message: `Delegation for admin ${adminUserId} revoked successfully`,
+        adminUserId,
       });
     },
   );

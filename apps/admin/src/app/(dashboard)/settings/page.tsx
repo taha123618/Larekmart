@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/nextjs";
 import {
   fetchSystemSettings,
   updateSystemSettings,
+  fetchAdminDelegations,
+  grantAdminDelegation,
+  revokeAdminDelegation,
 } from "@/services/seller.service";
 import {
   Card,
@@ -15,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -27,6 +32,8 @@ import {
   Radio,
   CheckCircle2,
   XCircle,
+  UserCheck,
+  Trash2,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -69,6 +76,51 @@ export default function SettingsAdminPage() {
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to update system settings.");
+    },
+  });
+
+  // Delegated Manage Admins state & queries
+  const [newAdminUserId, setNewAdminUserId] = useState("");
+
+  const {
+    data: delegations = [],
+    isLoading: isLoadingDelegations,
+    refetch: refetchDelegations,
+  } = useQuery({
+    queryKey: ["admin", "delegations"],
+    queryFn: async () => {
+      const token = await getToken();
+      return fetchAdminDelegations(token || undefined);
+    },
+    enabled: isSuperAdmin,
+  });
+
+  const grantMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const token = await getToken();
+      return grantAdminDelegation(userId, token || undefined);
+    },
+    onSuccess: () => {
+      setNewAdminUserId("");
+      refetchDelegations();
+      toast.success("Manage Admin delegation granted successfully!");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to grant delegation");
+    },
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const token = await getToken();
+      return revokeAdminDelegation(userId, token || undefined);
+    },
+    onSuccess: () => {
+      refetchDelegations();
+      toast.success("Manage Admin delegation revoked successfully!");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to revoke delegation");
     },
   });
 
@@ -313,6 +365,117 @@ export default function SettingsAdminPage() {
               </span>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* DELEGATED MANAGE ADMINS (SELLER VERIFICATION) */}
+      <Card className="border border-gray-200 dark:border-gray-800 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <CardTitle className="text-lg">
+                  Delegated Manage Admins (Seller Verification)
+                </CardTitle>
+              </div>
+              <CardDescription>
+                Designate specific administrators with authority to verify
+                sellers, inspect KYB records, and activate storefronts.
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {delegations.length} Active Delegations
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isSuperAdmin ? (
+            <>
+              {/* Grant New Delegation Form */}
+              <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 space-y-3">
+                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  Grant Seller Verification Permission to an Administrator
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    placeholder="Enter Admin Clerk User ID (e.g. user_2abc123...)"
+                    value={newAdminUserId}
+                    onChange={(e) => setNewAdminUserId(e.target.value.trim())}
+                    className="flex-1 bg-white dark:bg-zinc-800 font-mono text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={!newAdminUserId || grantMutation.isPending}
+                    onClick={() => grantMutation.mutate(newAdminUserId)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                  >
+                    <UserCheck className="w-4 h-4 mr-1.5" />
+                    {grantMutation.isPending
+                      ? "Granting..."
+                      : "Grant Manage Admin"}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-gray-500">
+                  Admins granted this delegation gain authority to approve,
+                  reject, suspend, and verify marketplace sellers and KYB
+                  vendors without requiring platform-wide Super Admin access.
+                </p>
+              </div>
+
+              {/* Delegations Table */}
+              {isLoadingDelegations ? (
+                <div className="text-xs text-gray-500 py-4 text-center">
+                  Loading active delegations...
+                </div>
+              ) : delegations.length === 0 ? (
+                <div className="text-center py-6 border border-dashed rounded-xl border-gray-200 dark:border-gray-800 text-xs text-gray-400">
+                  No additional Manage Admins delegated. Only Super Admins
+                  currently have verification authority.
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200 dark:divide-gray-800 border rounded-xl overflow-hidden text-xs">
+                  {delegations.map((del) => (
+                    <div
+                      key={del.id}
+                      className="p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-zinc-900/50 transition-colors"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="font-mono font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                          <span>{del.adminUserId}</span>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800"
+                          >
+                            manage_sellers
+                          </Badge>
+                        </div>
+                        <div className="text-[11px] text-gray-400">
+                          Granted by {del.grantedByUserId} on{" "}
+                          {new Date(del.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={revokeMutation.isPending}
+                        onClick={() => revokeMutation.mutate(del.adminUserId)}
+                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 h-8 px-2.5"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
+                        Revoke
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 text-xs text-gray-500">
+              Only a Super Admin can view, grant, or revoke Manage Admin seller
+              verification permissions.
+            </div>
+          )}
         </CardContent>
       </Card>
 

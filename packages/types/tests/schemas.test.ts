@@ -265,10 +265,14 @@ async function runSchemaTests() {
   assert.equal(GATEWAY_HEADERS.INTERNAL_SECRET, "x-internal-secret");
   assert.equal(GATEWAY_HEADERS.IS_SUPER_ADMIN, "x-user-is-super-admin");
   assert.equal(GATEWAY_HEADERS.IS_SELLER, "x-user-is-seller");
+  assert.equal(GATEWAY_HEADERS.CAN_MANAGE_SELLERS, "x-user-can-manage-sellers");
 
-  const { SystemSettingsSchema, UpdateSystemSettingsSchema } = await import(
-    "../src/index.js"
-  );
+  const {
+    SystemSettingsSchema,
+    UpdateSystemSettingsSchema,
+    AdminDelegationSchema,
+    GrantDelegationSchema,
+  } = await import("../src/index.js");
   const validSysSettings = {
     id: "marketplace",
     isSellerEnabled: true,
@@ -285,8 +289,25 @@ async function runSchemaTests() {
       .success,
     false,
   );
+
+  const validDelegation = {
+    id: "del_1",
+    adminUserId: "user_admin_123",
+    permission: "manage_sellers",
+    grantedByUserId: "user_super_admin",
+    createdAt: new Date().toISOString(),
+  };
+  assert.equal(AdminDelegationSchema.safeParse(validDelegation).success, true);
+  assert.equal(
+    GrantDelegationSchema.safeParse({ adminUserId: "user_admin_123" }).success,
+    true,
+  );
+  assert.equal(
+    GrantDelegationSchema.safeParse({ adminUserId: "" }).success,
+    false,
+  );
   console.log(
-    "✓ Gateway schemas, header contracts, and SystemSettings schemas verified",
+    "✓ Gateway schemas, header contracts, and SystemSettings/Delegation schemas verified",
   );
 
   // 10. Tax Domain Schemas

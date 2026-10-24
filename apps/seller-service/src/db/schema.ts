@@ -220,3 +220,22 @@ export const systemSettings = pgTable("system_settings", {
     .defaultNow(),
   updatedBy: varchar("updated_by", { length: 128 }),
 });
+
+// ==============================================================================
+// 9. Admin Delegations (Super Admin Delegated Verification Authority)
+// ==============================================================================
+export const adminDelegations = pgTable(
+  "admin_delegations",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    adminUserId: varchar("admin_user_id", { length: 128 }).notNull(),
+    permission: varchar("permission", { length: 64 })
+      .notNull()
+      .default("manage_sellers"),
+    grantedByUserId: varchar("granted_by_user_id", { length: 128 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("admin_delegations_user_idx").on(table.adminUserId)],
+);

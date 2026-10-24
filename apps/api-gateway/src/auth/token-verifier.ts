@@ -7,6 +7,7 @@ export interface AuthenticatedUser {
   role: "admin" | "seller" | "customer" | "super_admin";
   isSuperAdmin: boolean;
   isSeller: boolean;
+  canManageSellers: boolean;
   claims?: CustomJwtSessionClaims;
 }
 
@@ -25,6 +26,11 @@ export function extractAuthClaims(
       rawRole === "super_admin" || claims?.metadata?.isSuperAdmin === true;
     const isSeller =
       rawRole === "seller" || claims?.metadata?.isSeller === true;
+    const canManageSellers =
+      isSuperAdmin ||
+      claims?.metadata?.canManageSellers === true ||
+      (Array.isArray(claims?.metadata?.permissions) &&
+        claims.metadata.permissions.includes("manage_sellers"));
 
     let role: "admin" | "seller" | "customer" | "super_admin" = "customer";
     if (isSuperAdmin) {
@@ -40,6 +46,7 @@ export function extractAuthClaims(
       role,
       isSuperAdmin,
       isSeller,
+      canManageSellers,
       claims,
     };
   } catch {

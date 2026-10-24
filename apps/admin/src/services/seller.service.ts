@@ -189,9 +189,7 @@ export async function recordAdminSellerPerformance(
 /**
  * Fetch platform-wide marketplace system settings (Public or Admin)
  */
-export async function fetchSystemSettings(
-  authToken?: string,
-): Promise<{
+export async function fetchSystemSettings(authToken?: string): Promise<{
   id: string;
   isSellerEnabled: boolean;
   updatedAt: string;
@@ -234,6 +232,82 @@ export async function updateSystemSettings(
     throw new Error(
       errorBody.message ||
         `Failed to update system settings (HTTP ${res.status})`,
+    );
+  }
+  return res.json();
+}
+
+/**
+ * Fetch all active Manage Admin delegations (Super Admin only)
+ */
+export async function fetchAdminDelegations(authToken?: string): Promise<
+  Array<{
+    id: string;
+    adminUserId: string;
+    permission: string;
+    grantedByUserId: string;
+    createdAt: string;
+  }>
+> {
+  const url = `${API_BASE}/api/v1/admin/delegations`;
+  const res = await fetch(url, {
+    headers: getHeaders(authToken),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch admin delegations (HTTP ${res.status})`);
+  }
+  const data = await res.json();
+  return data.delegations || [];
+}
+
+/**
+ * Grant Manage Admin delegation to an administrator (Super Admin only)
+ */
+export async function grantAdminDelegation(
+  adminUserId: string,
+  authToken?: string,
+): Promise<{
+  message: string;
+  delegation: {
+    id: string;
+    adminUserId: string;
+    permission: string;
+    grantedByUserId: string;
+    createdAt: string;
+  };
+}> {
+  const url = `${API_BASE}/api/v1/admin/delegations`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify({ adminUserId }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(
+      errorBody.message || `Failed to grant delegation (HTTP ${res.status})`,
+    );
+  }
+  return res.json();
+}
+
+/**
+ * Revoke Manage Admin delegation from an administrator (Super Admin only)
+ */
+export async function revokeAdminDelegation(
+  adminUserId: string,
+  authToken?: string,
+): Promise<{ message: string; adminUserId: string }> {
+  const url = `${API_BASE}/api/v1/admin/delegations/${adminUserId}`;
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: getHeaders(authToken),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(
+      errorBody.message || `Failed to revoke delegation (HTTP ${res.status})`,
     );
   }
   return res.json();

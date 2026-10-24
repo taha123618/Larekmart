@@ -319,6 +319,132 @@ async function runSellerServiceTests() {
       "  ✓ Super Admin successfully re-enabled seller feature (isSellerEnabled: true)",
     );
 
+    // ────────────────────────────────────────────────────────────
+    // Test 6: Delegated Manage Admin Verification & Delegations
+    // ────────────────────────────────────────────────────────────
+    console.log(
+      "\n[Test 6] Delegated Manage Admin & Seller Verification Authority",
+    );
+
+    // 6.1 Standard admin without manage_sellers authority cannot update seller status (403 MANAGE_ADMIN_REQUIRED)
+    const nonManageAdminStatusRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/admin/sellers/dummy-seller-id/status",
+      headers: {
+        "x-user-id": "admin-auditor-1",
+        "x-user-role": "admin",
+      },
+      payload: {
+        status: "ACTIVE",
+        reason: "Unauthorized attempt",
+      },
+    });
+    assert.equal(nonManageAdminStatusRes.statusCode, 403);
+    const nonManageJson = JSON.parse(nonManageAdminStatusRes.payload);
+    assert.equal(nonManageJson.code, "MANAGE_ADMIN_REQUIRED");
+    console.log(
+      "  ✓ Standard admin without delegation rejected with 403 MANAGE_ADMIN_REQUIRED",
+    );
+
+    // 6.2 Manage Admin with x-user-can-manage-sellers: true bypasses the guard
+    const manageAdminStatusRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/admin/sellers/dummy-seller-id/status",
+      headers: {
+        "x-user-id": "admin-delegate-1",
+        "x-user-role": "admin",
+        "x-user-can-manage-sellers": "true",
+      },
+      payload: {
+        status: "ACTIVE",
+        reason: "Legitimate verification",
+      },
+    });
+    assert.notEqual(
+      manageAdminStatusRes.statusCode,
+      403,
+      "Manage Admin should not be rejected with 403",
+    );
+    console.log(
+      "  ✓ Delegated Manage Admin passes verification guard successfully",
+    );
+
+    // 6.3 Non-Super-Admin cannot grant delegations (403 SUPER_ADMIN_REQUIRED)
+    const unauthDelegationRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/admin/delegations",
+      headers: {
+        "x-user-id": "admin-standard",
+        "x-user-role": "admin",
+      },
+      payload: {
+        adminUserId: "user-target-admin",
+      },
+    });
+    assert.equal(unauthDelegationRes.statusCode, 403);
+    const unauthDelJson = JSON.parse(unauthDelegationRes.payload);
+    assert.equal(unauthDelJson.code, "SUPER_ADMIN_REQUIRED");
+    console.log(
+      "  ✓ Non-Super-Admin prohibited from delegating permissions (403 SUPER_ADMIN_REQUIRED)",
+    );
+
+    // 6.4 Super Admin grants delegation
+    const grantDelRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/admin/delegations",
+      headers: {
+        "x-user-id": "super-admin-root",
+        "x-user-role": "admin",
+        "x-user-is-super-admin": "true",
+      },
+      payload: {
+        adminUserId: "admin-delegate-test-id",
+        permission: "manage_sellers",
+      },
+    });
+    assert.equal(grantDelRes.statusCode, 201);
+    const grantDelJson = JSON.parse(grantDelRes.payload);
+    assert.equal(grantDelJson.delegation.adminUserId, "admin-delegate-test-id");
+    assert.equal(grantDelJson.delegation.permission, "manage_sellers");
+    console.log(
+      "  ✓ Super Admin successfully grants manage_sellers delegation",
+    );
+
+    // 6.5 Super Admin lists delegations
+    const listDelRes = await app.inject({
+      method: "GET",
+      url: "/api/v1/admin/delegations",
+      headers: {
+        "x-user-id": "super-admin-root",
+        "x-user-role": "admin",
+        "x-user-is-super-admin": "true",
+      },
+    });
+    assert.equal(listDelRes.statusCode, 200);
+    const listDelJson = JSON.parse(listDelRes.payload);
+    assert.ok(Array.isArray(listDelJson.delegations));
+    const found = listDelJson.delegations.some(
+      (d: { adminUserId: string }) =>
+        d.adminUserId === "admin-delegate-test-id",
+    );
+    assert.ok(found, "Granted delegation should appear in list");
+    console.log("  ✓ Super Admin retrieves active delegations list");
+
+    // 6.6 Super Admin revokes delegation
+    const revokeDelRes = await app.inject({
+      method: "DELETE",
+      url: "/api/v1/admin/delegations/admin-delegate-test-id",
+      headers: {
+        "x-user-id": "super-admin-root",
+        "x-user-role": "admin",
+        "x-user-is-super-admin": "true",
+      },
+    });
+    assert.equal(revokeDelRes.statusCode, 200);
+    const revokeDelJson = JSON.parse(revokeDelRes.payload);
+    assert.equal(revokeDelJson.success, true);
+    console.log("  ✓ Super Admin revokes manage_sellers delegation");
+
     console.log("\n==================================================");
     console.log("  ALL SELLER-SERVICE TESTS PASSED SUCCESSFULLY!   ");
     console.log("==================================================\n");

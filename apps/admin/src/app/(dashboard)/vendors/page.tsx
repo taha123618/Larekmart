@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import {
   fetchAdminVendors,
   fetchAdminVendorDetails,
@@ -60,7 +60,18 @@ type ActiveTab = "vendors" | "verifications" | "documents";
 
 export default function VendorsAdminPage() {
   const { getToken } = useAuth();
+  const { user } = useUser();
   const queryClient = useQueryClient();
+
+  // Super Admin & Manage Admin permissions
+  const userRole = user?.publicMetadata?.role as string | undefined;
+  const isSuperAdmin =
+    userRole === "super_admin" || user?.publicMetadata?.isSuperAdmin === true;
+  const canManageSellers =
+    isSuperAdmin ||
+    user?.publicMetadata?.canManageSellers === true ||
+    (Array.isArray(user?.publicMetadata?.permissions) &&
+      user.publicMetadata.permissions.includes("manage_sellers"));
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("vendors");
   const [searchQuery, setSearchQuery] = useState("");
@@ -286,10 +297,24 @@ export default function VendorsAdminPage() {
       {/* Top Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-            <Building2 className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
-            Vendor & Business KYB Management
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+              <Building2 className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
+              Vendor & Business KYB Management
+            </h1>
+            {canManageSellers ? (
+              <Badge className="bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-normal">
+                {isSuperAdmin ? "Super Admin" : "Manage Admin (Verification)"}
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="text-amber-600 border-amber-500/20 text-xs font-normal"
+              >
+                Auditor (Read-Only)
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Authoritative legal business entities, merchant KYB compliance, and
             verification workflows.
@@ -535,18 +560,24 @@ export default function VendorsAdminPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          disabled={!canManageSellers}
                           onClick={() => {
                             setKybVendor(vendor);
                             setKybNotes("");
                             setKybDecision("APPROVED");
                           }}
-                          title="Perform KYB Verification"
+                          title={
+                            canManageSellers
+                              ? "Perform KYB Verification"
+                              : "Manage Admin verification permission required"
+                          }
                         >
                           <ShieldCheck className="h-4 w-4 text-emerald-600" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
+                          disabled={!canManageSellers}
                           onClick={() => {
                             setStatusVendor(vendor);
                             setNewStatus(
@@ -556,7 +587,11 @@ export default function VendorsAdminPage() {
                             );
                             setStatusReason("");
                           }}
-                          title="Change Operational Status"
+                          title={
+                            canManageSellers
+                              ? "Change Operational Status"
+                              : "Manage Admin verification permission required"
+                          }
                         >
                           <Ban className="h-4 w-4 text-rose-500" />
                         </Button>
@@ -867,6 +902,15 @@ export default function VendorsAdminPage() {
                                 size="sm"
                                 variant="outline"
                                 className="h-7 px-2 text-emerald-600"
+                                disabled={
+                                  !canManageSellers ||
+                                  verifyDocMutation.isPending
+                                }
+                                title={
+                                  canManageSellers
+                                    ? "Accept document"
+                                    : "Manage Admin permission required"
+                                }
                                 onClick={() =>
                                   verifyDocMutation.mutate({
                                     vendorId: selectedVendorDetails.id,
@@ -881,6 +925,15 @@ export default function VendorsAdminPage() {
                                 size="sm"
                                 variant="outline"
                                 className="h-7 px-2 text-rose-600"
+                                disabled={
+                                  !canManageSellers ||
+                                  verifyDocMutation.isPending
+                                }
+                                title={
+                                  canManageSellers
+                                    ? "Reject document"
+                                    : "Manage Admin permission required"
+                                }
                                 onClick={() =>
                                   verifyDocMutation.mutate({
                                     vendorId: selectedVendorDetails.id,
@@ -910,6 +963,12 @@ export default function VendorsAdminPage() {
               <div className="flex gap-2 pt-4 border-t border-neutral-200 dark:border-neutral-800">
                 <Button
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  disabled={!canManageSellers}
+                  title={
+                    canManageSellers
+                      ? "Approve KYB Dossier"
+                      : "Manage Admin permission required"
+                  }
                   onClick={() => {
                     setKybVendor(selectedVendorDetails);
                     setKybDecision("APPROVED");
@@ -922,6 +981,12 @@ export default function VendorsAdminPage() {
                 <Button
                   variant="destructive"
                   className="flex-1"
+                  disabled={!canManageSellers}
+                  title={
+                    canManageSellers
+                      ? "Reject KYB Dossier"
+                      : "Manage Admin permission required"
+                  }
                   onClick={() => {
                     setKybVendor(selectedVendorDetails);
                     setKybDecision("REJECTED");
@@ -998,7 +1063,7 @@ export default function VendorsAdminPage() {
 
             <Button
               className="w-full mt-4"
-              disabled={verifyMutation.isPending}
+              disabled={!canManageSellers || verifyMutation.isPending}
               onClick={() => {
                 if (!kybVendor) return;
                 verifyMutation.mutate({
@@ -1066,7 +1131,11 @@ export default function VendorsAdminPage() {
 
             <Button
               className="w-full mt-4"
-              disabled={!statusReason.trim() || statusMutation.isPending}
+              disabled={
+                !canManageSellers ||
+                !statusReason.trim() ||
+                statusMutation.isPending
+              }
               onClick={() => {
                 if (!statusVendor) return;
                 statusMutation.mutate({

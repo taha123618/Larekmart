@@ -26,6 +26,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       "x-user-name",
       "x-user-is-super-admin",
       "x-user-is-seller",
+      "x-user-can-manage-sellers",
       "x-internal-secret",
     ],
     credentials: true,

@@ -10,6 +10,7 @@ export const GATEWAY_HEADERS = {
   USER_ROLE: "x-user-role",
   IS_SUPER_ADMIN: "x-user-is-super-admin",
   IS_SELLER: "x-user-is-seller",
+  CAN_MANAGE_SELLERS: "x-user-can-manage-sellers",
   GUEST_TOKEN: "x-guest-token",
   FORWARDED_FOR: "x-forwarded-for",
   IDEMPOTENCY_KEY: "idempotency-key",

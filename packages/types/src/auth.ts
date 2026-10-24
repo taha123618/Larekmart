@@ -5,6 +5,8 @@ export interface CustomJwtSessionClaims {
     role?: "user" | "admin" | "seller" | "super_admin";
     isSuperAdmin?: boolean;
     isSeller?: boolean;
+    canManageSellers?: boolean;
+    permissions?: string[];
   };
 }
 

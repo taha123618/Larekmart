@@ -20,11 +20,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = "Internal server error";
+    let code: string | undefined = undefined;
     let errors: unknown = undefined;
 
     if (exception instanceof ZodError) {
       status = HttpStatus.BAD_REQUEST;
       message = "Validation error";
+      code = "VALIDATION_ERROR";
       errors = exception.issues.map((issue) => ({
         path: issue.path.join("."),
         message: issue.message,
@@ -37,6 +39,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       } else if (typeof res === "object" && res !== null) {
         const obj = res as Record<string, unknown>;
         message = (obj.message as string) || exception.message;
+        code = obj.code as string | undefined;
         errors = obj.errors;
       }
     } else if (exception instanceof Error) {
@@ -50,6 +53,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     response.status(status).send({
       statusCode: status,
       message,
+      ...(code ? { code } : {}),
       ...(errors ? { errors } : {}),
       path: request.url,
       timestamp: new Date().toISOString(),

@@ -14,6 +14,7 @@ import {
 import { AdminVendorsService } from "./admin-vendors.service.js";
 import { AuthGuard } from "../../common/guards/auth.guard.js";
 import { AdminGuard } from "../../common/guards/admin.guard.js";
+import { ManageAdminGuard } from "../../common/guards/manage-admin.guard.js";
 import type {
   AdminApproveVendorInput,
   AdminRejectVendorInput,
@@ -51,6 +52,7 @@ export class AdminVendorsController {
   }
 
   @Post(":vendorId/approve")
+  @UseGuards(ManageAdminGuard)
   @HttpCode(HttpStatus.OK)
   async approveVendor(
     @Param("vendorId") vendorId: string,
@@ -61,6 +63,7 @@ export class AdminVendorsController {
   }
 
   @Post(":vendorId/reject")
+  @UseGuards(ManageAdminGuard)
   @HttpCode(HttpStatus.OK)
   async rejectVendor(
     @Param("vendorId") vendorId: string,
@@ -71,6 +74,7 @@ export class AdminVendorsController {
   }
 
   @Post(":vendorId/suspend")
+  @UseGuards(ManageAdminGuard)
   @HttpCode(HttpStatus.OK)
   async suspendVendor(
     @Param("vendorId") vendorId: string,
@@ -81,6 +85,7 @@ export class AdminVendorsController {
   }
 
   @Post(":vendorId/reactivate")
+  @UseGuards(ManageAdminGuard)
   @HttpCode(HttpStatus.OK)
   async reactivateVendor(
     @Param("vendorId") vendorId: string,
@@ -91,6 +96,7 @@ export class AdminVendorsController {
   }
 
   @Patch(":vendorId/documents/:documentId")
+  @UseGuards(ManageAdminGuard)
   async reviewDocument(
     @Param("vendorId") vendorId: string,
     @Param("documentId") documentId: string,

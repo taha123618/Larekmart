@@ -272,6 +272,93 @@ async function runVendorServiceTests() {
     assert.ok(reactivatedEvent.reactivatedAt);
     console.log("  ✓ All 6 vendor lifecycle Kafka event contracts verified");
 
+    // ────────────────────────────────────────────────────────────
+    // Test 6: Delegated Manage Admin Verification Guard
+    // ────────────────────────────────────────────────────────────
+    console.log(
+      "\n[Test 6] Delegated Manage Admin Authority (ManageAdminGuard)",
+    );
+
+    // Standard admin without delegation rejected with 403 on approval
+    const nonManageApproveRes = await fastify.inject({
+      method: "POST",
+      url: "/api/v1/admin/vendors/vnd-test-123/approve",
+      headers: {
+        "x-user-id": "admin-auditor-1",
+        "x-user-role": "admin",
+      },
+      payload: {
+        reason: "Unauthorized attempt without manage_sellers",
+      },
+    });
+    assert.equal(nonManageApproveRes.statusCode, 403);
+    const nonManageApproveJson = JSON.parse(nonManageApproveRes.payload);
+    assert.equal(nonManageApproveJson.code, "MANAGE_ADMIN_REQUIRED");
+    console.log(
+      "  ✓ Standard admin without delegation rejected on approval (403 MANAGE_ADMIN_REQUIRED)",
+    );
+
+    // Standard admin without delegation rejected with 403 on rejection
+    const nonManageRejectRes = await fastify.inject({
+      method: "POST",
+      url: "/api/v1/admin/vendors/vnd-test-123/reject",
+      headers: {
+        "x-user-id": "admin-auditor-1",
+        "x-user-role": "admin",
+      },
+      payload: {
+        reason: "Unauthorized reject attempt",
+      },
+    });
+    assert.equal(nonManageRejectRes.statusCode, 403);
+    const nonManageRejectJson = JSON.parse(nonManageRejectRes.payload);
+    assert.equal(nonManageRejectJson.code, "MANAGE_ADMIN_REQUIRED");
+    console.log(
+      "  ✓ Standard admin without delegation rejected on rejection (403 MANAGE_ADMIN_REQUIRED)",
+    );
+
+    // Delegated Manage Admin (x-user-can-manage-sellers: "true") passes ManageAdminGuard
+    const manageAdminApproveRes = await fastify.inject({
+      method: "POST",
+      url: "/api/v1/admin/vendors/vnd-test-123/approve",
+      headers: {
+        "x-user-id": "admin-delegate-1",
+        "x-user-role": "admin",
+        "x-user-can-manage-sellers": "true",
+      },
+      payload: {
+        reason: "Legitimate approval by delegated admin",
+      },
+    });
+    assert.notEqual(
+      manageAdminApproveRes.statusCode,
+      403,
+      "Manage Admin should pass ManageAdminGuard",
+    );
+    console.log(
+      "  ✓ Delegated Manage Admin passes ManageAdminGuard on vendor approval",
+    );
+
+    // Super Admin passes ManageAdminGuard
+    const superAdminApproveRes = await fastify.inject({
+      method: "POST",
+      url: "/api/v1/admin/vendors/vnd-test-123/approve",
+      headers: {
+        "x-user-id": "admin-super",
+        "x-user-role": "admin",
+        "x-user-is-super-admin": "true",
+      },
+      payload: {
+        reason: "Legitimate approval by Super Admin",
+      },
+    });
+    assert.notEqual(
+      superAdminApproveRes.statusCode,
+      403,
+      "Super Admin should pass ManageAdminGuard",
+    );
+    console.log("  ✓ Super Admin passes ManageAdminGuard on vendor approval");
+
     console.log("\n==================================================");
     console.log("  ALL VENDOR SERVICE TESTS PASSED SUCCESSFULLY!   ");
     console.log("==================================================\n");
