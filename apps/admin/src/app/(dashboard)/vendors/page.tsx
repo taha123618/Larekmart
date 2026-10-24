@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/nextjs";
 import {
@@ -764,9 +765,19 @@ export default function VendorsAdminPage() {
                   </div>
                   <div>
                     <span className="text-neutral-400">Clerk Owner ID:</span>
-                    <p className="font-mono">
-                      {selectedVendorDetails.ownerUserId}
-                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="font-mono truncate">
+                        {selectedVendorDetails.ownerUserId}
+                      </p>
+                      <Link
+                        href={`/users/${selectedVendorDetails.ownerUserId}`}
+                        className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-0.5 shrink-0"
+                        title="Manage User & isSeller Privilege"
+                      >
+                        <Eye className="w-3 h-3" />
+                        User isSeller
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>

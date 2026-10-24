@@ -13,7 +13,8 @@ import {
   getMySeller,
   fetchSystemSettings,
 } from "@/services/seller.service";
-import type { OrganizationType } from "@repo/types";
+import { fetchCurrentUser } from "@/services/user.service";
+import type { OrganizationType, UserDetailResponse } from "@repo/types";
 import {
   Store,
   Building2,
@@ -40,6 +41,7 @@ export default function BecomeASellerPage() {
     storeSlug?: string;
     status?: string;
   } | null>(null);
+  const [dbUser, setDbUser] = useState<UserDetailResponse | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState(true);
   const [isSellerEnabled, setIsSellerEnabled] = useState(true);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
@@ -52,7 +54,8 @@ export default function BecomeASellerPage() {
   }, []);
 
   const userIsSeller = Boolean(
-    user?.publicMetadata?.isSeller ||
+    dbUser?.isSeller ||
+      user?.publicMetadata?.isSeller ||
       user?.unsafeMetadata?.isSeller ||
       user?.publicMetadata?.role === "seller",
   );
@@ -100,10 +103,15 @@ export default function BecomeASellerPage() {
 
       try {
         const token = await getToken();
-        const [vendor, seller] = await Promise.all([
+        const [vendor, seller, userProfile] = await Promise.all([
           getMyVendor(token || undefined),
           getMySeller(token || undefined),
+          token ? fetchCurrentUser(token) : Promise.resolve(null),
         ]);
+
+        if (userProfile) {
+          setDbUser(userProfile);
+        }
 
         if (vendor || seller) {
           setExistingMerchant({
@@ -467,7 +475,26 @@ export default function BecomeASellerPage() {
               </div>
             </div>
 
-            {!userIsSeller && (
+            {userIsSeller ? (
+              <div className="mb-6 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                  <div>
+                    <h3 className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                      Authoritative Seller Privilege Verified
+                    </h3>
+                    <p className="mt-0.5 text-xs text-emerald-700/90 dark:text-emerald-400/90">
+                      Your database user account has active seller credentials (
+                      <code className="font-mono bg-emerald-500/10 px-1 py-0.5 rounded">
+                        isSeller: true
+                      </code>
+                      ). You are fully authorized to operate marketplace
+                      storefronts, manage policies, and sell products.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
               <div className="mb-6 p-4 rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-900 dark:text-blue-200">
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />

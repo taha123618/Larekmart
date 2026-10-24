@@ -22,7 +22,7 @@ import NotificationBell from "./NotificationBell";
 import WishlistButton from "./WishlistButton";
 import CartHeaderButton from "./CartHeaderButton";
 import ThemeToggleAnimated from "./common/ThemeToggleAnimated";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
 import ProfileButton from "./ProfileButton";
 import CurrencySelector from "./CurrencySelector";
 
@@ -36,8 +36,15 @@ const CATEGORY_LINKS = [
 ];
 
 export default function Navbar() {
+  const { user } = useUser();
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+
+  const isSeller = Boolean(
+    user?.publicMetadata?.isSeller ||
+      user?.unsafeMetadata?.isSeller ||
+      user?.publicMetadata?.role === "seller",
+  );
 
   useEffect(() => {
     fetchSystemSettings()
@@ -77,7 +84,10 @@ export default function Navbar() {
                   href="/become-a-seller"
                   className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
                 >
-                  <span>Sell on Larekmart</span>
+                  {isSeller && <Store className="w-3.5 h-3.5" />}
+                  <span>
+                    {isSeller ? "Seller Portal" : "Sell on Larekmart"}
+                  </span>
                 </Link>
                 <span className="hidden sm:inline text-slate-700">|</span>
               </>

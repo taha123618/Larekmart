@@ -109,7 +109,8 @@ export default function AccountPage(): React.JSX.Element {
   }, []);
 
   const isSeller = Boolean(
-    clerkUser?.publicMetadata?.isSeller ||
+    userData?.isSeller ||
+      clerkUser?.publicMetadata?.isSeller ||
       clerkUser?.unsafeMetadata?.isSeller ||
       clerkUser?.publicMetadata?.role === "seller",
   );
@@ -486,6 +487,12 @@ export default function AccountPage(): React.JSX.Element {
             <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
               Verified Shopper
             </span>
+            {isSeller && (
+              <span className="px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold flex items-center gap-1">
+                <Store className="w-3.5 h-3.5" />
+                Verified Seller
+              </span>
+            )}
           </div>
         </div>
       </div>
