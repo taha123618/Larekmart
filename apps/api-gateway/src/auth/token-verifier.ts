@@ -24,8 +24,13 @@ export function extractAuthClaims(
     const rawRole = claims?.metadata?.role;
     const isSuperAdmin =
       rawRole === "super_admin" || claims?.metadata?.isSuperAdmin === true;
+    const anyClaims = claims as Record<string, unknown> | undefined;
     const isSeller =
-      rawRole === "seller" || claims?.metadata?.isSeller === true;
+      rawRole === "seller" ||
+      claims?.metadata?.isSeller === true ||
+      anyClaims?.isSeller === true ||
+      (anyClaims?.publicMetadata as Record<string, unknown> | undefined)
+        ?.isSeller === true;
     const canManageSellers =
       isSuperAdmin ||
       claims?.metadata?.canManageSellers === true ||

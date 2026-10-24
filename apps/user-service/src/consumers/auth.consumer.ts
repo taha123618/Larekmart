@@ -70,6 +70,14 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
             ? `${firstName} ${lastName}`
             : firstName || undefined,
       });
+
+      if (isSeller && !user.isSeller) {
+        await userRepository.updateStatus(user.id, { isSeller: true });
+        logger.info(
+          `Granted isSeller=true in database to user ${user.id} (authUserId: ${authUserId}) on event sync`,
+        );
+      }
+
       logger.info(
         `Updated user profile for existing authUserId: ${authUserId}`,
       );
@@ -81,6 +89,30 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
   } catch (error) {
     userMetrics.kafkaEventsFailed.inc({ topic: "user.created" });
     logger.error("Error handling user creation Kafka event in user-service", {
+      error: String(error),
+    });
+  }
+}
+
+export async function handleSellerPrivilegeGranted(
+  payload: any,
+): Promise<void> {
+  try {
+    if (!payload) return;
+    const target = payload.value !== undefined ? payload.value : payload;
+    const authUserId =
+      target.primaryUserId || target.ownerUserId || target.userId;
+    if (!authUserId) return;
+
+    const user = await userRepository.findByAuthUserId(authUserId);
+    if (user && !user.isSeller) {
+      await userRepository.updateStatus(user.id, { isSeller: true });
+      logger.info(
+        `Granted isSeller=true in database to user ${user.id} (authUserId: ${authUserId}) from seller/vendor event`,
+      );
+    }
+  } catch (error) {
+    logger.error("Error updating seller privilege from event in user-service", {
       error: String(error),
     });
   }

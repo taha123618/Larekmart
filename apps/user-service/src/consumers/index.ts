@@ -1,6 +1,9 @@
 import { consumer } from "../utils/kafka.js";
 import { logger } from "../observability/metrics.js";
-import { handleAuthUserCreated } from "./auth.consumer.js";
+import {
+  handleAuthUserCreated,
+  handleSellerPrivilegeGranted,
+} from "./auth.consumer.js";
 
 export { consumer };
 
@@ -15,6 +18,12 @@ export async function startKafkaConsumers(): Promise<void> {
         },
       },
       {
+        topicName: "user.updated",
+        topicHandler: async (msg) => {
+          if (msg.value) await handleAuthUserCreated(msg.value);
+        },
+      },
+      {
         topicName: "auth.user_created",
         topicHandler: async (msg) => {
           if (msg.value) await handleAuthUserCreated(msg.value);
@@ -24,6 +33,24 @@ export async function startKafkaConsumers(): Promise<void> {
         topicName: "user.registered",
         topicHandler: async (msg) => {
           if (msg.value) await handleAuthUserCreated(msg.value);
+        },
+      },
+      {
+        topicName: "seller.created",
+        topicHandler: async (msg) => {
+          if (msg.value) await handleSellerPrivilegeGranted(msg.value);
+        },
+      },
+      {
+        topicName: "seller.activated",
+        topicHandler: async (msg) => {
+          if (msg.value) await handleSellerPrivilegeGranted(msg.value);
+        },
+      },
+      {
+        topicName: "vendor.verified",
+        topicHandler: async (msg) => {
+          if (msg.value) await handleSellerPrivilegeGranted(msg.value);
         },
       },
     ]);

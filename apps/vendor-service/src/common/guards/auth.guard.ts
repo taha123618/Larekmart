@@ -10,6 +10,7 @@ export interface AuthenticatedUser {
   userId: string;
   role: string;
   email?: string;
+  isSeller?: boolean;
 }
 
 declare module "fastify" {
@@ -26,6 +27,7 @@ export class AuthGuard implements CanActivate {
     const role =
       (request.headers["x-user-role"] as string | undefined) || "user";
     const email = request.headers["x-user-email"] as string | undefined;
+    const isSeller = request.headers["x-user-is-seller"] === "true";
 
     if (!userId) {
       throw new UnauthorizedException(
@@ -37,6 +39,7 @@ export class AuthGuard implements CanActivate {
       userId,
       role,
       email,
+      isSeller,
     };
 
     return true;

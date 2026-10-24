@@ -74,6 +74,7 @@ router.post("/", async (req, res) => {
         email: user.emailAddresses[0]?.emailAddress,
         firstName: user.firstName,
         lastName: user.lastName,
+        isSeller: Boolean(user.publicMetadata?.isSeller),
       },
     });
     return res.status(201).json(user);
