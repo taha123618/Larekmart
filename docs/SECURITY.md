@@ -17,6 +17,10 @@ Security architecture, authentication standards, perimeter protection, and data 
 - **Admin Self-Promotion Bootstrap**:
   - `POST /api/claim-admin` in `apps/admin` is fail-closed: disabled by default unless `ALLOW_ADMIN_CLAIM === "true"` and `ADMIN_REGISTRATION_SECRET` is set.
   - Requires valid Clerk authentication and timing-safe comparison on the `x-admin-claim-secret` header.
+- **Super Admin Governance & Delegated Administration**:
+  - **Super Admin Authority**: Global kill-switch operations (`isSellerEnabled` in `system_settings`) and granting/revoking delegations require full Super Admin authority (`sessionClaims.metadata.role === "admin"`).
+  - **Delegated Manage Admin**: Operational marketplace administration (e.g., managing seller storefronts, staff, and policies) can be delegated via `admin_delegations` records in `seller-service` with specific scopes (e.g. `manage_sellers`).
+  - **Header-Level Authority Binding**: Downstream services verify either direct Super Admin role or `x-user-can-manage-sellers: true` for delegated seller operations.
 
 ---
 
@@ -25,10 +29,11 @@ Security architecture, authentication standards, perimeter protection, and data 
 The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) serves as the primary ingress perimeter:
 
 - **Client Header Stripping**:
-  - Client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`) are unconditionally stripped on all incoming requests before routing downstream.
-  - Mitigates user impersonation and privilege escalation attacks.
+  - Client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-can-manage-sellers`) are unconditionally stripped on all incoming requests before routing downstream.
+  - Mitigates user impersonation, seller privilege spoofing, and privilege escalation attacks.
 - **Trusted Identity Propagation**:
   - The Gateway verifies Clerk session tokens at the perimeter and injects verified `GATEWAY_HEADERS.USER_ID` and `GATEWAY_HEADERS.USER_ROLE` downstream, signed with `GATEWAY_HEADERS.INTERNAL_SECRET`.
+  - Propagates verified seller context downstream via `x-user-is-seller` and delegated management capability via `x-user-can-manage-sellers`.
 - **Distributed Rate Limiting**:
   - Enforced per IP and authenticated user via Redis sliding window / token bucket.
   - Configured with separate limits for sensitive routes (`auth`, `search`, `orders`, `media`, `general`).

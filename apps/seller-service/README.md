@@ -17,9 +17,7 @@ The seller service owns the marketplace selling persona and public storefront pr
 
 ---
 
-## 2. Database Schema
-
-Seven relational tables persisted in PostgreSQL via Drizzle ORM:
+Nine relational tables persisted in PostgreSQL via Drizzle ORM:
 
 | Table                          | Purpose                                                                                                 |
 | :----------------------------- | :------------------------------------------------------------------------------------------------------ |
@@ -30,6 +28,8 @@ Seven relational tables persisted in PostgreSQL via Drizzle ORM:
 | `seller_policies`              | Public merchant policies (`SHIPPING`, `RETURNS`, `PRIVACY`, `TERMS`).                                   |
 | `seller_status_history`        | Immutable audit log of seller status transitions (`ONBOARDING`, `ACTIVE`, `SUSPENDED`, `INACTIVE`).     |
 | `seller_performance_snapshots` | Service-level indicators (star rating, fulfillment rate, cancellation rate, response times).            |
+| `system_settings`              | Global platform marketplace governance controls and kill switch (`isSellerEnabled`).                    |
+| `admin_delegations`            | Granular Super Admin delegations granting `manage_sellers` authority to Manage Admins.                  |
 
 ---
 
@@ -57,10 +57,16 @@ Seven relational tables persisted in PostgreSQL via Drizzle ORM:
 
 - `GET /api/v1/admin/sellers` — List all marketplace sellers with status filtering and search.
 - `GET /api/v1/admin/sellers/:sellerId` — Inspect comprehensive seller details, linked vendor, store, staff, policies, and metrics.
-- `POST /api/v1/admin/sellers/:sellerId/status` — Unified status transition with audit reason.
+- `POST /api/v1/admin/sellers/:sellerId/status` — Unified status transition with audit reason (requires Manage Admin or Super Admin).
 - `POST /api/v1/admin/sellers/:sellerId/activate` — Activate seller account.
 - `POST /api/v1/admin/sellers/:sellerId/suspend` — Suspend seller account with policy violation reason.
 - `GET /api/v1/admin/sellers/:sellerId/performance` — View historical performance snapshots.
+- `GET /api/v1/system-settings` — Public discovery of platform governance settings (`isSellerEnabled`).
+- `GET /api/v1/admin/system-settings` — Retrieve full platform governance configuration.
+- `PATCH /api/v1/admin/system-settings` — Mutate project-wide seller functionality (`isSellerEnabled`). Strictly restricted to **Super Admin**.
+- `GET /api/v1/admin/delegations` — List active admin delegations (`requireSuperAdmin` or `x-user-can-manage-sellers`).
+- `POST /api/v1/admin/delegations` — Grant `manage_sellers` authority to an admin user (strictly Super Admin).
+- `DELETE /api/v1/admin/delegations/:adminUserId/:scope` — Revoke delegation (strictly Super Admin).
 
 ### Health & Metrics
 
@@ -73,13 +79,13 @@ Seven relational tables persisted in PostgreSQL via Drizzle ORM:
 
 Publishes events to Kafka following the repository `{ value: payload }` envelope convention:
 
-| Topic                       | Trigger                                         | Consumers                                                   |
-| :-------------------------- | :---------------------------------------------- | :---------------------------------------------------------- |
-| `seller.created`            | New seller storefront registered.               | `email-service`, `analytic-service`, `notification-service` |
-| `seller.activated`          | Administrator approves/activates storefront.    | `email-service`, `analytic-service`, `notification-service` |
-| `seller.updated`            | Store account details or status modified.       | `analytic-service`, `notification-service`                  |
-| `seller.suspended`          | Store suspended for policy violations.          | `email-service`, `analytic-service`, `notification-service` |
-| `seller.storefront.updated` | Store name, branding, or vacation mode updated. | `analytic-service`, `notification-service`                  |
+| Topic                       | Trigger                                         | Consumers                                                                                           |
+| :-------------------------- | :---------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| `seller.created`            | New seller storefront registered.               | `user-service` (sets `isSeller: true`), `email-service`, `analytic-service`, `notification-service` |
+| `seller.activated`          | Administrator approves/activates storefront.    | `user-service` (sets `isSeller: true`), `email-service`, `analytic-service`, `notification-service` |
+| `seller.updated`            | Store account details or status modified.       | `analytic-service`, `notification-service`                                                          |
+| `seller.suspended`          | Store suspended for policy violations.          | `email-service`, `analytic-service`, `notification-service`                                         |
+| `seller.storefront.updated` | Store name, branding, or vacation mode updated. | `analytic-service`, `notification-service`                                                          |
 
 ---
 

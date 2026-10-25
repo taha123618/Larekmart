@@ -54,6 +54,9 @@ jobs:
       PROMOTION_DATABASE_URL: ${{ secrets.STAGING_PROMOTION_DATABASE_URL }}
       TAX_DATABASE_URL: ${{ secrets.STAGING_TAX_DATABASE_URL }}
       RETURN_DATABASE_URL: ${{ secrets.STAGING_RETURN_DATABASE_URL }}
+      PRICING_DATABASE_URL: ${{ secrets.STAGING_PRICING_DATABASE_URL }}
+      VENDOR_DATABASE_URL: ${{ secrets.STAGING_VENDOR_DATABASE_URL }}
+      SELLER_DATABASE_URL: ${{ secrets.STAGING_SELLER_DATABASE_URL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -95,6 +98,10 @@ jobs:
         if: env.USER_DATABASE_URL != ''
         run: pnpm --filter @repo/user-db db:deploy
 
+      - name: Run Prisma Migration Deploy (Vendor DB)
+        if: env.VENDOR_DATABASE_URL != ''
+        run: pnpm --filter @repo/vendor-db db:deploy
+
       - name: Run Drizzle Migration Deploy (Media Service)
         if: env.MEDIA_DATABASE_URL != ''
         run: pnpm --filter media-service db:migrate
@@ -118,6 +125,14 @@ jobs:
       - name: Run Drizzle Migration Deploy (Return Service)
         if: env.RETURN_DATABASE_URL != ''
         run: pnpm --filter return-service db:migrate
+
+      - name: Run Drizzle Migration Deploy (Pricing Service)
+        if: env.PRICING_DATABASE_URL != ''
+        run: pnpm --filter pricing-service db:migrate
+
+      - name: Run Drizzle Migration Deploy (Seller Service)
+        if: env.SELLER_DATABASE_URL != ''
+        run: pnpm --filter seller-service db:migrate
 
   # ════════════════════════════════════════════════════════════════
   # STAGE 4: Kubernetes Deployment, Rollout Probes & Synthetic Verification
@@ -179,12 +194,15 @@ jobs:
               larekmart/promotion-service=ghcr.io/${{ github.repository_owner }}/larekmart/promotion-service:staging-${SHA_SHORT} \
               larekmart/tax-service=ghcr.io/${{ github.repository_owner }}/larekmart/tax-service:staging-${SHA_SHORT} \
               larekmart/return-service=ghcr.io/${{ github.repository_owner }}/larekmart/return-service:staging-${SHA_SHORT} \
+              larekmart/pricing-service=ghcr.io/${{ github.repository_owner }}/larekmart/pricing-service:staging-${SHA_SHORT} \
+              larekmart/vendor-service=ghcr.io/${{ github.repository_owner }}/larekmart/vendor-service:staging-${SHA_SHORT} \
+              larekmart/seller-service=ghcr.io/${{ github.repository_owner }}/larekmart/seller-service:staging-${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:staging-${SHA_SHORT}
 
             echo "Applying Staging manifests to namespace larekmart-staging..."
             kubectl apply -k .
 
-            echo "Tracking rollout status across all 21 microservice workloads..."
+            echo "Tracking rollout status across all 25 microservice workloads..."
             DEPLOYMENTS=(
               staging-client
               staging-admin
@@ -207,6 +225,9 @@ jobs:
               staging-promotion-service
               staging-tax-service
               staging-return-service
+              staging-pricing-service
+              staging-vendor-service
+              staging-seller-service
               staging-email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do

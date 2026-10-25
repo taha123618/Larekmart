@@ -66,14 +66,14 @@ Six relational tables persisted in PostgreSQL via Prisma:
 
 Publishes events to Kafka following the `{ value: payload }` envelope convention:
 
-| Topic                           | Trigger                                             | Consumers                                                   |
-| :------------------------------ | :-------------------------------------------------- | :---------------------------------------------------------- |
-| `vendor.registered`             | New corporate entity registered in draft state.     | `email-service`, `analytic-service`, `notification-service` |
-| `vendor.verification.requested` | Merchant submits organization for KYB verification. | `analytic-service`, `notification-service`                  |
-| `vendor.verified`               | Compliance admin approves KYB verification.         | `email-service`, `analytic-service`, `notification-service` |
-| `vendor.rejected`               | Compliance admin rejects KYB documentation.         | `email-service`, `analytic-service`, `notification-service` |
-| `vendor.suspended`              | Organization suspended for compliance failure.      | `email-service`, `analytic-service`, `notification-service` |
-| `vendor.reactivated`            | Suspended vendor organization restored.             | `email-service`, `analytic-service`, `notification-service` |
+| Topic                           | Trigger                                             | Consumers                                                                                           |
+| :------------------------------ | :-------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| `vendor.registered`             | New corporate entity registered in draft state.     | `email-service`, `analytic-service`, `notification-service`                                         |
+| `vendor.verification.requested` | Merchant submits organization for KYB verification. | `analytic-service`, `notification-service`                                                          |
+| `vendor.verified`               | Compliance admin approves KYB verification.         | `user-service` (sets `isSeller: true`), `email-service`, `analytic-service`, `notification-service` |
+| `vendor.rejected`               | Compliance admin rejects KYB documentation.         | `email-service`, `analytic-service`, `notification-service`                                         |
+| `vendor.suspended`              | Organization suspended for compliance failure.      | `email-service`, `analytic-service`, `notification-service`                                         |
+| `vendor.reactivated`            | Suspended vendor organization restored.             | `email-service`, `analytic-service`, `notification-service`                                         |
 
 ---
 
