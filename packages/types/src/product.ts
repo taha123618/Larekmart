@@ -1,7 +1,10 @@
 import type { Product, Category } from "@repo/product-db";
 import z from "zod";
 
-export type ProductType = Product;
+export type ProductType = Product & {
+  sellerId?: string;
+  sellerName?: string;
+};
 
 export type ProductsType = ProductType[];
 

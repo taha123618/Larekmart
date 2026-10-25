@@ -144,10 +144,13 @@ This app talks HTTP to `product-service`, `order-service`, `payment-service`,
 Marketplace Vendors & Seller Storefronts:
 
 - `vendor.service.ts` provides client methods to register legal business entities (`registerVendor`), retrieve merchant organization (`getMyVendor`), and submit KYB verification dossiers (`submitVendorVerification`).
-- `seller.service.ts` provides public storefront lookups (`fetchStorefront`), merchant storefront setup (`createSeller`), and store branding/policy management (`updateSellerStore`).
+- `seller.service.ts` provides public storefront lookups (`fetchStorefront`), merchant storefront setup (`createSeller`), store branding/policy management (`updateSellerStore`), and system settings (`fetchSystemSettings`).
 - `/become-a-seller` provides an interactive 3-step onboarding wizard for prospective merchants.
 - `/stores/[slug]` provides a public merchant storefront profile with store branding, vacation status, custom policies, and product catalog.
 - `SellerBadge.tsx` displays verified merchant accreditation and direct storefront links on product detail pages (`/products/[id]`).
+- `isSellerEnabled` governance: frontends query `fetchSystemSettings` and dynamically hide or lock seller registration and storefront pages if the Super Admin disables the marketplace toggle.
+- `isSeller` user experience: `Navbar` dynamically presents "Seller Portal" with a store icon for verified sellers, while prospective users see "Sell on Larekmart"; `/account` showcases the Verified Seller status badge.
+- Multi-vendor transparency: `ProductCard.tsx` and `QuickViewModal.tsx` display merchant attribution ("By {sellerName}") linking to the seller's storefront, and `CartDrawer.tsx` renders merchant attribution per cart item.
 
 Shipping & tracking integration:
 

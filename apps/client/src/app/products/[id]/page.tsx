@@ -152,8 +152,15 @@ const ProductPage = async ({
             {/* Verified Merchant Badge */}
             <div className="mt-4">
               <SellerBadge
-                storeName="Larekmart Official Store"
-                storeSlug="larekmart-official"
+                storeName={product.sellerName || "Larekmart Official Store"}
+                storeSlug={
+                  product.sellerName
+                    ? product.sellerName
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/(^-|-$)/g, "")
+                    : "larekmart-official"
+                }
                 rating={4.9}
                 isVerified={true}
               />

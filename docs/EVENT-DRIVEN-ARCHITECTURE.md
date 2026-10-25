@@ -148,12 +148,12 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `return.completed`                | return-service       | order-service, notification-service, email-service, analytic-service                             | `ReturnCompletedEventPayload` (`returnId`, `orderId`, `customerId`, `paymentIntentId`, `amount`, `currency`, `refundedAt`)                                                                                      |
 | `vendor.registered`               | vendor-service       | notification-service, email-service, analytic-service                                            | `VendorRegisteredEvent` (`vendorId`, `ownerUserId`, `legalName`, `country`, `status`, `registeredAt`)                                                                                                           |
 | `vendor.verification.requested`   | vendor-service       | notification-service, analytic-service                                                           | `VendorVerificationRequestedEvent` (`vendorId`, `workflowType`, `requestedAt`)                                                                                                                                  |
-| `vendor.verified`                 | vendor-service       | notification-service, email-service, analytic-service                                            | `VendorVerifiedEvent` (`vendorId`, `verifiedAt`, `reviewerAdminId`)                                                                                                                                             |
+| `vendor.verified`                 | vendor-service       | user-service, notification-service, email-service, analytic-service                              | `VendorVerifiedEvent` (`vendorId`, `verifiedAt`, `reviewerAdminId`)                                                                                                                                             |
 | `vendor.rejected`                 | vendor-service       | notification-service, email-service, analytic-service                                            | `VendorRejectedEvent` (`vendorId`, `rejectedAt`, `reason`, `deficiencies`)                                                                                                                                      |
 | `vendor.suspended`                | vendor-service       | notification-service, email-service, analytic-service                                            | `VendorSuspendedEvent` (`vendorId`, `suspendedAt`, `reason`)                                                                                                                                                    |
 | `vendor.reactivated`              | vendor-service       | notification-service, email-service, analytic-service                                            | `VendorReactivatedEvent` (`vendorId`, `reactivatedAt`)                                                                                                                                                          |
-| `seller.created`                  | seller-service       | notification-service, email-service, analytic-service                                            | `SellerCreatedEvent` (`sellerId`, `vendorId`, `primaryUserId`, `storeName`, `slug`, `status`, `createdAt`)                                                                                                      |
-| `seller.activated`                | seller-service       | notification-service, email-service, analytic-service                                            | `SellerActivatedEvent` (`sellerId`, `vendorId`, `activatedAt`, `activatedByUserId`)                                                                                                                             |
+| `seller.created`                  | seller-service       | user-service, notification-service, email-service, analytic-service                              | `SellerCreatedEvent` (`sellerId`, `vendorId`, `primaryUserId`, `storeName`, `slug`, `status`, `createdAt`)                                                                                                      |
+| `seller.activated`                | seller-service       | user-service, notification-service, email-service, analytic-service                              | `SellerActivatedEvent` (`sellerId`, `vendorId`, `activatedAt`, `activatedByUserId`)                                                                                                                             |
 | `seller.updated`                  | seller-service       | notification-service, analytic-service                                                           | `SellerUpdatedEvent` (`sellerId`, `updatedFields`, `updatedAt`)                                                                                                                                                 |
 | `seller.suspended`                | seller-service       | notification-service, email-service, analytic-service                                            | `SellerSuspendedEvent` (`sellerId`, `vendorId`, `reason`, `suspendedAt`)                                                                                                                                        |
 | `seller.storefront.updated`       | seller-service       | notification-service, analytic-service                                                           | `SellerStorefrontUpdatedEvent` (`sellerId`, `storeId`, `storeName`, `slug`, `vacationMode`, `status`, `updatedAt`)                                                                                              |
@@ -675,7 +675,7 @@ Emitted when an administrator or verification provider completes KYB approval.
 ```
 
 - **Producer:** `apps/vendor-service/src/modules/admin/admin-vendors.service.ts`
-- **Consumers:** `notification-service`, `email-service`, `analytic-service`.
+- **Consumers:** `user-service` (promotes user profile `isSeller: true`), `notification-service`, `email-service`, `analytic-service`.
 
 #### `vendor.rejected`
 
@@ -715,7 +715,7 @@ Emitted when a new storefront profile is initialized under a verified vendor ent
 ```
 
 - **Producer:** `apps/seller-service/src/routes/seller.routes.ts`
-- **Consumers:** `notification-service`, `email-service`, `analytic-service`.
+- **Consumers:** `user-service` (promotes user profile `isSeller: true`), `notification-service`, `email-service`, `analytic-service`.
 
 #### `seller.activated`
 
@@ -734,7 +734,7 @@ Emitted when a storefront becomes active and eligible to receive customer orders
 ```
 
 - **Producer:** `apps/seller-service/src/routes/admin.routes.ts`
-- **Consumers:** `notification-service`, `email-service`, `analytic-service`.
+- **Consumers:** `user-service` (promotes user profile `isSeller: true`), `notification-service`, `email-service`, `analytic-service`.
 
 #### `seller.updated`
 

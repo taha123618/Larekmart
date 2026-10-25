@@ -46,9 +46,11 @@ and uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-for
 - Clerk frontend with `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`.
 - Server-side Clerk with `CLERK_SECRET_KEY` and `@clerk/nextjs/server`.
 - Admin role is `sessionClaims.metadata.role === "admin"`.
-- Super Admin role is `sessionClaims.metadata.role === "super_admin"` or `sessionClaims.metadata.isSuperAdmin === true`. Super Admin has exclusive permissions to toggle project-wide seller functionality (`isSellerEnabled`) in `/settings`.
-- User admin operations in the UI call `auth-service` over HTTP with a Clerk token. The
-  service enforces admin-only access.
+- Super Admin role is `sessionClaims.metadata.role === "super_admin"` or `sessionClaims.metadata.isSuperAdmin === true`. Super Admin has exclusive permissions to toggle project-wide seller functionality (`isSellerEnabled`) and grant/revoke administrative delegations in `/settings`.
+- Delegated Manage Admin: Super Admins can delegate the `manage_sellers` scope to designated admin accounts via `/settings`. Delegated Manage Admins can review vendors and update seller storefront statuses without requiring global Super Admin access.
+- User management: `/users` displays Verified Seller badges, role filtering (Buyers vs Verified Sellers), and allows editing `isSeller` persistent status via `user-service`.
+- User admin operations in the UI call `auth-service` and `user-service` over HTTP with a Clerk token. The
+  services enforce admin-only access.
 
 ## Backend calls from this app
 

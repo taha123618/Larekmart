@@ -23,10 +23,13 @@ This document specifies the mandatory cybersecurity standards and implementation
   - The `/api/claim-admin` endpoint in `apps/admin` is fail-closed: disabled unless `ALLOW_ADMIN_CLAIM === "true"` AND `ADMIN_REGISTRATION_SECRET` is set. Do not reintroduce NODE_ENV-based gating — a missing env var must never enable self-promotion.
   - When enabled, every request requires the `x-admin-claim-secret` header, compared in constant time against `ADMIN_REGISTRATION_SECRET`.
   - Admin UI route middleware (`apps/admin/src/middleware.ts`) strictly requires `sessionClaims?.metadata?.role === "admin"`.
+- **Super Admin Governance & Delegated Administration**:
+  - Global platform controls (`PATCH /api/v1/admin/system-settings` for `isSellerEnabled`) and delegation management (`POST/DELETE /api/v1/admin/delegations`) are strictly restricted to Super Administrators (`role === "super_admin"` or `claims.isSuperAdmin === true`).
+  - Manage Admins can be granted the `manage_sellers` delegation scope in `admin_delegations`. When present, `api-gateway` injects `x-user-can-manage-sellers: true` downstream, authorizing them to review vendors and update seller statuses without granting global Super Admin privileges.
 - **Internal Service Verification & API Gateway Perimeter**:
   - Direct HTTP calls between microservices are prohibited for business flows (use Kafka).
-  - All public traffic enters through the centralized API Gateway (`apps/api-gateway`). The Gateway unconditionally strips client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`) to prevent identity spoofing.
-  - The Gateway injects verified Clerk claims downstream (`x-user-id`, `x-user-role`) along with `x-internal-secret`.
+  - All public traffic enters through the centralized API Gateway (`apps/api-gateway`). The Gateway unconditionally strips client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-can-manage-sellers`) to prevent identity spoofing.
+  - The Gateway injects verified Clerk claims downstream (`x-user-id`, `x-user-role`, `x-user-is-seller`, `x-user-can-manage-sellers`) along with `x-internal-secret`.
   - Downstream services verify `x-internal-secret` against `INTERNAL_SERVICE_SECRET` using constant-time SHA-256 digest comparison (`safeTimingCompare` via `crypto.timingSafeEqual`).
   - Production deployments must fail startup if `INTERNAL_SERVICE_SECRET` equals the development placeholder.
 
