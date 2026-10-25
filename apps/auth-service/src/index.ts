@@ -5,6 +5,7 @@ import { shouldBeAdmin } from "./middleware/authMiddleware.js";
 import userRoute from "./routes/user.route.js";
 import { producer } from "./utils/kafka.js";
 import { startAuthConsumer } from "./consumer.js";
+import { validateInternalServiceSecret } from "@repo/types";
 import {
   createLogger,
   createHealthRegistry,
@@ -86,6 +87,11 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
 
 const start = async () => {
   try {
+    validateInternalServiceSecret(
+      process.env.INTERNAL_SERVICE_SECRET,
+      process.env.NODE_ENV,
+      "auth-service",
+    );
     await producer.connect();
     await startAuthConsumer();
     app.listen(8003, () => {

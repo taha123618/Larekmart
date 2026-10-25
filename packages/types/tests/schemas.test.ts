@@ -10,6 +10,8 @@ import {
   GatewayHealthResponseSchema,
   GatewayErrorResponseSchema,
   GATEWAY_HEADERS,
+  DEFAULT_INTERNAL_SECRET,
+  validateInternalServiceSecret,
   AdminUpdateUserStatusSchema,
   UserDetailResponseSchema,
 } from "../src/index.js";
@@ -268,6 +270,55 @@ async function runSchemaTests() {
   assert.equal(GATEWAY_HEADERS.IS_SUPER_ADMIN, "x-user-is-super-admin");
   assert.equal(GATEWAY_HEADERS.IS_SELLER, "x-user-is-seller");
   assert.equal(GATEWAY_HEADERS.CAN_MANAGE_SELLERS, "x-user-can-manage-sellers");
+
+  // SEC-03 Internal Secret Production Fail-Closed Tests
+  assert.doesNotThrow(() => {
+    validateInternalServiceSecret(
+      DEFAULT_INTERNAL_SECRET,
+      "development",
+      "test-service",
+    );
+  }, "Development mode must allow placeholder secret");
+
+  assert.throws(
+    () => {
+      validateInternalServiceSecret(
+        DEFAULT_INTERNAL_SECRET,
+        "production",
+        "test-service",
+      );
+    },
+    /FATAL: In production, INTERNAL_SERVICE_SECRET must be configured/,
+    "Production must reject default placeholder secret",
+  );
+
+  assert.throws(
+    () => {
+      validateInternalServiceSecret("", "production", "test-service");
+    },
+    /FATAL: In production, INTERNAL_SERVICE_SECRET must be configured/,
+    "Production must reject empty secret",
+  );
+
+  assert.throws(
+    () => {
+      validateInternalServiceSecret(
+        "short-secret",
+        "production",
+        "test-service",
+      );
+    },
+    /FATAL: In production, INTERNAL_SERVICE_SECRET must be configured/,
+    "Production must reject short secret (<16 chars)",
+  );
+
+  assert.doesNotThrow(() => {
+    validateInternalServiceSecret(
+      "super-secret-random-prod-key-12345678",
+      "production",
+      "test-service",
+    );
+  }, "Production must allow strong random secret");
 
   const {
     SystemSettingsSchema,

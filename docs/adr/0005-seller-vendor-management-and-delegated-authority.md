@@ -40,6 +40,7 @@ We designed and implemented a dedicated, decoupled architecture across `@repo/ve
 ## Consequences
 
 ### Positive
+
 - Strict separation between legal entity KYB (`vendor-service`) and operational customer storefronts (`seller-service`).
 - Zero direct service-to-service HTTP dependencies; all privilege promotions and status syncs occur asynchronously over Kafka (`@repo/kafka`).
 - Platform governance is decoupled from code deployments: Super Admins can pause seller operations instantly via `isSellerEnabled`.
@@ -47,5 +48,6 @@ We designed and implemented a dedicated, decoupled architecture across `@repo/ve
 - Seamless reverse-proxy header injection (`x-user-is-seller`, `x-user-can-manage-sellers`) minimizes repetitive database queries across downstream microservices.
 
 ### Trade-offs
+
 - Delegation cache in `api-gateway` or services requires cache invalidation or brief TTL expiry (bounded to 60s) when delegations are revoked.
 - Dual-role users (buying customers who become sellers) have state updated asynchronously via Kafka; short eventual consistency window before `isSeller` reflects across all read models.

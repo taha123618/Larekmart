@@ -10,6 +10,7 @@ import {
   createMemoryCheck,
 } from "@repo/monitoring";
 import { prisma } from "@repo/inventory-db";
+import { validateInternalServiceSecret } from "@repo/types";
 import inventoryRoute from "./routes/inventory.route.js";
 import { logger, metrics } from "./observability/metrics.js";
 import { consumer, producer } from "./utils/kafka.js";
@@ -154,6 +155,11 @@ let stopExpiryWorker: (() => void) | null = null;
 
 async function start(): Promise<void> {
   try {
+    validateInternalServiceSecret(
+      process.env.INTERNAL_SERVICE_SECRET,
+      process.env.NODE_ENV,
+      "inventory-service",
+    );
     await producer.connect();
     await consumer.connect();
     await startInventoryEventConsumer();

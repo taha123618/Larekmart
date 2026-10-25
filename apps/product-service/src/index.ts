@@ -6,6 +6,7 @@ import productRouter from "./routes/product.route.js";
 import categoryRouter from "./routes/category.route.js";
 import { consumer, producer } from "./utils/kafka.js";
 import { prisma } from "@repo/product-db";
+import { validateInternalServiceSecret } from "@repo/types";
 import {
   createHealthRegistry,
   createHttpMonitor,
@@ -128,6 +129,11 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
 
 const start = async () => {
   try {
+    validateInternalServiceSecret(
+      process.env.INTERNAL_SERVICE_SECRET,
+      process.env.NODE_ENV,
+      "product-service",
+    );
     await Promise.all([producer.connect(), consumer.connect()]);
     app.listen(8000, () => {
       logger.info("Product service is running on port 8000");

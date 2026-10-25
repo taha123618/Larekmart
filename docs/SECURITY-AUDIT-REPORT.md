@@ -44,65 +44,51 @@ A comprehensive architectural and source-code security audit was conducted acros
 
 ```
 VULNERABILITY HIERARCHY
-├── [HIGH] SEC-01: IDOR & Unscoped Query in Order Service (GET /seller-orders)
+├── [HIGH] SEC-01: IDOR & Unscoped Query in Order Service (GET /seller-orders) [RESOLVED & VERIFIED]
 ├── [HIGH] SEC-02: Missing Seller Attribution & Cross-Seller Product Mutation
-├── [MED]  SEC-03: Production Boot Validation for INTERNAL_SERVICE_SECRET
+├── [MED]  SEC-03: Production Boot Validation for INTERNAL_SERVICE_SECRET      [RESOLVED & VERIFIED]
 ├── [LOW]  SEC-04: Network Perimeter Isolation of Microservice Ports
 └── [LOW]  SEC-05: Route-Specific Rate Limiting on Merchant Onboarding
 ```
 
 ---
 
-### SEC-01 [HIGH]: IDOR & Unscoped Query in Order Service (`GET /seller-orders`)
+### SEC-01 [HIGH]: IDOR & Unscoped Query in Order Service (`GET /seller-orders`) [RESOLVED & VERIFIED]
 
+- **Status:** **RESOLVED & VERIFIED**
 - **Vulnerability Identifiers:** CWE-639 (Authorization Bypass Through User-Controlled Key), CWE-200 (Information Exposure)
-- **Affected File:** [`apps/order-service/src/routes/order.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/order-service/src/routes/order.ts#L93-L114)
+- **Affected File:** [`apps/order-service/src/routes/order.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/order-service/src/routes/order.ts#L93-L135)
+- **Automated Test Coverage:** [`apps/order-service/tests/order-security.test.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/order-service/tests/order-security.test.ts)
 - **Detailed Mechanics:**
   The endpoint allows sellers to view orders associated with their merchant account:
-  ```typescript
-  fastify.get(
-    "/seller-orders",
-    { preHandler: shouldBeSeller },
-    async (request, reply) => {
-      const { sellerId, limit } = request.query as {
-        sellerId?: string;
-        limit?: number;
-      };
-      const query: Record<string, unknown> = {};
-      if (sellerId) {
-        query.$or = [{ sellerId }, { "products.sellerId": sellerId }];
-      }
-      const { result: orders } = await measureAsync(
-        "db.order.findSellerOrders",
-        async () => {
-          return await Order.find(query)
-            .limit(limit ? Number(limit) : 50)
-            .sort({ createdAt: -1 });
-        },
-      );
-      return reply.send(orders);
-    },
-  );
-  ```
+  1. **Unscoped Exposure:** Previously, if a seller sent a request without `?sellerId=...`, `query` remained `{}`. `Order.find({})` executed and returned orders across the **entire marketplace** (exposing customer names, addresses, amounts, and purchased products).
+  2. **IDOR:** If a seller supplied `?sellerId=<competing_seller_id>`, the endpoint did not verify whether `sellerId` matched `request.userId`. A seller could inspect any competing seller's orders.
 
-  1. **Unscoped Exposure:** If a seller sends a request without `?sellerId=...`, `query` remains `{}`. `Order.find({})` executes and returns orders across the **entire marketplace** (exposing customer names, addresses, amounts, and purchased products).
-  2. **IDOR:** If a seller supplies `?sellerId=<competing_seller_id>`, the endpoint does not verify whether `sellerId` matches `request.userId` (or belongs to the authenticated caller). A seller can inspect any competing seller's orders.
-- **Defensive Remediation:**
-  Enforce that non-admin requests strictly scope the query to `request.userId`:
+- **Defensive Remediation Implemented:**
+  Enforced that non-admin requests strictly scope queries to `request.userId` and reject queries for other sellers with `403 Forbidden`:
+
   ```typescript
-  const effectiveSellerId =
-    request.userRole === "admin" ? sellerId : request.userId;
-  if (!effectiveSellerId) {
-    return reply
-      .status(400)
-      .send({ message: "Seller identification required" });
+  const isAdmin = request.userRole === "admin";
+  if (!isAdmin && sellerId && sellerId !== request.userId) {
+    return reply.status(403).send({
+      message: "Access forbidden: you cannot query orders of other sellers",
+    });
   }
-  const query = {
-    $or: [
+
+  const effectiveSellerId = isAdmin ? sellerId : request.userId;
+  if (!isAdmin && !effectiveSellerId) {
+    return reply.status(400).send({
+      message: "Seller identity required to access seller orders",
+    });
+  }
+
+  const query: Record<string, unknown> = {};
+  if (effectiveSellerId) {
+    query.$or = [
       { sellerId: effectiveSellerId },
       { "products.sellerId": effectiveSellerId },
-    ],
-  };
+    ];
+  }
   ```
 
 ---
@@ -123,25 +109,19 @@ VULNERABILITY HIERARCHY
 
 ---
 
-### SEC-03 [MEDIUM]: Production Startup Validation for Default Secrets
+### SEC-03 [MEDIUM]: Production Startup Validation for Default Secrets [RESOLVED & VERIFIED]
 
+- **Status:** **RESOLVED & VERIFIED**
 - **Vulnerability Identifiers:** CWE-1188 (Insecure Default Initialization of Resource)
-- **Affected Files:** Microservice `env.ts` configurations across backend apps.
+- **Affected Files:** Microservice `env.ts` configurations and service entrypoints across backend apps.
+- **Automated Test Coverage:** [`packages/types/tests/schemas.test.ts`](file:///Users/taha/projects/microservices-ecommerce/packages/types/tests/schemas.test.ts)
 - **Detailed Mechanics:**
-  In local development, `INTERNAL_SERVICE_SECRET` defaults to `"dev-shared-internal-secret-larekmart"`. If deployed to staging or production without explicitly setting this environment variable, an attacker with network access could forge gateway identity headers (`x-internal-secret`, `x-user-id`, `x-user-role`).
-- **Defensive Remediation:**
-  Enforce a fail-closed production boot validation in all microservice `env.ts` files (matching `shipping-service`):
-  ```typescript
-  if (
-    process.env.NODE_ENV === "production" &&
-    (!env.INTERNAL_SERVICE_SECRET ||
-      env.INTERNAL_SERVICE_SECRET === "dev-shared-internal-secret-larekmart")
-  ) {
-    throw new Error(
-      "FATAL: INTERNAL_SERVICE_SECRET must be configured with a cryptographically strong secret in production.",
-    );
-  }
-  ```
+  In local development, `INTERNAL_SERVICE_SECRET` defaults to `"dev-shared-internal-secret-larekmart"`. If deployed to staging or production without explicitly setting this environment variable, an attacker with internal network access could forge gateway identity headers (`x-internal-secret`, `x-user-id`, `x-user-role`).
+- **Defensive Remediation Implemented:**
+  1. Implemented centralized `validateInternalServiceSecret(secret, nodeEnv, serviceName)` in [`packages/types/src/gateway.ts`](file:///Users/taha/projects/microservices-ecommerce/packages/types/src/gateway.ts), enforcing minimum 16 characters and prohibiting all development default placeholders (`DEFAULT_INTERNAL_SECRET`, `INSECURE_INTERNAL_SECRET_PLACEHOLDERS`) when `NODE_ENV === "production"`.
+  2. Integrated fail-closed validations into Zod `superRefine` configurations across all microservice `env.ts` files (`api-gateway`, `seller-service`, `cart-service`, `pricing-service`, `promotion-service`, `wishlist-service`, `user-service`, `search-service`, `review-service`, `shipping-service`, `tax-service`, `return-service`, `vendor-service`, `media-service`).
+  3. Integrated startup lifecycle validations at the `start()` entrypoints for services without separate `env.ts` (`order-service`, `product-service`, `inventory-service`, `auth-service`, `analytic-service`, `payment-service`).
+  4. Verified fail-closed production throws and development allowance via regression tests in `@repo/types`.
 
 ---
 

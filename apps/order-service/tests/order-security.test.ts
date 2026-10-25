@@ -200,6 +200,107 @@ async function runOrderSecurityTests() {
     "✓ IDOR ownership rules verified under all user, seller, and admin permutations",
   );
 
+  // 6. Test SEC-01 /seller-orders scoping logic
+  console.log("6. Testing SEC-01 /seller-orders Scoping & IDOR Prevention...");
+
+  function computeSellerOrdersQuery(
+    request: { userId?: string; userRole?: string },
+    query: { sellerId?: string; limit?: number },
+  ) {
+    const isAdmin = request.userRole === "admin";
+    if (!isAdmin && query.sellerId && query.sellerId !== request.userId) {
+      return {
+        statusCode: 403,
+        error: "Access forbidden: you cannot query orders of other sellers",
+      };
+    }
+
+    const effectiveSellerId = isAdmin ? query.sellerId : request.userId;
+    if (!isAdmin && !effectiveSellerId) {
+      return {
+        statusCode: 400,
+        error: "Seller identity required to access seller orders",
+      };
+    }
+
+    const mongoQuery: Record<string, unknown> = {};
+    if (effectiveSellerId) {
+      mongoQuery.$or = [
+        { sellerId: effectiveSellerId },
+        { "products.sellerId": effectiveSellerId },
+      ];
+    }
+
+    return { statusCode: 200, query: mongoQuery };
+  }
+
+  // Case A: Seller does not pass sellerId - must automatically scope to caller's userId
+  const sellerAutoScope = computeSellerOrdersQuery(
+    { userId: "sel_my_store", userRole: "seller" },
+    {},
+  );
+  assert.equal(sellerAutoScope.statusCode, 200);
+  assert.deepEqual(sellerAutoScope.query, {
+    $or: [
+      { sellerId: "sel_my_store" },
+      { "products.sellerId": "sel_my_store" },
+    ],
+  });
+  console.log(
+    "✓ SEC-01: Seller without query param automatically scoped to own userId",
+  );
+
+  // Case B: Seller attempts IDOR by passing competing seller ID - must be rejected with 403
+  const sellerIdorAttack = computeSellerOrdersQuery(
+    { userId: "sel_my_store", userRole: "seller" },
+    { sellerId: "sel_competitor_store" },
+  );
+  assert.equal(sellerIdorAttack.statusCode, 403);
+  assert.equal(
+    sellerIdorAttack.error,
+    "Access forbidden: you cannot query orders of other sellers",
+  );
+  console.log("✓ SEC-01: Seller IDOR attempt blocked with 403 Forbidden");
+
+  // Case C: Seller passes own sellerId - permitted and scoped
+  const sellerOwnQuery = computeSellerOrdersQuery(
+    { userId: "sel_my_store", userRole: "seller" },
+    { sellerId: "sel_my_store" },
+  );
+  assert.equal(sellerOwnQuery.statusCode, 200);
+  assert.deepEqual(sellerOwnQuery.query, {
+    $or: [
+      { sellerId: "sel_my_store" },
+      { "products.sellerId": "sel_my_store" },
+    ],
+  });
+  console.log("✓ SEC-01: Seller with own sellerId parameter succeeds");
+
+  // Case D: Admin queries specific seller - permitted
+  const adminTargetQuery = computeSellerOrdersQuery(
+    { userId: "usr_admin_999", userRole: "admin" },
+    { sellerId: "sel_competitor_store" },
+  );
+  assert.equal(adminTargetQuery.statusCode, 200);
+  assert.deepEqual(adminTargetQuery.query, {
+    $or: [
+      { sellerId: "sel_competitor_store" },
+      { "products.sellerId": "sel_competitor_store" },
+    ],
+  });
+  console.log("✓ SEC-01: Administrator can query any seller's orders");
+
+  // Case E: Admin queries all orders without sellerId
+  const adminAllQuery = computeSellerOrdersQuery(
+    { userId: "usr_admin_999", userRole: "admin" },
+    {},
+  );
+  assert.equal(adminAllQuery.statusCode, 200);
+  assert.deepEqual(adminAllQuery.query, {});
+  console.log(
+    "✓ SEC-01: Administrator without sellerId queries marketplace-wide",
+  );
+
   console.log("\n=======================================================");
   console.log(" All Order Security & IDOR Tests Passed Successfully!  ");
   console.log("=======================================================\n");

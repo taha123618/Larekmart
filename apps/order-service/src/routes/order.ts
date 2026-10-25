@@ -97,15 +97,38 @@ export const orderRoute = async (fastify: FastifyInstance) => {
         sellerId?: string;
         limit?: number;
       };
-      const query: Record<string, unknown> = {};
-      if (sellerId) {
-        query.$or = [{ sellerId }, { "products.sellerId": sellerId }];
+
+      // SEC-01 IDOR & Data Exposure Remediation:
+      // Scope query strictly to the authenticated seller identity unless caller is an admin.
+      const isAdmin = request.userRole === "admin";
+      if (!isAdmin && sellerId && sellerId !== request.userId) {
+        return reply.status(403).send({
+          message: "Access forbidden: you cannot query orders of other sellers",
+        });
       }
+
+      const effectiveSellerId = isAdmin ? sellerId : request.userId;
+      if (!isAdmin && !effectiveSellerId) {
+        return reply.status(400).send({
+          message: "Seller identity required to access seller orders",
+        });
+      }
+
+      const query: Record<string, unknown> = {};
+      if (effectiveSellerId) {
+        query.$or = [
+          { sellerId: effectiveSellerId },
+          { "products.sellerId": effectiveSellerId },
+        ];
+      }
+
+      const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+
       const { result: orders } = await measureAsync(
         "db.order.findSellerOrders",
         async () => {
           return await Order.find(query)
-            .limit(limit ? Number(limit) : 50)
+            .limit(safeLimit)
             .sort({ createdAt: -1 });
         },
       );

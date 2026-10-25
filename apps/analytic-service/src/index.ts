@@ -22,11 +22,12 @@ import {
   recordSellerEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
-import type {
-  PaymentSuccessfulType,
-  OrderCreatedType,
-  UserCreatedType,
-  StripeProductType,
+import {
+  type PaymentSuccessfulType,
+  type OrderCreatedType,
+  type UserCreatedType,
+  type StripeProductType,
+  validateInternalServiceSecret,
 } from "@repo/types";
 import {
   createHealthRegistry,
@@ -145,6 +146,11 @@ const consumer = createConsumer(kafka, "analytic-service-group");
 
 const start = async () => {
   try {
+    validateInternalServiceSecret(
+      process.env.INTERNAL_SERVICE_SECRET,
+      process.env.NODE_ENV,
+      "analytic-service",
+    );
     console.log("Starting Analytic Service...");
 
     // 1. Initialize DB tables if PostgreSQL is available

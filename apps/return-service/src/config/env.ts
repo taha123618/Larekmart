@@ -1,6 +1,10 @@
 import { z } from "zod";
+import {
+  DEFAULT_INTERNAL_SECRET,
+  validateInternalServiceSecret,
+} from "@repo/types";
 
-export const DEFAULT_INTERNAL_SECRET = "dev-shared-internal-secret-larekmart";
+export { DEFAULT_INTERNAL_SECRET };
 
 const envSchema = z
   .object({
@@ -48,15 +52,17 @@ const envSchema = z
       .default("http://localhost:3002,http://localhost:3003"),
   })
   .superRefine((data, ctx) => {
-    if (
-      data.NODE_ENV === "production" &&
-      data.GATEWAY_INTERNAL_SECRET === DEFAULT_INTERNAL_SECRET
-    ) {
+    try {
+      validateInternalServiceSecret(
+        data.GATEWAY_INTERNAL_SECRET,
+        data.NODE_ENV,
+        "return-service",
+      );
+    } catch (err: any) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["GATEWAY_INTERNAL_SECRET"],
-        message:
-          "In production, GATEWAY_INTERNAL_SECRET must be set to a secure secret instead of the default development placeholder.",
+        message: err.message,
       });
     }
   });
