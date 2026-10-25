@@ -6,6 +6,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --skip-generate",
     "db:deploy": "prisma migrate deploy",
+    "db:seed": "pnpm dlx tsx --env-file-if-exists=.env src/seed.ts",
     "test:integration": "pnpm dlx tsx src/scripts/verify-inventory-db.ts",
     "check-types": "tsc --noEmit"
   },
