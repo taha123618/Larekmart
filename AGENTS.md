@@ -191,11 +191,11 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
   Follow the extension style of the file you are editing.
 - **Type-check before you finish.** Run `pnpm check-types` (or the workspace filter)
   and `pnpm build` for changes that affect a Next.js app or payment-service.
-- **Testing strategy.** Seventeen workspaces ship real test suites run by `pnpm test`
-  (Turborepo): `@repo/types`, `user-service`, `cart-service`, `shipping-service`,
+- **Testing strategy.** Twenty-five workspaces ship real test suites run by `pnpm test`
+  (Turborepo): `@repo/types`, `api-gateway`, `product-service`, `payment-service`, `auth-service`, `analytic-service`, `search-service`, `inventory-service`, `catalog-service`, `email-service`, `user-service`, `cart-service`, `shipping-service`,
   `order-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, and `seller-service` use standalone tsx-run test files under
   `tests/` (follow the file's internal runner convention, e.g.
-  `media-service/tests/index.test.ts`); `notification-service` uses `go test ./...`;
+  `product-service/tests/product-service.test.ts`); `notification-service` uses `go test ./...`;
   `recommendation-service` uses pytest via `uv`. There is **no Vitest/Jest anywhere** —
   do not introduce a new runner when extending an existing suite. When adding tests,
   follow `docs/TESTING.md`. Note: `tsc` configs typecheck `src/` only — test files are

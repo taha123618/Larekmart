@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm dlx tsx --env-file=.env --watch src/index.ts",
+    "test": "tsx tests/product-service.test.ts",
     "backfill:search": "pnpm dlx tsx --env-file=.env src/scripts/backfill-search-index.ts",
     "check-types": "tsc --noEmit"
   },
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.3"
+    "@types/express": "^5.0.3",
+    "tsx": "^4.20.5"
   }
 }

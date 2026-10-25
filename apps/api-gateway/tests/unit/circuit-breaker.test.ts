@@ -6,7 +6,7 @@ export async function runCircuitBreakerTests() {
 
   const cb = new CircuitBreaker({
     failureThreshold: 3,
-    cooldownPeriodMs: 100, // short cooldown for fast testing
+    cooldownPeriodMs: 400, // reliable cooldown for parallel test runners
     successThreshold: 2,
   });
 
@@ -28,7 +28,7 @@ export async function runCircuitBreakerTests() {
   assert.equal(cb.isAvailable(service), false);
 
   // Wait for cooldown to expire
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  await new Promise((resolve) => setTimeout(resolve, 450));
 
   // Accessing it transitions to HALF_OPEN
   assert.equal(cb.getState(service), "HALF_OPEN");
@@ -49,7 +49,7 @@ export async function runCircuitBreakerTests() {
   cb.recordFailure(service);
   assert.equal(cb.getState(service), "OPEN");
 
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  await new Promise((resolve) => setTimeout(resolve, 450));
   assert.equal(cb.getState(service), "HALF_OPEN");
 
   // Failure in HALF_OPEN trips immediately back to OPEN
