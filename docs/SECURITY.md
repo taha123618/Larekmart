@@ -134,3 +134,9 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
 
 - **Hardened Image Baseline**: All Docker container workloads adhere to the Docker Hardened Image (DHI) standard with multi-stage builds and non-root execution (UID 1000/1001/10001).
 - **Vulnerability Scans**: Docker Scout Quickview (`pnpm docker:scout`) enforces zero Critical and zero High remediable CVEs.
+
+---
+
+## 11. Comprehensive Security Audit Report
+
+For an in-depth, code-level vulnerability analysis, IDOR inspection, and defense-in-depth verification across all 23 microservices and frontends, consult the dedicated [Comprehensive Security Audit Report](SECURITY-AUDIT-REPORT.md).

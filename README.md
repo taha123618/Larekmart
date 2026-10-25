@@ -260,7 +260,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
         └───────────────────────────────────────────────────────────┘
 ```
 
-> Cross-service communication is strictly asynchronous through Kafka events. Backend services never call each other over HTTP. Public traffic enters through `api-gateway`, which enforces rate limits, authenticates sessions, strips spoofed headers, and injects verified identity headers signed with `x-internal-secret`. See [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) for full topic contracts and [`docs/SECURITY.md`](docs/SECURITY.md) for security policies.
+> Cross-service communication is strictly asynchronous through Kafka events. Backend services never call each other over HTTP. Public traffic enters through `api-gateway`, which enforces rate limits, authenticates sessions, strips spoofed headers, and injects verified identity headers signed with `x-internal-secret`. See [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) for full topic contracts, [`docs/SECURITY.md`](docs/SECURITY.md) for security policies, and [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md) for the comprehensive security audit.
 
 ---
 
@@ -577,6 +577,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 | [`docs/DESIGN.md`](docs/DESIGN.md)                                                                                         | UI/UX design system, design tokens, responsive breakpoints, component specs & motion   |
 | [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)                                                                               | Coding style, naming patterns, and design principles                                   |
 | [`docs/SECURITY.md`](docs/SECURITY.md)                                                                                     | Security policies, Clerk authorization, and Stripe webhook verification                |
+| [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md)                                                           | Comprehensive Security Audit Report: vulnerability analysis & remediation plan         |
 | [`docs/TESTING.md`](docs/TESTING.md)                                                                                       | Testing strategy, verification commands, and automated test setup                      |
 | [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)                                                                             | Contribution standards, git workflow, and definition of done                           |
 | [`docs/adr/README.md`](docs/adr/README.md)                                                                                 | Architecture Decision Records (ADRs)                                                   |
