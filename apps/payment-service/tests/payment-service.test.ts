@@ -157,7 +157,7 @@ async function runPaymentServiceTests(): Promise<void> {
     referenceId: "cs_test_a1b2c3d4e5",
     cartId: "cart_user_777",
     reservationId: "res_stock_888",
-    couponCode: "SPRING2026",
+    paymentMethod: "card",
     taxCalculationId: "tax_calc_999",
     taxAmount: 18.5,
     userId: "user_buyer_stripe_101",
@@ -176,7 +176,7 @@ async function runPaymentServiceTests(): Promise<void> {
   assert.equal(mockPaymentEvent.status, "success");
   assert.equal(mockPaymentEvent.amount, 14999);
   assert.equal(mockPaymentEvent.products?.[0]?.name, "Larek Pro Running Shoes");
-  assert.equal(mockPaymentEvent.couponCode, "SPRING2026");
+  assert.equal(mockPaymentEvent.paymentMethod, "card");
   console.log("  ✓ PaymentSuccessfulType contract adherence validated");
 
   console.log("\n==================================================");

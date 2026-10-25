@@ -82,8 +82,9 @@ async function runCatalogServiceTests(): Promise<void> {
     url: "/metrics",
   });
   assert.equal(metricsRes.statusCode, 200, "GET /metrics must return 200 OK");
+  const contentType = String(metricsRes.headers["content-type"] ?? "");
   assert.ok(
-    metricsRes.headers["content-type"]?.includes("text/plain"),
+    contentType.includes("text/plain"),
     "Metrics endpoint must return text/plain Prometheus format",
   );
   console.log("  ✓ GET /metrics exposed valid Prometheus telemetry metrics");
