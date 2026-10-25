@@ -114,3 +114,17 @@ export interface InventoryChangedPayload {
   reason?: string;
   occurredAt: string;
 }
+
+export interface InventoryReservationFailedPayload {
+  reservationId: string;
+  referenceId?: string | null;
+  productId?: number;
+  variantId?: string;
+  reason:
+    | "EXPIRED"
+    | "INSUFFICIENT_STOCK"
+    | "NOT_FOUND"
+    | "VERIFICATION_REJECTED";
+  details?: string;
+  occurredAt: string;
+}

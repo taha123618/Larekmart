@@ -305,6 +305,16 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 so consumers can type against the catalog/order shapes without importing the DB clients
 directly into their runtime.
 
+### PostgreSQL Connection Pooling Layer (PgBouncer)
+
+To prevent PostgreSQL connection pool exhaustion across 14 relational microservices during high-concurrency flash sales (Daraz scale), connections are proxied through an upstream **PgBouncer** container running on port `6432` with `pool_mode = transaction`.
+
+PgBouncer enforces domain pool size guarantees so background or non-critical write traffic cannot exhaust database connections needed by core checkout services:
+
+- **Tier 1 — Core Commerce & Checkout (High Priority)**: `inventory_db` (pool 30), `pricing_db` (pool 25), `product_db` (pool 25), `catalog_db` (pool 25), `vendor_db` (pool 15), `seller_db` (pool 15), `shipping_db` (pool 15), `user_db` (pool 15), `promotion_db` (pool 15).
+- **Tier 2 — Search & Notifications**: `recommendation_db` (pool 10), `notification_db` (pool 10).
+- **Tier 3 — Engagement & Secondary Services (Capped)**: `review_db` (pool 8), `media_db` (pool 8), `wishlist_db` (pool 8), `analytics_db` (pool 10).
+
 ## Key request flows
 
 ### Checkout → order → inventory → email

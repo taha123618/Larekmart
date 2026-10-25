@@ -38,8 +38,12 @@ export const config = {
       productCreated: "product.created",
       productUpdated: "product.updated",
       pricingPriceUpdated: "pricing.price.updated",
+      priceUpdated: "price.updated",
       productDeleted: "product.deleted",
       ratingSummaryUpdated: "product.rating-summary.updated",
+      inventoryStockSold: "inventory.stock.sold",
+      inventoryLowStock: "inventory.low_stock",
+      inventoryAdjusted: "inventory.adjusted",
     },
   },
   search: {

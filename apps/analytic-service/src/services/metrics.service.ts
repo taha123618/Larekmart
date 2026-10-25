@@ -1,4 +1,5 @@
 import { pool, getDbStatus } from "../db.js";
+import { eventBatcher } from "./event-batcher.js";
 import type {
   PaymentSuccessfulType,
   OrderCreatedType,
@@ -18,6 +19,26 @@ import {
 } from "../cache/analytics-cache.js";
 
 const logger = createLogger("analytic-service:metrics");
+
+/**
+ * Enqueues an analytics event to the micro-batcher ring buffer for high-throughput
+ * multi-row database persistence, eliminating connection starvation during flash sales.
+ */
+export const bufferAnalyticsEvent = (
+  eventType: string,
+  userId: string | null,
+  amount: number | null,
+  metadata: Record<string, unknown>,
+  createdAt?: string | Date,
+): void => {
+  eventBatcher.enqueue({
+    eventType,
+    userId: userId ? String(userId) : null,
+    amount: amount !== null && amount !== undefined ? Number(amount) : 0,
+    metadata: metadata || {},
+    createdAt: createdAt ? new Date(createdAt) : new Date(),
+  });
+};
 
 // In-memory aggregates for rapid observation and resilience fallback
 const inMemoryMetrics = {
@@ -76,27 +97,13 @@ export const recordVendorEvent = async (eventType: string, payload: any) => {
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  if (getDbStatus()) {
-    try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          eventType,
-          String(userId),
-          0,
-          JSON.stringify(memoryEvent.metadata),
-          memoryEvent.created_at,
-        ],
-      );
-    } catch (err) {
-      captureError(err, {
-        serviceName: "analytic-service",
-        logger,
-        context: "recordVendorEvent.dbInsert",
-      });
-    }
-  }
+  bufferAnalyticsEvent(
+    eventType,
+    String(userId),
+    0,
+    memoryEvent.metadata as Record<string, unknown>,
+    memoryEvent.created_at,
+  );
 
   logger.info(
     `[Vendor Event] ${eventType} for ${payload?.legalName || userId}`,
@@ -130,27 +137,13 @@ export const recordSellerEvent = async (eventType: string, payload: any) => {
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  if (getDbStatus()) {
-    try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          eventType,
-          String(userId),
-          0,
-          JSON.stringify(memoryEvent.metadata),
-          memoryEvent.created_at,
-        ],
-      );
-    } catch (err) {
-      captureError(err, {
-        serviceName: "analytic-service",
-        logger,
-        context: "recordSellerEvent.dbInsert",
-      });
-    }
-  }
+  bufferAnalyticsEvent(
+    eventType,
+    String(userId),
+    0,
+    memoryEvent.metadata as Record<string, unknown>,
+    memoryEvent.created_at,
+  );
 
   logger.info(
     `[Seller Event] ${eventType} for ${payload?.storeName || userId}`,
@@ -194,27 +187,13 @@ export const recordMediaEvent = async (
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  if (getDbStatus()) {
-    try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          eventType,
-          String(userId),
-          0,
-          JSON.stringify(memoryEvent.metadata),
-          memoryEvent.created_at,
-        ],
-      );
-    } catch (err) {
-      captureError(err, {
-        serviceName: "analytic-service",
-        logger,
-        context: "recordMediaEvent.dbInsert",
-      });
-    }
-  }
+  bufferAnalyticsEvent(
+    eventType,
+    String(userId),
+    0,
+    memoryEvent.metadata as Record<string, unknown>,
+    memoryEvent.created_at,
+  );
 
   logger.info(
     `[Media Event] ${eventType} for ${userId} (mediaId: ${payload?.mediaId || payload?.id})`,
@@ -253,27 +232,13 @@ export const recordReviewEvent = async (
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  if (getDbStatus()) {
-    try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          eventType,
-          String(userId),
-          amount,
-          JSON.stringify(memoryEvent.metadata),
-          memoryEvent.created_at,
-        ],
-      );
-    } catch (err) {
-      captureError(err, {
-        serviceName: "analytic-service",
-        logger,
-        context: "recordReviewEvent.dbInsert",
-      });
-    }
-  }
+  bufferAnalyticsEvent(
+    eventType,
+    String(userId),
+    amount,
+    memoryEvent.metadata as Record<string, unknown>,
+    memoryEvent.created_at,
+  );
 
   logger.info(
     `[Review Event] ${eventType} for ${userId} (productId: ${data?.productId})`,
@@ -316,27 +281,13 @@ export const recordWishlistEvent = async (
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  if (getDbStatus()) {
-    try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          eventType,
-          String(userId),
-          amount,
-          JSON.stringify(memoryEvent.metadata),
-          memoryEvent.created_at,
-        ],
-      );
-    } catch (err) {
-      captureError(err, {
-        serviceName: "analytic-service",
-        logger,
-        context: "recordWishlistEvent.dbInsert",
-      });
-    }
-  }
+  bufferAnalyticsEvent(
+    eventType,
+    String(userId),
+    amount,
+    memoryEvent.metadata as Record<string, unknown>,
+    memoryEvent.created_at,
+  );
 
   logger.info(
     `[Wishlist Event] ${eventType} for ${userId} (wishlistId: ${data?.wishlistId})`,
@@ -379,27 +330,13 @@ export const recordPromotionEvent = async (
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  if (getDbStatus()) {
-    try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          eventType,
-          String(userId),
-          amount,
-          JSON.stringify(memoryEvent.metadata),
-          memoryEvent.created_at,
-        ],
-      );
-    } catch (err) {
-      captureError(err, {
-        serviceName: "analytic-service",
-        logger,
-        context: "recordPromotionEvent.dbInsert",
-      });
-    }
-  }
+  bufferAnalyticsEvent(
+    eventType,
+    String(userId),
+    amount,
+    memoryEvent.metadata as Record<string, unknown>,
+    memoryEvent.created_at,
+  );
 
   logger.info(`[Promotion Event] ${eventType} recorded`, {
     promotionId: data?.promotionId,
@@ -458,27 +395,13 @@ export const recordTaxEvent = async (
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  if (getDbStatus()) {
-    try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          eventType,
-          String(userId),
-          isNaN(taxAmount) ? null : taxAmount,
-          JSON.stringify(memoryEvent.metadata),
-          memoryEvent.created_at,
-        ],
-      );
-    } catch (err) {
-      captureError(err, {
-        serviceName: "analytic-service",
-        logger,
-        context: "recordTaxEvent.dbInsert",
-      });
-    }
-  }
+  bufferAnalyticsEvent(
+    eventType,
+    String(userId),
+    isNaN(taxAmount) ? null : taxAmount,
+    memoryEvent.metadata as Record<string, unknown>,
+    memoryEvent.created_at,
+  );
 
   logger.info(
     `[Tax Event] ${eventType} for ${userId} (taxAmount: ${taxAmount})`,
@@ -535,27 +458,13 @@ export const recordReturnEvent = async (
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
-  if (getDbStatus()) {
-    try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata, created_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          eventType,
-          String(userId),
-          isNaN(amount) ? null : amount,
-          JSON.stringify(memoryEvent.metadata),
-          memoryEvent.created_at,
-        ],
-      );
-    } catch (err) {
-      captureError(err, {
-        serviceName: "analytic-service",
-        logger,
-        context: "recordReturnEvent.dbInsert",
-      });
-    }
-  }
+  bufferAnalyticsEvent(
+    eventType,
+    String(userId),
+    isNaN(amount) ? null : amount,
+    memoryEvent.metadata as Record<string, unknown>,
+    memoryEvent.created_at,
+  );
 
   logger.info(`[Return Event] ${eventType} for ${userId} (amount: ${amount})`);
 };
@@ -594,6 +503,14 @@ export const recordCartEvent = async (
   inMemoryEvents.unshift(memoryEvent);
   if (inMemoryEvents.length > 100) inMemoryEvents.pop();
 
+  bufferAnalyticsEvent(
+    eventType,
+    userId,
+    amount,
+    memoryEvent.metadata as Record<string, unknown>,
+    memoryEvent.created_at,
+  );
+
   logger.info(`[Cart Event] ${eventType} for ${userId} (amount: $${amount})`);
 };
 
@@ -623,23 +540,20 @@ export const recordPayment = async (payload: PaymentSuccessfulType) => {
     `[Payment] User ${userId} paid $${amountInDollars.toFixed(2)} (${payload.products?.length || 0} items)`,
   );
 
+  bufferAnalyticsEvent(
+    "payment.successful",
+    userId,
+    amountInDollars,
+    {
+      email: payload.email,
+      status: payload.status,
+      products: payload.products,
+    },
+    memoryEvent.created_at,
+  );
+
   if (getDbStatus()) {
     try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata)
-         VALUES ($1, $2, $3, $4)`,
-        [
-          "payment.successful",
-          userId,
-          amountInDollars,
-          JSON.stringify({
-            email: payload.email,
-            status: payload.status,
-            products: payload.products,
-          }),
-        ],
-      );
-
       await pool.query(
         `INSERT INTO analytics_daily_summary (date, total_revenue)
          VALUES (CURRENT_DATE, $1)
@@ -652,7 +566,7 @@ export const recordPayment = async (payload: PaymentSuccessfulType) => {
       captureError(err, {
         serviceName: "analytic-service",
         logger,
-        context: "recordPayment.dbInsert",
+        context: "recordPayment.summaryUpdate",
       });
     }
   }
@@ -679,19 +593,16 @@ export const recordOrder = async (payload: OrderCreatedType) => {
     `[Order] Email ${payload.email} for $${amountInDollars.toFixed(2)} (Status: ${payload.status})`,
   );
 
+  bufferAnalyticsEvent(
+    "order.created",
+    payload.email,
+    amountInDollars,
+    { status: payload.status },
+    memoryEvent.created_at,
+  );
+
   if (getDbStatus()) {
     try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata)
-         VALUES ($1, $2, $3, $4)`,
-        [
-          "order.created",
-          payload.email,
-          amountInDollars,
-          JSON.stringify({ status: payload.status }),
-        ],
-      );
-
       await pool.query(
         `INSERT INTO analytics_daily_summary (date, total_orders)
          VALUES (CURRENT_DATE, 1)
@@ -703,7 +614,7 @@ export const recordOrder = async (payload: OrderCreatedType) => {
       captureError(err, {
         serviceName: "analytic-service",
         logger,
-        context: "recordOrder.dbInsert",
+        context: "recordOrder.summaryUpdate",
       });
     }
   }
@@ -726,18 +637,16 @@ export const recordUserSignup = async (payload: UserCreatedType) => {
 
   logger.info(`[User Signup] ${payload.username} (${payload.email})`);
 
+  bufferAnalyticsEvent(
+    "user.created",
+    payload.email,
+    null,
+    { username: payload.username },
+    memoryEvent.created_at,
+  );
+
   if (getDbStatus()) {
     try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, metadata)
-         VALUES ($1, $2, $3)`,
-        [
-          "user.created",
-          payload.email,
-          JSON.stringify({ username: payload.username }),
-        ],
-      );
-
       await pool.query(
         `INSERT INTO analytics_daily_summary (date, total_signups)
          VALUES (CURRENT_DATE, 1)
@@ -749,7 +658,7 @@ export const recordUserSignup = async (payload: UserCreatedType) => {
       captureError(err, {
         serviceName: "analytic-service",
         logger,
-        context: "recordUserSignup.dbInsert",
+        context: "recordUserSignup.summaryUpdate",
       });
     }
   }
@@ -774,19 +683,16 @@ export const recordProductCreated = async (payload: StripeProductType) => {
     `[Product Created] ${payload.name} (ID: ${payload.id}, Price: $${payload.price})`,
   );
 
+  bufferAnalyticsEvent(
+    "product.created",
+    String(payload.id),
+    payload.price,
+    { name: payload.name },
+    memoryEvent.created_at,
+  );
+
   if (getDbStatus()) {
     try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata)
-         VALUES ($1, $2, $3, $4)`,
-        [
-          "product.created",
-          payload.id,
-          payload.price,
-          JSON.stringify({ name: payload.name }),
-        ],
-      );
-
       await pool.query(
         `INSERT INTO analytics_daily_summary (date, total_products_created)
          VALUES (CURRENT_DATE, 1)
@@ -798,7 +704,7 @@ export const recordProductCreated = async (payload: StripeProductType) => {
       captureError(err, {
         serviceName: "analytic-service",
         logger,
-        context: "recordProductCreated.dbInsert",
+        context: "recordProductCreated.summaryUpdate",
       });
     }
   }
@@ -821,25 +727,13 @@ export const recordProductDeleted = async (productId: number | string) => {
 
   logger.info(`[Product Deleted] ID ${productId}`);
 
-  if (getDbStatus()) {
-    try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, metadata)
-         VALUES ($1, $2, $3)`,
-        [
-          "product.deleted",
-          productId.toString(),
-          JSON.stringify({ productId }),
-        ],
-      );
-    } catch (err) {
-      captureError(err, {
-        serviceName: "analytic-service",
-        logger,
-        context: "recordProductDeleted.dbInsert",
-      });
-    }
-  }
+  bufferAnalyticsEvent(
+    "product.deleted",
+    productId.toString(),
+    null,
+    { productId },
+    memoryEvent.created_at,
+  );
 };
 
 export const recordInventoryEvent = async (
@@ -872,26 +766,13 @@ export const recordInventoryEvent = async (
     `[Inventory Event] ${eventType} for Product ID ${payload.productId ?? "N/A"} (Qty: ${payload.quantity ?? "N/A"})`,
   );
 
-  if (getDbStatus()) {
-    try {
-      await pool.query(
-        `INSERT INTO analytics_events (event_type, user_id, amount, metadata)
-         VALUES ($1, $2, $3, $4)`,
-        [
-          eventType,
-          payload.productId ? payload.productId.toString() : null,
-          payload.quantity ?? null,
-          JSON.stringify(payload),
-        ],
-      );
-    } catch (err) {
-      captureError(err, {
-        serviceName: "analytic-service",
-        logger,
-        context: "recordInventoryEvent.dbInsert",
-      });
-    }
-  }
+  bufferAnalyticsEvent(
+    eventType,
+    payload.productId ? payload.productId.toString() : null,
+    payload.quantity ?? null,
+    payload as Record<string, unknown>,
+    memoryEvent.created_at,
+  );
 };
 
 export const getMetricsSnapshot = (): AnalyticsSummaryType => ({

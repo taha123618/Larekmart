@@ -1,7 +1,18 @@
 import mongoose, { InferSchemaType, model } from "mongoose";
 const { Schema } = mongoose;
 
-export const OrderStatus = ["success", "failed"] as const;
+export const OrderStatus = [
+  "success",
+  "failed",
+  "pending_confirmation",
+  "confirmed",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled_out_of_stock",
+  "refund_pending",
+  "refunded",
+] as const;
 
 const OrderSchema = new Schema(
   {
@@ -10,13 +21,37 @@ const OrderSchema = new Schema(
     amount: { type: Number, required: true },
     taxAmount: { type: Number, default: 0 },
     taxCalculationId: { type: String, default: null },
-    status: { type: String, required: true, enum: OrderStatus },
+    status: {
+      type: String,
+      required: true,
+      enum: OrderStatus,
+      default: "pending_confirmation",
+    },
     paymentMethod: { type: String, default: "card" }, // "card" or "cod"
     isCod: { type: Boolean, default: false },
     sellerId: { type: String, default: null, index: true },
     vendorId: { type: String, default: null },
     carrier: { type: String, default: "custom" },
     trackingNumber: { type: String, default: null },
+    paymentSessionId: {
+      type: String,
+      default: null,
+      sparse: true,
+      index: true,
+    },
+    reservationId: { type: String, default: null },
+    refundId: { type: String, default: null },
+    sagaHistory: {
+      type: [
+        {
+          state: { type: String, required: true },
+          trigger: { type: String, required: true },
+          timestamp: { type: Date, default: Date.now },
+          error: { type: String, default: null },
+        },
+      ],
+      default: [],
+    },
     shippingAddress: {
       type: {
         fullName: String,

@@ -37,6 +37,12 @@ export async function startKafkaConsumers(): Promise<void> {
         },
       },
       {
+        topicName: "price.updated",
+        topicHandler: async (msg) => {
+          if (msg.value) await handlePriceUpdated(msg.value);
+        },
+      },
+      {
         topicName: "product.deleted",
         topicHandler: async (msg) => {
           if (msg.value) await handleProductDeleted(msg.value);
@@ -74,6 +80,12 @@ export async function startKafkaConsumers(): Promise<void> {
       },
       {
         topicName: "inventory.low_stock",
+        topicHandler: async (msg) => {
+          if (msg.value) await handleInventoryAdjusted(msg.value);
+        },
+      },
+      {
+        topicName: "inventory.stock.sold",
         topicHandler: async (msg) => {
           if (msg.value) await handleInventoryAdjusted(msg.value);
         },

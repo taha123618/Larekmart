@@ -22,6 +22,7 @@ import {
   recordSellerEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
+import { eventBatcher } from "./services/event-batcher.js";
 import {
   type PaymentSuccessfulType,
   type OrderCreatedType,
@@ -156,7 +157,10 @@ const start = async () => {
     // 1. Initialize DB tables if PostgreSQL is available
     await initAnalyticsDB();
 
-    // 2. Connect Kafka consumer
+    // 2. Start telemetry micro-batcher ring buffer
+    eventBatcher.start();
+
+    // 3. Connect Kafka consumer
     await consumer.connect();
 
     // 3. Register subscriptions for all project event streams
@@ -686,6 +690,26 @@ const start = async () => {
         `[Analytics Heartbeat] Revenue: $${snapshot.totalRevenue.toFixed(2)} | Orders: ${snapshot.totalOrders} | Signups: ${snapshot.totalSignups} | Products: +${snapshot.totalProductsCreated}/-${snapshot.totalProductsDeleted}`,
       );
     }, 60000);
+
+    // Graceful shutdown handling
+    const shutdown = async (signal: string) => {
+      logger.info(
+        `Received ${signal}. Gracefully stopping Analytic Service...`,
+      );
+      try {
+        await eventBatcher.stop();
+        await consumer.disconnect();
+        await pool.end();
+        logger.info("Analytic Service stopped cleanly.");
+        process.exit(0);
+      } catch (err) {
+        logger.error("Error during graceful shutdown:", err);
+        process.exit(1);
+      }
+    };
+
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
   } catch (error) {
     logger.fatal(
       "Analytic Service encountered a critical startup error",

@@ -32,8 +32,27 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
     discountAmount,
     taxCalculationId,
     taxAmount,
+    expiresAt,
   } = parsed.data;
   const userId = c.get("userId");
+
+  // Pre-checkout atomic lease verification
+  if (expiresAt) {
+    const expirationDate =
+      typeof expiresAt === "number" ? new Date(expiresAt) : new Date(expiresAt);
+    if (
+      !isNaN(expirationDate.getTime()) &&
+      expirationDate.getTime() <= Date.now()
+    ) {
+      return c.json(
+        {
+          error:
+            "Checkout reservation lease has expired. Please refresh your cart.",
+        },
+        400,
+      );
+    }
+  }
 
   try {
     const lineItems = await Promise.all(

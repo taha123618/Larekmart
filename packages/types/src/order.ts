@@ -121,3 +121,40 @@ export const CreateCodOrderSchema = z.object({
 });
 
 export type CreateCodOrderInput = z.infer<typeof CreateCodOrderSchema>;
+
+export interface OrderConfirmedPayload {
+  orderId: string;
+  userId: string;
+  email?: string;
+  cartId?: string | null;
+  paymentSessionId?: string | null;
+  reservationId?: string | null;
+  amount: number;
+  products: Array<{
+    productId?: string | number | null;
+    name?: string | null;
+    quantity?: number | null;
+    price?: number | null;
+    sellerId?: string | null;
+  }>;
+  shippingAddress?: unknown;
+  confirmedAt: string;
+}
+
+export interface PaymentRefundRequestedPayload {
+  orderId: string;
+  paymentSessionId: string;
+  amount?: number;
+  reason: string;
+  userId?: string | null;
+  requestedAt: string;
+}
+
+export interface PaymentRefundCompletedPayload {
+  orderId: string;
+  refundId: string;
+  paymentSessionId: string;
+  amount: number;
+  status: "succeeded" | "failed";
+  completedAt: string;
+}

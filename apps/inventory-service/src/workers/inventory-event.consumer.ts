@@ -53,6 +53,17 @@ export async function startInventoryEventConsumer(): Promise<void> {
               `Rejected payment.successful for reference ${referenceId}: ${verification.reason}`,
             );
             inventoryMetrics.paymentVerificationRejectedTotal.inc();
+            await producer.send("inventory.reservation.failed", {
+              value: {
+                reservationId: referenceId,
+                referenceId: payload.sessionId || payload.referenceId,
+                reason: "VERIFICATION_REJECTED",
+                details:
+                  verification.reason ||
+                  "Stripe paid session verification failed",
+                occurredAt: new Date().toISOString(),
+              },
+            });
             return;
           }
 
@@ -102,6 +113,15 @@ export async function startInventoryEventConsumer(): Promise<void> {
             logger.info(
               `No active reservations found matching reference: ${referenceId}`,
             );
+            await producer.send("inventory.reservation.failed", {
+              value: {
+                reservationId: referenceId,
+                referenceId: payload.sessionId || payload.referenceId,
+                reason: "NOT_FOUND",
+                details: `No active reservation found matching reference: ${referenceId}`,
+                occurredAt: new Date().toISOString(),
+              },
+            });
           }
         } catch (error) {
           logger.error(

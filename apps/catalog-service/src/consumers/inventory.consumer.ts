@@ -10,7 +10,8 @@ export async function handleInventoryAdjusted(payload: any): Promise<void> {
 
     await productProjector.projectInventoryUpdate({
       productId: String(productId),
-      available: target.available ?? target.quantity,
+      available:
+        target.available ?? target.availableQuantity ?? target.quantity,
       status: target.status,
       eventId: target.eventId,
     });

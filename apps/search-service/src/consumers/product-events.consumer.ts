@@ -215,6 +215,145 @@ export async function registerProductEventSubscriptions(
         }
       },
     },
+    {
+      topicName: config.kafka.topics.priceUpdated,
+      topicHandler: async (message: any) => {
+        const payload = message.value || message;
+        logger.info("Received price.updated event", { payload });
+
+        try {
+          const productId = payload.productId || payload.id;
+          const newPrice =
+            payload.newPrice ?? payload.basePrice ?? payload.price;
+
+          if (
+            productId !== undefined &&
+            typeof newPrice === "number" &&
+            !isNaN(newPrice)
+          ) {
+            await indexingService.updateProductPartial(productId, {
+              price: newPrice,
+              compareAtPrice: payload.compareAtPrice,
+            });
+            searchMetrics.kafkaEventsProcessedTotal.inc({
+              topic: config.kafka.topics.priceUpdated,
+              status: "success",
+            });
+          }
+        } catch (error: any) {
+          searchMetrics.kafkaEventsProcessedTotal.inc({
+            topic: config.kafka.topics.priceUpdated,
+            status: "error",
+          });
+          logger.error("Failed to process price.updated event", {
+            error: error.message,
+            payload,
+          });
+        }
+      },
+    },
+    {
+      topicName: config.kafka.topics.inventoryStockSold,
+      topicHandler: async (message: any) => {
+        const payload = message.value || message;
+        logger.info("Received inventory.stock.sold event", { payload });
+
+        try {
+          const productId = payload.productId || payload.id;
+          const available =
+            payload.availableQuantity ?? payload.available ?? payload.quantity;
+
+          if (productId !== undefined && productId !== null) {
+            const inStock = available !== undefined ? available > 0 : true;
+            await indexingService.updateProductPartial(productId, {
+              inStock,
+              ...(available !== undefined ? { stockQuantity: available } : {}),
+            });
+            searchMetrics.kafkaEventsProcessedTotal.inc({
+              topic: config.kafka.topics.inventoryStockSold,
+              status: "success",
+            });
+          }
+        } catch (error: any) {
+          searchMetrics.kafkaEventsProcessedTotal.inc({
+            topic: config.kafka.topics.inventoryStockSold,
+            status: "error",
+          });
+          logger.error("Failed to process inventory.stock.sold event", {
+            error: error.message,
+            payload,
+          });
+        }
+      },
+    },
+    {
+      topicName: config.kafka.topics.inventoryLowStock,
+      topicHandler: async (message: any) => {
+        const payload = message.value || message;
+        logger.info("Received inventory.low_stock event", { payload });
+
+        try {
+          const productId = payload.productId || payload.id;
+          const available =
+            payload.availableQuantity ?? payload.available ?? payload.quantity;
+
+          if (productId !== undefined && productId !== null) {
+            const inStock = available !== undefined ? available > 0 : true;
+            await indexingService.updateProductPartial(productId, {
+              inStock,
+              ...(available !== undefined ? { stockQuantity: available } : {}),
+            });
+            searchMetrics.kafkaEventsProcessedTotal.inc({
+              topic: config.kafka.topics.inventoryLowStock,
+              status: "success",
+            });
+          }
+        } catch (error: any) {
+          searchMetrics.kafkaEventsProcessedTotal.inc({
+            topic: config.kafka.topics.inventoryLowStock,
+            status: "error",
+          });
+          logger.error("Failed to process inventory.low_stock event", {
+            error: error.message,
+            payload,
+          });
+        }
+      },
+    },
+    {
+      topicName: config.kafka.topics.inventoryAdjusted,
+      topicHandler: async (message: any) => {
+        const payload = message.value || message;
+        logger.info("Received inventory.adjusted event", { payload });
+
+        try {
+          const productId = payload.productId || payload.id;
+          const available =
+            payload.availableQuantity ?? payload.available ?? payload.quantity;
+
+          if (productId !== undefined && productId !== null) {
+            const inStock = available !== undefined ? available > 0 : true;
+            await indexingService.updateProductPartial(productId, {
+              inStock,
+              ...(available !== undefined ? { stockQuantity: available } : {}),
+            });
+            searchMetrics.kafkaEventsProcessedTotal.inc({
+              topic: config.kafka.topics.inventoryAdjusted,
+              status: "success",
+            });
+          }
+        } catch (error: any) {
+          searchMetrics.kafkaEventsProcessedTotal.inc({
+            topic: config.kafka.topics.inventoryAdjusted,
+            status: "error",
+          });
+          logger.error("Failed to process inventory.adjusted event", {
+            error: error.message,
+            payload,
+          });
+        }
+      },
+    },
   ];
 
   try {

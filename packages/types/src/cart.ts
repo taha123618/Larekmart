@@ -202,6 +202,7 @@ export const CreateCheckoutSessionSchema = z.object({
   discountAmount: z.number().nonnegative().optional(),
   taxCalculationId: z.string().max(100).optional(),
   taxAmount: z.number().nonnegative().optional(),
+  expiresAt: z.union([z.string(), z.number()]).optional(),
 });
 export type CreateCheckoutSessionInputType = z.infer<
   typeof CreateCheckoutSessionSchema

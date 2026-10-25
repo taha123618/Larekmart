@@ -196,6 +196,30 @@ async function runAnalyticServiceTests(): Promise<void> {
       "  ✓ recordVendorEvent accurately increments in-memory KPI counters",
     );
 
+    // -------------------------------------------------------------------------
+    // TEST 4: EventBatcher Ring Buffer & Micro-Batch Queue
+    // -------------------------------------------------------------------------
+    console.log("\n4. Testing EventBatcher ring buffer & queue buffering...");
+    const { eventBatcher } = await import("../src/services/event-batcher.js");
+    const initialQueueLen = eventBatcher.getQueueLength();
+
+    eventBatcher.enqueue({
+      eventType: "test.high_velocity_event",
+      userId: "user_batch_test",
+      amount: 49.99,
+      metadata: { source: "sqa_unit_test" },
+      createdAt: new Date(),
+    });
+
+    assert.equal(
+      eventBatcher.getQueueLength(),
+      initialQueueLen + 1,
+      "eventBatcher queue length must increment after enqueueing",
+    );
+    console.log(
+      "  ✓ eventBatcher correctly enqueues event to in-memory ring buffer",
+    );
+
     console.log("\n==================================================");
     console.log("🎉 ALL ANALYTIC SERVICE SQA TESTS PASSED (100%)");
     console.log("==================================================");

@@ -143,6 +143,12 @@ export const startServer = async (): Promise<void> => {
           },
         },
         {
+          topicName: "order.confirmed",
+          topicHandler: async (msg) => {
+            if (msg.value) await handleOrderCreated(msg.value);
+          },
+        },
+        {
           topicName: "order-successful",
           topicHandler: async (msg) => {
             if (msg.value) await handleOrderCreated(msg.value);

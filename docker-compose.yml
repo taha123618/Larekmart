@@ -48,6 +48,26 @@ services:
     networks:
       - larekmart-network
 
+  pgbouncer:
+    build:
+      context: ./docker/pgbouncer
+      dockerfile: Dockerfile
+    container_name: larekmart-pgbouncer
+    restart: unless-stopped
+    ports:
+      - "${PGBOUNCER_BIND_IP:-127.0.0.1}:6432:6432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 6432 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - larekmart-network
+
   mysql:
     build:
       context: ./docker/mysql

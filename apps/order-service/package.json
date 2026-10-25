@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "test": "tsx tests/order-security.test.ts",
+    "test": "tsx tests/order-security.test.ts && tsx tests/checkout-saga.test.ts",
     "test:cod": "tsx tests/cod-pricing.test.ts && tsx tests/cod-mismatch-rejection.test.ts",
     "check-types": "tsc --noEmit",
     "dev": "tsx --env-file=.env --watch src/index.ts"

@@ -51,5 +51,22 @@ export const runKafkaSubscriptions = async () => {
         }
       },
     },
+    {
+      topicName: "payment.refund.requested",
+      topicHandler: async (message) => {
+        const payload = message.value;
+        console.log(
+          "Received message: payment.refund.requested",
+          payload?.orderId,
+        );
+
+        if (payload) {
+          const { handleCheckoutRefundRequest } = await import(
+            "./refund.handler.js"
+          );
+          await handleCheckoutRefundRequest(payload);
+        }
+      },
+    },
   ]);
 };

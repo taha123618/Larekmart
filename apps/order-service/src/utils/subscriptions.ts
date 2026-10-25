@@ -1,5 +1,10 @@
 import { consumer } from "./kafka";
-import { createOrder } from "./order";
+import {
+  createOrder,
+  confirmOrder,
+  cancelOutOfStockOrder,
+  markOrderRefunded,
+} from "./order";
 
 export const runKafkaSubscriptions = async () => {
   consumer.subscribe([
@@ -7,7 +12,28 @@ export const runKafkaSubscriptions = async () => {
       topicName: "payment.successful",
       topicHandler: async (message) => {
         const order = message.value;
-        await createOrder(order);
+        if (order) await createOrder(order);
+      },
+    },
+    {
+      topicName: "inventory.stock.sold",
+      topicHandler: async (message) => {
+        const payload = message.value;
+        if (payload) await confirmOrder(payload);
+      },
+    },
+    {
+      topicName: "inventory.reservation.failed",
+      topicHandler: async (message) => {
+        const payload = message.value;
+        if (payload) await cancelOutOfStockOrder(payload);
+      },
+    },
+    {
+      topicName: "payment.refund.completed",
+      topicHandler: async (message) => {
+        const payload = message.value;
+        if (payload) await markOrderRefunded(payload);
       },
     },
     {
@@ -20,6 +46,7 @@ export const runKafkaSubscriptions = async () => {
             await Order.findByIdAndUpdate(payload.orderId, {
               trackingNumber: payload.trackingNumber,
               carrier: payload.carrier,
+              status: "shipped",
             });
           }
         } catch (err) {
