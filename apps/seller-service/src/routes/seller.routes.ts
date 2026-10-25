@@ -414,6 +414,95 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
+  // 5b. Alias: PUT /api/v1/sellers/:sellerId/store (for client compatibility)
+  app.put(
+    "/api/v1/sellers/:sellerId/store",
+    { preHandler: [requireSellerStaffOrAdmin] },
+    async (request, reply) => {
+      const { sellerId } = request.params as { sellerId: string };
+      const body = UpdateStorefrontSchema.parse(request.body);
+
+      const storeRows = await db
+        .select()
+        .from(sellerStores)
+        .where(eq(sellerStores.sellerId, sellerId))
+        .limit(1);
+
+      if (storeRows.length === 0) {
+        return reply.status(404).send({ message: "Storefront not found" });
+      }
+
+      const currentStore = storeRows[0]!;
+
+      if (body.slug && body.slug !== currentStore.slug) {
+        const existingSlug = await db
+          .select({ id: sellerStores.id })
+          .from(sellerStores)
+          .where(eq(sellerStores.slug, body.slug))
+          .limit(1);
+
+        if (existingSlug.length > 0) {
+          return reply
+            .status(409)
+            .send({ message: "Store slug is already in use" });
+        }
+      }
+
+      const updateData: Partial<typeof sellerStores.$inferInsert> = {
+        updatedAt: new Date(),
+      };
+      if (body.name !== undefined) updateData.name = body.name;
+      if (body.slug !== undefined) updateData.slug = body.slug;
+      if (body.headline !== undefined) updateData.headline = body.headline;
+      if (body.description !== undefined)
+        updateData.description = body.description;
+      if (body.logoMediaId !== undefined)
+        updateData.logoMediaId = body.logoMediaId;
+      if (body.bannerMediaId !== undefined)
+        updateData.bannerMediaId = body.bannerMediaId;
+      if (body.vacationMode !== undefined)
+        updateData.vacationMode = body.vacationMode;
+      if (body.vacationMessage !== undefined)
+        updateData.vacationMessage = body.vacationMessage;
+      if (body.vacationEndDate !== undefined) {
+        updateData.vacationEndDate = body.vacationEndDate
+          ? new Date(body.vacationEndDate)
+          : null;
+      }
+      if (body.status !== undefined) updateData.status = body.status;
+
+      await db
+        .update(sellerStores)
+        .set(updateData)
+        .where(eq(sellerStores.id, currentStore.id));
+
+      const updatedStoreRows = await db
+        .select()
+        .from(sellerStores)
+        .where(eq(sellerStores.id, currentStore.id))
+        .limit(1);
+
+      const updated = updatedStoreRows[0]!;
+
+      await cacheService.invalidateStorefront(currentStore.slug, sellerId);
+      if (updated.slug !== currentStore.slug) {
+        await cacheService.invalidateStorefront(updated.slug, sellerId);
+      }
+
+      await sellerEventProducer.publishSellerStorefrontUpdated({
+        sellerId,
+        storeId: updated.id,
+        storeName: updated.name,
+        slug: updated.slug,
+        vacationMode: updated.vacationMode,
+        status: updated.status,
+        updatedAt: new Date().toISOString(),
+      });
+
+      return reply.send({ store: updated });
+    },
+  );
+
   // 5. Add staff member
   app.post(
     "/api/v1/sellers/:sellerId/staff",

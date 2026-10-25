@@ -50,12 +50,13 @@ export interface PublicStorefrontResponse {
 export interface ClientSeller {
   id: string;
   vendorId: string;
-  ownerUserId: string;
+  primaryUserId?: string;
+  ownerUserId?: string;
   status: SellerStatus;
-  primaryCurrency: string;
+  primaryCurrency?: string;
   onboardedAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
   store?: SellerStore | null;
   policies?: SellerPolicy[];
 }
@@ -142,7 +143,32 @@ export async function getMySeller(
     }
 
     const data = await res.json();
-    return data.seller || null;
+    if (Array.isArray(data)) {
+      if (data.length === 0) return null;
+      const first = data[0];
+      return {
+        id: first.id,
+        vendorId: first.vendorId,
+        primaryUserId: first.primaryUserId,
+        status: first.status,
+        createdAt: first.createdAt,
+        store: first.storeName
+          ? {
+              id: first.id,
+              sellerId: first.id,
+              name: first.storeName,
+              slug: first.slug,
+              status: first.vacationMode ? "VACATION" : "ACTIVE",
+              vacationMode: Boolean(first.vacationMode),
+              createdAt: first.createdAt
+                ? String(first.createdAt)
+                : new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }
+          : null,
+      };
+    }
+    return data.seller || data || null;
   } catch (err) {
     console.warn("getMySeller error:", err);
     return null;
@@ -157,8 +183,8 @@ export async function updateSellerStore(
   storeData: Partial<SellerStore>,
   authToken?: string,
 ): Promise<SellerStore> {
-  const res = await fetch(`${SELLERS_BASE}/${sellerId}/store`, {
-    method: "PUT",
+  const res = await fetch(`${SELLERS_BASE}/${sellerId}/storefront`, {
+    method: "PATCH",
     headers: getHeaders(authToken),
     body: JSON.stringify(storeData),
   });
@@ -170,7 +196,7 @@ export async function updateSellerStore(
     );
   }
   const data = await res.json();
-  return data.store;
+  return data.store || data;
 }
 
 export interface ClientSystemSettings {
