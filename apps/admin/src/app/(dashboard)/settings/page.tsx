@@ -9,6 +9,7 @@ import {
   fetchAdminDelegations,
   grantAdminDelegation,
   revokeAdminDelegation,
+  type UpdateAdminSystemSettingsInput,
 } from "@/services/seller.service";
 import {
   Card,
@@ -34,6 +35,8 @@ import {
   XCircle,
   UserCheck,
   Trash2,
+  Sliders,
+  Megaphone,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -66,9 +69,9 @@ export default function SettingsAdminPage() {
 
   // Mutation for updating system settings
   const updateMutation = useMutation({
-    mutationFn: async (enabled: boolean) => {
+    mutationFn: async (input: boolean | UpdateAdminSystemSettingsInput) => {
       const token = await getToken();
-      return updateSystemSettings(enabled, token || undefined);
+      return updateSystemSettings(input, token || undefined);
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["admin", "system-settings"], data.settings);
@@ -78,6 +81,11 @@ export default function SettingsAdminPage() {
       toast.error(err.message || "Failed to update system settings.");
     },
   });
+
+  const [maintenanceText, setMaintenanceText] = useState("");
+  const isSellerEnabled = settings?.isSellerEnabled ?? true;
+  const isSellerRegistrationOpen = settings?.isSellerRegistrationOpen ?? true;
+  const isStorefrontsActive = settings?.isStorefrontsActive ?? true;
 
   // Delegated Manage Admins state & queries
   const [newAdminUserId, setNewAdminUserId] = useState("");
@@ -123,8 +131,6 @@ export default function SettingsAdminPage() {
       toast.error(err.message || "Failed to revoke delegation");
     },
   });
-
-  const isSellerEnabled = settings?.isSellerEnabled ?? true;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto py-4">
@@ -341,6 +347,139 @@ export default function SettingsAdminPage() {
                   preserved for re-activation.
                 </li>
               </ul>
+            </div>
+          </div>
+
+          {/* Granular Operational Sub-Controls */}
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-800 space-y-4">
+            <div className="flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                Granular Marketplace Operational Controls
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Sub-Switch 1: Registration Open */}
+              <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      Seller Onboarding & Registration
+                    </span>
+                    <Badge
+                      variant={
+                        isSellerRegistrationOpen ? "default" : "secondary"
+                      }
+                      className="text-[10px]"
+                    >
+                      {isSellerRegistrationOpen ? "Open" : "Paused"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Controls whether new merchants can submit KYB applications
+                    via &ldquo;Become a Seller&rdquo;.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={isSellerRegistrationOpen ? "outline" : "default"}
+                  disabled={
+                    !isSuperAdmin ||
+                    !isSellerEnabled ||
+                    updateMutation.isPending
+                  }
+                  onClick={() =>
+                    updateMutation.mutate({
+                      isSellerRegistrationOpen: !isSellerRegistrationOpen,
+                    })
+                  }
+                  className="shrink-0"
+                >
+                  {!isSuperAdmin && <Lock className="w-3.5 h-3.5 mr-1" />}
+                  {isSellerRegistrationOpen
+                    ? "Pause Onboarding"
+                    : "Open Onboarding"}
+                </Button>
+              </div>
+
+              {/* Sub-Switch 2: Storefronts Active */}
+              <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      Marketplace Storefronts & Purchasing
+                    </span>
+                    <Badge
+                      variant={isStorefrontsActive ? "default" : "secondary"}
+                      className="text-[10px]"
+                    >
+                      {isStorefrontsActive ? "Active" : "Paused"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Controls customer browsing and ordering across seller stores
+                    (/stores/:slug).
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={isStorefrontsActive ? "outline" : "default"}
+                  disabled={
+                    !isSuperAdmin ||
+                    !isSellerEnabled ||
+                    updateMutation.isPending
+                  }
+                  onClick={() =>
+                    updateMutation.mutate({
+                      isStorefrontsActive: !isStorefrontsActive,
+                    })
+                  }
+                  className="shrink-0"
+                >
+                  {!isSuperAdmin && <Lock className="w-3.5 h-3.5 mr-1" />}
+                  {isStorefrontsActive ? "Pause Stores" : "Activate Stores"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Sub-Control 3: Maintenance Announcement Message */}
+            <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Megaphone className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    Marketplace Maintenance Announcement
+                  </span>
+                </div>
+                <span className="text-xs text-gray-500">
+                  Displayed on storefront banners when operations are paused
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={maintenanceText || settings?.maintenanceMessage || ""}
+                  onChange={(e) => setMaintenanceText(e.target.value)}
+                  placeholder="e.g. Marketplace seller operations are temporarily paused for scheduled maintenance."
+                  disabled={!isSuperAdmin || updateMutation.isPending}
+                  className="text-xs"
+                />
+                <Button
+                  size="sm"
+                  disabled={!isSuperAdmin || updateMutation.isPending}
+                  onClick={() =>
+                    updateMutation.mutate({
+                      maintenanceMessage:
+                        maintenanceText ||
+                        settings?.maintenanceMessage ||
+                        "Marketplace seller operations are temporarily paused for routine maintenance.",
+                    })
+                  }
+                >
+                  {!isSuperAdmin && <Lock className="w-3.5 h-3.5 mr-1" />}
+                  Save Announcement
+                </Button>
+              </div>
             </div>
           </div>
 

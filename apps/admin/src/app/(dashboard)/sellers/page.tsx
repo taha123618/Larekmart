@@ -110,6 +110,9 @@ export default function SellersAdminPage() {
   });
 
   const isSellerEnabled = systemSettings?.isSellerEnabled ?? true;
+  const isSellerRegistrationOpen =
+    systemSettings?.isSellerRegistrationOpen ?? true;
+  const isStorefrontsActive = systemSettings?.isStorefrontsActive ?? true;
 
   const statusMutation = useMutation({
     mutationFn: async ({
@@ -276,6 +279,48 @@ export default function SellersAdminPage() {
           </div>
         </div>
       )}
+
+      {isSellerEnabled &&
+        (!isSellerRegistrationOpen || !isStorefrontsActive) && (
+          <div className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-4 text-sky-900 dark:text-sky-200">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-sky-600 dark:text-sky-400 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-sky-800 dark:text-sky-300">
+                  Operational Sub-Controls Active
+                </h3>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {!isSellerRegistrationOpen && (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                    >
+                      Merchant Onboarding Paused
+                    </Badge>
+                  )}
+                  {!isStorefrontsActive && (
+                    <Badge
+                      variant="outline"
+                      className="border-rose-500 text-rose-600 dark:text-rose-400 bg-rose-500/10"
+                    >
+                      Storefront Browsing & Purchasing Paused
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-sky-700/90 dark:text-sky-400/90">
+                  Manage these sub-controls in{" "}
+                  <a
+                    href="/settings"
+                    className="underline font-semibold hover:text-sky-900 dark:hover:text-sky-100"
+                  >
+                    Platform Settings
+                  </a>
+                  .
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">

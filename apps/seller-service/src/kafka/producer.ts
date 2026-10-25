@@ -6,6 +6,8 @@ import {
   type SellerUpdatedEvent,
   type SellerSuspendedEvent,
   type SellerStorefrontUpdatedEvent,
+  type SystemSettingsUpdatedEvent,
+  type AdminDelegationEvent,
 } from "@repo/types";
 import { env } from "../config/env.js";
 
@@ -68,6 +70,24 @@ export class SellerEventProducer {
     payload: SellerStorefrontUpdatedEvent,
   ): Promise<void> {
     await this.send(SELLER_TOPICS.STOREFRONT_UPDATED, payload);
+  }
+
+  public async publishSettingsUpdated(
+    payload: SystemSettingsUpdatedEvent,
+  ): Promise<void> {
+    await this.send(SELLER_TOPICS.SETTINGS_UPDATED, payload);
+  }
+
+  public async publishDelegationGranted(
+    payload: AdminDelegationEvent,
+  ): Promise<void> {
+    await this.send(SELLER_TOPICS.DELEGATION_GRANTED, payload);
+  }
+
+  public async publishDelegationRevoked(
+    payload: AdminDelegationEvent,
+  ): Promise<void> {
+    await this.send(SELLER_TOPICS.DELEGATION_REVOKED, payload);
   }
 }
 

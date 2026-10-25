@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Layers,
   Store,
+  AlertTriangle,
 } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import WishlistButton from "./WishlistButton";
@@ -39,6 +40,12 @@ export default function Navbar() {
   const { user } = useUser();
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+  const [isSellerRegistrationOpen, setIsSellerRegistrationOpen] =
+    useState(true);
+  const [isStorefrontsActive, setIsStorefrontsActive] = useState(true);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(
+    null,
+  );
 
   const isSeller = Boolean(
     user?.publicMetadata?.isSeller ||
@@ -48,16 +55,40 @@ export default function Navbar() {
 
   useEffect(() => {
     fetchSystemSettings()
-      .then((settings) => setIsSellerEnabled(settings.isSellerEnabled))
-      .catch(() => setIsSellerEnabled(true));
+      .then((settings) => {
+        setIsSellerEnabled(settings.isSellerEnabled);
+        setIsSellerRegistrationOpen(settings.isSellerRegistrationOpen);
+        setIsStorefrontsActive(settings.isStorefrontsActive);
+        setMaintenanceMessage(settings.maintenanceMessage ?? null);
+      })
+      .catch(() => {
+        setIsSellerEnabled(true);
+        setIsSellerRegistrationOpen(true);
+        setIsStorefrontsActive(true);
+      });
   }, []);
 
   const visibleCategoryLinks = CATEGORY_LINKS.filter(
-    (item) => isSellerEnabled || item.label !== "Featured Stores",
+    (item) =>
+      (isSellerEnabled && isStorefrontsActive) ||
+      item.label !== "Featured Stores",
   );
 
   return (
     <header className="w-full bg-white/95 dark:bg-[#0b0f19]/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 shadow-xs dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] transition-colors duration-200">
+      {/* 0. ADAPTIVE MAINTENANCE BANNER */}
+      {(!isSellerEnabled || !isStorefrontsActive) && (
+        <div className="bg-amber-500/15 dark:bg-amber-950/60 border-b border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs py-1.5 px-4 text-center font-medium flex items-center justify-center gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>
+            {maintenanceMessage ||
+              (!isSellerEnabled
+                ? "Marketplace seller operations are temporarily paused for routine maintenance."
+                : "Marketplace seller storefronts are currently paused for routine maintenance.")}
+          </span>
+        </div>
+      )}
+
       {/* 1. TOP UTILITY ANNOUNCEMENT BAR */}
       <div className="bg-slate-900 dark:bg-slate-950 text-slate-300 text-xs py-2 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
@@ -78,20 +109,30 @@ export default function Navbar() {
 
           {/* Utility Links */}
           <div className="flex items-center gap-2.5 sm:gap-4 text-[11px] sm:text-xs shrink-0">
-            {isSellerEnabled && (
+            {isSeller ? (
+              // When isSeller is true: display seller-related UI & link
               <>
                 <Link
                   href="/become-a-seller"
                   className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
                 >
-                  {isSeller && <Store className="w-3.5 h-3.5" />}
-                  <span>
-                    {isSeller ? "Seller Portal" : "Sell on Larekmart"}
-                  </span>
+                  <Store className="w-3.5 h-3.5" />
+                  <span>Seller Portal</span>
                 </Link>
                 <span className="hidden sm:inline text-slate-700">|</span>
               </>
-            )}
+            ) : isSellerEnabled && isSellerRegistrationOpen ? (
+              // When isSeller is false: display onboarding CTA if registration is open
+              <>
+                <Link
+                  href="/become-a-seller"
+                  className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
+                >
+                  <span>Sell on Larekmart</span>
+                </Link>
+                <span className="hidden sm:inline text-slate-700">|</span>
+              </>
+            ) : null}
             <Link
               href="/track"
               className="hover:text-white transition flex items-center gap-1"

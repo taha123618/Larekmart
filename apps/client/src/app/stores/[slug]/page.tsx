@@ -98,7 +98,7 @@ export default async function StorefrontPage({
   const { slug } = await params;
 
   const settings = await fetchSystemSettings();
-  if (!settings.isSellerEnabled) {
+  if (!settings.isSellerEnabled || !settings.isStorefrontsActive) {
     return (
       <main className="min-h-[60vh] flex items-center justify-center px-4 py-16">
         <div className="max-w-md w-full text-center space-y-4 p-8 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 shadow-sm">
@@ -106,12 +106,11 @@ export default async function StorefrontPage({
             <Store className="w-6 h-6" />
           </div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-            Marketplace Stores Temporarily Unavailable
+            Marketplace Stores Temporarily Paused
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            Marketplace storefronts and independent merchant stores are
-            currently disabled across Larekmart. Please check back later or
-            continue exploring our catalog.
+            {settings.maintenanceMessage ||
+              "Marketplace storefronts and independent merchant stores are currently paused for routine maintenance. Please check back later or continue exploring our catalog."}
           </p>
           <div className="pt-2">
             <Link

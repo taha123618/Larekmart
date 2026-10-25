@@ -173,15 +173,20 @@ export async function updateSellerStore(
   return data.store;
 }
 
+export interface ClientSystemSettings {
+  id: string;
+  isSellerEnabled: boolean;
+  isSellerRegistrationOpen: boolean;
+  isStorefrontsActive: boolean;
+  maintenanceMessage?: string | null;
+  updatedAt: string;
+  updatedBy?: string | null;
+}
+
 /**
  * Public discovery endpoint: Fetch platform-wide marketplace system settings
  */
-export async function fetchSystemSettings(): Promise<{
-  id: string;
-  isSellerEnabled: boolean;
-  updatedAt: string;
-  updatedBy?: string | null;
-}> {
+export async function fetchSystemSettings(): Promise<ClientSystemSettings> {
   try {
     const res = await fetch(`${API_BASE}/api/v1/system-settings`, {
       headers: { "Content-Type": "application/json" },
@@ -191,6 +196,10 @@ export async function fetchSystemSettings(): Promise<{
       return {
         id: "marketplace",
         isSellerEnabled: true,
+        isSellerRegistrationOpen: true,
+        isStorefrontsActive: true,
+        maintenanceMessage:
+          "Marketplace seller operations are temporarily paused for routine maintenance.",
         updatedAt: new Date().toISOString(),
       };
     }
@@ -200,6 +209,10 @@ export async function fetchSystemSettings(): Promise<{
     return {
       id: "marketplace",
       isSellerEnabled: true,
+      isSellerRegistrationOpen: true,
+      isStorefrontsActive: true,
+      maintenanceMessage:
+        "Marketplace seller operations are temporarily paused for routine maintenance.",
       updatedAt: new Date().toISOString(),
     };
   }

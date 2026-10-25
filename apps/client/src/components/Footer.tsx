@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
+import { useUser } from "@clerk/nextjs";
 import { fetchSystemSettings } from "@/services/seller.service";
 
 // Static constants hoisted outside of component scope to eliminate re-allocation overhead
@@ -188,21 +189,50 @@ function FooterComponent() {
     [],
   );
 
+  const { user } = useUser();
+  const isSeller = Boolean(
+    user?.publicMetadata?.isSeller ||
+      user?.unsafeMetadata?.isSeller ||
+      user?.publicMetadata?.role === "seller",
+  );
+
   const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+  const [isSellerRegistrationOpen, setIsSellerRegistrationOpen] =
+    useState(true);
 
   useEffect(() => {
     fetchSystemSettings()
-      .then((settings) => setIsSellerEnabled(settings.isSellerEnabled))
-      .catch(() => setIsSellerEnabled(true));
+      .then((settings) => {
+        setIsSellerEnabled(settings.isSellerEnabled);
+        setIsSellerRegistrationOpen(settings.isSellerRegistrationOpen);
+      })
+      .catch(() => {
+        setIsSellerEnabled(true);
+        setIsSellerRegistrationOpen(true);
+      });
   }, []);
 
   // Memoized navigation, department, and social lists
   const navLinks = useMemo(
     () =>
-      STATIC_NAV_LINKS.filter(
-        (item) => isSellerEnabled || item.href !== "/become-a-seller",
-      ),
-    [isSellerEnabled],
+      STATIC_NAV_LINKS.flatMap((item) => {
+        if (item.href === "/become-a-seller") {
+          if (!isSellerEnabled) return [];
+          if (isSeller) {
+            return [
+              {
+                label: "Seller Portal",
+                href: "/become-a-seller",
+                count: "[PORTAL]",
+              },
+            ];
+          }
+          if (!isSellerRegistrationOpen) return [];
+          return [item];
+        }
+        return [item];
+      }),
+    [isSellerEnabled, isSellerRegistrationOpen, isSeller],
   );
   const departmentLinks = useMemo(() => STATIC_DEPARTMENT_LINKS, []);
   const socialLinks = useMemo(() => STATIC_SOCIAL_LINKS, []);

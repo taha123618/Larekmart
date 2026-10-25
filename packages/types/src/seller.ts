@@ -282,6 +282,9 @@ export const SELLER_TOPICS = {
   UPDATED: "seller.updated",
   SUSPENDED: "seller.suspended",
   STOREFRONT_UPDATED: "seller.storefront.updated",
+  SETTINGS_UPDATED: "marketplace.settings.updated",
+  DELEGATION_GRANTED: "admin.delegation.granted",
+  DELEGATION_REVOKED: "admin.delegation.revoked",
 } as const;
 
 export type SellerTopic = (typeof SELLER_TOPICS)[keyof typeof SELLER_TOPICS];
@@ -301,6 +304,9 @@ export type SellerCreatedEvent = z.infer<typeof SellerCreatedEventSchema>;
 export const SellerActivatedEventSchema = z.object({
   sellerId: z.string(),
   vendorId: z.string(),
+  userId: z.string().optional(),
+  primaryUserId: z.string().optional(),
+  isSeller: z.boolean().default(true).optional(),
   activatedAt: z.string(),
   activatedByUserId: z.string().optional().nullable(),
 });
@@ -318,6 +324,9 @@ export type SellerUpdatedEvent = z.infer<typeof SellerUpdatedEventSchema>;
 export const SellerSuspendedEventSchema = z.object({
   sellerId: z.string(),
   vendorId: z.string(),
+  userId: z.string().optional(),
+  primaryUserId: z.string().optional(),
+  isSeller: z.boolean().default(false).optional(),
   reason: z.string(),
   suspendedAt: z.string(),
   suspendedByUserId: z.string().optional().nullable(),
@@ -346,6 +355,9 @@ export type SellerStorefrontUpdatedEvent = z.infer<
 export const SystemSettingsSchema = z.object({
   id: z.string(),
   isSellerEnabled: z.boolean(),
+  isSellerRegistrationOpen: z.boolean().default(true),
+  isStorefrontsActive: z.boolean().default(true),
+  maintenanceMessage: z.string().nullable().optional(),
   updatedAt: z.string(),
   updatedBy: z.string().nullable().optional(),
 });
@@ -353,13 +365,24 @@ export const SystemSettingsSchema = z.object({
 export type SystemSettings = z.infer<typeof SystemSettingsSchema>;
 
 export const UpdateSystemSettingsSchema = z.object({
-  isSellerEnabled: z.boolean({
-    message: "isSellerEnabled is required",
-  }),
+  isSellerEnabled: z.boolean().optional(),
+  isSellerRegistrationOpen: z.boolean().optional(),
+  isStorefrontsActive: z.boolean().optional(),
+  maintenanceMessage: z.string().optional(),
 });
 
 export type UpdateSystemSettingsInput = z.infer<
   typeof UpdateSystemSettingsSchema
+>;
+
+export const SystemSettingsUpdatedEventSchema = z.object({
+  settings: SystemSettingsSchema,
+  updatedBy: z.string().nullable().optional(),
+  timestamp: z.string(),
+});
+
+export type SystemSettingsUpdatedEvent = z.infer<
+  typeof SystemSettingsUpdatedEventSchema
 >;
 
 // ==============================================================================
@@ -381,3 +404,14 @@ export const GrantDelegationSchema = z.object({
 });
 
 export type GrantDelegationInput = z.infer<typeof GrantDelegationSchema>;
+
+export const AdminDelegationEventSchema = z.object({
+  delegationId: z.string(),
+  adminUserId: z.string(),
+  permission: z.string(),
+  grantedByUserId: z.string(),
+  action: z.enum(["GRANTED", "REVOKED"]),
+  timestamp: z.string(),
+});
+
+export type AdminDelegationEvent = z.infer<typeof AdminDelegationEventSchema>;

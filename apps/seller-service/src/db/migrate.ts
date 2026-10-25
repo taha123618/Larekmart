@@ -107,9 +107,16 @@ export async function runMigrations(): Promise<void> {
       CREATE TABLE IF NOT EXISTS system_settings (
         id VARCHAR(64) PRIMARY KEY,
         is_seller_enabled BOOLEAN DEFAULT TRUE NOT NULL,
+        is_seller_registration_open BOOLEAN DEFAULT TRUE NOT NULL,
+        is_storefronts_active BOOLEAN DEFAULT TRUE NOT NULL,
+        maintenance_message TEXT DEFAULT 'Marketplace seller operations are temporarily paused for routine maintenance.',
         updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
         updated_by VARCHAR(128)
       );
+
+      ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS is_seller_registration_open BOOLEAN DEFAULT TRUE NOT NULL;
+      ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS is_storefronts_active BOOLEAN DEFAULT TRUE NOT NULL;
+      ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS maintenance_message TEXT DEFAULT 'Marketplace seller operations are temporarily paused for routine maintenance.';
 
       CREATE TABLE IF NOT EXISTS admin_delegations (
         id VARCHAR(64) PRIMARY KEY,
@@ -120,8 +127,8 @@ export async function runMigrations(): Promise<void> {
       );
       CREATE INDEX IF NOT EXISTS admin_delegations_user_idx ON admin_delegations(admin_user_id);
 
-      INSERT INTO system_settings (id, is_seller_enabled, updated_at)
-      VALUES ('marketplace', TRUE, NOW())
+      INSERT INTO system_settings (id, is_seller_enabled, is_seller_registration_open, is_storefronts_active, updated_at)
+      VALUES ('marketplace', TRUE, TRUE, TRUE, NOW())
       ON CONFLICT (id) DO NOTHING;
     `);
 

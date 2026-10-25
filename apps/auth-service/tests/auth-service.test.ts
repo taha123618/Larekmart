@@ -3,6 +3,12 @@ import {
   shouldBeUser,
   shouldBeAdmin,
 } from "../src/middleware/authMiddleware.js";
+import {
+  handleSellerActivatedEvent,
+  handleSellerSuspendedEvent,
+  handleDelegationGrantedEvent,
+  handleDelegationRevokedEvent,
+} from "../src/consumer.js";
 import { GATEWAY_HEADERS, UserFormSchema } from "@repo/types";
 
 interface MockResponse {
@@ -245,6 +251,99 @@ async function runAuthServiceTests(): Promise<void> {
     };
     assert.equal(userDeletedPayload.userId, "user_deleted_456");
     console.log("  ✓ user.deleted event payload structure verified");
+
+    // -------------------------------------------------------------------------
+    // TEST 5: Clerk Metadata Kafka Event Handlers (isSeller & canManageSellers)
+    // -------------------------------------------------------------------------
+    console.log(
+      "\n5. Testing Clerk Metadata Kafka Handlers (isSeller & canManageSellers)...",
+    );
+
+    const mockClerkDb: Record<string, Record<string, unknown>> = {};
+    const mockClerkClient = {
+      users: {
+        updateUserMetadata: async (
+          userId: string,
+          params: { publicMetadata: Record<string, unknown> },
+        ) => {
+          mockClerkDb[userId] = {
+            ...(mockClerkDb[userId] || {}),
+            ...params.publicMetadata,
+          };
+          return { id: userId, publicMetadata: mockClerkDb[userId] };
+        },
+      },
+    } as any;
+
+    // 5A: seller.activated sets isSeller: true
+    const activatedSuccess = await handleSellerActivatedEvent(
+      {
+        sellerId: "sel_101",
+        userId: "user_merchant_101",
+        isSeller: true,
+      },
+      mockClerkClient,
+    );
+    assert.equal(activatedSuccess, true);
+    assert.equal(mockClerkDb["user_merchant_101"]?.isSeller, true);
+    console.log(
+      "  ✓ seller.activated successfully synchronized publicMetadata.isSeller = true",
+    );
+
+    // 5B: seller.suspended sets isSeller: false
+    const suspendedSuccess = await handleSellerSuspendedEvent(
+      {
+        sellerId: "sel_101",
+        userId: "user_merchant_101",
+        isSeller: false,
+        reason: "Compliance violation",
+      },
+      mockClerkClient,
+    );
+    assert.equal(suspendedSuccess, true);
+    assert.equal(mockClerkDb["user_merchant_101"]?.isSeller, false);
+    console.log(
+      "  ✓ seller.suspended successfully synchronized publicMetadata.isSeller = false",
+    );
+
+    // 5C: admin.delegation.granted sets canManageSellers: true
+    const delegationGranted = await handleDelegationGrantedEvent(
+      {
+        adminUserId: "admin_user_manage_505",
+        permission: "manage_sellers",
+        action: "GRANTED",
+      },
+      mockClerkClient,
+    );
+    assert.equal(delegationGranted, true);
+    assert.equal(mockClerkDb["admin_user_manage_505"]?.canManageSellers, true);
+    console.log(
+      "  ✓ admin.delegation.granted successfully synchronized publicMetadata.canManageSellers = true",
+    );
+
+    // 5D: admin.delegation.revoked sets canManageSellers: false
+    const delegationRevoked = await handleDelegationRevokedEvent(
+      {
+        adminUserId: "admin_user_manage_505",
+        action: "REVOKED",
+      },
+      mockClerkClient,
+    );
+    assert.equal(delegationRevoked, true);
+    assert.equal(mockClerkDb["admin_user_manage_505"]?.canManageSellers, false);
+    console.log(
+      "  ✓ admin.delegation.revoked successfully synchronized publicMetadata.canManageSellers = false",
+    );
+
+    // 5E: Resiliency on missing target IDs
+    const missingTarget = await handleSellerActivatedEvent(
+      { sellerId: "sel_empty" },
+      mockClerkClient,
+    );
+    assert.equal(missingTarget, false);
+    console.log(
+      "  ✓ Missing user ID payloads handled gracefully without throwing",
+    );
 
     console.log("\n==================================================");
     console.log("🎉 ALL AUTH SERVICE SQA TESTS PASSED (100%)");

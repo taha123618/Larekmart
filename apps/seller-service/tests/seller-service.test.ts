@@ -300,7 +300,7 @@ async function runSellerServiceTests() {
       "  ✓ Public storefront routes blocked when feature disabled (403 SELLER_FEATURE_DISABLED)",
     );
 
-    // 5.7 Super Admin re-enables seller functionality
+    // 5.7 Super Admin re-enables seller functionality with granular operational controls
     const superAdminReEnableRes = await app.inject({
       method: "PATCH",
       url: "/api/v1/admin/system-settings",
@@ -310,13 +310,22 @@ async function runSellerServiceTests() {
       },
       payload: {
         isSellerEnabled: true,
+        isSellerRegistrationOpen: false,
+        isStorefrontsActive: true,
+        maintenanceMessage: "Seller onboarding currently paused",
       },
     });
     assert.equal(superAdminReEnableRes.statusCode, 200);
     const reEnabledResult = JSON.parse(superAdminReEnableRes.payload);
     assert.equal(reEnabledResult.settings.isSellerEnabled, true);
+    assert.equal(reEnabledResult.settings.isSellerRegistrationOpen, false);
+    assert.equal(reEnabledResult.settings.isStorefrontsActive, true);
+    assert.equal(
+      reEnabledResult.settings.maintenanceMessage,
+      "Seller onboarding currently paused",
+    );
     console.log(
-      "  ✓ Super Admin successfully re-enabled seller feature (isSellerEnabled: true)",
+      "  ✓ Super Admin successfully updated granular settings (isSellerEnabled, isSellerRegistrationOpen, isStorefrontsActive)",
     );
 
     // ────────────────────────────────────────────────────────────

@@ -186,15 +186,29 @@ export async function recordAdminSellerPerformance(
   return data.snapshot;
 }
 
+export interface AdminSystemSettings {
+  id: string;
+  isSellerEnabled: boolean;
+  isSellerRegistrationOpen: boolean;
+  isStorefrontsActive: boolean;
+  maintenanceMessage?: string | null;
+  updatedAt: string;
+  updatedBy?: string | null;
+}
+
+export type UpdateAdminSystemSettingsInput = {
+  isSellerEnabled?: boolean;
+  isSellerRegistrationOpen?: boolean;
+  isStorefrontsActive?: boolean;
+  maintenanceMessage?: string;
+};
+
 /**
  * Fetch platform-wide marketplace system settings (Public or Admin)
  */
-export async function fetchSystemSettings(authToken?: string): Promise<{
-  id: string;
-  isSellerEnabled: boolean;
-  updatedAt: string;
-  updatedBy?: string | null;
-}> {
+export async function fetchSystemSettings(
+  authToken?: string,
+): Promise<AdminSystemSettings> {
   const url = `${API_BASE}/api/v1/system-settings`;
   const res = await fetch(url, {
     headers: getHeaders(authToken),
@@ -210,22 +224,19 @@ export async function fetchSystemSettings(authToken?: string): Promise<{
  * Update platform-wide marketplace system settings (Super Admin only)
  */
 export async function updateSystemSettings(
-  isSellerEnabled: boolean,
+  input: boolean | UpdateAdminSystemSettingsInput,
   authToken?: string,
 ): Promise<{
   message: string;
-  settings: {
-    id: string;
-    isSellerEnabled: boolean;
-    updatedAt: string;
-    updatedBy?: string | null;
-  };
+  settings: AdminSystemSettings;
 }> {
+  const payload =
+    typeof input === "boolean" ? { isSellerEnabled: input } : input;
   const url = `${API_BASE}/api/v1/admin/system-settings`;
   const res = await fetch(url, {
     method: "PATCH",
     headers: getHeaders(authToken),
-    body: JSON.stringify({ isSellerEnabled }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));

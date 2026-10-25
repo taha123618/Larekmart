@@ -215,6 +215,13 @@ export const sellerPerformanceSnapshots = pgTable(
 export const systemSettings = pgTable("system_settings", {
   id: varchar("id", { length: 64 }).primaryKey(), // e.g. "marketplace"
   isSellerEnabled: boolean("is_seller_enabled").notNull().default(true),
+  isSellerRegistrationOpen: boolean("is_seller_registration_open")
+    .notNull()
+    .default(true),
+  isStorefrontsActive: boolean("is_storefronts_active").notNull().default(true),
+  maintenanceMessage: text("maintenance_message").default(
+    "Marketplace seller operations are temporarily paused for routine maintenance.",
+  ),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

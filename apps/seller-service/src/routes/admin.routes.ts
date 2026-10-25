@@ -168,6 +168,9 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
         await sellerEventProducer.publishSellerActivated({
           sellerId,
           vendorId: sellerRows[0]!.vendorId,
+          userId: sellerRows[0]!.primaryUserId,
+          primaryUserId: sellerRows[0]!.primaryUserId,
+          isSeller: true,
           activatedAt: new Date().toISOString(),
           activatedByUserId: adminId,
         });
@@ -175,6 +178,9 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
         await sellerEventProducer.publishSellerSuspended({
           sellerId,
           vendorId: sellerRows[0]!.vendorId,
+          userId: sellerRows[0]!.primaryUserId,
+          primaryUserId: sellerRows[0]!.primaryUserId,
+          isSeller: false,
           reason: body.reason || "Suspended by Administrator",
           suspendedAt: new Date().toISOString(),
           suspendedByUserId: adminId,
@@ -238,6 +244,9 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
       await sellerEventProducer.publishSellerActivated({
         sellerId,
         vendorId: sellerRows[0]!.vendorId,
+        userId: sellerRows[0]!.primaryUserId,
+        primaryUserId: sellerRows[0]!.primaryUserId,
+        isSeller: true,
         activatedAt: new Date().toISOString(),
         activatedByUserId: adminId,
       });
@@ -283,6 +292,9 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
       await sellerEventProducer.publishSellerSuspended({
         sellerId,
         vendorId: sellerRows[0]!.vendorId,
+        userId: sellerRows[0]!.primaryUserId,
+        primaryUserId: sellerRows[0]!.primaryUserId,
+        isSeller: false,
         reason: body.reason,
         suspendedAt: new Date().toISOString(),
         suspendedByUserId: adminId,
@@ -342,12 +354,12 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
 
       const adminId = getUserId(request);
       const updated = await settingsService.updateSystemSettings(
-        parseResult.data.isSellerEnabled,
+        parseResult.data,
         adminId,
       );
 
       return reply.send({
-        message: `Seller/Vendor platform feature successfully ${updated.isSellerEnabled ? "enabled" : "disabled"}`,
+        message: "Marketplace system settings successfully updated",
         settings: updated,
       });
     },
@@ -415,6 +427,15 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
         .where(eq(adminDelegations.id, id))
         .limit(1);
 
+      await sellerEventProducer.publishDelegationGranted({
+        delegationId: id,
+        adminUserId,
+        permission: "manage_sellers",
+        grantedByUserId: superAdminId,
+        action: "GRANTED",
+        timestamp: new Date().toISOString(),
+      });
+
       return reply.status(201).send({
         message: "Manage Admin verification delegation granted successfully",
         delegation: newDelegation,
@@ -428,10 +449,20 @@ export const adminSellerRoutes: FastifyPluginAsync = async (app) => {
     { preHandler: [requireSuperAdmin] },
     async (request, reply) => {
       const { adminUserId } = request.params as { adminUserId: string };
+      const superAdminId = getUserId(request) || "system-super-admin";
 
       await db
         .delete(adminDelegations)
         .where(eq(adminDelegations.adminUserId, adminUserId));
+
+      await sellerEventProducer.publishDelegationRevoked({
+        delegationId: `del_revoked_${Date.now()}`,
+        adminUserId,
+        permission: "manage_sellers",
+        grantedByUserId: superAdminId,
+        action: "REVOKED",
+        timestamp: new Date().toISOString(),
+      });
 
       return reply.send({
         success: true,

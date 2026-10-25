@@ -144,6 +144,8 @@ export default function VendorsAdminPage() {
   });
 
   const isSellerEnabled = systemSettings?.isSellerEnabled ?? true;
+  const isSellerRegistrationOpen =
+    systemSettings?.isSellerRegistrationOpen ?? true;
 
   // Mutations
   const verifyMutation = useMutation({
@@ -356,6 +358,31 @@ export default function VendorsAdminPage() {
                 <a
                   href="/settings"
                   className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-100"
+                >
+                  Platform Settings
+                </a>
+                .
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSellerEnabled && !isSellerRegistrationOpen && (
+        <div className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-4 text-sky-900 dark:text-sky-200">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-sky-600 dark:text-sky-400 mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-sky-800 dark:text-sky-300">
+                New Vendor Onboarding Temporarily Paused
+              </h3>
+              <p className="text-xs text-sky-700/90 dark:text-sky-400/90">
+                A Super Admin has toggled new merchant onboarding off. Public
+                registration forms are currently not accepting new applications.
+                Manage this in{" "}
+                <a
+                  href="/settings"
+                  className="underline font-semibold hover:text-sky-900 dark:hover:text-sky-100"
                 >
                   Platform Settings
                 </a>

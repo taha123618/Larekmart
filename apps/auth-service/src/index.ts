@@ -4,6 +4,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { shouldBeAdmin } from "./middleware/authMiddleware.js";
 import userRoute from "./routes/user.route.js";
 import { producer } from "./utils/kafka.js";
+import { startAuthConsumer } from "./consumer.js";
 import {
   createLogger,
   createHealthRegistry,
@@ -86,6 +87,7 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
 const start = async () => {
   try {
     await producer.connect();
+    await startAuthConsumer();
     app.listen(8003, () => {
       logger.info("Auth service is running on port 8003");
     });

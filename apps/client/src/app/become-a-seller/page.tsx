@@ -44,12 +44,24 @@ export default function BecomeASellerPage() {
   const [dbUser, setDbUser] = useState<UserDetailResponse | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState(true);
   const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+  const [isSellerRegistrationOpen, setIsSellerRegistrationOpen] =
+    useState(true);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(
+    null,
+  );
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
   useEffect(() => {
     fetchSystemSettings()
-      .then((settings) => setIsSellerEnabled(settings.isSellerEnabled))
-      .catch(() => setIsSellerEnabled(true))
+      .then((settings) => {
+        setIsSellerEnabled(settings.isSellerEnabled);
+        setIsSellerRegistrationOpen(settings.isSellerRegistrationOpen);
+        setMaintenanceMessage(settings.maintenanceMessage ?? null);
+      })
+      .catch(() => {
+        setIsSellerEnabled(true);
+        setIsSellerRegistrationOpen(true);
+      })
       .finally(() => setIsLoadingSettings(false));
   }, []);
 
@@ -297,11 +309,11 @@ export default function BecomeASellerPage() {
               <AlertTriangle className="h-7 w-7" />
             </div>
             <h2 className="text-xl font-bold">
-              Seller & Vendor Registration Unavailable
+              Seller & Vendor Operations Paused
             </h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
-              The marketplace seller program is currently paused by platform
-              administrators. Please check back later.
+              {maintenanceMessage ||
+                "The marketplace seller program is currently paused by platform administrators for scheduled maintenance. Please check back later."}
             </p>
 
             {existingMerchant && (
@@ -334,6 +346,29 @@ export default function BecomeASellerPage() {
                 className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 font-semibold text-sm transition-colors"
               >
                 Return to Homepage
+              </Link>
+            </div>
+          </div>
+        ) : !isSellerRegistrationOpen && !existingMerchant && !userIsSeller ? (
+          /* REGISTRATION PAUSED CALLOUT */
+          <div className="p-8 sm:p-10 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl text-center space-y-4">
+            <div className="h-14 w-14 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Clock className="h-7 w-7" />
+            </div>
+            <h2 className="text-xl font-bold">
+              New Merchant Onboarding Temporarily Paused
+            </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
+              We are currently not accepting new merchant applications while we
+              upgrade marketplace systems. Existing verified sellers can still
+              access their store management portals.
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 font-semibold text-sm transition-colors"
+              >
+                Return to Storefront
               </Link>
             </div>
           </div>

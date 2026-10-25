@@ -16,6 +16,9 @@ import {
   SellerUpdatedEventSchema,
   SellerSuspendedEventSchema,
   SellerStorefrontUpdatedEventSchema,
+  SystemSettingsSchema,
+  UpdateSystemSettingsSchema,
+  AdminDelegationEventSchema,
   SELLER_TOPICS,
 } from "../src/index.js";
 
@@ -105,6 +108,9 @@ async function runSellerContractTests() {
   assert.equal(SELLER_TOPICS.CREATED, "seller.created");
   assert.equal(SELLER_TOPICS.ACTIVATED, "seller.activated");
   assert.equal(SELLER_TOPICS.STOREFRONT_UPDATED, "seller.storefront.updated");
+  assert.equal(SELLER_TOPICS.SETTINGS_UPDATED, "marketplace.settings.updated");
+  assert.equal(SELLER_TOPICS.DELEGATION_GRANTED, "admin.delegation.granted");
+  assert.equal(SELLER_TOPICS.DELEGATION_REVOKED, "admin.delegation.revoked");
 
   const createdEvent = SellerCreatedEventSchema.parse({
     sellerId: "sel-001",
@@ -117,6 +123,29 @@ async function runSellerContractTests() {
   });
   assert.equal(createdEvent.sellerId, "sel-001");
 
+  const activatedEvent = SellerActivatedEventSchema.parse({
+    sellerId: "sel-001",
+    vendorId: "vnd-123456",
+    userId: "user-100",
+    isSeller: true,
+    activatedAt: new Date().toISOString(),
+    activatedByUserId: "admin-root",
+  });
+  assert.equal(activatedEvent.isSeller, true);
+  assert.equal(activatedEvent.userId, "user-100");
+
+  const suspendedEvent = SellerSuspendedEventSchema.parse({
+    sellerId: "sel-001",
+    vendorId: "vnd-123456",
+    userId: "user-100",
+    isSeller: false,
+    reason: "Compliance policy violation",
+    suspendedAt: new Date().toISOString(),
+    suspendedByUserId: "admin-root",
+  });
+  assert.equal(suspendedEvent.isSeller, false);
+  assert.equal(suspendedEvent.reason, "Compliance policy violation");
+
   const storefrontEvent = SellerStorefrontUpdatedEventSchema.parse({
     sellerId: "sel-001",
     storeId: "str-001",
@@ -128,6 +157,36 @@ async function runSellerContractTests() {
   });
   assert.equal(storefrontEvent.storeId, "str-001");
   console.log("✓ Kafka Topics & Event Schemas verified");
+
+  // 6. System Settings & Delegations
+  console.log("6. Testing System Settings & Delegation Schemas...");
+  const settings = SystemSettingsSchema.parse({
+    id: "marketplace",
+    isSellerEnabled: true,
+    isSellerRegistrationOpen: true,
+    isStorefrontsActive: true,
+    maintenanceMessage: "Marketplace maintenance",
+    updatedAt: new Date().toISOString(),
+    updatedBy: "super-admin-1",
+  });
+  assert.equal(settings.isSellerRegistrationOpen, true);
+  assert.equal(settings.isStorefrontsActive, true);
+
+  const partialUpdate = UpdateSystemSettingsSchema.parse({
+    isSellerRegistrationOpen: false,
+  });
+  assert.equal(partialUpdate.isSellerRegistrationOpen, false);
+
+  const delegationEvent = AdminDelegationEventSchema.parse({
+    delegationId: "del-123",
+    adminUserId: "admin-user-456",
+    permission: "manage_sellers",
+    grantedByUserId: "super-admin-1",
+    action: "GRANTED",
+    timestamp: new Date().toISOString(),
+  });
+  assert.equal(delegationEvent.action, "GRANTED");
+  console.log("✓ System Settings & Delegation Schemas verified");
 
   console.log("\nALL SELLER CONTRACT TESTS PASSED! 🎉");
 }

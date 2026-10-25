@@ -279,6 +279,9 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
           await sellerEventProducer.publishSellerActivated({
             sellerId,
             vendorId: currentSeller.vendorId,
+            userId: currentSeller.primaryUserId,
+            primaryUserId: currentSeller.primaryUserId,
+            isSeller: true,
             activatedAt: new Date().toISOString(),
             activatedByUserId: userId,
           });
@@ -286,6 +289,9 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
           await sellerEventProducer.publishSellerSuspended({
             sellerId,
             vendorId: currentSeller.vendorId,
+            userId: currentSeller.primaryUserId,
+            primaryUserId: currentSeller.primaryUserId,
+            isSeller: false,
             reason: body.reason || "Suspended by user request",
             suspendedAt: new Date().toISOString(),
             suspendedByUserId: userId,

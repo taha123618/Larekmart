@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import { systemSettings } from "../db/schema.js";
 import { cacheService } from "./cache.service.js";
-import type { SystemSettings } from "@repo/types";
+import { sellerEventProducer } from "../kafka/producer.js";
+import type { SystemSettings, UpdateSystemSettingsInput } from "@repo/types";
 
 const SETTINGS_ID = "marketplace";
 const CACHE_KEY = "marketplace:system_settings";
@@ -36,6 +37,9 @@ export class SettingsService {
         const res: SystemSettings = {
           id: row.id,
           isSellerEnabled: row.isSellerEnabled,
+          isSellerRegistrationOpen: row.isSellerRegistrationOpen,
+          isStorefrontsActive: row.isStorefrontsActive,
+          maintenanceMessage: row.maintenanceMessage,
           updatedAt: row.updatedAt.toISOString(),
           updatedBy: row.updatedBy ?? null,
         };
@@ -50,6 +54,10 @@ export class SettingsService {
         .values({
           id: SETTINGS_ID,
           isSellerEnabled: true,
+          isSellerRegistrationOpen: true,
+          isStorefrontsActive: true,
+          maintenanceMessage:
+            "Marketplace seller operations are temporarily paused for routine maintenance.",
           updatedAt: now,
           updatedBy: "system",
         })
@@ -58,6 +66,10 @@ export class SettingsService {
       const defaultSettings: SystemSettings = {
         id: SETTINGS_ID,
         isSellerEnabled: true,
+        isSellerRegistrationOpen: true,
+        isStorefrontsActive: true,
+        maintenanceMessage:
+          "Marketplace seller operations are temporarily paused for routine maintenance.",
         updatedAt: now.toISOString(),
         updatedBy: "system",
       };
@@ -71,6 +83,10 @@ export class SettingsService {
       return {
         id: SETTINGS_ID,
         isSellerEnabled: true,
+        isSellerRegistrationOpen: true,
+        isStorefrontsActive: true,
+        maintenanceMessage:
+          "Marketplace seller operations are temporarily paused for routine maintenance.",
         updatedAt: new Date().toISOString(),
         updatedBy: "fallback",
       };
@@ -86,14 +102,54 @@ export class SettingsService {
   }
 
   /**
-   * Updates project-wide seller enablement.
+   * Fast-path check to evaluate if seller registration / onboarding is open.
+   */
+  public async isSellerRegistrationOpen(): Promise<boolean> {
+    const settings = await this.getSystemSettings();
+    return settings.isSellerEnabled && settings.isSellerRegistrationOpen;
+  }
+
+  /**
+   * Fast-path check to evaluate if marketplace storefronts are active for browsing/purchasing.
+   */
+  public async isStorefrontsActive(): Promise<boolean> {
+    const settings = await this.getSystemSettings();
+    return settings.isSellerEnabled && settings.isStorefrontsActive;
+  }
+
+  /**
+   * Updates project-wide seller enablement and operational sub-switches.
    * Restricted to Super Admin callers.
    */
   public async updateSystemSettings(
-    isSellerEnabled: boolean,
+    input: boolean | UpdateSystemSettingsInput,
     updatedBy?: string | null,
   ): Promise<SystemSettings> {
     const now = new Date();
+    const current = await this.getSystemSettings();
+
+    const normalized: UpdateSystemSettingsInput =
+      typeof input === "boolean" ? { isSellerEnabled: input } : input;
+
+    const newIsSellerEnabled =
+      normalized.isSellerEnabled !== undefined
+        ? normalized.isSellerEnabled
+        : current.isSellerEnabled;
+
+    const newIsSellerRegistrationOpen =
+      normalized.isSellerRegistrationOpen !== undefined
+        ? normalized.isSellerRegistrationOpen
+        : current.isSellerRegistrationOpen;
+
+    const newIsStorefrontsActive =
+      normalized.isStorefrontsActive !== undefined
+        ? normalized.isStorefrontsActive
+        : current.isStorefrontsActive;
+
+    const newMaintenanceMessage =
+      normalized.maintenanceMessage !== undefined
+        ? normalized.maintenanceMessage
+        : current.maintenanceMessage;
 
     const existing = await db
       .select({ id: systemSettings.id })
@@ -104,7 +160,10 @@ export class SettingsService {
     if (existing.length === 0) {
       await db.insert(systemSettings).values({
         id: SETTINGS_ID,
-        isSellerEnabled,
+        isSellerEnabled: newIsSellerEnabled,
+        isSellerRegistrationOpen: newIsSellerRegistrationOpen,
+        isStorefrontsActive: newIsStorefrontsActive,
+        maintenanceMessage: newMaintenanceMessage,
         updatedAt: now,
         updatedBy: updatedBy ?? null,
       });
@@ -112,7 +171,10 @@ export class SettingsService {
       await db
         .update(systemSettings)
         .set({
-          isSellerEnabled,
+          isSellerEnabled: newIsSellerEnabled,
+          isSellerRegistrationOpen: newIsSellerRegistrationOpen,
+          isStorefrontsActive: newIsStorefrontsActive,
+          maintenanceMessage: newMaintenanceMessage,
           updatedAt: now,
           updatedBy: updatedBy ?? null,
         })
@@ -121,12 +183,23 @@ export class SettingsService {
 
     const updated: SystemSettings = {
       id: SETTINGS_ID,
-      isSellerEnabled,
+      isSellerEnabled: newIsSellerEnabled,
+      isSellerRegistrationOpen: newIsSellerRegistrationOpen,
+      isStorefrontsActive: newIsStorefrontsActive,
+      maintenanceMessage: newMaintenanceMessage,
       updatedAt: now.toISOString(),
       updatedBy: updatedBy ?? null,
     };
 
     await this.cacheSettings(updated);
+
+    // Publish event asynchronously to inform downstream services and frontends
+    await sellerEventProducer.publishSettingsUpdated({
+      settings: updated,
+      updatedBy: updatedBy ?? null,
+      timestamp: now.toISOString(),
+    });
+
     return updated;
   }
 
