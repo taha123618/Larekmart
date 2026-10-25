@@ -7,14 +7,15 @@ with this summary.
 ## Repository Architecture
 
 pnpm 9 + Turborepo monorepo for **Larekmart**, a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . Two
-Next.js apps (`client` :3002, `admin` :3003), 20 backend services (`product-service` :8000,
+Next.js apps (`client` :3002, `admin` :3003), 23 backend services (`product-service` :8000,
 `order-service` :8001, `payment-service` :8002, `auth-service` :8003, `analytic-service` :8004,
 `notification-service` :8005, `search-service` :8006, `inventory-service` :8007,
 `recommendation-service` :8008, `cart-service` :8009, `catalog-service` :8010, `shipping-service` :8011,
 `user-service` :8012, `media-service` :8013, `review-service` :8014, `wishlist-service` :8015,
-`promotion-service` :8016, `tax-service` :8017, `return-service` :8018, `email-service` worker), `api-gateway` (:8080), and shared packages (`@repo/kafka`, `@repo/types`,
+`promotion-service` :8016, `tax-service` :8017, `return-service` :8018, `pricing-service` :8019,
+`vendor-service` :8020, `seller-service` :8021, `email-service` worker), `api-gateway` (:8080), and shared packages (`@repo/kafka`, `@repo/types`,
 `@repo/monitoring`, `@repo/redis`, `@repo/opensearch`, `@repo/product-db`, `@repo/inventory-db`,
-`@repo/order-db`, `@repo/cart-db`, `@repo/catalog-db`, `@repo/shipping-db`, `@repo/user-db`, `@repo/eslint-config`, `@repo/typescript-config`).
+`@repo/order-db`, `@repo/cart-db`, `@repo/catalog-db`, `@repo/shipping-db`, `@repo/user-db`, `@repo/vendor-db`, `@repo/eslint-config`, `@repo/typescript-config`).
 
 ## AI Agent Lifecycle
 
@@ -47,7 +48,7 @@ Next.js apps (`client` :3002, `admin` :3003), 20 backend services (`product-serv
 - Commit secrets or `.env` files, or edit `packages/product-db/generated/**`.
 - Add direct HTTP calls between backend services.
 - Weaken shared tsconfig/eslint configs or add `any` to bypass type errors.
-- Claim tests pass — no test runner exists in this repo yet (see `docs/TESTING.md`).
+- Claim tests pass without running verification — follow workspace test runner conventions (`docs/TESTING.md`).
 
 <!-- GSD Configuration — managed by gsd-core installer -->
 

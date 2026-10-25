@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm dlx tsx --env-file=.env --watch src/index.ts",
+    "test": "tsx tests/auth-service.test.ts",
     "check-types": "tsc --noEmit"
   },
   "keywords": [],
@@ -22,6 +23,7 @@
     "@repo/typescript-config": "workspace:*",
     "@repo/types": "workspace:*",
     "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.3"
+    "@types/express": "^5.0.3",
+    "tsx": "^4.20.5"
   }
 }

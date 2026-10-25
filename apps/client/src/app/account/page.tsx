@@ -22,6 +22,7 @@ import {
   Globe,
   DollarSign,
   Loader2,
+  Store,
 } from "lucide-react";
 import {
   fetchCurrentUser,
@@ -33,6 +34,7 @@ import {
   updateUserSettings,
 } from "@/services/user.service";
 import { uploadAvatar, resolveMediaUrls } from "@/services/media.service";
+import { fetchSystemSettings } from "@/services/seller.service";
 import type {
   UserDetailResponse,
   AddressResponse,
@@ -97,6 +99,21 @@ export default function AccountPage(): React.JSX.Element {
   const [avatarMediaId, setAvatarMediaId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+
+  useEffect(() => {
+    fetchSystemSettings()
+      .then((settings) => setIsSellerEnabled(settings.isSellerEnabled))
+      .catch(() => setIsSellerEnabled(true));
+  }, []);
+
+  const isSeller = Boolean(
+    userData?.isSeller ||
+      clerkUser?.publicMetadata?.isSeller ||
+      clerkUser?.unsafeMetadata?.isSeller ||
+      clerkUser?.publicMetadata?.role === "seller",
+  );
 
   const [isSaving, startSaving] = useTransition();
 
@@ -470,6 +487,12 @@ export default function AccountPage(): React.JSX.Element {
             <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
               Verified Shopper
             </span>
+            {isSeller && (
+              <span className="px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold flex items-center gap-1">
+                <Store className="w-3.5 h-3.5" />
+                Verified Seller
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -531,6 +554,18 @@ export default function AccountPage(): React.JSX.Element {
           <Heart className="w-4 h-4 text-rose-500" />
           <span>My Wishlists</span>
         </Link>
+
+        {isSellerEnabled && (
+          <Link
+            href="/become-a-seller"
+            className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all font-semibold"
+          >
+            <Store className="w-4 h-4 text-indigo-500" />
+            <span>
+              {isSeller ? "Seller Portal (Active)" : "Become a Seller"}
+            </span>
+          </Link>
+        )}
       </div>
 
       {/* Tab 1: Profile */}

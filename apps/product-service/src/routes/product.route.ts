@@ -10,14 +10,17 @@ import {
   backfillSearchIndexHandler,
   searchProducts,
 } from "../controllers/search.controller";
-import { shouldBeAdmin } from "../middleware/authMiddleware";
+import {
+  shouldBeAdmin,
+  shouldBeSellerOrAdmin,
+} from "../middleware/authMiddleware";
 
 const router: Router = Router();
 
-router.post("/", shouldBeAdmin, createProduct);
+router.post("/", shouldBeSellerOrAdmin, createProduct);
 router.post("/backfill-search", shouldBeAdmin, backfillSearchIndexHandler);
-router.put("/:id", shouldBeAdmin, updateProduct);
-router.delete("/:id", shouldBeAdmin, deleteProduct);
+router.put("/:id", shouldBeSellerOrAdmin, updateProduct);
+router.delete("/:id", shouldBeSellerOrAdmin, deleteProduct);
 router.get("/", getProducts);
 // Must be registered before "/:id" so it is not captured as a product id.
 router.get("/search", searchProducts);

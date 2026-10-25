@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import { clerkPlugin, getAuth } from "@clerk/fastify";
 import { shouldBeUser } from "./middleware/authMiddleware.js";
 import { connectOrderDB, mongoose } from "@repo/order-db";
+import { validateInternalServiceSecret } from "@repo/types";
 import { orderRoute } from "./routes/order.js";
 import { consumer, producer } from "./utils/kafka.js";
 import { runKafkaSubscriptions } from "./utils/subscriptions.js";
@@ -190,6 +191,11 @@ fastify.register(orderRoute);
 
 const start = async () => {
   try {
+    validateInternalServiceSecret(
+      process.env.INTERNAL_SERVICE_SECRET,
+      process.env.NODE_ENV,
+      "order-service",
+    );
     await Promise.all([
       connectOrderDB(),
       producer.connect(),

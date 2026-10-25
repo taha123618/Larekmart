@@ -84,7 +84,12 @@ export const requireSeller = async (
     });
   }
 
-  if (request.userRole !== "seller" && request.userRole !== "admin") {
+  if (
+    !request.isSeller &&
+    request.userRole !== "seller" &&
+    request.userRole !== "admin" &&
+    !request.isSuperAdmin
+  ) {
     gatewayAuthFailuresTotal.inc({
       reason: "forbidden_non_seller",
       route: request.url,

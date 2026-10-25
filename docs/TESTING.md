@@ -6,22 +6,32 @@ This document outlines the testing strategy, current verification mechanisms, an
 
 Larekmart features a unified multi-runtime testing strategy orchestrated via Turborepo (`pnpm test`):
 
-1. **Automated Unit & Integration Test Suites**:
+1. **Automated Unit & Integration Test Suites (25 Workspaces in `pnpm test`)**:
    - `@repo/types`: Domain contracts and Zod schema validations (`pnpm --filter @repo/types test`).
-   - `user-service`: Profile, address, and account-domain service tests (`pnpm --filter user-service test`).
+   - `api-gateway`: Route registry, circuit breaker cooldown state machine, retry policy, auth guards, and proxy route integration (`pnpm --filter api-gateway test`).
+   - `product-service`: Auth guards (user, seller, admin), Clerk token claims, Kafka event payloads (`toProductEventPayload`), and ProductFormSchema (`pnpm --filter product-service test`).
    - `order-service`: Order security and authorization tests (`pnpm --filter order-service test`).
+   - `payment-service`: Hono auth middleware, gateway header propagation, Stripe webhook signature failure handling, and `PaymentSuccessfulType` event schema (`pnpm --filter payment-service test`).
+   - `auth-service`: Clerk express integration, user/admin guards, `UserFormSchema`, and user lifecycle events (`pnpm --filter auth-service test`).
+   - `analytic-service`: Express auth guards, real-time KPI metrics snapshot calculations, and merchant event aggregation (`pnpm --filter analytic-service test`).
+   - `search-service`: Fastify auth guards, OpenSearch payload validation, `BulkIndexRequestSchema`, and reindex parameters (`pnpm --filter search-service test`).
+   - `inventory-service`: Stripe session verification regression guard, Hono auth middleware, multi-warehouse cache aggregation, and inventory reservation schemas (`pnpm --filter inventory-service test`).
+   - `catalog-service`: Read-model cache key formatting, Fastify health/readiness/metrics route injection, and product projection payloads (`pnpm --filter catalog-service test`).
    - `cart-service`: Financial pricing engine, discount calculators, and threshold boundary tests (`pnpm --filter cart-service test`).
    - `shipping-service`: Constant-time webhook verification and authorization middleware tests (`pnpm --filter shipping-service test`).
-   - `media-service`: Six offline suites (unit validation, storage, API, messaging, workers, and a full lifecycle suite) covering object-key traversal safety, magic-byte MIME detection, per-category size limits, cross-owner authorization, private-media visibility, URL strategy, worker claim SQL, index strategy, and cleanup sweeps (`pnpm --filter media-service test`).
+   - `user-service`: Profile, address, and account-domain service tests (`pnpm --filter user-service test`).
+   - `media-service`: Six offline suites covering object-key traversal safety, magic-byte MIME detection, size limits, cross-owner authorization, and cleanup sweeps (`pnpm --filter media-service test`).
    - `review-service`: Product reviews, rating calculations, verified purchases, anti-abuse voting, and moderation tests (`pnpm --filter review-service test`).
    - `wishlist-service`: Wishlist operations, item deduplication, guest-to-user migration, token shares, price drop and restock alert tests (`pnpm --filter wishlist-service test`).
    - `promotion-service`: Eleven suites covering campaign lifecycle, coupon codes, evaluation quotes, budget tracking, ACID reservations, worker sweeps, and event emission (`pnpm --filter promotion-service test`).
-   - `tax-service`: Nine suites covering health probes, auth guards, decimal arithmetic precision, standard rule evaluation, exemption certificate verification, calculation snapshot persistence, proportional return refunds, adapter factory, and event emission (`pnpm --filter tax-service test`).
-   - `return-service`: Fourteen suites covering return eligibility, 14-day return window validation, partial quantities, evidence validation, state machine transitions, warehouse inspections, carrier reverse-shipping, decimal refund proration, outbox event persistence, and event emission (`pnpm --filter return-service test`).
-   - `pricing-service`: Ten suites covering decimal financial precision, volume tiered pricing, multi-currency conversion, negative price prevention, quote snapshot persistence, Fastify endpoints, timing-safe authentication, and event emission (`pnpm --filter pricing-service test`).
+   - `tax-service`: Nine suites covering health probes, auth guards, decimal arithmetic precision, standard rule evaluation, exemption certificate verification, and proportional return refunds (`pnpm --filter tax-service test`).
+   - `return-service`: Fourteen suites covering return eligibility, 14-day return window validation, partial quantities, evidence validation, state machine transitions, and refund proration (`pnpm --filter return-service test`).
+   - `pricing-service`: Ten suites covering decimal financial precision, volume tiered pricing, multi-currency conversion, negative price prevention, and quote snapshot persistence (`pnpm --filter pricing-service test`).
+   - `vendor-service`: Legal entity registration, KYB document verification, member access, status transitions, and lifecycle event emission (`pnpm --filter vendor-service test`).
+   - `seller-service`: Marketplace storefront profiles, multi-staff permissions, operational settings, metrics snapshots, and Fastify endpoints (`pnpm --filter seller-service test`).
+   - `email-service`: Email template interpolation for user signups, order receipts with tax breakdown, KYB notifications, and storefront lifecycle alerts (`pnpm --filter email-service test`).
    - `notification-service`: Native Go test suite for workers, templates, dispatchers, and WebSockets (`go test ./...`).
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
-   - `@repo/redis`: Opt-in Redis integration verifier (`pnpm --filter @repo/redis verify:redis`).
 
 2. **Strict TypeScript Compilation**:
    ```bash

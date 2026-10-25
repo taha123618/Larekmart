@@ -1,6 +1,10 @@
 import { z } from "zod";
+import {
+  DEFAULT_INTERNAL_SECRET,
+  validateInternalServiceSecret,
+} from "@repo/types";
 
-export const DEFAULT_INTERNAL_SECRET = "dev-shared-internal-secret-larekmart";
+export { DEFAULT_INTERNAL_SECRET };
 
 const envSchema = z
   .object({
@@ -53,17 +57,21 @@ const envSchema = z
     TAX_SERVICE_URL: z.string().default("http://localhost:8017"),
     RETURN_SERVICE_URL: z.string().default("http://localhost:8018"),
     PRICING_SERVICE_URL: z.string().default("http://localhost:8019"),
+    VENDOR_SERVICE_URL: z.string().default("http://localhost:8020"),
+    SELLER_SERVICE_URL: z.string().default("http://localhost:8021"),
   })
   .superRefine((data, ctx) => {
-    if (
-      data.NODE_ENV === "production" &&
-      data.INTERNAL_SERVICE_SECRET === DEFAULT_INTERNAL_SECRET
-    ) {
+    try {
+      validateInternalServiceSecret(
+        data.INTERNAL_SERVICE_SECRET,
+        data.NODE_ENV,
+        "api-gateway",
+      );
+    } catch (err: any) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["INTERNAL_SERVICE_SECRET"],
-        message:
-          "In production, INTERNAL_SERVICE_SECRET must be set to a secure, randomly generated secret instead of the default development placeholder.",
+        message: err.message,
       });
     }
   });

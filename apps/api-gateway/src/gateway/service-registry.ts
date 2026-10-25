@@ -107,6 +107,16 @@ export const services = {
     url: env.PRICING_SERVICE_URL,
     timeoutMs: 5000,
   },
+  vendor: {
+    name: "vendor-service",
+    url: env.VENDOR_SERVICE_URL,
+    timeoutMs: 10000,
+  },
+  seller: {
+    name: "seller-service",
+    url: env.SELLER_SERVICE_URL,
+    timeoutMs: 10000,
+  },
 } as const satisfies Record<string, ServiceTarget>;
 
 export const downstreamServices = services;

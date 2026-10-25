@@ -25,6 +25,7 @@ export interface UserWithServiceStatus {
   emailAddresses: Array<{ emailAddress: string; [key: string]: unknown }>;
   banned?: boolean;
   userServiceStatus?: string | null;
+  isSeller?: boolean;
   phone?: string | null;
   [key: string]: unknown;
 }
@@ -114,6 +115,26 @@ export const columns: ColumnDef<UserWithServiceStatus>[] = [
           )}
         >
           {String(status)}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "isSeller",
+    header: "Seller",
+    cell: ({ row }) => {
+      const user = row.original;
+      const isSeller = Boolean(user.isSeller);
+      return (
+        <div
+          className={cn(
+            "px-2 py-0.5 rounded-md w-max text-xs font-semibold",
+            isSeller
+              ? "bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30"
+              : "bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-300 dark:border-neutral-700",
+          )}
+        >
+          {isSeller ? "Seller" : "Buyer"}
         </div>
       );
     },

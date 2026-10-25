@@ -19,3 +19,5 @@ export * from "./promotion";
 export * from "./tax";
 export * from "./returns";
 export * from "./pricing";
+export * from "./vendor";
+export * from "./seller";

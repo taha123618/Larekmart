@@ -2,6 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import { columns, type UserWithServiceStatus } from "./columns";
 import { DataTable } from "./data-table";
 import { fetchAdminUsers } from "@/services/user.service";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Store, ShoppingBag, ShieldCheck } from "lucide-react";
 
 const getData = async (): Promise<{
   data: UserWithServiceStatus[];
@@ -44,6 +46,12 @@ const getData = async (): Promise<{
             [key: string]: unknown;
           }>) || [],
         userServiceStatus: su?.status || null,
+        isSeller:
+          su?.isSeller ??
+          Boolean(
+            (cu.publicMetadata as Record<string, unknown> | undefined)
+              ?.isSeller,
+          ),
         phone: su?.phone || null,
       };
     });
@@ -60,11 +68,97 @@ const getData = async (): Promise<{
 
 const UsersPage = async () => {
   const res = await getData();
+  const totalCount = res.data.length;
+  const sellerCount = res.data.filter((u) => u.isSeller).length;
+  const buyerCount = totalCount - sellerCount;
+  const activeCount = res.data.filter(
+    (u) =>
+      !u.banned &&
+      u.userServiceStatus !== "SUSPENDED" &&
+      u.userServiceStatus !== "DEACTIVATED",
+  ).length;
+
   return (
-    <div className="">
-      <div className="mb-8 px-4 py-2 bg-secondary rounded-md">
-        <h1 className="font-semibold">All Users</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 bg-secondary/80 rounded-lg">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">
+            User & Account Management
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Manage customer profiles, authoritative database status, and seller
+            privileges
+          </p>
+        </div>
       </div>
+
+      {/* KPI Cards */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
+              Total Users
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalCount}</div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Across Clerk & database
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
+              Verified Sellers
+            </CardTitle>
+            <Store className="h-4 w-4 text-indigo-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+              {sellerCount}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Authorized seller privileges
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
+              Shoppers / Buyers
+            </CardTitle>
+            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{buyerCount}</div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Standard marketplace accounts
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
+              Active Accounts
+            </CardTitle>
+            <ShieldCheck className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+              {activeCount}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Unrestricted access
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
       <DataTable columns={columns} data={res.data} />
     </div>
   );

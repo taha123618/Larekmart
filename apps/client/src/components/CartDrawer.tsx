@@ -147,6 +147,12 @@ export default function CartDrawer() {
                               {item.selectedColor &&
                                 ` • Color: ${item.selectedColor}`}
                             </p>
+                            {(item as { sellerName?: string }).sellerName && (
+                              <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-0.5 truncate font-medium">
+                                Sold by{" "}
+                                {(item as { sellerName?: string }).sellerName}
+                              </p>
+                            )}
                             <div className="flex items-center justify-between mt-3">
                               <div className="flex items-center border border-gray-200 dark:border-slate-700 rounded-lg">
                                 <button

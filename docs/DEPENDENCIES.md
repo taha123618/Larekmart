@@ -108,6 +108,18 @@ apps/pricing-service ───────┬─▶ drizzle-orm + pg ─▶ Post
                            ├─▶ @repo/monitoring
                            └─▶ @repo/types
 
+apps/vendor-service ────────┬─▶ @repo/vendor-db ─▶ @prisma/client ─▶ PostgreSQL (larekmart_vendor_db)
+                           ├─▶ @repo/kafka
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           ├─▶ @repo/monitoring
+                           └─▶ @repo/types
+
+apps/seller-service ────────┬─▶ drizzle-orm + pg ─▶ PostgreSQL (larekmart_seller_db)
+                           ├─▶ @repo/kafka
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           ├─▶ @repo/monitoring
+                           └─▶ @repo/types
+
 apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                            ├─▶ @repo/monitoring
@@ -133,6 +145,7 @@ all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 | `@repo/catalog-db`        | persistence  | `@prisma/client`                                                    | Prisma catalog schema and models for catalog read projections                                                                                                                                                                                                                                                                                                                                           |
 | `@repo/shipping-db`       | persistence  | `@prisma/client`                                                    | Prisma shipping schema, shipments, methods, carrier tracking events and packages                                                                                                                                                                                                                                                                                                                        |
 | `@repo/user-db`           | persistence  | `@prisma/client`                                                    | Prisma user schema, profiles, addresses, preferences, settings, and idempotency events                                                                                                                                                                                                                                                                                                                  |
+| `@repo/vendor-db`         | persistence  | `@prisma/client`                                                    | Prisma vendor schema, business profiles, KYB documents, verifications, members, and status history                                                                                                                                                                                                                                                                                                      |
 | `@repo/eslint-config`     | config       | eslint plugins                                                      | `base`, `next-js`, `react-internal`                                                                                                                                                                                                                                                                                                                                                                     |
 | `@repo/typescript-config` | config       | —                                                                   | `base.json`, `nextjs.json`, `react-library.json`                                                                                                                                                                                                                                                                                                                                                        |
 

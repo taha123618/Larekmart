@@ -198,6 +198,10 @@ const SingleUserPage = async ({
                 <EditUser
                   userId={id}
                   initialStatus={userDetail?.status || "ACTIVE"}
+                  isSeller={
+                    userDetail?.isSeller ??
+                    Boolean(data?.publicMetadata?.isSeller)
+                  }
                   fullName={
                     userDetail?.profile?.displayName ||
                     (data?.firstName
@@ -264,6 +268,22 @@ const SingleUserPage = async ({
                   }`}
                 >
                   {userDetail?.status || (data?.banned ? "BANNED" : "ACTIVE")}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold">Seller Privilege:</span>
+                <span
+                  className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                    (userDetail?.isSeller ??
+                    Boolean(data?.publicMetadata?.isSeller))
+                      ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300"
+                      : "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-400"
+                  }`}
+                >
+                  {(userDetail?.isSeller ??
+                  Boolean(data?.publicMetadata?.isSeller))
+                    ? "Verified Seller"
+                    : "Standard Customer (Non-Seller)"}
                 </span>
               </div>
             </div>

@@ -18,7 +18,7 @@
 
 ---
 
-**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, and promotions; MongoDB for orders and carts; MySQL for tax rules, calculations, jurisdictions, and return/refund management).
+**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-three backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, and sellers; MongoDB for orders and carts; MySQL for tax rules, calculations, jurisdictions, and return/refund management).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node, Go, and Python services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 
@@ -260,7 +260,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
         └───────────────────────────────────────────────────────────┘
 ```
 
-> Cross-service communication is strictly asynchronous through Kafka events. Backend services never call each other over HTTP. Public traffic enters through `api-gateway`, which enforces rate limits, authenticates sessions, strips spoofed headers, and injects verified identity headers signed with `x-internal-secret`. See [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) for full topic contracts and [`docs/SECURITY.md`](docs/SECURITY.md) for security policies.
+> Cross-service communication is strictly asynchronous through Kafka events. Backend services never call each other over HTTP. Public traffic enters through `api-gateway`, which enforces rate limits, authenticates sessions, strips spoofed headers, and injects verified identity headers signed with `x-internal-secret`. See [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) for full topic contracts, [`docs/SECURITY.md`](docs/SECURITY.md) for security policies, and [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md) for the comprehensive security audit.
 
 ---
 
@@ -292,7 +292,9 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── promotion-service/     # Hono 4 + PostgreSQL + Drizzle + Redis promotions, coupons, budget holds & discounts (:8016)
 │   ├── tax-service/           # Fastify 5 + MySQL + Drizzle + Redis tax rules, calculations, exemptions & quotes (:8017)
 │   ├── return-service/        # Koa 2 + MySQL + Drizzle + Redis return requests, eligibility, inspection & refund coordination (:8018)
-│   └── pricing-service/       # Fastify 5 + PostgreSQL + Drizzle + Redis authoritative merchandise pricing, multi-currency conversion, tiered rules & quotes (:8019)
+│   ├── pricing-service/       # Fastify 5 + PostgreSQL + Drizzle + Redis authoritative merchandise pricing, multi-currency conversion, tiered rules & quotes (:8019)
+│   ├── vendor-service/        # NestJS 10 (Fastify) + PostgreSQL + Prisma + Redis vendor onboarding, KYB verification & documents (:8020)
+│   └── seller-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis storefront configuration, staff, policies & performance (:8021)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -306,6 +308,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── catalog-db/           # @repo/catalog-db — Prisma catalog read-model schema (PostgreSQL)
 │   ├── shipping-db/          # @repo/shipping-db — Prisma shipments, tracking events & labels (PostgreSQL)
 │   ├── user-db/              # @repo/user-db   — Prisma profiles, addresses & preferences (PostgreSQL)
+│   ├── vendor-db/            # @repo/vendor-db — Prisma vendor schema, business profiles & KYB documents (PostgreSQL)
 │   ├── eslint-config/        # @repo/eslint-config — shared ESLint flat configs
 │   └── typescript-config/    # @repo/typescript-config — shared tsconfig bases
 ├── docs/                     # Architecture, dependencies, conventions, testing, ADRs
@@ -344,6 +347,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`tax-service`**            | Fastify 5, Drizzle, MySQL, Redis, Kafka, Clerk                                        | `8017` | Jurisdiction-aware tax calculations, versioned tax rules, customer exemptions, checkout quotes, auditable snapshots, and provider adapters.                                                        |
 | **`return-service`**         | Koa 2, Drizzle, MySQL, Redis, Kafka, Clerk                                            | `8018` | Complete return & refund lifecycle: eligibility checks, partial-quantity returns, evidence attachments, inspection dispositions, return-shipment tracking, and Stripe refund SAGA coordination.    |
 | **`pricing-service`**        | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk, Decimal.js                       | `8019` | Authoritative merchandise pricing, seller price lists (B2B & B2C), multi-currency conversion, tiered volume rules, promotional discount composition, immutable quote snapshots, and audit history. |
+| **`vendor-service`**         | NestJS 10 (Fastify), Prisma, PostgreSQL, Redis, Kafka, Clerk, Zod                     | `8020` | Marketplace vendor registration, legal entities, KYB verification workflows, verification documents, authorized representatives & lifecycle states.                                                |
+| **`seller-service`**         | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk, Zod                              | `8021` | Marketplace storefront configuration, custom slugs & branding, seller staff & permissions, marketplace operational settings, policies, performance snapshots & seller events.                      |
 
 ---
 
@@ -363,6 +368,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`@repo/catalog-db`**        | PostgreSQL catalog read-model persistence via Prisma schema and generated client.                            | `catalog-service`                                   |
 | **`@repo/shipping-db`**       | PostgreSQL shipping persistence via Prisma: shipments, packages, tracking events, labels.                    | `shipping-service`                                  |
 | **`@repo/user-db`**           | PostgreSQL user-domain persistence via Prisma: profiles, addresses, preferences, settings.                   | `user-service`                                      |
+| **`@repo/vendor-db`**         | PostgreSQL vendor-domain persistence via Prisma: legal entities, business profiles, KYB documents & history. | `vendor-service`                                    |
 | **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                     | `admin`, `client`                                   |
 | **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 37 workspaces                                   |
 
@@ -433,6 +439,9 @@ pnpm --filter promotion-service db:migrate
 pnpm --filter tax-service db:migrate
 pnpm --filter return-service db:migrate
 pnpm --filter pricing-service db:migrate
+pnpm --filter seller-service db:migrate
+pnpm --filter @repo/vendor-db db:generate
+pnpm --filter @repo/vendor-db db:migrate
 
 # 4. Start all workspaces concurrently in development mode
 pnpm dev
@@ -445,7 +454,7 @@ pnpm dev
 | **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                        |
 | **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                 |
 | **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                            |
-| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet` / `pytest`) across all 37 workspaces            |
+| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet` / `pytest`) across all 39 workspaces            |
 | **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                      |
 | **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                         |
 | **Build**           | `pnpm build`                                                | Run configured builds for the Next.js apps, Node services, packages, and Go service |
@@ -568,6 +577,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 | [`docs/DESIGN.md`](docs/DESIGN.md)                                                                                         | UI/UX design system, design tokens, responsive breakpoints, component specs & motion   |
 | [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)                                                                               | Coding style, naming patterns, and design principles                                   |
 | [`docs/SECURITY.md`](docs/SECURITY.md)                                                                                     | Security policies, Clerk authorization, and Stripe webhook verification                |
+| [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md)                                                           | Comprehensive Security Audit Report: vulnerability analysis & remediation plan         |
 | [`docs/TESTING.md`](docs/TESTING.md)                                                                                       | Testing strategy, verification commands, and automated test setup                      |
 | [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)                                                                             | Contribution standards, git workflow, and definition of done                           |
 | [`docs/adr/README.md`](docs/adr/README.md)                                                                                 | Architecture Decision Records (ADRs)                                                   |

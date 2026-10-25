@@ -58,6 +58,9 @@ jobs:
       PROMOTION_DATABASE_URL: ${{ secrets.PROD_PROMOTION_DATABASE_URL }}
       TAX_DATABASE_URL: ${{ secrets.PROD_TAX_DATABASE_URL }}
       RETURN_DATABASE_URL: ${{ secrets.PROD_RETURN_DATABASE_URL }}
+      PRICING_DATABASE_URL: ${{ secrets.PROD_PRICING_DATABASE_URL }}
+      VENDOR_DATABASE_URL: ${{ secrets.PROD_VENDOR_DATABASE_URL }}
+      SELLER_DATABASE_URL: ${{ secrets.PROD_SELLER_DATABASE_URL }}
 
     steps:
       - name: Checkout Code
@@ -100,6 +103,10 @@ jobs:
         if: env.USER_DATABASE_URL != ''
         run: pnpm --filter @repo/user-db db:deploy
 
+      - name: Execute Non-Destructive Migrations (Vendor DB)
+        if: env.VENDOR_DATABASE_URL != ''
+        run: pnpm --filter @repo/vendor-db db:deploy
+
       - name: Execute Non-Destructive Migrations (Media Service)
         if: env.MEDIA_DATABASE_URL != ''
         run: pnpm --filter media-service db:migrate
@@ -123,6 +130,14 @@ jobs:
       - name: Execute Non-Destructive Migrations (Return Service)
         if: env.RETURN_DATABASE_URL != ''
         run: pnpm --filter return-service db:migrate
+
+      - name: Execute Non-Destructive Migrations (Pricing Service)
+        if: env.PRICING_DATABASE_URL != ''
+        run: pnpm --filter pricing-service db:migrate
+
+      - name: Execute Non-Destructive Migrations (Seller Service)
+        if: env.SELLER_DATABASE_URL != ''
+        run: pnpm --filter seller-service db:migrate
 
   # ════════════════════════════════════════════════════════════════
   # STAGE 4: Zero-Downtime Kubernetes Rolling Update & Verification
@@ -184,12 +199,15 @@ jobs:
               larekmart/promotion-service=ghcr.io/${{ github.repository_owner }}/larekmart/promotion-service:${SHA_SHORT} \
               larekmart/tax-service=ghcr.io/${{ github.repository_owner }}/larekmart/tax-service:${SHA_SHORT} \
               larekmart/return-service=ghcr.io/${{ github.repository_owner }}/larekmart/return-service:${SHA_SHORT} \
+              larekmart/pricing-service=ghcr.io/${{ github.repository_owner }}/larekmart/pricing-service:${SHA_SHORT} \
+              larekmart/vendor-service=ghcr.io/${{ github.repository_owner }}/larekmart/vendor-service:${SHA_SHORT} \
+              larekmart/seller-service=ghcr.io/${{ github.repository_owner }}/larekmart/seller-service:${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:${SHA_SHORT}
 
             echo "Applying Production manifests to namespace larekmart..."
             kubectl apply -k .
 
-            echo "Tracking zero-downtime rolling updates across all 21 workloads..."
+            echo "Tracking zero-downtime rolling updates across all 25 workloads..."
             DEPLOYMENTS=(
               client
               admin
@@ -212,6 +230,9 @@ jobs:
               promotion-service
               tax-service
               return-service
+              pricing-service
+              vendor-service
+              seller-service
               email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do

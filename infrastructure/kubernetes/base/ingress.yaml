@@ -257,3 +257,31 @@ spec:
                 name: pricing-service
                 port:
                   number: 8019
+          - path: /api/v1/vendors
+            pathType: Prefix
+            backend:
+              service:
+                name: vendor-service
+                port:
+                  number: 8020
+          - path: /api/v1/admin/vendors
+            pathType: Prefix
+            backend:
+              service:
+                name: vendor-service
+                port:
+                  number: 8020
+          - path: /api/v1/sellers
+            pathType: Prefix
+            backend:
+              service:
+                name: seller-service
+                port:
+                  number: 8021
+          - path: /api/v1/admin/sellers
+            pathType: Prefix
+            backend:
+              service:
+                name: seller-service
+                port:
+                  number: 8021

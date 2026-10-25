@@ -27,4 +27,4 @@ mirror for Cursor; when they disagree, `AGENTS.md` wins.
 - **Scope your instructions:** read the `AGENTS.md` in the workspace you are editing
   (`apps/*/AGENTS.md`, `packages/*/AGENTS.md`) before making changes.
 - **Verify:** `pnpm check-types` always; add `pnpm build` (Next apps, payment-service)
-  and `pnpm lint` (admin, client) when relevant. No test runner is configured.
+  and `pnpm lint` (admin, client) when relevant; run test suites with `pnpm test` (`docs/TESTING.md`).

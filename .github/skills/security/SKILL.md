@@ -12,21 +12,24 @@ This document specifies the mandatory cybersecurity standards and implementation
 ## 1. Authentication & Authorization (Clerk & RBAC)
 
 - **Authentication is delegated to Clerk**: Never hand-roll authentication.
-- **Roles in Clerk Claims**: `sessionClaims.metadata.role` is `"user" | "admin"` (typed as `CustomJwtSessionClaims` in `@repo/types`).
+- **Roles in Clerk Claims**: `sessionClaims.metadata.role` is `"user" | "seller" | "admin"` (typed as `CustomJwtSessionClaims` in `@repo/types`).
 - **Backend Guards (by framework)**:
-  - **Express**: Use `shouldBeUser` or `shouldBeAdmin` middleware.
-  - **Fastify**: Use `preHandler: shouldBeUser | shouldBeAdmin`.
+  - **Express**: Use `shouldBeUser`, `shouldBeAdmin`, or `shouldBeSellerOrAdmin` (e.g. `apps/product-service`).
+  - **Fastify**: Use `preHandler: shouldBeUser | shouldBeAdmin`, or `requireSellerStaffOrAdmin` (`apps/seller-service`).
   - **Hono**: Use `createMiddleware` in `apps/payment-service/src/middleware` or `apps/inventory-service`.
   - **Koa**: Use `requireAdminOrInternal` in `apps/shipping-service/src/middleware/auth.middleware.ts`.
-- **Status Codes**: Return `401 Unauthorized` for missing/invalid tokens, and `403 Forbidden` for authenticated requests lacking admin privileges.
+- **Status Codes**: Return `401 Unauthorized` for missing/invalid tokens, and `403 Forbidden` for authenticated requests lacking necessary privileges.
 - **Admin Privilege Escalation Protection**:
   - The `/api/claim-admin` endpoint in `apps/admin` is fail-closed: disabled unless `ALLOW_ADMIN_CLAIM === "true"` AND `ADMIN_REGISTRATION_SECRET` is set. Do not reintroduce NODE_ENV-based gating — a missing env var must never enable self-promotion.
   - When enabled, every request requires the `x-admin-claim-secret` header, compared in constant time against `ADMIN_REGISTRATION_SECRET`.
   - Admin UI route middleware (`apps/admin/src/middleware.ts`) strictly requires `sessionClaims?.metadata?.role === "admin"`.
+- **Super Admin Governance & Delegated Administration**:
+  - Global platform controls (`PATCH /api/v1/admin/system-settings` for `isSellerEnabled`) and delegation management (`POST/DELETE /api/v1/admin/delegations`) are strictly restricted to Super Administrators (`role === "super_admin"` or `claims.isSuperAdmin === true`).
+  - Manage Admins can be granted the `manage_sellers` delegation scope in `admin_delegations`. When present, `api-gateway` injects `x-user-can-manage-sellers: true` downstream, authorizing them to review vendors and update seller statuses without granting global Super Admin privileges.
 - **Internal Service Verification & API Gateway Perimeter**:
   - Direct HTTP calls between microservices are prohibited for business flows (use Kafka).
-  - All public traffic enters through the centralized API Gateway (`apps/api-gateway`). The Gateway unconditionally strips client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`) to prevent identity spoofing.
-  - The Gateway injects verified Clerk claims downstream (`x-user-id`, `x-user-role`) along with `x-internal-secret`.
+  - All public traffic enters through the centralized API Gateway (`apps/api-gateway`). The Gateway unconditionally strips client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-can-manage-sellers`) to prevent identity spoofing.
+  - The Gateway injects verified Clerk claims downstream (`x-user-id`, `x-user-role`, `x-user-is-seller`, `x-user-can-manage-sellers`) along with `x-internal-secret`.
   - Downstream services verify `x-internal-secret` against `INTERNAL_SERVICE_SECRET` using constant-time SHA-256 digest comparison (`safeTimingCompare` via `crypto.timingSafeEqual`).
   - Production deployments must fail startup if `INTERNAL_SERVICE_SECRET` equals the development placeholder.
 
@@ -45,7 +48,8 @@ This document specifies the mandatory cybersecurity standards and implementation
     }
     ```
   - In `cart-service`, operations must strictly bind to the authenticated `userId` from the verified session or an unguessable guest session UUID.
-  - Administrative endpoints (e.g. `GET /admin/stats`, `GET /admin/recent` in `cart-service`) must be gated with `requireAdmin`.
+  - In `seller-service`, operations on `/api/v1/sellers/:sellerId` strictly verify that the caller is the seller primary user, an authorized staff member with required granular permissions, or an admin.
+  - Administrative endpoints (e.g. `GET /admin/stats`, `GET /admin/recent` in `cart-service`, `GET /api/v1/admin/sellers` in `seller-service`) must be gated with `requireAdmin`.
 
 ---
 

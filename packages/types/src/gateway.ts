@@ -8,6 +8,9 @@ export const GATEWAY_HEADERS = {
   INTERNAL_SECRET: "x-internal-secret",
   USER_ID: "x-user-id",
   USER_ROLE: "x-user-role",
+  IS_SUPER_ADMIN: "x-user-is-super-admin",
+  IS_SELLER: "x-user-is-seller",
+  CAN_MANAGE_SELLERS: "x-user-can-manage-sellers",
   GUEST_TOKEN: "x-guest-token",
   FORWARDED_FOR: "x-forwarded-for",
   IDEMPOTENCY_KEY: "idempotency-key",
@@ -15,6 +18,46 @@ export const GATEWAY_HEADERS = {
 
 export type GatewayHeaderKey =
   (typeof GATEWAY_HEADERS)[keyof typeof GATEWAY_HEADERS];
+
+/**
+ * Known insecure development placeholder values for internal service secrets.
+ * These placeholders must NEVER be accepted when NODE_ENV is "production".
+ */
+export const DEFAULT_INTERNAL_SECRET = "dev-shared-internal-secret-larekmart";
+export const INSECURE_INTERNAL_SECRET_PLACEHOLDERS = [
+  DEFAULT_INTERNAL_SECRET,
+  "dev-internal-secret-change-in-production",
+  "dev_gateway_secret_change_in_production",
+  "internal_secret_key_abc",
+  "secret",
+  "change-me",
+] as const;
+
+/**
+ * Validates that an internal service secret satisfies production fail-closed security invariants:
+ * 1. Must be defined and non-empty.
+ * 2. Must not match any known development placeholder.
+ * 3. Must be at least 16 characters in length.
+ *
+ * If NODE_ENV is "production" and any condition fails, this function throws a fatal Error.
+ */
+export function validateInternalServiceSecret(
+  secret?: string | null,
+  nodeEnv: string = process.env.NODE_ENV || "development",
+  serviceName: string = "service",
+): void {
+  if (nodeEnv === "production") {
+    if (
+      !secret ||
+      INSECURE_INTERNAL_SECRET_PLACEHOLDERS.includes(secret as any) ||
+      secret.trim().length < 16
+    ) {
+      throw new Error(
+        `[${serviceName}] FATAL: In production, INTERNAL_SERVICE_SECRET must be configured with a cryptographically secure random secret (minimum 16 characters) and cannot use development default placeholders.`,
+      );
+    }
+  }
+}
 
 /**
  * Validated downstream microservices registered in the API Gateway.

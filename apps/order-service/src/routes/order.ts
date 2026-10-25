@@ -1,5 +1,9 @@
 import { FastifyInstance } from "fastify";
-import { shouldBeAdmin, shouldBeUser } from "../middleware/authMiddleware";
+import {
+  shouldBeAdmin,
+  shouldBeSeller,
+  shouldBeUser,
+} from "../middleware/authMiddleware";
 import { Order, mongoose } from "@repo/order-db";
 import { startOfMonth, subMonths } from "date-fns";
 import {
@@ -86,6 +90,53 @@ export const orderRoute = async (fastify: FastifyInstance) => {
   );
 
   fastify.get(
+    "/seller-orders",
+    { preHandler: shouldBeSeller },
+    async (request, reply) => {
+      const { sellerId, limit } = request.query as {
+        sellerId?: string;
+        limit?: number;
+      };
+
+      // SEC-01 IDOR & Data Exposure Remediation:
+      // Scope query strictly to the authenticated seller identity unless caller is an admin.
+      const isAdmin = request.userRole === "admin";
+      if (!isAdmin && sellerId && sellerId !== request.userId) {
+        return reply.status(403).send({
+          message: "Access forbidden: you cannot query orders of other sellers",
+        });
+      }
+
+      const effectiveSellerId = isAdmin ? sellerId : request.userId;
+      if (!isAdmin && !effectiveSellerId) {
+        return reply.status(400).send({
+          message: "Seller identity required to access seller orders",
+        });
+      }
+
+      const query: Record<string, unknown> = {};
+      if (effectiveSellerId) {
+        query.$or = [
+          { sellerId: effectiveSellerId },
+          { "products.sellerId": effectiveSellerId },
+        ];
+      }
+
+      const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+
+      const { result: orders } = await measureAsync(
+        "db.order.findSellerOrders",
+        async () => {
+          return await Order.find(query)
+            .limit(safeLimit)
+            .sort({ createdAt: -1 });
+        },
+      );
+      return reply.send(orders);
+    },
+  );
+
+  fastify.get(
     "/orders/:id",
     { preHandler: shouldBeUser },
     async (request, reply) => {
@@ -98,8 +149,15 @@ export const orderRoute = async (fastify: FastifyInstance) => {
         return reply.status(404).send({ message: "Order not found" });
       }
 
-      // Prevent IDOR: Ensure only the owning user or an administrator can access this order
-      if (order.userId !== request.userId && request.userRole !== "admin") {
+      // Prevent IDOR: Ensure only the owning user, assigned seller, or an administrator can access this order
+      const isOwner = order.userId === request.userId;
+      const isAdmin = request.userRole === "admin";
+      const isAssignedSeller =
+        request.userRole === "seller" &&
+        (order.sellerId === request.userId ||
+          order.products.some((p: any) => p.sellerId === request.userId));
+
+      if (!isOwner && !isAdmin && !isAssignedSeller) {
         return reply
           .status(403)
           .send({ message: "Access forbidden: order does not belong to you" });

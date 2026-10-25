@@ -3,7 +3,15 @@
 import { use } from "react";
 import { AnalyticsSummaryType } from "@repo/types";
 import { Card } from "./ui/card";
-import { DollarSign, ShoppingBag, Users, Layers, Activity } from "lucide-react";
+import {
+  DollarSign,
+  ShoppingBag,
+  Users,
+  Layers,
+  Activity,
+  Store,
+  ShieldCheck,
+} from "lucide-react";
 
 export const AnalyticsSummaryCards = ({
   summaryPromise,
@@ -18,6 +26,8 @@ export const AnalyticsSummaryCards = ({
   const products = summary
     ? Math.max(0, summary.totalProductsCreated - summary.totalProductsDeleted)
     : 0;
+  const sellers = summary?.totalSellersActive ?? 0;
+  const vendors = summary?.totalVendorsVerified ?? 0;
 
   const cards = [
     {
@@ -52,10 +62,26 @@ export const AnalyticsSummaryCards = ({
       color: "text-amber-500",
       bgColor: "bg-amber-500/10",
     },
+    {
+      title: "Active Sellers",
+      value: sellers.toLocaleString(),
+      description: "Marketplace storefronts",
+      icon: Store,
+      color: "text-indigo-500",
+      bgColor: "bg-indigo-500/10",
+    },
+    {
+      title: "Verified Vendors",
+      value: vendors.toLocaleString(),
+      description: "KYB-approved business entities",
+      icon: ShieldCheck,
+      color: "text-teal-500",
+      bgColor: "bg-teal-500/10",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 w-full">
       {cards.map((card) => {
         const Icon = card.icon;
         return (

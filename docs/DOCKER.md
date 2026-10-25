@@ -55,7 +55,7 @@ Larekmart's production container topology is organized into an isolated Docker b
                                               │ (/ws WebSocket proxy)             │ (/api/* REST routes)
                                               ▼                                   ▼
                                  ┌──────────────────────────┐        ┌──────────────────────────┐
-                                 │   Notification Service   │        │ 13 Domain Microservices  │
+                                 │   Notification Service   │        │ 23 Domain Microservices  │
                                  │   Go Chi WS Hub (:8005)  │        │ (Product, Order, Cart,   │
                                  └──────────────────────────┘        │  Catalog, Inventory,     │
                                                                      │  Payment, Search, etc.)  │
@@ -140,6 +140,8 @@ docker/
 | `tax-service`            | `8017`                            | `127.0.0.1:8017`                     | **Internal Only**   | Jurisdiction-aware tax calculations, rules, exemptions & snapshots           |
 | `return-service`         | `8018`                            | `127.0.0.1:8018`                     | **Internal Only**   | Multi-seller return & refund lifecycle, inspection, shipment & proration     |
 | `pricing-service`        | `8019`                            | `127.0.0.1:8019`                     | **Internal Only**   | Authoritative merchandise pricing, seller price lists, tiered rules & quotes |
+| `vendor-service`         | `8020`                            | `127.0.0.1:8020`                     | **Internal Only**   | Legal business entities, merchant onboarding, KYB documents & verification   |
+| `seller-service`         | `8021`                            | `127.0.0.1:8021`                     | **Internal Only**   | Marketplace storefront configuration, staff permissions & operations         |
 | `mysql`                  | `3306`                            | `127.0.0.1:3306`                     | **Internal Only**   | MySQL 8.0 database engine for tax compliance, rules & return tracking        |
 | `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                           |
 | `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                                  |
@@ -429,6 +431,8 @@ Every single container image used in the Larekmart platform is cataloged below, 
 | **tax-service**            | Node Microservice      | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **return-service**         | Node Microservice      | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **pricing-service**        | Node Microservice      | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
+| **vendor-service**         | NestJS Microservice    | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
+| **seller-service**         | Node Microservice      | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **email-service**          | Node Worker            | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **client**                 | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |
 | **admin**                  | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |

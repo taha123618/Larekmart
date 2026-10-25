@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SearchBar from "./SearchBar";
+import { fetchSystemSettings } from "@/services/seller.service";
 import {
   Truck,
   User,
@@ -15,28 +16,79 @@ import {
   Tag,
   ShieldCheck,
   Layers,
+  Store,
+  AlertTriangle,
 } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import WishlistButton from "./WishlistButton";
 import CartHeaderButton from "./CartHeaderButton";
 import ThemeToggleAnimated from "./common/ThemeToggleAnimated";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
 import ProfileButton from "./ProfileButton";
 import CurrencySelector from "./CurrencySelector";
 
 const CATEGORY_LINKS = [
   { label: "Super Deals", href: "/#flash-deals", icon: Flame, highlight: true },
   { label: "All Products", href: "/products", icon: Tag },
+  { label: "Featured Stores", href: "/stores/demo-tech-store", icon: Store },
   { label: "Trending", href: "/#trending", icon: Sparkles },
   { label: "New Arrivals", href: "/#new-arrivals", icon: Layers },
   { label: "Track Shipment", href: "/track", icon: Truck },
 ];
 
 export default function Navbar() {
+  const { user } = useUser();
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+  const [isSellerRegistrationOpen, setIsSellerRegistrationOpen] =
+    useState(true);
+  const [isStorefrontsActive, setIsStorefrontsActive] = useState(true);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(
+    null,
+  );
+
+  const isSeller = Boolean(
+    user?.publicMetadata?.isSeller ||
+      user?.unsafeMetadata?.isSeller ||
+      user?.publicMetadata?.role === "seller",
+  );
+
+  useEffect(() => {
+    fetchSystemSettings()
+      .then((settings) => {
+        setIsSellerEnabled(settings.isSellerEnabled);
+        setIsSellerRegistrationOpen(settings.isSellerRegistrationOpen);
+        setIsStorefrontsActive(settings.isStorefrontsActive);
+        setMaintenanceMessage(settings.maintenanceMessage ?? null);
+      })
+      .catch(() => {
+        setIsSellerEnabled(true);
+        setIsSellerRegistrationOpen(true);
+        setIsStorefrontsActive(true);
+      });
+  }, []);
+
+  const visibleCategoryLinks = CATEGORY_LINKS.filter(
+    (item) =>
+      (isSellerEnabled && isStorefrontsActive) ||
+      item.label !== "Featured Stores",
+  );
 
   return (
     <header className="w-full bg-white/95 dark:bg-[#0b0f19]/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 shadow-xs dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] transition-colors duration-200">
+      {/* 0. ADAPTIVE MAINTENANCE BANNER */}
+      {(!isSellerEnabled || !isStorefrontsActive) && (
+        <div className="bg-amber-500/15 dark:bg-amber-950/60 border-b border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs py-1.5 px-4 text-center font-medium flex items-center justify-center gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>
+            {maintenanceMessage ||
+              (!isSellerEnabled
+                ? "Marketplace seller operations are temporarily paused for routine maintenance."
+                : "Marketplace seller storefronts are currently paused for routine maintenance.")}
+          </span>
+        </div>
+      )}
+
       {/* 1. TOP UTILITY ANNOUNCEMENT BAR */}
       <div className="bg-slate-900 dark:bg-slate-950 text-slate-300 text-xs py-2 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
@@ -57,6 +109,30 @@ export default function Navbar() {
 
           {/* Utility Links */}
           <div className="flex items-center gap-2.5 sm:gap-4 text-[11px] sm:text-xs shrink-0">
+            {isSeller ? (
+              // When isSeller is true: display seller-related UI & link
+              <>
+                <Link
+                  href="/become-a-seller"
+                  className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
+                >
+                  <Store className="w-3.5 h-3.5" />
+                  <span>Seller Portal</span>
+                </Link>
+                <span className="hidden sm:inline text-slate-700">|</span>
+              </>
+            ) : isSellerEnabled && isSellerRegistrationOpen ? (
+              // When isSeller is false: display onboarding CTA if registration is open
+              <>
+                <Link
+                  href="/become-a-seller"
+                  className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
+                >
+                  <span>Sell on Larekmart</span>
+                </Link>
+                <span className="hidden sm:inline text-slate-700">|</span>
+              </>
+            ) : null}
             <Link
               href="/track"
               className="hover:text-white transition flex items-center gap-1"
@@ -210,7 +286,7 @@ export default function Navbar() {
 
             {/* Ribbon Links */}
             <nav className="flex items-center gap-1 pl-3">
-              {CATEGORY_LINKS.map((item) => {
+              {visibleCategoryLinks.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link
@@ -249,7 +325,7 @@ export default function Navbar() {
       {/* 4. MOBILE CATEGORIES HORIZONTAL SCROLL STRIP (Under 640px) */}
       <div className="sm:hidden bg-slate-50 dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800/80 px-3 py-2 overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold">
-          {CATEGORY_LINKS.map((item) => {
+          {visibleCategoryLinks.map((item) => {
             const Icon = item.icon;
             return (
               <Link

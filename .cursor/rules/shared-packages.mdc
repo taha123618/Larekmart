@@ -13,9 +13,9 @@ Per-package detail: `packages/<pkg>/AGENTS.md`. Shared rules:
 - `@repo/kafka` — the only place `kafkajs` is used; expose helpers, not clients.
 - `@repo/types` — shared contracts; it depends on both `@repo/product-db` and
   `@repo/order-db`, so avoid introducing runtime coupling or cycles. Keep persistence imports type-only.
-- `@repo/product-db` — change `prisma/schema.prisma` and regenerate; never edit
+- `@repo/product-db`, `@repo/inventory-db`, `@repo/user-db`, `@repo/vendor-db` — change `prisma/schema.prisma` and regenerate; never edit
   `generated/**`.
-- `@repo/order-db` — Mongoose models and connection helpers only.
+- `@repo/order-db`, `@repo/cart-db` — Mongoose models and connection helpers only.
 - `@repo/eslint-config` / `@repo/typescript-config` — shared toolchain configurations.
   Changing these affects all workspaces; verify with `pnpm check-types` and `pnpm lint`.
 

@@ -190,10 +190,7 @@ export default function PricingDashboardPage() {
     },
   });
 
-  const {
-    data: priceHistory = [],
-    isLoading: isHistoryLoading,
-  } = useQuery({
+  const { data: priceHistory = [], isLoading: isHistoryLoading } = useQuery({
     queryKey: ["admin-price-history", selectedProductPriceId],
     queryFn: async () => {
       if (!selectedProductPriceId) return [];

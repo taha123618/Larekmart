@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx --env-file=.env --watch src/index.ts",
+    "test": "tsx tests/payment-service.test.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "check-types": "tsc --noEmit"

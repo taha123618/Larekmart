@@ -93,7 +93,6 @@ async function runStripeVerifyTests() {
     }
     resetStripeClientForTests();
   }
-  process.exit(0);
 }
 
 runStripeVerifyTests().catch((err) => {

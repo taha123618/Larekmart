@@ -51,5 +51,9 @@ images:
     newTag: v1.0.0
   - name: larekmart/pricing-service
     newTag: v1.0.0
+  - name: larekmart/vendor-service
+    newTag: v1.0.0
+  - name: larekmart/seller-service
+    newTag: v1.0.0
   - name: larekmart/email-service
     newTag: v1.0.0

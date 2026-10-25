@@ -156,4 +156,22 @@ export const publicRoutes: GatewayRouteConfig[] = [
     timeoutMs: services.pricing.timeoutMs,
     rewritePrefix: "/api/v1/prices",
   },
+
+  // 15. Seller Service Public Storefront Browsing
+  {
+    prefix: "/api/v1/storefronts",
+    target: services.seller.url,
+    serviceName: services.seller.name,
+    timeoutMs: services.seller.timeoutMs,
+    rewritePrefix: "/api/v1/storefronts",
+  },
+
+  // 16. Platform System Settings (Public status query)
+  {
+    prefix: "/api/v1/system-settings",
+    target: services.seller.url,
+    serviceName: services.seller.name,
+    timeoutMs: services.seller.timeoutMs,
+    rewritePrefix: "/api/v1/system-settings",
+  },
 ];

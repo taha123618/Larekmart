@@ -27,6 +27,7 @@ model User {
   email       String           @unique
   phone       String?
   status      UserStatus       @default(ACTIVE)
+  isSeller    Boolean          @default(false) @map("is_seller")
   createdAt   DateTime         @default(now()) @map("created_at")
   updatedAt   DateTime         @updatedAt @map("updated_at")
 
@@ -36,6 +37,7 @@ model User {
   settings    UserSettings?
 
   @@index([status])
+  @@index([isSeller])
   @@index([createdAt])
   @@map("users")
 }

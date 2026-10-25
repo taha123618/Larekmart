@@ -2,10 +2,10 @@
 
 ## Purpose
 
-Prisma ORM schema and client for user-service (PostgreSQL).
+Prisma ORM schema and client for user-service (PostgreSQL). Models include `User`, `UserProfile` (including `isSeller: boolean`), `UserAddress`, `UserPreferences`, `UserSettings`, and `ProcessedEvent`.
 
 ## Boundaries
 
 - Never import application code into this package.
-- Generated code in \`generated/prisma/\` is produced by \`prisma generate\`. Never edit it directly.
-- Export \`prisma\` client instance from \`src/index.ts\`.
+- Generated code in `generated/prisma/` is produced by `prisma generate`. Never edit it directly.
+- Export `prisma` client instance from `src/index.ts`.

@@ -157,6 +157,105 @@ const start = async () => {
           );
         },
       },
+      {
+        topicName: "vendor.registered",
+        topicHandler: async (message) => {
+          const { legalName, contactEmail, vendorId } = message.value || {};
+          logger.info(
+            `[email-service] Vendor registration received for '${legalName}' (${vendorId})`,
+          );
+          if (contactEmail) {
+            await sendMail({
+              email: contactEmail,
+              subject: "KYB Application Received - Larekmart Merchant Network",
+              text: `Dear ${legalName || "Merchant"},\n\nYour business registration (ID: ${vendorId}) has been received and is currently under review by our compliance team.\n\nThank you for choosing Larekmart.`,
+            });
+          }
+        },
+      },
+      {
+        topicName: "vendor.verified",
+        topicHandler: async (message) => {
+          const { legalName, contactEmail, vendorId } = message.value || {};
+          logger.info(
+            `[email-service] Vendor verified: '${legalName}' (${vendorId})`,
+          );
+          if (contactEmail) {
+            await sendMail({
+              email: contactEmail,
+              subject:
+                "Congratulations! Your KYB Application is Approved - Larekmart",
+              text: `Dear ${legalName || "Merchant"},\n\nYour business organization has passed verification. You can now launch active seller storefronts on Larekmart.\n\nVisit your dashboard to get started.`,
+            });
+          }
+        },
+      },
+      {
+        topicName: "vendor.rejected",
+        topicHandler: async (message) => {
+          const { legalName, contactEmail, vendorId, reason } =
+            message.value || {};
+          logger.info(
+            `[email-service] Vendor rejected: '${legalName}' (${vendorId}) - Reason: ${reason}`,
+          );
+          if (contactEmail) {
+            await sendMail({
+              email: contactEmail,
+              subject: "Update on Your Larekmart Business Verification",
+              text: `Dear ${legalName || "Merchant"},\n\nOur compliance team reviewed your KYB documentation. At this time, additional information is required:\n\nReason: ${reason || "Document requirements not met"}\n\nPlease submit updated documents through the merchant portal.`,
+            });
+          }
+        },
+      },
+      {
+        topicName: "seller.created",
+        topicHandler: async (message) => {
+          const { storeName, slug, contactEmail } = message.value || {};
+          logger.info(
+            `[email-service] Storefront created: '${storeName}' (/stores/${slug})`,
+          );
+          if (contactEmail) {
+            await sendMail({
+              email: contactEmail,
+              subject: `Your Storefront '${storeName}' Has Been Created!`,
+              text: `Welcome to Larekmart Marketplace!\n\nYour storefront '${storeName}' is configured. Shoppers will be able to discover your products at /stores/${slug}.\n\nNext steps: upload your product catalog and verify your shipping policies.`,
+            });
+          }
+        },
+      },
+      {
+        topicName: "seller.activated",
+        topicHandler: async (message) => {
+          const { storeName, slug, contactEmail } = message.value || {};
+          logger.info(
+            `[email-service] Storefront activated: '${storeName}' (/stores/${slug})`,
+          );
+          if (contactEmail) {
+            await sendMail({
+              email: contactEmail,
+              subject: `Your Storefront '${storeName}' is Now Live!`,
+              text: `Great news! Your storefront '${storeName}' is now active on the Larekmart marketplace. Customers can now browse and purchase your catalog.`,
+            });
+          }
+        },
+      },
+      {
+        topicName: "seller.suspended",
+        topicHandler: async (message) => {
+          const { sellerId, reason, contactEmail } = message.value || {};
+          logger.warn(
+            `[email-service] Storefront suspended: '${sellerId}', reason: '${reason}'`,
+          );
+          if (contactEmail) {
+            await sendMail({
+              email: contactEmail,
+              subject:
+                "Notice: Your Larekmart Seller Storefront Has Been Suspended",
+              text: `Dear Merchant,\n\nYour marketplace storefront has been suspended.\n\nReason: ${reason || "Marketplace policy violation"}\n\nPlease contact merchant support or review your seller dashboard for resolution.`,
+            });
+          }
+        },
+      },
     ]);
   } catch (error) {
     logger.fatal("Email service consumer error", error);

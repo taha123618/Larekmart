@@ -6,6 +6,7 @@ import { cors } from "hono/cors";
 import { consumer, producer } from "./utils/kafka.js";
 import { runKafkaSubscriptions } from "./utils/subscriptions.js";
 import webhookRoute from "./routes/webhooks.route.js";
+import { validateInternalServiceSecret } from "@repo/types";
 import {
   createLogger,
   createHealthRegistry,
@@ -76,6 +77,11 @@ app.route("/webhooks", webhookRoute);
 
 const start = async () => {
   try {
+    validateInternalServiceSecret(
+      process.env.INTERNAL_SERVICE_SECRET,
+      process.env.NODE_ENV,
+      "payment-service",
+    );
     await Promise.all([producer.connect(), consumer.connect()]);
     await runKafkaSubscriptions();
     serve(

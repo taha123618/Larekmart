@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm dlx tsx --env-file=.env --watch src/index.ts",
+    "test": "tsx tests/email-service.test.ts",
     "check-types": "tsc --noEmit"
   },
   "keywords": [],
@@ -21,6 +22,7 @@
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^24.5.2",
     "@types/nodemailer": "^8.0.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }
 }

@@ -77,8 +77,14 @@ export async function registerProxyRoutes(
           // Explicitly strip untrusted client-supplied identity & internal headers
           delete rewritten[GATEWAY_HEADERS.USER_ID];
           delete rewritten[GATEWAY_HEADERS.USER_ROLE];
+          delete rewritten[GATEWAY_HEADERS.IS_SUPER_ADMIN];
+          delete rewritten[GATEWAY_HEADERS.IS_SELLER];
+          delete rewritten[GATEWAY_HEADERS.CAN_MANAGE_SELLERS];
           delete rewritten["x-user-id"];
           delete rewritten["x-user-role"];
+          delete rewritten["x-user-is-super-admin"];
+          delete rewritten["x-user-is-seller"];
+          delete rewritten["x-user-can-manage-sellers"];
           delete rewritten["x-internal-secret"];
           delete rewritten["x-user-permissions"];
 
@@ -92,6 +98,15 @@ export async function registerProxyRoutes(
             rewritten[GATEWAY_HEADERS.USER_ID] = originalReq.authUserId;
             rewritten[GATEWAY_HEADERS.USER_ROLE] =
               originalReq.userRole || "user";
+            if (originalReq.isSuperAdmin) {
+              rewritten[GATEWAY_HEADERS.IS_SUPER_ADMIN] = "true";
+            }
+            if (originalReq.isSeller) {
+              rewritten[GATEWAY_HEADERS.IS_SELLER] = "true";
+            }
+            if (originalReq.canManageSellers) {
+              rewritten[GATEWAY_HEADERS.CAN_MANAGE_SELLERS] = "true";
+            }
           }
 
           return rewritten;

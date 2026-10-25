@@ -31,6 +31,13 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
       null;
     const firstName = data.firstName || data.first_name || null;
     const lastName = data.lastName || data.last_name || null;
+    const isSeller = Boolean(
+      data.isSeller ||
+        data.public_metadata?.isSeller ||
+        data.publicMetadata?.isSeller ||
+        data.public_metadata?.role === "seller" ||
+        data.publicMetadata?.role === "seller",
+    );
 
     if (!authUserId || !email) {
       logger.warn("Received user creation event without authUserId or email", {
@@ -48,6 +55,7 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
         phone,
         firstName,
         lastName,
+        isSeller,
       });
       logger.info(
         `Created user-service account for authUserId: ${authUserId}, userId: ${user.id}`,
@@ -62,6 +70,14 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
             ? `${firstName} ${lastName}`
             : firstName || undefined,
       });
+
+      if (isSeller && !user.isSeller) {
+        await userRepository.updateStatus(user.id, { isSeller: true });
+        logger.info(
+          `Granted isSeller=true in database to user ${user.id} (authUserId: ${authUserId}) on event sync`,
+        );
+      }
+
       logger.info(
         `Updated user profile for existing authUserId: ${authUserId}`,
       );
@@ -73,6 +89,30 @@ export async function handleAuthUserCreated(payload: any): Promise<void> {
   } catch (error) {
     userMetrics.kafkaEventsFailed.inc({ topic: "user.created" });
     logger.error("Error handling user creation Kafka event in user-service", {
+      error: String(error),
+    });
+  }
+}
+
+export async function handleSellerPrivilegeGranted(
+  payload: any,
+): Promise<void> {
+  try {
+    if (!payload) return;
+    const target = payload.value !== undefined ? payload.value : payload;
+    const authUserId =
+      target.primaryUserId || target.ownerUserId || target.userId;
+    if (!authUserId) return;
+
+    const user = await userRepository.findByAuthUserId(authUserId);
+    if (user && !user.isSeller) {
+      await userRepository.updateStatus(user.id, { isSeller: true });
+      logger.info(
+        `Granted isSeller=true in database to user ${user.id} (authUserId: ${authUserId}) from seller/vendor event`,
+      );
+    }
+  } catch (error) {
+    logger.error("Error updating seller privilege from event in user-service", {
       error: String(error),
     });
   }

@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "check-types": "tsc --noEmit",
+    "test": "tsx tests/search-service.test.ts",
     "dev": "tsx --env-file=.env --watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js"

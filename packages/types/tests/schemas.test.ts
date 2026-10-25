@@ -10,6 +10,10 @@ import {
   GatewayHealthResponseSchema,
   GatewayErrorResponseSchema,
   GATEWAY_HEADERS,
+  DEFAULT_INTERNAL_SECRET,
+  validateInternalServiceSecret,
+  AdminUpdateUserStatusSchema,
+  UserDetailResponseSchema,
 } from "../src/index.js";
 
 async function runSchemaTests() {
@@ -263,7 +267,101 @@ async function runSchemaTests() {
 
   assert.equal(GATEWAY_HEADERS.REQUEST_ID, "x-request-id");
   assert.equal(GATEWAY_HEADERS.INTERNAL_SECRET, "x-internal-secret");
-  console.log("✓ Gateway schemas and header contracts verified");
+  assert.equal(GATEWAY_HEADERS.IS_SUPER_ADMIN, "x-user-is-super-admin");
+  assert.equal(GATEWAY_HEADERS.IS_SELLER, "x-user-is-seller");
+  assert.equal(GATEWAY_HEADERS.CAN_MANAGE_SELLERS, "x-user-can-manage-sellers");
+
+  // SEC-03 Internal Secret Production Fail-Closed Tests
+  assert.doesNotThrow(() => {
+    validateInternalServiceSecret(
+      DEFAULT_INTERNAL_SECRET,
+      "development",
+      "test-service",
+    );
+  }, "Development mode must allow placeholder secret");
+
+  assert.throws(
+    () => {
+      validateInternalServiceSecret(
+        DEFAULT_INTERNAL_SECRET,
+        "production",
+        "test-service",
+      );
+    },
+    /FATAL: In production, INTERNAL_SERVICE_SECRET must be configured/,
+    "Production must reject default placeholder secret",
+  );
+
+  assert.throws(
+    () => {
+      validateInternalServiceSecret("", "production", "test-service");
+    },
+    /FATAL: In production, INTERNAL_SERVICE_SECRET must be configured/,
+    "Production must reject empty secret",
+  );
+
+  assert.throws(
+    () => {
+      validateInternalServiceSecret(
+        "short-secret",
+        "production",
+        "test-service",
+      );
+    },
+    /FATAL: In production, INTERNAL_SERVICE_SECRET must be configured/,
+    "Production must reject short secret (<16 chars)",
+  );
+
+  assert.doesNotThrow(() => {
+    validateInternalServiceSecret(
+      "super-secret-random-prod-key-12345678",
+      "production",
+      "test-service",
+    );
+  }, "Production must allow strong random secret");
+
+  const {
+    SystemSettingsSchema,
+    UpdateSystemSettingsSchema,
+    AdminDelegationSchema,
+    GrantDelegationSchema,
+  } = await import("../src/index.js");
+  const validSysSettings = {
+    id: "marketplace",
+    isSellerEnabled: true,
+    updatedAt: new Date().toISOString(),
+    updatedBy: "user_super_admin",
+  };
+  assert.equal(SystemSettingsSchema.safeParse(validSysSettings).success, true);
+  assert.equal(
+    UpdateSystemSettingsSchema.safeParse({ isSellerEnabled: false }).success,
+    true,
+  );
+  assert.equal(
+    UpdateSystemSettingsSchema.safeParse({ isSellerEnabled: "invalid" })
+      .success,
+    false,
+  );
+
+  const validDelegation = {
+    id: "del_1",
+    adminUserId: "user_admin_123",
+    permission: "manage_sellers",
+    grantedByUserId: "user_super_admin",
+    createdAt: new Date().toISOString(),
+  };
+  assert.equal(AdminDelegationSchema.safeParse(validDelegation).success, true);
+  assert.equal(
+    GrantDelegationSchema.safeParse({ adminUserId: "user_admin_123" }).success,
+    true,
+  );
+  assert.equal(
+    GrantDelegationSchema.safeParse({ adminUserId: "" }).success,
+    false,
+  );
+  console.log(
+    "✓ Gateway schemas, header contracts, and SystemSettings/Delegation schemas verified",
+  );
 
   // 10. Tax Domain Schemas
   console.log("10. Testing Tax Domain Schemas...");
@@ -375,6 +473,75 @@ async function runSchemaTests() {
   assert.equal(CreateTaxRuleSchema.safeParse(validRule).success, true);
   console.log(
     "✓ Tax schemas (Quote, CalcResponse, ReturnQuote, Rules) verified",
+  );
+
+  // 11. User isSeller Domain Contracts & Admin Schemas
+  console.log("11. Testing User isSeller Domain Contracts & Admin Schemas...");
+  // A. AdminUpdateUserStatusSchema valid cases
+  const validStatusOnly = AdminUpdateUserStatusSchema.safeParse({
+    status: "ACTIVE",
+  });
+  assert.equal(validStatusOnly.success, true);
+
+  const validSellerOnly = AdminUpdateUserStatusSchema.safeParse({
+    isSeller: true,
+  });
+  assert.equal(validSellerOnly.success, true);
+  if (validSellerOnly.success) {
+    assert.equal(validSellerOnly.data.isSeller, true);
+  }
+
+  const validStatusAndSeller = AdminUpdateUserStatusSchema.safeParse({
+    status: "SUSPENDED",
+    isSeller: false,
+  });
+  assert.equal(validStatusAndSeller.success, true);
+
+  // B. Invariant: invalid non-boolean isSeller must be rejected
+  const invalidSellerType = AdminUpdateUserStatusSchema.safeParse({
+    isSeller: "true",
+  });
+  assert.equal(
+    invalidSellerType.success,
+    false,
+    "String isSeller must be rejected",
+  );
+
+  // C. UserDetailResponseSchema default and explicit isSeller
+  const minimalUser = {
+    id: "usr_123",
+    authUserId: "auth_123",
+    email: "seller@larekmart.com",
+    phone: null,
+    status: "ACTIVE",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  const parsedDefault = UserDetailResponseSchema.safeParse(minimalUser);
+  assert.equal(parsedDefault.success, true);
+  if (parsedDefault.success) {
+    assert.equal(
+      parsedDefault.data.isSeller,
+      false,
+      "Default isSeller must be false",
+    );
+  }
+
+  const verifiedSellerUser = {
+    ...minimalUser,
+    isSeller: true,
+  };
+  const parsedSeller = UserDetailResponseSchema.safeParse(verifiedSellerUser);
+  assert.equal(parsedSeller.success, true);
+  if (parsedSeller.success) {
+    assert.equal(
+      parsedSeller.data.isSeller,
+      true,
+      "Explicit isSeller must be preserved as true",
+    );
+  }
+  console.log(
+    "✓ User isSeller contracts, default values, and admin status schemas verified",
   );
 
   console.log("\n=======================================================");

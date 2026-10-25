@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  DEFAULT_INTERNAL_SECRET,
+  validateInternalServiceSecret,
+} from "@repo/types";
 
 /**
  * Zod-validated environment configuration.
@@ -6,6 +10,7 @@ import { z } from "zod";
  * operate with silently-missing credentials.
  */
 const EnvSchema = z.object({
+  INTERNAL_SERVICE_SECRET: z.string().default(DEFAULT_INTERNAL_SECRET),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -185,6 +190,17 @@ if (envConfig.NODE_ENV === "production" && envConfig.MEDIA_DEV_AUTH_BYPASS) {
   console.error(
     "[media-service] MEDIA_DEV_AUTH_BYPASS=true is forbidden when NODE_ENV=production",
   );
+  process.exit(1);
+}
+
+try {
+  validateInternalServiceSecret(
+    envConfig.INTERNAL_SERVICE_SECRET,
+    envConfig.NODE_ENV,
+    "media-service",
+  );
+} catch (err: any) {
+  console.error(err.message);
   process.exit(1);
 }
 

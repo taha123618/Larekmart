@@ -147,6 +147,11 @@ apps/api-gateway/
 | `/api/v1/admin/media/*`     | `media-service` (8013)          | `/api/v1/admin/media`     | Admin Only    | 15,000ms |
 | `/api/v1/reviews/*`         | `review-service` (8014)         | `/api/v1/reviews`         | Public / User | 5,000ms  |
 | `/api/v1/admin/reviews/*`   | `review-service` (8014)         | `/api/v1/admin/reviews`   | Admin Only    | 5,000ms  |
+| `/api/v1/vendors/*`         | `vendor-service` (8020)         | `/api/v1/vendors`         | User / Admin  | 10,000ms |
+| `/api/v1/sellers/*`         | `seller-service` (8021)         | `/api/v1/sellers`         | User / Admin  | 10,000ms |
+| `/api/v1/storefronts/*`     | `seller-service` (8021)         | `""`                      | Public        | 5,000ms  |
+| `/api/v1/system-settings`   | `seller-service` (8021)         | `""`                      | Public        | 3,000ms  |
+| `/api/v1/admin/delegations` | `seller-service` (8021)         | `""`                      | Admin Only    | 5,000ms  |
 | `/order-chart`              | `order-service` (8001)          | `/order-chart`            | Admin Only    | 10,000ms |
 | `/api/v1/analytics/*`       | `analytic-service` (8004)       | `/analytics`              | Admin Only    | 5,000ms  |
 | `/api/v1/home`              | _Gateway Aggregated_            | _Internal Fan-out_        | Public        | 2,500ms  |
@@ -162,17 +167,21 @@ Incoming requests from public clients may attempt to spoof internal identity hea
 - `x-user-id`
 - `x-user-role`
 - `x-user-permissions`
+- `x-user-is-seller`
+- `x-user-can-manage-sellers`
 - `x-internal-secret`
 
 ### Trusted Header Propagation
 
 After validating the Clerk session token, the gateway injects trusted headers for downstream consumption:
 
-- `x-request-id`: UUIDv4 request correlation ID.
-- `x-user-id`: Verified Clerk user ID.
-- `x-user-role`: `admin`, `seller`, or `customer`.
-- `x-internal-secret`: Monorepo shared secret (`INTERNAL_SERVICE_SECRET`).
-- `traceparent`: W3C distributed trace context (`00-{traceId}-{spanId}-01`).
+- `x-request-id` — UUIDv4 request correlation ID
+- `x-user-id` — Authenticated Clerk customer ID
+- `x-user-role` — Resolved role (`customer`, `seller`, `admin`, `super_admin`)
+- `x-user-is-seller` — Set to `true` when user has verified seller privileges
+- `x-user-can-manage-sellers` — Set to `true` when caller is Super Admin or has `manage_sellers` administrative delegation
+- `x-internal-secret` — Shared secret (`INTERNAL_SERVICE_SECRET`) for downstream microservice verification
+- `traceparent` — W3C distributed trace context (`00-{traceId}-{spanId}-01`)
 
 ---
 

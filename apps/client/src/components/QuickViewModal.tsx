@@ -10,6 +10,7 @@ import {
   Star,
   CheckCircle,
   ShieldCheck,
+  Store,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -174,6 +175,23 @@ export default function QuickViewModal() {
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-snug">
                   {quickViewProduct.name}
                 </h3>
+
+                {/* Seller Store Link */}
+                {quickViewProduct.sellerName && (
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    <Store className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    <span>
+                      Sold by{" "}
+                      <Link
+                        href={`/stores/${quickViewProduct.sellerName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                        onClick={closeQuickView}
+                        className="font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 underline decoration-dotted underline-offset-2"
+                      >
+                        {quickViewProduct.sellerName}
+                      </Link>
+                    </span>
+                  </div>
+                )}
 
                 {/* Rating / Guarantee */}
                 {(quickViewProduct as ProductWithRating).rating ? (

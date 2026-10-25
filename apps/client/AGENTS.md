@@ -138,7 +138,19 @@ This app talks HTTP to `product-service`, `order-service`, `payment-service`,
 `catalog-service` (`NEXT_PUBLIC_CATALOG_SERVICE_URL` :8010), `shipping-service` (`NEXT_PUBLIC_SHIPPING_SERVICE_URL` :8011),
 `user-service` (`NEXT_PUBLIC_USER_SERVICE_URL` :8012), `review-service` (`NEXT_PUBLIC_REVIEW_SERVICE_URL` :8014),
 `wishlist-service` (`NEXT_PUBLIC_WISHLIST_SERVICE_URL` :8015), `promotion-service` (`NEXT_PUBLIC_PROMOTION_SERVICE_URL` :8016),
-`tax-service` (`NEXT_PUBLIC_TAX_SERVICE_URL` :8017), and `return-service` (`NEXT_PUBLIC_RETURN_SERVICE_URL` :8018). It never calls `auth-service` directly — Clerk handles user auth.
+`tax-service` (`NEXT_PUBLIC_TAX_SERVICE_URL` :8017), `return-service` (`NEXT_PUBLIC_RETURN_SERVICE_URL` :8018), `pricing-service` (`NEXT_PUBLIC_PRICING_SERVICE_URL` :8019),
+`vendor-service` (`NEXT_PUBLIC_VENDOR_SERVICE_URL` :8020), and `seller-service` (`NEXT_PUBLIC_SELLER_SERVICE_URL` :8021). It never calls `auth-service` directly — Clerk handles user auth.
+
+Marketplace Vendors & Seller Storefronts:
+
+- `vendor.service.ts` provides client methods to register legal business entities (`registerVendor`), retrieve merchant organization (`getMyVendor`), and submit KYB verification dossiers (`submitVendorVerification`).
+- `seller.service.ts` provides public storefront lookups (`fetchStorefront`), merchant storefront setup (`createSeller`), store branding/policy management (`updateSellerStore`), and system settings (`fetchSystemSettings`).
+- `/become-a-seller` provides an interactive 3-step onboarding wizard for prospective merchants.
+- `/stores/[slug]` provides a public merchant storefront profile with store branding, vacation status, custom policies, and product catalog.
+- `SellerBadge.tsx` displays verified merchant accreditation and direct storefront links on product detail pages (`/products/[id]`).
+- `isSellerEnabled` governance: frontends query `fetchSystemSettings` and dynamically hide or lock seller registration and storefront pages if the Super Admin disables the marketplace toggle.
+- `isSeller` user experience: `Navbar` dynamically presents "Seller Portal" with a store icon for verified sellers, while prospective users see "Sell on Larekmart"; `/account` showcases the Verified Seller status badge.
+- Multi-vendor transparency: `ProductCard.tsx` and `QuickViewModal.tsx` display merchant attribution ("By {sellerName}") linking to the seller's storefront, and `CartDrawer.tsx` renders merchant attribution per cart item.
 
 Shipping & tracking integration:
 

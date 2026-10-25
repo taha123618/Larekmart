@@ -28,8 +28,8 @@ boundary/contract/security rule), **should-fix**, or **nit**.
 
 ### Auth & security
 
-- [ ] Mutating routes are guarded (`shouldBeUser` / `shouldBeAdmin`); non-admins can't
-      reach admin functionality.
+- [ ] Mutating routes are guarded (`shouldBeUser` / `shouldBeAdmin` / `shouldBeSellerOrAdmin` / `requireSellerStaffOrAdmin`); non-admins and unauthorized roles can't
+      reach privileged functionality.
 - [ ] `userId` is derived from the session, never from the request body.
 - [ ] Stripe webhooks still verify the signature; no secrets or `.env` files leaked.
 - [ ] `NEXT_PUBLIC_*` used only for non-secret values.
@@ -47,7 +47,7 @@ boundary/contract/security rule), **should-fix**, or **nit**.
 - [ ] ESM `.js` import extensions follow the file's existing style.
 - [ ] Errors return `{ message }` with an appropriate status; async Kafka handlers
       catch errors so the consumer survives.
-- [ ] DB access goes through the designated package or service ORM schema (e.g. `@repo/product-db`, `@repo/order-db`, `@repo/cart-db`, Drizzle).
+- [ ] DB access goes through the designated package or service ORM schema (e.g. `@repo/product-db`, `@repo/order-db`, `@repo/cart-db`, `@repo/vendor-db`, Drizzle).
 - [ ] Env vars added to the workspace `.env.example`.
 
 ### Quality & verification

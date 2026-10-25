@@ -173,7 +173,8 @@ export const UpdateUserAccountSchema = z.object({
 export type UpdateUserAccountInput = z.infer<typeof UpdateUserAccountSchema>;
 
 export const AdminUpdateUserStatusSchema = z.object({
-  status: UserStatusEnum,
+  status: UserStatusEnum.optional(),
+  isSeller: z.boolean().optional(),
 });
 export type AdminUpdateUserStatusInput = z.infer<
   typeof AdminUpdateUserStatusSchema
@@ -185,6 +186,7 @@ export const UserDetailResponseSchema = z.object({
   email: z.string(),
   phone: z.string().nullable(),
   status: UserStatusEnum,
+  isSeller: z.boolean().default(false),
   profile: UserProfileResponseSchema.nullable().optional(),
   preferences: UserPreferencesResponseSchema.nullable().optional(),
   settings: UserSettingsResponseSchema.nullable().optional(),

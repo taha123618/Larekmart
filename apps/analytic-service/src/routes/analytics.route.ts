@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import {
   getMetricsSnapshot,
+  getMerchantMetricsSnapshot,
   getDailyAnalytics,
   getRecentEvents,
 } from "../services/metrics.service.js";
@@ -17,6 +18,18 @@ router.get("/summary", shouldBeAdmin, async (req: Request, res: Response) => {
     return res
       .status(500)
       .json({ message: "Failed to retrieve summary metrics" });
+  }
+});
+
+// Get real-time merchant KPIs
+router.get("/merchants", shouldBeAdmin, async (req: Request, res: Response) => {
+  try {
+    const merchants = getMerchantMetricsSnapshot();
+    return res.status(200).json(merchants);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to retrieve merchant metrics" });
   }
 });
 

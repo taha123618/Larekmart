@@ -19,6 +19,8 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 | `review-service`         | `8014` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Customer reviews, ratings, verified gating, moderation                    |
 | `wishlist-service`       | `8015` | Fastify 5              | `shouldBeUser` / Public link token | Wishlists, saved products, guest merge, price-drop                        |
 | `promotion-service`      | `8016` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Campaigns, coupons, discount eligibility, budgets & checkout reservations |
+| `vendor-service`         | `8020` | NestJS 10 (Fastify)    | `shouldBeUser` / `shouldBeAdmin`   | Legal business entities, KYB, documents & verifications                   |
+| `seller-service`         | `8021` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Marketplace storefronts, staff, delegations & governance                  |
 | `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                                              |
 
 ---
@@ -1022,3 +1024,152 @@ All requests route through `api-gateway` on port `8080`.
 
 - **Auth**: Public / Scraper
 - **Response**: Liveness probe, readiness probe (verifying MySQL `return_db` and Redis connectivity), and Prometheus metrics exposition.
+
+---
+
+## 15. Vendor Service (`:8020`)
+
+### `POST /api/v1/vendors`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `CreateVendorSchema` (`legalName`, `tradeName?`, `country`, `registrationNumber?`, `taxIdentificationNumber?`)
+- **Response**: `{ vendor: VendorWithProfile }`
+- **Side Effect**: Emits `vendor.registered` Kafka event
+
+### `GET /api/v1/vendors/me`
+
+- **Auth**: User (`shouldBeUser`)
+- **Response**: `{ vendor: VendorWithProfile | null }`
+
+### `GET /api/v1/vendors/:id`
+
+- **Auth**: User (`shouldBeUser`)
+- **Response**: `{ vendor: VendorWithProfile }`
+
+### `PATCH /api/v1/vendors/:id`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `UpdateVendorSchema` (`tradeName?`, `contactEmail?`, `contactPhone?`)
+- **Response**: `{ vendor: VendorWithProfile }`
+
+### `GET /api/v1/vendors/:id/business-profile`
+
+- **Auth**: User (`shouldBeUser`)
+- **Response**: `{ businessProfile: VendorBusinessProfile }`
+
+### `PUT /api/v1/vendors/:id/business-profile`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `UpsertVendorBusinessProfileSchema` (`website?`, `businessAddress`, `supportEmail?`, `bankDetails?`)
+- **Response**: `{ businessProfile: VendorBusinessProfile }`
+
+### `POST /api/v1/vendors/:id/documents`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `UploadVendorDocumentSchema` (`documentType`, `mediaId`, `fileName?`, `metadata?`)
+- **Response**: `{ document: VendorDocument }`
+- **Side Effect**: Emits `vendor.document_uploaded` Kafka event
+
+### `GET /api/v1/vendors/:id/documents`
+
+- **Auth**: User (`shouldBeUser`)
+- **Response**: `{ documents: VendorDocument[] }`
+
+### `POST /api/v1/vendors/:id/verifications`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `RequestVerificationSchema` (`workflowType?`)
+- **Response**: `{ verification: VendorVerification }`
+- **Side Effect**: Transitions status to `PENDING_VERIFICATION`, emits `vendor.verification.requested`
+
+### `GET /api/v1/admin/vendors`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `page`, `limit`, `status`, `search`
+- **Response**: `{ items: VendorListItem[], total: number, page: number, totalPages: number }`
+
+### `GET /api/v1/admin/vendors/verifications/pending`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ pending: VendorVerificationListItem[] }`
+
+### `POST /api/v1/admin/vendors/:id/verify`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `AdminVerifyVendorSchema` (`decision`: `"APPROVE"` | `"REJECT"`, `rejectionReason?`, `reviewerNotes?`)
+- **Response**: `{ success: true, vendor: VendorWithProfile }`
+- **Side Effect**: Emits `vendor.verified` or `vendor.rejected` Kafka event (triggering `user-service` to promote `isSeller: true` on approval)
+
+### `POST /api/v1/admin/vendors/:id/status`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `AdminUpdateVendorStatusSchema` (`status`: `"ACTIVE"` | `"SUSPENDED"` | `"BANNED"`, `reason?`)
+- **Response**: `{ success: true, vendor: VendorWithProfile }`
+- **Side Effect**: Emits `vendor.suspended` or `vendor.reactivated` Kafka event
+
+---
+
+## 16. Seller Service (`:8021`)
+
+### `GET /api/v1/system-settings`
+
+- **Auth**: Public
+- **Response**: `{ isSellerEnabled: boolean, platformFeePercentage: number, requireVendorVerification: boolean, allowDirectStoreRegistration: boolean }`
+
+### `GET /api/v1/admin/system-settings`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ settings: SystemSettings }`
+
+### `PATCH /api/v1/admin/system-settings`
+
+- **Auth**: Super Admin (`shouldBeAdmin`, verifies role `super_admin` or `isSuperAdmin: true`)
+- **Body**: `UpdateSystemSettingsSchema` (`isSellerEnabled?`, `platformFeePercentage?`, `requireVendorVerification?`, `allowDirectStoreRegistration?`)
+- **Response**: `{ success: true, settings: SystemSettings }`
+- **Side Effect**: Updates database and invalidates Redis key `marketplace:system_settings`
+
+### `GET /api/v1/admin/delegations`
+
+- **Auth**: Super Admin or Manage Admin (`shouldBeAdmin`, verifies `super_admin` or `x-user-can-manage-sellers: true`)
+- **Response**: `{ delegations: AdminDelegationItem[] }`
+
+### `POST /api/v1/admin/delegations`
+
+- **Auth**: Super Admin (`shouldBeAdmin`, strictly requires `super_admin` or `isSuperAdmin: true`)
+- **Body**: `GrantDelegationSchema` (`adminUserId`, `scope`: `"manage_sellers"`, `notes?`)
+- **Response**: `{ success: true, delegation: AdminDelegationItem }`
+
+### `DELETE /api/v1/admin/delegations/:adminUserId/:scope`
+
+- **Auth**: Super Admin (`shouldBeAdmin`, strictly requires `super_admin` or `isSuperAdmin: true`)
+- **Response**: `{ success: true, message: "Delegation revoked" }`
+
+### `POST /api/v1/sellers`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `CreateSellerSchema` (`vendorId`, `storeName`, `slug`, `contactEmail`, `contactPhone?`)
+- **Response**: `{ seller: SellerWithStore }`
+- **Side Effect**: Emits `seller.created` Kafka event (triggering `user-service` to promote `isSeller: true`)
+
+### `GET /api/v1/sellers/me`
+
+- **Auth**: User (`shouldBeUser`)
+- **Response**: `{ sellers: SellerWithStore[] }`
+
+### `GET /api/v1/storefronts/:slug`
+
+- **Auth**: Public
+- **Response**: `{ storefront: StorefrontPublicProfile }` (Served read-through cached via Redis `seller:v1:*`)
+
+### `GET /api/v1/admin/sellers`
+
+- **Auth**: Admin or Delegated Manage Admin (`shouldBeAdmin`, accepts Super Admin or `x-user-can-manage-sellers: true`)
+- **Query Params**: `page`, `limit`, `status`, `search`
+- **Response**: `{ items: SellerListItem[], total: number, page: number, totalPages: number }`
+
+### `POST /api/v1/admin/sellers/:id/status`
+
+- **Auth**: Admin or Delegated Manage Admin (`shouldBeAdmin`, accepts Super Admin or `x-user-can-manage-sellers: true`)
+- **Body**: `AdminUpdateSellerStatusSchema` (`status`: `"ACTIVE"` | `"SUSPENDED"` | `"PENDING"` | `"TERMINATED"`, `reason?`)
+- **Response**: `{ success: true, seller: SellerWithStore }`
+- **Side Effect**: Emits `seller.activated` or `seller.suspended` Kafka event

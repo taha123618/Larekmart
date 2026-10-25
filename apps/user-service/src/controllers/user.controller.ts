@@ -57,15 +57,24 @@ export class UserController {
       limit?: string;
       status?: string;
       search?: string;
+      isSeller?: string;
     };
 
     const page = query.page ? Number.parseInt(query.page, 10) : 1;
     const limit = query.limit ? Number.parseInt(query.limit, 10) : 20;
 
+    const isSeller =
+      query.isSeller === "true"
+        ? true
+        : query.isSeller === "false"
+          ? false
+          : undefined;
+
     const result = await userService.adminListUsers({
       page,
       limit,
       status: query.status as UserStatus | undefined,
+      isSeller,
       search: query.search,
     });
 
@@ -87,10 +96,10 @@ export class UserController {
     const params = request.params as { id: string };
     const body = AdminUpdateUserStatusSchema.parse(request.body);
 
-    const updated = await userService.adminUpdateUserStatus(
-      params.id,
-      body.status,
-    );
+    const updated = await userService.adminUpdateUserStatus(params.id, {
+      status: body.status,
+      isSeller: body.isSeller,
+    });
     return reply.status(200).send(updated);
   }
 }

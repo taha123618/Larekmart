@@ -19,6 +19,12 @@ export function toProductEventPayload(product: Product): ProductCreatedPayload {
     sizes: product.sizes,
     colors: product.colors,
     images: product.images as unknown as Record<string, string>,
+    sellerId: (product as Record<string, unknown>).sellerId as
+      | string
+      | undefined,
+    sellerName: (product as Record<string, unknown>).sellerName as
+      | string
+      | undefined,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };

@@ -36,11 +36,12 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Checkout: `ShippingForm` (carrier rate calculations & COD) → `StripePaymentForm` (Stripe `CheckoutProvider`, custom UI) / `CodConfirmationForm` →
   return page polls the session status → `/orders`.
 - Customer Returns Hub: `/account/returns` real-time return tracking, status badges, RMA details, carrier tracking links, and printable return label slips. Returns can be initiated directly from `/orders` via `RequestReturnModal`.
+- Merchant Storefronts & Onboarding: `/become-a-seller` merchant onboarding flow with KYB organization details, `/stores/[slug]` dedicated seller storefront profile and catalog showcase, and `SellerBadge` trust tags on marketplace product cards.
 - Auth: Clerk; server components fetch orders with `auth().getToken()`.
 
 **`admin` (dashboard, :3003)** — Next.js App Router, shadcn/ui, Tailwind v4.
 
-- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), and cache
+- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), vendors (`/vendors` legal business entity and KYB verification approval dashboard), sellers (`/sellers` marketplace seller account and commission oversight), and cache
   performance (Redis hit/miss rates per service, scraped live from each service's `/metrics`).
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
@@ -56,14 +57,14 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 **`api-gateway` (Fastify 5, :8080 / :8090)** — Single public entry point reverse proxy.
 
 - **Responsibilities**: Request routing, authentication enforcement (Clerk session validation),
-  authorization context injection (`x-user-id`, `x-user-role`, `x-internal-secret`), rate limiting
+  authorization context injection (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-can-manage-sellers`), rate limiting
   via Redis token bucket, request correlation (`x-request-id`, `x-correlation-id`), W3C traceparent
   propagation, circuit breaking, safe retries (GET/HEAD), and bounded timeouts.
-- **Routing**: Centralized declarative route registry mapping all 18 downstream microservices.
+- **Routing**: Centralized declarative route registry mapping all downstream microservices, including routing `/api/v1/admin/delegations` directly to `seller-service`.
 - **Aggregation**: `GET /api/v1/home` fans out concurrently to `catalog-service` and
   `recommendation-service` with graceful partial degradation.
 - **Security**: Strips client-supplied internal headers before routing; enforces role gates
-  (public, authenticated, admin).
+  (public, authenticated, admin, seller) and verifies Super Admin status and `manage_sellers` administrative delegations.
 
 ### Services
 
@@ -176,10 +177,10 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 **`user-service` (Fastify 5, :8012)** — customer profiles, saved addresses, preferences, and account settings domain authority.
 
 - Routes: `GET /api/v1/users/me`, `PATCH /api/v1/users/me`, `DELETE /api/v1/users/me`, `GET /api/v1/users/me/profile`, `PATCH /api/v1/users/me/profile`, `GET /api/v1/users/me/addresses`, `POST /api/v1/users/me/addresses`, `GET /api/v1/users/me/addresses/:addressId`, `PATCH /api/v1/users/me/addresses/:addressId`, `DELETE /api/v1/users/me/addresses/:addressId`, `GET /api/v1/users/me/preferences`, `PATCH /api/v1/users/me/preferences`, `GET /api/v1/users/me/settings`, `PATCH /api/v1/users/me/settings`, `GET /api/v1/users/admin/users`, `GET /api/v1/users/admin/users/:id`, `PATCH /api/v1/users/admin/users/:id/status`, `/health`, `/ready`, `/metrics`.
-- Persistence: PostgreSQL via `@repo/user-db` (Prisma) targeting `user_db` (`users`, `user_profiles`, `user_addresses`, `user_preferences`, `user_settings`, `processed_events`). Keeps authentication credentials and passwords completely out of the database (strictly delegated to Clerk / `auth-service`).
+- Persistence: PostgreSQL via `@repo/user-db` (Prisma) targeting `user_db` (`users`, `user_profiles`, `user_addresses`, `user_preferences`, `user_settings`, `processed_events`). The `UserProfile` model persistently tracks marketplace seller privilege (`isSeller: boolean`, default `false`). Keeps authentication credentials and passwords completely out of the database (strictly delegated to Clerk / `auth-service`).
 - Caching: Redis (`user:v1:*` namespace) through `@repo/redis` — read-through cache for user profile, address lists, preferences, and settings with controlled short TTLs (300s) and write invalidation.
 - Address Management: Manages customer default shipping & billing addresses, ensuring transactional single-default guarantees. Downstream checkout/shipping services snapshot addresses immutably to preserve historical records.
-- Events: Publishes `user.created`, `user.updated`, `user.profile_updated`, `user.address_created`, `user.address_updated`, `user.address_deleted`, `user.preferences_updated`, `user.deleted`, `user.deletion_requested`. Consumes `user.created`, `auth.user_created`, `user.registered` with idempotency deduplication via `processed_events`.
+- Events: Publishes `user.created`, `user.updated`, `user.profile_updated`, `user.address_created`, `user.address_updated`, `user.address_deleted`, `user.preferences_updated`, `user.deleted`, `user.deletion_requested`. Consumes `user.created`, `auth.user_created`, `user.registered`, `vendor.verified`, `seller.created`, `seller.activated` with idempotency deduplication via `processed_events`. When a merchant completes vendor verification or activates a seller storefront, `user-service` automatically promotes `isSeller: true` on their user profile.
 
 **`media-service` (Hono, :8013)** — object storage, media metadata, upload lifecycle, and image variants.
 
@@ -239,46 +240,66 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Negative Price Guard: Strict zero-floor clamping ensuring discounts and promotions never produce negative totals.
 - Events: Publishes `pricing.price.created`, `pricing.price.updated`, `pricing.price.expired`, `pricing.quote.created`. Consumes `product.created`, `product.deleted`, `order.created`.
 
+**`vendor-service` (NestJS 10 / Fastify, :8020)** — legal business entities, merchant onboarding, KYB verification, documents, and lifecycle state management.
+
+- Routes: `POST /api/v1/vendors`, `GET /api/v1/vendors`, `GET /api/v1/vendors/:id`, `PATCH /api/v1/vendors/:id`, `GET /api/v1/vendors/:id/business-profile`, `PUT /api/v1/vendors/:id/business-profile`, `POST /api/v1/vendors/:id/documents`, `GET /api/v1/vendors/:id/documents`, `POST /api/v1/vendors/:id/verifications`, `GET /api/v1/vendors/:id/verifications`, `POST /api/v1/vendors/:id/members`, `GET /api/v1/vendors/:id/members`, `POST /api/v1/admin/vendors/:id/approve`, `POST /api/v1/admin/vendors/:id/reject`, `POST /api/v1/admin/vendors/:id/suspend`, `POST /api/v1/admin/vendors/:id/reactivate`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
+- Persistence: PostgreSQL via `@repo/vendor-db` (Prisma) targeting `larekmart_vendor_db` (`vendors`, `vendor_business_profiles`, `vendor_documents`, `vendor_verifications`, `vendor_members`, `vendor_status_history`).
+- Caching: Redis (`vendor:v1:*` namespace) through `@repo/redis` for vendor entity lookups, verification status cache, and rate limiting.
+- KYB & Media: Coordinates business verification documents using media-service presigned uploads and Clerk identity context.
+- Events: Publishes `vendor.created`, `vendor.updated`, `vendor.verified`, `vendor.rejected`, `vendor.suspended`, `vendor.reactivated`, `vendor.document_uploaded`, `vendor.verification_submitted`. Consumes `media.uploaded`, `user.deleted`.
+
+**`seller-service` (Fastify 5, :8021)** — marketplace storefront configuration, staff & permissions, operational settings, performance snapshots, and seller lifecycle.
+
+- Routes: `POST /api/v1/sellers`, `GET /api/v1/sellers`, `GET /api/v1/sellers/me`, `GET /api/v1/sellers/:id`, `PATCH /api/v1/sellers/:id`, `GET /api/v1/storefronts/:slug`, `GET /api/v1/sellers/:id/storefront`, `PATCH /api/v1/sellers/:id/storefront`, `GET /api/v1/sellers/:id/settings`, `PATCH /api/v1/sellers/:id/settings`, `POST /api/v1/sellers/:id/staff`, `GET /api/v1/sellers/:id/staff`, `PUT /api/v1/sellers/:id/policies`, `GET /api/v1/sellers/:id/performance`, `GET /api/v1/admin/sellers`, `POST /api/v1/admin/sellers/:id/status`, `POST /api/v1/admin/sellers/:id/activate`, `POST /api/v1/admin/sellers/:id/suspend`, `GET /api/v1/admin/delegations`, `POST /api/v1/admin/delegations`, `DELETE /api/v1/admin/delegations/:adminUserId/:scope`, `GET /api/v1/system-settings` (public discovery), `GET /api/v1/admin/system-settings` (admin read), `PATCH /api/v1/admin/system-settings` (Super Admin toggle), `/health`, `/ready`, `/metrics`.
+- Persistence: PostgreSQL via Drizzle ORM targeting `larekmart_seller_db` (`sellers`, `seller_stores`, `seller_staff`, `seller_settings`, `seller_policies`, `seller_status_history`, `seller_performance_snapshots`, `system_settings`, `admin_delegations`).
+- Caching: Redis (`seller:v1:*` namespace) through `@repo/redis` for storefront public profiles, staff permission lookups, and rate limiting.
+- Marketplace Multi-Tenancy: Bridges verified legal vendors with one or more customer-facing storefronts, enforcing role-based permissions (owner, manager, staff) and Super Admin delegation of `manage_sellers` authority.
+- Events: Publishes `seller.created`, `seller.updated`, `seller.suspended`, `seller.reactivated`, `seller.staff_added`, `seller.staff_removed`, `seller.metrics_updated`. Consumes `vendor.verified`, `vendor.suspended`, `order.created`, `order.delivered`, `review.created`.
+
 ## Data ownership
 
-| Store      | Owner                            | Accessed via                  | Notable models                                                                                                                                     |
-| ---------- | -------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL | product-service                  | `@repo/product-db` (Prisma)   | `Product`, `Category`                                                                                                                              |
-| PostgreSQL | inventory-service                | `@repo/inventory-db` (Prisma) | `inventory_items`, `inventory_reservations`, `inventory_movements`                                                                                 |
-| PostgreSQL | catalog-service                  | `@repo/catalog-db` (Prisma)   | `catalog_products`, `catalog_categories`, `catalog_brands`, `catalog_collections`                                                                  |
-| PostgreSQL | shipping-service                 | `@repo/shipping-db` (Prisma)  | `shipments`, `shipment_items`, `shipment_packages`, `shipping_methods`, `tracking_events`, `shipping_labels`                                       |
-| PostgreSQL | user-service                     | `@repo/user-db` (Prisma)      | `users`, `user_profiles`, `user_addresses`, `user_preferences`, `user_settings`, `processed_events`                                                |
-| PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`              |
-| PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                                      |
-| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events`            |
-| PostgreSQL | media-service                    | Drizzle (`pg`)                | `media`, `media_variants`, `media_uploads`, `media_processing_jobs`, `processed_events`                                                            |
-| PostgreSQL | review-service                   | Drizzle (`pg`)                | `reviews`, `review_media`, `review_votes`, `review_reports`, `review_moderation_actions`, `seller_responses`, `product_rating_summaries`           |
-| PostgreSQL | wishlist-service                 | Drizzle (`pg`)                | `wishlists`, `wishlist_items`, `wishlist_shares`, `wishlist_events`                                                                                |
-| PostgreSQL | promotion-service                | Drizzle (`pg`)                | `promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets`       |
-| PostgreSQL | pricing-service                  | Drizzle (`pg`)                | `price_lists`, `product_prices`, `variant_prices`, `price_rules`, `price_history`, `price_quotes`, `currency_rates`                                |
-| MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`             |
-| MySQL      | return-service                   | Drizzle (`mysql2`)            | `returns`, `return_items`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_outbox` |
-| S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                             |
-| Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                              |
-| Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                                          |
-| Redis      | product-service                  | `@repo/redis` (ioredis)       | `product:v1:*` (catalog read-through cache)                                                                                                        |
-| Redis      | catalog-service                  | `@repo/redis` (ioredis)       | `catalog:v1:*` (storefront product & collection cache)                                                                                             |
-| Redis      | shipping-service                 | `@repo/redis` (ioredis)       | `shipping:v1:*` (shipping rate cache, tracking cache, webhook idempotency)                                                                         |
-| Redis      | user-service                     | `@repo/redis` (ioredis)       | `user:v1:*` (profile, address, preference, settings read-through cache)                                                                            |
-| Redis      | analytic-service                 | `@repo/redis` (ioredis)       | `analytics:v1:*` (dashboard read-through cache)                                                                                                    |
-| Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                              |
-| Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                                       |
-| Redis      | review-service                   | `@repo/redis` (ioredis)       | `review:*` (product rating summary cache, anti-abuse vote/report limits)                                                                           |
-| Redis      | wishlist-service                 | `@repo/redis` (ioredis)       | `wishlist:v1:*` (share token cache, link verification)                                                                                             |
-| Redis      | promotion-service                | `@repo/redis` (ioredis)       | `promotion:v1:*` (active promotion cache, coupon fast-lookup, rate-limiting)                                                                       |
-| Redis      | tax-service                      | `@repo/redis` (ioredis)       | `tax:v1:*` (rule cache, jurisdiction lookup fast-path)                                                                                             |
-| Redis      | return-service                   | `@repo/redis` (ioredis)       | `return:v1:*` (policy cache, return window cache, anti-abuse rate limits)                                                                          |
-| Redis      | pricing-service                  | `@repo/redis` (ioredis)       | `pricing:v1:*` (exchange rate cache, active quote cache, rate-limiting)                                                                            |
-| OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                              |
-| MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                            |
-| MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                           |
-| Clerk      | auth-service (and all frontends) | Clerk SDKs                    | users, session claims                                                                                                                              |
-| Stripe     | payment-service                  | `stripe` SDK                  | products, prices, sessions                                                                                                                         |
+| Store      | Owner                            | Accessed via                  | Notable models                                                                                                                                                                    |
+| ---------- | -------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL | product-service                  | `@repo/product-db` (Prisma)   | `Product`, `Category`                                                                                                                                                             |
+| PostgreSQL | inventory-service                | `@repo/inventory-db` (Prisma) | `inventory_items`, `inventory_reservations`, `inventory_movements`                                                                                                                |
+| PostgreSQL | catalog-service                  | `@repo/catalog-db` (Prisma)   | `catalog_products`, `catalog_categories`, `catalog_brands`, `catalog_collections`                                                                                                 |
+| PostgreSQL | shipping-service                 | `@repo/shipping-db` (Prisma)  | `shipments`, `shipment_items`, `shipment_packages`, `shipping_methods`, `tracking_events`, `shipping_labels`                                                                      |
+| PostgreSQL | user-service                     | `@repo/user-db` (Prisma)      | `users`, `user_profiles`, `user_addresses`, `user_preferences`, `user_settings`, `processed_events`                                                                               |
+| PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`                                             |
+| PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                                                                     |
+| PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events`                                           |
+| PostgreSQL | media-service                    | Drizzle (`pg`)                | `media`, `media_variants`, `media_uploads`, `media_processing_jobs`, `processed_events`                                                                                           |
+| PostgreSQL | review-service                   | Drizzle (`pg`)                | `reviews`, `review_media`, `review_votes`, `review_reports`, `review_moderation_actions`, `seller_responses`, `product_rating_summaries`                                          |
+| PostgreSQL | wishlist-service                 | Drizzle (`pg`)                | `wishlists`, `wishlist_items`, `wishlist_shares`, `wishlist_events`                                                                                                               |
+| PostgreSQL | promotion-service                | Drizzle (`pg`)                | `promotions`, `promotion_rules`, `promotion_targets`, `coupon_codes`, `promotion_reservations`, `promotion_redemptions`, `promotion_budgets`                                      |
+| PostgreSQL | pricing-service                  | Drizzle (`pg`)                | `price_lists`, `product_prices`, `variant_prices`, `price_rules`, `price_history`, `price_quotes`, `currency_rates`                                                               |
+| PostgreSQL | vendor-service                   | `@repo/vendor-db` (Prisma)    | `vendors`, `vendor_business_profiles`, `vendor_documents`, `vendor_verifications`, `vendor_members`, `vendor_status_history`                                                      |
+| PostgreSQL | seller-service                   | Drizzle (`pg`)                | `sellers`, `seller_stores`, `seller_staff`, `seller_settings`, `seller_policies`, `seller_status_history`, `seller_performance_snapshots`, `system_settings`, `admin_delegations` |
+| MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`                                            |
+| MySQL      | return-service                   | Drizzle (`mysql2`)            | `returns`, `return_items`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_outbox`                                |
+| S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                                                            |
+| Redis      | notification-service             | `go-redis` (Go)               | `event:<id>` (idempotency fast-cache)                                                                                                                                             |
+| Redis      | search-service                   | `@repo/redis` (ioredis)       | `search:v1:*` (search result cache, suggestion cache, rate-limit buckets)                                                                                                         |
+| Redis      | product-service                  | `@repo/redis` (ioredis)       | `product:v1:*` (catalog read-through cache)                                                                                                                                       |
+| Redis      | catalog-service                  | `@repo/redis` (ioredis)       | `catalog:v1:*` (storefront product & collection cache)                                                                                                                            |
+| Redis      | shipping-service                 | `@repo/redis` (ioredis)       | `shipping:v1:*` (shipping rate cache, tracking cache, webhook idempotency)                                                                                                        |
+| Redis      | user-service                     | `@repo/redis` (ioredis)       | `user:v1:*` (profile, address, preference, settings read-through cache)                                                                                                           |
+| Redis      | analytic-service                 | `@repo/redis` (ioredis)       | `analytics:v1:*` (dashboard read-through cache)                                                                                                                                   |
+| Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                                                             |
+| Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                                                                      |
+| Redis      | review-service                   | `@repo/redis` (ioredis)       | `review:*` (product rating summary cache, anti-abuse vote/report limits)                                                                                                          |
+| Redis      | wishlist-service                 | `@repo/redis` (ioredis)       | `wishlist:v1:*` (share token cache, link verification)                                                                                                                            |
+| Redis      | promotion-service                | `@repo/redis` (ioredis)       | `promotion:v1:*` (active promotion cache, coupon fast-lookup, rate-limiting)                                                                                                      |
+| Redis      | tax-service                      | `@repo/redis` (ioredis)       | `tax:v1:*` (rule cache, jurisdiction lookup fast-path)                                                                                                                            |
+| Redis      | return-service                   | `@repo/redis` (ioredis)       | `return:v1:*` (policy cache, return window cache, anti-abuse rate limits)                                                                                                         |
+| Redis      | pricing-service                  | `@repo/redis` (ioredis)       | `pricing:v1:*` (exchange rate cache, active quote cache, rate-limiting)                                                                                                           |
+| Redis      | vendor-service                   | `@repo/redis` (ioredis)       | `vendor:v1:*` (vendor profile cache, verification status cache, rate limits)                                                                                                      |
+| Redis      | seller-service                   | `@repo/redis` (ioredis)       | `seller:v1:*` (storefront profile cache, staff permission cache, rate limits), `marketplace:system_settings` (governance cache)                                                   |
+| OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                                                             |
+| MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                                                           |
+| MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                                                          |
+| Clerk      | auth-service (and all frontends) | Clerk SDKs                    | users, session claims                                                                                                                                                             |
+| Stripe     | payment-service                  | `stripe` SDK                  | products, prices, sessions                                                                                                                                                        |
 
 `@repo/types` re-exports the persistence-derived types (`Product`, `Category`, `Order`, `Shipment`, `ShippingRate`)
 so consumers can type against the catalog/order shapes without importing the DB clients
@@ -369,6 +390,23 @@ warehouse (Inspect Items) ── POST /api/v1/admin/returns/:id/inspect ──�
                                                                                                                    │         ├── return.completed ──▶ order-service (mark REFUNDED)
                                                                                                                    │         └── return.completed ──▶ analytic-service & email-service
                                                                                                                    └── payment.refund.failed ──▶ return-service (mark REFUND_FAILED)
+```
+
+### Merchant Onboarding, KYB Verification & Seller Storefront Flow
+
+```
+client (Become a Seller) ── POST /api/v1/vendors ──▶ vendor-service ── Prisma ──▶ PostgreSQL (larekmart_vendor_db)
+       │                                                    │
+       ├── Presigned doc upload ──▶ media-service           └── vendor.created ──▶ notification-service & email-service
+       │                                  │
+       │                                  └── media.uploaded ──▶ vendor-service ──▶ vendor.verification_submitted
+admin (Review & Approve KYB) ── POST /api/v1/admin/vendors/:id/approve ──▶ vendor-service
+                                                                                │
+                                                                                └── vendor.verified ──▶ seller-service (unlock seller creation)
+seller (Create Storefront) ── POST /api/v1/sellers ──▶ seller-service ── Drizzle ──▶ PostgreSQL (larekmart_seller_db)
+       │                                                   │
+       │                                                   └── seller.created ──▶ analytic-service & notification-service
+buyer (Browse Seller Store) ── GET /api/v1/sellers/slug/:slug ──▶ seller-service ── Redis (seller:v1:*) / DB
 ```
 
 ## Cross-cutting concerns

@@ -4,6 +4,7 @@ import RecommendationSection from "@/components/RecommendationSection";
 import ProductGallery from "@/components/ProductGallery";
 import ProductTabs from "@/components/ProductTabs";
 import { ProductType } from "@repo/types";
+import { SellerBadge } from "@/components/seller/SellerBadge";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -147,6 +148,23 @@ const ProductPage = async ({
             <p className="text-sm text-slate-600 dark:text-slate-300 mt-4 leading-relaxed">
               {product.description || product.shortDescription}
             </p>
+
+            {/* Verified Merchant Badge */}
+            <div className="mt-4">
+              <SellerBadge
+                storeName={product.sellerName || "Larekmart Official Store"}
+                storeSlug={
+                  product.sellerName
+                    ? product.sellerName
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/(^-|-$)/g, "")
+                    : "larekmart-official"
+                }
+                rating={4.9}
+                isVerified={true}
+              />
+            </div>
 
             {/* Micro-guarantee strip */}
             <div className="grid grid-cols-2 gap-3 my-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800/80 text-xs">

@@ -9,8 +9,22 @@ export type AnalyticsSummaryType = {
   totalCartsExpired?: number;
   totalTaxCollected?: number;
   totalTaxCalculations?: number;
+  totalVendorsRegistered?: number;
+  totalVendorsVerified?: number;
+  totalSellersCreated?: number;
+  totalSellersActive?: number;
   lastEventTime: string;
   isDbConnected: boolean;
+};
+
+export type MerchantAnalyticsMetricsType = {
+  totalVendorsRegistered: number;
+  totalVendorsVerified: number;
+  totalVendorsSuspended: number;
+  totalSellersCreated: number;
+  totalSellersActive: number;
+  totalSellersSuspended: number;
+  lastEventTime: string;
 };
 
 export type AnalyticsDailyChartType = {

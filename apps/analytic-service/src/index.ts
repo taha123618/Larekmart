@@ -18,13 +18,16 @@ import {
   recordPromotionEvent,
   recordTaxEvent,
   recordReturnEvent,
+  recordVendorEvent,
+  recordSellerEvent,
   getMetricsSnapshot,
 } from "./services/metrics.service.js";
-import type {
-  PaymentSuccessfulType,
-  OrderCreatedType,
-  UserCreatedType,
-  StripeProductType,
+import {
+  type PaymentSuccessfulType,
+  type OrderCreatedType,
+  type UserCreatedType,
+  type StripeProductType,
+  validateInternalServiceSecret,
 } from "@repo/types";
 import {
   createHealthRegistry,
@@ -143,6 +146,11 @@ const consumer = createConsumer(kafka, "analytic-service-group");
 
 const start = async () => {
   try {
+    validateInternalServiceSecret(
+      process.env.INTERNAL_SERVICE_SECRET,
+      process.env.NODE_ENV,
+      "analytic-service",
+    );
     console.log("Starting Analytic Service...");
 
     // 1. Initialize DB tables if PostgreSQL is available
@@ -594,6 +602,69 @@ const start = async () => {
           const payload = message.value || message;
           if (payload) {
             await recordReturnEvent("return.completed", payload);
+          }
+        },
+      },
+      {
+        topicName: "vendor.registered",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordVendorEvent("vendor.registered", payload);
+          }
+        },
+      },
+      {
+        topicName: "vendor.verified",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordVendorEvent("vendor.verified", payload);
+          }
+        },
+      },
+      {
+        topicName: "vendor.suspended",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordVendorEvent("vendor.suspended", payload);
+          }
+        },
+      },
+      {
+        topicName: "seller.created",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordSellerEvent("seller.created", payload);
+          }
+        },
+      },
+      {
+        topicName: "seller.activated",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordSellerEvent("seller.activated", payload);
+          }
+        },
+      },
+      {
+        topicName: "seller.suspended",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordSellerEvent("seller.suspended", payload);
+          }
+        },
+      },
+      {
+        topicName: "seller.storefront.updated",
+        topicHandler: async (message: any) => {
+          const payload = message.value || message;
+          if (payload) {
+            await recordSellerEvent("seller.storefront.updated", payload);
           }
         },
       },

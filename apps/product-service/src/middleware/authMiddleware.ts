@@ -110,3 +110,64 @@ export const shouldBeAdmin = (
   req.userId = auth.userId;
   return next();
 };
+
+export const shouldBeSellerOrAdmin = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  // 1. Fast-path: Check trusted API Gateway internal header propagation
+  const internalSecret = req.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
+    | string
+    | undefined;
+  const configuredSecret = process.env.INTERNAL_SERVICE_SECRET;
+  const gatewayUserId = req.headers?.[GATEWAY_HEADERS.USER_ID] as
+    | string
+    | undefined;
+  const gatewayUserRole = req.headers?.[GATEWAY_HEADERS.USER_ROLE] as
+    | string
+    | undefined;
+  const gatewayIsSeller =
+    req.headers?.[GATEWAY_HEADERS.IS_SELLER] === "true" ||
+    req.headers?.["x-user-is-seller"] === "true";
+
+  if (
+    internalSecret &&
+    configuredSecret &&
+    safeTimingCompare(internalSecret, configuredSecret) &&
+    gatewayUserId
+  ) {
+    if (
+      gatewayUserRole !== "admin" &&
+      gatewayUserRole !== "seller" &&
+      !gatewayIsSeller
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Seller or Admin role required!" });
+    }
+    req.userId = gatewayUserId;
+    req.userRole = gatewayUserRole || (gatewayIsSeller ? "seller" : "user");
+    return next();
+  }
+
+  // 2. Fallback: Direct Clerk token verification
+  const auth = getAuth(req);
+  const userId = auth?.userId;
+
+  if (!userId) {
+    return res.status(401).json({ message: "You are not logged in!" });
+  }
+
+  const claims = auth.sessionClaims as CustomJwtSessionClaims;
+  const role = claims?.metadata?.role;
+  const isSeller = claims?.metadata?.isSeller === true || role === "seller";
+
+  if (role !== "admin" && !isSeller) {
+    return res.status(403).json({ message: "Seller or Admin role required!" });
+  }
+
+  req.userId = auth.userId;
+  req.userRole = role || (isSeller ? "seller" : "user");
+  return next();
+};

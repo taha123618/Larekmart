@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
@@ -46,6 +47,7 @@ const formSchema = z.object({
     "DEACTIVATED",
     "PENDING_VERIFICATION",
   ]),
+  isSeller: z.boolean(),
 });
 
 export interface EditUserProps {
@@ -55,6 +57,7 @@ export interface EditUserProps {
     | "SUSPENDED"
     | "DEACTIVATED"
     | "PENDING_VERIFICATION";
+  isSeller?: boolean;
   fullName?: string;
   email?: string;
   phone?: string;
@@ -63,6 +66,7 @@ export interface EditUserProps {
 const EditUser = ({
   userId,
   initialStatus = "ACTIVE",
+  isSeller = false,
   fullName = "",
   email = "",
   phone = "",
@@ -80,6 +84,7 @@ const EditUser = ({
       email: email || "",
       phone: phone || "",
       status: initialStatus,
+      isSeller: isSeller,
     },
   });
 
@@ -89,8 +94,9 @@ const EditUser = ({
       email: email || "",
       phone: phone || "",
       status: initialStatus,
+      isSeller: isSeller,
     });
-  }, [userId, initialStatus, fullName, email, phone, form]);
+  }, [userId, initialStatus, isSeller, fullName, email, phone, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!userId) return;
@@ -101,9 +107,14 @@ const EditUser = ({
       const token = await getToken();
       if (!token) throw new Error("Authentication token not available");
 
-      const ok = await updateAdminUserStatus(token, userId, values.status);
+      const ok = await updateAdminUserStatus(token, userId, {
+        status: values.status,
+        isSeller: values.isSeller,
+      });
       if (ok) {
-        setSuccessMsg(`User status updated to ${values.status}!`);
+        setSuccessMsg(
+          `User updated: status ${values.status}, isSeller: ${values.isSeller ? "true" : "false"}!`,
+        );
         router.refresh();
       } else {
         setErrorMsg("Failed to update user status in user-service");
@@ -205,6 +216,28 @@ const EditUser = ({
                         Directly controls customer status in user-service
                       </FormDescription>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="isSeller"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Seller Privilege (isSeller)</FormLabel>
+                        <FormDescription>
+                          Controls isSeller flag in database to enable or
+                          disable seller access
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />

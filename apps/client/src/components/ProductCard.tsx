@@ -5,7 +5,7 @@ import useCartStore from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { useUIStore } from "@/stores/uiStore";
 import { ProductType } from "@repo/types";
-import { ShoppingCart, Heart, Eye, Star } from "lucide-react";
+import { ShoppingCart, Heart, Eye, Star, Store } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import MediaImage from "./MediaImage";
@@ -178,6 +178,23 @@ export default function ProductCard({ product }: ProductCardProps) {
               {product.name}
             </h3>
           </Link>
+
+          {/* Seller / Storefront */}
+          {product.sellerName && (
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+              <Store className="w-3 h-3 text-indigo-500 shrink-0" />
+              <span className="truncate">
+                By{" "}
+                <Link
+                  href={`/stores/${product.sellerName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 underline decoration-dotted underline-offset-2"
+                >
+                  {product.sellerName}
+                </Link>
+              </span>
+            </div>
+          )}
 
           {/* Description */}
           <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">

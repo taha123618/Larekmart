@@ -6,6 +6,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
+import { useUser } from "@clerk/nextjs";
+import { fetchSystemSettings } from "@/services/seller.service";
 
 // Static constants hoisted outside of component scope to eliminate re-allocation overhead
 const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
@@ -37,6 +39,7 @@ const STATIC_NAV_LINKS: readonly NavItem[] = [
   { label: "My Orders", href: "/orders" },
   { label: "Returns & Refunds", href: "/account/returns" },
   { label: "Customer Care", href: "/return" },
+  { label: "Become a Seller", href: "/become-a-seller", count: "[SELL]" },
 ];
 
 const STATIC_DEPARTMENT_LINKS: readonly NavItem[] = [
@@ -186,8 +189,51 @@ function FooterComponent() {
     [],
   );
 
+  const { user } = useUser();
+  const isSeller = Boolean(
+    user?.publicMetadata?.isSeller ||
+      user?.unsafeMetadata?.isSeller ||
+      user?.publicMetadata?.role === "seller",
+  );
+
+  const [isSellerEnabled, setIsSellerEnabled] = useState(true);
+  const [isSellerRegistrationOpen, setIsSellerRegistrationOpen] =
+    useState(true);
+
+  useEffect(() => {
+    fetchSystemSettings()
+      .then((settings) => {
+        setIsSellerEnabled(settings.isSellerEnabled);
+        setIsSellerRegistrationOpen(settings.isSellerRegistrationOpen);
+      })
+      .catch(() => {
+        setIsSellerEnabled(true);
+        setIsSellerRegistrationOpen(true);
+      });
+  }, []);
+
   // Memoized navigation, department, and social lists
-  const navLinks = useMemo(() => STATIC_NAV_LINKS, []);
+  const navLinks = useMemo(
+    () =>
+      STATIC_NAV_LINKS.flatMap((item) => {
+        if (item.href === "/become-a-seller") {
+          if (!isSellerEnabled) return [];
+          if (isSeller) {
+            return [
+              {
+                label: "Seller Portal",
+                href: "/become-a-seller",
+                count: "[PORTAL]",
+              },
+            ];
+          }
+          if (!isSellerRegistrationOpen) return [];
+          return [item];
+        }
+        return [item];
+      }),
+    [isSellerEnabled, isSellerRegistrationOpen, isSeller],
+  );
   const departmentLinks = useMemo(() => STATIC_DEPARTMENT_LINKS, []);
   const socialLinks = useMemo(() => STATIC_SOCIAL_LINKS, []);
 
