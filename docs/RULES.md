@@ -52,6 +52,14 @@ This document is the authoritative standard for all engineering practices, archi
      - Add the type and Zod schema to `@repo/types`.
      - Update the producer and all consumers simultaneously.
      - Document the payload and lifecycle in `docs/EVENT-DRIVEN-ARCHITECTURE.md`.
+5. **Transactional Outbox for Dual Writes**:
+   - Microservices committing database mutations that trigger downstream Kafka events must write domain events atomically to an `OutboxEvent` model/table within the same transaction.
+   - Dual-writes directly to Kafka outside the database transaction are strictly prohibited.
+6. **Distributed Mutation Idempotency**:
+   - High-impact state-mutating HTTP requests (e.g., checkout mutations, order creations, payments) must enforce client-supplied `Idempotency-Key` headers.
+   - Mutual exclusion must be acquired via Redis atomic leases (`acquireIdempotencyLock`) to prevent duplicate writes and safely replay cached responses with `Idempotent-Replayed: true`.
+7. **Thundering Herd Shielding (`SingleFlight`)**:
+   - Aggregation routes and high-velocity read endpoints prone to cache misses must coalesce concurrent in-flight promises via `SingleFlightGroup` before initiating downstream network fetches.
 
 ---
 

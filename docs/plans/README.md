@@ -1,0 +1,27 @@
+# Architecture & Engineering Plans (`docs/plans`)
+
+This directory contains the authoritative architectural specifications, execution plans, and test engineering reports for Larekmart's high-scale distributed microservices platform.
+
+---
+
+## Index of Architectural Plans
+
+| Document                                                                                                                                                                | Scope / Workspaces                                             | Key Innovations & Invariants                                                                                                                                                                     |
+| :---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **[Daraz-Scale Production Readiness](file:///Users/taha/projects/microservices-ecommerce/docs/plans/daraz-scale-production-readiness.md)**                              | Full Platform (23 Services)                                    | Multi-DB Dual-ACK Saga (Mongo, Postgres, MySQL), PgBouncer connection pooling (1,000 conns), analytic ring buffer micro-batching (99.8% write reduction), pre-checkout lease checks.             |
+| **[Transactional Outbox Pattern](file:///Users/taha/projects/microservices-ecommerce/docs/plans/transactional-outbox-order-service.md)**                                | `apps/order-service`, `@repo/order-db`                         | Zero event loss on dual-writes; optimistic fast-path publish with 5s lease-locked recovery sweeper; 7-day MongoDB TTL pruning.                                                                   |
+| **[High-Velocity Redis Stock Gatekeeper](file:///Users/taha/projects/microservices-ecommerce/docs/plans/flash-sale-redis-stock-gatekeeper.md)**                         | `apps/inventory-service`                                       | Eliminates Postgres row-lock contention under 5,000 req/sec flash sales via atomic Lua reservation scripts, sub-millisecond fast rejection, and compensation rollbacks.                          |
+| **[Kafka Consumer DLQ & Poison-Pill Isolation](file:///Users/taha/projects/microservices-ecommerce/docs/plans/kafka-consumer-dlq-resilience.md)**                       | `packages/kafka`                                               | Automatic poison-pill fast-failing (`SyntaxError`, `ZodError`) to `<topic>.dlq` on attempt 1; exponential retry backoff (1s, 2s, 4s) for transient failures; zero consumer loop stalls.          |
+| **[API Gateway Thundering Herd Protection (SingleFlight)](file:///Users/taha/projects/microservices-ecommerce/docs/plans/api-gateway-singleflight-thundering-herd.md)** | `apps/api-gateway`                                             | In-flight request coalescing (`SingleFlightGroup`) on high-velocity read and aggregation routes (`/api/v1/inventory/:id/availability`, `/api/v1/home`), shielding backends from cache stampedes. |
+| **[Distributed Mutation Idempotency Key Engine](file:///Users/taha/projects/microservices-ecommerce/docs/plans/distributed-mutation-idempotency-key.md)**               | `packages/redis`, `apps/order-service`, `apps/payment-service` | IETF-standard `Idempotency-Key` engine; Redis atomic lease locking (`SET NX PX`); 409 Conflict on in-flight duplicates; transparent `Idempotent-Replayed: true` caching.                         |
+| **[Deep Architecture Analysis & Testing Report](file:///Users/taha/projects/microservices-ecommerce/docs/plans/deep-architecture-analysis-and-testing-report.md)**      | Monorepo-Wide (39 Workspaces)                                  | Complete system topology, dual-ACK sequence diagrams, and service-by-service test matrix (25/25 test suites passing, 0 TypeScript errors).                                                       |
+
+---
+
+## Core Engineering Invariants
+
+1. **Strictly Asynchronous Inter-Service Communication**: No backend service may perform synchronous HTTP calls to another backend service. All communication flows through `@repo/kafka`.
+2. **Zero Event Loss (Transactional Outbox)**: State changes and domain events must be committed atomically within the same database transaction.
+3. **Poison-Pill Isolation**: Malformed payloads or deterministic schema decode errors must fast-fail directly to `<topic>.dlq` without blocking consumer partitions.
+4. **Idempotency & Replayability**: All state-mutating endpoints (`POST`, `PUT`, `DELETE`) must respect `Idempotency-Key` headers and prevent duplicate database mutations upon network retries.
+5. **Thundering Herd Shielding**: High-velocity read routes and cache misses must use SingleFlight promise coalescing before dispatching upstream network requests.

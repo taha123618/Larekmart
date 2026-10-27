@@ -18,7 +18,9 @@
 
 ---
 
-**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-three backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, and sellers; MongoDB for orders and carts; MySQL 8.0 with dedicated, isolated instances for tax compliance on port 3306 and returns management on port 3307).
+**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale (Amazon, AliExpress, and Daraz). It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-three backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, and sellers; MongoDB for orders and carts; MySQL 8.0 with dedicated, isolated instances for tax compliance on port 3306 and returns management on port 3307).
+
+Engineered to endure massive high-concurrency shopping festivals (e.g., 11.11 flash sales with 5,000+ req/sec on hot items), the platform features a **Distributed Multi-DB Checkout Saga (Dual-ACK)**, **Transactional Outbox** event publishing, **API Gateway Thundering-Herd Protection (`SingleFlight`)**, **Distributed Mutation Idempotency**, **High-Velocity Redis Stock Gatekeeper**, **Kafka Dead-Letter Queue (DLQ) Resilience**, **PgBouncer Transaction Pooling (Port 6432)**, and **Telemetry Ring Buffer Micro-Batching** (reducing DB write queries by 99.8%).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node, Go, and Python services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 
@@ -266,6 +268,49 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 
 > **Deterministic Anti-Starvation Resource Boundaries**: All 41 service containers in `docker-compose.yml` (23 microservices, 3 Kafka KRaft brokers, OpenSearch, PostgreSQL, and MySQL) enforce granular CPU and RAM limits and reservations (`deploy.resources.limits` & `reservations`) using 6 standardized profiles, preventing host memory starvation and Linux OOM killer termination under peak marketplace loads.
 
+### ⚡ Daraz-Scale High-Concurrency Architecture & Resilience Engineering
+
+To sustain **tens of thousands of concurrent users** and prevent cascading system failures during 11.11 shopping festivals and high-velocity flash sales (5,000+ req/sec on hot items), Larekmart incorporates eight enterprise distributed systems patterns:
+
+1. **Distributed Multi-DB Checkout Saga (Dual-ACK & Automated Refunds)**:
+   - When a payment completes, three physically distinct database engines must achieve consistency without 2PC locking: `order-db` (MongoDB), `inventory-db` (PostgreSQL), and `tax_db` (MySQL).
+   - Order confirmation requires a **Dual-ACK**: `inventory.stock.sold` (inventory settlement) + `tax.calculation.completed` (tax snapshot & liability).
+   - If either stock or tax calculation fails, `order-service` aborts confirmation, trips the compensation flow, emits `payment.refund.requested` (triggering automated Stripe refunds in `payment-service`), and cancels reservations.
+   - An active background sweeper runs every 30s to cancel any order trapped in `pending_confirmation` longer than 60s.
+2. **Transactional Outbox Pattern (`order-service`)**:
+   - Eliminates dual-write inconsistencies between MongoDB and Kafka.
+   - Orders and `OutboxEvent` documents (status `PENDING`) are written within the same atomic database transaction.
+   - Optimistic non-blocking fast-path dispatch publishes immediately, marking the outbox event `PUBLISHED`.
+   - A resilient 5-second lease-locked background sweeper (`lockedUntil < NOW`) recovers any unpublished events caused by transient network blips or broker restarts.
+   - Native MongoDB TTL indexes automatically purge published events after 7 days, maintaining an immutable audit log without unbounded storage growth.
+3. **API Gateway Thundering-Herd Protection (`SingleFlightGroup`)**:
+   - High-velocity read routes (e.g. `GET /api/v1/inventory/:productId/availability` and home aggregation `GET /api/v1/home`) coalesce concurrent requests for identical cache keys onto a single in-flight Promise.
+   - When 5,000 concurrent shoppers request product stock on a cache miss, **exactly 1 request** hits downstream PostgreSQL/Redis, with the result broadcast to all waiting callers, completely shielding backends from cache stampedes.
+4. **Distributed Mutation Idempotency Key Engine (`@repo/redis`)**:
+   - State-mutating routes (e.g., `POST /orders/cod`) enforce IETF-standard `Idempotency-Key` headers.
+   - Redis atomic leases (`acquireIdempotencyLock`) grant mutual exclusion:
+     - First attempt: acquires lock and processes order.
+     - Concurrent attempt: returns `409 Conflict` ("Mutation currently in-flight").
+     - Replayed attempt: transparently serves cached response with header `Idempotent-Replayed: true` with 0 database or Kafka interaction.
+5. **High-Velocity Redis Stock Gatekeeper (Flash Sale Engine)**:
+   - Evaluates stock availability directly in Redis using atomic Lua decrement scripts (`stock:available:{productId}:{variantId}:{warehouseId}`).
+   - Fast-fails requests under 0 stock in <1ms without touching PostgreSQL connection pools or acquiring table row locks.
+   - In-memory claim tokens (`stock:claim:{referenceId}`) hold reservations during checkout; failures automatically invoke compensation rollbacks (`INCRBY`).
+6. **Kafka Consumer Poison-Pill Isolation & Dead-Letter Queue (DLQ)**:
+   - Malformed payloads, corrupted bytes, and schema violations (`SyntaxError`, `ZodError`) fast-fail immediately to `<topic>.dlq` on attempt 1 without retry delays.
+   - Transient errors (DB connection blips, lock contention) retry with exponential backoff (1s, 2s, 4s) before routing to DLQ with comprehensive audit headers (`x-original-topic`, `x-error-message`, `x-is-poison-pill`, `x-attempt-count`).
+   - Consumer partitions commit offsets cleanly and never stall.
+7. **PostgreSQL Connection Isolation & PgBouncer Pooling (Port 6432)**:
+   - Multiplexes up to 1,000 incoming client connections into dedicated physical pools (`pool_mode = transaction`).
+   - Guaranteed pool quotas prevent non-critical background traffic from starving Tier-1 commerce databases (`product_db`, `inventory_db`, `catalog_db`, `pricing_db`).
+   - Prisma packages configure `directUrl` for zero-overhead direct migrations on port 5432 while routing runtime traffic through PgBouncer.
+8. **High-Velocity Telemetry Ring Buffer Micro-Batching (`analytic-service`)**:
+   - Ingests telemetry into an in-memory ring buffer (500 events / 1,000ms flush window).
+   - Replaces single-statement synchronous DB writes with parameterized multi-row bulk inserts (`INSERT INTO ... VALUES (...), (...)...`), reducing database write transactions by **99.8%** during peak flash sale loads.
+   - Full flush on `SIGTERM`/`SIGINT` guarantees zero event loss.
+
+For in-depth architectural specifications and diagrams, see [`docs/plans/README.md`](docs/plans/README.md).
+
 ---
 
 ## Monorepo Layout
@@ -329,18 +374,18 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | ---------------------------- | ------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`client`**                 | Next.js 16, React 19, Tailwind v4, Zustand, Framer Motion, GSAP, Stripe, Clerk        | `3002` | Customer storefront: catalog search/filter, persistent cart, Framer Motion drawers/modals, GSAP banners, Stripe checkout, order history.                                                           |
 | **`admin`**                  | Next.js 15, React 19, Tailwind v4, shadcn/ui, TanStack Table & Query, Recharts, Clerk | `3003` | Admin dashboard: catalog management, user administration proxy, order trends, and real-time KPI cards & charts from `analytic-service`.                                                            |
-| **`api-gateway`**            | Fastify 5, `@fastify/http-proxy`, Opossum, Redis, Clerk                               | `8080` | Unified public reverse proxy, header sanitization, Clerk JWT validation, Redis rate limiting, circuit breaker, and `/api/v1/home` aggregation.                                                     |
+| **`api-gateway`**            | Fastify 5, `@fastify/http-proxy`, Opossum, Redis, Clerk                               | `8080` | Unified public reverse proxy, header sanitization, Clerk JWT validation, SingleFlight thundering-herd protection, edge stock availability cache, and `/api/v1/home` aggregation.                   |
 | **`product-service`**        | Express 5, Prisma, PostgreSQL, Kafka                                                  | `8000` | Product and category catalog CRUD; publishes `product.created` and `product.deleted`.                                                                                                              |
-| **`order-service`**          | Fastify 5, Mongoose, MongoDB, Kafka                                                   | `8001` | Consumes `payment.successful`, persists orders, serves user orders and 6-month sales analytics; publishes `order.created`.                                                                         |
-| **`payment-service`**        | Hono, Stripe SDK, Kafka                                                               | `8002` | Creates Stripe checkout sessions, verifies Stripe webhooks, mirrors catalog products to Stripe; publishes `payment.successful`.                                                                    |
+| **`order-service`**          | Fastify 5, Mongoose, MongoDB, Kafka                                                   | `8001` | Multi-DB Dual-ACK Saga orchestrator, Transactional Outbox worker, distributed idempotency middleware, and 6-month sales analytics.                                                                 |
+| **`payment-service`**        | Hono, Stripe SDK, Kafka                                                               | `8002` | Creates Stripe checkout sessions, verifies Stripe webhooks, mirrors catalog products to Stripe, and processes automated Saga refunds; publishes `payment.successful`.                              |
 | **`auth-service`**           | Express 5, Clerk Backend SDK, Kafka                                                   | `8003` | Admin user management proxying Clerk backend; publishes `user.created`.                                                                                                                            |
 | **`email-service`**          | Node.js (ESM), Nodemailer (Gmail OAuth2), Kafka                                       | —      | Headless worker consuming `user.created` (welcome) and `order.created` (order receipts).                                                                                                           |
-| **`analytic-service`**       | Express 5, Node.js (ESM), PostgreSQL (`pg`), Kafka                                    | `8004` | Consumes all event streams, updates live KPI counters, persists audit logs & daily rollups to PostgreSQL, and serves REST analytics to `admin`.                                                    |
+| **`analytic-service`**       | Express 5, Node.js (ESM), PostgreSQL (`pg`), Kafka                                    | `8004` | Telemetry in-memory ring buffer (500 events / 1s batch, 99.8% DB write reduction), KPI aggregations, audit logs, and REST analytics to `admin`.                                                    |
 | **`notification-service`**   | Go 1.22 (Chi), PostgreSQL, Redis, WebSockets, Kafka, OpenTelemetry                    | `8005` | Multi-channel notification orchestration (Email, SMS, Push, In-App), worker pools, Redis deduplication, and real-time WebSocket hub.                                                               |
 | **`search-service`**         | Fastify 5, OpenSearch, Redis, Kafka, Clerk                                            | `8006` | Product search, autocomplete, faceting, rate limiting, Kafka-driven indexing, and zero-downtime reindexing.                                                                                        |
-| **`inventory-service`**      | Hono 4, Prisma, PostgreSQL, Redis, Kafka, Clerk                                       | `8007` | Stock availability, atomic reservations, warehouse inventory, restocks, adjustments, and inventory events.                                                                                         |
+| **`inventory-service`**      | Hono 4, Prisma, PostgreSQL, Redis, Kafka, Clerk                                       | `8007` | Stock availability, High-Velocity Redis Stock Gatekeeper (Lua decrement), centralized stock counters, reservations, and inventory events.                                                          |
 | **`recommendation-service`** | Python 3.12+ (FastAPI), SQLAlchemy async, PostgreSQL, pgvector, Redis, Celery, Kafka  | `8008` | Hybrid candidate generation (collaborative & content filtering, embeddings, trending velocity), interactive tester, and behavioral telemetry.                                                      |
-| **`cart-service`**           | Express 5, Mongoose, MongoDB, Redis, Kafka, Clerk                                     | `8009` | Authoritative cart persistence, guest-to-user merge, coupon management, estimated totals, and TTL expiration worker.                                                                               |
+| **`cart-service`**           | Express 5, Mongoose, MongoDB, Redis, Kafka, Clerk                                     | `8009` | Authoritative cart persistence, zero-hop Redis stock validation, guest-to-user merge, coupon management, and TTL expiration worker.                                                                |
 | **`catalog-service`**        | Fastify 5, Prisma, PostgreSQL, Redis, Kafka, Clerk                                    | `8010` | Read-optimized product discovery: categories, brands, collections, and storefront listing projections.                                                                                             |
 | **`shipping-service`**       | Koa (Node.js), Prisma, PostgreSQL, Redis, Kafka, Clerk                                | `8011` | Shipment lifecycle, rate quotes, carrier adapters (TCS/Leopards/DHL/FedEx), tracking, and labels.                                                                                                  |
 | **`user-service`**           | Fastify 5, Prisma, PostgreSQL, Redis, Kafka, Clerk                                    | `8012` | Customer profiles, saved addresses, preferences, and account-domain events.                                                                                                                        |
@@ -358,23 +403,23 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 
 ## Shared Packages
 
-| Package                       | Purpose & Exports                                                                                            | Primary Consumers                                   |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| **`@repo/kafka`**             | Kafka client wrapper (`createKafkaClient`, `createProducer`, `createConsumer`) and local 3-broker compose.   | All backend services                                |
-| **`@repo/types`**             | Central contract package: API domain types, Kafka payload interfaces, and shared Zod form schemas.           | All applications & packages                         |
-| **`@repo/monitoring`**        | Framework-agnostic structured logging, health checks, metrics, and performance telemetry.                    | All applications & packages                         |
-| **`@repo/redis`**             | Redis client factory, namespaced key builder, typed cache helpers, namespace invalidation, and rate limiter. | Product, order, search, analytic, and cart services |
-| **`@repo/opensearch`**        | OpenSearch client factory, product mappings, query builders, indexing, search, and reindex helpers.          | Product and search services                         |
-| **`@repo/product-db`**        | PostgreSQL catalog persistence via Prisma schema and generated `prisma` client singleton.                    | `product-service`, `@repo/types` (type-only)        |
-| **`@repo/inventory-db`**      | PostgreSQL inventory persistence via Prisma, atomic reservations, and an inventory movement ledger.          | `inventory-service`                                 |
-| **`@repo/order-db`**          | MongoDB persistence via Mongoose `Order` model and connection helper.                                        | `order-service`, `@repo/types` (type-only)          |
-| **`@repo/cart-db`**           | MongoDB persistence via Mongoose `Cart` and `ProcessedEvent` models and connection helper.                   | `cart-service`, `@repo/types` (type-only)           |
-| **`@repo/catalog-db`**        | PostgreSQL catalog read-model persistence via Prisma schema and generated client.                            | `catalog-service`                                   |
-| **`@repo/shipping-db`**       | PostgreSQL shipping persistence via Prisma: shipments, packages, tracking events, labels.                    | `shipping-service`                                  |
-| **`@repo/user-db`**           | PostgreSQL user-domain persistence via Prisma: profiles, addresses, preferences, settings.                   | `user-service`                                      |
-| **`@repo/vendor-db`**         | PostgreSQL vendor-domain persistence via Prisma: legal entities, business profiles, KYB documents & history. | `vendor-service`                                    |
-| **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                     | `admin`, `client`                                   |
-| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 39 workspaces                                   |
+| Package                       | Purpose & Exports                                                                                                                 | Primary Consumers                                   |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| **`@repo/kafka`**             | Kafka client wrapper, Dead-Letter Queue (DLQ), poison-pill fast-failing, exponential backoff retries, and local 3-broker compose. | All backend services                                |
+| **`@repo/types`**             | Central contract package: API domain types, Kafka payload interfaces, and shared Zod form schemas.                                | All applications & packages                         |
+| **`@repo/monitoring`**        | Framework-agnostic structured logging, health checks, metrics, and performance telemetry.                                         | All applications & packages                         |
+| **`@repo/redis`**             | Redis client factory, distributed mutation idempotency primitives, typed cache helpers, invalidation, and rate limiter.           | Product, order, search, analytic, and cart services |
+| **`@repo/opensearch`**        | OpenSearch client factory, product mappings, query builders, indexing, search, and reindex helpers.                               | Product and search services                         |
+| **`@repo/product-db`**        | PostgreSQL catalog persistence via Prisma schema and generated `prisma` client singleton with PgBouncer `directUrl`.              | `product-service`, `@repo/types` (type-only)        |
+| **`@repo/inventory-db`**      | PostgreSQL inventory persistence via Prisma, atomic reservations, movement ledger, and PgBouncer `directUrl`.                     | `inventory-service`                                 |
+| **`@repo/order-db`**          | MongoDB persistence via Mongoose `Order` and `OutboxEvent` (transactional outbox with 7-day TTL).                                 | `order-service`, `@repo/types` (type-only)          |
+| **`@repo/cart-db`**           | MongoDB persistence via Mongoose `Cart` and `ProcessedEvent` models and connection helper.                                        | `cart-service`, `@repo/types` (type-only)           |
+| **`@repo/catalog-db`**        | PostgreSQL catalog read-model persistence via Prisma schema and generated client.                                                 | `catalog-service`                                   |
+| **`@repo/shipping-db`**       | PostgreSQL shipping persistence via Prisma: shipments, packages, tracking events, labels.                                         | `shipping-service`                                  |
+| **`@repo/user-db`**           | PostgreSQL user-domain persistence via Prisma: profiles, addresses, preferences, settings.                                        | `user-service`                                      |
+| **`@repo/vendor-db`**         | PostgreSQL vendor-domain persistence via Prisma: legal entities, business profiles, KYB documents & history.                      | `vendor-service`                                    |
+| **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                                          | `admin`, `client`                                   |
+| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).                              | All 39 workspaces                                   |
 
 ---
 
@@ -595,6 +640,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 | [`docs/comparisons/DEVOPS-INFRASTRUCTURE-STACK-COMPARISON.md`](docs/comparisons/DEVOPS-INFRASTRUCTURE-STACK-COMPARISON.md) | Full-stack evaluation: Docker vs. K8s vs. GitHub Actions vs. Ingress                   |
 | [`docs/comparisons/REVERSE-PROXY-INGRESS-COMPARISON.md`](docs/comparisons/REVERSE-PROXY-INGRESS-COMPARISON.md)             | Reverse proxy evaluation: Caddy vs. NGINX vs. Traefik                                  |
 | [`docs/comparisons/OBSERVABILITY-STACK-COMPARISON.md`](docs/comparisons/OBSERVABILITY-STACK-COMPARISON.md)                 | Observability evaluation: Dozzle vs. Rootprint vs. CNCF Prometheus/Grafana/Loki        |
+| [`docs/plans/README.md`](docs/plans/README.md)                                                                             | High-Concurrency Daraz-Scale Architecture Plans, Multi-DB Saga, Outbox, & DLQ Index    |
 
 ---
 

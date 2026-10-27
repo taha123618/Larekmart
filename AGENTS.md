@@ -139,6 +139,18 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
   are gitignored. Read config from environment variables.
 - **Never edit generated code.** `packages/product-db/generated/prisma/**` is produced
   by `prisma generate` and is gitignored. Change the schema instead.
+- **Transactional Outbox for Dual Writes.** State mutations that emit Kafka events
+  must persist the event to an outbox model within the database transaction to prevent
+  silent event loss.
+- **Enforce Distributed Idempotency.** State-mutating routes (`POST /orders/cod`, etc.)
+  must enforce `Idempotency-Key` headers using `@repo/redis` atomic leases to prevent
+  duplicate mutations and transparently replay cached responses.
+- **Thundering-Herd Protection (`SingleFlight`).** High-velocity read aggregation routes
+  and cache misses must coalesce in-flight promises via `SingleFlightGroup` before querying
+  downstream microservices or databases.
+- **Poison-Pill & DLQ Isolation.** Consumer loops must rely on `@repo/kafka` DLQ routing
+  so malformed payloads (`SyntaxError`, `ZodError`) fast-fail to `<topic>.dlq` without stalling
+  partition consumption.
 - **Match existing conventions** before introducing new libraries. Check whether the
   dependency already exists in the workspace you are editing.
 - **Keep changes scoped.** Use Turborepo filters for the workspace you touch; do not

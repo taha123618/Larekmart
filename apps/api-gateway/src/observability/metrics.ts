@@ -80,6 +80,18 @@ export const gateway5xxTotal = createCounter(
   "Total server 5xx responses returned by gateway",
 );
 
+export const gatewaySingleFlightCallsTotal = createCounter(
+  metrics,
+  "gateway_singleflight_calls_total",
+  "Total operations processed through SingleFlight coalescing",
+);
+
+export const gatewaySingleFlightSharedTotal = createCounter(
+  metrics,
+  "gateway_singleflight_shared_total",
+  "Total concurrent duplicate requests coalesced to an in-flight promise",
+);
+
 // Aliases for backwards compatibility
 export const gatewayUpstreamErrorsTotal = gatewayProxyErrorsTotal;
 export const gatewayUpstreamTimeoutTotal = gatewayProxyTimeoutsTotal;

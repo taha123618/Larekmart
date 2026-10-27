@@ -1,6 +1,7 @@
 import { runRouteRegistryTests } from "./unit/route-registry.test.js";
 import { runCircuitBreakerTests } from "./unit/circuit-breaker.test.js";
 import { runRetryTests } from "./unit/retry.test.js";
+import { runSingleFlightTests } from "./unit/singleflight.test.js";
 import { runAuthTests } from "./auth/auth.test.js";
 import { runSecurityTests } from "./security/security.test.js";
 import { runHealthIntegrationTests } from "./integration/health.test.js";
@@ -17,6 +18,7 @@ async function main() {
     await runRouteRegistryTests();
     await runCircuitBreakerTests();
     await runRetryTests();
+    await runSingleFlightTests();
     await runAuthTests();
     await runSecurityTests();
     await runHealthIntegrationTests();

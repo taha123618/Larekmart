@@ -60,6 +60,8 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
   authorization context injection (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-can-manage-sellers`), rate limiting
   via Redis token bucket, request correlation (`x-request-id`, `x-correlation-id`), W3C traceparent
   propagation, circuit breaking, safe retries (GET/HEAD), and bounded timeouts.
+- **Thundering Herd Shielding (`SingleFlightGroup`)**: In-flight promise coalescing in `src/resilience/singleflight.ts` deduplicates concurrent cache misses on hot endpoints (e.g. `GET /api/v1/inventory/:productId/availability` and `GET /api/v1/home`), preventing downstream database and connection pool exhaustion.
+- **Sub-Millisecond Edge Stock Cache**: Serves stock queries directly from Redis (`stock:product:{productId}`) in ~1ms, shielding `inventory-service` from flash sale spikes.
 - **Routing**: Centralized declarative route registry mapping all downstream microservices, including routing `/api/v1/admin/delegations` directly to `seller-service`.
 - **Aggregation**: `GET /api/v1/home` fans out concurrently to `catalog-service` and
   `recommendation-service` with graceful partial degradation.
@@ -85,17 +87,21 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 
 - Routes: `/user-orders` (user-scoped), `/orders` (admin, optional `limit`),
   `/order-chart` (admin, 6-month aggregation), `/health`, `/test`.
-- Persistence: Mongoose → MongoDB (`Order`, statuses `success | failed`).
+- Persistence: Mongoose → MongoDB (`Order`, `OutboxEvent`).
+- Distributed Idempotency Key Engine: Enforces `Idempotency-Key` headers on state-mutating requests (`POST /orders/cod`), acquiring atomic Redis locks (`acquireIdempotencyLock`) to prevent duplicate order generation and replay cached responses with `Idempotent-Replayed: true`.
+- Transactional Outbox Pattern: Eliminates dual-write inconsistencies between MongoDB and Kafka via optimistic fast-path dispatch, an active 5-second lease-locked background sweeper (`lockedUntil < NOW`), and a 7-day MongoDB TTL retention index.
+- Multi-DB Dual-ACK Saga Orchestrator: Consumes `payment.successful`, creates orders in `pending_confirmation`, awaits Dual-ACK (`inventory.stock.sold` + `tax.calculation.completed`), and transitions to `confirmed`. Automatically requests Stripe refunds on stock/tax failures.
 - Caching: Redis (`order:v1:*` namespace) through `@repo/redis` — read-through cache for
   `GET /order-chart`, TTL-bounded rather than invalidated on write, because orders arrive faster
   than a per-order invalidation could be repopulated.
-- Consumes `payment.successful` → `createOrder` → publishes `order.created`.
 
 **`payment-service` (Hono, :8002)** — money.
 
 - Routes: `/sessions/create-checkout-session`, `/sessions/:id`, `/webhooks/stripe`,
   `/health`.
 - Stripe custom checkout (`ui_mode: "custom"`); prices fetched live from Stripe.
+- Pre-Checkout Stock Lease Validation: Verifies stock reservation leases (`expiresAt`) and vendor verification eligibility before session creation.
+- Automated Compensation Refunds: Consumes `payment.refund.requested`, executes automated Stripe refunds (`stripe.refunds.create`), and publishes `payment.refund.completed`.
 - Consumes `product.created` / `product.deleted` → creates/deletes Stripe products.
 - Emits `payment.successful` from the verified webhook.
 
@@ -111,8 +117,9 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 **`analytic-service` (Express 5, :8004)** — metrics and event analytics.
 
 - Routes: `/analytics/summary`, `/analytics/daily-chart`, `/analytics/events`, `/health`.
-- Consumes `payment.successful`, `order.created`, `user.created`, `product.created`, and `product.deleted`.
-- Tracks real-time KPI metrics and persists event audit logs and daily summaries to PostgreSQL.
+- Consumes all domain Kafka event streams.
+- High-Velocity Telemetry Ring Buffer: Implements an in-memory ring buffer (500-event capacity / 1,000ms flush window in `src/services/event-batcher.ts`), executing multi-row parameterized bulk inserts (`INSERT INTO ... VALUES (...), (...)...`) that reduce PostgreSQL write operations by **99.8%** during flash sales, with graceful shutdown flush ensuring 0 event loss.
+- Isolated Database: Runs on dedicated PostgreSQL instance (`larekmart-postgres-analytics` on port 5433), eliminating telemetry lock contention on core commerce databases.
 - Caching: Redis (`analytics:v1:*` namespace) through `@repo/redis` — TTL-bounded read-through cache for
   `/analytics/daily-chart` and `/analytics/events`. Entries expire rather than being invalidated per event,
   because events arrive faster than a write-through invalidation would repopulate them.
@@ -316,21 +323,33 @@ PgBouncer enforces domain pool size guarantees so background or non-critical wri
 
 ## Key request flows
 
-### Checkout → order → inventory → email
+### Distributed Multi-DB Dual-ACK Checkout Saga (MongoDB, PostgreSQL, MySQL)
 
 ```
-client            payment-service            Stripe              order-service        inventory-service       email-service
-  │  POST /sessions/create-checkout-session ─▶│                   │                    │                       │
-  │                                          │ create session ──▶│                    │                       │
-  │  ◀── client_secret ───────────────────────│                   │                    │                       │
-  │  confirm() ──────────────────────────────────────────────────▶│                    │                       │
-  │                                          │  ◀ checkout.session.completed          │                       │
-  │                                          │ verify signature  │                    │                       │
-  │                                          │── payment.successful ─────────────────▶│                       │
-  │                                          │                   │                    │ confirmReservation    │
-  │                                          │                   │                    │── inventory.sold ────▶│
-  │                                          │                   │ createOrder        │                       │
-  │                                          │                   │── order.created ───┼──────────────────────▶│ send email
+client        payment-service       Stripe          order-service (Mongo)    inventory-service (PG)     tax-service (MySQL)     cart-service (Mongo)
+  │ POST /sessions/create-checkout ──▶│                        │                        │                        │                        │
+  │ (validates lease & vendor)        │ create session ───────▶│                        │                        │                        │
+  │◀── client_secret ─────────────────│                        │                        │                        │                        │
+  │ confirm() ────────────────────────────────────────────────▶│                        │                        │                        │
+  │                                   │◀ checkout.session.completed                     │                        │                        │
+  │                                   │ verify signature       │                        │                        │                        │
+  │                                   │── payment.successful ─▶│ (PENDING_CONFIRMATION) │                        │                        │
+  │                                   │── payment.successful ──────────────────────────▶│ (commit reservation)   │                        │
+  │                                   │                        │── order.created ───────────────────────────────▶│ (snapshot audit tax)   │
+  │                                   │                        │                        │                        │                        │
+  │                                   │                        │◀── inventory.stock.sold│ (ACK 1: Stock Sold)    │                        │
+  │                                   │                        │◀── tax.calculation.completed (ACK 2: Tax Done) ─│                        │
+  │                                   │                        │                                                                          │
+  │                                   │                        │ [Dual-ACK Received: Transition status to CONFIRMED]                      │
+  │                                   │                        │── order.confirmed ──────────────────────────────────────────────────────▶│ (clear cart)
+  │                                   │                        │── order.confirmed ──▶ shipping-service & notification-service             │
+  │                                   │                        │                                                                          │
+  │                                   │                        │ [Compensating Flow on Stock or Tax Failure]:                             │
+  │                                   │                        │── payment.refund.requested (order-service) ──▶ payment-service           │
+  │                                   │                        │── inventory.reservation.cancelled ──▶ inventory-service                  │
+  │                                   │                        │── tax.calculation.voided ──▶ tax-service                                 │
+  │                                   │                        │── order.cancelled ──▶ customer notifications & shipping                  │
+  │                                   │                        │                                                                          │
 ```
 
 ### Product → Stripe + Search index
@@ -446,6 +465,8 @@ buyer (Browse Seller Store) ── GET /api/v1/sellers/slug/:slug ──▶ sell
   displayed. Redis is treated as **optional everywhere**: every read
   falls through to the source of truth on a miss, and a Redis outage reports `degraded`, never
   `unhealthy`, in `/health`.
+- **Event Resilience & Dead-Letter Queue (DLQ):** `@repo/kafka` incorporates intelligent poison-pill isolation. Malformed payloads or deterministic schema violations (`SyntaxError`, `ZodError`) fast-fail immediately to `<topic>.dlq` on attempt 1 without retry loops. Transient errors (database lock contention, connection failovers) retry with exponential backoff (1s, 2s, 4s) before routing to DLQ with comprehensive metadata headers (`x-original-topic`, `x-error-message`, `x-is-poison-pill`, `x-attempt-count`). Offsets commit cleanly, preventing consumer partition stalls.
+- **Transactional Outbox Pattern:** Services performing dual writes (e.g. `order-service` saving an order in MongoDB and publishing `order.created` to Kafka) persist the event to an `OutboxEvent` collection within the same ACID transaction. An optimistic fast-path publishes immediately, while a background sweeper running every 5 seconds reclaims unpublished events via atomic lease locks (`lockedUntil`), guaranteeing at-least-once event delivery across network outages or process crashes.
 - **CORS:** each service allow-lists the specific frontend origins it serves
   (`client` :3002, `admin` :3003).
 - **Error shape:** `{ message }` JSON with correct status codes; a global error handler

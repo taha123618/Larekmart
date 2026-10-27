@@ -42,12 +42,13 @@ Current helper surface is intentionally small. Expose helpers, not raw clients.
   for its containerized single-broker setup. Note the local brokers are still bound
   to `127.0.0.1` only: do not re-publish them on `0.0.0.0` without SASL/SCRAM + ACLs.
 
-## Error handling
+## Error handling & Dead-Letter Queue (DLQ)
 
-- The consumer wrapper catches per-message errors and logs them so one bad message does not
-  kill the consumer loop.
-- There is no dead-letter topic or retry policy yet; treat handler failures as observable,
-  not fatal.
+- `createConsumer` implements automated retry and Dead-Letter Queue routing by default (`ConsumerRetryOptions`):
+  - **Poison-Pill Fast-Fail**: Non-transient errors (such as `SyntaxError` on malformed JSON or `ZodError` schema validation failures) bypass retries and route directly to `<topic>.dlq` on attempt 1.
+  - **Exponential Backoff**: Transient handler errors retry up to `maxRetries` (default 3) with exponential backoff (default 1s, 2s, 4s).
+  - **Terminal DLQ Routing**: If retries are exhausted, the message is dispatched to `<topic>.dlq` with failure metadata headers (`x-original-topic`, `x-original-partition`, `x-original-offset`, `x-consumer-group`, `x-error-message`, `x-attempt-count`, `x-is-poison-pill`, `x-failed-at`), and the partition offset is committed so partition consumption is not blocked.
+  - An embedded lazy producer is managed automatically per consumer instance and cleanly disconnected on shutdown.
 
 ## What not to do
 
@@ -58,6 +59,10 @@ Current helper surface is intentionally small. Expose helpers, not raw clients.
 
 ## Verification
 
+```bash
+pnpm --filter @repo/kafka check-types
+pnpm --filter @repo/kafka test
+```
 - `pnpm --filter @repo/kafka check-types`
 - Start local Kafka and run a producer/consumer against it; inspect topics in Kafka UI
   at `:8080`.

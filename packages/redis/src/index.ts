@@ -61,6 +61,20 @@ export type { CacheReadResult, CacheReadStatus } from "./cache.js";
 export { createKeyBuilder } from "./key-builder.js";
 export type { KeyBuilder } from "./key-builder.js";
 
+// Idempotency engine
+export {
+  acquireIdempotencyLock,
+  commitIdempotencyResponse,
+  releaseIdempotencyLock,
+} from "./idempotency.js";
+export type {
+  IdempotencyState,
+  IdempotentResponse,
+  StoredIdempotencyRecord,
+  AcquireLockResult,
+  IdempotencyOptions,
+} from "./idempotency.js";
+
 // Shared types
 export type {
   RedisClientConfig,

@@ -74,6 +74,15 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 - If you change a payload, update the producer, every consumer, `@repo/types`, and
   `docs/EVENT-DRIVEN-ARCHITECTURE.md` together.
 
+## Distributed Idempotency Key Engine
+
+- State-mutating routes (such as `POST /orders/cod`) are wrapped with `executeWithIdempotency` (`src/middleware/idempotency.ts`).
+- Respects the IETF `Idempotency-Key` header.
+- Uses atomic Redis locking (`acquireIdempotencyLock` / `commitIdempotencyResponse` from `@repo/redis`):
+  - In-flight execution sets atomic lease lock; concurrent duplicates receive `409 Conflict`.
+  - Completed execution caches `{ statusCode, body }` with 24h TTL; subsequent retries transparently replay the response with `Idempotent-Replayed: true` without duplicating database writes or Kafka events.
+  - Handler errors release the lock, allowing legitimate retries.
+
 ## Error handling
 
 - Return `{ message }` JSON with the correct status.
@@ -95,5 +104,5 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 ## Verification
 
 - `pnpm --filter order-service check-types`
+- `pnpm --filter order-service test` (runs `order-security`, `checkout-saga`, `transactional-outbox`, and `idempotency` test suites)
 - Manual flows against running MongoDB + Kafka.
-- No general JavaScript test runner exists yet; verify this service with its type-check and manual MongoDB/Kafka flows.

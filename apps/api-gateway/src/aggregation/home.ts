@@ -3,6 +3,7 @@ import { services } from "../gateway/service-registry.js";
 import { logger } from "../observability/logger.js";
 import { GATEWAY_HEADERS } from "@repo/types";
 import { env } from "../config/env.js";
+import { singleFlight } from "../resilience/singleflight.js";
 
 async function fetchWithTimeout(
   url: string,
@@ -48,26 +49,45 @@ export const homeAggregationRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
-    // Concurrent read aggregation with 2.5s bounded timeout to prevent fan-out latency
+    // Concurrent read aggregation with SingleFlight coalescing to prevent fan-out storms
     const [featuredProductsResult, categoriesResult, recommendationsResult] =
       await Promise.allSettled([
-        fetchWithTimeout(
-          `${services.catalog.url}/api/v1/catalog/featured`,
-          2500,
-          outboundHeaders,
+        singleFlight.do(
+          "home:catalog:featured",
+          () =>
+            fetchWithTimeout(
+              `${services.catalog.url}/api/v1/catalog/featured`,
+              2500,
+              outboundHeaders,
+            ),
+          { label: "home-featured", timeoutMs: 3000 },
         ),
-        fetchWithTimeout(
-          `${services.catalog.url}/api/v1/catalog/categories`,
-          2500,
-          outboundHeaders,
+        singleFlight.do(
+          "home:catalog:categories",
+          () =>
+            fetchWithTimeout(
+              `${services.catalog.url}/api/v1/catalog/categories`,
+              2500,
+              outboundHeaders,
+            ),
+          { label: "home-categories", timeoutMs: 3000 },
         ),
-        fetchWithTimeout(
-          userId
-            ? `${services.recommendation.url}/api/v1/recommendations/personalized?userId=${encodeURIComponent(userId)}`
-            : `${services.recommendation.url}/api/v1/recommendations/trending`,
-          2000,
-          outboundHeaders,
-        ),
+        userId
+          ? fetchWithTimeout(
+              `${services.recommendation.url}/api/v1/recommendations/personalized?userId=${encodeURIComponent(userId)}`,
+              2000,
+              outboundHeaders,
+            )
+          : singleFlight.do(
+              "home:recommendations:trending",
+              () =>
+                fetchWithTimeout(
+                  `${services.recommendation.url}/api/v1/recommendations/trending`,
+                  2000,
+                  outboundHeaders,
+                ),
+              { label: "home-trending-recommendations", timeoutMs: 2500 },
+            ),
       ]);
 
     const featured =

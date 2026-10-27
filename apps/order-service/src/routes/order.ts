@@ -17,6 +17,7 @@ import {
   setCachedOrderChart,
 } from "../cache/order-chart-cache";
 import { dispatchViaOutbox } from "../outbox/outbox-relay.js";
+import { executeWithIdempotency } from "../middleware/idempotency.js";
 
 /**
  * Resolves server-authoritative unit prices (in paisa) for COD line items.
@@ -182,81 +183,92 @@ export const orderRoute = async (fastify: FastifyInstance) => {
 
       const body = parsed.data;
 
-      // Price integrity: every line item is priced from the product database
-      // and the total is recomputed server-side. The client-declared amount is
-      // a cross-check only — a mismatch is rejected with 409, and an unknown
-      // productId fails before any order is written.
-      let serverPrices: Map<number, number>;
-      try {
-        serverPrices = await getServerProductPricesPaisa(
-          body.products.map((product) => product.productId),
-        );
-      } catch {
-        return reply.status(502).send({
-          message: "Unable to verify product prices, please retry shortly",
-        });
-      }
+      return executeWithIdempotency(
+        request,
+        reply,
+        async () => {
+          // Price integrity: every line item is priced from the product database
+          // and the total is recomputed server-side. The client-declared amount is
+          // a cross-check only — a mismatch is rejected with 409, and an unknown
+          // productId fails before any order is written.
+          let serverPrices: Map<number, number>;
+          try {
+            serverPrices = await getServerProductPricesPaisa(
+              body.products.map((product) => product.productId),
+            );
+          } catch {
+            const err = new Error(
+              "Unable to verify product prices, please retry shortly",
+            );
+            (err as any).statusCode = 502;
+            throw err;
+          }
 
-      const missingProduct = body.products.find(
-        (product) => !serverPrices.has(product.productId),
+          const missingProduct = body.products.find(
+            (product) => !serverPrices.has(product.productId),
+          );
+          if (missingProduct) {
+            const err = new Error("Order contains an unknown product");
+            (err as any).statusCode = 409;
+            throw err;
+          }
+
+          const serverAmount = computeCodOrderTotalPaisa(body, serverPrices);
+          if (serverAmount !== body.amount) {
+            const err = new Error(
+              "Declared amount does not match server-computed total",
+            );
+            (err as any).statusCode = 409;
+            throw err;
+          }
+
+          const newOrder = new Order({
+            userId: request.userId,
+            email: body.email,
+            amount: serverAmount,
+            taxAmount: body.taxTotal ?? 0,
+            taxCalculationId: body.taxCalculationId || null,
+            status: "success",
+            paymentMethod: "cod",
+            isCod: true,
+            carrier: body.carrier || "custom",
+            shippingAddress: body.shippingAddress,
+            products: body.products.map((product) => ({
+              name: String(product.productId),
+              quantity: product.quantity,
+              price: serverPrices.get(product.productId) ?? 0,
+            })),
+          });
+
+          const saved = await newOrder.save();
+          logger.info(`COD Order created with ID: ${saved._id}`);
+
+          // Dispatch order.created via Transactional Outbox
+          await dispatchViaOutbox("order.created", {
+            orderId: saved._id.toString(),
+            userId: saved.userId,
+            reservationId: body.reservationId || null,
+            couponCode: body.couponCode || null,
+            taxCalculationId: body.taxCalculationId || null,
+            taxAmount: body.taxTotal ?? 0,
+            email: saved.email,
+            amount: saved.amount,
+            status: saved.status,
+            paymentMethod: "cod",
+            isCod: true,
+            codAmount: saved.amount,
+            codFee: body.codFee ?? 0,
+            carrier: body.carrier || "custom",
+            serviceType: body.serviceType || "standard",
+            shippingRateAmount: body.shippingRateAmount ?? 0,
+            shippingAddress: body.shippingAddress,
+            products: saved.products,
+          });
+
+          return { statusCode: 201, data: saved };
+        },
+        { prefix: "order:cod:" },
       );
-      if (missingProduct) {
-        return reply.status(409).send({
-          message: "Order contains an unknown product",
-        });
-      }
-
-      const serverAmount = computeCodOrderTotalPaisa(body, serverPrices);
-      if (serverAmount !== body.amount) {
-        return reply.status(409).send({
-          message: "Declared amount does not match server-computed total",
-        });
-      }
-
-      const newOrder = new Order({
-        userId: request.userId,
-        email: body.email,
-        amount: serverAmount,
-        taxAmount: body.taxTotal ?? 0,
-        taxCalculationId: body.taxCalculationId || null,
-        status: "success",
-        paymentMethod: "cod",
-        isCod: true,
-        carrier: body.carrier || "custom",
-        shippingAddress: body.shippingAddress,
-        products: body.products.map((product) => ({
-          name: String(product.productId),
-          quantity: product.quantity,
-          price: serverPrices.get(product.productId) ?? 0,
-        })),
-      });
-
-      const saved = await newOrder.save();
-      logger.info(`COD Order created with ID: ${saved._id}`);
-
-      // Dispatch order.created via Transactional Outbox
-      await dispatchViaOutbox("order.created", {
-        orderId: saved._id.toString(),
-        userId: saved.userId,
-        reservationId: body.reservationId || null,
-        couponCode: body.couponCode || null,
-        taxCalculationId: body.taxCalculationId || null,
-        taxAmount: body.taxTotal ?? 0,
-        email: saved.email,
-        amount: saved.amount,
-        status: saved.status,
-        paymentMethod: "cod",
-        isCod: true,
-        codAmount: saved.amount,
-        codFee: body.codFee ?? 0,
-        carrier: body.carrier || "custom",
-        serviceType: body.serviceType || "standard",
-        shippingRateAmount: body.shippingRateAmount ?? 0,
-        shippingAddress: body.shippingAddress,
-        products: saved.products,
-      });
-
-      return reply.status(201).send(saved);
     },
   );
 

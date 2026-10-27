@@ -894,6 +894,57 @@ Emitted when a seller modifies store branding, tagline, or toggles vacation mode
 - **Producer:** `apps/seller-service/src/routes/seller.routes.ts`
 - **Consumers:** `notification-service`, `analytic-service`.
 
+## Dead-Letter Queue (DLQ) & Poison-Pill Isolation
+
+In distributed event streams, unhandled consumer crashes or infinite reprocessing loops can stall Kafka partitions. `@repo/kafka` embeds an automatic **Poison-Pill Isolation and Dead-Letter Queue (DLQ)** mechanism in `createConsumer`:
+
+```
+Incoming Kafka Message
+       │
+       ▼
+ [JSON.parse] ──(SyntaxError / Malformed)──▶ [Fast-Fail to <topic>.dlq] (Attempt 1)
+       │
+   Valid JSON
+       │
+       ▼
+[topicHandler] ──(Success)──▶ Commit Offset & Record Metrics
+       │
+   (Failure)
+       │
+  Attempts < 3?
+     ├── Yes ──▶ Sleep with Exponential Backoff (1s, 2s, 4s) ──▶ Retry topicHandler
+     └── No  ──▶ Terminal Failure ──▶ Dispatch to <topic>.dlq ──▶ Commit Offset
+```
+
+### Standardized DLQ Headers & Metadata
+
+When a message is dispatched to `<topic>.dlq`, the original payload is wrapped and published with metadata headers:
+
+- `x-original-topic`: Source topic name (e.g. `payment.successful`).
+- `x-original-partition`: Partition number where the message was received.
+- `x-original-offset`: Source offset.
+- `x-consumer-group`: Consumer group ID processing the message.
+- `x-error-message`: Extracted error message.
+- `x-error-name`: Error constructor name (e.g. `SyntaxError`, `ZodError`).
+- `x-error-stack`: Truncated stack trace for auditing.
+- `x-attempt-count`: Total number of processing attempts made before isolation.
+- `x-is-poison-pill`: `"true"` if fast-failed on malformed payload; `"false"` if failed after retries.
+- `x-failed-at`: ISO 8601 timestamp.
+
+### Consumer Retry Configuration
+
+Consumers configure retry and DLQ behavior via `ConsumerRetryOptions`:
+
+```ts
+await consumer.consume(topics, handlers, {
+  enableDlq: true, // Default: true
+  maxRetries: 3, // Default: 3
+  initialRetryDelayMs: 1000, // Default: 1000ms
+  backoffMultiplier: 2, // Default: 2 (1s, 2s, 4s)
+  dlqTopicSuffix: ".dlq", // Default: ".dlq"
+});
+```
+
 ## Adding or changing an event
 
 1. Decide whether the change is additive (new optional field) or breaking (rename,

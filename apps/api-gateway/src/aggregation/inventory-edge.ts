@@ -9,6 +9,7 @@ import { redis } from "../cache/redis.js";
 import { services } from "../gateway/service-registry.js";
 import { env } from "../config/env.js";
 import { logger } from "../observability/logger.js";
+import { singleFlight } from "../resilience/singleflight.js";
 
 async function fetchUpstreamAvailability(
   productId: string,
@@ -102,14 +103,18 @@ export const inventoryEdgeRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      // 2. Fetch from upstream inventory-service
+      // 2. Fetch from upstream inventory-service with SingleFlight protection
       const requestId =
         (request.headers[GATEWAY_HEADERS.REQUEST_ID] as string) ||
         String(request.id);
-      const upstream = await fetchUpstreamAvailability(
-        productId,
-        variantId,
-        requestId,
+      const flightKey = `inv:${productId}:${variantId ?? ""}`;
+      const upstream = await singleFlight.do(
+        flightKey,
+        () => fetchUpstreamAvailability(productId, variantId, requestId),
+        {
+          label: "inventory-availability",
+          timeoutMs: services.inventory.timeoutMs || 4000,
+        },
       );
 
       if (!upstream) {

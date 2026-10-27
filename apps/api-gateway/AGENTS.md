@@ -12,7 +12,8 @@ It handles cross-cutting concerns:
 - Clerk JWT authentication and session claim extraction (`@clerk/fastify`)
 - Internal trusted header injection (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-is-super-admin`, `x-user-can-manage-sellers`) executed strictly _after_ stripping untrusted headers
 - Distributed rate limiting with Redis fallback (`@fastify/rate-limit`)
-- Unified error formatting and upstream timeout handling
+- In-flight request coalescing (`SingleFlightGroup`) protecting against Thundering Herd and Cache Stampedes on high-velocity read/aggregation endpoints
+- Unified error formatting, circuit breakers, and upstream timeout handling
 - Prometheus telemetry & structured JSON logging (`@repo/monitoring`)
 
 It intentionally contains **no business domain logic**, database queries, or Kafka consumers.

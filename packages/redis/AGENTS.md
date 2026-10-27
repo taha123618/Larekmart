@@ -14,6 +14,7 @@ Scope rules for AI coding agents working in this package.
 - **Namespace-versioned bulk invalidation** (`bumpNamespaceVersion`, `getNamespaceVersion`)
 - A **key builder** (`createKeyBuilder`) that owns service key prefixes
 - A **fixed-window rate limiter** (`checkRateLimit`)
+- A **distributed idempotency engine** (`acquireIdempotencyLock`, `commitIdempotencyResponse`, `releaseIdempotencyLock`)
 - The re-exported ioredis `Redis` client type
 
 ## 2. What belongs here
