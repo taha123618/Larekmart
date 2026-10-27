@@ -1,4 +1,7 @@
 import { Cart, ProcessedEvent } from "@repo/cart-db";
+import { cacheSet } from "@repo/redis";
+import { type StockAvailabilityCache, buildStockCacheKey } from "@repo/types";
+import { redis } from "../utils/redis.js";
 import { logger } from "../observability/metrics.js";
 import { invalidateCartCache } from "../cache/cart-cache.js";
 
@@ -14,6 +17,22 @@ export const handleInventoryAdjusted = async (
 ): Promise<void> => {
   const { productId, availableQuantity } = payload;
   if (!productId || typeof availableQuantity !== "number") return;
+
+  // Immediately update Redis stock cache for sub-millisecond cart checks
+  const cacheKey = buildStockCacheKey(productId, payload.variantId);
+  const stockPayload: StockAvailabilityCache = {
+    productId: Number(productId) || 0,
+    variantId: payload.variantId ?? null,
+    availableQuantity,
+    status:
+      availableQuantity === 0
+        ? "OUT_OF_STOCK"
+        : availableQuantity <= 5
+          ? "LOW_STOCK"
+          : "IN_STOCK",
+    updatedAt: new Date().toISOString(),
+  };
+  await cacheSet(redis.client, cacheKey, stockPayload, 900).catch(() => {});
 
   const eventId = `inv_adj_${productId}_${Date.now()}`;
   const existing = await ProcessedEvent.findOne({ eventId });

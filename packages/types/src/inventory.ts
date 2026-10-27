@@ -128,3 +128,21 @@ export interface InventoryReservationFailedPayload {
   details?: string;
   occurredAt: string;
 }
+
+export interface StockAvailabilityCache {
+  productId: number;
+  variantId?: string | null;
+  availableQuantity: number;
+  status: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+  updatedAt: string;
+}
+
+export function buildStockCacheKey(
+  productId: number | string,
+  variantId?: string | null,
+): string {
+  if (variantId && variantId !== "all") {
+    return `stock:product:${productId}:variant:${variantId}`;
+  }
+  return `stock:product:${productId}`;
+}

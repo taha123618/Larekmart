@@ -2,9 +2,11 @@ import {
   bumpNamespaceVersion,
   cacheRead,
   cacheSet,
+  cacheDel,
   getNamespaceVersion,
 } from "@repo/redis";
 import type { InventoryItem } from "@repo/inventory-db";
+import { type StockAvailabilityCache, buildStockCacheKey } from "@repo/types";
 import { cacheMetrics } from "../observability/metrics.js";
 import {
   inventoryCacheTtlSeconds,
@@ -70,10 +72,69 @@ export async function writeAvailability(
     availability,
     inventoryCacheTtlSeconds,
   );
+
+  // Synchronize centralized cross-service Redis key for cart-service & gateway edge
+  try {
+    const centralizedKey = buildStockCacheKey(
+      availability.productId,
+      availability.variantId,
+    );
+    const stockPayload: StockAvailabilityCache = {
+      productId: availability.productId,
+      variantId: availability.variantId ?? null,
+      availableQuantity: availability.availableQuantity,
+      status:
+        availability.availableQuantity === 0
+          ? "OUT_OF_STOCK"
+          : availability.availableQuantity <= 5
+            ? "LOW_STOCK"
+            : "IN_STOCK",
+      updatedAt: new Date().toISOString(),
+    };
+    await cacheSet(redis.client, centralizedKey, stockPayload, 900); // 15-minute rolling TTL
+  } catch {
+    // Non-blocking degradation
+  }
 }
 
-export async function invalidateInventoryCache(): Promise<void> {
+export async function writeCentralizedStockCache(
+  productId: number,
+  availableQuantity: number,
+  variantId?: string | null,
+): Promise<void> {
+  try {
+    const centralizedKey = buildStockCacheKey(productId, variantId);
+    const stockPayload: StockAvailabilityCache = {
+      productId,
+      variantId: variantId ?? null,
+      availableQuantity,
+      status:
+        availableQuantity === 0
+          ? "OUT_OF_STOCK"
+          : availableQuantity <= 5
+            ? "LOW_STOCK"
+            : "IN_STOCK",
+      updatedAt: new Date().toISOString(),
+    };
+    await cacheSet(redis.client, centralizedKey, stockPayload, 900);
+  } catch {
+    // Non-blocking degradation
+  }
+}
+
+export async function invalidateInventoryCache(
+  productId?: number,
+  variantId?: string,
+): Promise<void> {
   await bumpNamespaceVersion(redis.client, versionKey, namespaceFallback);
+  if (productId) {
+    try {
+      const centralizedKey = buildStockCacheKey(productId, variantId);
+      await cacheDel(redis.client, centralizedKey);
+    } catch {
+      // Non-blocking
+    }
+  }
 }
 
 export function availabilityFromItems(

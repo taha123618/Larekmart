@@ -10,6 +10,7 @@ import { livenessHandler } from "./health/live.js";
 import { readinessHandler } from "./health/ready.js";
 import { registerProxyRoutes } from "./gateway/proxy.js";
 import { homeAggregationRoutes } from "./aggregation/home.js";
+import { inventoryEdgeRoutes } from "./aggregation/inventory-edge.js";
 import {
   metrics,
   gatewayRequestsTotal,
@@ -85,8 +86,9 @@ export async function buildApp(): Promise<FastifyInstance> {
       .send(metrics.toPrometheus());
   });
 
-  // 9. Aggregation Routes (Read-only bounded home aggregations)
+  // 9. Aggregation & Edge Cache Routes
   await app.register(homeAggregationRoutes);
+  await app.register(inventoryEdgeRoutes);
 
   // 10. Register Microservice Proxy Upstreams
   await registerProxyRoutes(app);

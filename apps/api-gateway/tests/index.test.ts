@@ -4,6 +4,7 @@ import { runRetryTests } from "./unit/retry.test.js";
 import { runAuthTests } from "./auth/auth.test.js";
 import { runSecurityTests } from "./security/security.test.js";
 import { runHealthIntegrationTests } from "./integration/health.test.js";
+import { runInventoryEdgeTests } from "./integration/inventory-edge.test.js";
 
 async function main() {
   console.log("=================================================");
@@ -19,6 +20,7 @@ async function main() {
     await runAuthTests();
     await runSecurityTests();
     await runHealthIntegrationTests();
+    await runInventoryEdgeTests();
 
     const elapsed = Date.now() - start;
     console.log("\n=================================================");
