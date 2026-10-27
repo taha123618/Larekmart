@@ -34,6 +34,7 @@ const fetchClientSecret = async (
   reservationId?: string,
   taxCalculationId?: string,
   taxAmount?: number,
+  expiresAt?: string,
 ): Promise<string> => {
   const paymentServiceUrl =
     process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL ||
@@ -52,6 +53,7 @@ const fetchClientSecret = async (
         reservationId,
         taxCalculationId,
         taxAmount,
+        expiresAt,
       }),
       headers: {
         "Content-Type": "application/json",
@@ -133,6 +135,7 @@ const StripePaymentForm = ({
           undefined,
           taxCalculationId,
           taxAmount,
+          serverCart?.expiresAt,
         );
         return secret;
       } catch (err: unknown) {
@@ -151,6 +154,7 @@ const StripePaymentForm = ({
     serverCart?.id,
     serverCart?.coupons,
     serverCart?.pricing?.discountTotal,
+    serverCart?.expiresAt,
     taxCalculationId,
     taxAmount,
   ]);
