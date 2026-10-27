@@ -118,9 +118,10 @@ export class ValidationService {
       }
 
       const data = (await res.json()) as any;
+      const payload = data?.data ?? data;
       const totalAvailable =
-        typeof data.availableQuantity === "number"
-          ? data.availableQuantity
+        typeof payload?.availableQuantity === "number"
+          ? payload.availableQuantity
           : 999;
 
       // Backfill Redis stock cache for subsequent add-to-cart operations

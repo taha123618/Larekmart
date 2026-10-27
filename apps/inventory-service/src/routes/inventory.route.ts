@@ -276,7 +276,7 @@ inventoryRoute.post("/items", shouldBeAdmin, async (c) => {
     if (!parsed.success) return validationResponse(c, parsed.error);
 
     const item = await createInventoryItem(parsed.data);
-    await invalidateInventoryCache();
+    await invalidateInventoryCache(item.productId, item.variantId);
     await publishItemEvent("inventory.created", item);
     return c.json({ data: item }, 201);
   } catch (error) {
@@ -488,7 +488,10 @@ inventoryRoute.post("/reservations/:id/expire", shouldBeUser, async (c) => {
       c.get("userId"),
     );
     inventoryMetrics.reservationsExpiredTotal.inc();
-    await invalidateInventoryCache();
+    await invalidateInventoryCache(
+      reservation.inventoryItem.productId,
+      reservation.inventoryItem.variantId,
+    );
     await publishItemEvent(
       "inventory.reservation.expired",
       reservation.inventoryItem,
@@ -522,6 +525,17 @@ inventoryRoute.post("/reservations/expire-stale", shouldBeAdmin, async (c) => {
     if (expiredList.length > 0) {
       inventoryMetrics.reservationsExpiredTotal.inc({}, expiredList.length);
       await invalidateInventoryCache();
+      const distinctExpiredProds = new Set<string>();
+      for (const item of expiredList) {
+        const prodKey = `${item.inventoryItem.productId}:${item.inventoryItem.variantId ?? ""}`;
+        if (!distinctExpiredProds.has(prodKey)) {
+          distinctExpiredProds.add(prodKey);
+          await invalidateInventoryCache(
+            item.inventoryItem.productId,
+            item.inventoryItem.variantId,
+          );
+        }
+      }
       for (const item of expiredList) {
         await publishItemEvent(
           "inventory.reservation.expired",

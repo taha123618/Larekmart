@@ -38,7 +38,15 @@ async function fetchUpstreamAvailability(
       return null;
     }
 
-    return (await res.json()) as { availableQuantity: number; status?: string };
+    const body = (await res.json()) as any;
+    const payload = body?.data ?? body;
+    return {
+      availableQuantity:
+        typeof payload?.availableQuantity === "number"
+          ? payload.availableQuantity
+          : 0,
+      status: payload?.status,
+    };
   } catch (err) {
     logger.warn("Upstream inventory-service availability query failed", {
       productId,
@@ -74,6 +82,12 @@ export const inventoryEdgeRoutes: FastifyPluginAsync = async (fastify) => {
         if (cached.status === "hit" && cached.value) {
           reply.header("X-Cache", "HIT");
           return reply.send({
+            data: {
+              productId: cached.value.productId,
+              variantId: cached.value.variantId,
+              availableQuantity: cached.value.availableQuantity,
+              status: cached.value.status,
+            },
             productId: cached.value.productId,
             variantId: cached.value.variantId,
             availableQuantity: cached.value.availableQuantity,
@@ -129,6 +143,12 @@ export const inventoryEdgeRoutes: FastifyPluginAsync = async (fastify) => {
 
       reply.header("X-Cache", "MISS");
       return reply.send({
+        data: {
+          productId: stockPayload.productId,
+          variantId: stockPayload.variantId,
+          availableQuantity: stockPayload.availableQuantity,
+          status: stockPayload.status,
+        },
         ...stockPayload,
         source: "inventory-service",
       });

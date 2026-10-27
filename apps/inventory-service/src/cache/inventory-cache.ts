@@ -73,27 +73,29 @@ export async function writeAvailability(
     inventoryCacheTtlSeconds,
   );
 
-  // Synchronize centralized cross-service Redis key for cart-service & gateway edge
-  try {
-    const centralizedKey = buildStockCacheKey(
-      availability.productId,
-      availability.variantId,
-    );
-    const stockPayload: StockAvailabilityCache = {
-      productId: availability.productId,
-      variantId: availability.variantId ?? null,
-      availableQuantity: availability.availableQuantity,
-      status:
-        availability.availableQuantity === 0
-          ? "OUT_OF_STOCK"
-          : availability.availableQuantity <= 5
-            ? "LOW_STOCK"
-            : "IN_STOCK",
-      updatedAt: new Date().toISOString(),
-    };
-    await cacheSet(redis.client, centralizedKey, stockPayload, 900); // 15-minute rolling TTL
-  } catch {
-    // Non-blocking degradation
+  // Synchronize centralized cross-service Redis key for cart-service & gateway edge (only when global availability across all warehouses)
+  if (!availability.warehouseId) {
+    try {
+      const centralizedKey = buildStockCacheKey(
+        availability.productId,
+        availability.variantId,
+      );
+      const stockPayload: StockAvailabilityCache = {
+        productId: availability.productId,
+        variantId: availability.variantId ?? null,
+        availableQuantity: availability.availableQuantity,
+        status:
+          availability.availableQuantity === 0
+            ? "OUT_OF_STOCK"
+            : availability.availableQuantity <= 5
+              ? "LOW_STOCK"
+              : "IN_STOCK",
+        updatedAt: new Date().toISOString(),
+      };
+      await cacheSet(redis.client, centralizedKey, stockPayload, 900); // 15-minute rolling TTL
+    } catch {
+      // Non-blocking degradation
+    }
   }
 }
 

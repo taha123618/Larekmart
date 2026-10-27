@@ -47,6 +47,11 @@ export async function runInventoryEdgeTests() {
       "Must return cached available quantity",
     );
     assert.strictEqual(
+      hitBody.data?.availableQuantity,
+      42,
+      "Must return data.availableQuantity for client storefront compatibility",
+    );
+    assert.strictEqual(
       hitBody.source,
       "edge-cache",
       "Source must indicate edge-cache",

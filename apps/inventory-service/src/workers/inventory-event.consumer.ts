@@ -79,6 +79,17 @@ export async function startInventoryEventConsumer(): Promise<void> {
               confirmed.length,
             );
             await invalidateInventoryCache();
+            const seenConfirmedProds = new Set<string>();
+            for (const item of confirmed) {
+              const k = `${item.inventoryItem.productId}:${item.inventoryItem.variantId ?? ""}`;
+              if (!seenConfirmedProds.has(k)) {
+                seenConfirmedProds.add(k);
+                await invalidateInventoryCache(
+                  item.inventoryItem.productId,
+                  item.inventoryItem.variantId,
+                );
+              }
+            }
 
             for (const item of confirmed) {
               try {
@@ -235,6 +246,17 @@ export async function startInventoryEventConsumer(): Promise<void> {
 
           if (released.length > 0) {
             await invalidateInventoryCache();
+            const seenReleasedProds = new Set<string>();
+            for (const item of released) {
+              const k = `${item.inventoryItem.productId}:${item.inventoryItem.variantId ?? ""}`;
+              if (!seenReleasedProds.has(k)) {
+                seenReleasedProds.add(k);
+                await invalidateInventoryCache(
+                  item.inventoryItem.productId,
+                  item.inventoryItem.variantId,
+                );
+              }
+            }
             logger.info(
               `Successfully released ${released.length} reservation(s) via saga compensation for: ${refId}`,
             );
@@ -269,6 +291,17 @@ export async function startInventoryEventConsumer(): Promise<void> {
 
           if (released.length > 0) {
             await invalidateInventoryCache();
+            const seenOrderCancelledProds = new Set<string>();
+            for (const item of released) {
+              const k = `${item.inventoryItem.productId}:${item.inventoryItem.variantId ?? ""}`;
+              if (!seenOrderCancelledProds.has(k)) {
+                seenOrderCancelledProds.add(k);
+                await invalidateInventoryCache(
+                  item.inventoryItem.productId,
+                  item.inventoryItem.variantId,
+                );
+              }
+            }
             logger.info(
               `Released ${released.length} reservation(s) following order.cancelled for: ${refId}`,
             );
