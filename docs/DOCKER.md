@@ -10,21 +10,22 @@ This document is the comprehensive operations manual for building, running, moni
 2. [Infrastructure Directory Layout](#2-infrastructure-directory-layout)
 3. [Network & Port Allocations](#3-network--port-allocations)
 4. [Edge Ingress & Reverse-Proxy Architecture](#4-edge-ingress--reverse-proxy-architecture)
-5. [Quick Start Commands](#5-quick-start-commands)
-6. [Horizontal Autoscaling & WebSocket Scaling](#6-horizontal-autoscaling--websocket-scaling)
-7. [Development & Maintenance Operations](#7-development--maintenance-operations)
-8. [Database Migrations & Initial Setup](#8-database-migrations--initial-setup)
-9. [Troubleshooting](#9-troubleshooting)
-10. [Observability Stack](#10-observability-stack)
-11. [Kubernetes Deployment](#11-kubernetes-deployment)
-12. [Container Security, Hardening & Docker Scout Workflow](#12-container-security-hardening--docker-scout-workflow)
-    - [12.1 Image Hardening Philosophy & Standards](#121-image-hardening-philosophy--standards)
-    - [12.2 Complete Project Image Inventory & Hardening Matrix](#122-complete-project-image-inventory--hardening-matrix)
-    - [12.3 Docker Scout Verification Workflow](#123-docker-scout-verification-workflow)
-    - [12.4 Production Readiness Gate & Vulnerability SLA](#124-production-readiness-gate--vulnerability-sla)
-    - [12.5 Repeatable Automated Verification & CI/CD](#125-repeatable-automated-verification--cicd)
-    - [12.6 Known Vulnerabilities, Exceptions & Mitigation Register (VEX)](#126-known-vulnerabilities-exceptions--mitigation-register-vex)
-    - [12.7 Developer Runbook: Introducing or Updating an Image](#127-developer-runbook-introducing-or-updating-an-image)
+5. [Microservice Resource Limits & Anti-Starvation Profiles](#5-microservice-resource-limits--anti-starvation-profiles)
+6. [Kafka Cluster & Advertised Listener Resolution](#6-kafka-cluster--advertised-listener-resolution)
+7. [Quick Start Commands](#7-quick-start-commands)
+8. [Development & Maintenance Operations](#8-development--maintenance-operations)
+9. [Database Migrations & Initial Setup](#9-database-migrations--initial-setup)
+10. [Troubleshooting](#10-troubleshooting)
+11. [Observability Stack](#11-observability-stack)
+12. [Kubernetes Deployment](#12-kubernetes-deployment)
+13. [Container Security, Hardening & Docker Scout Workflow](#13-container-security-hardening--docker-scout-workflow)
+    - [13.1 Image Hardening Philosophy & Standards](#131-image-hardening-philosophy--standards)
+    - [13.2 Complete Project Image Inventory & Hardening Matrix](#132-complete-project-image-inventory--hardening-matrix)
+    - [13.3 Docker Scout Verification Workflow](#133-docker-scout-verification-workflow)
+    - [13.4 Production Readiness Gate & Vulnerability SLA](#134-production-readiness-gate--vulnerability-sla)
+    - [13.5 Repeatable Automated Verification & CI/CD](#135-repeatable-automated-verification--cicd)
+    - [13.6 Known Vulnerabilities, Exceptions & Mitigation Register (VEX)](#136-known-vulnerabilities-exceptions--mitigation-register-vex)
+    - [13.7 Developer Runbook: Introducing or Updating an Image](#137-developer-runbook-introducing-or-updating-an-image)
 
 ---
 
@@ -149,7 +150,67 @@ docker/
 
 ---
 
-## 4. Quick Start Commands
+## 4. Edge Ingress & Reverse-Proxy Architecture
+
+Larekmart deploys **Traefik v3** (`docker-compose.traefik.yml` and `docker-compose.yml`) as its authoritative edge ingress controller. All external internet traffic terminates TLS at Traefik before dispatching to frontends or the centralized Fastify API Gateway.
+
+### 4.1 Traefik Router Priority Hierarchy
+
+To eliminate route collisions where Next.js dynamic catch-all pages (`[[...slug]]`) intercept API calls or WebSocket upgrades, explicit Traefik router priorities are enforced:
+
+| Router                   | Priority | Matching Rule                                                                                                                           | Target Service       | Middlewares                                                                          |
+| :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------- | :------------------- | :----------------------------------------------------------------------------------- |
+| **`api-gateway-ws`**     | `120`    | `PathPrefix(/ws)` across all domains                                                                                                    | `api-gateway` (8090) | Sticky session cookie (`ws-affinity`) for real-time WebSocket connection persistence |
+| **`api-gateway-direct`** | `110`    | `Host(api.localhost) && PathPrefix(/v1)`                                                                                                | `api-gateway` (8090) | `add-api-prefix` (prepends `/api` to normalize path to `/api/v1/*`)                  |
+| **`api-gateway`**        | `100`    | `Host(api.localhost) \|\| PathPrefix(/api) \|\| PathPrefix(/notifications) \|\| PathPrefix(/user-orders) \|\| PathPrefix(/order-chart)` | `api-gateway` (8090) | Ingress rate limiting, gzip compression, security headers                            |
+| **`admin`**              | `60`     | `Host(admin.localhost)`                                                                                                                 | `admin` (3003)       | Next.js admin dashboard UI                                                           |
+| **`client`**             | `50`     | `Host(shop.localhost) \|\| Host(larekmart.localhost) \|\| Host(localhost)`                                                              | `client` (3002)      | Next.js storefront customer UI                                                       |
+
+### 4.2 Unified Storefront Client Environment
+
+Rather than requiring static build arguments pointing individual microservices to separate local ports, both Next.js frontends point uniformly to:
+
+```env
+NEXT_PUBLIC_API_GATEWAY_URL=http://localhost:8090
+```
+
+All 23 individual microservice endpoints (`NEXT_PUBLIC_*_SERVICE_URL`) are treated as optional overrides that automatically default to `NEXT_PUBLIC_API_GATEWAY_URL`. Traefik and Fastify dynamically route sub-paths without forcing Next.js rebuilds when backend service topology changes.
+
+---
+
+## 5. Microservice Resource Limits & Anti-Starvation Profiles
+
+To prevent stateful datastores and 23 concurrent microservices from competing greedily for host memory and triggering the Linux Out-Of-Memory (OOM) killer, `docker-compose.yml` standardizes resource boundaries using 6 reusable YAML extension profiles:
+
+| Profile Anchor          | CPU Limit | Memory Limit | CPU Reservation | Memory Reservation | Assigned Workspaces                                                                                                                                                 |
+| :---------------------- | :-------- | :----------- | :-------------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `x-microservice-deploy` | `0.50`    | `512M`       | `0.10`          | `128M`             | Standard microservices: Auth, Order, Payment, Product, Catalog, Inventory, User, Shipping, Media, Review, Wishlist, Promotion, Tax, Return, Pricing, Vendor, Seller |
+| `x-heavy-deploy`        | `1.00`    | `1024M`      | `0.20`          | `256M`             | Heavy workloads: `recommendation-service` (pgvector), `api-gateway`, `client`, `admin`, `mongo`, Kafka Brokers 1–3                                                  |
+| `x-database-deploy`     | `1.50`    | `1536M`      | `0.25`          | `512M`             | Primary stateful engines: `postgres` & `opensearch`                                                                                                                 |
+| `x-search-deploy`       | `0.75`    | `768M`       | `0.15`          | `256M`             | Indexing & isolated relational nodes: `search-service`, `postgres-analytics`, `mysql` (Tax DB), `mysql-returns` (Return DB)                                         |
+| `x-light-deploy`        | `0.25`    | `256M`       | `0.05`          | `64M`              | Background workers & utilities: `email-service`, `media-cleanup`, `pgbouncer`, `mongo-express`                                                                      |
+| `x-cache-deploy`        | `0.50`    | `512M`       | `0.10`          | `128M`             | In-memory caching & tooling: `redis`, `kafka-ui`                                                                                                                    |
+
+All 41 containers in `docker-compose.yml` inherit these definitions via standard `deploy: *profile-name` anchors, guaranteeing deterministic memory footprints during automated bulk indexing or traffic spikes.
+
+---
+
+## 6. Kafka Cluster & Advertised Listener Resolution
+
+Larekmart runs a highly available 3-broker Apache Kafka cluster operating in KRaft consensus mode (no Zookeeper dependency).
+
+- **Broker Quorum**: `kafka-broker-1` (node 1), `kafka-broker-2` (node 2), `kafka-broker-3` (node 3) form the voter quorum on controller ports `9093`, `29093`, and `39093`.
+- **Topic Durability**: High-throughput business topics require `KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3` and `KAFKA_MIN_INSYNC_REPLICAS: 2`.
+- **Dynamic Host Resolution (`KAFKA_EXTERNAL_HOST`)**:
+  Advertised listeners bind internal traffic to container names (`kafka-broker-1:9092`) while exposing external ports (`9094`, `9095`, `9096`) via:
+  ```yaml
+  KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-1:9092,EXTERNAL://${KAFKA_EXTERNAL_HOST:-localhost}:9094
+  ```
+  When deploying to a remote staging VPS or Kubernetes node, injecting `KAFKA_EXTERNAL_HOST=<remote-ip-or-domain>` guarantees external producers and consumer groups receive reachable broker metadata.
+
+---
+
+## 7. Quick Start Commands
 
 ### Prerequisites
 
@@ -200,7 +261,7 @@ docker compose down -v
 
 ---
 
-## 5. Development & Maintenance Operations
+## 8. Development & Maintenance Operations
 
 ### Viewing Logs
 
@@ -210,7 +271,7 @@ docker compose logs -f
 
 # Follow logs of a specific service
 docker compose logs -f product-service
-docker compose logs -f kafka
+docker compose logs -f kafka-broker-1
 docker compose logs -f order-service
 ```
 
@@ -229,11 +290,11 @@ docker compose ps
 ### Inspecting Kafka Topics via Web UI
 
 Open your browser to:
-[http://localhost:8090](http://localhost:8090)
+[http://localhost:8080](http://localhost:8080) (or `http://kafka.localhost` via Traefik ingress)
 
 ---
 
-## 6. Database Migrations & Initial Setup
+## 9. Database Migrations & Initial Setup
 
 When spinning up PostgreSQL for the first time, `docker/postgres/init-multiple-databases.sh` automatically initializes all required databases:
 
@@ -244,8 +305,16 @@ When spinning up PostgreSQL for the first time, `docker/postgres/init-multiple-d
 - `analytics_db`
 - `larekmart_notification_db`
 - `recommendation_db` (with `CREATE EXTENSION vector;`)
+- `user_db` (`larekmart_user_db`)
+- `media_db`
+- `review_db`
+- `wishlist_db`
+- `promotion_db`
+- `pricing_db`
+- `vendor_db` (`larekmart_vendor_db`)
+- `seller_db`
 
-To run Prisma migrations against the running containerized database:
+To run database migrations against the running containerized databases:
 
 ```bash
 pnpm --filter @repo/product-db db:deploy
@@ -256,6 +325,12 @@ pnpm --filter media-service db:migrate
 pnpm --filter review-service db:migrate
 pnpm --filter wishlist-service db:migrate
 pnpm --filter promotion-service db:migrate
+pnpm --filter tax-service db:migrate
+pnpm --filter return-service db:migrate
+pnpm --filter pricing-service db:migrate
+pnpm --filter seller-service db:migrate
+pnpm --filter @repo/vendor-db db:generate
+pnpm --filter @repo/vendor-db db:migrate
 ```
 
 To seed initial catalog data:
@@ -266,12 +341,13 @@ pnpm --filter @repo/product-db db:seed
 
 ---
 
-## 7. Troubleshooting
+## 10. Troubleshooting
 
 ### 1. Kafka Connection Timeout / Unknown Broker
 
-- Ensure your service uses `KAFKA_BROKERS=kafka:9092` when running inside the Docker network.
-- For host-run processes connecting to the containerized Kafka broker, use `localhost:9094`.
+- Ensure your service uses `KAFKA_BROKERS=kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092` when running inside the Docker network.
+- For host-run processes connecting to the containerized Kafka broker, use `localhost:9094,localhost:9095,localhost:9096`.
+- If connecting from a remote machine or staging host, ensure `KAFKA_EXTERNAL_HOST` is populated with the public IP/hostname.
 
 ### 2. MongoDB Authentication & Connection
 
@@ -292,7 +368,7 @@ pnpm --filter @repo/product-db db:seed
 
 ---
 
-## 8. Observability Stack
+## 11. Observability Stack
 
 The `docker-compose.observability.yml` file provides a complete monitoring and logging solution that attaches to the `larekmart-network` alongside the main stack.
 
@@ -355,7 +431,7 @@ The repository provides three distinct logging and observability tools tailored 
 
 ---
 
-## 9. Kubernetes Deployment
+## 12. Kubernetes Deployment
 
 See `infrastructure/kubernetes/README.md` for the full Kubernetes operations guide.
 
@@ -382,11 +458,11 @@ kubectl get pods,svc,hpa,ingress -n larekmart-dev
 
 ---
 
-## 10. Container Security, Hardening & Docker Scout Workflow
+## 13. Container Security, Hardening & Docker Scout Workflow
 
 To ensure production safety and supply-chain integrity, **all Docker images utilized across Larekmart must adhere to a strict security and hardening workflow**. Base images must be minimized, stripped of unnecessary tooling, scanned with **Docker Scout Quickview**, and hardened before deployment.
 
-### 10.1 Image Hardening Philosophy & Standards
+### 13.1 Image Hardening Philosophy & Standards
 
 Our container security model is built upon five foundational principles:
 
@@ -408,7 +484,7 @@ Our container security model is built upon five foundational principles:
 
 ---
 
-### 10.2 Complete Project Image Inventory & Hardening Matrix
+### 13.2 Complete Project Image Inventory & Hardening Matrix
 
 Every single container image used in the Larekmart platform is cataloged below, along with its current base, hardened target, non-root identity, and verification status:
 
@@ -457,7 +533,7 @@ Every single container image used in the Larekmart platform is cataloged below, 
 
 ---
 
-### 10.3 Docker Scout Verification Workflow
+### 13.3 Docker Scout Verification Workflow
 
 Docker Scout provides continuous vulnerability detection, Software Bill of Materials (SBOM) indexing, and automated remediation suggestions.
 
@@ -532,7 +608,7 @@ docker buildx build \
 
 ---
 
-### 10.4 Production Readiness Gate & Vulnerability SLA
+### 13.4 Production Readiness Gate & Vulnerability SLA
 
 No image may be released to staging or production environments unless it satisfies the following gate policy:
 
@@ -545,7 +621,7 @@ No image may be released to staging or production environments unless it satisfi
 
 ---
 
-### 10.5 Repeatable Automated Verification & CI/CD
+### 13.5 Repeatable Automated Verification & CI/CD
 
 To make vulnerability audits effortless and repeatable for developers and CI/CD pipelines, Larekmart provides an automated audit script:
 
@@ -587,7 +663,7 @@ docker-scout-scan:
 
 ---
 
-### 10.6 Known Vulnerabilities, Exceptions & Mitigation Register (VEX)
+### 13.6 Known Vulnerabilities, Exceptions & Mitigation Register (VEX)
 
 Where an upstream vulnerability cannot currently be remediated due to lack of a released patch or strict binary compatibility constraints, it must be formally documented in this register with compensating controls and a review date:
 
@@ -600,7 +676,7 @@ Where an upstream vulnerability cannot currently be remediated due to lack of a 
 
 ---
 
-### 10.7 Developer Runbook: Introducing or Updating an Image
+### 13.7 Developer Runbook: Introducing or Updating an Image
 
 When adding a new microservice, worker, or updating an existing base image, follow this strict checklist before submitting a pull request:
 

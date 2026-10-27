@@ -58,37 +58,33 @@ export interface CacheServiceTarget {
  * before `.env` is filled in.
  */
 export function getCacheServiceTargets(): CacheServiceTarget[] {
+  const gatewayUrl =
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090";
+
   return [
     {
       service: "search-service",
-      url:
-        process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL ?? "http://localhost:8006",
+      url: process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL || gatewayUrl,
     },
     {
       service: "product-service",
-      url:
-        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ?? "http://localhost:8000",
+      url: process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || gatewayUrl,
     },
     {
       service: "analytic-service",
-      url:
-        process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL ?? "http://localhost:8004",
+      url: process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL || gatewayUrl,
     },
     {
       service: "order-service",
-      url: process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ?? "http://localhost:8001",
+      url: process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || gatewayUrl,
     },
     {
       service: "inventory-service",
-      url:
-        process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ??
-        "http://localhost:8007",
+      url: process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || gatewayUrl,
     },
     {
       service: "recommendation-service",
-      url:
-        process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ??
-        "http://localhost:8008",
+      url: process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL || gatewayUrl,
     },
   ];
 }

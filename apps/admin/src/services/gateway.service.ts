@@ -11,6 +11,14 @@ export const getApiGatewayUrl = (): string => {
 };
 
 /**
+ * Resolves a microservice endpoint with optional environment override,
+ * falling back to the centralized API Gateway URL if the override is omitted.
+ */
+export const getServiceUrl = (serviceEnvValue?: string): string => {
+  return serviceEnvValue || getApiGatewayUrl();
+};
+
+/**
  * Checks API Gateway health status from admin app.
  */
 export async function checkGatewayHealth(): Promise<GatewayHealthResponse | null> {

@@ -260,7 +260,11 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
         └───────────────────────────────────────────────────────────┘
 ```
 
+> **Edge Ingress & Unified Gateway Routing**: Public internet traffic terminates TLS at **Traefik v3** (`docker-compose.traefik.yml`), which enforces strict router priorities (`priority=100` on API gateway vs `priority=50` on storefront) so Next.js catch-all routes never shadow API endpoints or WebSockets. Both frontends compile against a unified gateway variable (`NEXT_PUBLIC_API_GATEWAY_URL: http://localhost:8090`), treating individual microservice URLs as optional overrides to eliminate static build redeployments on routing changes.
+
 > **Zero Trust Perimeter & Event-Driven Core**: Cross-service communication is strictly asynchronous through Kafka events; backend services never make synchronous HTTP calls to one another. All public traffic enters through `api-gateway`, which enforces rate limits, validates Clerk sessions, scrubs spoofed headers, and injects verified identity claims signed with `x-internal-secret`. The gateway boots independently of downstream services, leveraging Opossum circuit breakers for graceful degradation (returning degraded stub payloads for non-critical reads such as reviews, wishlists, and recommendations during outages) while strictly failing closed with structured 503 responses on transactional endpoints. Downstream services verify transport authenticity in constant time and strictly decouple gateway transport secrets from administrative end-user privileges. For deep architectural specifications, see [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) (event schemas), [`SECURITY.md`](SECURITY.md) (perimeter & cryptographic standards), and [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md) (vulnerability analysis & remediation log).
+
+> **Deterministic Anti-Starvation Resource Boundaries**: All 41 service containers in `docker-compose.yml` (23 microservices, 3 Kafka KRaft brokers, OpenSearch, PostgreSQL, and MySQL) enforce granular CPU and RAM limits and reservations (`deploy.resources.limits` & `reservations`) using 6 standardized profiles, preventing host memory starvation and Linux OOM killer termination under peak marketplace loads.
 
 ---
 
@@ -432,6 +436,7 @@ pnpm --filter @repo/product-db db:generate
 pnpm --filter @repo/inventory-db db:generate
 pnpm --filter @repo/catalog-db db:generate
 pnpm --filter @repo/shipping-db db:generate
+pnpm --filter @repo/user-db db:generate
 pnpm --filter media-service db:migrate
 pnpm --filter review-service db:migrate
 pnpm --filter wishlist-service db:migrate
