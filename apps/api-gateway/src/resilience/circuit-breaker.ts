@@ -30,6 +30,9 @@ import {
   gatewayCircuitBreakerOpenTotal,
   gatewayCircuitBreakerSlowCallTripsTotal,
   gatewayCircuitBreakerHalfOpenTotal,
+  gatewayCircuitBreakerState,
+  gatewayCircuitBreakerTripsTotal,
+  gatewayCircuitBreakerCanaryAttemptsTotal,
 } from "../observability/metrics.js";
 import { SlidingWindowMetrics } from "./sliding-window-metrics.js";
 
@@ -54,6 +57,8 @@ export interface CircuitBreakerConfig {
   halfOpenMaxMs?: number;
   /** Consecutive successes required in HALF_OPEN to CLOSE (default 3) */
   successThreshold?: number;
+  /** Max concurrent canary probes permitted in HALF_OPEN (default 2) */
+  canaryConcurrencyLimit?: number;
 }
 
 // ── Internal state per service ────────────────────────────────────────────────
@@ -66,6 +71,8 @@ interface CircuitRecord {
   halfOpenBackoffMs: number;
   /** Consecutive successes recorded in HALF_OPEN */
   consecutiveSuccesses: number;
+  /** Active concurrent canary probes executing in HALF_OPEN */
+  activeCanaryProbes: number;
 }
 
 // ── Jitter helper ─────────────────────────────────────────────────────────────
@@ -89,6 +96,7 @@ export class CircuitBreaker {
   private readonly halfOpenInitialMs: number;
   private readonly halfOpenMaxMs: number;
   private readonly successThreshold: number;
+  private readonly canaryConcurrencyLimit: number;
 
   constructor(config: CircuitBreakerConfig = {}) {
     this.minWindowCalls = config.minWindowCalls ?? 5;
@@ -98,6 +106,7 @@ export class CircuitBreaker {
     this.halfOpenInitialMs = config.halfOpenInitialMs ?? 15_000;
     this.halfOpenMaxMs = config.halfOpenMaxMs ?? 120_000;
     this.successThreshold = config.successThreshold ?? 3;
+    this.canaryConcurrencyLimit = config.canaryConcurrencyLimit ?? 2;
     this.metrics = new SlidingWindowMetrics(config.windowSizeSeconds ?? 10);
   }
 
@@ -111,18 +120,29 @@ export class CircuitBreaker {
         nextAttemptTime: 0,
         halfOpenBackoffMs: this.halfOpenInitialMs,
         consecutiveSuccesses: 0,
+        activeCanaryProbes: 0,
       };
       this.circuits.set(service, record);
+      gatewayCircuitBreakerState.set(0, { service });
     }
     return record;
   }
 
-  private tripToOpen(service: string, record: CircuitRecord, reason: string, forcedRetryAfterMs?: number): void {
-    const backoffMs = forcedRetryAfterMs ?? withJitter(record.halfOpenBackoffMs);
+  private tripToOpen(
+    service: string,
+    record: CircuitRecord,
+    reason: string,
+    forcedRetryAfterMs?: number,
+  ): void {
+    const backoffMs =
+      forcedRetryAfterMs ?? withJitter(record.halfOpenBackoffMs);
     record.state = "OPEN";
     record.nextAttemptTime = Date.now() + backoffMs;
     record.consecutiveSuccesses = 0;
+    record.activeCanaryProbes = 0;
     gatewayCircuitBreakerOpenTotal.inc({ service });
+    gatewayCircuitBreakerTripsTotal.inc({ service, reason });
+    gatewayCircuitBreakerState.set(2, { service });
     logger.warn(`Circuit breaker tripped OPEN for service: ${service}`, {
       service,
       reason,
@@ -133,16 +153,21 @@ export class CircuitBreaker {
   private promoteToHalfOpen(service: string, record: CircuitRecord): void {
     record.state = "HALF_OPEN";
     record.consecutiveSuccesses = 0;
+    record.activeCanaryProbes = 0;
     // Backoff doubles on the NEXT failure in HALF_OPEN, capped at max
     record.halfOpenBackoffMs = Math.min(
       record.halfOpenBackoffMs * 2,
       this.halfOpenMaxMs,
     );
     gatewayCircuitBreakerHalfOpenTotal.inc({ service });
-    logger.info(`Circuit breaker transitioned to HALF_OPEN for service: ${service}`, {
-      service,
-      nextBackoffMs: record.halfOpenBackoffMs,
-    });
+    gatewayCircuitBreakerState.set(1, { service });
+    logger.info(
+      `Circuit breaker transitioned to HALF_OPEN for service: ${service}`,
+      {
+        service,
+        nextBackoffMs: record.halfOpenBackoffMs,
+      },
+    );
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
@@ -164,11 +189,21 @@ export class CircuitBreaker {
 
   /**
    * Returns true if requests should be forwarded to the upstream service.
-   * CLOSED and HALF_OPEN are both considered "available".
+   * CLOSED is available. In HALF_OPEN, enforces canary concurrency gating
+   * (only up to canaryConcurrencyLimit requests pass concurrently).
    */
   public isAvailable(service: string): boolean {
     const state = this.getState(service);
-    return state === "CLOSED" || state === "HALF_OPEN";
+    if (state === "CLOSED") return true;
+    if (state === "OPEN") return false;
+
+    // In HALF_OPEN: concurrency gate to prevent canary stampedes
+    const record = this.getRecord(service);
+    if (record.activeCanaryProbes < this.canaryConcurrencyLimit) {
+      record.activeCanaryProbes++;
+      return true;
+    }
+    return false;
   }
 
   // ── Threshold evaluation ─────────────────────────────────────────────────
@@ -184,10 +219,18 @@ export class CircuitBreaker {
     if (snap.total < this.minWindowCalls) return; // not enough data yet
 
     if (snap.failureRate >= this.failureRateThreshold) {
-      this.tripToOpen(service, record, `failure-rate=${(snap.failureRate * 100).toFixed(1)}%`);
+      this.tripToOpen(
+        service,
+        record,
+        `failure-rate=${(snap.failureRate * 100).toFixed(1)}%`,
+      );
     } else if (snap.slowCallRate >= this.slowCallRateThreshold) {
       gatewayCircuitBreakerSlowCallTripsTotal.inc({ service });
-      this.tripToOpen(service, record, `slow-call-rate=${(snap.slowCallRate * 100).toFixed(1)}%`);
+      this.tripToOpen(
+        service,
+        record,
+        `slow-call-rate=${(snap.slowCallRate * 100).toFixed(1)}%`,
+      );
     }
   }
 
@@ -202,14 +245,23 @@ export class CircuitBreaker {
     this.metrics.record(service, false, latencyMs, this.slowCallThresholdMs);
 
     if (record.state === "HALF_OPEN") {
+      record.activeCanaryProbes = Math.max(0, record.activeCanaryProbes - 1);
+      gatewayCircuitBreakerCanaryAttemptsTotal.inc({
+        service,
+        result: "success",
+      });
       record.consecutiveSuccesses++;
       if (record.consecutiveSuccesses >= this.successThreshold) {
         record.state = "CLOSED";
         // Reset backoff on a clean close
         record.halfOpenBackoffMs = this.halfOpenInitialMs;
         record.consecutiveSuccesses = 0;
+        record.activeCanaryProbes = 0;
+        gatewayCircuitBreakerState.set(0, { service });
         this.metrics.reset(service);
-        logger.info(`Circuit breaker RESET to CLOSED for service: ${service}`, { service });
+        logger.info(`Circuit breaker RESET to CLOSED for service: ${service}`, {
+          service,
+        });
       }
       return;
     }
@@ -230,6 +282,11 @@ export class CircuitBreaker {
     this.metrics.record(service, true, latencyMs, this.slowCallThresholdMs);
 
     if (record.state === "HALF_OPEN") {
+      record.activeCanaryProbes = Math.max(0, record.activeCanaryProbes - 1);
+      gatewayCircuitBreakerCanaryAttemptsTotal.inc({
+        service,
+        result: "failure",
+      });
       // Any failure during probe → back to OPEN with escalated backoff
       this.tripToOpen(service, record, "probe-failure");
       return;
@@ -259,15 +316,23 @@ export class CircuitBreaker {
       const remaining = record.nextAttemptTime - Date.now();
       if (serverWantsMs > remaining) {
         record.nextAttemptTime = Date.now() + serverWantsMs;
-        logger.info(`Circuit breaker: upstream extended Retry-After for ${service}`, {
-          service,
-          retryAfterSecs,
-        });
+        logger.info(
+          `Circuit breaker: upstream extended Retry-After for ${service}`,
+          {
+            service,
+            retryAfterSecs,
+          },
+        );
       }
       return;
     }
     // CLOSED or HALF_OPEN → immediately trip open
-    this.tripToOpen(service, record, `upstream-retry-after=${retryAfterSecs}s`, retryAfterSecs * 1000);
+    this.tripToOpen(
+      service,
+      record,
+      `upstream-retry-after=${retryAfterSecs}s`,
+      retryAfterSecs * 1000,
+    );
   }
 
   /**
@@ -284,7 +349,11 @@ export class CircuitBreaker {
     if (service) {
       this.circuits.delete(service);
       this.metrics.reset(service);
+      gatewayCircuitBreakerState.set(0, { service });
     } else {
+      for (const svc of this.circuits.keys()) {
+        gatewayCircuitBreakerState.set(0, { service: svc });
+      }
       this.circuits.clear();
       this.metrics.reset();
     }

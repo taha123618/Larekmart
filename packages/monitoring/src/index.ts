@@ -18,6 +18,7 @@ export {
   MetricsRegistry,
   createMetricsRegistry,
   createCounter,
+  createGauge,
   createCacheMetrics,
   createHistogram,
 } from "./metrics.js";
@@ -25,6 +26,7 @@ export type {
   CacheMetrics,
   CacheReadOutcome,
   MetricCounter,
+  MetricGauge,
   MetricHistogram,
 } from "./metrics.js";
 

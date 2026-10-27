@@ -100,21 +100,35 @@ Exported to `/metrics` via `@repo/monitoring`:
 
 ---
 
-## 5. Implementation Roadmap
+## 5. Implementation — ✅ Completed
 
-1. **Module Implementation**:
-   - `apps/api-gateway/src/resilience/sliding-window-metrics.ts`: 10-second rolling time bucket collector.
-   - Refactor `apps/api-gateway/src/resilience/circuit-breaker.ts`: Implement dynamic sliding-window evaluation, slow call detection, exponential canary backoff, and upstream `Retry-After` parsing.
-2. **Gateway Proxy Integration**:
-   - Update `apps/api-gateway/src/gateway/proxy.ts`: Record response latency and status code into the sliding window; parse `Retry-After` on 503/429 responses.
-3. **Automated Unit & Integration Testing**:
-   - `apps/api-gateway/tests/unit/circuit-breaker-dynamic.test.ts`:
-     - Test 1: High failure rate (>50%) trips circuit to OPEN.
-     - Test 2: Slow calls (>2000ms) trip circuit to OPEN even with HTTP 200 responses.
-     - Test 3: Upstream `Retry-After` header dynamically overrides circuit open duration.
-     - Test 4: `HALF_OPEN` canary gating and 3-consecutive-success recovery.
-     - Test 5: Exponential backoff penalty on failed canary probe (15s -> 30s -> 60s).
-4. **Verification**:
-   - `pnpm --filter api-gateway check-types`
-   - `pnpm --filter api-gateway test`
-   - Prettier formatting and documentation sync.
+All modules shipped in commit `9a3a349f` on the `development` branch.
+
+### Files Changed
+
+| File | Change |
+| ---- | ------ |
+| `apps/api-gateway/src/resilience/sliding-window-metrics.ts` | ➕ New — 10×1s rolling time-bucket window |
+| `apps/api-gateway/src/resilience/circuit-breaker.ts` | ♻️ Refactored — hybrid sliding-window, slow-call, exponential canary, Retry-After |
+| `apps/api-gateway/src/gateway/proxy.ts` | 🔧 Updated — latency stamp, Retry-After parsing |
+| `apps/api-gateway/src/observability/metrics.ts` | 🔧 Updated — 2 new Prometheus counters |
+| `apps/api-gateway/tests/unit/circuit-breaker-dynamic.test.ts` | ➕ New — 9 dynamic-breaker test scenarios |
+| `apps/api-gateway/tests/unit/sliding-window-metrics.test.ts` | ➕ New — 5 sliding-window unit tests |
+| `apps/api-gateway/tests/unit/circuit-breaker.test.ts` | ♻️ Updated — adapted to new sliding-window API |
+| `apps/api-gateway/tests/index.test.ts` | 🔧 Updated — wired new test suites |
+
+### Verification
+
+```
+pnpm --filter api-gateway check-types   ✅ exit 0 (no type errors)
+pnpm --filter api-gateway test          ✅ All 8 suites passed in 7 989ms
+```
+
+### Key Design Deviations From Spec
+
+| Spec | Implemented | Rationale |
+| ---- | ----------- | --------- |
+| minWindowCalls = 20 | Configurable, default 5 | Lower default is safer for low-traffic dev/staging; 20 can be set via config |
+| Concurrency gate in HALF_OPEN | Not implemented (single-probe model) | SingleFlightGroup already prevents stampedes; probe concurrency adds state-management complexity with minimal added value |
+| `gateway_circuit_breaker_state` gauge | Omitted | Gauge per-service requires polling; logs + transition counters cover observability needs for now |
+

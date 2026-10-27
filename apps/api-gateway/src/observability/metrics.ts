@@ -1,5 +1,6 @@
 import {
   createCounter,
+  createGauge,
   createHistogram,
   createMetricsRegistry,
 } from "@repo/monitoring";
@@ -62,6 +63,12 @@ export const gatewayProxyRetriesTotal = createCounter(
   "Total retries initiated for safe downstream requests",
 );
 
+export const gatewayCircuitBreakerState = createGauge(
+  metrics,
+  "gateway_circuit_breaker_state",
+  "Circuit breaker state: 0=CLOSED, 1=HALF_OPEN, 2=OPEN",
+);
+
 export const gatewayCircuitBreakerOpenTotal = createCounter(
   metrics,
   "gateway_circuit_breaker_open_total",
@@ -78,6 +85,18 @@ export const gatewayCircuitBreakerHalfOpenTotal = createCounter(
   metrics,
   "gateway_circuit_breaker_half_open_total",
   "Total times circuit breaker transitioned to HALF_OPEN for canary probe",
+);
+
+export const gatewayCircuitBreakerTripsTotal = createCounter(
+  metrics,
+  "gateway_circuit_breaker_trips_total",
+  "Total circuit breaker trips partitioned by reason",
+);
+
+export const gatewayCircuitBreakerCanaryAttemptsTotal = createCounter(
+  metrics,
+  "gateway_circuit_breaker_canary_attempts_total",
+  "Total canary probes executed in HALF_OPEN state partitioned by result",
 );
 
 export const gateway4xxTotal = createCounter(

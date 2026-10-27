@@ -34,7 +34,11 @@ export async function runCircuitBreakerDynamicTests() {
     cb.recordFailure(svc, 10);
     cb.recordFailure(svc, 10);
     cb.recordFailure(svc, 10);
-    assert.equal(cb.getState(svc), "CLOSED", "Should stay CLOSED below min-window");
+    assert.equal(
+      cb.getState(svc),
+      "CLOSED",
+      "Should stay CLOSED below min-window",
+    );
     assert.ok(cb.isAvailable(svc));
   }
 
@@ -54,7 +58,11 @@ export async function runCircuitBreakerDynamicTests() {
     cb.recordFailure(svc, 50);
     assert.equal(cb.getState(svc), "CLOSED", "Not yet at minWindowCalls");
     cb.recordFailure(svc, 50);
-    assert.equal(cb.getState(svc), "OPEN", "Should trip OPEN at 50% failure rate");
+    assert.equal(
+      cb.getState(svc),
+      "OPEN",
+      "Should trip OPEN at 50% failure rate",
+    );
     assert.equal(cb.isAvailable(svc), false);
   }
 
@@ -73,10 +81,14 @@ export async function runCircuitBreakerDynamicTests() {
     // All successes but 3 of 4 are slow (above 1 000ms threshold)
     cb.recordSuccess(svc, 1500); // slow
     cb.recordSuccess(svc, 1500); // slow
-    cb.recordSuccess(svc, 50);   // fast
+    cb.recordSuccess(svc, 50); // fast
     assert.equal(cb.getState(svc), "CLOSED", "Not yet at minWindowCalls");
     cb.recordSuccess(svc, 1500); // slow — 4th call, 75% slow rate
-    assert.equal(cb.getState(svc), "OPEN", "Should trip OPEN at 75% slow-call rate");
+    assert.equal(
+      cb.getState(svc),
+      "OPEN",
+      "Should trip OPEN at 75% slow-call rate",
+    );
   }
 
   // ── 4. HALF_OPEN canary: 3 consecutive successes → CLOSED ─────────────────
@@ -101,11 +113,23 @@ export async function runCircuitBreakerDynamicTests() {
 
     // 3 consecutive successes → CLOSED
     cb.recordSuccess(svc, 20);
-    assert.equal(cb.getState(svc), "HALF_OPEN", "Still HALF_OPEN after 1 success");
+    assert.equal(
+      cb.getState(svc),
+      "HALF_OPEN",
+      "Still HALF_OPEN after 1 success",
+    );
     cb.recordSuccess(svc, 20);
-    assert.equal(cb.getState(svc), "HALF_OPEN", "Still HALF_OPEN after 2 successes");
+    assert.equal(
+      cb.getState(svc),
+      "HALF_OPEN",
+      "Still HALF_OPEN after 2 successes",
+    );
     cb.recordSuccess(svc, 20);
-    assert.equal(cb.getState(svc), "CLOSED", "Should be CLOSED after 3 consecutive successes");
+    assert.equal(
+      cb.getState(svc),
+      "CLOSED",
+      "Should be CLOSED after 3 consecutive successes",
+    );
     assert.ok(cb.isAvailable(svc));
   }
 
@@ -134,9 +158,17 @@ export async function runCircuitBreakerDynamicTests() {
 
     // Verify backoff doubled: can't probe before ~200ms
     await new Promise((r) => setTimeout(r, 130));
-    assert.equal(cb.getState(svc), "OPEN", "Should still be OPEN (in doubled backoff)");
+    assert.equal(
+      cb.getState(svc),
+      "OPEN",
+      "Should still be OPEN (in doubled backoff)",
+    );
     await new Promise((r) => setTimeout(r, 120));
-    assert.equal(cb.getState(svc), "HALF_OPEN", "Should be HALF_OPEN after doubled backoff");
+    assert.equal(
+      cb.getState(svc),
+      "HALF_OPEN",
+      "Should be HALF_OPEN after doubled backoff",
+    );
   }
 
   // ── 6. feedUpstreamRetryAfter forces OPEN from CLOSED ─────────────────────
@@ -150,7 +182,11 @@ export async function runCircuitBreakerDynamicTests() {
 
     assert.equal(cb.getState(svc), "CLOSED");
     cb.feedUpstreamRetryAfter(svc, 0.2); // 200ms Retry-After
-    assert.equal(cb.getState(svc), "OPEN", "Should trip OPEN via Retry-After from CLOSED");
+    assert.equal(
+      cb.getState(svc),
+      "OPEN",
+      "Should trip OPEN via Retry-After from CLOSED",
+    );
 
     // Should not be available during retry-after window
     assert.equal(cb.isAvailable(svc), false);
@@ -179,7 +215,11 @@ export async function runCircuitBreakerDynamicTests() {
 
     // After 150ms it should still be OPEN (original would have expired)
     await new Promise((r) => setTimeout(r, 160));
-    assert.equal(cb.getState(svc), "OPEN", "Extended Retry-After should keep circuit OPEN");
+    assert.equal(
+      cb.getState(svc),
+      "OPEN",
+      "Extended Retry-After should keep circuit OPEN",
+    );
 
     // After total ~550ms it should probe
     await new Promise((r) => setTimeout(r, 400));
@@ -200,7 +240,11 @@ export async function runCircuitBreakerDynamicTests() {
     // 6 successes + 4 failures = 40% failure rate — stays CLOSED
     for (let i = 0; i < 6; i++) cb.recordSuccess(svc, 100);
     for (let i = 0; i < 4; i++) cb.recordFailure(svc, 100);
-    assert.equal(cb.getState(svc), "CLOSED", "40% failure rate should not trip circuit");
+    assert.equal(
+      cb.getState(svc),
+      "CLOSED",
+      "40% failure rate should not trip circuit",
+    );
 
     const snap = cb.windowSnapshot(svc);
     assert.equal(snap.total, 10);
@@ -228,6 +272,58 @@ export async function runCircuitBreakerDynamicTests() {
 
     const snap = cb.windowSnapshot(svc);
     assert.equal(snap.total, 0, "Metrics should be cleared after reset");
+  }
+
+  // ── 10. Canary concurrency gating in HALF_OPEN ──────────────────────────
+  {
+    const cb = new CircuitBreaker({
+      minWindowCalls: 2,
+      failureRateThreshold: 0.5,
+      halfOpenInitialMs: 100,
+      canaryConcurrencyLimit: 2,
+      successThreshold: 3,
+    });
+    const svc = "svc-canary-concurrency";
+
+    cb.recordFailure(svc, 10);
+    cb.recordFailure(svc, 10);
+    assert.equal(cb.getState(svc), "OPEN");
+
+    await new Promise((r) => setTimeout(r, 150));
+    assert.equal(cb.getState(svc), "HALF_OPEN");
+
+    // Probe 1 allowed
+    assert.equal(cb.isAvailable(svc), true, "Probe 1 should be allowed");
+    // Probe 2 allowed
+    assert.equal(cb.isAvailable(svc), true, "Probe 2 should be allowed");
+    // Probe 3 blocked by concurrency gate (limit = 2)
+    assert.equal(
+      cb.isAvailable(svc),
+      false,
+      "Probe 3 should be blocked by concurrency gate",
+    );
+
+    // Complete Probe 1 with success
+    cb.recordSuccess(svc, 20);
+    // Now a slot is freed, probe can proceed
+    assert.equal(
+      cb.isAvailable(svc),
+      true,
+      "Probe slot freed after probe 1 completed",
+    );
+
+    // Complete remaining probes to reach 3 successes
+    cb.recordSuccess(svc, 20);
+    cb.recordSuccess(svc, 20);
+    assert.equal(
+      cb.getState(svc),
+      "CLOSED",
+      "Should transition to CLOSED after 3 successes",
+    );
+    // Once closed, unlimited requests allowed
+    assert.equal(cb.isAvailable(svc), true);
+    assert.equal(cb.isAvailable(svc), true);
+    assert.equal(cb.isAvailable(svc), true);
   }
 
   console.log("✔ [UNIT] Dynamic Circuit Breaker tests passed");

@@ -385,6 +385,33 @@ export function createCounter(
 }
 
 /**
+ * A gauge metric bound to a registry, with a Prometheus-style `.set()`
+ * surface.
+ */
+export interface MetricGauge {
+  set(value: number, labels?: MetricLabels): void;
+}
+
+/**
+ * Creates a gauge bound to `registry`.
+ *
+ * @param registry - Registry the gauge reports into (drives `/metrics`).
+ * @param name     - Metric name, e.g. `"gateway_circuit_breaker_state"`.
+ * @param help     - Prometheus HELP text.
+ */
+export function createGauge(
+  registry: MetricsRegistry,
+  name: string,
+  help?: string,
+): MetricGauge {
+  return {
+    set(value: number, labels: MetricLabels = {}) {
+      registry.setGauge(name, value, labels, help);
+    },
+  };
+}
+
+/**
  * A histogram metric bound to a registry.
  */
 export interface MetricHistogram {
