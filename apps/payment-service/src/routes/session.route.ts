@@ -100,33 +100,49 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
       }),
     );
 
+    const rawIdempKey =
+      c.req.header("idempotency-key") ||
+      c.req.header("x-idempotency-key") ||
+      undefined;
+
+    const requestOptions = rawIdempKey
+      ? { idempotencyKey: rawIdempKey.trim() }
+      : undefined;
+
     const { result: session } = await measureAsync(
       "stripe.createSession",
       async () => {
-        return await stripe.checkout.sessions.create({
-          line_items: lineItems,
-          client_reference_id: userId,
-          mode: "payment",
-          ui_mode: "custom",
-          metadata: {
-            cartId: cartId || "",
-            userId: userId || "",
-            reservationId: reservationId || "",
-            couponCode: couponCode || "",
-            discountAmount:
-              discountAmount !== undefined ? String(discountAmount) : "",
-            taxCalculationId: taxCalculationId || "",
-            taxAmount: taxAmount !== undefined ? String(taxAmount) : "",
+        return await stripe.checkout.sessions.create(
+          {
+            line_items: lineItems,
+            client_reference_id: userId,
+            mode: "payment",
+            ui_mode: "custom",
+            metadata: {
+              cartId: cartId || "",
+              userId: userId || "",
+              reservationId: reservationId || "",
+              couponCode: couponCode || "",
+              discountAmount:
+                discountAmount !== undefined ? String(discountAmount) : "",
+              taxCalculationId: taxCalculationId || "",
+              taxAmount: taxAmount !== undefined ? String(taxAmount) : "",
+            },
+            return_url:
+              "http://localhost:3002/return?session_id={CHECKOUT_SESSION_ID}",
           },
-          return_url:
-            "http://localhost:3002/return?session_id={CHECKOUT_SESSION_ID}",
-        });
+          requestOptions,
+        );
       },
     );
 
     logger.info(
       `Stripe checkout session created: ${session.id} for user ${userId}`,
     );
+
+    if (rawIdempKey) {
+      c.header("Idempotency-Key", rawIdempKey);
+    }
 
     return c.json({ checkoutSessionClientSecret: session.client_secret });
   } catch (error) {

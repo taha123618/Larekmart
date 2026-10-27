@@ -41,6 +41,8 @@ Stripe product sync driven by Kafka. It emits `payment.successful` after verifyi
 - Custom checkout UI mode (`ui_mode: "custom"`).
 - Prices fetched live from Stripe; do not hardcode price objects when the existing code
   fetches them.
+- Pre-checkout lease and vendor gates: validate `expiresAt` before creating sessions.
+- Idempotency support: respects `Idempotency-Key` or `x-idempotency-key` request headers, passing `{ idempotencyKey }` to `stripe.checkout.sessions.create` to prevent duplicate Stripe session charges upon client network retries.
 - Webhook signature verification must use
   `stripe.webhooks.constructEvent(body, sig, webhookSecret)` with raw request text, not
   parsed JSON.
