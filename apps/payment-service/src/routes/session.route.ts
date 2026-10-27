@@ -109,6 +109,11 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
       ? { idempotencyKey: rawIdempKey.trim() }
       : undefined;
 
+    const clientUrl = (
+      process.env.CLIENT_URL || "http://localhost:3002"
+    ).replace(/\/+$/, "");
+    const returnUrl = `${clientUrl}/return?session_id={CHECKOUT_SESSION_ID}`;
+
     const { result: session } = await measureAsync(
       "stripe.createSession",
       async () => {
@@ -128,8 +133,7 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
               taxCalculationId: taxCalculationId || "",
               taxAmount: taxAmount !== undefined ? String(taxAmount) : "",
             },
-            return_url:
-              "http://localhost:3002/return?session_id={CHECKOUT_SESSION_ID}",
+            return_url: returnUrl,
           },
           requestOptions,
         );
