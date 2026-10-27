@@ -3,6 +3,7 @@ import {
   OrderType,
   OrderConfirmedPayload,
   PaymentRefundRequestedPayload,
+  OrderCancelledPayload,
 } from "@repo/types";
 import { producer } from "./kafka";
 import { createLogger, captureError, measureAsync } from "@repo/monitoring";
@@ -151,20 +152,23 @@ export const confirmOrder = async (inventorySoldPayload: any) => {
  * 3. Saga Compensation Phase: Cancel order and request refund if inventory reservation failed
  */
 export const cancelOutOfStockOrder = async (failedPayload: any) => {
-  const { reservationId, referenceId, reason, details } = failedPayload;
+  const { reservationId, referenceId, orderId, reason, details } =
+    failedPayload;
   logger.warn(
-    `Triggering Saga compensation for failed reservation: ${reservationId}, reference: ${referenceId} (${reason})`,
+    `Triggering Saga compensation for failed reservation: ${reservationId}, reference: ${referenceId}, order: ${orderId} (${reason})`,
   );
 
   try {
-    const query = reservationId
-      ? { reservationId, status: "pending_confirmation" }
-      : { paymentSessionId: referenceId, status: "pending_confirmation" };
+    const query = orderId
+      ? { _id: orderId, status: "pending_confirmation" }
+      : reservationId
+        ? { reservationId, status: "pending_confirmation" }
+        : { paymentSessionId: referenceId, status: "pending_confirmation" };
 
     const order = await Order.findOne(query);
     if (!order) {
       logger.info(
-        `No pending_confirmation order found to compensate for reservation ${reservationId}`,
+        `No pending_confirmation order found to compensate for reservation ${reservationId} or order ${orderId}`,
       );
       return;
     }
@@ -179,7 +183,7 @@ export const cancelOutOfStockOrder = async (failedPayload: any) => {
 
     await order.save();
     logger.warn(
-      `Order ${order._id} cancelled due to out-of-stock. Emitting payment.refund.requested...`,
+      `Order ${order._id} cancelled due to out-of-stock. Emitting payment.refund.requested and order.cancelled...`,
     );
 
     const refundPayload: PaymentRefundRequestedPayload = {
@@ -192,6 +196,15 @@ export const cancelOutOfStockOrder = async (failedPayload: any) => {
     };
 
     await producer.send("payment.refund.requested", { value: refundPayload });
+
+    const cancelledPayload: OrderCancelledPayload = {
+      orderId: order._id.toString(),
+      userId: order.userId,
+      reason: details || `Stock reservation failed: ${reason}`,
+      cancelledAt: new Date().toISOString(),
+    };
+
+    await producer.send("order.cancelled", { value: cancelledPayload });
   } catch (err) {
     logger.error("Error executing Saga compensation for cancelled order:", err);
   }
@@ -222,4 +235,53 @@ export const markOrderRefunded = async (refundPayload: any) => {
   } catch (err) {
     logger.error("Error marking order refunded:", err);
   }
+};
+
+/**
+ * 5. Saga Resilience: Sweeper for pending_confirmation orders that timed out
+ */
+export const processPendingConfirmationTimeouts = async (
+  timeoutMs = 60000,
+): Promise<number> => {
+  const threshold = new Date(Date.now() - timeoutMs);
+  const stuckOrders = await Order.find({
+    status: "pending_confirmation",
+    createdAt: { $lte: threshold },
+  });
+
+  if (stuckOrders.length === 0) return 0;
+
+  logger.warn(
+    `Found ${stuckOrders.length} pending_confirmation orders timed out past ${timeoutMs}ms`,
+  );
+
+  for (const order of stuckOrders) {
+    await cancelOutOfStockOrder({
+      orderId: order._id.toString(),
+      reservationId: (order as any).reservationId,
+      referenceId: (order as any).paymentSessionId,
+      reason: "TIMEOUT",
+      details: `Inventory confirmation timed out after ${timeoutMs / 1000}s`,
+    });
+  }
+
+  return stuckOrders.length;
+};
+
+export const startPendingConfirmationTimeoutSweeper = (
+  intervalMs = 30000,
+  timeoutMs = 60000,
+): NodeJS.Timeout => {
+  const timer = setInterval(async () => {
+    try {
+      await processPendingConfirmationTimeouts(timeoutMs);
+    } catch (err) {
+      logger.error(
+        "Error executing pending confirmation timeout sweeper:",
+        err,
+      );
+    }
+  }, intervalMs);
+  timer.unref();
+  return timer;
 };

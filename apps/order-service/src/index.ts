@@ -7,6 +7,7 @@ import { validateInternalServiceSecret } from "@repo/types";
 import { orderRoute } from "./routes/order.js";
 import { consumer, producer } from "./utils/kafka.js";
 import { runKafkaSubscriptions } from "./utils/subscriptions.js";
+import { startPendingConfirmationTimeoutSweeper } from "./utils/order.js";
 import {
   createHealthRegistry,
   createHttpMonitor,
@@ -202,11 +203,14 @@ const start = async () => {
       consumer.connect(),
     ]);
     await runKafkaSubscriptions();
+    startPendingConfirmationTimeoutSweeper();
     await fastify.listen({
       port: 8001,
       host: process.env.HOST || "0.0.0.0",
     });
-    logger.info("Order service is running on port 8001");
+    logger.info(
+      "Order service is running on port 8001 (Saga timeout sweeper active)",
+    );
   } catch (err) {
     logger.fatal("Failed to initialize order-service", err);
     process.exit(1);

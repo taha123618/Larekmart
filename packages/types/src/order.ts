@@ -158,3 +158,10 @@ export interface PaymentRefundCompletedPayload {
   status: "succeeded" | "failed";
   completedAt: string;
 }
+
+export interface OrderCancelledPayload {
+  orderId: string;
+  userId?: string | null;
+  reason: string;
+  cancelledAt: string;
+}

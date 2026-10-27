@@ -17,6 +17,7 @@ import {
   confirmOrder,
   cancelOutOfStockOrder,
   markOrderRefunded,
+  processPendingConfirmationTimeouts,
 } from "../src/utils/order.js";
 
 const MONGO_URI =
@@ -28,6 +29,7 @@ async function runSagaTests() {
   );
 
   await mongoose.connect(MONGO_URI);
+  await Order.deleteMany({ email: "saga-tester@example.com" });
 
   // Mock producer.send to capture and verify Saga event dispatches without requiring live Kafka broker
   const sentEvents: Array<{ topic: string; message: any }> = [];
@@ -140,7 +142,19 @@ async function runSagaTests() {
       refundRequestedEvent,
       "payment.refund.requested must be dispatched to payment-service",
     );
-    console.log("✓ Saga compensation on inventory failure passed.");
+
+    const cancelledEvent = sentEvents.find(
+      (e) =>
+        e.topic === "order.cancelled" &&
+        e.message.value.orderId === failOrder._id.toString(),
+    );
+    assert.ok(
+      cancelledEvent,
+      "order.cancelled must be dispatched to shipping, promotion, and notification services",
+    );
+    console.log(
+      "✓ Saga compensation on inventory failure passed (refund requested & order.cancelled emitted).",
+    );
 
     // 4. Terminal Refund Phase: Stripe refund completed
     console.log(
@@ -192,9 +206,54 @@ async function runSagaTests() {
     );
     console.log("✓ Order confirmed transition passed.");
 
+    // 6. Timeout Sweeper Path: Simulate an order whose inventory confirmation timed out
+    console.log(
+      "6. Testing Saga Confirmation Timeout Sweeper (stuck pending_confirmation order)...",
+    );
+    const timeoutSessionId = `cs_test_timeout_${Date.now()}`;
+    const timeoutReservationId = `res_test_timeout_${Date.now()}`;
+    const timeoutOrder = await createOrder({
+      ...orderPayload,
+      sessionId: timeoutSessionId,
+      referenceId: timeoutSessionId,
+      reservationId: timeoutReservationId,
+    });
+
+    // Manually backdate createdAt on raw MongoDB collection to bypass Mongoose timestamp locking
+    await Order.collection.updateOne(
+      { _id: timeoutOrder._id },
+      { $set: { createdAt: new Date(Date.now() - 65000) } },
+    );
+
+    // Run timeout sweeper with 60000ms threshold
+    const processedCount = await processPendingConfirmationTimeouts(60000);
+    assert.strictEqual(
+      processedCount >= 1,
+      true,
+      "Sweeper must find and process the timed-out order",
+    );
+
+    const timedOutUpdatedOrder = await Order.findById(timeoutOrder._id);
+    assert.strictEqual(
+      timedOutUpdatedOrder?.status,
+      "cancelled_out_of_stock",
+      "Timed out order must transition to cancelled_out_of_stock",
+    );
+
+    const timeoutRefundEvent = sentEvents.find(
+      (e) =>
+        e.topic === "payment.refund.requested" &&
+        e.message.value.orderId === timeoutOrder._id.toString(),
+    );
+    assert.ok(
+      timeoutRefundEvent,
+      "Timeout sweeper must emit payment.refund.requested for abandoned order",
+    );
+    console.log("✓ Saga confirmation timeout sweeper passed.");
+
     // Cleanup test documents
     await Order.deleteMany({
-      _id: { $in: [createdOrder._id, failOrder._id] },
+      _id: { $in: [createdOrder._id, failOrder._id, timeoutOrder._id] },
     });
     console.log("\n=======================================================");
     console.log(" All Distributed Checkout Saga Tests Passed Successfully! ");
