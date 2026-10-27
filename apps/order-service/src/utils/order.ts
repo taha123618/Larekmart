@@ -9,7 +9,7 @@ import {
   TaxCalculationVoidedEventPayload,
   InventoryReservationCancelledPayload,
 } from "@repo/types";
-import { producer } from "./kafka";
+import { dispatchViaOutbox } from "../outbox/outbox-relay.js";
 import { createLogger, captureError, measureAsync } from "@repo/monitoring";
 
 const logger = createLogger("order-service:saga-orchestrator");
@@ -77,21 +77,19 @@ export const createOrder = async (orderPayload: any) => {
       `Order initialized in PENDING_CONFIRMATION with ID: ${savedOrder._id} (TaxStatus: ${orderDoc.taxStatus}, InvStatus: pending)`,
     );
 
-    await producer.send("order.created", {
-      value: {
-        orderId: savedOrder._id.toString(),
-        userId: savedOrder.userId,
-        cartId: orderPayload.cartId || null,
-        reservationId: reservationId,
-        paymentSessionId: sessionId,
-        couponCode: orderPayload.couponCode || null,
-        taxCalculationId: savedOrder.taxCalculationId || null,
-        taxAmount: savedOrder.taxAmount ?? 0,
-        email: savedOrder.email,
-        amount: savedOrder.amount,
-        status: savedOrder.status,
-        products: savedOrder.products,
-      },
+    await dispatchViaOutbox("order.created", {
+      orderId: savedOrder._id.toString(),
+      userId: savedOrder.userId,
+      cartId: orderPayload.cartId || null,
+      reservationId: reservationId,
+      paymentSessionId: sessionId,
+      couponCode: orderPayload.couponCode || null,
+      taxCalculationId: savedOrder.taxCalculationId || null,
+      taxAmount: savedOrder.taxAmount ?? 0,
+      email: savedOrder.email,
+      amount: savedOrder.amount,
+      status: savedOrder.status,
+      products: savedOrder.products,
     });
 
     return savedOrder;
@@ -159,7 +157,10 @@ export const confirmOrder = async (inventorySoldPayload: any) => {
         confirmedAt: new Date().toISOString(),
       };
 
-      await producer.send("order.confirmed", { value: confirmedPayload });
+      await dispatchViaOutbox(
+        "order.confirmed",
+        confirmedPayload as unknown as Record<string, unknown>,
+      );
     } else {
       (order as any).sagaHistory.push({
         state: "pending_confirmation",
@@ -230,7 +231,10 @@ export const handleTaxCompleted = async (
         confirmedAt: new Date().toISOString(),
       };
 
-      await producer.send("order.confirmed", { value: confirmedPayload });
+      await dispatchViaOutbox(
+        "order.confirmed",
+        confirmedPayload as unknown as Record<string, unknown>,
+      );
     } else {
       (order as any).sagaHistory.push({
         state: "pending_confirmation",
@@ -294,7 +298,10 @@ export const handleTaxFailed = async (
       userId: order.userId,
       requestedAt: new Date().toISOString(),
     };
-    await producer.send("payment.refund.requested", { value: refundPayload });
+    await dispatchViaOutbox(
+      "payment.refund.requested",
+      refundPayload as unknown as Record<string, unknown>,
+    );
 
     // 2. Emit order.cancelled
     const cancelledPayload: OrderCancelledPayload = {
@@ -303,7 +310,10 @@ export const handleTaxFailed = async (
       reason: `Tax calculation verification failed: ${error}`,
       cancelledAt: new Date().toISOString(),
     };
-    await producer.send("order.cancelled", { value: cancelledPayload });
+    await dispatchViaOutbox(
+      "order.cancelled",
+      cancelledPayload as unknown as Record<string, unknown>,
+    );
 
     // 3. Compensate PostgreSQL inventory (release reservation/stock)
     const invCancelPayload: InventoryReservationCancelledPayload = {
@@ -313,9 +323,10 @@ export const handleTaxFailed = async (
       reason: `Order cancelled due to tax mismatch: ${error}`,
       cancelledAt: new Date().toISOString(),
     };
-    await producer.send("inventory.reservation.cancelled", {
-      value: invCancelPayload,
-    });
+    await dispatchViaOutbox(
+      "inventory.reservation.cancelled",
+      invCancelPayload as unknown as Record<string, unknown>,
+    );
   } catch (err) {
     logger.error("Error executing Saga compensation for tax failure:", err);
   }
@@ -369,7 +380,10 @@ export const cancelOutOfStockOrder = async (failedPayload: any) => {
       userId: order.userId,
       requestedAt: new Date().toISOString(),
     };
-    await producer.send("payment.refund.requested", { value: refundPayload });
+    await dispatchViaOutbox(
+      "payment.refund.requested",
+      refundPayload as unknown as Record<string, unknown>,
+    );
 
     // 2. Emit order.cancelled
     const cancelledPayload: OrderCancelledPayload = {
@@ -378,7 +392,10 @@ export const cancelOutOfStockOrder = async (failedPayload: any) => {
       reason: details || `Stock reservation failed: ${reason}`,
       cancelledAt: new Date().toISOString(),
     };
-    await producer.send("order.cancelled", { value: cancelledPayload });
+    await dispatchViaOutbox(
+      "order.cancelled",
+      cancelledPayload as unknown as Record<string, unknown>,
+    );
 
     // 3. Compensate MySQL tax calculation (void calculation snapshot)
     if ((order as any).taxCalculationId) {
@@ -389,7 +406,10 @@ export const cancelOutOfStockOrder = async (failedPayload: any) => {
         reason: details || `Inventory reservation failed: ${reason}`,
         voidedAt: new Date().toISOString(),
       };
-      await producer.send("tax.calculation.voided", { value: taxVoidPayload });
+      await dispatchViaOutbox(
+        "tax.calculation.voided",
+        taxVoidPayload as unknown as Record<string, unknown>,
+      );
     }
   } catch (err) {
     logger.error("Error executing Saga compensation for cancelled order:", err);

@@ -38,9 +38,21 @@ Operational routes:
 All request bodies are validated with Zod schemas from `@repo/types`. Customer mutations
 derive the `userId` from verified Clerk claims.
 
-## Concurrency & Oversell Prevention
+## Concurrency & Flash-Sale Redis Stock Gatekeeper
 
-To strictly prevent race conditions and overselling:
+To strictly prevent race conditions, overselling, and database connection pool starvation during high-velocity flash sales (e.g. 5,000+ req/sec):
+
+### 1. Atomic Redis Pre-Check (Gatekeeper Fast-Path)
+
+Incoming checkout reservations (`POST /api/v1/inventory/reservations`) first pass through an atomic Redis Lua script (`RESERVE_LUA` in `src/gatekeeper/redis-stock-gatekeeper.ts`):
+
+- **<1ms Fast Rejection**: If `availableQuantity < requestedQuantity`, the request is rejected immediately with HTTP 409 without touching PostgreSQL.
+- **Atomic Claim**: If stock is available, Redis decrements the stock counter and registers a temporary claim token (`stock:claim:{referenceId}`) with a 60-second TTL.
+- **Cold-Start Protection**: If the counter is missing in Redis, a 2-second distributed mutex (`stock:lock:...`) loads ground truth from PostgreSQL once and initializes the counter, protecting the DB from thundering herds.
+
+### 2. PostgreSQL Authoritative Ledger & Compensation Rollback
+
+Once the Redis claim is granted, the reservation is committed to PostgreSQL:
 
 ```sql
 UPDATE inventory_items
@@ -52,9 +64,15 @@ WHERE product_id = $1 AND variant_id = $2 AND warehouse_id = $3
   AND available_quantity >= $quantity;
 ```
 
-PostgreSQL row-level locking ensures that concurrent checkout requests evaluate available stock
-atomically. If stock is insufficient, the operation fails cleanly with an `Insufficient inventory`
-error, increments `inventory_oversell_prevented_total`, and returns HTTP 409.
+- If the PostgreSQL transaction succeeds: The temporary claim token is finalized and deleted.
+- If the PostgreSQL transaction fails or times out: An atomic compensation rollback (`ROLLBACK_LUA`) immediately increments the Redis counter back by the claimed quantity, preventing phantom stock loss.
+
+### 3. Dual-Action Release & Expiry
+
+When reservations are released, cancelled, or expired:
+
+- PostgreSQL updates the reservation and writes an audit ledger movement.
+- Redis stock counters are atomically incremented (`INCREMENT_LUA`) and centralized read caches are synchronized.
 
 ## Reservation Accounting Invariant
 
@@ -97,11 +115,12 @@ The service subscribes to cross-service events:
 
 - `payment.successful` — When a customer completes checkout in `payment-service` (via Stripe webhook), `inventory-service` consumes this event and confirms matching reservations in PostgreSQL, converting reserved stock to sold stock and publishing `inventory.stock.sold`.
 
-## Local Development
+## Local Development & Testing
 
 ```bash
 pnpm --filter inventory-service dev
 pnpm --filter inventory-service check-types
+pnpm --filter inventory-service test
 pnpm --filter inventory-service build
 ```
 

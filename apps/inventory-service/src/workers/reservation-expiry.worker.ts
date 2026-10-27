@@ -2,6 +2,7 @@ import { expireStaleReservations } from "@repo/inventory-db";
 import { invalidateInventoryCache } from "../cache/inventory-cache.js";
 import { inventoryMetrics, logger } from "../observability/metrics.js";
 import { producer } from "../utils/kafka.js";
+import { redisStockGatekeeper } from "../gatekeeper/redis-stock-gatekeeper.js";
 
 /**
  * Starts a background worker that periodically sweeps and releases expired checkout reservations.
@@ -36,6 +37,14 @@ export function startReservationExpiryWorker(
         await invalidateInventoryCache();
 
         for (const item of expiredList) {
+          await redisStockGatekeeper.incrementStockCounter(
+            {
+              productId: item.inventoryItem.productId,
+              variantId: item.inventoryItem.variantId,
+              warehouseId: item.inventoryItem.warehouseId,
+            },
+            item.quantity,
+          );
           await invalidateInventoryCache(
             item.inventoryItem.productId,
             item.inventoryItem.variantId,

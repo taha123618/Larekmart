@@ -33,8 +33,10 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 
 ## Persistence
 
-- Mongoose via `@repo/order-db`. Use `Order`, `OrderStatus`, `OrderSchemaType`, and
-  `connectOrderDB` as the public surface.
+- Mongoose via `@repo/order-db`. Use `Order`, `OrderStatus`, `OrderSchemaType`, `OutboxEvent`,
+  and `connectOrderDB` as the public surface.
+- Outbox collection (`OutboxEvent`) records all lifecycle events inside atomic MongoDB transactions
+  alongside `Order` document changes to guarantee zero event loss (Transactional Outbox pattern).
 - Do not create ad-hoc Mongo clients or bypass the shared model.
 - Order statuses: `success | failed` in the existing model.
 
@@ -56,11 +58,17 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
   as `degraded` rather than failing the service.
 - Config: `REDIS_URL`, `REDIS_KEY_PREFIX`, `ORDER_CHART_CACHE_TTL_SECONDS` (see `.env.example`).
 
-## Events
+## Events & Transactional Outbox
 
 - Consume Kafka through `@repo/kafka`.
 - Current subscriptions from this service: `payment.successful` → order creation.
-- This service publishes `order.created` (containing `orderId`, `userId`, `email`, `amount`, `status`, `products`, and optional `reservationId` / `couponCode`) after persisting an order, consumed by `email-service`, `recommendation-service`, `analytic-service`, `notification-service`, and `promotion-service`.
+- **Transactional Outbox Relay (`src/outbox/outbox-relay.ts`)**:
+  - Always publish domain events via `dispatchViaOutbox(topic, payload, { session })`.
+  - Fast path: If published outside an active transaction session, the event is immediately sent to Kafka and marked `PUBLISHED`.
+  - Transaction path: When executed within a MongoDB ClientSession, the event is persisted into `OutboxEvent` within the same transaction. Upon commit, it is either dispatched immediately or swept asynchronously.
+  - Background Sweeper: Runs periodically (default 5s) to claim un-dispatched or failed events with an atomic 30s distributed lease lock (`lockedUntil`) to ensure at-least-once delivery without cross-replica race conditions.
+  - Retention: Events are automatically pruned after 7 days via MongoDB TTL index on `publishedAt`.
+- This service publishes `order.created`, `order.confirmed`, `order.cancelled`, `payment.refund.requested`, `inventory.reservation.cancelled`, and `tax.calculation.voided`.
 - Use the `{ value: payload }` envelope and read `message.value` in handlers.
 - Because subscriptions use `fromBeginning: true`, handlers must be tolerant of re-processing.
 - If you change a payload, update the producer, every consumer, `@repo/types`, and
@@ -70,7 +78,7 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 
 - Return `{ message }` JSON with the correct status.
 - Kafka handlers must catch and log so a bad message does not kill the consumer loop.
-- There is no dead-letter topic or retry policy yet; treat handler failures as observable.
+- Outbox events retry with exponential backoff up to 5 attempts before remaining in `FAILED` state for dead-letter review.
 
 ## Health and observability
 

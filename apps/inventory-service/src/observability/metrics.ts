@@ -58,6 +58,21 @@ export const inventoryMetrics = {
     "inventory_oversell_prevented_total",
     "Total number of reservation/deduction attempts rejected due to insufficient stock",
   ),
+  gatekeeperFastRejectsTotal: createCounter(
+    metrics,
+    "inventory_gatekeeper_fast_rejects_total",
+    "Total number of reservations rejected in Redis before reaching PostgreSQL",
+  ),
+  gatekeeperClaimsTotal: createCounter(
+    metrics,
+    "inventory_gatekeeper_claims_total",
+    "Total number of reservation claims granted by Redis Gatekeeper",
+  ),
+  gatekeeperRollbacksTotal: createCounter(
+    metrics,
+    "inventory_gatekeeper_rollbacks_total",
+    "Total number of Redis Gatekeeper stock rollbacks upon database failure",
+  ),
   lowStockAlertsTotal: createCounter(
     metrics,
     "inventory_low_stock_alerts_total",

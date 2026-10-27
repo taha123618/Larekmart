@@ -9,6 +9,10 @@ import { consumer, producer } from "./utils/kafka.js";
 import { runKafkaSubscriptions } from "./utils/subscriptions.js";
 import { startPendingConfirmationTimeoutSweeper } from "./utils/order.js";
 import {
+  startOutboxSweeper,
+  stopOutboxSweeper,
+} from "./outbox/outbox-relay.js";
+import {
   createHealthRegistry,
   createHttpMonitor,
   createMemoryCheck,
@@ -204,13 +208,38 @@ const start = async () => {
     ]);
     await runKafkaSubscriptions();
     startPendingConfirmationTimeoutSweeper();
+    startOutboxSweeper();
     await fastify.listen({
       port: 8001,
       host: process.env.HOST || "0.0.0.0",
     });
     logger.info(
-      "Order service is running on port 8001 (Saga timeout sweeper active)",
+      "Order service is running on port 8001 (Saga timeout & Outbox sweepers active)",
     );
+
+    const shutdown = async (signal: string) => {
+      logger.info(
+        `Received ${signal}, shutting down order-service gracefully...`,
+      );
+      stopOutboxSweeper();
+      try {
+        await fastify.close();
+        await producer.disconnect();
+        await consumer.disconnect();
+        await mongoose.disconnect();
+        await redis.close();
+        logger.info("Order service shut down cleanly.");
+        process.exit(0);
+      } catch (err) {
+        logger.error("Error during order-service shutdown", {
+          error: String(err),
+        });
+        process.exit(1);
+      }
+    };
+
+    process.on("SIGINT", () => void shutdown("SIGINT"));
+    process.on("SIGTERM", () => void shutdown("SIGTERM"));
   } catch (err) {
     logger.fatal("Failed to initialize order-service", err);
     process.exit(1);

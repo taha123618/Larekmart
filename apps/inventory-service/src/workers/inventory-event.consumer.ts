@@ -12,6 +12,7 @@ import { invalidateInventoryCache } from "../cache/inventory-cache.js";
 import { inventoryMetrics, logger } from "../observability/metrics.js";
 import { consumer, producer } from "../utils/kafka.js";
 import { verifyPaidCheckoutSession } from "../utils/stripe-verify.js";
+import { redisStockGatekeeper } from "../gatekeeper/redis-stock-gatekeeper.js";
 
 /**
  * Subscribes to cross-service payment and order Kafka events to synchronize inventory state.
@@ -248,6 +249,14 @@ export async function startInventoryEventConsumer(): Promise<void> {
             await invalidateInventoryCache();
             const seenReleasedProds = new Set<string>();
             for (const item of released) {
+              await redisStockGatekeeper.incrementStockCounter(
+                {
+                  productId: item.inventoryItem.productId,
+                  variantId: item.inventoryItem.variantId,
+                  warehouseId: item.inventoryItem.warehouseId,
+                },
+                item.quantity,
+              );
               const k = `${item.inventoryItem.productId}:${item.inventoryItem.variantId ?? ""}`;
               if (!seenReleasedProds.has(k)) {
                 seenReleasedProds.add(k);

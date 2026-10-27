@@ -16,6 +16,7 @@ import {
   getCachedOrderChart,
   setCachedOrderChart,
 } from "../cache/order-chart-cache";
+import { dispatchViaOutbox } from "../outbox/outbox-relay.js";
 
 /**
  * Resolves server-authoritative unit prices (in paisa) for COD line items.
@@ -233,29 +234,26 @@ export const orderRoute = async (fastify: FastifyInstance) => {
       const saved = await newOrder.save();
       logger.info(`COD Order created with ID: ${saved._id}`);
 
-      // Dispatch order.created with COD and carrier attributes
-      const { producer } = await import("../utils/kafka.js");
-      await producer.send("order.created", {
-        value: {
-          orderId: saved._id.toString(),
-          userId: saved.userId,
-          reservationId: body.reservationId || null,
-          couponCode: body.couponCode || null,
-          taxCalculationId: body.taxCalculationId || null,
-          taxAmount: body.taxTotal ?? 0,
-          email: saved.email,
-          amount: saved.amount,
-          status: saved.status,
-          paymentMethod: "cod",
-          isCod: true,
-          codAmount: saved.amount,
-          codFee: body.codFee ?? 0,
-          carrier: body.carrier || "custom",
-          serviceType: body.serviceType || "standard",
-          shippingRateAmount: body.shippingRateAmount ?? 0,
-          shippingAddress: body.shippingAddress,
-          products: saved.products,
-        },
+      // Dispatch order.created via Transactional Outbox
+      await dispatchViaOutbox("order.created", {
+        orderId: saved._id.toString(),
+        userId: saved.userId,
+        reservationId: body.reservationId || null,
+        couponCode: body.couponCode || null,
+        taxCalculationId: body.taxCalculationId || null,
+        taxAmount: body.taxTotal ?? 0,
+        email: saved.email,
+        amount: saved.amount,
+        status: saved.status,
+        paymentMethod: "cod",
+        isCod: true,
+        codAmount: saved.amount,
+        codFee: body.codFee ?? 0,
+        carrier: body.carrier || "custom",
+        serviceType: body.serviceType || "standard",
+        shippingRateAmount: body.shippingRateAmount ?? 0,
+        shippingAddress: body.shippingAddress,
+        products: saved.products,
       });
 
       return reply.status(201).send(saved);

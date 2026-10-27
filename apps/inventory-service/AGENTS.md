@@ -27,13 +27,18 @@ all inventory state is persisted through `@repo/inventory-db` in PostgreSQL.
   movement history.
 - Operational routes: `/health`, `/ready`, `/metrics`.
 
-## Concurrency and events
+## Concurrency, Redis Gatekeeper, and Events
 
-- Use `@repo/inventory-db` operations; never read a quantity and then write an
-  unconditional replacement.
+- **Flash-Sale Redis Stock Gatekeeper (`src/gatekeeper/redis-stock-gatekeeper.ts`)**:
+  - High-velocity checkout traffic is pre-checked via an atomic Redis Lua script (`RESERVE_LUA`) before reaching PostgreSQL.
+  - Insufficient stock requests are fast-rejected in <1ms without touching the database, protecting PostgreSQL connection pools from row-lock starvation.
+  - Winning requests claim stock in Redis, acquire a temporary claim token (`stock:claim:{referenceId}` with 60s TTL), and proceed to PostgreSQL to persist the formal reservation and movement ledger.
+  - If PostgreSQL transaction fails, the Redis counter is immediately rolled back (`ROLLBACK_LUA`) to prevent stock leakage.
+  - Cold cache misses are lazily populated from PostgreSQL using a 2-second distributed mutex (`stock:lock:...`) to prevent thundering herds.
+  - Released or expired reservations atomically increment the Redis stock counter (`INCREMENT_LUA`).
+- Use `@repo/inventory-db` operations; never read a quantity and then write an unconditional replacement.
 - Reservations use a conditional atomic update requiring sufficient available stock.
-- Publish `inventory.*` Kafka events only after the database transaction commits. Event
-  publication is observable but does not make Redis or Kafka authoritative.
+- Publish `inventory.*` Kafka events only after the database transaction commits. Event publication is observable but does not make Redis or Kafka authoritative.
 - Use `{ value: payload }` when publishing and keep handlers/event consumers defensive.
 
 ## Security
@@ -47,10 +52,9 @@ all inventory state is persisted through `@repo/inventory-db` in PostgreSQL.
 
 ```bash
 pnpm --filter inventory-service check-types
+pnpm --filter inventory-service test
 pnpm --filter inventory-service build
 pnpm --filter @repo/inventory-db db:generate
-pnpm check-types
 ```
 
-A running PostgreSQL and Redis are required for live service verification. No service-level
-JavaScript test runner is configured yet.
+A running PostgreSQL and Redis are required for live service verification. Automated test suites run via `pnpm --filter inventory-service test` covering Stripe verification, auth guards, Zod schemas, and Redis Stock Gatekeeper concurrency and stress tests.

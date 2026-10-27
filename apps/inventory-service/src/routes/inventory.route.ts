@@ -40,6 +40,7 @@ import {
 } from "../cache/inventory-cache.js";
 import { inventoryMetrics, logger } from "../observability/metrics.js";
 import { producer } from "../utils/kafka.js";
+import { redisStockGatekeeper } from "../gatekeeper/redis-stock-gatekeeper.js";
 
 const inventoryRoute = new Hono<{ Variables: AuthVariables }>();
 
@@ -276,6 +277,14 @@ inventoryRoute.post("/items", shouldBeAdmin, async (c) => {
     if (!parsed.success) return validationResponse(c, parsed.error);
 
     const item = await createInventoryItem(parsed.data);
+    await redisStockGatekeeper.setStockCounter(
+      {
+        productId: item.productId,
+        variantId: item.variantId,
+        warehouseId: item.warehouseId,
+      },
+      item.availableQuantity,
+    );
     await invalidateInventoryCache(item.productId, item.variantId);
     await publishItemEvent("inventory.created", item);
     return c.json({ data: item }, 201);
@@ -308,6 +317,14 @@ inventoryRoute.post("/restock", shouldBeAdmin, async (c) => {
       parsed.data,
     );
     inventoryMetrics.restocksTotal.inc();
+    await redisStockGatekeeper.setStockCounter(
+      {
+        productId: item.productId,
+        variantId: item.variantId,
+        warehouseId: item.warehouseId,
+      },
+      item.availableQuantity,
+    );
     await invalidateInventoryCache(item.productId, item.variantId);
     await publishItemEvent("inventory.restocked", item);
     return c.json({ data: item });
@@ -341,6 +358,14 @@ inventoryRoute.post("/adjustments", shouldBeAdmin, async (c) => {
       parsed.data,
     );
     inventoryMetrics.adjustmentsTotal.inc();
+    await redisStockGatekeeper.setStockCounter(
+      {
+        productId: item.productId,
+        variantId: item.variantId,
+        warehouseId: item.warehouseId,
+      },
+      item.availableQuantity,
+    );
     await invalidateInventoryCache(item.productId, item.variantId);
     await publishItemEvent("inventory.adjusted", item);
     return c.json({ data: item });
@@ -372,10 +397,61 @@ inventoryRoute.post("/reservations", shouldBeUser, async (c) => {
     );
     if (!parsed.success) return validationResponse(c, parsed.error);
 
-    const reservation = await reserveInventory({
-      ...parsed.data,
-      userId: c.get("userId"),
+    const itemKey = {
+      productId: parsed.data.productId,
+      variantId: parsed.data.variantId,
+      warehouseId: parsed.data.warehouseId,
+    };
+
+    // 1. Fast-Path Precheck via Redis Stock Gatekeeper (Lua Script)
+    const precheck = await redisStockGatekeeper.precheckAndClaim({
+      itemKey,
+      quantity: parsed.data.quantity,
+      referenceId: parsed.data.referenceId,
     });
+
+    if (!precheck.success) {
+      if (precheck.reason === "INSUFFICIENT_STOCK") {
+        logger.warn("Inventory reservation fast-rejected by Redis Gatekeeper", {
+          itemKey,
+          requested: parsed.data.quantity,
+          available: precheck.availableQuantity,
+        });
+        return c.json(
+          {
+            message: `Insufficient inventory: requested ${parsed.data.quantity}, available ${precheck.availableQuantity}`,
+          },
+          409,
+        );
+      }
+      if (precheck.reason === "ITEM_NOT_FOUND") {
+        return c.json(
+          {
+            message: `Inventory item not found or inactive for product ${parsed.data.productId}`,
+          },
+          404,
+        );
+      }
+    }
+
+    // 2. Persist to PostgreSQL with compensation rollback on failure
+    let reservation;
+    try {
+      reservation = await reserveInventory({
+        ...parsed.data,
+        userId: c.get("userId"),
+      });
+      // Finalize Redis claim upon successful DB commit
+      await redisStockGatekeeper.finalizeClaim(parsed.data.referenceId);
+    } catch (dbError) {
+      // Rollback claimed Redis stock counter immediately
+      await redisStockGatekeeper.rollbackClaim({
+        itemKey,
+        referenceId: parsed.data.referenceId,
+        quantity: parsed.data.quantity,
+      });
+      throw dbError;
+    }
 
     inventoryMetrics.reservationsCreatedTotal.inc();
     await invalidateInventoryCache(
@@ -454,6 +530,14 @@ inventoryRoute.post("/reservations/:id/release", shouldBeUser, async (c) => {
       c.get("userId"),
     );
     inventoryMetrics.reservationsReleasedTotal.inc();
+    await redisStockGatekeeper.incrementStockCounter(
+      {
+        productId: reservation.inventoryItem.productId,
+        variantId: reservation.inventoryItem.variantId,
+        warehouseId: reservation.inventoryItem.warehouseId,
+      },
+      reservation.quantity,
+    );
     await invalidateInventoryCache(
       reservation.inventoryItem.productId,
       reservation.inventoryItem.variantId,
@@ -488,6 +572,14 @@ inventoryRoute.post("/reservations/:id/expire", shouldBeUser, async (c) => {
       c.get("userId"),
     );
     inventoryMetrics.reservationsExpiredTotal.inc();
+    await redisStockGatekeeper.incrementStockCounter(
+      {
+        productId: reservation.inventoryItem.productId,
+        variantId: reservation.inventoryItem.variantId,
+        warehouseId: reservation.inventoryItem.warehouseId,
+      },
+      reservation.quantity,
+    );
     await invalidateInventoryCache(
       reservation.inventoryItem.productId,
       reservation.inventoryItem.variantId,
@@ -527,6 +619,14 @@ inventoryRoute.post("/reservations/expire-stale", shouldBeAdmin, async (c) => {
       await invalidateInventoryCache();
       const distinctExpiredProds = new Set<string>();
       for (const item of expiredList) {
+        await redisStockGatekeeper.incrementStockCounter(
+          {
+            productId: item.inventoryItem.productId,
+            variantId: item.inventoryItem.variantId,
+            warehouseId: item.inventoryItem.warehouseId,
+          },
+          item.quantity,
+        );
         const prodKey = `${item.inventoryItem.productId}:${item.inventoryItem.variantId ?? ""}`;
         if (!distinctExpiredProds.has(prodKey)) {
           distinctExpiredProds.add(prodKey);

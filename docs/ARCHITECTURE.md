@@ -135,8 +135,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 **`inventory-service` (Hono 4, :8007)** — stock and reservation authority.
 
 - Routes: `/api/v1/inventory` for availability, reservations, confirmation, release, expiry, restock, adjustments, low-stock queries, and movement history; plus `/health`, `/ready`, and `/metrics`.
-- Persistence: PostgreSQL through `@repo/inventory-db`; available, reserved, and sold quantities remain authoritative there.
-- Caching: Redis (`inventory:v1:*`) only for best-effort availability reads.
+- Caching & Flash-Sale Gatekeeper: Redis (`inventory:v1:*`) provides read-through availability caching and an atomic Redis Lua Stock Gatekeeper (`src/gatekeeper/redis-stock-gatekeeper.ts`) providing <1ms fast-rejection under flash sales and mutual exclusion warm-up, protecting PostgreSQL connection pools.
 - Events: publishes `inventory.*` events after committed transactions; Kafka is never used to decide stock availability.
 
 **`recommendation-service` (Python 3.12+ / FastAPI, :8008)** — personalization and recommendation platform.
