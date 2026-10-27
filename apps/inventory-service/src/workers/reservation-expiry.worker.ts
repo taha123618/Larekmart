@@ -36,6 +36,10 @@ export function startReservationExpiryWorker(
         await invalidateInventoryCache();
 
         for (const item of expiredList) {
+          await invalidateInventoryCache(
+            item.inventoryItem.productId,
+            item.inventoryItem.variantId,
+          );
           try {
             await producer.send("inventory.reservation.expired", {
               value: {

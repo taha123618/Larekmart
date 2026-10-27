@@ -131,6 +131,9 @@ export async function invalidateInventoryCache(
     try {
       const centralizedKey = buildStockCacheKey(productId, variantId);
       await cacheDel(redis.client, centralizedKey);
+      if (variantId) {
+        await cacheDel(redis.client, buildStockCacheKey(productId));
+      }
     } catch {
       // Non-blocking
     }

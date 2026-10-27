@@ -308,7 +308,7 @@ inventoryRoute.post("/restock", shouldBeAdmin, async (c) => {
       parsed.data,
     );
     inventoryMetrics.restocksTotal.inc();
-    await invalidateInventoryCache();
+    await invalidateInventoryCache(item.productId, item.variantId);
     await publishItemEvent("inventory.restocked", item);
     return c.json({ data: item });
   } catch (error) {
@@ -341,7 +341,7 @@ inventoryRoute.post("/adjustments", shouldBeAdmin, async (c) => {
       parsed.data,
     );
     inventoryMetrics.adjustmentsTotal.inc();
-    await invalidateInventoryCache();
+    await invalidateInventoryCache(item.productId, item.variantId);
     await publishItemEvent("inventory.adjusted", item);
     return c.json({ data: item });
   } catch (error) {
@@ -378,7 +378,10 @@ inventoryRoute.post("/reservations", shouldBeUser, async (c) => {
     });
 
     inventoryMetrics.reservationsCreatedTotal.inc();
-    await invalidateInventoryCache();
+    await invalidateInventoryCache(
+      reservation.inventoryItem.productId,
+      reservation.inventoryItem.variantId,
+    );
     await publishItemEvent("inventory.reserved", reservation.inventoryItem, {
       reservationId: reservation.id,
       quantity: reservation.quantity,
@@ -413,7 +416,10 @@ inventoryRoute.post("/reservations/:id/confirm", shouldBeAdmin, async (c) => {
   try {
     const reservation = await confirmInventoryReservation(c.req.param("id"));
     inventoryMetrics.reservationsConfirmedTotal.inc();
-    await invalidateInventoryCache();
+    await invalidateInventoryCache(
+      reservation.inventoryItem.productId,
+      reservation.inventoryItem.variantId,
+    );
     await publishItemEvent(
       "inventory.reservation.confirmed",
       reservation.inventoryItem,
@@ -448,7 +454,10 @@ inventoryRoute.post("/reservations/:id/release", shouldBeUser, async (c) => {
       c.get("userId"),
     );
     inventoryMetrics.reservationsReleasedTotal.inc();
-    await invalidateInventoryCache();
+    await invalidateInventoryCache(
+      reservation.inventoryItem.productId,
+      reservation.inventoryItem.variantId,
+    );
     await publishItemEvent("inventory.released", reservation.inventoryItem, {
       reservationId: reservation.id,
       quantity: reservation.quantity,
