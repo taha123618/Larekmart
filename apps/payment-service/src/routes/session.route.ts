@@ -54,6 +54,18 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
     }
   }
 
+  // Pre-checkout merchant/vendor eligibility gate
+  for (const item of cart) {
+    if (item.vendorId && item.vendorId.startsWith("suspended_")) {
+      return c.json(
+        {
+          error: `Merchant vendor '${item.vendorId}' is currently suspended and ineligible for checkout.`,
+        },
+        400,
+      );
+    }
+  }
+
   try {
     const lineItems = await Promise.all(
       cart.map(async (item) => {

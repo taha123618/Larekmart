@@ -1,6 +1,9 @@
 import { consumer } from "../utils/kafka.js";
 import { taxEventProducer } from "./producers/tax.producer.js";
-import { handleOrderCreatedEvent } from "./consumers/order.consumer.js";
+import {
+  handleOrderCreatedEvent,
+  handleOrderCancelledEvent,
+} from "./consumers/order.consumer.js";
 import {
   handleProductTaxCategoryUpdatedEvent,
   handleTaxRulesUpdatedEvent,
@@ -15,6 +18,10 @@ export async function startKafka(): Promise<void> {
       {
         topicName: "order.created",
         topicHandler: handleOrderCreatedEvent,
+      },
+      {
+        topicName: "order.cancelled",
+        topicHandler: handleOrderCancelledEvent,
       },
       {
         topicName: "product.tax-category.updated",

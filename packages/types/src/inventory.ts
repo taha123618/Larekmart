@@ -146,3 +146,11 @@ export function buildStockCacheKey(
   }
   return `stock:product:${productId}`;
 }
+
+export interface InventoryReservationCancelledPayload {
+  orderId?: string;
+  reservationId?: string | null;
+  referenceId?: string | null;
+  reason: string;
+  cancelledAt: string;
+}

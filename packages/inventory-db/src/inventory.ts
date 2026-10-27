@@ -558,6 +558,44 @@ export async function confirmReservationsByReference(
   return confirmed;
 }
 
+/**
+ * Releases active reservations associated with a reference ID or reservation ID.
+ * Returns reserved stock to availableQuantity and records RELEASE movements.
+ */
+export async function releaseReservationsByReference(
+  referenceId: string,
+  userId?: string,
+  reason = "Saga compensation release",
+): Promise<InventoryReservationWithItem[]> {
+  const matching = await prisma.inventoryReservation.findMany({
+    where: {
+      status: InventoryReservationStatus.RESERVED,
+      OR: [{ id: referenceId }, { referenceId }],
+      ...(userId ? { userId } : {}),
+    },
+  });
+
+  const released: InventoryReservationWithItem[] = [];
+  for (const reservation of matching) {
+    try {
+      const result = await releaseInventoryReservation(
+        reservation.id,
+        reservation.userId,
+        {
+          referenceType: "SAGA_COMPENSATION",
+          referenceId,
+          reason,
+        },
+      );
+      released.push(result);
+    } catch {
+      // Reservation might have been concurrently expired or released
+    }
+  }
+
+  return released;
+}
+
 export async function restockInventory(
   key: InventoryItemKey,
   quantity: number,

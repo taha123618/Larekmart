@@ -193,6 +193,8 @@ export const CreateCheckoutSessionSchema = z.object({
         name: z.string().min(1).max(250),
         quantity: z.number().int().positive().max(100),
         price: z.number().nonnegative().optional(),
+        sellerId: z.string().optional().nullable(),
+        vendorId: z.string().optional().nullable(),
       }),
     )
     .min(1, "Cart must contain at least one item"),

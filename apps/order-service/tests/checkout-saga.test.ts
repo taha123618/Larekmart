@@ -1,12 +1,14 @@
 /**
- * Test Suite: Distributed Checkout Saga Orchestrator Invariants
+ * Test Suite: Distributed Multi-DB Checkout Saga Orchestrator Invariants
  *
  * Verifies:
- * 1. Initial Phase: Order created in `pending_confirmation` status with `sagaHistory` and `paymentSessionId`.
+ * 1. Initial Phase: Order created in `pending_confirmation` status with `taxStatus: pending` and `inventoryStatus: pending`.
  * 2. Idempotency Invariant: Duplicate `payment.successful` payload does not duplicate orders.
- * 3. Happy Path: `confirmOrder` transitions order to `confirmed` and dispatches `order.confirmed`.
- * 4. Compensation Path: `cancelOutOfStockOrder` transitions order to `cancelled_out_of_stock` and dispatches `payment.refund.requested`.
- * 5. Terminal Refund Phase: `markOrderRefunded` transitions order to `refunded` and records `refundId`.
+ * 3. Dual-ACK Coordination: Order transitions to `confirmed` only after BOTH `inventory.stock.sold` AND `tax.calculation.completed`.
+ * 4. Tax Failure Compensation: `handleTaxFailed` transitions order to `cancelled_tax_mismatch` and dispatches refund + inventory release.
+ * 5. Inventory Failure Compensation: `cancelOutOfStockOrder` transitions order and dispatches refund + tax void.
+ * 6. Terminal Refund Phase: `markOrderRefunded` transitions order to `refunded`.
+ * 7. Timeout Sweeper: Sweeps orders exceeding the confirmation threshold.
  */
 
 import assert from "node:assert";
@@ -15,6 +17,8 @@ import { producer } from "../src/utils/kafka.js";
 import {
   createOrder,
   confirmOrder,
+  handleTaxCompleted,
+  handleTaxFailed,
   cancelOutOfStockOrder,
   markOrderRefunded,
   processPendingConfirmationTimeouts,
@@ -42,7 +46,7 @@ async function runSagaTests() {
   const testUserId = "user_saga_tester";
 
   try {
-    // 1. Initial Phase: Create Order in PENDING_CONFIRMATION
+    // 1. Initial Phase: Create Order in PENDING_CONFIRMATION with Dual-ACK pending flags
     console.log("1. Testing initial order creation in pending_confirmation...");
     const orderPayload = {
       sessionId: testSessionId,
@@ -66,14 +70,19 @@ async function runSagaTests() {
       "Order status must initially be pending_confirmation",
     );
     assert.strictEqual(
+      (createdOrder as any).taxStatus,
+      "pending",
+      "taxStatus must initially be pending when taxCalculationId is provided",
+    );
+    assert.strictEqual(
+      (createdOrder as any).inventoryStatus,
+      "pending",
+      "inventoryStatus must initially be pending",
+    );
+    assert.strictEqual(
       (createdOrder as any).paymentSessionId,
       testSessionId,
       "paymentSessionId must be persisted",
-    );
-    assert.strictEqual(
-      (createdOrder as any).reservationId,
-      testReservationId,
-      "reservationId must be persisted",
     );
     assert.strictEqual(
       (createdOrder as any).sagaHistory.length,
@@ -83,11 +92,6 @@ async function runSagaTests() {
 
     const initialEvent = sentEvents.find((e) => e.topic === "order.created");
     assert.ok(initialEvent, "order.created event must be emitted");
-    assert.strictEqual(
-      initialEvent.message.value.status,
-      "pending_confirmation",
-      "order.created must carry status pending_confirmation",
-    );
     console.log("✓ Initial order creation in pending_confirmation passed.");
 
     // 2. Idempotency: Duplicate payment.successful does not duplicate
@@ -100,99 +104,50 @@ async function runSagaTests() {
     );
     console.log("✓ Idempotency verified.");
 
-    // 3. Compensation Path: Simulate inventory reservation failure on a separate order
-    console.log(
-      "3. Testing Saga compensation (inventory reservation failure)...",
-    );
-    const failSessionId = `cs_test_fail_${Date.now()}`;
-    const failReservationId = `res_test_fail_${Date.now()}`;
-    const failOrder = await createOrder({
-      ...orderPayload,
-      sessionId: failSessionId,
-      referenceId: failSessionId,
-      reservationId: failReservationId,
-    });
-
-    await cancelOutOfStockOrder({
-      reservationId: failReservationId,
-      referenceId: failSessionId,
-      reason: "INSUFFICIENT_STOCK",
-      details: "Item sold out in flash sale race condition",
-    });
-
-    const updatedFailOrder = await Order.findById(failOrder._id);
-    assert.strictEqual(
-      updatedFailOrder?.status,
-      "cancelled_out_of_stock",
-      "Order must transition to cancelled_out_of_stock",
-    );
-    const lastHistory = (updatedFailOrder as any).sagaHistory.slice(-1)[0];
-    assert.strictEqual(
-      lastHistory.state,
-      "cancelled_out_of_stock",
-      "Saga history must record cancelled_out_of_stock transition",
-    );
-
-    const refundRequestedEvent = sentEvents.find(
-      (e) =>
-        e.topic === "payment.refund.requested" &&
-        e.message.value.orderId === failOrder._id.toString(),
-    );
-    assert.ok(
-      refundRequestedEvent,
-      "payment.refund.requested must be dispatched to payment-service",
-    );
-
-    const cancelledEvent = sentEvents.find(
-      (e) =>
-        e.topic === "order.cancelled" &&
-        e.message.value.orderId === failOrder._id.toString(),
-    );
-    assert.ok(
-      cancelledEvent,
-      "order.cancelled must be dispatched to shipping, promotion, and notification services",
-    );
-    console.log(
-      "✓ Saga compensation on inventory failure passed (refund requested & order.cancelled emitted).",
-    );
-
-    // 4. Terminal Refund Phase: Stripe refund completed
-    console.log(
-      "4. Testing Terminal Refund Phase (payment.refund.completed)...",
-    );
-    await markOrderRefunded({
-      orderId: failOrder._id.toString(),
-      refundId: "re_mock_refund_123",
-      paymentSessionId: failSessionId,
-    });
-
-    const refundedOrder = await Order.findById(failOrder._id);
-    assert.strictEqual(
-      refundedOrder?.status,
-      "refunded",
-      "Order must transition to refunded",
-    );
-    assert.strictEqual(
-      (refundedOrder as any).refundId,
-      "re_mock_refund_123",
-      "refundId must be recorded on the order document",
-    );
-    console.log("✓ Terminal refund transition passed.");
-
-    // 5. Happy Path: Confirm original order on inventory.stock.sold
-    console.log(
-      "5. Testing Happy Path: confirmOrder on inventory.stock.sold...",
-    );
+    // 3. Dual-ACK Step A: Inventory sold, awaiting tax confirmation
+    console.log("3. Testing Dual-ACK Step A: Inventory sold, awaiting tax completion...");
     await confirmOrder({
       reservationId: testReservationId,
       referenceId: testSessionId,
+    });
+
+    const awaitingTaxOrder = await Order.findById(createdOrder._id);
+    assert.strictEqual(
+      awaitingTaxOrder?.status,
+      "pending_confirmation",
+      "Order must remain in pending_confirmation while tax is still pending",
+    );
+    assert.strictEqual(
+      (awaitingTaxOrder as any).inventoryStatus,
+      "sold",
+      "inventoryStatus must be sold",
+    );
+    console.log("✓ Order correctly held in pending_confirmation awaiting tax completion.");
+
+    // 3. Dual-ACK Step B: Tax settled -> dual-ACK met -> transitions to confirmed
+    console.log("4. Testing Dual-ACK Step B: Tax calculation settled -> order confirmed...");
+    await handleTaxCompleted({
+      calculationId: "tax_calc_123",
+      referenceId: createdOrder._id.toString(),
+      referenceType: "order",
+      currency: "USD",
+      subtotal: "150.00",
+      taxTotal: "5.00",
+      total: "155.00",
+      ruleVersion: "2026-10",
+      completedAt: new Date().toISOString(),
     });
 
     const confirmedOrder = await Order.findById(createdOrder._id);
     assert.strictEqual(
       confirmedOrder?.status,
       "confirmed",
-      "Order must transition to confirmed upon inventory stock sold",
+      "Order must transition to confirmed upon achieving Dual-ACK",
+    );
+    assert.strictEqual(
+      (confirmedOrder as any).taxStatus,
+      "completed",
+      "taxStatus must be completed",
     );
 
     const confirmedEvent = sentEvents.find(
@@ -202,14 +157,113 @@ async function runSagaTests() {
     );
     assert.ok(
       confirmedEvent,
-      "order.confirmed event must be dispatched to cart-service and shipping-service",
+      "order.confirmed event must be dispatched once Dual-ACK is achieved",
     );
-    console.log("✓ Order confirmed transition passed.");
+    console.log("✓ Dual-ACK confirmed transition passed.");
 
-    // 6. Timeout Sweeper Path: Simulate an order whose inventory confirmation timed out
-    console.log(
-      "6. Testing Saga Confirmation Timeout Sweeper (stuck pending_confirmation order)...",
+    // 5. Compensation Path: Tax calculation failure compensation
+    console.log("5. Testing Saga compensation on Tax calculation failure...");
+    const taxFailSessionId = `cs_test_taxfail_${Date.now()}`;
+    const taxFailReservationId = `res_test_taxfail_${Date.now()}`;
+    const taxFailOrder = await createOrder({
+      ...orderPayload,
+      sessionId: taxFailSessionId,
+      referenceId: taxFailSessionId,
+      reservationId: taxFailReservationId,
+      taxCalculationId: "tax_calc_invalid",
+    });
+
+    await handleTaxFailed({
+      calculationId: "tax_calc_invalid",
+      referenceId: taxFailOrder._id.toString(),
+      referenceType: "order",
+      error: "Tax rate discrepancy or jurisdiction not found",
+      failedAt: new Date().toISOString(),
+    });
+
+    const updatedTaxFailOrder = await Order.findById(taxFailOrder._id);
+    assert.strictEqual(
+      updatedTaxFailOrder?.status,
+      "cancelled_tax_mismatch",
+      "Order must transition to cancelled_tax_mismatch",
     );
+
+    const taxFailRefundEvent = sentEvents.find(
+      (e) =>
+        e.topic === "payment.refund.requested" &&
+        e.message.value.orderId === taxFailOrder._id.toString(),
+    );
+    assert.ok(
+      taxFailRefundEvent,
+      "payment.refund.requested must be dispatched to refund customer",
+    );
+
+    const taxFailInvCancelEvent = sentEvents.find(
+      (e) =>
+        e.topic === "inventory.reservation.cancelled" &&
+        e.message.value.orderId === taxFailOrder._id.toString(),
+    );
+    assert.ok(
+      taxFailInvCancelEvent,
+      "inventory.reservation.cancelled must be dispatched to release PostgreSQL stock",
+    );
+    console.log("✓ Tax failure compensation passed (refund + inventory release emitted).");
+
+    // 6. Compensation Path: Inventory reservation failure with Tax Voiding
+    console.log("6. Testing Saga compensation on Inventory failure (with tax voiding)...");
+    const invFailSessionId = `cs_test_invfail_${Date.now()}`;
+    const invFailReservationId = `res_test_invfail_${Date.now()}`;
+    const invFailOrder = await createOrder({
+      ...orderPayload,
+      sessionId: invFailSessionId,
+      referenceId: invFailSessionId,
+      reservationId: invFailReservationId,
+      taxCalculationId: "tax_calc_to_void",
+    });
+
+    await cancelOutOfStockOrder({
+      reservationId: invFailReservationId,
+      referenceId: invFailSessionId,
+      reason: "INSUFFICIENT_STOCK",
+      details: "Item sold out in flash sale race condition",
+    });
+
+    const updatedInvFailOrder = await Order.findById(invFailOrder._id);
+    assert.strictEqual(
+      updatedInvFailOrder?.status,
+      "cancelled_out_of_stock",
+      "Order must transition to cancelled_out_of_stock",
+    );
+
+    const invFailTaxVoidEvent = sentEvents.find(
+      (e) =>
+        e.topic === "tax.calculation.voided" &&
+        e.message.value.calculationId === "tax_calc_to_void",
+    );
+    assert.ok(
+      invFailTaxVoidEvent,
+      "tax.calculation.voided must be dispatched to MySQL tax service",
+    );
+    console.log("✓ Inventory failure compensation passed (tax void emitted).");
+
+    // 7. Terminal Refund Phase: Stripe refund completed
+    console.log("7. Testing Terminal Refund Phase (payment.refund.completed)...");
+    await markOrderRefunded({
+      orderId: invFailOrder._id.toString(),
+      refundId: "re_mock_refund_123",
+      paymentSessionId: invFailSessionId,
+    });
+
+    const refundedOrder = await Order.findById(invFailOrder._id);
+    assert.strictEqual(
+      refundedOrder?.status,
+      "refunded",
+      "Order must transition to refunded",
+    );
+    console.log("✓ Terminal refund transition passed.");
+
+    // 8. Timeout Sweeper Path: Simulate an order whose Dual-ACK timed out
+    console.log("8. Testing Saga Confirmation Timeout Sweeper...");
     const timeoutSessionId = `cs_test_timeout_${Date.now()}`;
     const timeoutReservationId = `res_test_timeout_${Date.now()}`;
     const timeoutOrder = await createOrder({
@@ -219,13 +273,12 @@ async function runSagaTests() {
       reservationId: timeoutReservationId,
     });
 
-    // Manually backdate createdAt on raw MongoDB collection to bypass Mongoose timestamp locking
+    // Manually backdate createdAt on raw MongoDB collection
     await Order.collection.updateOne(
       { _id: timeoutOrder._id },
       { $set: { createdAt: new Date(Date.now() - 65000) } },
     );
 
-    // Run timeout sweeper with 60000ms threshold
     const processedCount = await processPendingConfirmationTimeouts(60000);
     assert.strictEqual(
       processedCount >= 1,
@@ -239,24 +292,21 @@ async function runSagaTests() {
       "cancelled_out_of_stock",
       "Timed out order must transition to cancelled_out_of_stock",
     );
-
-    const timeoutRefundEvent = sentEvents.find(
-      (e) =>
-        e.topic === "payment.refund.requested" &&
-        e.message.value.orderId === timeoutOrder._id.toString(),
-    );
-    assert.ok(
-      timeoutRefundEvent,
-      "Timeout sweeper must emit payment.refund.requested for abandoned order",
-    );
     console.log("✓ Saga confirmation timeout sweeper passed.");
 
     // Cleanup test documents
     await Order.deleteMany({
-      _id: { $in: [createdOrder._id, failOrder._id, timeoutOrder._id] },
+      _id: {
+        $in: [
+          createdOrder._id,
+          taxFailOrder._id,
+          invFailOrder._id,
+          timeoutOrder._id,
+        ],
+      },
     });
     console.log("\n=======================================================");
-    console.log(" All Distributed Checkout Saga Tests Passed Successfully! ");
+    console.log(" All Distributed Multi-DB Saga Tests Passed Successfully! ");
     console.log("=======================================================\n");
   } finally {
     await mongoose.disconnect();

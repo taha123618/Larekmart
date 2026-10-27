@@ -10,6 +10,7 @@ export const OrderStatus = [
   "shipped",
   "delivered",
   "cancelled_out_of_stock",
+  "cancelled_tax_mismatch",
   "refund_pending",
   "refunded",
 ] as const;
@@ -21,6 +22,16 @@ const OrderSchema = new Schema(
     amount: { type: Number, required: true },
     taxAmount: { type: Number, default: 0 },
     taxCalculationId: { type: String, default: null },
+    taxStatus: {
+      type: String,
+      enum: ["pending", "completed", "failed", "voided"],
+      default: "pending",
+    },
+    inventoryStatus: {
+      type: String,
+      enum: ["pending", "reserved", "sold", "failed"],
+      default: "pending",
+    },
     status: {
       type: String,
       required: true,

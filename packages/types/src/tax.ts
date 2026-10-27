@@ -248,6 +248,7 @@ export type TaxCalculationCompletedEventPayload = z.infer<
 >;
 
 export const TaxCalculationFailedEventPayloadSchema = z.object({
+  calculationId: z.string().optional(),
   referenceId: z.string(),
   referenceType: z.string(),
   error: z.string(),
@@ -255,6 +256,17 @@ export const TaxCalculationFailedEventPayloadSchema = z.object({
 });
 export type TaxCalculationFailedEventPayload = z.infer<
   typeof TaxCalculationFailedEventPayloadSchema
+>;
+
+export const TaxCalculationVoidedEventPayloadSchema = z.object({
+  calculationId: z.string().optional(),
+  referenceId: z.string(),
+  referenceType: z.string(),
+  reason: z.string(),
+  voidedAt: z.string(),
+});
+export type TaxCalculationVoidedEventPayload = z.infer<
+  typeof TaxCalculationVoidedEventPayloadSchema
 >;
 
 export const TaxRulesUpdatedEventPayloadSchema = z.object({
@@ -345,4 +357,18 @@ export interface TaxOverviewResponse {
   totalCategories: number;
   totalCalculations: number;
   provider: string;
+}
+
+export interface TaxCalculationFailedPayload {
+  calculationId?: string;
+  orderId: string;
+  reason: string;
+  timestamp: string;
+}
+
+export interface TaxCalculationVoidedPayload {
+  calculationId: string;
+  orderId?: string;
+  reason: string;
+  voidedAt: string;
 }

@@ -188,7 +188,7 @@ export class TaxCalculationRepository {
   public async updateReference(
     id: string,
     referenceId: string,
-    referenceType: "order" | "quote" | "invoice" = "order",
+    referenceType: "order" | "quote" | "invoice" | "voided" = "order",
   ): Promise<void> {
     try {
       const db = getDb();

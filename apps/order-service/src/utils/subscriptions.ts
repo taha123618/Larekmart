@@ -4,6 +4,8 @@ import {
   confirmOrder,
   cancelOutOfStockOrder,
   markOrderRefunded,
+  handleTaxCompleted,
+  handleTaxFailed,
 } from "./order";
 
 export const runKafkaSubscriptions = async () => {
@@ -20,6 +22,20 @@ export const runKafkaSubscriptions = async () => {
       topicHandler: async (message) => {
         const payload = message.value;
         if (payload) await confirmOrder(payload);
+      },
+    },
+    {
+      topicName: "tax.calculation.completed",
+      topicHandler: async (message) => {
+        const payload = message.value;
+        if (payload) await handleTaxCompleted(payload);
+      },
+    },
+    {
+      topicName: "tax.calculation.failed",
+      topicHandler: async (message) => {
+        const payload = message.value;
+        if (payload) await handleTaxFailed(payload);
       },
     },
     {

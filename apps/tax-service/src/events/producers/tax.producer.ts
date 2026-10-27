@@ -2,6 +2,7 @@ import { producer } from "../../utils/kafka.js";
 import type {
   TaxCalculationCompletedEventPayload,
   TaxCalculationFailedEventPayload,
+  TaxCalculationVoidedEventPayload,
   TaxRulesUpdatedEventPayload,
   TaxCalculationAdjustedEventPayload,
 } from "@repo/types";
@@ -43,6 +44,12 @@ export class TaxEventProducer {
     payload: TaxCalculationFailedEventPayload,
   ): Promise<void> {
     await this.send("tax.calculation.failed", payload);
+  }
+
+  public async publishTaxCalculationVoided(
+    payload: TaxCalculationVoidedEventPayload,
+  ): Promise<void> {
+    await this.send("tax.calculation.voided", payload);
   }
 
   public async publishTaxRulesUpdated(

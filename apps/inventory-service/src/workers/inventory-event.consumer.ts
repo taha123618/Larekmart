@@ -1,5 +1,6 @@
 import {
   confirmReservationsByReference,
+  releaseReservationsByReference,
   listInventoryItems,
   restockInventory,
 } from "@repo/inventory-db";
@@ -202,6 +203,79 @@ export async function startInventoryEventConsumer(): Promise<void> {
         } catch (error) {
           logger.error(
             "Error processing return.inspection.completed Kafka message in inventory-service",
+            error,
+          );
+        }
+      },
+    },
+    {
+      topicName: "inventory.reservation.cancelled",
+      topicHandler: async (message) => {
+        try {
+          const payload = message.value as {
+            orderId?: string;
+            reservationId?: string;
+            referenceId?: string;
+            reason?: string;
+          };
+          if (!payload) return;
+
+          const refId =
+            payload.reservationId || payload.referenceId || payload.orderId;
+          if (!refId) return;
+
+          logger.info(
+            `Processing inventory.reservation.cancelled compensation for: ${refId}`,
+          );
+          const released = await releaseReservationsByReference(
+            refId,
+            undefined,
+            payload.reason || "Saga compensation reservation cancelled",
+          );
+
+          if (released.length > 0) {
+            await invalidateInventoryCache();
+            logger.info(
+              `Successfully released ${released.length} reservation(s) via saga compensation for: ${refId}`,
+            );
+          }
+        } catch (error) {
+          logger.error(
+            "Error processing inventory.reservation.cancelled message in inventory-service",
+            error,
+          );
+        }
+      },
+    },
+    {
+      topicName: "order.cancelled",
+      topicHandler: async (message) => {
+        try {
+          const payload = message.value as {
+            orderId?: string;
+            reservationId?: string;
+            reason?: string;
+          };
+          if (!payload) return;
+
+          const refId = payload.reservationId || payload.orderId;
+          if (!refId) return;
+
+          const released = await releaseReservationsByReference(
+            refId,
+            undefined,
+            payload.reason || "Order cancelled compensation",
+          );
+
+          if (released.length > 0) {
+            await invalidateInventoryCache();
+            logger.info(
+              `Released ${released.length} reservation(s) following order.cancelled for: ${refId}`,
+            );
+          }
+        } catch (error) {
+          logger.error(
+            "Error processing order.cancelled message in inventory-service",
             error,
           );
         }
