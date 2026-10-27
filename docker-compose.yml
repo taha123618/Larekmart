@@ -83,7 +83,11 @@ services:
     volumes:
       - postgres_analytics_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_ANALYTICS_USER:-postgres} -d analytics_db"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_ANALYTICS_USER:-postgres} -d analytics_db",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -102,7 +106,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-mysql_root_password_123}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-tax_db}
-      MYSQL_MULTIPLE_DATABASES: ${MYSQL_MULTIPLE_DATABASES:-tax_db,return_db}
+      MYSQL_MULTIPLE_DATABASES: ${MYSQL_MULTIPLE_DATABASES:-tax_db}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -116,6 +120,38 @@ services:
           "-u",
           "root",
           "-p$${MYSQL_ROOT_PASSWORD:-mysql_root_password_123}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - larekmart-network
+
+  mysql-returns:
+    build:
+      context: ./docker/mysql
+      dockerfile: Dockerfile
+    container_name: larekmart-mysql-returns
+    restart: unless-stopped
+    ports:
+      - "${RETURNS_DB_BIND_IP:-127.0.0.1}:3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_RETURNS_ROOT_PASSWORD:-mysql_root_password_123}
+      MYSQL_DATABASE: return_db
+    volumes:
+      - mysql_returns_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p$${MYSQL_RETURNS_ROOT_PASSWORD:-mysql_root_password_123}",
         ]
       interval: 10s
       timeout: 5s
@@ -190,7 +226,8 @@ services:
     build:
       context: ./docker/kafka
       dockerfile: Dockerfile
-    container_name: larekmart-kafka
+    container_name: larekmart-kafka-broker-1
+    hostname: kafka-broker-1
     restart: unless-stopped
     ports:
       - "${KAFKA_BIND_IP:-127.0.0.1}:9092:9092"
@@ -199,19 +236,20 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-broker-1:9092,EXTERNAL://${KAFKA_EXTERNAL_HOST:-localhost}:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-broker-1:9093,2@kafka-broker-2:9093,3@kafka-broker-3:9093
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
     volumes:
-      - kafka_data:/var/lib/kafka/data
+      - kafka_broker_1_data:/var/lib/kafka/data
     healthcheck:
       test:
         [
@@ -223,7 +261,94 @@ services:
       retries: 5
       start_period: 15s
     networks:
-      - larekmart-network
+      larekmart-network:
+        aliases:
+          - kafka-broker-1
+          - kafka
+
+  kafka-broker-2:
+    build:
+      context: ./docker/kafka
+      dockerfile: Dockerfile
+    container_name: larekmart-kafka-broker-2
+    hostname: kafka-broker-2
+    restart: unless-stopped
+    ports:
+      - "${KAFKA_BIND_IP:-127.0.0.1}:9095:9095"
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9095
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-broker-2:9092,EXTERNAL://${KAFKA_EXTERNAL_HOST:-localhost}:9095
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-broker-1:9093,2@kafka-broker-2:9093,3@kafka-broker-3:9093
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    volumes:
+      - kafka_broker_2_data:/var/lib/kafka/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    networks:
+      larekmart-network:
+        aliases:
+          - kafka-broker-2
+
+  kafka-broker-3:
+    build:
+      context: ./docker/kafka
+      dockerfile: Dockerfile
+    container_name: larekmart-kafka-broker-3
+    hostname: kafka-broker-3
+    restart: unless-stopped
+    ports:
+      - "${KAFKA_BIND_IP:-127.0.0.1}:9096:9096"
+    environment:
+      KAFKA_NODE_ID: 3
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9096
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-broker-3:9092,EXTERNAL://${KAFKA_EXTERNAL_HOST:-localhost}:9096
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-broker-1:9093,2@kafka-broker-2:9093,3@kafka-broker-3:9093
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    volumes:
+      - kafka_broker_3_data:/var/lib/kafka/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    networks:
+      larekmart-network:
+        aliases:
+          - kafka-broker-3
 
   opensearch:
     build:
@@ -269,11 +394,15 @@ services:
       - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: larekmart-cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092
       KAFKA_CLUSTERS_0_READONLY: "false"
       KAFKA_CLUSTERS_0_TOPIC_AUTO_CREATE: "true"
     depends_on:
       kafka:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
@@ -932,6 +1061,10 @@ services:
       - "8018"
     ports:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8018:8018"
+    environment:
+      - MYSQL_HOST=mysql-returns
+      - MYSQL_PORT=3306
+      - DATABASE_URL=mysql://root:${MYSQL_RETURNS_ROOT_PASSWORD:-mysql_root_password_123}@mysql-returns:3306/return_db
     env_file:
       - ./apps/return-service/.env
     healthcheck:
@@ -945,7 +1078,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      mysql:
+      mysql-returns:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -1078,48 +1211,6 @@ services:
       start_period: 15s
     depends_on:
       redis:
-        condition: service_healthy
-      product-service:
-        condition: service_healthy
-      order-service:
-        condition: service_healthy
-      payment-service:
-        condition: service_healthy
-      auth-service:
-        condition: service_healthy
-      analytic-service:
-        condition: service_healthy
-      notification-service:
-        condition: service_healthy
-      search-service:
-        condition: service_healthy
-      inventory-service:
-        condition: service_healthy
-      cart-service:
-        condition: service_healthy
-      catalog-service:
-        condition: service_healthy
-      shipping-service:
-        condition: service_healthy
-      user-service:
-        condition: service_healthy
-      media-service:
-        condition: service_healthy
-      review-service:
-        condition: service_healthy
-      wishlist-service:
-        condition: service_healthy
-      promotion-service:
-        condition: service_healthy
-      tax-service:
-        condition: service_healthy
-      return-service:
-        condition: service_healthy
-      pricing-service:
-        condition: service_healthy
-      vendor-service:
-        condition: service_healthy
-      seller-service:
         condition: service_healthy
     networks:
       - larekmart-network
@@ -1262,12 +1353,18 @@ volumes:
     name: larekmart_mongo_data
   redis_data:
     name: larekmart_redis_data
-  kafka_data:
-    name: larekmart_kafka_data
+  kafka_broker_1_data:
+    name: larekmart_kafka_broker_1_data
+  kafka_broker_2_data:
+    name: larekmart_kafka_broker_2_data
+  kafka_broker_3_data:
+    name: larekmart_kafka_broker_3_data
   opensearch_data:
     name: larekmart_opensearch_data
   mysql_data:
     name: larekmart_mysql_data
+  mysql_returns_data:
+    name: larekmart_mysql_returns_data
 
 # ============================================================================
 # Networks

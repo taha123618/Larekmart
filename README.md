@@ -18,7 +18,7 @@
 
 ---
 
-**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-three backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, and sellers; MongoDB for orders and carts; MySQL for tax rules, calculations, jurisdictions, and return/refund management).
+**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale. It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-three backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, and sellers; MongoDB for orders and carts; MySQL 8.0 with dedicated, isolated instances for tax compliance on port 3306 and returns management on port 3307).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node, Go, and Python services, and shared internal packages managed with unified tooling, strict TypeScript typing, and shared configurations.
 
@@ -260,7 +260,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
         └───────────────────────────────────────────────────────────┘
 ```
 
-> **Zero Trust Perimeter & Event-Driven Core**: Cross-service communication is strictly asynchronous through Kafka events; backend services never make synchronous HTTP calls to one another. All public traffic enters through `api-gateway`, which enforces rate limits, validates Clerk sessions, scrubs spoofed headers, and injects verified identity claims signed with `x-internal-secret`. Downstream services verify transport authenticity in constant time and strictly decouple gateway transport secrets from administrative end-user privileges. For deep architectural specifications, see [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) (event schemas), [`SECURITY.md`](SECURITY.md) (perimeter & cryptographic standards), and [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md) (vulnerability analysis & remediation log).
+> **Zero Trust Perimeter & Event-Driven Core**: Cross-service communication is strictly asynchronous through Kafka events; backend services never make synchronous HTTP calls to one another. All public traffic enters through `api-gateway`, which enforces rate limits, validates Clerk sessions, scrubs spoofed headers, and injects verified identity claims signed with `x-internal-secret`. The gateway boots independently of downstream services, leveraging Opossum circuit breakers for graceful degradation (returning degraded stub payloads for non-critical reads such as reviews, wishlists, and recommendations during outages) while strictly failing closed with structured 503 responses on transactional endpoints. Downstream services verify transport authenticity in constant time and strictly decouple gateway transport secrets from administrative end-user privileges. For deep architectural specifications, see [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) (event schemas), [`SECURITY.md`](SECURITY.md) (perimeter & cryptographic standards), and [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md) (vulnerability analysis & remediation log).
 
 ---
 
@@ -290,8 +290,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 │   ├── review-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis reviews, ratings, moderation & reputation (:8014)
 │   ├── wishlist-service/      # Fastify 5 + PostgreSQL + Drizzle + Redis wishlists, guest migration & price/stock alerts (:8015)
 │   ├── promotion-service/     # Hono 4 + PostgreSQL + Drizzle + Redis promotions, coupons, budget holds & discounts (:8016)
-│   ├── tax-service/           # Fastify 5 + MySQL + Drizzle + Redis tax rules, calculations, exemptions & quotes (:8017)
-│   ├── return-service/        # Koa 2 + MySQL + Drizzle + Redis return requests, eligibility, inspection & refund coordination (:8018)
+│   ├── tax-service/           # Fastify 5 + MySQL (tax_db :3306) + Drizzle + Redis tax rules, calculations, exemptions & quotes (:8017)
+│   ├── return-service/        # Koa 2 + MySQL (return_db :3307) + Drizzle + Redis return requests, eligibility, inspection & refund coordination (:8018)
 │   ├── pricing-service/       # Fastify 5 + PostgreSQL + Drizzle + Redis authoritative merchandise pricing, multi-currency conversion, tiered rules & quotes (:8019)
 │   ├── vendor-service/        # NestJS 10 (Fastify) + PostgreSQL + Prisma + Redis vendor onboarding, KYB verification & documents (:8020)
 │   └── seller-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis storefront configuration, staff, policies & performance (:8021)
@@ -381,9 +381,9 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 - **Frontend Frameworks**: Next.js 15 (App Router, Turbopack, React Server Components), React 19
 - **UI & Design System**: Tailwind CSS v4, shadcn/ui, Radix UI primitives, Lucide React, Recharts
 - **State Management & Forms**: Zustand (persisted), TanStack React Query v5, TanStack Table v8, React Hook Form + Zod
-- **Backend & Gateway Frameworks**: Fastify 5 (`@fastify/http-proxy`, `@fastify/helmet`, Opossum circuit breaker), Express 5, Hono 4, Koa, Go 1.22 (Chi), Python 3.12+ (FastAPI)
-- **Databases & Persistence**: PostgreSQL (via Prisma ORM, Drizzle ORM & pg), MongoDB (via Mongoose), MySQL 8.0 (via Drizzle ORM)
-- **Message Broker**: Apache Kafka (KafkaJS, 3-broker cluster with ZooKeeper and Kafka UI)
+- **Backend & Gateway Frameworks**: Fastify 5 (`@fastify/http-proxy`, `@fastify/helmet`, Opossum circuit breaker with graceful degradation for non-critical paths), Express 5, Hono 4, Koa, Go 1.22 (Chi), Python 3.12+ (FastAPI)
+- **Databases & Persistence**: PostgreSQL (via Prisma ORM, Drizzle ORM & pg), MongoDB (via Mongoose), MySQL 8.0 (physically isolated instances: `tax_db` on port 3306 and `return_db` on port 3307 via Drizzle ORM)
+- **Message Broker**: Apache Kafka (KafkaJS, 3-broker KRaft cluster with quorum voting, min ISR 2, and Kafka UI)
 - **Authentication**: Clerk (`@clerk/nextjs`, `@clerk/express`, `@clerk/fastify`, `@hono/clerk-auth`)
 - **Payments**: Stripe (Custom Checkout Element + Webhooks)
 
@@ -395,12 +395,12 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 
 - **Node.js**: ≥ 18
 - **pnpm**: 9.0.0 (`corepack enable && corepack prepare pnpm@9.0.0 --activate`)
-- **Docker**: For running the local Kafka cluster and Redis
+- **Docker**: For running the local Kafka cluster, databases, and Redis
 - **Redis**: Local or containerized on port `6379` (cache for product, order, search, and analytic services)
 - **OpenSearch**: Local or containerized on port `9200` (search index owned by search-service)
 - **PostgreSQL**: Local or containerized on port `5432`
 - **MongoDB**: Local or containerized on port `27017`
-- **MySQL**: Local or containerized on port `3306` (tax compliance & snapshots owned by `tax-service`; return requests, RMA tracking, inspections & refunds owned by `return-service`)
+- **MySQL**: Local or containerized instances: port `3306` for `tax_db` (tax compliance & snapshots owned by `tax-service`); port `3307` for `return_db` (isolated return requests, RMA tracking, inspections & refunds owned by `return-service`)
 
 ### 2. Installation & Setup
 
@@ -408,8 +408,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 # ==============================================================================
 # Option A: Full Docker Compose Environment (Recommended)
 # ==============================================================================
-# Spins up backing databases (Postgres with pgvector, MongoDB replica set, MySQL 8.0, Redis,
-# Kafka KRaft broker, OpenSearch), Kafka UI, all 21 backend services, and both Next.js frontends:
+# Spins up backing databases (Postgres with pgvector, MongoDB replica set, isolated MySQL instances for tax_db & return_db, Redis,
+# 3-broker Kafka KRaft cluster, OpenSearch), Kafka UI, all 23 backend services, and both Next.js frontends:
 docker compose up -d --build
 
 # View logs:
@@ -424,8 +424,8 @@ docker compose down
 # 1. Automated monorepo setup (dependencies, .env files, AI skills sync)
 pnpm run setup
 
-# 2. Start backing infrastructure in Docker (PostgreSQL, MongoDB, Mongo-Express, MySQL, Redis, Kafka, OpenSearch, Kafka UI)
-docker compose up -d postgres mongo mongo-express mysql redis kafka opensearch kafka-ui
+# 2. Start backing infrastructure in Docker (PostgreSQL, MongoDB, Mongo-Express, MySQL tax_db, MySQL return_db, Redis, 3-broker Kafka, OpenSearch, Kafka UI)
+docker compose up -d postgres mongo mongo-express mysql mysql-returns redis kafka-broker-1 kafka-broker-2 kafka-broker-3 opensearch kafka-ui
 
 # 3. Generate Prisma Clients & apply database migrations
 pnpm --filter @repo/product-db db:generate

@@ -10,6 +10,13 @@ import {
 } from "../auth/authorization.js";
 import { GATEWAY_HEADERS } from "@repo/types";
 import { gatewayProxyRequestsTotal } from "../observability/metrics.js";
+import { circuitBreaker } from "../resilience/circuit-breaker.js";
+
+export const NON_CRITICAL_SERVICES = new Set<string>([
+  "review-service",
+  "wishlist-service",
+  "recommendation-service",
+]);
 
 export async function registerProxyRoutes(
   fastify: FastifyInstance,
@@ -24,33 +31,57 @@ export async function registerProxyRoutes(
       websocket: route.websocket,
     });
 
-    const hasAuthCheck = Boolean(
-      route.requireAdmin || route.requireSeller || route.requireAuth,
-    );
-
-    const preHandler = hasAuthCheck
-      ? (
-          req: FastifyRequest,
-          reply: FastifyReply,
-          done: (err?: Error) => void,
-        ) => {
-          const run = async () => {
-            if (route.requireAdmin) {
-              await requireAdmin(req, reply);
-            } else if (route.requireSeller) {
-              await requireSeller(req, reply);
-            } else if (route.requireAuth) {
-              await requireAuth(req, reply);
-            }
-          };
-
-          run()
-            .then(() => done())
-            .catch((err) =>
-              done(err instanceof Error ? err : new Error(String(err))),
-            );
+    const preHandler = (
+      req: FastifyRequest,
+      reply: FastifyReply,
+      done: (err?: Error) => void,
+    ) => {
+      const run = async () => {
+        // Fast-fail or degrade if downstream circuit breaker is open
+        if (!circuitBreaker.isAvailable(route.serviceName)) {
+          if (
+            NON_CRITICAL_SERVICES.has(route.serviceName) &&
+            req.method === "GET"
+          ) {
+            reply.status(200).send({
+              data: [],
+              degraded: true,
+              message: `${route.serviceName} is temporarily degraded. Serving fallback content.`,
+            });
+            return;
+          }
+          reply
+            .header("Retry-After", "5")
+            .status(503)
+            .send({
+              statusCode: 503,
+              error: "Service Unavailable",
+              message: `${route.serviceName} is temporarily unavailable, please retry.`,
+              degraded: false,
+              retryAfter: 5,
+            });
+          return;
         }
-      : undefined;
+
+        if (route.requireAdmin) {
+          await requireAdmin(req, reply);
+        } else if (route.requireSeller) {
+          await requireSeller(req, reply);
+        } else if (route.requireAuth) {
+          await requireAuth(req, reply);
+        }
+      };
+
+      run()
+        .then(() => {
+          if (!reply.sent) {
+            done();
+          }
+        })
+        .catch((err) =>
+          done(err instanceof Error ? err : new Error(String(err))),
+        );
+    };
 
     await fastify.register(httpProxy, {
       upstream: route.target,
@@ -60,6 +91,43 @@ export async function registerProxyRoutes(
       websocket: route.websocket ?? false,
       preHandler: preHandler as any,
       replyOptions: {
+        onError: (reply, { error }) => {
+          circuitBreaker.recordFailure(route.serviceName);
+          logger.warn(
+            `Gateway proxy error for service ${route.serviceName}: ${error.message}`,
+          );
+          if (!reply.sent) {
+            const req = reply.request as FastifyRequest | undefined;
+            if (
+              NON_CRITICAL_SERVICES.has(route.serviceName) &&
+              req?.method === "GET"
+            ) {
+              reply.status(200).send({
+                data: [],
+                degraded: true,
+                message: `${route.serviceName} is temporarily unavailable. Serving fallback content.`,
+              });
+            } else {
+              reply
+                .header("Retry-After", "5")
+                .status(503)
+                .send({
+                  statusCode: 503,
+                  error: "Service Unavailable",
+                  message: `${route.serviceName} is temporarily unavailable, please retry.`,
+                  degraded: false,
+                  retryAfter: 5,
+                });
+            }
+          }
+        },
+        onResponse: (_request, _reply, res) => {
+          if (res.statusCode && res.statusCode >= 500) {
+            circuitBreaker.recordFailure(route.serviceName);
+          } else {
+            circuitBreaker.recordSuccess(route.serviceName);
+          }
+        },
         rewriteRequestHeaders: (originalReq, headers) => {
           gatewayProxyRequestsTotal.inc({
             service: String(route.serviceName),

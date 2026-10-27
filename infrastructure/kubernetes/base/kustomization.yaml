@@ -39,6 +39,7 @@ resources:
   - autoscaling/keda-scaledobjects.yaml
   - pdb/pod-disruption-budgets.yaml
   - network-policies/network-policies.yaml
+  - messaging/kafka-cluster.yaml
 
 labels:
   - pairs:
