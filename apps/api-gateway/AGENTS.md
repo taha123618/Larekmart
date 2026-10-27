@@ -19,7 +19,7 @@ It intentionally contains **no business domain logic**, database queries, or Kaf
 
 ## 2. Port & Upstream Route Map
 
-Port: **8080**
+Port: **8090** (standalone / Docker; 8080 reserved for Kafka UI)
 
 | Public Route Prefix         | Upstream Service         | Port | Rewrite Prefix    |
 | :-------------------------- | :----------------------- | :--- | :---------------- |

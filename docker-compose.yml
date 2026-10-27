@@ -1313,8 +1313,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=larekmart-network"
-      # REST API Router (Primary /api/* routing across all domains)
-      - "traefik.http.routers.api-gateway.rule=Host(`${API_DOMAIN:-api.localhost}`) || PathPrefix(`/api`) || PathPrefix(`/notifications`) || PathPrefix(`/user-orders`) || PathPrefix(`/order-chart`)"
+      # Primary Gateway REST Router (Dedicated API Host - Priority 100)
+      - "traefik.http.routers.api-gateway.rule=Host(`${API_DOMAIN:-api.localhost}`)"
       - "traefik.http.routers.api-gateway.entrypoints=web,websecure"
       - "traefik.http.routers.api-gateway.middlewares=sec-headers,compress,rate-limit,retry"
       - "traefik.http.routers.api-gateway.priority=100"
@@ -1322,12 +1322,12 @@ services:
       - "traefik.http.services.api-gateway.loadbalancer.healthcheck.path=/health/ready"
       - "traefik.http.services.api-gateway.loadbalancer.healthcheck.interval=10s"
       - "traefik.http.services.api-gateway.loadbalancer.healthcheck.timeout=3s"
-      # Direct api.localhost Router (Prepends /api if requesting api.localhost/v1/...)
-      - "traefik.http.routers.api-gateway-direct.rule=Host(`${API_DOMAIN:-api.localhost}`) && PathPrefix(`/v1`)"
-      - "traefik.http.routers.api-gateway-direct.entrypoints=web,websecure"
-      - "traefik.http.routers.api-gateway-direct.middlewares=sec-headers,compress,add-api-prefix,rate-limit,retry"
-      - "traefik.http.routers.api-gateway-direct.service=api-gateway"
-      - "traefik.http.routers.api-gateway-direct.priority=110"
+      # Shared Storefront API Router (Strict Host && PathPrefix - Priority 100)
+      - "traefik.http.routers.api-gateway-path.rule=(Host(`${DOMAIN:-localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`)) && (PathPrefix(`/api`) || PathPrefix(`/notifications`) || PathPrefix(`/user-orders`) || PathPrefix(`/order-chart`))"
+      - "traefik.http.routers.api-gateway-path.entrypoints=web,websecure"
+      - "traefik.http.routers.api-gateway-path.middlewares=sec-headers,compress,rate-limit,retry"
+      - "traefik.http.routers.api-gateway-path.service=api-gateway"
+      - "traefik.http.routers.api-gateway-path.priority=100"
       # Real-Time WebSocket Router with Session Affinity for Horizontal Scaling
       - "traefik.http.routers.api-gateway-ws.rule=(Host(`${API_DOMAIN:-api.localhost}`) || Host(`${DOMAIN:-localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`)) && PathPrefix(`/ws`)"
       - "traefik.http.routers.api-gateway-ws.entrypoints=web,websecure"

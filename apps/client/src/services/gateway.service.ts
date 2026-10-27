@@ -11,7 +11,18 @@ import type {
 } from "@repo/types";
 
 export const getApiGatewayUrl = (): string => {
-  return process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090";
+  if (typeof window !== "undefined") {
+    // In browser: allow relative requests (e.g. "" or specific URL) for same-origin proxying
+    return process.env.NEXT_PUBLIC_API_GATEWAY_URL !== undefined
+      ? process.env.NEXT_PUBLIC_API_GATEWAY_URL
+      : "http://localhost:8090";
+  }
+  // Server-side (Node SSR): requires an absolute URL
+  return (
+    process.env.INTERNAL_API_GATEWAY_URL ||
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8090"
+  );
 };
 
 /**
@@ -31,7 +42,8 @@ export async function getGatewayHomeAggregation(
 ): Promise<GatewayHomeAggregationResponse | null> {
   try {
     const gatewayUrl = getApiGatewayUrl();
-    const url = new URL(`${gatewayUrl}/api/v1/home`);
+    const endpoint = "/api/v1/home";
+    const fullUrl = gatewayUrl ? `${gatewayUrl}${endpoint}` : endpoint;
 
     const headers: Record<string, string> = {
       Accept: "application/json",
@@ -41,7 +53,7 @@ export async function getGatewayHomeAggregation(
       headers["x-user-id"] = userId;
     }
 
-    const res = await fetch(url.toString(), {
+    const res = await fetch(fullUrl, {
       headers,
       next: { revalidate: 60 },
     });

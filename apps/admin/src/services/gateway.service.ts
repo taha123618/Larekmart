@@ -7,7 +7,18 @@
 import type { GatewayHealthResponse } from "@repo/types";
 
 export const getApiGatewayUrl = (): string => {
-  return process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090";
+  if (typeof window !== "undefined") {
+    // In browser: allow relative requests (e.g. "" or specific URL) for same-origin proxying
+    return process.env.NEXT_PUBLIC_API_GATEWAY_URL !== undefined
+      ? process.env.NEXT_PUBLIC_API_GATEWAY_URL
+      : "http://localhost:8090";
+  }
+  // Server-side (Node SSR): requires an absolute URL
+  return (
+    process.env.INTERNAL_API_GATEWAY_URL ||
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+    "http://localhost:8090"
+  );
 };
 
 /**

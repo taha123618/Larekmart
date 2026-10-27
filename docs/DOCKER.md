@@ -156,15 +156,15 @@ Larekmart deploys **Traefik v3** (`docker-compose.traefik.yml` and `docker-compo
 
 ### 4.1 Traefik Router Priority Hierarchy
 
-To eliminate route collisions where Next.js dynamic catch-all pages (`[[...slug]]`) intercept API calls or WebSocket upgrades, explicit Traefik router priorities are enforced:
+To eliminate route collisions where Next.js dynamic catch-all pages (`[[...slug]]`) intercept API calls or WebSocket upgrades, explicit Traefik router priorities and strictly disentangled host/path expressions are enforced:
 
-| Router                   | Priority | Matching Rule                                                                                                                           | Target Service       | Middlewares                                                                          |
-| :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------- | :------------------- | :----------------------------------------------------------------------------------- |
-| **`api-gateway-ws`**     | `120`    | `PathPrefix(/ws)` across all domains                                                                                                    | `api-gateway` (8090) | Sticky session cookie (`ws-affinity`) for real-time WebSocket connection persistence |
-| **`api-gateway-direct`** | `110`    | `Host(api.localhost) && PathPrefix(/v1)`                                                                                                | `api-gateway` (8090) | `add-api-prefix` (prepends `/api` to normalize path to `/api/v1/*`)                  |
-| **`api-gateway`**        | `100`    | `Host(api.localhost) \|\| PathPrefix(/api) \|\| PathPrefix(/notifications) \|\| PathPrefix(/user-orders) \|\| PathPrefix(/order-chart)` | `api-gateway` (8090) | Ingress rate limiting, gzip compression, security headers                            |
-| **`admin`**              | `60`     | `Host(admin.localhost)`                                                                                                                 | `admin` (3003)       | Next.js admin dashboard UI                                                           |
-| **`client`**             | `50`     | `Host(shop.localhost) \|\| Host(larekmart.localhost) \|\| Host(localhost)`                                                              | `client` (3002)      | Next.js storefront customer UI                                                       |
+| Router                 | Priority | Matching Rule                                                                                                               | Target Service       | Purpose / Middlewares                                                                |
+| :--------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------- | :------------------- | :----------------------------------------------------------------------------------- |
+| **`api-gateway-ws`**   | `120`    | `(Host(api.localhost) \|\| Host(...) \|\| Host(localhost)) && PathPrefix(/ws)`                                              | `api-gateway` (8090) | Sticky session cookie (`lm_ws_affinity`) for real-time WebSocket session persistence |
+| **`api-gateway`**      | `100`    | `Host(api.localhost)`                                                                                                       | `api-gateway` (8090) | Dedicated API host routing; native Fastify `/api/v1/*` handling, rate limiting       |
+| **`api-gateway-path`** | `100`    | `(Host(shop.localhost) \|\| Host(...) \|\| Host(localhost)) && (PathPrefix(/api) \|\| PathPrefix(/notifications) \|\| ...)` | `api-gateway` (8090) | Shared-domain API path router strictly bound with `&&` (zero frontend asset overlap) |
+| **`admin`**            | `60`     | `Host(admin.localhost)`                                                                                                     | `admin` (3003)       | Next.js admin dashboard UI                                                           |
+| **`client`**           | `50`     | `Host(shop.localhost) \|\| Host(larekmart.localhost) \|\| Host(localhost)`                                                  | `client` (3002)      | Next.js storefront customer UI (cleanly receives all root and hydration traffic)     |
 
 ### 4.2 Unified Storefront Client Environment
 

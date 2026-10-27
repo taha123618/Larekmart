@@ -64,9 +64,9 @@ services:
       - "traefik.http.middlewares.sec-headers.headers.contenttypenosniff=true"
       - "traefik.http.middlewares.sec-headers.headers.framedeny=true"
       - "traefik.http.middlewares.sec-headers.headers.referrerspolicy=strict-origin-when-cross-origin"
-      - "traefik.http.middlewares.sec-headers.headers.stsseconds=31536000"
-      - "traefik.http.middlewares.sec-headers.headers.stsincludesubdomains=true"
-      - "traefik.http.middlewares.sec-headers.headers.stspreload=true"
+      - "traefik.http.middlewares.sec-headers.headers.stsseconds=${TRAEFIK_HSTS_MAX_AGE:-0}"
+      - "traefik.http.middlewares.sec-headers.headers.stsincludesubdomains=${TRAEFIK_HSTS_INCLUDE_SUBDOMAINS:-false}"
+      - "traefik.http.middlewares.sec-headers.headers.stspreload=${TRAEFIK_HSTS_PRELOAD:-false}"
 
       # 2. Gzip / Brotli Compression Middleware
       - "traefik.http.middlewares.compress.compress=true"
@@ -79,9 +79,6 @@ services:
       - "traefik.http.middlewares.retry.retry.attempts=3"
       - "traefik.http.middlewares.retry.retry.initialinterval=100ms"
 
-      # 5. Path Rewriting & Prefix Unification Middlewares
-      - "traefik.http.middlewares.add-api-prefix.addprefix.prefix=/api"
-      - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api"
     healthcheck:
       test:
         [
