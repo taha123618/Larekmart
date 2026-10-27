@@ -66,6 +66,7 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `user.created`                    | auth-service         | email-service, analytic-service, notification-service                                            | `{ username: string, email: string }`                                                                                                                                                                                                                    |
 | `order.created`                   | order-service        | email-service, analytic-service, notification-service, recommendation-service, promotion-service | `{ orderId: string, userId: string, email: string, amount: number, status: "pending_confirmation" \| "confirmed" \| "success" \| "failed", products: { name: string, quantity: number, price: number }[], reservationId?: string, couponCode?: string }` |
 | `order.confirmed`                 | order-service        | cart-service, shipping-service, notification-service, analytic-service                           | `OrderConfirmedPayload` (`{ orderId, userId, email, amount, paymentSessionId, reservationId, products, confirmedAt }`)                                                                                                                                   |
+| `order.cancelled`                 | order-service        | shipping-service, promotion-service, notification-service, analytic-service                      | `OrderCancelledPayload` (`{ orderId, userId, reason, cancelledAt }`)                                                                                                                                                       |
 | `payment.successful`              | payment-service      | order-service, analytic-service, notification-service, inventory-service, recommendation-service | `{ sessionId, referenceId, reservationId, userId, email, amount, status, products: { name, quantity, price }[] }`                                                                                                                                        |
 | `payment.refund.requested`        | order-service        | payment-service                                                                                  | `PaymentRefundRequestedPayload` (`{ orderId, paymentSessionId, amount, reason, userId, requestedAt }`)                                                                                                                                                   |
 | `payment.refund.completed`        | payment-service      | order-service                                                                                    | `PaymentRefundCompletedPayload` (`{ orderId, refundId, paymentSessionId, amount, status, completedAt }`)                                                                                                                                                 |
@@ -318,6 +319,96 @@ Emitted from the verified Stripe webhook on `checkout.session.completed`.
 - Consumers:
   - `apps/order-service/src/utils/subscriptions.ts` → `createOrder`
   - `apps/inventory-service/src/workers/inventory-event.consumer.ts` → `confirmReservationsByReference` (converts reserved stock to sold stock)
+
+### `order.confirmed`
+
+Emitted from `order-service` when `inventory.stock.sold` confirms that stock has been successfully debited for the order's reservation.
+
+```jsonc
+{
+  "value": {
+    "orderId": "650f1234567890abcdef1234",
+    "userId": "user_2aX...",
+    "email": "customer@example.com",
+    "paymentSessionId": "cs_test_...",
+    "reservationId": "res_...",
+    "amount": 5990,
+    "products": [
+      { "productId": "12", "name": "Classic Oxford Shirt", "quantity": 1, "price": 5990 }
+    ],
+    "confirmedAt": "2026-10-27T12:00:00.000Z"
+  }
+}
+```
+
+- Producer: `apps/order-service/src/utils/order.ts` (`confirmOrder`)
+- Consumers:
+  - `apps/cart-service` → converts/clears user cart
+  - `apps/shipping-service` → initiates shipment creation
+  - `apps/notification-service` → dispatches customer order confirmation notice
+  - `apps/analytic-service` → records confirmed conversion metrics
+
+### `order.cancelled`
+
+Emitted from `order-service` when a checkout order is cancelled (e.g. inventory reservation failed, timeout expired, or customer initiated cancellation).
+
+```jsonc
+{
+  "value": {
+    "orderId": "650f1234567890abcdef1234",
+    "userId": "user_2aX...",
+    "reason": "Stock reservation failed: INSUFFICIENT_STOCK",
+    "cancelledAt": "2026-10-27T12:00:00.000Z"
+  }
+}
+```
+
+- Producer: `apps/order-service/src/utils/order.ts` (`cancelOutOfStockOrder`)
+- Consumers:
+  - `apps/shipping-service` → cancels any pending shipment
+  - `apps/promotion-service` → releases coupon and promotional reservations
+  - `apps/notification-service` → sends cancellation notification to customer
+  - `apps/analytic-service` → logs cancellation event
+
+### `payment.refund.requested`
+
+Emitted by `order-service` when an order cannot be confirmed (due to out-of-stock reservation failure or timeout), triggering an automated compensation refund in `payment-service`.
+
+```jsonc
+{
+  "value": {
+    "orderId": "650f1234567890abcdef1234",
+    "paymentSessionId": "cs_test_...",
+    "amount": 5990,
+    "reason": "Stock reservation failed: INSUFFICIENT_STOCK",
+    "userId": "user_2aX...",
+    "requestedAt": "2026-10-27T12:00:00.000Z"
+  }
+}
+```
+
+- Producer: `apps/order-service/src/utils/order.ts`
+- Consumer: `apps/payment-service/src/utils/refund.handler.ts` → executes `stripe.refunds.create`
+
+### `payment.refund.completed`
+
+Emitted by `payment-service` after executing the Stripe compensation refund.
+
+```jsonc
+{
+  "value": {
+    "orderId": "650f1234567890abcdef1234",
+    "refundId": "re_...",
+    "paymentSessionId": "cs_test_...",
+    "amount": 5990,
+    "status": "succeeded",
+    "completedAt": "2026-10-27T12:00:00.000Z"
+  }
+}
+```
+
+- Producer: `apps/payment-service/src/utils/refund.handler.ts`
+- Consumer: `apps/order-service/src/utils/subscriptions.ts` → marks order `status: "refunded"`
 
 ### `cart.*` (`cart.item_added`, `cart.merged`, `cart.expired`, etc.)
 
