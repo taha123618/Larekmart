@@ -5,7 +5,7 @@ const { Pool } = pg;
 export const pool = new Pool({
   connectionString:
     process.env.DATABASE_URL ||
-    "postgresql://postgres:postgres@localhost:5432/ecommerce",
+    "postgresql://postgres:postgres@localhost:5433/analytics_db",
 });
 
 let isDbConnected = false;

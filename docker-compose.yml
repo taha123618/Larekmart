@@ -36,7 +36,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
       POSTGRES_DB: ${POSTGRES_DB:-product_db}
-      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,analytics_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -65,6 +65,29 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+    networks:
+      - larekmart-network
+
+  postgres-analytics:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    container_name: larekmart-postgres-analytics
+    restart: unless-stopped
+    ports:
+      - "${ANALYTICS_DB_BIND_IP:-127.0.0.1}:5433:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_ANALYTICS_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_ANALYTICS_PASSWORD:-password123}
+      POSTGRES_DB: analytics_db
+    volumes:
+      - postgres_analytics_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_ANALYTICS_USER:-postgres} -d analytics_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - larekmart-network
 
@@ -411,6 +434,8 @@ services:
       - "8004"
     ports:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8004:8004"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_ANALYTICS_USER:-postgres}:${POSTGRES_ANALYTICS_PASSWORD:-password123}@postgres-analytics:5432/analytics_db
     env_file:
       - ./apps/analytic-service/.env
     healthcheck:
@@ -424,7 +449,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      postgres:
+      postgres-analytics:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -1231,6 +1256,8 @@ services:
 volumes:
   postgres_data:
     name: larekmart_postgres_data
+  postgres_analytics_data:
+    name: larekmart_postgres_analytics_data
   mongo_data:
     name: larekmart_mongo_data
   redis_data:
