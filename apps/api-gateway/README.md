@@ -43,8 +43,8 @@ The **Larekmart API Gateway** is the single public HTTP entry point for storefro
 The gateway acts as the **security and routing boundary**:
 
 1. **Request Correlation:** Generates or validates `x-request-id` and sets standard W3C `traceparent` headers.
-2. **Client Header Sanitization:** Removes any client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`).
-3. **Authentication Verification:** Verifies Clerk session tokens, extracts identity claims, and injects trusted identity headers.
+2. **Client Header Sanitization:** Removes any client-supplied internal headers (`x-user-id`, `x-user-role`, `x-user-is-super-admin`, `x-user-is-seller`, `x-user-can-manage-sellers`, `x-internal-secret`) _before_ rewriting and proxying to upstreams.
+3. **Authentication Verification:** Verifies Clerk session tokens, extracts identity claims, and injects trusted identity headers alongside the validated `x-internal-secret`.
 4. **Distributed Rate Limiting:** Enforces Redis-backed sliding-window rate limits per policy tier (AUTH, PUBLIC_READ, SEARCH, PAYMENT, ADMIN) with local memory fallback.
 5. **Resilience:** Circuit breaking, configurable upstream timeouts, and idempotent retries (only safe GET/HEAD requests, never payment/order writes).
 6. **Error Normalization:** Uniform error structures without leaking internal IPs, database connection strings, or stack traces.

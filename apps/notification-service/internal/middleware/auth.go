@@ -102,6 +102,8 @@ func ExtractUserID(r *http.Request) string {
 				if err != nil || subtle.ConstantTimeCompare(providedSig, expectedSig) != 1 {
 					return ""
 				}
+			} else if os.Getenv("APP_ENV") == "production" || os.Getenv("ENV") == "production" {
+				return ""
 			}
 
 			payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])

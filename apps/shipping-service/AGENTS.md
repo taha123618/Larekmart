@@ -15,10 +15,12 @@ Instructions for agents editing `apps/shipping-service`.
 - Use Redis via `@repo/redis` solely for caching and webhook idempotency.
 - Use Kafka via `@repo/kafka` for asynchronous cross-service events. Always use `{ value: payload }` envelope.
 - Standard error responses must be JSON: `{ message: string }`.
+- Authentication via `requireAdminOrInternal`: requires valid `x-internal-secret` (verified with `safeTimingCompare`) or cryptographically verified Clerk Bearer token with `role === "admin"`. If forwarded by gateway on behalf of a user (`x-user-role`), non-admin users are rejected with 403. In production, missing signing keys must fail-closed (401).
 
 ## 3. Commands
 
 ```bash
 pnpm --filter shipping-service dev
 pnpm --filter shipping-service check-types
+pnpm --filter shipping-service test
 ```

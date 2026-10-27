@@ -12,7 +12,7 @@ A high-performance hybrid recommendation platform for Larekmart built with Pytho
 - `app/core/config.py` — Pydantic Settings reading environment variables from `.env`.
 - `app/core/logging.py` — Structured logging configuration via `structlog`.
 - `app/core/errors.py` — Global exception handlers returning standard `{ message }` JSON.
-- `app/core/security.py` — Security headers and Clerk JWT validation helper.
+- `app/core/security.py` — Security headers, constant-time internal secret verification (`hmac.compare_digest`), gateway user identity propagation, and fail-closed Clerk JWT cryptographic verification. In production, unverified tokens or headers are strictly rejected.
 - `app/db/session.py` — SQLAlchemy 2.x async engine (`asyncpg`) and sessionmaker.
 - `app/db/models/` — Lean database domain models matching `001_initial_schema.py`:
   - `user_interaction.py` — User behavioral events (`VIEW`, `ADD_TO_CART`, `ORDER_COMPLETED`, etc.)

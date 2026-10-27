@@ -6,6 +6,9 @@ const FORBIDDEN_CLIENT_HEADERS = [
   "x-user-role",
   "x-user-permissions",
   "x-internal-secret",
+  "x-user-is-super-admin",
+  "x-user-is-seller",
+  "x-user-can-manage-sellers",
 ] as const;
 
 export function registerRequestIdMiddleware(fastify: FastifyInstance): void {

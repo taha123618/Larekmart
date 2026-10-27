@@ -18,7 +18,13 @@ export function isInternalService(request: FastifyRequest): boolean {
   return safeTimingCompare(secret, env.INTERNAL_SERVICE_SECRET);
 }
 
+export function isTrustedContext(request: FastifyRequest): boolean {
+  if (isInternalService(request)) return true;
+  return env.NODE_ENV === "development" || env.NODE_ENV === "test";
+}
+
 export function getUserId(request: FastifyRequest): string | null {
+  if (!isTrustedContext(request)) return null;
   const userId = request.headers["x-user-id"];
   if (typeof userId === "string" && userId.trim().length > 0) {
     return userId.trim();
@@ -27,6 +33,7 @@ export function getUserId(request: FastifyRequest): string | null {
 }
 
 export function getUserRole(request: FastifyRequest): string | null {
+  if (!isTrustedContext(request)) return null;
   const userRole = request.headers["x-user-role"];
   if (typeof userRole === "string") {
     return userRole.trim();
@@ -35,14 +42,17 @@ export function getUserRole(request: FastifyRequest): string | null {
 }
 
 export function isSuperAdmin(request: FastifyRequest): boolean {
-  if (isInternalService(request)) return true;
+  if (!isTrustedContext(request)) return false;
   const role = getUserRole(request);
   const isSuper = request.headers["x-user-is-super-admin"] === "true";
-  return role === "super_admin" || isSuper;
+  return (
+    role === "super_admin" || isSuper || (isInternalService(request) && !role)
+  );
 }
 
 export function isSeller(request: FastifyRequest): boolean {
-  if (isInternalService(request) || isSuperAdmin(request)) return true;
+  if (!isTrustedContext(request)) return false;
+  if (isSuperAdmin(request)) return true;
   const role = getUserRole(request);
   const isSellerFlag = request.headers["x-user-is-seller"] === "true";
   return isSellerFlag || role === "seller" || role === "admin";
@@ -52,6 +62,10 @@ export async function requireUser(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
+  if (!isTrustedContext(request)) {
+    reply.status(401).send({ message: "Authentication required" });
+    return;
+  }
   const userId = getUserId(request);
   if (!userId) {
     reply.status(401).send({ message: "Authentication required" });
@@ -62,7 +76,10 @@ export async function requireAdmin(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  if (isInternalService(request)) {
+  if (!isTrustedContext(request)) {
+    reply
+      .status(403)
+      .send({ message: "Invalid or missing internal service secret" });
     return;
   }
   const role = getUserRole(request);
@@ -84,7 +101,8 @@ export async function requireSuperAdmin(
 }
 
 export function isManageAdmin(request: FastifyRequest): boolean {
-  if (isInternalService(request) || isSuperAdmin(request)) return true;
+  if (!isTrustedContext(request)) return false;
+  if (isSuperAdmin(request)) return true;
   return request.headers["x-user-can-manage-sellers"] === "true";
 }
 
@@ -118,8 +136,8 @@ export async function requireSellerEnabled(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  // Allow internal service calls and super admin operations through
-  if (isInternalService(request) || isSuperAdmin(request)) {
+  // Allow internal machine-to-machine service calls and super admin operations through
+  if (isSuperAdmin(request)) {
     return;
   }
 
@@ -138,10 +156,16 @@ export async function requireSellerStaffOrAdmin(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  if (isInternalService(request)) {
+  if (!isTrustedContext(request)) {
+    reply.status(401).send({ message: "Authentication required" });
     return;
   }
-  if (getUserRole(request) === "admin") {
+  const role = getUserRole(request);
+  if (
+    role === "admin" ||
+    role === "super_admin" ||
+    (isInternalService(request) && !role)
+  ) {
     return;
   }
 

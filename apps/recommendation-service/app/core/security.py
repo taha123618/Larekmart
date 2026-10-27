@@ -45,11 +45,20 @@ def setup_security(app: FastAPI) -> None:
 
 def get_current_actor(request: Request) -> dict[str, Any] | None:
     """Resolves authenticated actor from internal secret or Clerk session."""
+    settings = get_settings()
     internal_secret = os.getenv("INTERNAL_SERVICE_SECRET")
     provided_secret = request.headers.get("x-internal-secret")
+    is_internal = False
     if internal_secret and provided_secret:
         if hmac.compare_digest(provided_secret, internal_secret):
-            return {"userId": "internal", "role": "admin", "isInternal": True}
+            is_internal = True
+
+    if is_internal:
+        x_user_id = request.headers.get("x-user-id")
+        if x_user_id:
+            x_user_role = request.headers.get("x-user-role", "user")
+            return {"userId": x_user_id, "role": x_user_role, "isInternal": False}
+        return {"userId": "internal", "role": "admin", "isInternal": True}
 
     auth_header = request.headers.get("authorization")
     if auth_header and auth_header.startswith("Bearer "):
@@ -70,6 +79,9 @@ def get_current_actor(request: Request) -> dict[str, Any] | None:
                         return None
                 except Exception:
                     return None
+            elif settings.app_env == "production":
+                # In production, tokens cannot be accepted without cryptographic verification
+                return None
 
             try:
                 padding = "=" * (-len(parts[1]) % 4)
@@ -85,11 +97,12 @@ def get_current_actor(request: Request) -> dict[str, Any] | None:
             except Exception:
                 return None
 
-    # Dev/test bypass with x-user-id header
-    x_user_id = request.headers.get("x-user-id")
-    if x_user_id:
-        role = request.headers.get("x-user-role", "user")
-        return {"userId": x_user_id, "role": role, "isInternal": False}
+    # Dev/test bypass with x-user-id header permitted only in non-production environments
+    if settings.app_env != "production":
+        x_user_id = request.headers.get("x-user-id")
+        if x_user_id:
+            role = request.headers.get("x-user-role", "user")
+            return {"userId": x_user_id, "role": role, "isInternal": False}
 
     return None
 

@@ -179,7 +179,15 @@ See `.env.example` for the full list. Required in production:
 - `DATABASE_URL` or `MYSQL_HOST/PORT/USER/PASSWORD/DATABASE`
 - `KAFKA_BROKERS`, `KAFKA_CLIENT_ID`, `KAFKA_GROUP_ID`
 - `REDIS_URL`
-- `GATEWAY_INTERNAL_SECRET` (must differ from default in production)
+- `GATEWAY_INTERNAL_SECRET` (must differ from default in production; verified via constant-time comparison)
+- `CLERK_SECRET_KEY` / `CLERK_JWT_KEY` (required for direct Bearer JWT signature verification; fails closed in production)
+
+### Authentication Architecture
+
+`src/middleware/auth.middleware.ts` enforces zero-trust authentication:
+
+1. **API Gateway Path**: Validates `x-internal-secret` using constant-time comparison (`safeTimingCompare`). If valid, trusts `x-user-id` and `x-user-role`.
+2. **Direct Bearer Path**: Cryptographically verifies HMAC-SHA256 or RSA-SHA256 signatures against `CLERK_JWT_KEY` or `CLERK_SECRET_KEY`. In production, missing keys or invalid signatures strictly fail closed (401/403). Base64 decoding without signature verification is prohibited.
 
 ## 10. Definition of Done
 

@@ -24,15 +24,18 @@ Please include:
 
 ## 2. Security Architecture Principles
 
-### Zero Trust Across Services
+### Zero Trust Across Services & Gateway Perimeter
 
 - Direct service-to-service HTTP requests for business actions are prohibited; services communicate asynchronously via Kafka topics.
-- Where HTTP routes accept internal infrastructure traffic (e.g., internal notification routing), they require an explicit internal service secret (`X-Internal-Secret`).
+- All public ingress traffic enters via the centralized API Gateway (`apps/api-gateway`). The gateway strips all untrusted client headers (`x-user-id`, `x-user-role`, `x-user-is-super-admin`, `x-user-is-seller`, `x-user-can-manage-sellers`, `x-internal-secret`) _before_ forwarding to downstream services.
+- Gateway injects the verified `x-internal-secret` and Clerk claims. Downstream services verify `x-internal-secret` in constant time (`safeTimingCompare`).
+- **Authorization Decoupling**: An internal service secret validates that the request originated from the trusted API Gateway; it **never** grants administrative privileges to a user. Administrative endpoints strictly require `role === "admin"`, `role === "super_admin"`, or delegated Super Admin claims.
 
-### Centralized Authentication (Clerk)
+### Centralized Authentication & Cryptographic JWT Verification (Clerk)
 
 - Identity verification is strictly delegated to Clerk across storefront and admin applications.
 - Tokens and session claims are cryptographically verified by backend middleware before executing any controller logic.
+- Direct Bearer token verification across services uses constant-time HMAC-SHA256 or RSA-SHA256. In production, unverified tokens or missing signing keys fail closed (HTTP 401/403). Base64url payload decoding without signature verification is strictly forbidden.
 - Roles (`admin` vs. `user`) are stored in verified JWT claims (`sessionClaims.metadata.role`).
 - The admin privilege claim route (`/api/claim-admin`) is fail-closed: it is disabled unless `ALLOW_ADMIN_CLAIM === "true"` AND `ADMIN_REGISTRATION_SECRET` is configured; the secret is compared in constant time. No environment-mode detection exists — a missing env var can never silently enable admin self-promotion.
 

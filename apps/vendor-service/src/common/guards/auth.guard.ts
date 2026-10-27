@@ -5,6 +5,8 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
+import { env } from "../../config/env.js";
+import { isInternalService } from "./admin.guard.js";
 
 export interface AuthenticatedUser {
   userId: string;
@@ -23,6 +25,17 @@ declare module "fastify" {
 export class AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
+    const isInternal = isInternalService(request);
+    const isDevOrTest =
+      env.NODE_ENV === "development" || env.NODE_ENV === "test";
+
+    // In production, user identity must arrive through trusted gateway
+    if (!isInternal && !isDevOrTest) {
+      throw new UnauthorizedException(
+        "Invalid or missing internal service secret",
+      );
+    }
+
     const userId = request.headers["x-user-id"] as string | undefined;
     const role =
       (request.headers["x-user-role"] as string | undefined) || "user";

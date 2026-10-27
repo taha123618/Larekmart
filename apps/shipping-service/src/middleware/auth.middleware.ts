@@ -25,6 +25,14 @@ export async function requireAdminOrInternal(
         .update(internalSecret)
         .digest();
       if (crypto.timingSafeEqual(hashProvided, hashInternal)) {
+        const role = ctx.headers["x-user-role"] || ctx.headers["X-User-Role"];
+        if (role && role !== "admin") {
+          ctx.status = 403;
+          ctx.body = { message: "Administrator privileges required" };
+          return;
+        }
+        ctx.state.userId = ctx.headers["x-user-id"] || "internal";
+        ctx.state.userRole = typeof role === "string" ? role : "admin";
         return next();
       }
     } catch {
@@ -51,14 +59,12 @@ export async function requireAdminOrInternal(
     try {
       const jwtKey = process.env.CLERK_JWT_KEY;
       const clerkSecret = process.env.CLERK_SECRET_KEY;
+      const key = jwtKey || clerkSecret;
       const isProduction =
         (process.env.NODE_ENV || env.NODE_ENV) === "production";
 
       // If a signing key is configured, verify signature cryptographically
-
-      // If a signing key is configured, verify signature
-      if (jwtKey || clerkSecret) {
-        const key = jwtKey || clerkSecret!;
+      if (key) {
         const signedData = `${parts[0]}.${parts[1]}`;
         const signature = Buffer.from(parts[2]!, "base64url");
 
@@ -90,6 +96,12 @@ export async function requireAdminOrInternal(
           ctx.body = { message: "Invalid or tampered token signature" };
           return;
         }
+      } else if (isProduction) {
+        ctx.status = 401;
+        ctx.body = {
+          message: "Cryptographic signing key required in production",
+        };
+        return;
       }
 
       const payloadJson = Buffer.from(parts[1]!, "base64url").toString("utf8");

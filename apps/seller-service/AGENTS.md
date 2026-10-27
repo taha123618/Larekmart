@@ -24,7 +24,7 @@ It provides storefront configuration (store name, slug, tagline, banner, logo, b
 - `src/kafka/` — `producer.ts` publishing typed events using the `{ value: payload }` envelope.
 - `src/services/` — `cache.service.ts` caching storefronts with Redis TTL and cache invalidation.
 - `src/middleware/` —
-  - `auth.middleware.ts`: `requireUser` (`x-user-id`), `requireAdmin` (`x-user-role === "admin"` or `x-internal-secret`), `requireSellerStaffOrAdmin`.
+  - `auth.middleware.ts`: `requireUser` (`x-user-id` with trusted gateway context), `requireAdmin` (`x-user-role === "admin"` or `isSuperAdmin` with trusted gateway context), `requireSellerStaffOrAdmin`. Direct non-gateway requests in production are rejected.
   - `error.middleware.ts`: Global error handler formatting standard `{ message, errors }` responses.
 - `src/routes/` —
   - `health.routes.ts`: `/health`, `/ready`, `/metrics`, `/api/v1/sellers/health`.

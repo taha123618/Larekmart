@@ -71,7 +71,6 @@ export async function registerProxyRoutes(
             [GATEWAY_HEADERS.REQUEST_ID]:
               (originalReq.headers[GATEWAY_HEADERS.REQUEST_ID] as string) ||
               String(originalReq.id),
-            [GATEWAY_HEADERS.INTERNAL_SECRET]: env.INTERNAL_SERVICE_SECRET,
           };
 
           // Explicitly strip untrusted client-supplied identity & internal headers
@@ -87,6 +86,10 @@ export async function registerProxyRoutes(
           delete rewritten["x-user-can-manage-sellers"];
           delete rewritten["x-internal-secret"];
           delete rewritten["x-user-permissions"];
+
+          // Inject verified internal gateway secret for downstream services
+          rewritten[GATEWAY_HEADERS.INTERNAL_SECRET] =
+            env.INTERNAL_SERVICE_SECRET;
 
           // Forward W3C traceparent if present
           if (originalReq.headers["traceparent"]) {

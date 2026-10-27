@@ -8,9 +8,9 @@ It handles cross-cutting concerns:
 
 - Reverse proxying to 20 backend microservices via `@fastify/http-proxy`
 - Centralized CORS and defensive security headers (`@fastify/cors`, `@fastify/helmet`)
-- Request correlation and client untrusted header stripping (`x-request-id`)
+- Request correlation (`x-request-id`) and untrusted client header stripping (`x-user-id`, `x-user-role`, `x-user-is-super-admin`, `x-user-is-seller`, `x-user-can-manage-sellers`, `x-internal-secret`)
 - Clerk JWT authentication and session claim extraction (`@clerk/fastify`)
-- Internal trusted header injection (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-can-manage-sellers`)
+- Internal trusted header injection (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-is-super-admin`, `x-user-can-manage-sellers`) executed strictly _after_ stripping untrusted headers
 - Distributed rate limiting with Redis fallback (`@fastify/rate-limit`)
 - Unified error formatting and upstream timeout handling
 - Prometheus telemetry & structured JSON logging (`@repo/monitoring`)

@@ -19,7 +19,10 @@ const EnvSchema = z
       .default("localhost:9094,localhost:9095,localhost:9096"),
     GATEWAY_INTERNAL_SECRET: z
       .string()
-      .default("dev_gateway_secret_change_in_production"),
+      .default(
+        process.env.INTERNAL_SERVICE_SECRET ||
+          "dev_gateway_secret_change_in_production",
+      ),
   })
   .superRefine((data, ctx) => {
     try {

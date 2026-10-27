@@ -82,6 +82,30 @@ async function runSecurityTests() {
     "Internal service secret match must allow request",
   );
 
+  // Case A2: Gateway forwards regular user role with internal secret -> MUST reject 403
+  nextCalled = false;
+  const mockCtxGatewayUser = {
+    headers: {
+      "x-internal-secret": "internal_secret_key_abc",
+      "x-user-role": "user",
+      "x-user-id": "user_normal",
+    },
+    state: {},
+  } as any;
+  await requireAdminOrInternal(mockCtxGatewayUser, async () => {
+    nextCalled = true;
+  });
+  assert.equal(
+    nextCalled,
+    false,
+    "Gateway forwarded user role must NOT have admin access",
+  );
+  assert.equal(
+    mockCtxGatewayUser.status,
+    403,
+    "Expected 403 Forbidden for gateway user",
+  );
+
   // Case B: No secret and no auth in production
   nextCalled = false;
   const mockCtxUnauth = {
@@ -95,6 +119,7 @@ async function runSecurityTests() {
   assert.equal(mockCtxUnauth.status, 401, "Expected 401 Unauthorized status");
 
   // Case C: Standard user claims (non-admin)
+  process.env.NODE_ENV = "test";
   nextCalled = false;
   const userPayload = Buffer.from(
     JSON.stringify({ sub: "user_123", metadata: { role: "user" } }),
@@ -114,7 +139,7 @@ async function runSecurityTests() {
   );
   assert.equal(mockCtxUser.status, 403, "Expected 403 Forbidden for non-admin");
 
-  // Case D: Admin claims
+  // Case D: Admin claims in dev/test environment
   nextCalled = false;
   const adminPayload = Buffer.from(
     JSON.stringify({ sub: "admin_456", metadata: { role: "admin" } }),
@@ -126,9 +151,34 @@ async function runSecurityTests() {
   await requireAdminOrInternal(mockCtxAdmin, async () => {
     nextCalled = true;
   });
-  assert.equal(nextCalled, true, "Admin claims must allow request");
+  assert.equal(
+    nextCalled,
+    true,
+    "Admin claims must allow request in test environment",
+  );
   assert.equal(mockCtxAdmin.state.userId, "admin_456");
   assert.equal(mockCtxAdmin.state.userRole, "admin");
+
+  // Case D2: In production without signing keys, unverified token must fail closed (401)
+  process.env.NODE_ENV = "production";
+  nextCalled = false;
+  const mockCtxProdUnverified = {
+    headers: { authorization: `Bearer header.${adminPayload}.signature` },
+    state: {},
+  } as any;
+  await requireAdminOrInternal(mockCtxProdUnverified, async () => {
+    nextCalled = true;
+  });
+  assert.equal(
+    nextCalled,
+    false,
+    "Unverified token in production must be rejected",
+  );
+  assert.equal(
+    mockCtxProdUnverified.status,
+    401,
+    "Expected 401 when key is missing in production",
+  );
 
   // Case E: Cryptographic JWT signature verification when CLERK_SECRET_KEY is configured
   console.log("3. Testing cryptographic JWT signature verification...");

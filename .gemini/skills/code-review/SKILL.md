@@ -31,6 +31,9 @@ boundary/contract/security rule), **should-fix**, or **nit**.
 - [ ] Mutating routes are guarded (`shouldBeUser` / `shouldBeAdmin` / `shouldBeSellerOrAdmin` / `requireSellerStaffOrAdmin`); non-admins and unauthorized roles can't
       reach privileged functionality.
 - [ ] `userId` is derived from the session, never from the request body.
+- [ ] `isInternalService` (matching `x-internal-secret`) only verifies channel authenticity; it does **never** grant admin permissions to regular users whose requests are routed via the gateway.
+- [ ] Direct Bearer tokens are cryptographically verified (HMAC/RSA with constant time) and fail-closed in production if signing keys are absent; never decode unverified `parts[1]`.
+- [ ] Untrusted client headers (`x-user-id`, `x-user-role`, `x-user-is-super-admin`, `x-user-can-manage-sellers`, `x-internal-secret`) are stripped at the gateway _before_ upstream forwarding.
 - [ ] Stripe webhooks still verify the signature; no secrets or `.env` files leaked.
 - [ ] `NEXT_PUBLIC_*` used only for non-secret values.
 

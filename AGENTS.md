@@ -59,7 +59,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 2. **Maintain Boundary Isolation**: Never import code from an application into another application or package.
 3. **Follow Event Standards**: For Kafka changes, update the producer, all consumers, `@repo/types`, and `docs/EVENT-DRIVEN-ARCHITECTURE.md` together. Always use the `{ value: payload }` envelope and ensure handlers read `message.value`.
 4. **Preserve TypeScript Strictness**: Do not use `any` or `@ts-ignore` to silence type errors.
-5. **Enforce Security**: Derive `userId` from verified Clerk sessions, never trust client-supplied input, and verify Stripe webhook signatures.
+5. **Enforce Security**: Derive `userId` from verified Clerk sessions, strip client-supplied identity/claim headers at the gateway before forwarding, verify direct Bearer tokens cryptographically (failing closed in production), never treat an internal gateway secret as an admin privilege bypass for users, and verify webhook signatures with constant-time comparisons.
 6. **Handle Errors Safely**: Return structured `{ message }` JSON from HTTP services. Catch and log async errors in Kafka handlers to prevent consumer loop crashes.
 
 ### After Making Changes
@@ -131,6 +131,10 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 - **Authentication is Clerk everywhere.** Never hand-roll auth. Backends gate routes
   with `shouldBeUser` / `shouldBeAdmin`; admin routes require
   `sessionClaims.metadata.role === "admin"`.
+- **Perimeter & Zero-Trust Verification.** API Gateway unconditionally strips untrusted
+  client headers before forwarding. Downstream microservices must verify `x-internal-secret`
+  in constant time and must never grant admin privileges based solely on gateway transport
+  secrets when a user request is being proxied.
 - **Never commit secrets.** Only `.env.example` files are tracked; real `.env*` files
   are gitignored. Read config from environment variables.
 - **Never edit generated code.** `packages/product-db/generated/prisma/**` is produced

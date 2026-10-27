@@ -105,7 +105,9 @@ async function runSagaTests() {
     console.log("✓ Idempotency verified.");
 
     // 3. Dual-ACK Step A: Inventory sold, awaiting tax confirmation
-    console.log("3. Testing Dual-ACK Step A: Inventory sold, awaiting tax completion...");
+    console.log(
+      "3. Testing Dual-ACK Step A: Inventory sold, awaiting tax completion...",
+    );
     await confirmOrder({
       reservationId: testReservationId,
       referenceId: testSessionId,
@@ -122,10 +124,14 @@ async function runSagaTests() {
       "sold",
       "inventoryStatus must be sold",
     );
-    console.log("✓ Order correctly held in pending_confirmation awaiting tax completion.");
+    console.log(
+      "✓ Order correctly held in pending_confirmation awaiting tax completion.",
+    );
 
     // 3. Dual-ACK Step B: Tax settled -> dual-ACK met -> transitions to confirmed
-    console.log("4. Testing Dual-ACK Step B: Tax calculation settled -> order confirmed...");
+    console.log(
+      "4. Testing Dual-ACK Step B: Tax calculation settled -> order confirmed...",
+    );
     await handleTaxCompleted({
       calculationId: "tax_calc_123",
       referenceId: createdOrder._id.toString(),
@@ -207,10 +213,14 @@ async function runSagaTests() {
       taxFailInvCancelEvent,
       "inventory.reservation.cancelled must be dispatched to release PostgreSQL stock",
     );
-    console.log("✓ Tax failure compensation passed (refund + inventory release emitted).");
+    console.log(
+      "✓ Tax failure compensation passed (refund + inventory release emitted).",
+    );
 
     // 6. Compensation Path: Inventory reservation failure with Tax Voiding
-    console.log("6. Testing Saga compensation on Inventory failure (with tax voiding)...");
+    console.log(
+      "6. Testing Saga compensation on Inventory failure (with tax voiding)...",
+    );
     const invFailSessionId = `cs_test_invfail_${Date.now()}`;
     const invFailReservationId = `res_test_invfail_${Date.now()}`;
     const invFailOrder = await createOrder({
@@ -247,7 +257,9 @@ async function runSagaTests() {
     console.log("✓ Inventory failure compensation passed (tax void emitted).");
 
     // 7. Terminal Refund Phase: Stripe refund completed
-    console.log("7. Testing Terminal Refund Phase (payment.refund.completed)...");
+    console.log(
+      "7. Testing Terminal Refund Phase (payment.refund.completed)...",
+    );
     await markOrderRefunded({
       orderId: invFailOrder._id.toString(),
       refundId: "re_mock_refund_123",

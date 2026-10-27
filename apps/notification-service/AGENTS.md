@@ -36,6 +36,7 @@ It operates on **port 8005** with a lightweight Chi HTTP server, Go-native worke
 - **Clean Internal Layout**: All application logic lives inside `internal/`.
 - **No Global Mutable State**: Dependencies are injected explicitly into constructors.
 - **Context Propagation**: Every database query, Kafka handler, and HTTP request propagates `context.Context` with OpenTelemetry trace spans.
+- **Authentication & Security**: `internal/middleware/auth.go` validates identity headers via gateway internal secret (`X-Internal-Secret` matching `INTERNAL_SERVICE_SECRET` via `subtle.ConstantTimeCompare`) or cryptographically verified Clerk Bearer tokens (HMAC-SHA256). In production, unverified tokens and missing signing keys strictly fail closed. Query parameter `user_id` is restricted to non-production environments.
 - **Native Worker Pools**: Channel delivery tasks run via goroutines and buffered channels with exponential backoff and dead-letter classification.
 
 ## Database Migrations

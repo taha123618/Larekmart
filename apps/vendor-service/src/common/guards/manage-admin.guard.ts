@@ -6,25 +6,30 @@ import {
 } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { env } from "../../config/env.js";
+import { isInternalService } from "./admin.guard.js";
 
 @Injectable()
 export class ManageAdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
+    const isInternal = isInternalService(request);
+    const isDevOrTest =
+      env.NODE_ENV === "development" || env.NODE_ENV === "test";
+
+    // In production, caller identity must arrive through trusted gateway
+    if (!isInternal && !isDevOrTest) {
+      throw new ForbiddenException(
+        "Invalid or missing internal service secret",
+      );
+    }
+
     const role = request.headers["x-user-role"] as string | undefined;
     const isSuper =
       role === "super_admin" ||
       request.headers["x-user-is-super-admin"] === "true";
     const canManage = request.headers["x-user-can-manage-sellers"] === "true";
-    const internalSecret = request.headers["x-internal-secret"] as
-      | string
-      | undefined;
 
-    if (
-      isSuper ||
-      canManage ||
-      (internalSecret && internalSecret === env.GATEWAY_INTERNAL_SECRET)
-    ) {
+    if (isSuper || canManage || (isInternal && !role)) {
       return true;
     }
 

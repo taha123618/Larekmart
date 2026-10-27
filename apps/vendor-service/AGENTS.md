@@ -22,7 +22,7 @@ authorized representative access, and lifecycle state management (DRAFT, PENDING
 - `src/kafka/` — `KafkaModule` and `KafkaService` publishing typed events using the `{ value: payload }` envelope.
 - `src/redis/` — `RedisModule` and `RedisService` caching vendor data via `@repo/redis`.
 - `src/common/` —
-  - `guards/`: `AuthGuard` (`x-user-id`), `AdminGuard` (`role === "admin"` or `x-internal-secret`), `VendorMemberGuard` (membership or owner).
+  - `guards/`: `AuthGuard` (`x-user-id` validated against trusted gateway in production), `AdminGuard` (`role === "admin" / "super_admin"` or `isSuper` with timing-safe gateway check), `ManageAdminGuard` (`manage_sellers` delegation or Super Admin), `VendorMemberGuard` (membership or owner).
   - `filters/`: `HttpExceptionFilter` ensuring RFC-compliant and consistent `{ message, errors }` responses.
 - `src/modules/` —
   - `vendors/`: `VendorsService`, `VendorsController`, `VendorsModule` handling vendor onboarding, drafts, and verification submissions.
