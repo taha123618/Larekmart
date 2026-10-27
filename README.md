@@ -260,7 +260,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
         └───────────────────────────────────────────────────────────┘
 ```
 
-> Cross-service communication is strictly asynchronous through Kafka events. Backend services never call each other over HTTP. Public traffic enters through `api-gateway`, which enforces rate limits, authenticates sessions, strips spoofed headers, and injects verified identity headers signed with `x-internal-secret`. See [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) for full topic contracts, [`docs/SECURITY.md`](docs/SECURITY.md) for security policies, and [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md) for the comprehensive security audit.
+> **Zero Trust Perimeter & Event-Driven Core**: Cross-service communication is strictly asynchronous through Kafka events; backend services never make synchronous HTTP calls to one another. All public traffic enters through `api-gateway`, which enforces rate limits, validates Clerk sessions, scrubs spoofed headers, and injects verified identity claims signed with `x-internal-secret`. Downstream services verify transport authenticity in constant time and strictly decouple gateway transport secrets from administrative end-user privileges. For deep architectural specifications, see [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) (event schemas), [`SECURITY.md`](SECURITY.md) (perimeter & cryptographic standards), and [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md) (vulnerability analysis & remediation log).
 
 ---
 
@@ -370,7 +370,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 | **`@repo/user-db`**           | PostgreSQL user-domain persistence via Prisma: profiles, addresses, preferences, settings.                   | `user-service`                                      |
 | **`@repo/vendor-db`**         | PostgreSQL vendor-domain persistence via Prisma: legal entities, business profiles, KYB documents & history. | `vendor-service`                                    |
 | **`@repo/eslint-config`**     | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`).                                     | `admin`, `client`                                   |
-| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 37 workspaces                                   |
+| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`).         | All 39 workspaces                                   |
 
 ---
 
@@ -454,12 +454,15 @@ pnpm dev
 | **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                        |
 | **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                 |
 | **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                            |
-| **Type Check**      | `pnpm check-types`                                          | Run type checking (`tsc` / `go vet` / `pytest`) across all 39 workspaces            |
+| **Type Check**      | `pnpm check-types`                                          | Run strict TypeScript type checks across all 39 workspaces                          |
+| **Test Suites**     | `pnpm test`                                                 | Run unit and integration test suites across 25 workspaces (Node, Go, Python)        |
 | **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                      |
 | **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                         |
+| **Format Check**    | `pnpm format:check`                                         | Verify Prettier formatting compliance across the codebase                           |
 | **Build**           | `pnpm build`                                                | Run configured builds for the Next.js apps, Node services, packages, and Go service |
 | **Prisma Generate** | `pnpm --filter @repo/product-db db:generate`                | Regenerate Prisma client                                                            |
 | **Prisma Migrate**  | `pnpm --filter @repo/product-db db:migrate`                 | Create and apply development migrations                                             |
+| **Sync Skills**     | `pnpm run skills:sync`                                      | Synchronize `.agents/skills/` to `.cursor/`, `.claude/`, `.gemini/`, and `.github/` |
 
 ### 4. Running Kubernetes Staging & Development Environments
 
@@ -546,9 +549,9 @@ Workspace Skills (<workspace>/.agents/skills/*)
   - `coding-standards`: TypeScript strict conventions, ESM rules, and error response standards.
   - `debugging`: Playbooks for Kafka topic inspection, Clerk authentication, database connectivity, and SSR hydration.
   - `monorepo-development`: Workflows for pnpm workspaces, dependency management, and Turborepo pipelines.
-  - `security`: Auth guards, RBAC, Stripe webhook signature validation, and secret handling.
-    - `testing`: Monorepo verification guidelines, Go test coverage, and opt-in Redis integration checks.
-  - `code-review`: Checklist for boundary validation, event contracts, and quality verification.
+  - `security`: Zero Trust perimeter, constant-time cryptography, token signature verification, and Stripe webhook validation.
+  - `testing`: Monorepo verification guidelines, Go race test coverage, Python pytest, and standalone tsx test suites.
+  - `code-review`: Checklist for boundary validation, event contracts, zero-trust perimeter checks, and quality verification.
   - `documentation`: Scoped documentation rules and ADR maintenance.
   - `docker-devops`: Docker, Compose, Kubernetes, CI/CD, and production operations.
   - `security-audit`: Vulnerability review workflow for codebases, APIs, and services.
