@@ -68,6 +68,18 @@ export const gatewayCircuitBreakerOpenTotal = createCounter(
   "Total times circuit breaker tripped to OPEN state",
 );
 
+export const gatewayCircuitBreakerSlowCallTripsTotal = createCounter(
+  metrics,
+  "gateway_circuit_breaker_slow_call_trips_total",
+  "Total times circuit breaker tripped to OPEN due to slow-call rate",
+);
+
+export const gatewayCircuitBreakerHalfOpenTotal = createCounter(
+  metrics,
+  "gateway_circuit_breaker_half_open_total",
+  "Total times circuit breaker transitioned to HALF_OPEN for canary probe",
+);
+
 export const gateway4xxTotal = createCounter(
   metrics,
   "gateway_4xx_total",

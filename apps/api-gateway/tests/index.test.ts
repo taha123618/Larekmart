@@ -1,5 +1,7 @@
 import { runRouteRegistryTests } from "./unit/route-registry.test.js";
 import { runCircuitBreakerTests } from "./unit/circuit-breaker.test.js";
+import { runCircuitBreakerDynamicTests } from "./unit/circuit-breaker-dynamic.test.js";
+import { runSlidingWindowMetricsTests } from "./unit/sliding-window-metrics.test.js";
 import { runRetryTests } from "./unit/retry.test.js";
 import { runSingleFlightTests } from "./unit/singleflight.test.js";
 import { runAuthTests } from "./auth/auth.test.js";
@@ -17,6 +19,8 @@ async function main() {
   try {
     await runRouteRegistryTests();
     await runCircuitBreakerTests();
+    await runCircuitBreakerDynamicTests();
+    await runSlidingWindowMetricsTests();
     await runRetryTests();
     await runSingleFlightTests();
     await runAuthTests();

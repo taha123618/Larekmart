@@ -92,7 +92,11 @@ export async function registerProxyRoutes(
       preHandler: preHandler as any,
       replyOptions: {
         onError: (reply, { error }) => {
-          circuitBreaker.recordFailure(route.serviceName);
+          const startMs: number =
+            (reply.request as FastifyRequest & { _proxyStartMs?: number })
+              ._proxyStartMs ?? Date.now();
+          const latencyMs = Date.now() - startMs;
+          circuitBreaker.recordFailure(route.serviceName, latencyMs);
           logger.warn(
             `Gateway proxy error for service ${route.serviceName}: ${error.message}`,
           );
@@ -121,14 +125,35 @@ export async function registerProxyRoutes(
             }
           }
         },
-        onResponse: (_request, _reply, res) => {
-          if (res.statusCode && res.statusCode >= 500) {
-            circuitBreaker.recordFailure(route.serviceName);
+        onResponse: (request, _reply, res) => {
+          const startMs: number =
+            (request as FastifyRequest & { _proxyStartMs?: number })
+              ._proxyStartMs ?? Date.now();
+          const latencyMs = Date.now() - startMs;
+          const status = res.statusCode ?? 200;
+
+          // Parse upstream Retry-After on 429 / 503 for health feedback
+          if (status === 429 || status === 503) {
+            const retryAfterHeader = (res as { headers?: Record<string, string | string[] | undefined> }).headers?.["retry-after"];
+            const retryAfterSecs = retryAfterHeader
+              ? parseInt(Array.isArray(retryAfterHeader) ? retryAfterHeader[0] ?? "0" : retryAfterHeader, 10)
+              : 0;
+            if (retryAfterSecs > 0) {
+              circuitBreaker.feedUpstreamRetryAfter(route.serviceName, retryAfterSecs);
+            }
+          }
+
+          if (status >= 500) {
+            circuitBreaker.recordFailure(route.serviceName, latencyMs);
           } else {
-            circuitBreaker.recordSuccess(route.serviceName);
+            circuitBreaker.recordSuccess(route.serviceName, latencyMs);
           }
         },
         rewriteRequestHeaders: (originalReq, headers) => {
+          // Stamp the wall-clock start time so onError/onResponse can compute latency
+          (originalReq as FastifyRequest & { _proxyStartMs?: number })._proxyStartMs =
+            Date.now();
+
           gatewayProxyRequestsTotal.inc({
             service: String(route.serviceName),
             method: originalReq.method,
