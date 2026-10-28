@@ -39,7 +39,7 @@ export async function runCircuitBreakerTests() {
   assert.equal(cb.isAvailable(service), false);
 
   // Wait for cooldown to expire
-  await new Promise((resolve) => setTimeout(resolve, 450));
+  await new Promise((resolve) => setTimeout(resolve, 600));
 
   // Accessing it transitions to HALF_OPEN
   assert.equal(cb.getState(service), "HALF_OPEN");

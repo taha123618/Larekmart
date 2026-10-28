@@ -176,4 +176,14 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/sellers",
     requireAuth: true,
   },
+
+  // 14. Marketplace Disputes
+  {
+    prefix: "/api/v1/disputes",
+    target: services.vendor.url,
+    serviceName: services.vendor.name,
+    timeoutMs: services.vendor.timeoutMs,
+    rewritePrefix: "/api/v1/disputes",
+    requireAuth: true,
+  },
 ];

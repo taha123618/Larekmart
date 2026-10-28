@@ -161,4 +161,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/delegations",
     requireAdmin: true,
   },
+
+  // 13. Marketplace Dispute Arbitration
+  {
+    prefix: "/api/v1/admin/disputes",
+    target: services.vendor.url,
+    serviceName: services.vendor.name,
+    timeoutMs: services.vendor.timeoutMs,
+    rewritePrefix: "/api/v1/admin/disputes",
+    requireAdmin: true,
+  },
 ];
