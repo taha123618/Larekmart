@@ -13,6 +13,7 @@ import (
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/observability"
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/repositories"
 	"github.com/taha123618/Larekmart/apps/notification-service/internal/services"
+	"github.com/taha123618/Larekmart/apps/notification-service/internal/websocket"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -20,6 +21,7 @@ type DomainEventHandler struct {
 	notificationSvc *services.NotificationService
 	templateSvc     *services.TemplateService
 	eventRepo       *repositories.EventRepository
+	wsHub           *websocket.Hub
 	logger          *observability.Logger
 	metrics         *observability.Metrics
 }
@@ -38,6 +40,11 @@ func NewDomainEventHandler(
 		logger:          logger,
 		metrics:         metrics,
 	}
+}
+
+// SetWebSocketHub assigns the live WebSocket hub for direct real-time broadcast.
+func (h *DomainEventHandler) SetWebSocketHub(hub *websocket.Hub) {
+	h.wsHub = hub
 }
 
 // HandleEvent processes raw JSON message bytes from a Kafka topic.
@@ -185,6 +192,31 @@ func (h *DomainEventHandler) handleShippingTrackingUpdated(ctx context.Context, 
 		Metadata: payload,
 		Priority: models.PriorityHigh,
 	})
+
+	// Also directly broadcast real-time telemetry to all active tracking WebSocket clients
+	if h.wsHub != nil {
+		h.wsHub.BroadcastAll(map[string]interface{}{
+			"type":            "shipment_tracking_update",
+			"shipment_id":     payload["shipmentId"],
+			"tracking_number": trackingNumber,
+			"status":          status,
+			"location":        location,
+			"latitude":        payload["latitude"],
+			"longitude":       payload["longitude"],
+			"heading":         payload["heading"],
+			"accuracy_meters": payload["accuracyMeters"],
+			"eta_minutes":     payload["etaMinutes"],
+			"notification": map[string]interface{}{
+				"id":        "track_" + uuid.New().String()[:8],
+				"type":      "shipment_tracking_update",
+				"title":     title,
+				"body":      body,
+				"metadata":  payload,
+				"createdAt": time.Now().UTC().Format(time.RFC3339),
+			},
+		})
+	}
+
 	return err
 }
 
@@ -497,6 +529,8 @@ func extractSourceService(topic string) string {
 		return "vendor-service"
 	case "seller.created", "seller.activated", "seller.updated", "seller.suspended", "seller.storefront.updated":
 		return "seller-service"
+	case "shipping.tracking.updated", "tracking.updated", "shipment.in_transit", "shipment.out_for_delivery", "shipment.delivered", "shipment.created", "shipment.shipped":
+		return "shipping-service"
 	default:
 		return "unknown"
 	}

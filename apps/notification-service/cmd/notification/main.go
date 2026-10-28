@@ -177,6 +177,7 @@ func main() {
 
 	// 13. Kafka Consumers & Domain Events
 	domainEventHandler := consumers.NewDomainEventHandler(notificationSvc, templateSvc, eventRepo, logger, metrics)
+	domainEventHandler.SetWebSocketHub(wsHub)
 	consumerManager := consumers.NewConsumerManager(cfg.KafkaBrokers, cfg.KafkaGroupID, cfg.KafkaConsumerTopics, domainEventHandler, logger)
 	consumerManager.Start(ctx)
 	defer func() { _ = consumerManager.Close() }()

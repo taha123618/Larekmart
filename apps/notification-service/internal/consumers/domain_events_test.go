@@ -47,6 +47,10 @@ func TestExtractSourceService(t *testing.T) {
 		{"product.created", "product-service"},
 		{"vendor.registered", "vendor-service"},
 		{"seller.created", "seller-service"},
+		{"shipping.tracking.updated", "shipping-service"},
+		{"tracking.updated", "shipping-service"},
+		{"shipment.in_transit", "shipping-service"},
+		{"shipment.delivered", "shipping-service"},
 		{"custom.event", "unknown"},
 	}
 
