@@ -154,10 +154,33 @@ export const RecordInspectionSchema = z.object({
 
 export type RecordInspection = z.infer<typeof RecordInspectionSchema>;
 
+export const isSafeMediaUrl = (val: string): boolean => {
+  try {
+    const parsed = new URL(val);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return false;
+    }
+    const host = parsed.hostname.toLowerCase();
+    // Block link-local / cloud metadata addresses (SSRF mitigation)
+    if (host === "169.254.169.254" || host === "metadata.google.internal") {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const ReturnEvidenceSchema = z.object({
   returnId: z.string().min(1, "Return ID is required"),
   mediaId: z.string().min(1, "Media asset ID is required"),
-  url: z.string().url("Must be a valid URL"),
+  url: z
+    .string()
+    .url("Must be a valid URL")
+    .refine(
+      isSafeMediaUrl,
+      "URL must be a valid public HTTP or HTTPS web endpoint",
+    ),
   mediaType: z.enum(["PHOTO", "VIDEO", "DOCUMENT"]).default("PHOTO"),
   caption: z.string().max(500).optional(),
 });

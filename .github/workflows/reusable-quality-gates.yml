@@ -31,6 +31,9 @@ jobs:
       - name: Verify Code Formatting (Prettier)
         run: pnpm format:check
 
+      - name: Verify AI Agent Skills Synced
+        run: pnpm run skills:sync && git diff --exit-code .cursor/ .claude/ .gemini/ .github/
+
       - name: Generate Database Clients (Prisma & Drizzle)
         run: pnpm db:generate
 
