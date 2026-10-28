@@ -348,7 +348,13 @@ async function runTests() {
   console.log("==================================================\n");
 }
 
-runTests().catch((err) => {
-  console.error("Test execution failed:", err);
-  process.exit(1);
-});
+runTests()
+  .then(async () => {
+    const { redis } = await import("../src/utils/redis.js");
+    await redis.close().catch(() => {});
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("Test execution failed:", err);
+    process.exit(1);
+  });

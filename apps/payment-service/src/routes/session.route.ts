@@ -33,6 +33,8 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
     taxCalculationId,
     taxAmount,
     expiresAt,
+    currency = "USD",
+    exchangeRate = 1.0,
   } = parsed.data;
   const userId = c.get("userId");
 
@@ -66,30 +68,45 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
     }
   }
 
+  const targetCurrency = (currency || "USD").toLowerCase();
+  const rate =
+    typeof exchangeRate === "number" && exchangeRate > 0 ? exchangeRate : 1.0;
+
   try {
     const lineItems = await Promise.all(
       cart.map(async (item) => {
-        let unitAmount = await getStripeProductPrice(item.id);
-        if (typeof unitAmount !== "number" || unitAmount <= 0) {
+        let baseUsdUnitAmount = await getStripeProductPrice(item.id);
+        if (typeof baseUsdUnitAmount !== "number" || baseUsdUnitAmount <= 0) {
           // Fallback: calculate price in cents from item price
           if (
             typeof item.price === "number" &&
             !isNaN(item.price) &&
             item.price > 0
           ) {
-            unitAmount = Math.round(item.price * 100);
+            baseUsdUnitAmount = Math.round(item.price * 100);
           }
         }
         if (
-          typeof unitAmount !== "number" ||
-          unitAmount <= 0 ||
-          isNaN(unitAmount)
+          typeof baseUsdUnitAmount !== "number" ||
+          baseUsdUnitAmount <= 0 ||
+          isNaN(baseUsdUnitAmount)
         ) {
           throw new Error(`Valid price not found for product ID ${item.id}`);
         }
+
+        // Convert base USD cents to target currency
+        let unitAmount = baseUsdUnitAmount;
+        if (targetCurrency !== "usd") {
+          if (targetCurrency === "jpy") {
+            unitAmount = Math.round((baseUsdUnitAmount / 100) * rate);
+          } else {
+            unitAmount = Math.round(baseUsdUnitAmount * rate);
+          }
+        }
+
         return {
           price_data: {
-            currency: "usd",
+            currency: targetCurrency,
             product_data: {
               name: item.name,
             },
@@ -132,6 +149,8 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
                 discountAmount !== undefined ? String(discountAmount) : "",
               taxCalculationId: taxCalculationId || "",
               taxAmount: taxAmount !== undefined ? String(taxAmount) : "",
+              currency: targetCurrency.toUpperCase(),
+              exchangeRate: String(rate),
             },
             return_url: returnUrl,
           },

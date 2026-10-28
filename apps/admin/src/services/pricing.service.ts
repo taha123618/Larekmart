@@ -250,3 +250,28 @@ export async function upsertAdminCurrencyRate(
   }
   return res.json();
 }
+
+/**
+ * Trigger live refresh of currency exchange rates from market feed
+ */
+export async function refreshAdminCurrencyRates(
+  authToken?: string,
+): Promise<{
+  success: boolean;
+  refreshedCount: number;
+  source: string;
+  rates: Record<string, number>;
+  refreshedAt: string;
+}> {
+  const res = await fetch(`${ADMIN_BASE}/prices/currencies/refresh`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(
+      error.message || `Failed to refresh currency rates (HTTP ${res.status})`,
+    );
+  }
+  return res.json();
+}

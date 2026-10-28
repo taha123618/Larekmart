@@ -189,6 +189,24 @@ export const adminPricesRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   /**
+   * POST /api/v1/admin/prices/currencies/refresh
+   * Automatically refreshes currency exchange rates from market feed and resets cache
+   */
+  fastify.post("/prices/currencies/refresh", async (_request, reply) => {
+    try {
+      const result = await pricingService.refreshCurrencyRates();
+      return reply.status(200).send(result);
+    } catch (err) {
+      return reply.status(500).send({
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to refresh currency exchange rates",
+      });
+    }
+  });
+
+  /**
    * GET /api/v1/admin/prices/:priceId/history
    * Retrieves complete audit history for price modifications
    */

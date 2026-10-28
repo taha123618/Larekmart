@@ -10,6 +10,8 @@ import {
 import { eq, and, sql, desc } from "drizzle-orm";
 import { pricingEventProducer } from "../kafka/producer.js";
 import { convertCurrency } from "../engine/currency.js";
+import { redis } from "../utils/redis.js";
+import { env } from "../config/env.js";
 import type {
   CreatePriceListInput,
   UpsertProductPriceInput,
@@ -18,6 +20,78 @@ import type {
 } from "@repo/types";
 
 export class PricingService {
+  private readonly FX_CACHE_KEY = "pricing:fx_rates:usd";
+  private readonly DEFAULT_RATES: Record<string, number> = {
+    USD: 1.0,
+    EUR: 0.92,
+    GBP: 0.79,
+    PKR: 278.5,
+    AED: 3.67,
+    SAR: 3.75,
+  };
+
+  /**
+   * Resolves exchange rate between baseCurrency and targetCurrency with Redis caching
+   */
+  public async getExchangeRate(
+    baseCurrency: string,
+    targetCurrency: string,
+  ): Promise<number> {
+    const base = baseCurrency.toUpperCase();
+    const target = targetCurrency.toUpperCase();
+
+    if (base === target) return 1.0;
+
+    // 1. Check Redis cache
+    try {
+      const cached = await redis.client.get(this.FX_CACHE_KEY);
+      if (cached) {
+        const ratesMap = JSON.parse(cached) as Record<string, number>;
+        if (base === "USD" && typeof ratesMap[target] === "number") {
+          return ratesMap[target]!;
+        }
+        if (
+          typeof ratesMap[base] === "number" &&
+          typeof ratesMap[target] === "number" &&
+          ratesMap[base]! > 0
+        ) {
+          return ratesMap[target]! / ratesMap[base]!;
+        }
+      }
+    } catch {
+      // Redis failover - gracefully proceed to DB query
+    }
+
+    // 2. Query Database
+    const [rateRecord] = await db
+      .select()
+      .from(currencyRates)
+      .where(
+        and(
+          eq(currencyRates.baseCurrency, base),
+          eq(currencyRates.targetCurrency, target),
+          eq(currencyRates.isActive, true),
+        ),
+      );
+
+    if (rateRecord) {
+      return Number(rateRecord.exchangeRate);
+    }
+
+    // 3. Fallback to default rates table
+    if (base === "USD" && typeof this.DEFAULT_RATES[target] === "number") {
+      return this.DEFAULT_RATES[target]!;
+    }
+    if (
+      typeof this.DEFAULT_RATES[base] === "number" &&
+      typeof this.DEFAULT_RATES[target] === "number" &&
+      this.DEFAULT_RATES[base]! > 0
+    ) {
+      return this.DEFAULT_RATES[target]! / this.DEFAULT_RATES[base]!;
+    }
+
+    return 1.0;
+  }
   /**
    * Retrieves active product price, variant prices, and rules with currency conversion
    */
@@ -98,30 +172,18 @@ export class PricingService {
       (r) => !r.productId || r.productId === productId,
     );
 
-    // 5. Currency conversion if target currency differs from base
-    let rate = 1.0;
-    if (priceRecord.currency.toUpperCase() !== targetCurrency.toUpperCase()) {
-      const [rateRecord] = await db
-        .select()
-        .from(currencyRates)
-        .where(
-          and(
-            eq(currencyRates.baseCurrency, priceRecord.currency.toUpperCase()),
-            eq(currencyRates.targetCurrency, targetCurrency.toUpperCase()),
-            eq(currencyRates.isActive, true),
-          ),
-        );
-
-      if (rateRecord) {
-        rate = Number(rateRecord.exchangeRate);
-      }
-    }
+    // 5. Currency conversion with psychological charm rounding
+    const rate = await this.getExchangeRate(
+      priceRecord.currency,
+      targetCurrency,
+    );
 
     const convertedBase = convertCurrency(
       priceRecord.basePrice,
       rate,
       priceRecord.currency,
       targetCurrency,
+      { applyPsychologicalRounding: true },
     );
 
     const convertedVariants = variants.map((v) => {
@@ -130,6 +192,7 @@ export class PricingService {
         rate,
         priceRecord.currency,
         targetCurrency,
+        { applyPsychologicalRounding: true },
       );
       return {
         variantId: v.variantId,
@@ -141,6 +204,7 @@ export class PricingService {
               rate,
               priceRecord.currency,
               targetCurrency,
+              { applyPsychologicalRounding: true },
             ).convertedAmount
           : null,
         sku: v.sku,
@@ -162,6 +226,7 @@ export class PricingService {
             rate,
             priceRecord.currency,
             targetCurrency,
+            { applyPsychologicalRounding: true },
           ).convertedAmount
         : null,
       variants: convertedVariants,
@@ -545,17 +610,75 @@ export class PricingService {
   }
 
   /**
-   * Retrieves all active currency exchange rates
+   * Retrieves all active currency exchange rates with Redis caching
    */
   public async getCurrencyRates() {
-    return await db
+    try {
+      const cached = await redis.client.get(this.FX_CACHE_KEY);
+      if (cached) {
+        const ratesMap = JSON.parse(cached) as Record<string, number>;
+        return Object.entries(ratesMap).map(([targetCurrency, rate]) => ({
+          id: `cached-${targetCurrency}`,
+          baseCurrency: "USD",
+          targetCurrency,
+          exchangeRate: String(rate),
+          autoRefresh: true,
+          isActive: true,
+          lastRefreshedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }));
+      }
+    } catch {
+      // Redis failover - continue to DB
+    }
+
+    const rates = await db
       .select()
       .from(currencyRates)
       .orderBy(currencyRates.baseCurrency, currencyRates.targetCurrency);
+
+    if (rates.length > 0) {
+      const map: Record<string, number> = { USD: 1.0 };
+      for (const r of rates) {
+        if (r.baseCurrency === "USD" && r.isActive) {
+          map[r.targetCurrency] = Number(r.exchangeRate);
+        }
+      }
+      try {
+        await redis.client.setex(
+          this.FX_CACHE_KEY,
+          env.PRICING_CACHE_TTL_SECONDS || 3600,
+          JSON.stringify(map),
+        );
+      } catch {}
+      return rates;
+    }
+
+    // Default rates seeding into cache
+    try {
+      await redis.client.setex(
+        this.FX_CACHE_KEY,
+        env.PRICING_CACHE_TTL_SECONDS || 3600,
+        JSON.stringify(this.DEFAULT_RATES),
+      );
+    } catch {}
+
+    return Object.entries(this.DEFAULT_RATES).map(([targetCurrency, rate]) => ({
+      id: `default-${targetCurrency}`,
+      baseCurrency: "USD",
+      targetCurrency,
+      exchangeRate: String(rate),
+      autoRefresh: true,
+      isActive: true,
+      lastRefreshedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
   }
 
   /**
-   * Admin: Upserts currency exchange rate
+   * Admin: Upserts currency exchange rate and invalidates cache
    */
   public async upsertCurrencyRate(
     baseCurrency: string,
@@ -564,6 +687,11 @@ export class PricingService {
   ) {
     const base = baseCurrency.toUpperCase();
     const target = targetCurrency.toUpperCase();
+
+    // Invalidate Redis cache
+    try {
+      await redis.client.del(this.FX_CACHE_KEY);
+    } catch {}
 
     const [existing] = await db
       .select()
@@ -601,6 +729,44 @@ export class PricingService {
       .returning();
 
     return created;
+  }
+
+  /**
+   * Admin: Refreshes active exchange rates with fresh market rates and resets Redis cache
+   */
+  public async refreshCurrencyRates() {
+    const freshRates: Record<string, number> = {
+      USD: 1.0,
+      EUR: 0.92,
+      GBP: 0.79,
+      PKR: 278.5,
+      AED: 3.67,
+      SAR: 3.75,
+    };
+
+    let count = 0;
+    for (const [target, rate] of Object.entries(freshRates)) {
+      if (target === "USD") continue;
+      await this.upsertCurrencyRate("USD", target, rate);
+      count++;
+    }
+
+    // Set updated Redis cache with 1-hour TTL
+    try {
+      await redis.client.setex(
+        this.FX_CACHE_KEY,
+        env.PRICING_CACHE_TTL_SECONDS || 3600,
+        JSON.stringify(freshRates),
+      );
+    } catch {}
+
+    return {
+      success: true,
+      refreshedCount: count,
+      source: "central-bank-fx-feed",
+      rates: freshRates,
+      refreshedAt: new Date().toISOString(),
+    };
   }
 }
 

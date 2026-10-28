@@ -7,6 +7,7 @@ import { useEffect, useState, useMemo } from "react";
 import { CartItemsType, ShippingFormInputs } from "@repo/types";
 import CheckoutForm from "./CheckoutForm";
 import useCartStore from "@/stores/cartStore";
+import { useCurrencyStore } from "@/stores/currencyStore";
 import {
   AlertCircle,
   CreditCard,
@@ -35,6 +36,8 @@ const fetchClientSecret = async (
   taxCalculationId?: string,
   taxAmount?: number,
   expiresAt?: string,
+  currency?: string,
+  exchangeRate?: number,
 ): Promise<string> => {
   const paymentServiceUrl =
     process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL ||
@@ -54,6 +57,8 @@ const fetchClientSecret = async (
         taxCalculationId,
         taxAmount,
         expiresAt,
+        currency: currency || "USD",
+        exchangeRate: exchangeRate || 1.0,
       }),
       headers: {
         "Content-Type": "application/json",
@@ -89,6 +94,7 @@ const StripePaymentForm = ({
   taxAmount,
 }: StripePaymentFormProps) => {
   const { cart, serverCart } = useCartStore();
+  const { currentCurrency, exchangeRates } = useCurrencyStore();
   const [token, setToken] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
@@ -126,6 +132,7 @@ const StripePaymentForm = ({
         setInitError(null);
         const appliedCoupon = serverCart?.coupons?.[0]?.code;
         const discountAmount = serverCart?.pricing?.discountTotal;
+        const rate = exchangeRates[currentCurrency] ?? 1.0;
         const secret = await fetchClientSecret(
           cart,
           token,
@@ -136,6 +143,8 @@ const StripePaymentForm = ({
           taxCalculationId,
           taxAmount,
           serverCart?.expiresAt,
+          currentCurrency,
+          rate,
         );
         return secret;
       } catch (err: unknown) {

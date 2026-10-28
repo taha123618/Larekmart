@@ -82,8 +82,41 @@ interface CurrencyState {
   isLoadingRates: boolean;
   setCurrency: (currency: string) => void;
   loadRates: () => Promise<void>;
-  convertPrice: (usdAmount: number) => number;
+  convertPrice: (usdAmount: number, applyRounding?: boolean) => number;
   formatPrice: (usdAmount: number) => string;
+}
+
+export function applyStorefrontPsychologicalRounding(
+  amount: number,
+  currency: string,
+): number {
+  if (amount <= 1) return Math.round(amount * 100) / 100;
+  const curr = currency.toUpperCase();
+
+  switch (curr) {
+    case "USD":
+    case "EUR":
+    case "GBP":
+    case "CAD": {
+      // Psychological charm pricing ending in .99
+      return Math.floor(amount) + 0.99;
+    }
+    case "PKR": {
+      // Rounded to nearest 50 for realistic retail figures in Pakistan
+      const rounded = Math.round(amount / 50) * 50;
+      return Math.max(50, rounded);
+    }
+    case "AED":
+    case "SAR": {
+      // Rounded to .00 or .50
+      return Math.round(amount * 2) / 2;
+    }
+    case "JPY": {
+      return Math.round(amount);
+    }
+    default:
+      return Math.round(amount * 100) / 100;
+  }
 }
 
 export const useCurrencyStore = create<CurrencyState>()(
@@ -122,10 +155,13 @@ export const useCurrencyStore = create<CurrencyState>()(
         }
       },
 
-      convertPrice: (usdAmount: number): number => {
+      convertPrice: (usdAmount: number, applyRounding = true): number => {
         const { currentCurrency, exchangeRates } = get();
         const rate = exchangeRates[currentCurrency] ?? 1.0;
-        return usdAmount * rate;
+        const converted = usdAmount * rate;
+        return applyRounding
+          ? applyStorefrontPsychologicalRounding(converted, currentCurrency)
+          : Math.round(converted * 100) / 100;
       },
 
       formatPrice: (usdAmount: number): string => {
@@ -134,8 +170,12 @@ export const useCurrencyStore = create<CurrencyState>()(
           SUPPORTED_CURRENCIES[currentCurrency] ?? SUPPORTED_CURRENCIES["USD"]!;
         const rate = exchangeRates[currentCurrency] ?? 1.0;
         const converted = usdAmount * rate;
+        const rounded = applyStorefrontPsychologicalRounding(
+          converted,
+          currentCurrency,
+        );
 
-        const formattedNumber = converted.toLocaleString(undefined, {
+        const formattedNumber = rounded.toLocaleString(undefined, {
           minimumFractionDigits: config.decimals,
           maximumFractionDigits: config.decimals,
         });

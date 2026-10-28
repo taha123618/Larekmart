@@ -246,6 +246,62 @@ export const CurrencyRateSchema = z.object({
 });
 export type CurrencyRateInput = z.infer<typeof CurrencyRateSchema>;
 
+export const SupportedCurrencyEnum = {
+  USD: "USD",
+  PKR: "PKR",
+  EUR: "EUR",
+  GBP: "GBP",
+  AED: "AED",
+  SAR: "SAR",
+} as const;
+
+export type SupportedCurrency =
+  (typeof SupportedCurrencyEnum)[keyof typeof SupportedCurrencyEnum];
+
+export const SupportedCurrencySchema = z.enum([
+  SupportedCurrencyEnum.USD,
+  SupportedCurrencyEnum.PKR,
+  SupportedCurrencyEnum.EUR,
+  SupportedCurrencyEnum.GBP,
+  SupportedCurrencyEnum.AED,
+  SupportedCurrencyEnum.SAR,
+]);
+
+export const PsychologicalRoundingRuleSchema = z.enum([
+  "none",
+  "point_99",
+  "point_95",
+  "nearest_ten",
+  "nearest_hundred",
+]);
+
+export type PsychologicalRoundingRule = z.infer<
+  typeof PsychologicalRoundingRuleSchema
+>;
+
+export const CurrencyConversionOptionsSchema = z.object({
+  fromCurrency: z.string().length(3).default("USD"),
+  toCurrency: z.string().length(3),
+  amount: z.number().nonnegative(),
+  applyPsychologicalRounding: z.boolean().default(true),
+});
+
+export type CurrencyConversionOptions = z.infer<
+  typeof CurrencyConversionOptionsSchema
+>;
+
+export const RefreshCurrencyRatesResponseSchema = z.object({
+  success: z.boolean(),
+  refreshedCount: z.number().int().nonnegative(),
+  source: z.string(),
+  rates: z.record(z.string(), z.number()),
+  refreshedAt: z.string().datetime(),
+});
+
+export type RefreshCurrencyRatesResponse = z.infer<
+  typeof RefreshCurrencyRatesResponseSchema
+>;
+
 // ==============================================================================
 // 3. Kafka Event Payload Types & Topics
 // ==============================================================================

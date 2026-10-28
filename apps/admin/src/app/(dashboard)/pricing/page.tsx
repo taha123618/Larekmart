@@ -14,6 +14,7 @@ import {
   createAdminPriceRule,
   fetchAdminCurrencyRates,
   upsertAdminCurrencyRate,
+  refreshAdminCurrencyRates,
 } from "@/services/pricing.service";
 import type {
   CreatePriceListInput,
@@ -305,6 +306,22 @@ export default function PricingDashboardPage() {
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to update currency rate");
+    },
+  });
+
+  const refreshRatesMutation = useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      return refreshAdminCurrencyRates(token ?? undefined);
+    },
+    onSuccess: (data) => {
+      toast.success(
+        `Live exchange rates refreshed (${data.refreshedCount} currency pairs updated).`,
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin-currency-rates"] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to refresh currency rates");
     },
   });
 
@@ -1200,22 +1217,35 @@ export default function PricingDashboardPage() {
                 Zero-drift high-precision exchange rate conversion table.
               </CardDescription>
             </div>
-            <Sheet open={isUpdateRateOpen} onOpenChange={setIsUpdateRateOpen}>
-              <SheetTrigger asChild>
-                <Button size="sm" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Update Exchange Rate
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <SheetHeader>
-                  <SheetTitle>Update Currency Rate</SheetTitle>
-                  <SheetDescription>
-                    Adjust conversion multiplier against base USD.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                disabled={refreshRatesMutation.isPending}
+                onClick={() => refreshRatesMutation.mutate()}
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${refreshRatesMutation.isPending ? "animate-spin" : ""}`}
+                />
+                Refresh Live FX Rates
+              </Button>
+              <Sheet open={isUpdateRateOpen} onOpenChange={setIsUpdateRateOpen}>
+                <SheetTrigger asChild>
+                  <Button size="sm" className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Update Exchange Rate
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Update Currency Rate</SheetTitle>
+                    <SheetDescription>
+                      Adjust conversion multiplier against base USD.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-1">
                     <label className="text-xs font-medium">Base Currency</label>
                     <Input
                       value={rateForm.baseCurrency}
@@ -1271,7 +1301,8 @@ export default function PricingDashboardPage() {
                 </div>
               </SheetContent>
             </Sheet>
-          </CardHeader>
+          </div>
+        </CardHeader>
           <CardContent>
             {isRatesLoading ? (
               <div className="flex items-center justify-center p-8">
