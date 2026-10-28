@@ -23,6 +23,8 @@ import {
   DollarSign,
   Loader2,
   Store,
+  RotateCcw,
+  Package,
 } from "lucide-react";
 import {
   fetchCurrentUser,
@@ -546,6 +548,22 @@ export default function AccountPage(): React.JSX.Element {
           <Shield className="w-4 h-4" />
           Security & Privacy
         </button>
+
+        <Link
+          href="/orders"
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+        >
+          <Package className="w-4 h-4 text-indigo-500" />
+          <span>My Orders</span>
+        </Link>
+
+        <Link
+          href="/account/returns"
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all font-semibold"
+        >
+          <RotateCcw className="w-4 h-4 text-emerald-500" />
+          <span>Returns & Refunds</span>
+        </Link>
 
         <Link
           href="/wishlist"
