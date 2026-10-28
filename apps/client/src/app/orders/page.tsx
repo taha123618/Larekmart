@@ -13,6 +13,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import OrderReturnAction from "@/components/returns/OrderReturnAction";
+import OrderDisputeAction from "@/components/dispute/OrderDisputeAction";
 
 const fetchOrders = async () => {
   const { getToken } = await auth();
@@ -197,6 +198,7 @@ const OrdersPage = async (): Promise<React.JSX.Element> => {
 
                 <div className="flex items-center gap-2.5 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-slate-800 flex-wrap">
                   <OrderReturnAction order={order} />
+                  <OrderDisputeAction order={order} />
                   <Link
                     href={`/track?number=${encodeURIComponent(trackQuery)}`}
                     className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-xs"

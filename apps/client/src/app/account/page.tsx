@@ -26,6 +26,7 @@ import {
   RotateCcw,
   Package,
   Coins,
+  ShieldAlert,
 } from "lucide-react";
 import {
   fetchCurrentUser,
@@ -593,6 +594,16 @@ export default function AccountPage(): React.JSX.Element {
           >
             <Coins className="w-4 h-4 text-emerald-500" />
             <span>Escrow & Payouts</span>
+          </Link>
+        )}
+
+        {isSeller && (
+          <Link
+            href="/account/seller/disputes"
+            className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-all font-semibold"
+          >
+            <ShieldAlert className="w-4 h-4 text-amber-500" />
+            <span>Disputes & Claims</span>
           </Link>
         )}
       </div>
