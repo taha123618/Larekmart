@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "test": "tsx tests/schemas.test.ts && tsx tests/vendor.test.ts && tsx tests/seller.test.ts",
+    "test": "tsx tests/schemas.test.ts && tsx tests/vendor.test.ts && tsx tests/seller.test.ts && tsx tests/disputes.test.ts",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {

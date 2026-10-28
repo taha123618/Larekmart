@@ -122,6 +122,7 @@ model Vendor {
   commissionRates    VendorCommissionRate[]
   escrowLedgers      VendorEscrowLedger[]
   payoutRequests     VendorPayoutRequest[]
+  disputes           VendorDispute[]
 
   @@map("vendors")
 }
@@ -269,6 +270,7 @@ model VendorEscrowLedger {
   updatedAt        DateTime     @updatedAt
 
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  disputes VendorDispute[]
 
   @@index([vendorId, status])
   @@index([orderId])
@@ -322,3 +324,81 @@ model VendorPayoutRequest {
   @@index([payoutBatchId])
   @@map("vendor_payout_requests")
 }
+
+enum DisputeStatus {
+  OPENED
+  UNDER_REVIEW
+  EVIDENCE_REQUESTED
+  EVIDENCE_SUBMITTED
+  ARBITRATION
+  RESOLVED_BUYER_FAVOR
+  RESOLVED_SELLER_FAVOR
+  CANCELLED
+}
+
+enum DisputeType {
+  ITEM_NOT_RECEIVED
+  DAMAGED_OR_DEFECTIVE
+  SIGNIFICANTLY_NOT_AS_DESCRIBED
+  WRONG_ITEM_SENT
+  STRIPE_CHARGEBACK
+  UNAUTHORIZED_TRANSACTION
+}
+
+enum DisputeResolution {
+  BUYER_FAVOR
+  SELLER_FAVOR
+  MUTUAL_AGREEMENT
+}
+
+model VendorDispute {
+  id                 String             @id @default(uuid())
+  disputeNumber      String             @unique
+  orderId            String
+  orderItemId        String?
+  vendorId           String
+  buyerId            String
+  buyerEmail         String?
+  escrowLedgerId     String?
+  stripeDisputeId    String?
+  type               DisputeType
+  status             DisputeStatus      @default(OPENED)
+  disputedAmount     Decimal            @db.Decimal(14, 2)
+  currency           String             @default("PKR")
+  buyerClaim         String
+  buyerEvidenceUrls  String[]           @default([])
+  sellerRebuttal     String?
+  sellerEvidenceUrls String[]           @default([])
+  rebuttalDeadline   DateTime?
+  resolution         DisputeResolution?
+  resolutionReason   String?
+  resolvedByAdminId  String?
+  resolvedAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  vendor       Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  escrowLedger VendorEscrowLedger? @relation(fields: [escrowLedgerId], references: [id], onDelete: SetNull)
+  timeline     VendorDisputeTimeline[]
+
+  @@index([vendorId, status])
+  @@index([orderId])
+  @@index([buyerId])
+  @@index([status])
+  @@map("vendor_disputes")
+}
+
+model VendorDisputeTimeline {
+  id          String        @id @default(uuid())
+  disputeId   String
+  action      String
+  performedBy String
+  notes       String?
+  createdAt   DateTime      @default(now())
+
+  dispute VendorDispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@index([disputeId])
+  @@map("vendor_dispute_timelines")
+}
+
