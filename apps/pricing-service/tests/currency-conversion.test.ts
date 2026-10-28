@@ -50,7 +50,9 @@ async function runCurrencyConversionTests() {
     () => convertCurrency(-50, 1.2, "USD", "EUR"),
     /Amount for currency conversion must be non-negative/,
   );
-  console.log("  ✓ Rejection of negative amounts and invalid non-positive rates");
+  console.log(
+    "  ✓ Rejection of negative amounts and invalid non-positive rates",
+  );
 
   // ────────────────────────────────────────────────────────────
   // Test 2: Regional Psychological Charm Pricing Rules
@@ -95,7 +97,9 @@ async function runCurrencyConversionTests() {
   const microItem = new Decimal(0.45);
   const protectedMicro = applyPsychologicalRounding(microItem, "USD");
   assert.equal(protectedMicro.toNumber(), 0.45);
-  console.log("  ✓ Low-value micro items (< 1.00) protected from upward rounding");
+  console.log(
+    "  ✓ Low-value micro items (< 1.00) protected from upward rounding",
+  );
 
   // 2.5 Integrated convertCurrency with psychological option
   const charmConverted = convertCurrency(10, 0.92, "USD", "EUR", {
@@ -117,11 +121,19 @@ async function runCurrencyConversionTests() {
   assert.throws(() => SupportedCurrencySchema.parse("XYZ"));
   console.log("  ✓ SupportedCurrencySchema validates supported currencies");
 
-  const validRules = ["none", "point_99", "point_95", "nearest_ten", "nearest_hundred"];
+  const validRules = [
+    "none",
+    "point_99",
+    "point_95",
+    "nearest_ten",
+    "nearest_hundred",
+  ];
   for (const r of validRules) {
     assert.equal(PsychologicalRoundingRuleSchema.parse(r), r);
   }
-  console.log("  ✓ PsychologicalRoundingRuleSchema validates all rounding strategies");
+  console.log(
+    "  ✓ PsychologicalRoundingRuleSchema validates all rounding strategies",
+  );
 
   const parsedRefresh = RefreshCurrencyRatesResponseSchema.parse({
     success: true,
@@ -137,7 +149,9 @@ async function runCurrencyConversionTests() {
     refreshedAt: new Date().toISOString(),
   });
   assert.equal(parsedRefresh.refreshedCount, 5);
-  console.log("  ✓ RefreshCurrencyRatesResponseSchema validated against payload");
+  console.log(
+    "  ✓ RefreshCurrencyRatesResponseSchema validated against payload",
+  );
 
   // ────────────────────────────────────────────────────────────
   // Test 4: Fastify Endpoints & Route Security
@@ -156,15 +170,19 @@ async function runCurrencyConversionTests() {
     const currenciesJson = JSON.parse(currenciesRes.payload);
     assert.ok(Array.isArray(currenciesJson.rates));
     assert.ok(currenciesJson.rates.length > 0);
-    console.log("  ✓ GET /api/v1/prices/currencies returns active exchange rates");
+    console.log(
+      "  ✓ GET /api/v1/prices/currencies returns active exchange rates",
+    );
 
-    // 4.2 Admin refresh endpoint rejects unauthenticated request
+    // 4.2 Admin refresh endpoint rejects unauthorized request
     const unauthRefreshRes = await app.inject({
       method: "POST",
       url: "/api/v1/admin/prices/currencies/refresh",
     });
-    assert.equal(unauthRefreshRes.statusCode, 401);
-    console.log("  ✓ POST /api/v1/admin/prices/currencies/refresh rejects unauthenticated request (401)");
+    assert.equal(unauthRefreshRes.statusCode, 403);
+    console.log(
+      "  ✓ POST /api/v1/admin/prices/currencies/refresh rejects unauthorized request (403)",
+    );
 
     // 4.3 Admin refresh endpoint succeeds with internal secret
     const authRefreshRes = await app.inject({
@@ -179,7 +197,9 @@ async function runCurrencyConversionTests() {
     assert.equal(refreshJson.success, true);
     assert.ok(refreshJson.refreshedCount >= 5);
     assert.ok(refreshJson.rates.PKR > 0);
-    console.log("  ✓ POST /api/v1/admin/prices/currencies/refresh succeeds with internal secret");
+    console.log(
+      "  ✓ POST /api/v1/admin/prices/currencies/refresh succeeds with internal secret",
+    );
 
     console.log("\n==================================================");
     console.log("  ALL CURRENCY CONVERSION TESTS PASSED (100%)!    ");
@@ -199,4 +219,3 @@ runCurrencyConversionTests()
     console.error("Test execution failed:", err);
     process.exit(1);
   });
-

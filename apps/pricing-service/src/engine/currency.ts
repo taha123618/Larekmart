@@ -80,7 +80,8 @@ export function convertCurrency(
 ): ConversionResult {
   const decAmount = new Decimal(amount);
   const decRate = new Decimal(rate);
-  const shouldRoundPsychologically = options?.applyPsychologicalRounding ?? false;
+  const shouldRoundPsychologically =
+    options?.applyPsychologicalRounding ?? false;
 
   if (decAmount.isNegative()) {
     throw new Error("Amount for currency conversion must be non-negative");

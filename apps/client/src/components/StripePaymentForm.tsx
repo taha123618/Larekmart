@@ -166,6 +166,8 @@ const StripePaymentForm = ({
     serverCart?.expiresAt,
     taxCalculationId,
     taxAmount,
+    currentCurrency,
+    exchangeRates,
   ]);
 
   // Case 1: Stripe Publishable Key not configured in environment

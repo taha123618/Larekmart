@@ -15,4 +15,3 @@ export function getRedisService(): RedisService {
 }
 
 export const redis = getRedisService();
-

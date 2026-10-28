@@ -254,9 +254,7 @@ export async function upsertAdminCurrencyRate(
 /**
  * Trigger live refresh of currency exchange rates from market feed
  */
-export async function refreshAdminCurrencyRates(
-  authToken?: string,
-): Promise<{
+export async function refreshAdminCurrencyRates(authToken?: string): Promise<{
   success: boolean;
   refreshedCount: number;
   source: string;

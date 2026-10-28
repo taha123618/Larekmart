@@ -1246,63 +1246,68 @@ export default function PricingDashboardPage() {
                   </SheetHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-1">
-                    <label className="text-xs font-medium">Base Currency</label>
-                    <Input
-                      value={rateForm.baseCurrency}
-                      onChange={(e) =>
-                        setRateForm({
-                          ...rateForm,
-                          baseCurrency: e.target.value.toUpperCase(),
-                        })
+                      <label className="text-xs font-medium">
+                        Base Currency
+                      </label>
+                      <Input
+                        value={rateForm.baseCurrency}
+                        onChange={(e) =>
+                          setRateForm({
+                            ...rateForm,
+                            baseCurrency: e.target.value.toUpperCase(),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">
+                        Target Currency
+                      </label>
+                      <Input
+                        value={rateForm.targetCurrency}
+                        onChange={(e) =>
+                          setRateForm({
+                            ...rateForm,
+                            targetCurrency: e.target.value.toUpperCase(),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">
+                        Exchange Rate
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.0001"
+                        value={rateForm.exchangeRate}
+                        onChange={(e) =>
+                          setRateForm({
+                            ...rateForm,
+                            exchangeRate: parseFloat(e.target.value) || 1,
+                          })
+                        }
+                      />
+                    </div>
+                    <Button
+                      className="w-full mt-4"
+                      disabled={
+                        upsertRateMutation.isPending ||
+                        rateForm.exchangeRate <= 0
                       }
-                    />
+                      onClick={() => upsertRateMutation.mutate(rateForm)}
+                    >
+                      {upsertRateMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Save Currency Rate"
+                      )}
+                    </Button>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">
-                      Target Currency
-                    </label>
-                    <Input
-                      value={rateForm.targetCurrency}
-                      onChange={(e) =>
-                        setRateForm({
-                          ...rateForm,
-                          targetCurrency: e.target.value.toUpperCase(),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Exchange Rate</label>
-                    <Input
-                      type="number"
-                      step="0.0001"
-                      value={rateForm.exchangeRate}
-                      onChange={(e) =>
-                        setRateForm({
-                          ...rateForm,
-                          exchangeRate: parseFloat(e.target.value) || 1,
-                        })
-                      }
-                    />
-                  </div>
-                  <Button
-                    className="w-full mt-4"
-                    disabled={
-                      upsertRateMutation.isPending || rateForm.exchangeRate <= 0
-                    }
-                    onClick={() => upsertRateMutation.mutate(rateForm)}
-                  >
-                    {upsertRateMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Save Currency Rate"
-                    )}
-                  </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </CardHeader>
+                </SheetContent>
+              </Sheet>
+            </div>
+          </CardHeader>
           <CardContent>
             {isRatesLoading ? (
               <div className="flex items-center justify-center p-8">
