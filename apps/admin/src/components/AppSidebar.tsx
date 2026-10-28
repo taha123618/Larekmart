@@ -30,6 +30,7 @@ import {
   Coins,
   Building2,
   Store,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Sidebar,
@@ -303,6 +304,14 @@ const AppSidebar = () => {
                   <Link href="/settlements">
                     <Coins />
                     Escrow & Settlements
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/disputes">
+                    <ShieldAlert />
+                    Disputes & Claims
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
