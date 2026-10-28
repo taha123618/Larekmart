@@ -29,3 +29,8 @@ shipmentRouter.post(
   requireAdminOrInternal,
   ShipmentController.cancelShipment,
 );
+shipmentRouter.post(
+  "/:id/location",
+  requireAdminOrInternal,
+  ShipmentController.updateLocation,
+);

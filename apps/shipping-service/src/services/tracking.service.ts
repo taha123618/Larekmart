@@ -14,6 +14,11 @@ export class TrackingService {
     status: TypeShipmentStatus;
     description: string;
     location?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    heading?: number | null;
+    accuracyMeters?: number | null;
+    etaMinutes?: number | null;
     occurredAt?: Date;
     source?: "carrier_webhook" | "carrier_poll" | "manual";
     metadata?: Record<string, unknown>;
@@ -25,6 +30,25 @@ export class TrackingService {
 
     const prismaStatus = data.status as unknown as ShipmentStatus;
 
+    const mergedMetadata: Record<string, unknown> = {
+      ...(data.metadata || {}),
+      ...(data.latitude !== undefined && data.latitude !== null
+        ? { latitude: data.latitude }
+        : {}),
+      ...(data.longitude !== undefined && data.longitude !== null
+        ? { longitude: data.longitude }
+        : {}),
+      ...(data.heading !== undefined && data.heading !== null
+        ? { heading: data.heading }
+        : {}),
+      ...(data.accuracyMeters !== undefined && data.accuracyMeters !== null
+        ? { accuracyMeters: data.accuracyMeters }
+        : {}),
+      ...(data.etaMinutes !== undefined && data.etaMinutes !== null
+        ? { etaMinutes: data.etaMinutes }
+        : {}),
+    };
+
     // 1. Insert tracking event
     const event = await ShipmentRepository.addTrackingEvent({
       shipmentId: data.shipmentId,
@@ -33,7 +57,7 @@ export class TrackingService {
       location: data.location,
       occurredAt: data.occurredAt,
       source: data.source,
-      metadata: data.metadata,
+      metadata: mergedMetadata,
     });
 
     // 2. Update shipment status and dates
@@ -78,6 +102,10 @@ export class TrackingService {
         status: data.status,
         description: data.description,
         location: data.location,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        heading: data.heading,
+        etaMinutes: data.etaMinutes,
         occurredAt: data.occurredAt ?? new Date(),
       });
 
@@ -113,9 +141,13 @@ export class TrackingService {
       status: event.status as TypeShipmentStatus,
       description: event.description,
       location: event.location,
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
+      heading: data.heading ?? null,
+      accuracyMeters: data.accuracyMeters ?? null,
       occurredAt: event.occurredAt.toISOString(),
       source: event.source as "carrier_webhook" | "carrier_poll" | "manual",
-      metadata: event.metadata as Record<string, unknown> | null,
+      metadata: mergedMetadata,
     };
   }
 
@@ -148,25 +180,52 @@ export class TrackingService {
       }
     }
 
+    // Extract latest geolocation from tracking events
+    const latestEvent = shipment.trackingEvents[0];
+    const latestMeta =
+      (latestEvent?.metadata as Record<string, unknown> | null) || {};
+    const currentLatitude =
+      typeof latestMeta.latitude === "number" ? latestMeta.latitude : null;
+    const currentLongitude =
+      typeof latestMeta.longitude === "number" ? latestMeta.longitude : null;
+    const currentHeading =
+      typeof latestMeta.heading === "number" ? latestMeta.heading : null;
+    const etaMinutes =
+      typeof latestMeta.etaMinutes === "number" ? latestMeta.etaMinutes : null;
+
     const result: TrackingResult = {
       shipmentId: shipment.id,
       carrier: shipment.carrier,
       trackingNumber: trkNumber,
       status: shipment.status as TypeShipmentStatus,
       estimatedDeliveryAt: shipment.estimatedDeliveryAt?.toISOString() ?? null,
+      currentLatitude,
+      currentLongitude,
+      currentHeading,
+      etaMinutes,
       isCod: shipment.isCod,
       codAmount: shipment.codAmount ? Number(shipment.codAmount) : null,
       codStatus: shipment.codStatus,
-      events: shipment.trackingEvents.map((e) => ({
-        id: e.id,
-        shipmentId: e.shipmentId,
-        status: e.status as TypeShipmentStatus,
-        description: e.description,
-        location: e.location,
-        occurredAt: e.occurredAt.toISOString(),
-        source: e.source as "carrier_webhook" | "carrier_poll" | "manual",
-        metadata: e.metadata as Record<string, unknown> | null,
-      })),
+      events: shipment.trackingEvents.map((e) => {
+        const meta = (e.metadata as Record<string, unknown> | null) || {};
+        return {
+          id: e.id,
+          shipmentId: e.shipmentId,
+          status: e.status as TypeShipmentStatus,
+          description: e.description,
+          location: e.location,
+          latitude: typeof meta.latitude === "number" ? meta.latitude : null,
+          longitude: typeof meta.longitude === "number" ? meta.longitude : null,
+          heading: typeof meta.heading === "number" ? meta.heading : null,
+          accuracyMeters:
+            typeof meta.accuracyMeters === "number"
+              ? meta.accuracyMeters
+              : null,
+          occurredAt: e.occurredAt.toISOString(),
+          source: e.source as "carrier_webhook" | "carrier_poll" | "manual",
+          metadata: meta,
+        };
+      }),
       lastUpdated: shipment.updatedAt.toISOString(),
     };
 

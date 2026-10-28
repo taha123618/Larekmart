@@ -150,12 +150,42 @@ func (h *DomainEventHandler) dispatchDomainNotification(ctx context.Context, top
 		return h.handleSellerCreated(ctx, payload)
 	case "seller.activated":
 		return h.handleSellerActivated(ctx, payload)
+	case "shipping.tracking.updated", "tracking.updated", "shipment.in_transit", "shipment.out_for_delivery", "shipment.delivered":
+		return h.handleShippingTrackingUpdated(ctx, topic, payload)
 	case "notification.dispatch":
 		return h.handleDirectDispatch(ctx, payload)
 	default:
 		h.logger.Debug(ctx, fmt.Sprintf("Ignoring unhandled topic '%s'", topic))
 		return nil
 	}
+}
+
+func (h *DomainEventHandler) handleShippingTrackingUpdated(ctx context.Context, topic string, payload map[string]interface{}) error {
+	trackingNumber, _ := payload["trackingNumber"].(string)
+	status, _ := payload["status"].(string)
+	description, _ := payload["description"].(string)
+	location, _ := payload["location"].(string)
+
+	userID, _ := payload["userId"].(string)
+	if userID == "" {
+		userID = "public"
+	}
+
+	title := fmt.Sprintf("Shipment Update: %s (%s)", trackingNumber, status)
+	body := description
+	if location != "" {
+		body = fmt.Sprintf("%s - %s", location, description)
+	}
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   userID,
+		Type:     "shipment_tracking_update",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityHigh,
+	})
+	return err
 }
 
 func (h *DomainEventHandler) handleReviewReported(ctx context.Context, payload map[string]interface{}) error {

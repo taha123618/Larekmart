@@ -134,12 +134,22 @@ export async function registerProxyRoutes(
 
           // Parse upstream Retry-After on 429 / 503 for health feedback
           if (status === 429 || status === 503) {
-            const retryAfterHeader = (res as { headers?: Record<string, string | string[] | undefined> }).headers?.["retry-after"];
+            const retryAfterHeader = (
+              res as { headers?: Record<string, string | string[] | undefined> }
+            ).headers?.["retry-after"];
             const retryAfterSecs = retryAfterHeader
-              ? parseInt(Array.isArray(retryAfterHeader) ? retryAfterHeader[0] ?? "0" : retryAfterHeader, 10)
+              ? parseInt(
+                  Array.isArray(retryAfterHeader)
+                    ? (retryAfterHeader[0] ?? "0")
+                    : retryAfterHeader,
+                  10,
+                )
               : 0;
             if (retryAfterSecs > 0) {
-              circuitBreaker.feedUpstreamRetryAfter(route.serviceName, retryAfterSecs);
+              circuitBreaker.feedUpstreamRetryAfter(
+                route.serviceName,
+                retryAfterSecs,
+              );
             }
           }
 
@@ -151,8 +161,9 @@ export async function registerProxyRoutes(
         },
         rewriteRequestHeaders: (originalReq, headers) => {
           // Stamp the wall-clock start time so onError/onResponse can compute latency
-          (originalReq as FastifyRequest & { _proxyStartMs?: number })._proxyStartMs =
-            Date.now();
+          (
+            originalReq as FastifyRequest & { _proxyStartMs?: number }
+          )._proxyStartMs = Date.now();
 
           gatewayProxyRequestsTotal.inc({
             service: String(route.serviceName),

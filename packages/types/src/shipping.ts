@@ -211,6 +211,10 @@ export const TrackingEventSchema = z.object({
   status: ShipmentStatusSchema,
   description: z.string(),
   location: z.string().nullable().optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
+  heading: z.number().min(0).max(360).nullable().optional(),
+  accuracyMeters: z.number().nonnegative().nullable().optional(),
   occurredAt: z.string().or(z.date()),
   source: z.enum(["carrier_webhook", "carrier_poll", "manual"]),
   metadata: z.record(z.string(), z.unknown()).optional().nullable(),
@@ -224,6 +228,10 @@ export const TrackingResultSchema = z.object({
   trackingNumber: z.string(),
   status: ShipmentStatusSchema,
   estimatedDeliveryAt: z.string().or(z.date()).nullable().optional(),
+  currentLatitude: z.number().min(-90).max(90).nullable().optional(),
+  currentLongitude: z.number().min(-180).max(180).nullable().optional(),
+  currentHeading: z.number().min(0).max(360).nullable().optional(),
+  etaMinutes: z.number().int().nonnegative().nullable().optional(),
   isCod: z.boolean().optional(),
   codAmount: z.number().nullable().optional(),
   codStatus: z.string().nullable().optional(),
@@ -232,6 +240,26 @@ export const TrackingResultSchema = z.object({
 });
 
 export type TrackingResult = z.infer<typeof TrackingResultSchema>;
+
+export const UpdateShipmentLocationSchema = z.object({
+  shipmentId: z.string().min(1, "Shipment ID is required"),
+  status: ShipmentStatusSchema.optional().default("IN_TRANSIT"),
+  description: z.string().min(1, "Description is required"),
+  location: z.string().min(1, "Location name is required"),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  heading: z.number().min(0).max(360).optional(),
+  accuracyMeters: z.number().nonnegative().optional(),
+  etaMinutes: z.number().int().nonnegative().optional(),
+  source: z
+    .enum(["carrier_webhook", "carrier_poll", "manual"])
+    .optional()
+    .default("manual"),
+});
+
+export type UpdateShipmentLocation = z.infer<
+  typeof UpdateShipmentLocationSchema
+>;
 
 // ==========================================
 // 6. Carrier Provider Interface
@@ -374,6 +402,10 @@ export interface TrackingUpdatedPayload {
   status: ShipmentStatus;
   description: string;
   location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  heading?: number | null;
+  etaMinutes?: number | null;
   occurredAt: string;
   timestamp: string;
 }

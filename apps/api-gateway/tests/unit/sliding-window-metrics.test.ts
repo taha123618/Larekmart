@@ -24,9 +24,9 @@ export async function runSlidingWindowMetricsTests() {
   // ── 2. Basic recording accumulates correctly ───────────────────────────
   {
     const m = new SlidingWindowMetrics(10);
-    m.record("svc", false, 100, 500);  // success, fast
-    m.record("svc", true, 200, 500);   // failure, fast
-    m.record("svc", false, 600, 500);  // success, slow (600 > 500)
+    m.record("svc", false, 100, 500); // success, fast
+    m.record("svc", true, 200, 500); // failure, fast
+    m.record("svc", false, 600, 500); // success, slow (600 > 500)
 
     const snap = m.snapshot("svc");
     assert.equal(snap.total, 3);
@@ -58,7 +58,11 @@ export async function runSlidingWindowMetricsTests() {
     assert.equal(m.snapshot("svc-b").total, 1, "svc-b should be unaffected");
 
     m.reset();
-    assert.equal(m.snapshot("svc-b").total, 0, "Global reset should clear svc-b");
+    assert.equal(
+      m.snapshot("svc-b").total,
+      0,
+      "Global reset should clear svc-b",
+    );
   }
 
   // ── 5. Independent service namespaces don't bleed into each other ──────

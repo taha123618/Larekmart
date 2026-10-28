@@ -1,9 +1,11 @@
 import type { Context } from "koa";
 import { ShipmentService } from "../services/shipment.service.js";
 import { LabelService } from "../services/label.service.js";
+import { TrackingService } from "../services/tracking.service.js";
 import {
   CreateShipmentRequestSchema,
   CreateLabelRequestSchema,
+  UpdateShipmentLocationSchema,
 } from "@repo/types";
 
 export class ShipmentController {
@@ -120,6 +122,54 @@ export class ShipmentController {
       ctx.body = {
         message:
           err instanceof Error ? err.message : "Failed to cancel shipment",
+      };
+    }
+  }
+
+  static async updateLocation(ctx: Context): Promise<void> {
+    const id = ctx.params.id;
+    const body = (ctx.request.body as Record<string, unknown>) ?? {};
+    const parsed = UpdateShipmentLocationSchema.safeParse({
+      ...body,
+      shipmentId: id,
+    });
+
+    if (!parsed.success) {
+      ctx.status = 400;
+      ctx.body = {
+        message: "Invalid location update payload",
+        errors: parsed.error.issues,
+      };
+      return;
+    }
+
+    try {
+      const event = await TrackingService.recordTrackingEvent({
+        shipmentId: id,
+        status: parsed.data.status,
+        description: parsed.data.description,
+        location: parsed.data.location,
+        latitude: parsed.data.latitude,
+        longitude: parsed.data.longitude,
+        heading: parsed.data.heading,
+        accuracyMeters: parsed.data.accuracyMeters,
+        etaMinutes: parsed.data.etaMinutes,
+        source: parsed.data.source,
+      });
+
+      ctx.status = 201;
+      ctx.body = {
+        success: true,
+        message: "Shipment location updated and tracking event broadcasted",
+        event,
+      };
+    } catch (err) {
+      ctx.status = 400;
+      ctx.body = {
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to update shipment location",
       };
     }
   }

@@ -3,6 +3,7 @@
 ## 1. Executive Summary & Problem Analysis
 
 In a 23-microservice e-commerce ecosystem operating at Daraz scale:
+
 - **Current Limitation**: OpenSearch reindexing originally ran synchronously via HTTP (`wait_for_completion: true`). During large-catalog migrations or schema changes, this caused Fastify API gateway proxy timeouts (5–10s) and severed client connections.
 - **The Data Loss Drift Problem**: While OpenSearch's native `_reindex` copied documents from `products-v1` to `products-v2` (taking anywhere from seconds to several minutes), in-flight mutations (`product.created`, `product.updated`, `inventory.stock.sold`, `price.updated`, and admin HTTP updates) only updated `products-v1`. Once the alias swapped to `products-v2`, all mutations that occurred during the copy window were permanently lost.
 - **Lack of Verification & Instant Rollback**: Blindly swapping aliases without pre-swap document parity checks could expose storefront users to missing or corrupt product catalogs, with no automated rollback mechanism.
@@ -54,6 +55,7 @@ sequenceDiagram
 ## 3. Subsystem Components
 
 ### A. `@repo/opensearch` Enhancements
+
 - **Atomic Alias Swap (`atomicAliasSwap`)**:
   Performs an atomic `updateAliases` transaction in OpenSearch, removing the alias from old indices and binding it to the new index in a single network round-trip.
 - **Index Parity Verification (`verifyIndexParity`)**:
@@ -62,12 +64,14 @@ sequenceDiagram
   Scans all versioned indices (`products-v*`) to determine the current active pointer and retained historical snapshots.
 
 ### B. `apps/search-service`: Drift Reconciliation Engine (`DriftReconciler`)
+
 - **Live Dual-Writing**:
   When a reindex job is active, `indexingService.indexOrUpdateProduct`, `updateProductPartial`, and `deleteProduct` replicate mutations to the pending target index with optimistic concurrency control.
 - **Offline Drift Journal Buffer**:
   If a direct dual-write fails (e.g. transient cluster throttling during heavy reindexing scroll), the mutation is buffered in an in-memory drift journal and drained immediately upon reindex completion.
 
 ### C. Asynchronous Job Manager & Rollback API
+
 - `POST /api/v1/index/reindex`: Supports asynchronous processing (`?async=true` or `Prefer: respond-async`) returning `202 Accepted` with a tracking `jobId`.
 - `GET /api/v1/index/reindex/:jobId`: Returns current job phase (`INITIALIZING`, `COPYING_DOCUMENTS`, `RECONCILING_DRIFT`, `SWAPPING_ALIAS`, `COMPLETED`, `FAILED`).
 - `GET /api/v1/index/alias`: Returns current alias topology and retained previous indices.
@@ -78,6 +82,7 @@ sequenceDiagram
 ## 4. Verification & Testing
 
 Validated with automated test suites (`apps/search-service/tests/unit/reindex-drift-reconciliation.test.ts`):
+
 1. **DriftReconciler Dual-Write & Buffer Draining**:
    Simulated mutations during active reindexing; verified live replication and fallback journal drain.
 2. **Index Parity Gate**:

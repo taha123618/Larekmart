@@ -63,6 +63,7 @@ Current helper surface is intentionally small. Expose helpers, not raw clients.
 pnpm --filter @repo/kafka check-types
 pnpm --filter @repo/kafka test
 ```
+
 - `pnpm --filter @repo/kafka check-types`
 - Start local Kafka and run a producer/consumer against it; inspect topics in Kafka UI
   at `:8080`.

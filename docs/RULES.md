@@ -146,47 +146,54 @@ Whenever a new feature or service is built (e.g. `review-service`, customer retu
 ```
 
 ### 1. Schema & Contract Foundation (`@repo/types`, DB Schema)
+
 - Define canonical TypeScript interfaces and Zod validation schemas in `packages/types/src/<domain>.ts`.
 - Export schemas and types in `packages/types/src/index.ts`.
 - Create or update the service database schema (Prisma or Drizzle). Generate clients/types via migration scripts.
 - Never duplicate type declarations or validation schemas inside individual application directories.
 
 ### 2. Backend Microservice Architecture (`apps/<service>`)
+
 - Structure: `routes/` -> `controllers/` -> `services/` -> `repositories/` (or ORM models).
 - Enforce transactional outbox (`OutboxEvent`) for any database mutations that produce asynchronous domain events.
 - Implement distributed mutation idempotency (`Idempotency-Key` + Redis atomic lease) for high-impact mutations.
 - Implement readiness/health probes (`/health`, `/ready`) checking database and messaging dependencies.
 
 ### 3. API Gateway Reverse Proxy & Resilience (`apps/api-gateway`)
+
 - Register prefixes in `public.routes.ts`, `authenticated.routes.ts`, or `admin.routes.ts`.
 - Configure service target URLs, upstream timeouts, and circuit breaker registrations.
 - Wrap cacheable or high-velocity aggregation read paths with `SingleFlightGroup` to shield backends from thundering herds.
 - Unconditionally strip client-supplied identity/claim headers at the gateway before forwarding verified identity headers (`x-user-id`, `x-user-role`).
 
 ### 4. Kafka Event Lifecycle & Poison-Pill Resilience (`@repo/kafka`)
+
 - Producers must use `{ value: payload }` envelope and produce via transactional outbox.
 - Consumers must extract `message.value` and register Dead-Letter Queue (DLQ) isolation (`<topic>.dlq`) for unrecoverable errors (`SyntaxError`, `ZodError`).
 - Update `docs/EVENT-DRIVEN-ARCHITECTURE.md` with new event payloads, producers, and consumers.
 
 ### 5. Customer Storefront Implementation (`apps/client`)
+
 - Build client service in `apps/client/src/services/<domain>.service.ts` communicating with the backend via API Gateway (`process.env.NEXT_PUBLIC_API_GATEWAY_URL`).
 - Build responsive, accessible UI pages and components adhering to the Larekmart design system (dark/light mode, Tailwind CSS transitions, micro-animations).
 - Maintain React 19 / Next.js 16 hydration safety: avoid motion layout IDs on static grids, guard client-only localStorage states with `isMounted`, and use Server Components by default.
 
 ### 6. Admin Backoffice Operations (`apps/admin`)
+
 - Build admin service in `apps/admin/src/services/<domain>.service.ts`.
 - Implement responsive dashboards with KPIs, searchable/filterable data tables, action modals (approval, rejection, inspection, override), and audit notifications via React Query.
 - Ensure admin routes are secured behind Clerk admin authorization.
 
 ### 7. Automated Unit & Integration Testing
+
 - Add standalone test suites under `tests/` in the service or app.
 - Never introduce Jest or Vitest; follow the repository's native tsx test runner pattern.
 - Cover normal execution flows, validation rejections, duplicate request replay, and boundary failure modes.
 
 ### 8. Security & Zero-Trust Hardening
+
 - **Zero-Trust Identity**: Never trust client-supplied user IDs in bodies/params. Extract strictly from verified Clerk tokens.
 - **IDOR Protection**: Verify that the authenticated customer strictly owns the target resource before returning or mutating records.
 - **Constant-Time Verification**: Microservice internal endpoints must verify `x-internal-secret` using constant-time string comparisons.
 - **Input & Asset Sanitization**: Validate media URLs against authorized S3/MinIO bucket domains; sanitize freeform text inputs.
 - **CI/CD & Documentation**: Update `AGENTS.md`, `README.md`, OpenAPI/plans, and ensure GitHub Actions workflow checks pass cleanly.
-

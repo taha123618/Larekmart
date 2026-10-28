@@ -230,6 +230,10 @@ export class ShippingPublisher {
     status: ShipmentStatus;
     description: string;
     location?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    heading?: number | null;
+    etaMinutes?: number | null;
     occurredAt: Date | string;
   }): Promise<void> {
     const payload: TrackingUpdatedPayload = {
@@ -241,10 +245,15 @@ export class ShippingPublisher {
       status: data.status,
       description: data.description,
       location: data.location,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      heading: data.heading,
+      etaMinutes: data.etaMinutes,
       occurredAt: new Date(data.occurredAt).toISOString(),
       timestamp: new Date().toISOString(),
     };
 
     await this.safeSend("tracking.updated", payload);
+    await this.safeSend("shipping.tracking.updated", payload);
   }
 }

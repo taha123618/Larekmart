@@ -2,7 +2,10 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { fetchTracking } from "@/services/shipping.service";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import LiveDeliveryMap from "@/components/shipping/LiveDeliveryMap";
 import type { TrackingResult } from "@repo/types";
 import {
   Search,
@@ -108,6 +111,20 @@ function TrackContent(): React.JSX.Element {
   const [data, setData] = useState<TrackingResult | null>(null);
   const [copiedTracking, setCopiedTracking] = useState(false);
 
+  const { isSignedIn, userId } = useAuth();
+  const wsUrl =
+    process.env.NEXT_PUBLIC_NOTIFICATION_WS_URL || "ws://localhost:8080/ws";
+  const activeWsUrl =
+    isSignedIn && userId
+      ? `${wsUrl}?user_id=${encodeURIComponent(userId)}`
+      : null;
+
+  const { isReady, value: wsMsg } = useWebSocket<{
+    type: string;
+    shipment_id?: string;
+    tracking_number?: string;
+  }>(activeWsUrl);
+
   const handleSearch = useCallback(
     async (numToSearch: string) => {
       const trimmed = numToSearch.trim();
@@ -144,6 +161,17 @@ function TrackContent(): React.JSX.Element {
       handleSearch(initialNumber);
     }
   }, [initialNumber, handleSearch]);
+
+  useEffect(() => {
+    if (!wsMsg || !data) return;
+    if (
+      wsMsg.shipment_id === data.shipmentId ||
+      wsMsg.tracking_number === data.trackingNumber ||
+      wsMsg.type === "shipment_tracking_update"
+    ) {
+      handleSearch(data.trackingNumber);
+    }
+  }, [wsMsg, data, handleSearch]);
 
   const copyToClipboard = (text: string) => {
     if (navigator.clipboard) {
@@ -386,6 +414,9 @@ function TrackContent(): React.JSX.Element {
               </div>
             </div>
           </div>
+
+          {/* REAL-TIME DELIVERY RADAR MAP */}
+          <LiveDeliveryMap data={data} isLiveConnected={isReady} />
 
           {/* CHECKPOINT HISTORY */}
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">

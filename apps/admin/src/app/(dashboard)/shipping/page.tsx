@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { Shipment, ShippingMethod } from "@repo/types";
 import Link from "next/link";
+import CourierDispatcherSimulator from "@/components/shipping/CourierDispatcherSimulator";
 
 async function getShippingHealth(): Promise<{ ok: boolean; status?: string }> {
   try {
@@ -287,6 +288,9 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
           subtitle="Awaiting rider cash collection"
         />
       </div>
+
+      {/* COURIER DISPATCH & GEOLOCATION TELEMETRY SIMULATOR */}
+      <CourierDispatcherSimulator shipments={shipments} />
 
       {/* FILTER TABS & TOOLBAR */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-primary-foreground p-3 rounded-xl border border-border/40 text-xs">

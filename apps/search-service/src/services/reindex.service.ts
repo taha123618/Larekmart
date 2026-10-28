@@ -223,9 +223,7 @@ export class ReindexService {
   /**
    * Instantaneous 1-click rollback of an alias to a previous versioned index.
    */
-  public async rollbackAlias(
-    req: RollbackRequest,
-  ): Promise<{
+  public async rollbackAlias(req: RollbackRequest): Promise<{
     success: boolean;
     previousIndex: string | null;
     newIndex: string;

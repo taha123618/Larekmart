@@ -1,5 +1,6 @@
 import assert from "assert";
 import crypto from "node:crypto";
+import { UpdateShipmentLocationSchema } from "@repo/types";
 import { WebhookService } from "../src/services/webhook.service.js";
 import { requireAdminOrInternal } from "../src/middleware/auth.middleware.js";
 
@@ -254,6 +255,77 @@ async function runSecurityTests() {
     tamperedPayload,
   );
   assert.equal(hmacTampered, false, "Tampered payload must be rejected");
+
+  // 5. Test Geolocation Telemetry Schema Validation & Coordinate Boundary Enforcement
+  console.log(
+    "5. Testing Geolocation Telemetry Schema Validation & Coordinate Bounds...",
+  );
+  const validLocationPayload = {
+    shipmentId: "ship_test_123",
+    latitude: 24.8607,
+    longitude: 67.0011,
+    heading: 120,
+    accuracyMeters: 5,
+    etaMinutes: 45,
+    location: "Karachi Central Logistics Hub",
+    description: "Package en route with courier rider",
+    status: "OUT_FOR_DELIVERY",
+  };
+  const parsed = UpdateShipmentLocationSchema.safeParse(validLocationPayload);
+  assert.equal(
+    parsed.success,
+    true,
+    "Valid geolocation payload must pass schema parsing",
+  );
+  if (parsed.success) {
+    assert.equal(parsed.data.latitude, 24.8607);
+    assert.equal(parsed.data.longitude, 67.0011);
+    assert.equal(parsed.data.status, "OUT_FOR_DELIVERY");
+  }
+
+  // Reject out-of-bounds latitude (> 90)
+  const invalidLat = UpdateShipmentLocationSchema.safeParse({
+    ...validLocationPayload,
+    latitude: 95.0,
+  });
+  assert.equal(invalidLat.success, false, "Latitude > 90 must fail validation");
+
+  // Reject out-of-bounds longitude (< -180)
+  const invalidLng = UpdateShipmentLocationSchema.safeParse({
+    ...validLocationPayload,
+    longitude: -195.0,
+  });
+  assert.equal(
+    invalidLng.success,
+    false,
+    "Longitude < -180 must fail validation",
+  );
+
+  // Reject invalid heading (> 360)
+  const invalidHeading = UpdateShipmentLocationSchema.safeParse({
+    ...validLocationPayload,
+    heading: 420,
+  });
+  assert.equal(
+    invalidHeading.success,
+    false,
+    "Heading > 360 must fail validation",
+  );
+
+  // Reject missing location string
+  const missingLocation = UpdateShipmentLocationSchema.safeParse({
+    latitude: 24.8607,
+    longitude: 67.0011,
+  });
+  assert.equal(
+    missingLocation.success,
+    false,
+    "Missing location text must fail validation",
+  );
+
+  console.log(
+    "✓ Geolocation coordinate boundary & schema validation tests passed",
+  );
 
   console.log("All shipping-service security tests passed successfully!\n");
   process.exit(0);

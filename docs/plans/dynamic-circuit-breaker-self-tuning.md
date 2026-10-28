@@ -106,16 +106,16 @@ All modules shipped in commit `9a3a349f` on the `development` branch.
 
 ### Files Changed
 
-| File | Change |
-| ---- | ------ |
-| `apps/api-gateway/src/resilience/sliding-window-metrics.ts` | ➕ New — 10×1s rolling time-bucket window |
-| `apps/api-gateway/src/resilience/circuit-breaker.ts` | ♻️ Refactored — hybrid sliding-window, slow-call, exponential canary, Retry-After |
-| `apps/api-gateway/src/gateway/proxy.ts` | 🔧 Updated — latency stamp, Retry-After parsing |
-| `apps/api-gateway/src/observability/metrics.ts` | 🔧 Updated — 2 new Prometheus counters |
-| `apps/api-gateway/tests/unit/circuit-breaker-dynamic.test.ts` | ➕ New — 9 dynamic-breaker test scenarios |
-| `apps/api-gateway/tests/unit/sliding-window-metrics.test.ts` | ➕ New — 5 sliding-window unit tests |
-| `apps/api-gateway/tests/unit/circuit-breaker.test.ts` | ♻️ Updated — adapted to new sliding-window API |
-| `apps/api-gateway/tests/index.test.ts` | 🔧 Updated — wired new test suites |
+| File                                                          | Change                                                                            |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `apps/api-gateway/src/resilience/sliding-window-metrics.ts`   | ➕ New — 10×1s rolling time-bucket window                                         |
+| `apps/api-gateway/src/resilience/circuit-breaker.ts`          | ♻️ Refactored — hybrid sliding-window, slow-call, exponential canary, Retry-After |
+| `apps/api-gateway/src/gateway/proxy.ts`                       | 🔧 Updated — latency stamp, Retry-After parsing                                   |
+| `apps/api-gateway/src/observability/metrics.ts`               | 🔧 Updated — 2 new Prometheus counters                                            |
+| `apps/api-gateway/tests/unit/circuit-breaker-dynamic.test.ts` | ➕ New — 9 dynamic-breaker test scenarios                                         |
+| `apps/api-gateway/tests/unit/sliding-window-metrics.test.ts`  | ➕ New — 5 sliding-window unit tests                                              |
+| `apps/api-gateway/tests/unit/circuit-breaker.test.ts`         | ♻️ Updated — adapted to new sliding-window API                                    |
+| `apps/api-gateway/tests/index.test.ts`                        | 🔧 Updated — wired new test suites                                                |
 
 ### Verification
 
@@ -126,9 +126,8 @@ pnpm --filter api-gateway test          ✅ All 8 suites passed in 7 989ms
 
 ### Key Design Deviations From Spec
 
-| Spec | Implemented | Rationale |
-| ---- | ----------- | --------- |
-| minWindowCalls = 20 | Configurable, default 5 | Lower default is safer for low-traffic dev/staging; 20 can be set via config |
-| Concurrency gate in HALF_OPEN | Not implemented (single-probe model) | SingleFlightGroup already prevents stampedes; probe concurrency adds state-management complexity with minimal added value |
-| `gateway_circuit_breaker_state` gauge | Omitted | Gauge per-service requires polling; logs + transition counters cover observability needs for now |
-
+| Spec                                  | Implemented                          | Rationale                                                                                                                 |
+| ------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| minWindowCalls = 20                   | Configurable, default 5              | Lower default is safer for low-traffic dev/staging; 20 can be set via config                                              |
+| Concurrency gate in HALF_OPEN         | Not implemented (single-probe model) | SingleFlightGroup already prevents stampedes; probe concurrency adds state-management complexity with minimal added value |
+| `gateway_circuit_breaker_state` gauge | Omitted                              | Gauge per-service requires polling; logs + transition counters cover observability needs for now                          |

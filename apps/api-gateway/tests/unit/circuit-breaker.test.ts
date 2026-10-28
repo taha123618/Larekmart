@@ -14,7 +14,7 @@ export async function runCircuitBreakerTests() {
   console.log("▶ [UNIT] Running Circuit Breaker (legacy behaviour) tests...");
 
   const cb = new CircuitBreaker({
-    minWindowCalls: 3,         // trip after at least 3 calls
+    minWindowCalls: 3, // trip after at least 3 calls
     failureRateThreshold: 1.0, // 100% failure rate required → strictly consecutive
     halfOpenInitialMs: 400,
     halfOpenMaxMs: 800,

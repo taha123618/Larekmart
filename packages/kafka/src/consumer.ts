@@ -96,7 +96,9 @@ export const createConsumer = (
 
     const dlqTopic = `${params.topic}${dlqTopicSuffix}`;
     const errorMessage =
-      params.error instanceof Error ? params.error.message : String(params.error);
+      params.error instanceof Error
+        ? params.error.message
+        : String(params.error);
     const errorName =
       params.error instanceof Error ? params.error.name : "UnknownError";
     const errorStack =

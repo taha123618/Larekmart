@@ -170,3 +170,38 @@ export async function calculateShippingRates(params: {
     return [];
   }
 }
+
+export async function updateShipmentLocation(
+  id: string,
+  payload: {
+    status?: string;
+    location: string;
+    description: string;
+    latitude: number;
+    longitude: number;
+    heading?: number;
+    accuracyMeters?: number;
+    etaMinutes?: number;
+  },
+): Promise<{ success: boolean; event?: unknown; message?: string }> {
+  try {
+    const res = await fetch(`${BASE}/shipments/${id}/location`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res
+        .json()
+        .catch(() => ({ message: "Failed to update location" }));
+      return { success: false, message: err.message };
+    }
+    const data = await res.json();
+    return { success: true, event: data.event };
+  } catch (err) {
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : "Network error",
+    };
+  }
+}
