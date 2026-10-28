@@ -8,6 +8,7 @@ import {
   getProductDocument,
 } from "@repo/opensearch";
 import { getOpenSearchClient } from "../opensearch/client.js";
+import { driftReconciler } from "./drift-reconciler.js";
 import type { SearchProductDocument } from "@repo/types";
 
 export class IndexingService {
@@ -28,6 +29,9 @@ export class IndexingService {
         indexName,
         logger,
       );
+
+      // Reconcile in-flight mutation if blue/green reindex is currently active
+      await driftReconciler.recordUpsert(product);
 
       searchMetrics.indexingDocumentsTotal.inc({
         operation: "index",
@@ -77,6 +81,9 @@ export class IndexingService {
         logger,
       );
 
+      // Reconcile in-flight mutation if blue/green reindex is currently active
+      await driftReconciler.recordPartialUpdate(id, partialDoc);
+
       searchMetrics.indexingDocumentsTotal.inc({
         operation: "update",
         status: "success",
@@ -116,6 +123,9 @@ export class IndexingService {
         status: "start",
       });
       await deleteProductDocument(getOpenSearchClient(), id, indexName, logger);
+
+      // Reconcile in-flight mutation if blue/green reindex is currently active
+      await driftReconciler.recordDelete(id);
 
       searchMetrics.indexingDocumentsTotal.inc({
         operation: "delete",

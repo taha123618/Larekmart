@@ -58,6 +58,9 @@ export {
   ensureProductIndexExists,
   pointAliasToIndex,
   createNewVersionedIndex,
+  atomicAliasSwap,
+  getAliasTopology,
+  verifyIndexParity,
 } from "./indexes/products.index.js";
 
 // ── Mappings ─────────────────────────────────────────────────────────────────
@@ -92,6 +95,9 @@ export type {
   SearchBoostingConfig,
   ReindexOptions,
   ReindexResult,
+  AtomicSwapOptions,
+  IndexParityResult,
+  AliasTopology,
   OpenSearchHit,
   OpenSearchSearchResponse,
   AggregationResult,

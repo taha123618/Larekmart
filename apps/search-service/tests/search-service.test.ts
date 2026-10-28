@@ -7,6 +7,7 @@ import {
 } from "../src/schemas/indexing.schema.js";
 import { env } from "../src/config/env.js";
 import { GATEWAY_HEADERS, ReindexRequestSchema } from "@repo/types";
+import { runReindexDriftReconciliationTests } from "./unit/reindex-drift-reconciliation.test.js";
 
 interface MockFastifyReply {
   statusCode: number;
@@ -201,6 +202,11 @@ async function runSearchServiceTests(): Promise<void> {
   console.log(
     "  ✓ ReindexRequestSchema verified reindexing operation parameters",
   );
+
+  // ---------------------------------------------------------------------------
+  // TEST 6: Zero-Downtime Blue/Green Aliasing & Drift Reconciliation
+  // ---------------------------------------------------------------------------
+  await runReindexDriftReconciliationTests();
 
   console.log("\n==================================================");
   console.log("🎉 ALL SEARCH SERVICE SQA TESTS PASSED (100%)");

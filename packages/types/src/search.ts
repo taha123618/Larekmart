@@ -179,14 +179,56 @@ export const ReindexRequestSchema = z.object({
 
 export type ReindexRequest = z.infer<typeof ReindexRequestSchema>;
 
+export type ReindexJobStatus =
+  | "INITIALIZING"
+  | "COPYING_DOCUMENTS"
+  | "RECONCILING_DRIFT"
+  | "SWAPPING_ALIAS"
+  | "COMPLETED"
+  | "FAILED"
+  | "ABORTED";
+
+export interface ReindexJobRecord {
+  jobId: string;
+  status: ReindexJobStatus;
+  sourceIndex: string;
+  targetIndex: string;
+  aliasName: string;
+  batchSize: number;
+  recreateAlias: boolean;
+  indexedCount: number;
+  failedCount: number;
+  driftReconciledCount: number;
+  startTime: number;
+  endTime?: number;
+  durationMs?: number;
+  error?: string;
+}
+
 export interface ReindexResponse {
   success: boolean;
   message: string;
+  jobId?: string;
   indexedCount: number;
   failedCount: number;
+  driftReconciledCount?: number;
   newIndexName?: string;
   aliasName?: string;
   durationMs: number;
+}
+
+export const RollbackRequestSchema = z.object({
+  aliasName: z.string().optional(),
+  targetIndex: z.string().min(1, "Target index is required for rollback"),
+});
+
+export type RollbackRequest = z.infer<typeof RollbackRequestSchema>;
+
+export interface AliasTopologyResponse {
+  aliasName: string;
+  currentIndex: string | null;
+  allIndices: string[];
+  retainedIndices: string[];
 }
 
 /**

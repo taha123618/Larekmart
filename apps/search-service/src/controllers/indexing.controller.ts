@@ -13,6 +13,8 @@ import { getOpenSearchClient } from "../opensearch/client.js";
 import { config } from "../config/config.js";
 import { logger, searchMetrics } from "../observability/metrics.js";
 
+import { RollbackRequestSchema } from "@repo/types";
+
 // ── Reindex ──────────────────────────────────────────────────────────────────
 
 export async function reindexHandler(
@@ -20,9 +22,77 @@ export async function reindexHandler(
   reply: FastifyReply,
 ): Promise<void> {
   const body = ReindexRequestSchema.parse(request.body || {});
+  const query = request.query as { async?: string } | undefined;
+  const isAsync =
+    query?.async === "true" || request.headers["prefer"] === "respond-async";
+
+  if (isAsync) {
+    const job = await reindexService.startReindex(body);
+    return reply.status(202).send({
+      message: `Reindexing job [${job.jobId}] accepted and running in background`,
+      ...job,
+    });
+  }
+
   const result = await reindexService.executeReindex(body);
   const statusCode = result.success ? 200 : 500;
   return reply.status(statusCode).send(result);
+}
+
+/**
+ * GET /api/v1/index/reindex/:jobId
+ *
+ * Check the status and progress of an asynchronous reindexing job.
+ */
+export async function getReindexJobHandler(
+  request: FastifyRequest<{ Params: { jobId: string } }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { jobId } = request.params;
+  const job = reindexService.getJob(jobId);
+  if (!job) {
+    return reply.status(404).send({
+      success: false,
+      message: `Reindexing job [${jobId}] not found`,
+    });
+  }
+  return reply.status(200).send({
+    success: true,
+    ...job,
+  });
+}
+
+/**
+ * GET /api/v1/index/alias
+ *
+ * Inspect current alias pointers, active indices, and historical retained versions.
+ */
+export async function getAliasTopologyHandler(
+  _request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const topology = await reindexService.getAliasTopology();
+  return reply.status(200).send({
+    success: true,
+    ...topology,
+  });
+}
+
+/**
+ * POST /api/v1/index/alias/rollback
+ *
+ * Instantaneously roll back an alias to a previous versioned index without downtime.
+ */
+export async function rollbackAliasHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const body = RollbackRequestSchema.parse(request.body);
+  const result = await reindexService.rollbackAlias(body);
+  return reply.status(200).send({
+    message: `Alias successfully rolled back to [${result.newIndex}]`,
+    ...result,
+  });
 }
 
 // ── Single-document upsert ───────────────────────────────────────────────────

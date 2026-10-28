@@ -126,3 +126,31 @@ export interface ReindexResult {
   aliasSwapped: boolean;
   took: number;
 }
+
+/** Options for atomic alias swap. */
+export interface AtomicSwapOptions {
+  aliasName: string;
+  newIndex: string;
+  oldIndex?: string;
+  deleteOldIndex?: boolean;
+}
+
+/** Result of index parity verification. */
+export interface IndexParityResult {
+  sourceIndex: string;
+  targetIndex: string;
+  sourceCount: number;
+  targetCount: number;
+  diff: number;
+  isHealthy: boolean;
+  sampleSearchOk: boolean;
+  reason?: string;
+}
+
+/** Representation of alias topology across versioned indices. */
+export interface AliasTopology {
+  aliasName: string;
+  currentIndex: string | null;
+  allIndices: string[];
+  retainedIndices: string[];
+}

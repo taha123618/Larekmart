@@ -1,6 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
 import {
   reindexHandler,
+  getReindexJobHandler,
+  getAliasTopologyHandler,
+  rollbackAliasHandler,
   upsertProductHandler,
   partialUpdateProductHandler,
   deleteProductDocumentHandler,
@@ -20,11 +23,29 @@ export const indexingRoutes: FastifyPluginAsync = async (fastify) => {
     maxRequests: 10,
   });
 
-  // ── Reindex (zero-downtime full reindex via OpenSearch native API) ───────────
+  // ── Reindex & Alias Blue/Green Lifecycle ────────────────────────────────────
   fastify.post(
     "/index/reindex",
     { preHandler: [heavyRateLimiter, shouldBeAdmin] },
     reindexHandler,
+  );
+
+  fastify.get<{ Params: { jobId: string } }>(
+    "/index/reindex/:jobId",
+    { preHandler: [adminRateLimiter, shouldBeAdmin] },
+    getReindexJobHandler,
+  );
+
+  fastify.get(
+    "/index/alias",
+    { preHandler: [adminRateLimiter, shouldBeAdmin] },
+    getAliasTopologyHandler,
+  );
+
+  fastify.post(
+    "/index/alias/rollback",
+    { preHandler: [heavyRateLimiter, shouldBeAdmin] },
+    rollbackAliasHandler,
   );
 
   // ── Single-document operations ───────────────────────────────────────────────

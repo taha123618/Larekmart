@@ -13,12 +13,19 @@ A dedicated search and indexing microservice for Larekmart built with Node.js, F
 - `src/opensearch/client.ts` — OpenSearch client singleton (wraps `@repo/opensearch`), ping check, and shutdown.
 - `src/utils/redis.ts` — Redis client singleton and key builder (wraps `@repo/redis`).
 - `src/cache/` — normalized query hash caching (`search-cache.ts`) and autocomplete cache (`suggestion-cache.ts`).
-- `src/services/` — Business orchestration for search (`search.service.ts`), suggestions (`suggestion.service.ts`), document indexing (`indexing.service.ts`), and alias-based reindexing (`reindex.service.ts`).
+- `src/services/` — Business orchestration for search (`search.service.ts`), suggestions (`suggestion.service.ts`), document indexing (`indexing.service.ts`), in-flight mutation drift reconciliation (`drift-reconciler.ts`), and blue/green alias-based reindexing with 1-click rollback (`reindex.service.ts`).
 - `src/consumers/` — Product event handlers (`product-events.consumer.ts`) using `@repo/kafka` directly.
 - `src/routes/` — Fastify route modules (`search.ts`, `suggestions.ts`, `indexing.ts`, `health.ts`).
 - `src/controllers/` — Request handlers validating parameters with Zod.
 - `src/middleware/` — Rate limiting (`rate-limit.ts`), Clerk admin auth (`auth.ts`), and global error handling (`error-handler.ts`).
 - `src/observability/` — Metrics registry (`metrics.ts`) and OpenTelemetry tracing (`tracing.ts`).
+
+## Reindexing, Aliasing & Drift Reconciliation
+
+- Reindexing executes asynchronously (`POST /api/v1/index/reindex?async=true`) to avoid gateway proxy timeouts.
+- `DriftReconciler` (`src/services/drift-reconciler.ts`) intercepts live mutations during reindexing, dual-writes to the pending target index, buffers any transient errors, and drains them before the alias cutover to guarantee zero lost mutations.
+- Parity verification gate (`verifyIndexParity`) compares document count deltas and tests search query sanity before allowing the alias swap.
+- Atomic alias swap (`atomicAliasSwap`) switches read/write aliases in a single OpenSearch call without dropping older indices, enabling instantaneous 1-click rollback via `POST /api/v1/index/alias/rollback`.
 
 ## OpenSearch ownership
 
