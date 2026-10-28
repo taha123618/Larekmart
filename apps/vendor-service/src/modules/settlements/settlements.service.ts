@@ -748,4 +748,38 @@ export class SettlementsService {
       return updated;
     });
   }
+
+  /**
+   * Claw back a dispute-frozen escrow item when resolved in buyer's favor.
+   */
+  async clawbackDisputedEscrow(escrowId: string, reason: string) {
+    const item = await this.prisma.vendorEscrowLedger.findUnique({
+      where: { id: escrowId },
+    });
+
+    if (!item || item.status !== "DISPUTE_FROZEN") {
+      throw new BadRequestException(
+        `Escrow ${escrowId} is not in DISPUTE_FROZEN state`,
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.vendorEscrowLedger.update({
+        where: { id: escrowId },
+        data: {
+          status: "REFUNDED_RETURN",
+          disputeReason: reason,
+        },
+      });
+
+      await tx.vendorBalance.update({
+        where: { vendorId: item.vendorId },
+        data: {
+          disputeFrozenBalance: { decrement: item.netAmount },
+        },
+      });
+
+      return updated;
+    });
+  }
 }

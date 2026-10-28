@@ -8,6 +8,7 @@ import { VendorsModule } from "./modules/vendors/vendors.module.js";
 import { DocumentsModule } from "./modules/documents/documents.module.js";
 import { AdminVendorsModule } from "./modules/admin/admin-vendors.module.js";
 import { SettlementsModule } from "./modules/settlements/settlements.module.js";
+import { DisputesModule } from "./modules/disputes/disputes.module.js";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter.js";
 
 @Module({
@@ -20,6 +21,7 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter.js";
     DocumentsModule,
     AdminVendorsModule,
     SettlementsModule,
+    DisputesModule,
   ],
   providers: [
     {

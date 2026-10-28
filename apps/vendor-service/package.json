@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "check-types": "tsc --noEmit",
-    "test": "NODE_ENV=test tsx --env-file-if-exists=.env tests/vendor-service.test.ts && NODE_ENV=test tsx --env-file-if-exists=.env tests/settlements.test.ts"
+    "test": "NODE_ENV=test tsx --env-file-if-exists=.env tests/vendor-service.test.ts && NODE_ENV=test tsx --env-file-if-exists=.env tests/settlements.test.ts && NODE_ENV=test tsx --env-file-if-exists=.env tests/disputes.test.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
