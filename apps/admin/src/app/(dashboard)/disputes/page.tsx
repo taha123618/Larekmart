@@ -9,12 +9,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  FileText,
   Building2,
   RefreshCw,
   Search,
   Scale,
-  ExternalLink,
 } from "lucide-react";
 import {
   fetchAdminDisputes,
@@ -35,9 +33,12 @@ export default function DisputesDashboardPage(): React.JSX.Element {
   const [overview, setOverview] = useState<DisputesOverview | null>(null);
 
   // Filters & Search
-  const [statusFilter, setStatusFilter] = useState<DisputeStatus | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState<DisputeStatus | "ALL">(
+    "ALL",
+  );
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDispute, setSelectedDispute] = useState<DisputeResponse | null>(null);
+  const [selectedDispute, setSelectedDispute] =
+    useState<DisputeResponse | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -142,7 +143,8 @@ export default function DisputesDashboardPage(): React.JSX.Element {
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Resolve buyer inquiries, review merchant proof of delivery, and arbitrate frozen escrow funds.
+            Resolve buyer inquiries, review merchant proof of delivery, and
+            arbitrate frozen escrow funds.
           </p>
         </div>
 
@@ -165,7 +167,9 @@ export default function DisputesDashboardPage(): React.JSX.Element {
           <div className="text-2xl font-black text-slate-900 dark:text-white">
             {overview?.totalDisputes || 0}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Platform-wide filed disputes</p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Platform-wide filed disputes
+          </p>
         </div>
 
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 shadow-xs">
@@ -174,7 +178,8 @@ export default function DisputesDashboardPage(): React.JSX.Element {
             <AlertTriangle className="w-4 h-4 text-amber-600" />
           </div>
           <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
-            {(overview?.openCount || 0) + (overview?.evidenceRequestedCount || 0)}
+            {(overview?.openCount || 0) +
+              (overview?.evidenceRequestedCount || 0)}
           </div>
           <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 mt-1">
             Seller 7-day countdown active
@@ -187,7 +192,8 @@ export default function DisputesDashboardPage(): React.JSX.Element {
             <Scale className="w-4 h-4 text-indigo-600" />
           </div>
           <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
-            {(overview?.underReviewCount || 0) + (overview?.arbitrationCount || 0)}
+            {(overview?.underReviewCount || 0) +
+              (overview?.arbitrationCount || 0)}
           </div>
           <p className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80 mt-1">
             Rebuttal submitted; awaiting verdict
@@ -229,7 +235,7 @@ export default function DisputesDashboardPage(): React.JSX.Element {
           ].map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setStatusFilter(tab.key as any)}
+              onClick={() => setStatusFilter(tab.key as DisputeStatus | "ALL")}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
                 statusFilter === tab.key
                   ? "bg-black dark:bg-white text-white dark:text-black shadow-xs"
@@ -256,7 +262,8 @@ export default function DisputesDashboardPage(): React.JSX.Element {
               Zero Active Disputes
             </h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-              All marketplace orders are fulfilling smoothly without open buyer claims.
+              All marketplace orders are fulfilling smoothly without open buyer
+              claims.
             </p>
           </div>
         ) : (
@@ -275,7 +282,10 @@ export default function DisputesDashboardPage(): React.JSX.Element {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                 {disputes.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                  <tr
+                    key={d.id}
+                    className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition"
+                  >
                     <td className="py-4 px-6 font-mono font-bold text-slate-900 dark:text-white">
                       {d.disputeNumber}
                     </td>
@@ -326,4 +336,3 @@ export default function DisputesDashboardPage(): React.JSX.Element {
     </div>
   );
 }
-

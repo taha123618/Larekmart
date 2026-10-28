@@ -6,11 +6,9 @@ import { toast } from "react-toastify";
 import {
   ShieldAlert,
   X,
-  Loader2,
   CheckCircle2,
   XCircle,
   ExternalLink,
-  Clock,
   User,
   Building2,
   AlertTriangle,
@@ -47,7 +45,9 @@ export default function ArbitrationDrawer({
 
   const handleResolve = async (resolution: "BUYER_FAVOR" | "SELLER_FAVOR") => {
     if (resolutionReason.trim().length < 5) {
-      toast.warn("Please enter a valid resolution rationale (minimum 5 characters).");
+      toast.warn(
+        "Please enter a valid resolution rationale (minimum 5 characters).",
+      );
       return;
     }
 
@@ -117,27 +117,35 @@ export default function ArbitrationDrawer({
           {/* Dispute Overview Card */}
           <div className="grid grid-cols-2 gap-3 text-xs p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
             <div>
-              <span className="text-slate-400 block text-[11px]">Buyer Account</span>
+              <span className="text-slate-400 block text-[11px]">
+                Buyer Account
+              </span>
               <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 mt-0.5">
                 <User className="w-3.5 h-3.5 text-slate-400" />
                 {dispute.buyerEmail || dispute.buyerId}
               </span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[11px]">Vendor ID</span>
+              <span className="text-slate-400 block text-[11px]">
+                Vendor ID
+              </span>
               <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 mt-0.5">
                 <Building2 className="w-3.5 h-3.5 text-slate-400" />
                 {dispute.vendorId.slice(0, 18)}...
               </span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[11px]">Dispute Category</span>
+              <span className="text-slate-400 block text-[11px]">
+                Dispute Category
+              </span>
               <span className="font-semibold text-amber-600 dark:text-amber-400">
                 {dispute.type.replace(/_/g, " ")}
               </span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[11px]">Dispute Status</span>
+              <span className="text-slate-400 block text-[11px]">
+                Dispute Status
+              </span>
               <span className="font-semibold text-slate-900 dark:text-white">
                 {dispute.status}
               </span>
@@ -236,7 +244,10 @@ export default function ArbitrationDrawer({
               </div>
               <div className="space-y-3">
                 {dispute.timeline.map((entry) => (
-                  <div key={entry.id} className="flex items-start gap-3 text-xs">
+                  <div
+                    key={entry.id}
+                    className="flex items-start gap-3 text-xs"
+                  >
                     <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
@@ -284,8 +295,12 @@ export default function ArbitrationDrawer({
                   onChange={(e) => setClawbackEscrow(e.target.checked)}
                   className="rounded text-amber-600 focus:ring-amber-500"
                 />
-                <label htmlFor="clawbackCheck" className="text-xs text-slate-600 dark:text-slate-400">
-                  Clawback merchant escrow funds immediately upon Buyer Favor ruling
+                <label
+                  htmlFor="clawbackCheck"
+                  className="text-xs text-slate-600 dark:text-slate-400"
+                >
+                  Clawback merchant escrow funds immediately upon Buyer Favor
+                  ruling
                 </label>
               </div>
 
@@ -329,4 +344,3 @@ export default function ArbitrationDrawer({
     </div>
   );
 }
-

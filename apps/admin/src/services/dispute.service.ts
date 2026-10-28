@@ -47,7 +47,8 @@ export async function fetchAdminDisputesOverview(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch dispute overview (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch dispute overview (HTTP ${res.status})`,
     );
   }
 
@@ -109,7 +110,8 @@ export async function fetchAdminDisputeDetails(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch dispute details (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch dispute details (HTTP ${res.status})`,
     );
   }
 
@@ -139,4 +141,3 @@ export async function resolveAdminDispute(
 
   return res.json();
 }
-

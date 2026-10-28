@@ -6,7 +6,6 @@ import { toast } from "react-toastify";
 import {
   ShieldAlert,
   X,
-  UploadCloud,
   Loader2,
   AlertCircle,
   Plus,
@@ -15,6 +14,12 @@ import {
 import type { OrderType, DisputeType } from "@repo/types";
 import { createDispute } from "@/services/dispute.service";
 
+type OrderWithMeta = OrderType & {
+  vendorId?: string;
+  currency?: string;
+  id?: string;
+};
+
 interface OpenDisputeModalProps {
   order: OrderType;
   isOpen: boolean;
@@ -22,21 +27,28 @@ interface OpenDisputeModalProps {
   onSuccess?: () => void;
 }
 
-const DISPUTE_TYPES: { value: DisputeType; label: string; description: string }[] = [
+const DISPUTE_TYPES: {
+  value: DisputeType;
+  label: string;
+  description: string;
+}[] = [
   {
     value: "ITEM_NOT_RECEIVED",
     label: "Item Not Received",
-    description: "Tracking shows delivered or delivery deadline exceeded with no parcel.",
+    description:
+      "Tracking shows delivered or delivery deadline exceeded with no parcel.",
   },
   {
     value: "DAMAGED_OR_DEFECTIVE",
     label: "Damaged or Defective Item",
-    description: "Item arrived broken, shattered, or malfunctioning upon unboxing.",
+    description:
+      "Item arrived broken, shattered, or malfunctioning upon unboxing.",
   },
   {
     value: "SIGNIFICANTLY_NOT_AS_DESCRIBED",
     label: "Significantly Not As Described",
-    description: "Received item differs completely in material, specifications, or model.",
+    description:
+      "Received item differs completely in material, specifications, or model.",
   },
   {
     value: "WRONG_ITEM_SENT",
@@ -66,16 +78,15 @@ export default function OpenDisputeModal({
 
   if (!isOpen) return null;
 
+  const orderWithMeta = order as OrderWithMeta;
+
   // Resolve vendorId or default to platform
   const vendorId =
-    (order as any).vendorId ||
+    orderWithMeta.vendorId ||
     order.products?.[0]?.sellerId ||
     "00000000-0000-0000-0000-000000000000";
 
-  const totalAmount =
-    typeof order.amount === "number"
-      ? order.amount / 100
-      : 0;
+  const totalAmount = typeof order.amount === "number" ? order.amount / 100 : 0;
 
   const handleAddEvidence = () => {
     if (!newEvidenceUrl.trim()) return;
@@ -95,7 +106,9 @@ export default function OpenDisputeModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (claim.trim().length < 10) {
-      toast.warn("Please provide at least 10 characters detailing your dispute.");
+      toast.warn(
+        "Please provide at least 10 characters detailing your dispute.",
+      );
       return;
     }
 
@@ -105,11 +118,11 @@ export default function OpenDisputeModal({
 
       await createDispute(
         {
-          orderId: order._id || (order as any).id,
+          orderId: order._id || orderWithMeta.id || "unknown",
           vendorId,
           type,
           disputedAmount: totalAmount > 0 ? totalAmount : 1000,
-          currency: (order as any).currency || "PKR",
+          currency: orderWithMeta.currency || "PKR",
           buyerClaim: claim.trim(),
           buyerEvidenceUrls: evidenceUrls,
         },
@@ -151,7 +164,8 @@ export default function OpenDisputeModal({
               Report Issue & Open Dispute
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Order #{order._id || (order as any).id} • Escrow funds will be held in freeze
+              Order #{order._id || orderWithMeta.id} • Escrow funds will be held
+              in freeze
             </p>
           </div>
         </div>
@@ -160,7 +174,9 @@ export default function OpenDisputeModal({
         <div className="flex items-start gap-3 p-4 mb-6 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-amber-900 dark:text-amber-300 text-xs">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
           <div>
-            Opening a dispute automatically places the merchant&apos;s settlement escrow into a frozen state. The seller receives a 7-day window to provide counter-evidence or dispatch replacements.
+            Opening a dispute automatically places the merchant&apos;s
+            settlement escrow into a frozen state. The seller receives a 7-day
+            window to provide counter-evidence or dispatch replacements.
           </div>
         </div>
 
@@ -212,7 +228,9 @@ export default function OpenDisputeModal({
               placeholder="Describe what went wrong with the delivery, item condition, or discrepancy..."
               className="w-full text-xs p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
             />
-            <p className="text-[11px] text-slate-400 mt-1">Minimum 10 characters.</p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Minimum 10 characters.
+            </p>
           </div>
 
           {/* Evidence URLs */}
@@ -292,4 +310,3 @@ export default function OpenDisputeModal({
     </div>
   );
 }
-

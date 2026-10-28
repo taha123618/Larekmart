@@ -18,4 +18,3 @@ import { SettlementsModule } from "../settlements/settlements.module.js";
   exports: [DisputesService],
 })
 export class DisputesModule {}
-

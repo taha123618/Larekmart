@@ -72,7 +72,9 @@ export class DisputesController {
     const isAdmin =
       req.user?.role === "admin" || req.user?.role === "super_admin";
     if (!isAdmin) {
-      throw new ForbiddenException("Admin privilege required for global overview");
+      throw new ForbiddenException(
+        "Admin privilege required for global overview",
+      );
     }
     return this.disputesService.getDisputesOverview();
   }
@@ -142,7 +144,9 @@ export class VendorDisputesController {
   ) {
     const dispute = await this.disputesService.getDispute(id);
     if (dispute.vendorId !== vendorId) {
-      throw new ForbiddenException("This dispute does not belong to your vendor organization");
+      throw new ForbiddenException(
+        "This dispute does not belong to your vendor organization",
+      );
     }
     return dispute;
   }
@@ -211,4 +215,3 @@ export class AdminDisputesController {
     return this.disputesService.resolveDispute(id, adminId, validated);
   }
 }
-

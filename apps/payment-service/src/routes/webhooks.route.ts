@@ -73,7 +73,9 @@ webhookRoute.post("/stripe", async (c) => {
     case "charge.dispute.created": {
       const dispute = event.data.object as Stripe.Dispute;
       const chargeId =
-        typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
+        typeof dispute.charge === "string"
+          ? dispute.charge
+          : dispute.charge?.id;
       const paymentIntentId =
         typeof dispute.payment_intent === "string"
           ? dispute.payment_intent

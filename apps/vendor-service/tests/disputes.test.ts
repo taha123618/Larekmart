@@ -57,11 +57,14 @@ async function runDisputesTests() {
     type: "ITEM_NOT_RECEIVED",
     disputedAmount: 4999.5,
     currency: "PKR",
-    buyerClaim: "The courier did not deliver this parcel at the scheduled time.",
+    buyerClaim:
+      "The courier did not deliver this parcel at the scheduled time.",
     buyerEvidenceUrls: ["https://s3.larekmart.com/disputes/cctv.png"],
   });
   assert.equal(validCreate.disputedAmount, 4999.5);
-  console.log("  ✓ CreateDisputeSchema boundary and length constraints verified");
+  console.log(
+    "  ✓ CreateDisputeSchema boundary and length constraints verified",
+  );
 
   // 1.2 SubmitRebuttal validation
   assert.throws(() => {
@@ -72,11 +75,14 @@ async function runDisputesTests() {
   });
 
   const validRebuttal = SubmitRebuttalSchema.parse({
-    sellerRebuttal: "Signed delivery slip attached proving buyer received package.",
+    sellerRebuttal:
+      "Signed delivery slip attached proving buyer received package.",
     sellerEvidenceUrls: ["https://s3.larekmart.com/proofs/delivery_slip.pdf"],
   });
   assert.equal(validRebuttal.sellerEvidenceUrls.length, 1);
-  console.log("  ✓ SubmitRebuttalSchema requires detailed explanation and proof URLs");
+  console.log(
+    "  ✓ SubmitRebuttalSchema requires detailed explanation and proof URLs",
+  );
 
   // 1.3 ResolveDispute validation
   const validResolve = ResolveDisputeSchema.parse({
@@ -159,7 +165,9 @@ async function runDisputesTests() {
     availableBalance + escrowBalance + disputeFrozenBalance,
     "Invariant holds upon dispute clawback",
   );
-  console.log("  ✓ Buyer resolution clawback decrements frozen balance accurately");
+  console.log(
+    "  ✓ Buyer resolution clawback decrements frozen balance accurately",
+  );
 
   // Step 2b: Resolved in Seller's Favor -> Restore to Escrow
   // (Simulated with new 3,000 PKR dispute)
@@ -181,14 +189,20 @@ async function runDisputesTests() {
   console.log("\n[Test 3] 7-Day Seller Rebuttal Window Computation");
 
   const openedAt = new Date("2026-10-01T10:00:00Z");
-  const rebuttalDeadline = new Date(openedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const rebuttalDeadline = new Date(
+    openedAt.getTime() + 7 * 24 * 60 * 60 * 1000,
+  );
   assert.equal(rebuttalDeadline.toISOString(), "2026-10-08T10:00:00.000Z");
 
   const day4 = new Date("2026-10-05T10:00:00Z");
   assert.equal(day4 < rebuttalDeadline, true, "Seller can rebut on day 4");
 
   const day9 = new Date("2026-10-10T10:00:00Z");
-  assert.equal(day9 > rebuttalDeadline, true, "Rebuttal deadline has expired on day 9");
+  assert.equal(
+    day9 > rebuttalDeadline,
+    true,
+    "Rebuttal deadline has expired on day 9",
+  );
   console.log("  ✓ 7-day seller rebuttal window bounds verified");
 
   // ────────────────────────────────────────────────────────────
@@ -218,7 +232,9 @@ async function runDisputesTests() {
       401,
       "Customer disputes endpoint must reject unauthenticated request",
     );
-    console.log("  ✓ GET /api/v1/disputes rejects unauthenticated request (401)");
+    console.log(
+      "  ✓ GET /api/v1/disputes rejects unauthenticated request (401)",
+    );
 
     // 4.2 Admin disputes endpoint rejects non-admin request
     const nonAdminRes = await fastify.inject({
@@ -234,7 +250,9 @@ async function runDisputesTests() {
       403,
       "Admin disputes endpoint must reject regular customer request",
     );
-    console.log("  ✓ GET /api/v1/admin/disputes rejects non-admin caller (403)");
+    console.log(
+      "  ✓ GET /api/v1/admin/disputes rejects non-admin caller (403)",
+    );
 
     // 4.3 Vendor disputes endpoint rejects non-member request
     const nonMemberVendorRes = await fastify.inject({
@@ -250,7 +268,9 @@ async function runDisputesTests() {
       403,
       "Vendor disputes endpoint must enforce vendor membership (403)",
     );
-    console.log("  ✓ GET /api/v1/vendors/:vendorId/disputes rejects unauthorized caller (403)");
+    console.log(
+      "  ✓ GET /api/v1/vendors/:vendorId/disputes rejects unauthorized caller (403)",
+    );
 
     // 4.4 Admin dispute resolution endpoint rejects unauthenticated request
     const unauthResolveRes = await fastify.inject({
@@ -266,7 +286,9 @@ async function runDisputesTests() {
       403,
       "Admin resolve endpoint must reject unauthorized requests",
     );
-    console.log("  ✓ POST /api/v1/admin/disputes/:id/resolve strictly guarded (403)");
+    console.log(
+      "  ✓ POST /api/v1/admin/disputes/:id/resolve strictly guarded (403)",
+    );
 
     console.log("\n==================================================");
     console.log("  ALL DISPUTE RESOLUTION TESTS PASSED (100%)!     ");
@@ -280,4 +302,3 @@ runDisputesTests().catch((err) => {
   console.error("Test execution failed:", err);
   process.exit(1);
 });
-

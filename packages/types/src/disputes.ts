@@ -38,7 +38,8 @@ export const DisputeTypeEnum = {
   UNAUTHORIZED_TRANSACTION: "UNAUTHORIZED_TRANSACTION",
 } as const;
 
-export type DisputeType = (typeof DisputeTypeEnum)[keyof typeof DisputeTypeEnum];
+export type DisputeType =
+  (typeof DisputeTypeEnum)[keyof typeof DisputeTypeEnum];
 
 export const DisputeTypeSchema = z.enum([
   DisputeTypeEnum.ITEM_NOT_RECEIVED,
@@ -73,7 +74,9 @@ export const CreateDisputeSchema = z.object({
   orderItemId: z.string().optional().nullable(),
   vendorId: z.string().min(1, "Vendor ID is required"),
   type: DisputeTypeSchema,
-  disputedAmount: z.number().positive("Disputed amount must be greater than zero"),
+  disputedAmount: z
+    .number()
+    .positive("Disputed amount must be greater than zero"),
   currency: z.string().length(3).default("PKR"),
   buyerClaim: z
     .string()
@@ -88,11 +91,17 @@ export type CreateDisputeInput = z.infer<typeof CreateDisputeSchema>;
 export const SubmitRebuttalSchema = z.object({
   sellerRebuttal: z
     .string()
-    .min(10, "Please provide at least 10 characters detailing your rebuttal defense")
+    .min(
+      10,
+      "Please provide at least 10 characters detailing your rebuttal defense",
+    )
     .max(2000, "Rebuttal text cannot exceed 2000 characters"),
   sellerEvidenceUrls: z
     .array(z.string().url())
-    .min(1, "At least 1 piece of supporting evidence or tracking document is required"),
+    .min(
+      1,
+      "At least 1 piece of supporting evidence or tracking document is required",
+    ),
 });
 
 export type SubmitRebuttalInput = z.infer<typeof SubmitRebuttalSchema>;
@@ -220,4 +229,3 @@ export const PaymentDisputeClosedEventSchema = z.object({
 export type PaymentDisputeClosedEvent = z.infer<
   typeof PaymentDisputeClosedEventSchema
 >;
-

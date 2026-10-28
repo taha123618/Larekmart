@@ -15,7 +15,6 @@ import {
   RefreshCw,
   ChevronLeft,
   Store,
-  ExternalLink,
 } from "lucide-react";
 import { getMyVendor, type ClientVendor } from "@/services/vendor.service";
 import {
@@ -38,8 +37,11 @@ export default function MerchantDisputesPage(): React.JSX.Element {
   const [overview, setOverview] = useState<DisputesOverview | null>(null);
 
   // Filters
-  const [statusFilter, setStatusFilter] = useState<DisputeStatus | "ALL">("ALL");
-  const [selectedDispute, setSelectedDispute] = useState<DisputeResponse | null>(null);
+  const [statusFilter, setStatusFilter] = useState<DisputeStatus | "ALL">(
+    "ALL",
+  );
+  const [selectedDispute, setSelectedDispute] =
+    useState<DisputeResponse | null>(null);
   const [isRebuttalModalOpen, setIsRebuttalModalOpen] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -141,7 +143,9 @@ export default function MerchantDisputesPage(): React.JSX.Element {
     if (!deadlineStr) return "None";
     const d = new Date(deadlineStr);
     const now = new Date();
-    const diffHours = Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60));
+    const diffHours = Math.round(
+      (d.getTime() - now.getTime()) / (1000 * 60 * 60),
+    );
 
     if (diffHours < 0) {
       return <span className="text-rose-600 font-bold">Expired</span>;
@@ -155,7 +159,9 @@ export default function MerchantDisputesPage(): React.JSX.Element {
     }
     const days = Math.round(diffHours / 24);
     return (
-      <span className="text-amber-600 font-semibold">{days} days remaining</span>
+      <span className="text-amber-600 font-semibold">
+        {days} days remaining
+      </span>
     );
   };
 
@@ -180,7 +186,8 @@ export default function MerchantDisputesPage(): React.JSX.Element {
           No Verified Merchant Account
         </h2>
         <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
-          You need an active merchant vendor profile to manage disputes and settlement funds.
+          You need an active merchant vendor profile to manage disputes and
+          settlement funds.
         </p>
         <Link
           href="/become-a-seller"
@@ -214,7 +221,10 @@ export default function MerchantDisputesPage(): React.JSX.Element {
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
             <Building2 className="w-3.5 h-3.5" />
-            Merchant: <span className="font-bold text-slate-700 dark:text-slate-300">{vendor.legalName}</span>
+            Merchant:{" "}
+            <span className="font-bold text-slate-700 dark:text-slate-300">
+              {vendor.legalName}
+            </span>
           </p>
         </div>
 
@@ -238,7 +248,9 @@ export default function MerchantDisputesPage(): React.JSX.Element {
           <div className="text-2xl font-black text-slate-900 dark:text-white">
             {overview?.totalDisputes || 0}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Lifetime customer inquiries & claims</p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Lifetime customer inquiries & claims
+          </p>
         </div>
 
         {/* Action Required */}
@@ -248,7 +260,8 @@ export default function MerchantDisputesPage(): React.JSX.Element {
             <AlertTriangle className="w-4 h-4 text-amber-600" />
           </div>
           <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
-            {(overview?.openCount || 0) + (overview?.evidenceRequestedCount || 0)}
+            {(overview?.openCount || 0) +
+              (overview?.evidenceRequestedCount || 0)}
           </div>
           <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 mt-1">
             Rebuttal window active (7-day deadline)
@@ -262,9 +275,12 @@ export default function MerchantDisputesPage(): React.JSX.Element {
             <Clock className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-black text-slate-900 dark:text-white">
-            {(overview?.underReviewCount || 0) + (overview?.arbitrationCount || 0)}
+            {(overview?.underReviewCount || 0) +
+              (overview?.arbitrationCount || 0)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Counter-evidence under platform review</p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Counter-evidence under platform review
+          </p>
         </div>
 
         {/* Disputed Volume */}
@@ -276,7 +292,9 @@ export default function MerchantDisputesPage(): React.JSX.Element {
           <div className="text-2xl font-black text-slate-900 dark:text-white">
             {formatCurrency(overview?.totalDisputedAmount || 0)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Held in dispute freeze</p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Held in dispute freeze
+          </p>
         </div>
       </div>
 
@@ -291,7 +309,7 @@ export default function MerchantDisputesPage(): React.JSX.Element {
         ].map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setStatusFilter(tab.key as any)}
+            onClick={() => setStatusFilter(tab.key as DisputeStatus | "ALL")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
               statusFilter === tab.key
                 ? "bg-black dark:bg-white text-white dark:text-black shadow-xs"
@@ -312,7 +330,8 @@ export default function MerchantDisputesPage(): React.JSX.Element {
               No Disputes Found
             </h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-              Your store has an outstanding fulfillment record with zero active buyer claims.
+              Your store has an outstanding fulfillment record with zero active
+              buyer claims.
             </p>
           </div>
         ) : (
@@ -331,7 +350,10 @@ export default function MerchantDisputesPage(): React.JSX.Element {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                 {disputes.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                  <tr
+                    key={d.id}
+                    className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition"
+                  >
                     <td className="py-4 px-6 font-mono font-bold text-slate-900 dark:text-white">
                       {d.disputeNumber}
                     </td>
@@ -351,7 +373,8 @@ export default function MerchantDisputesPage(): React.JSX.Element {
                     </td>
                     <td className="py-4 px-6">{getStatusBadge(d.status)}</td>
                     <td className="py-4 px-6 text-right">
-                      {d.status === "OPENED" || d.status === "EVIDENCE_REQUESTED" ? (
+                      {d.status === "OPENED" ||
+                      d.status === "EVIDENCE_REQUESTED" ? (
                         <button
                           onClick={() => handleOpenRebuttal(d)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition"
@@ -391,4 +414,3 @@ export default function MerchantDisputesPage(): React.JSX.Element {
     </div>
   );
 }
-

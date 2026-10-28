@@ -47,7 +47,9 @@ export default function DisputeRebuttalModal({
       setEvidenceUrls([...evidenceUrls, newUrl.trim()]);
       setNewUrl("");
     } catch {
-      toast.error("Please enter a valid URL (e.g. proof of delivery, tracking PDF, inspection log).");
+      toast.error(
+        "Please enter a valid URL (e.g. proof of delivery, tracking PDF, inspection log).",
+      );
     }
   };
 
@@ -58,7 +60,9 @@ export default function DisputeRebuttalModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (rebuttal.trim().length < 10) {
-      toast.warn("Please provide at least 10 characters detailing your rebuttal defense.");
+      toast.warn(
+        "Please provide at least 10 characters detailing your rebuttal defense.",
+      );
       return;
     }
     if (evidenceUrls.length === 0) {
@@ -80,7 +84,9 @@ export default function DisputeRebuttalModal({
         token,
       );
 
-      toast.success("Rebuttal defense submitted successfully! Claim transitioned to Arbitration.");
+      toast.success(
+        "Rebuttal defense submitted successfully! Claim transitioned to Arbitration.",
+      );
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
@@ -166,7 +172,9 @@ export default function DisputeRebuttalModal({
               placeholder="Provide courier tracking details, signature proof, package weight receipts, or warehouse dispatch verification..."
               className="w-full text-xs p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
             />
-            <p className="text-[11px] text-slate-400 mt-1">Minimum 10 characters.</p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Minimum 10 characters.
+            </p>
           </div>
 
           {/* Evidence Upload URLs */}
@@ -213,7 +221,8 @@ export default function DisputeRebuttalModal({
             ) : (
               <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
-                At least one counter-evidence link is required to rebut this dispute.
+                At least one counter-evidence link is required to rebut this
+                dispute.
               </p>
             )}
           </div>
@@ -251,4 +260,3 @@ export default function DisputeRebuttalModal({
     </div>
   );
 }
-
