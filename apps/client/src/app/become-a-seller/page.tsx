@@ -26,6 +26,7 @@ import {
   Sparkles,
   Lock,
   AlertTriangle,
+  Coins,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -447,6 +448,13 @@ export default function BecomeASellerPage() {
                   View My Public Storefront
                 </Link>
               )}
+              <Link
+                href="/account/seller/payouts"
+                className="flex-1 text-center py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Coins className="w-4 h-4" />
+                Escrow & Payouts
+              </Link>
               <Link
                 href="/products"
                 className="flex-1 text-center py-2.5 px-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-sm font-semibold transition-colors"

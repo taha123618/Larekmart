@@ -25,6 +25,7 @@ import {
   Store,
   RotateCcw,
   Package,
+  Coins,
 } from "lucide-react";
 import {
   fetchCurrentUser,
@@ -582,6 +583,16 @@ export default function AccountPage(): React.JSX.Element {
             <span>
               {isSeller ? "Seller Portal (Active)" : "Become a Seller"}
             </span>
+          </Link>
+        )}
+
+        {isSeller && (
+          <Link
+            href="/account/seller/payouts"
+            className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all font-semibold"
+          >
+            <Coins className="w-4 h-4 text-emerald-500" />
+            <span>Escrow & Payouts</span>
           </Link>
         )}
       </div>

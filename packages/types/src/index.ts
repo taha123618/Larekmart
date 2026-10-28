@@ -21,3 +21,4 @@ export * from "./returns";
 export * from "./pricing";
 export * from "./vendor";
 export * from "./seller";
+export * from "./settlements";

@@ -159,6 +159,10 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `vendor.rejected`                                | vendor-service             | notification-service, email-service, analytic-service                                                         | `VendorRejectedEvent` (`vendorId`, `rejectedAt`, `reason`, `deficiencies`)                                                                                                                                                                                                          |
 | `vendor.suspended`                               | vendor-service             | notification-service, email-service, analytic-service                                                         | `VendorSuspendedEvent` (`vendorId`, `suspendedAt`, `reason`)                                                                                                                                                                                                                        |
 | `vendor.reactivated`                             | vendor-service             | notification-service, email-service, analytic-service                                                         | `VendorReactivatedEvent` (`vendorId`, `reactivatedAt`)                                                                                                                                                                                                                              |
+| `vendor.escrow.credited`                         | vendor-service             | analytic-service, notification-service                                                                        | `VendorEscrowCreditedPayload` (`vendorId`, `orderId`, `grossAmount`, `commissionRate`, `commissionAmount`, `netAmount`, `currency`)                                                                                                                                                 |
+| `vendor.escrow.released`                         | vendor-service             | analytic-service, notification-service                                                                        | `VendorEscrowReleasedPayload` (`vendorId`, `orderId`, `releasedAmount`, `currency`, `releasedAt`)                                                                                                                                                                                   |
+| `vendor.payout.requested`                        | vendor-service             | notification-service, analytic-service                                                                        | `VendorPayoutRequestedPayload` (`payoutRequestId`, `vendorId`, `amount`, `currency`, `requestedAt`)                                                                                                                                                                                 |
+| `vendor.payout.completed`                        | vendor-service             | notification-service, email-service, analytic-service                                                         | `VendorPayoutCompletedPayload` (`payoutRequestId`, `vendorId`, `amount`, `currency`, `transactionReference`, `completedAt`)                                                                                                                                                         |
 | `seller.created`                                 | seller-service             | user-service, notification-service, email-service, analytic-service                                           | `SellerCreatedEvent` (`sellerId`, `vendorId`, `primaryUserId`, `storeName`, `slug`, `status`, `createdAt`)                                                                                                                                                                          |
 | `seller.activated`                               | seller-service             | user-service, notification-service, email-service, analytic-service                                           | `SellerActivatedEvent` (`sellerId`, `vendorId`, `activatedAt`, `activatedByUserId`)                                                                                                                                                                                                 |
 | `seller.updated`                                 | seller-service             | notification-service, analytic-service                                                                        | `SellerUpdatedEvent` (`sellerId`, `updatedFields`, `updatedAt`)                                                                                                                                                                                                                     |
@@ -803,6 +807,94 @@ Emitted when KYB documentation is rejected or requires correction.
 
 - **Producer:** `apps/vendor-service/src/modules/admin/admin-vendors.service.ts`
 - **Consumers:** `notification-service`, `email-service`.
+
+#### `vendor.escrow.credited`
+
+Emitted when an order is created or payment confirmed, crediting the merchant's escrow buffer after deducting platform commission.
+
+```jsonc
+{
+  "value": {
+    "eventId": "evt_123456",
+    "eventType": "vendor.escrow.credited",
+    "vendorId": "550e8400-e29b-41d4-a716-446655440000",
+    "orderId": "ord_9841249",
+    "grossAmount": 25000,
+    "commissionRate": 8.5,
+    "commissionAmount": 2125,
+    "netAmount": 22875,
+    "currency": "PKR",
+    "timestamp": "2026-10-28T12:00:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/vendor-service/src/modules/settlements/settlements.service.ts`
+- **Consumers:** `analytic-service`, `notification-service`.
+
+#### `vendor.escrow.released`
+
+Emitted when the 7-day post-delivery customer return window buffer matures and escrowed funds unlock into the merchant's available balance.
+
+```jsonc
+{
+  "value": {
+    "eventId": "evt_123457",
+    "eventType": "vendor.escrow.released",
+    "vendorId": "550e8400-e29b-41d4-a716-446655440000",
+    "orderId": "ord_9841249",
+    "releasedAmount": 22875,
+    "currency": "PKR",
+    "releasedAt": "2026-10-28T14:30:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/vendor-service/src/modules/settlements/settlements.service.ts`
+- **Consumers:** `analytic-service`, `notification-service`.
+
+#### `vendor.payout.requested`
+
+Emitted when an authenticated merchant requests an on-demand withdrawal of matured available funds.
+
+```jsonc
+{
+  "value": {
+    "eventId": "evt_123458",
+    "eventType": "vendor.payout.requested",
+    "payoutRequestId": "660e8400-e29b-41d4-a716-446655440001",
+    "vendorId": "550e8400-e29b-41d4-a716-446655440000",
+    "amount": 20000,
+    "currency": "PKR",
+    "requestedAt": "2026-10-28T15:00:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/vendor-service/src/modules/settlements/settlements.service.ts`
+- **Consumers:** `notification-service`, `analytic-service`.
+
+#### `vendor.payout.completed`
+
+Emitted when a consolidated batch or on-demand payout is authorized and bank disbursement executes.
+
+```jsonc
+{
+  "value": {
+    "eventId": "evt_123459",
+    "eventType": "vendor.payout.completed",
+    "payoutRequestId": "660e8400-e29b-41d4-a716-446655440001",
+    "vendorId": "550e8400-e29b-41d4-a716-446655440000",
+    "amount": 20000,
+    "currency": "PKR",
+    "transactionReference": "RAAST-TRX-9481920",
+    "completedAt": "2026-10-28T15:15:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/vendor-service/src/modules/settlements/settlements.service.ts`
+- **Consumers:** `notification-service`, `email-service`, `analytic-service`.
 
 #### `seller.created`
 

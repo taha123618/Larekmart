@@ -55,6 +55,38 @@ enum VerificationStatus {
   EXPIRED
 }
 
+enum EscrowStatus {
+  HELD_IN_ESCROW
+  RELEASED
+  REFUNDED_RETURN
+  DISPUTE_FROZEN
+}
+
+enum PayoutStatus {
+  PENDING_APPROVAL
+  PROCESSING
+  PAID
+  REJECTED
+  FAILED
+}
+
+enum PayoutMethod {
+  BANK_TRANSFER
+  STRIPE_CONNECT
+  RAAST_INSTANT
+}
+
+enum LedgerEntryType {
+  ORDER_ESCROW_CREDIT
+  PLATFORM_COMMISSION_DEBIT
+  ESCROW_RELEASE_TO_AVAILABLE
+  PAYOUT_RESERVATION_DEBIT
+  PAYOUT_SETTLED
+  RETURN_ESCROW_REVERSAL
+  DISPUTE_HOLD
+  MANUAL_ADJUSTMENT
+}
+
 enum MemberRole {
   OWNER
   ADMIN
@@ -86,6 +118,10 @@ model Vendor {
   verifications      VendorVerification[]
   members            VendorMember[]
   statusHistory      VendorStatusHistory[]
+  balance            VendorBalance?
+  commissionRates    VendorCommissionRate[]
+  escrowLedgers      VendorEscrowLedger[]
+  payoutRequests     VendorPayoutRequest[]
 
   @@map("vendors")
 }
@@ -179,4 +215,110 @@ model VendorStatusHistory {
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@map("vendor_status_history")
+}
+
+model VendorBalance {
+  id                    String   @id @default(uuid())
+  vendorId              String   @unique
+  currency              String   @default("PKR")
+  availableBalance      Decimal  @default(0.00) @db.Decimal(14, 2)
+  escrowBalance         Decimal  @default(0.00) @db.Decimal(14, 2)
+  disputeFrozenBalance  Decimal  @default(0.00) @db.Decimal(14, 2)
+  lifetimeEarnings      Decimal  @default(0.00) @db.Decimal(14, 2)
+  lifetimePaid          Decimal  @default(0.00) @db.Decimal(14, 2)
+  lastPayoutAt          DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_balances")
+}
+
+model VendorCommissionRate {
+  id             String   @id @default(uuid())
+  vendorId       String?
+  categoryId     String
+  categoryName   String?
+  ratePercentage Decimal  @db.Decimal(5, 2) // e.g. 5.00 for 5%
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  vendor Vendor? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, categoryId])
+  @@map("vendor_commission_rates")
+}
+
+model VendorEscrowLedger {
+  id               String       @id @default(uuid())
+  vendorId         String
+  orderId          String
+  orderItemId      String?
+  grossAmount      Decimal      @db.Decimal(14, 2)
+  commissionRate   Decimal      @db.Decimal(5, 2)
+  commissionAmount Decimal      @db.Decimal(14, 2)
+  netAmount        Decimal      @db.Decimal(14, 2)
+  currency         String       @default("PKR")
+  status           EscrowStatus @default(HELD_IN_ESCROW)
+  deliveredAt      DateTime?
+  releaseDueAt     DateTime?
+  releasedAt       DateTime?
+  disputeReason    String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, status])
+  @@index([orderId])
+  @@index([releaseDueAt, status])
+  @@map("vendor_escrow_ledgers")
+}
+
+model VendorPayoutBatch {
+  id                      String            @id @default(uuid())
+  batchNumber             String            @unique
+  periodStart             DateTime
+  periodEnd               DateTime
+  totalGrossAmount        Decimal           @default(0.00) @db.Decimal(14, 2)
+  totalCommissionDeducted Decimal           @default(0.00) @db.Decimal(14, 2)
+  totalNetAmount          Decimal           @default(0.00) @db.Decimal(14, 2)
+  vendorCount             Int               @default(0)
+  status                  PayoutStatus      @default(PENDING_APPROVAL)
+  approvedByAdminId       String?
+  executedAt              DateTime?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  payoutRequests VendorPayoutRequest[]
+
+  @@map("vendor_payout_batches")
+}
+
+model VendorPayoutRequest {
+  id                   String             @id @default(uuid())
+  vendorId             String
+  payoutBatchId        String?
+  amount               Decimal            @db.Decimal(14, 2)
+  currency             String             @default("PKR")
+  paymentMethod        PayoutMethod       @default(BANK_TRANSFER)
+  status               PayoutStatus       @default(PENDING_APPROVAL)
+  bankName             String?
+  accountTitle         String?
+  accountNumberOrIban  String?
+  notes                String?
+  rejectionReason      String?
+  transactionReference String?
+  requestedAt          DateTime           @default(now())
+  approvedAt           DateTime?
+  paidAt               DateTime?
+  updatedAt            DateTime           @updatedAt
+
+  vendor      Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  payoutBatch VendorPayoutBatch? @relation(fields: [payoutBatchId], references: [id], onDelete: SetNull)
+
+  @@index([vendorId, status])
+  @@index([payoutBatchId])
+  @@map("vendor_payout_requests")
 }

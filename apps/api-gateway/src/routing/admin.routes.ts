@@ -123,6 +123,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/vendors",
     requireAdmin: true,
   },
+  {
+    prefix: "/api/v1/admin/settlements",
+    target: services.vendor.url,
+    serviceName: services.vendor.name,
+    timeoutMs: services.vendor.timeoutMs,
+    rewritePrefix: "/api/v1/admin/settlements",
+    requireAdmin: true,
+  },
 
   // 10. Seller Service Admin Management
   {
