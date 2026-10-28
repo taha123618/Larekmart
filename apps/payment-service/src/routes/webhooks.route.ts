@@ -70,6 +70,49 @@ webhookRoute.post("/stripe", async (c) => {
       );
       break;
 
+    case "charge.dispute.created": {
+      const dispute = event.data.object as Stripe.Dispute;
+      const chargeId =
+        typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
+      const paymentIntentId =
+        typeof dispute.payment_intent === "string"
+          ? dispute.payment_intent
+          : dispute.payment_intent?.id;
+
+      await producer.send("payment.dispute.created", {
+        value: {
+          stripeDisputeId: dispute.id,
+          chargeId: chargeId || null,
+          paymentIntentId: paymentIntentId || null,
+          amount: dispute.amount / 100, // standard currency units
+          currency: (dispute.currency || "usd").toUpperCase(),
+          reason: dispute.reason || "bank_inquiry",
+          status: dispute.status,
+          timestamp: new Date().toISOString(),
+        },
+      });
+      logger.info(
+        `Dispatched payment.dispute.created event for stripeDisputeId: ${dispute.id}`,
+      );
+      break;
+    }
+
+    case "charge.dispute.closed": {
+      const dispute = event.data.object as Stripe.Dispute;
+      await producer.send("payment.dispute.closed", {
+        value: {
+          stripeDisputeId: dispute.id,
+          status: dispute.status,
+          won: dispute.status === "won",
+          timestamp: new Date().toISOString(),
+        },
+      });
+      logger.info(
+        `Dispatched payment.dispute.closed event for stripeDisputeId: ${dispute.id} (status: ${dispute.status})`,
+      );
+      break;
+    }
+
     default:
       break;
   }
