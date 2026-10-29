@@ -21,8 +21,11 @@ export type AcquireLockResult =
   | { status: "replayed"; response: IdempotentResponse }
   | { status: "error"; message: string };
 
+export const DEFAULT_LOCK_TTL_MS = 10000; // 10 seconds strict auto-expiry threshold
+export const DEFAULT_RETENTION_TTL_SEC = 86400; // 24 hours
+
 export interface IdempotencyOptions {
-  /** Lock TTL in milliseconds for in-progress operations (default: 60,000ms / 1 min) */
+  /** Lock TTL in milliseconds for in-progress operations (default: 10,000ms / 10s strict threshold) */
   lockTtlMs?: number;
   /** Retention TTL in seconds for completed responses (default: 86,400s / 24 hours) */
   retentionTtlSec?: number;
@@ -31,9 +34,10 @@ export interface IdempotencyOptions {
 /**
  * Attempts to atomically acquire an idempotency lock in Redis for a given key.
  *
- * - Returns `status: "acquired"` if this is the first execution attempt.
+ * - Returns `status: "acquired"` if this is the first execution attempt or if a previous
+ *   in-flight attempt timed out / leaked due to a crashed worker.
  * - Returns `status: "replayed"` with the cached response if previously completed.
- * - Returns `status: "conflict"` if an identical mutation is currently in-flight.
+ * - Returns `status: "conflict"` if an identical mutation is actively in-flight within its strict TTL.
  * - Returns `status: "error"` if Redis is unreachable.
  */
 export async function acquireIdempotencyLock(
@@ -41,14 +45,14 @@ export async function acquireIdempotencyLock(
   key: string,
   options: IdempotencyOptions = {},
 ): Promise<AcquireLockResult> {
-  const lockTtlMs = options.lockTtlMs ?? 60000;
+  const lockTtlMs = options.lockTtlMs ?? DEFAULT_LOCK_TTL_MS;
   const inProgressPayload: StoredIdempotencyRecord = {
     state: "IN_PROGRESS",
     createdAt: Date.now(),
   };
 
   try {
-    // Atomic SET NX PX to claim in-flight execution
+    // 1. Atomic SET NX PX to claim in-flight execution with strict auto-expire lease
     const acquired = await client.set(
       key,
       JSON.stringify(inProgressPayload),
@@ -61,7 +65,7 @@ export async function acquireIdempotencyLock(
       return { status: "acquired" };
     }
 
-    // Key exists: check if in-progress or completed
+    // 2. Key exists: inspect existing record
     const raw = await client.get(key);
     if (!raw) {
       // Key expired between the SET attempt and GET; retry acquisition
@@ -85,15 +89,39 @@ export async function acquireIdempotencyLock(
     try {
       parsed = JSON.parse(raw);
     } catch {
-      // Overwrite corrupted payload
+      // Overwrite corrupted payload with fresh auto-expiring lease
       await client.set(key, JSON.stringify(inProgressPayload), "PX", lockTtlMs);
       return { status: "acquired" };
     }
 
+    // 3. Transparent replay for completed mutations
     if (parsed.state === "COMPLETED" && parsed.response) {
       return { status: "replayed", response: parsed.response };
     }
 
+    // 4. In-progress state detected: verify if the lock is dangling or stale
+    // (e.g. if the processing service crashed mid-flight without committing or releasing)
+    const pttl = await client.pttl(key);
+    const elapsedMs = parsed.createdAt ? Date.now() - parsed.createdAt : lockTtlMs;
+    const isStale =
+      pttl === -1 || // Key has no expiration set -> dangling un-expiring lock
+      pttl <= 0 ||   // Key already expired
+      elapsedMs >= lockTtlMs; // Wall-clock time exceeds strict lock lease
+
+    if (isStale) {
+      // Worker crashed mid-flight. Reclaim the lock atomically with a fresh strict lease.
+      const reclaimed = await client.set(
+        key,
+        JSON.stringify(inProgressPayload),
+        "PX",
+        lockTtlMs,
+      );
+      if (reclaimed === "OK") {
+        return { status: "acquired" };
+      }
+    }
+
+    // Lock is actively in-flight within valid strict TTL lease
     return {
       status: "conflict",
       message: "A mutation with this Idempotency-Key is currently in-flight",

@@ -66,6 +66,8 @@ export {
   acquireIdempotencyLock,
   commitIdempotencyResponse,
   releaseIdempotencyLock,
+  DEFAULT_LOCK_TTL_MS,
+  DEFAULT_RETENTION_TTL_SEC,
 } from "./idempotency.js";
 export type {
   IdempotencyState,

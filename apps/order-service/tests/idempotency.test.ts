@@ -99,6 +99,32 @@ async function runIdempotencyTests() {
     await releaseIdempotencyLock(redis.client, failKey);
     console.log("   ✔ Released lock allows immediate retry");
 
+    // 5b. Stale / Crashed Worker Dangling Lock Auto-Recovery
+    console.log("5b. Testing crashed worker dangling lock recovery on client retry...");
+    const crashedKey = redis.keys.simple(`test:crashed:${Date.now()}`);
+    // Simulate a worker that crashed mid-flight 15 seconds ago (past the 10s strict threshold)
+    await redis.client.set(
+      crashedKey,
+      JSON.stringify({
+        state: "IN_PROGRESS",
+        createdAt: Date.now() - 15000,
+      }),
+      "PX",
+      10000,
+    );
+
+    // Client replays mutation: engine must detect expired/stale lease and reclaim lock atomically
+    const lockReclaim = await acquireIdempotencyLock(redis.client, crashedKey, {
+      lockTtlMs: 10000,
+    });
+    assert.equal(
+      lockReclaim.status,
+      "acquired",
+      "Stale lock from crashed worker must be reclaimed rather than returning 409 conflict",
+    );
+    await releaseIdempotencyLock(redis.client, crashedKey);
+    console.log("   ✔ Stale lock from crashed worker successfully reclaimed on client retry");
+
     // 6. Fastify executeWithIdempotency Integration
     console.log("6. Testing executeWithIdempotency wrapper...");
     let mutationExecutions = 0;

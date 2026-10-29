@@ -11,7 +11,7 @@ import { logger } from "../observability/metrics.js";
 export interface IdempotencyHandlerOptions {
   /** Prefix for the Redis key, e.g. 'order:cod:' (default: 'order:idemp:') */
   prefix?: string;
-  /** Lock TTL in ms while processing mutation (default: 60,000ms) */
+  /** Lock TTL in ms while processing mutation (default: 10,000ms / 10s strict threshold) */
   lockTtlMs?: number;
   /** Retention TTL in sec for completed result (default: 86,400s / 24 hours) */
   retentionTtlSec?: number;
@@ -50,7 +50,7 @@ export async function executeWithIdempotency<T>(
   const redisKey = redis.keys.simple(`${prefix}${rawKey.trim()}`);
 
   const lockResult = await acquireIdempotencyLock(redis.client, redisKey, {
-    lockTtlMs: options.lockTtlMs ?? 60000,
+    lockTtlMs: options.lockTtlMs ?? 10000,
     retentionTtlSec: options.retentionTtlSec ?? 86400,
   });
 
