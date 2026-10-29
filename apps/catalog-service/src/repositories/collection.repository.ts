@@ -1,4 +1,4 @@
-import { prisma } from "@repo/catalog-db";
+import { readPrisma as prisma } from "@repo/catalog-db";
 import type { CatalogCollectionType } from "@repo/types";
 import { mapCollection } from "../utils/mappers.js";
 

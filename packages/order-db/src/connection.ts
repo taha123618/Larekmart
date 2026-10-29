@@ -61,15 +61,38 @@ export const syncOrderIndexes = async (): Promise<void> => {
   }
 };
 
-export const connectOrderDB = async () => {
+export interface OrderDBConnectionOptions {
+  readPreference?:
+    | "primary"
+    | "primaryPreferred"
+    | "secondary"
+    | "secondaryPreferred"
+    | "nearest";
+  maxPoolSize?: number;
+  minPoolSize?: number;
+}
+
+export const connectOrderDB = async (options?: OrderDBConnectionOptions) => {
   if (isConnected) return;
 
   if (!process.env.MONGO_URL) {
     throw new Error("MONGO_URL is not defined in env file!");
   }
 
+  const connectOptions: mongoose.ConnectOptions = {
+    maxPoolSize:
+      options?.maxPoolSize ?? Number(process.env.MONGO_MAX_POOL_SIZE || 100),
+    minPoolSize:
+      options?.minPoolSize ?? Number(process.env.MONGO_MIN_POOL_SIZE || 5),
+    readPreference:
+      (options?.readPreference ??
+        (process.env
+          .MONGO_READ_PREFERENCE as mongoose.ConnectOptions["readPreference"])) ||
+      "primaryPreferred",
+  };
+
   try {
-    await mongoose.connect(process.env.MONGO_URL);
+    await mongoose.connect(process.env.MONGO_URL, connectOptions);
     isConnected = true;
     console.log("Connected to MongoDB database successfully");
 
@@ -79,5 +102,54 @@ export const connectOrderDB = async () => {
   } catch (error) {
     console.error("MongoDB connection failed:", error);
     throw error;
+  }
+};
+
+/**
+ * Checks if the connected MongoDB instance is a sharded cluster (mongos router)
+ * and enables horizontal sharding on the orders collection with a hashed userId shard key.
+ * If running on a standalone or single-replica instance (e.g. dev/CI), it logs and exits cleanly.
+ */
+export const ensureOrderCollectionSharded = async (): Promise<{
+  sharded: boolean;
+  reason?: string;
+}> => {
+  try {
+    const adminDb = mongoose.connection.db?.admin();
+    if (!adminDb) {
+      return { sharded: false, reason: "No active database connection" };
+    }
+
+    const serverStatus = await adminDb.command({ isMaster: 1 });
+    // mongos returns msg: "isdbgrid" in isMaster / hello command
+    if (serverStatus.msg !== "isdbgrid") {
+      return {
+        sharded: false,
+        reason:
+          "Standalone or replica set detected (not mongos router); sharding omitted.",
+      };
+    }
+
+    const dbName = mongoose.connection.name || "order_db";
+    await adminDb.command({ enableSharding: dbName });
+    await adminDb.command({
+      shardCollection: `${dbName}.orders`,
+      key: { userId: "hashed" },
+    });
+
+    console.log(
+      `[order-db] Sharding enabled for ${dbName}.orders on { userId: "hashed" }`,
+    );
+    return { sharded: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      message.includes("already sharded") ||
+      message.includes("already enabled")
+    ) {
+      return { sharded: true };
+    }
+    console.warn("[order-db] Sharding configuration check notice:", message);
+    return { sharded: false, reason: message };
   }
 };

@@ -17,7 +17,24 @@ orderDb.createUser({
 });
 
 orderDb.createCollection("orders");
-print("Created 'orders' collection in 'order_db'.");
+// Create horizontal sharding and compound indexes for hyperscale performance
+orderDb.orders.createIndex({ userId: "hashed" });
+orderDb.orders.createIndex({ userId: 1, createdAt: -1 });
+orderDb.orders.createIndex({ paymentSessionId: 1 }, { sparse: true });
+print("Created 'orders' collection and sharding indexes in 'order_db'.");
+
+// Enable sharding if executing inside a sharded cluster (mongos)
+try {
+  sh.enableSharding("order_db");
+  sh.shardCollection("order_db.orders", { userId: "hashed" });
+  print(
+    "Enabled horizontal sharding on order_db.orders with { userId: 'hashed' }.",
+  );
+} catch (shardingErr) {
+  print(
+    "Standalone or single-node replica set detected; sharding skipped, indexes configured.",
+  );
+}
 
 // 2. Cart Service Database
 const cartDb = db.getSiblingDB("cart_db");

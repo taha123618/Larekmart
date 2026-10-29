@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import Fastify from "fastify";
+import { prisma, readPrisma } from "@repo/catalog-db";
 import { CatalogCacheKeys } from "../src/cache/catalog-cache.js";
 import { healthRoutes } from "../src/routes/health.routes.js";
 
@@ -122,6 +123,21 @@ async function runCatalogServiceTests(): Promise<void> {
   assert.equal(mockProductEvent.isFeatured, true);
   assert.equal(typeof mockProductEvent.price, "number");
   console.log("  ✓ Catalog product projector schema invariants verified");
+
+  // ---------------------------------------------------------------------------
+  // TEST 4: PostgreSQL Read Replica Routing Invariants
+  // ---------------------------------------------------------------------------
+  console.log("\n4. Testing PostgreSQL Read Replica routing & fallback...");
+  assert.ok(prisma, "Expected writePrisma (prisma) to be defined");
+  assert.ok(readPrisma, "Expected readPrisma to be defined");
+  assert.strictEqual(
+    readPrisma,
+    prisma,
+    "readPrisma should fallback to primary prisma when DATABASE_READ_REPLICA_URL is not set",
+  );
+  console.log(
+    "  ✓ Zero-overhead fallback: readPrisma points to primary prisma when replica URL is unset",
+  );
 
   console.log("\n==================================================");
   console.log("🎉 ALL CATALOG SERVICE SQA TESTS PASSED (100%)");

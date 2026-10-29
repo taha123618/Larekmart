@@ -91,11 +91,14 @@ const OrderSchema = new Schema(
   { timestamps: true },
 );
 
-// Indexes covering the order-service read paths:
-// - `{ userId: 1 }`              -> GET /user-orders
-// - `{ createdAt: -1 }`          -> GET /orders (recent first) and the
-//                                   monthly /order-chart date-range aggregation
+// Indexes covering the order-service read and horizontal sharding paths:
+// - `{ userId: 1 }`              -> GET /user-orders single-user equality lookup
+// - `{ createdAt: -1 }`          -> GET /orders (recent first) and monthly /order-chart date-range aggregation
+// - `{ userId: "hashed" }`       -> MongoDB horizontal sharding key (distributes write I/O across cluster shards)
+// - `{ userId: 1, createdAt: -1 }` -> Compound index covering user order history sorted by time
 OrderSchema.index({ createdAt: -1 });
+OrderSchema.index({ userId: "hashed" });
+OrderSchema.index({ userId: 1, createdAt: -1 });
 
 export type OrderSchemaType = InferSchemaType<typeof OrderSchema>;
 

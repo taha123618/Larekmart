@@ -10,5 +10,10 @@ export {
   markOutboxPublished,
   markOutboxFailed,
 } from "./outbox-model";
-export { connectOrderDB, syncOrderIndexes } from "./connection";
+export {
+  connectOrderDB,
+  syncOrderIndexes,
+  ensureOrderCollectionSharded,
+  type OrderDBConnectionOptions,
+} from "./connection";
 export { default as mongoose } from "mongoose";

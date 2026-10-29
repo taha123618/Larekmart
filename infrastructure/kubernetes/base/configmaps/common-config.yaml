@@ -20,6 +20,7 @@ data:
 
   # PostgreSQL Host (Cloud SQL / RDS / In-cluster Operator)
   POSTGRES_HOST: "postgres-cluster.larekmart.svc.cluster.local"
+  POSTGRES_READ_REPLICA_HOST: "postgres-replica.larekmart.svc.cluster.local"
   POSTGRES_PORT: "5432"
   POSTGRES_USER: "postgres"
 
