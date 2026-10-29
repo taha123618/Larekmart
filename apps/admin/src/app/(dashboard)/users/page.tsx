@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { columns, type UserWithServiceStatus } from "./columns";
 import { DataTable } from "./data-table";
 import { fetchAdminUsers } from "@/services/user.service";
+import { getServiceUrl } from "@/services/gateway.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Store, ShoppingBag, ShieldCheck } from "lucide-react";
 
@@ -11,13 +12,10 @@ const getData = async (): Promise<{
 }> => {
   const { getToken } = await auth();
   try {
-    const authUrl =
-      process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
-      process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8090";
+    const authUrl = getServiceUrl(process.env.NEXT_PUBLIC_AUTH_SERVICE_URL);
     const token = await getToken();
     const [authRes, userSvcRes] = await Promise.all([
-      fetch(`${authUrl}/users`, {
+      fetch(`${authUrl}/api/v1/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

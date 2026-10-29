@@ -36,6 +36,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useAuth } from "@clerk/nextjs";
 import { uploadProductImage } from "@/services/media.service";
+import { getServiceUrl } from "@/services/gateway.service";
 
 // const categories = [
 //   "T-shirts",
@@ -48,11 +49,10 @@ import { uploadProductImage } from "@/services/media.service";
 // ] as const;
 
 const fetchCategories = async () => {
-  const productServiceUrl =
-    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
-    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8090";
-  const res = await fetch(`${productServiceUrl}/categories`);
+  const productServiceUrl = getServiceUrl(
+    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
+  );
+  const res = await fetch(`${productServiceUrl}/api/v1/categories`);
 
   if (!res.ok) {
     throw new Error("Failed to fetch categories!");
@@ -96,12 +96,11 @@ const AddProduct = () => {
 
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof ProductFormSchema>) => {
-      const productServiceUrl =
-        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
-        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-        "http://localhost:8090";
+      const productServiceUrl = getServiceUrl(
+        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
+      );
       const token = await getToken();
-      const res = await fetch(`${productServiceUrl}/products`, {
+      const res = await fetch(`${productServiceUrl}/api/v1/products`, {
         method: "POST",
         body: JSON.stringify(data),
         headers: {

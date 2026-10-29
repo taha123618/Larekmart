@@ -3,18 +3,18 @@ import type {
   HomeRecommendationsResponseType,
   InteractionCreateType,
 } from "@repo/types";
+import { getServiceUrl, buildSafeUrl } from "./gateway.service";
 
-const RECOMMENDATION_SERVICE_URL =
-  process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const RECOMMENDATION_SERVICE_URL = getServiceUrl(
+  process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL,
+);
 
 export async function getHomeRecommendations(
   userId?: string,
   limit: number = 8,
 ): Promise<HomeRecommendationsResponseType | null> {
   try {
-    const url = new URL(
+    const url = buildSafeUrl(
       `${RECOMMENDATION_SERVICE_URL}/api/v1/recommendations/home`,
     );
     if (userId) {
@@ -37,7 +37,7 @@ export async function getCategoryRecommendations(
   limit: number = 8,
 ): Promise<RecommendationResponseType | null> {
   try {
-    const url = new URL(
+    const url = buildSafeUrl(
       `${RECOMMENDATION_SERVICE_URL}/api/v1/recommendations/category/${encodeURIComponent(categorySlugOrId)}`,
     );
     url.searchParams.set("limit", limit.toString());
@@ -57,7 +57,7 @@ export async function getRecentlyViewedRecommendations(
   limit: number = 6,
 ): Promise<RecommendationResponseType | null> {
   try {
-    const url = new URL(
+    const url = buildSafeUrl(
       `${RECOMMENDATION_SERVICE_URL}/api/v1/recommendations/recently-viewed`,
     );
     url.searchParams.set("userId", userId);
@@ -78,7 +78,7 @@ export async function getTrendingRecommendations(
   categorySlug?: string,
 ): Promise<RecommendationResponseType | null> {
   try {
-    const url = new URL(
+    const url = buildSafeUrl(
       `${RECOMMENDATION_SERVICE_URL}/api/v1/recommendations/trending`,
     );
     url.searchParams.set("limit", limit.toString());
@@ -101,7 +101,7 @@ export async function getPersonalizedRecommendations(
   limit: number = 8,
 ): Promise<RecommendationResponseType | null> {
   try {
-    const url = new URL(
+    const url = buildSafeUrl(
       `${RECOMMENDATION_SERVICE_URL}/api/v1/recommendations/personalized`,
     );
     url.searchParams.set("userId", userId);

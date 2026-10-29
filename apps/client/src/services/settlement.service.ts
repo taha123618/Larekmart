@@ -10,11 +10,9 @@ import type {
   EscrowStatus,
   PayoutStatus,
 } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_VENDOR_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_VENDOR_SERVICE_URL);
 
 function getHeaders(authToken?: string): Record<string, string> {
   const headers: Record<string, string> = {

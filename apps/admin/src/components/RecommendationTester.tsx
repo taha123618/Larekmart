@@ -27,6 +27,7 @@ import {
   Database,
 } from "lucide-react";
 import type { RecommendationResponseType } from "@repo/types";
+import { getServiceUrl } from "@/services/gateway.service";
 
 export default function RecommendationTester() {
   const [strategyType, setStrategyType] = useState<string>("trending");
@@ -38,10 +39,9 @@ export default function RecommendationTester() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RecommendationResponseType | null>(null);
 
-  const serviceUrl =
-    process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
-    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8090";
+  const serviceUrl = getServiceUrl(
+    process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL,
+  );
 
   const handleTest = async () => {
     setLoading(true);

@@ -10,11 +10,9 @@ import type {
   ReportReason,
   ReviewSortOption,
 } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_REVIEW_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_REVIEW_SERVICE_URL);
 
 export interface PaginatedReviewsResponse {
   reviews: Review[];

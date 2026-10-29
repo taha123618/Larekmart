@@ -16,11 +16,9 @@ import type {
   SharedWishlistResponse,
 } from "@repo/types";
 import { getOrCreateGuestToken } from "./cart.service";
+import { getServiceUrl } from "./gateway.service";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_WISHLIST_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_API_GATEWAY_URL);
 
 function getHeaders(authToken?: string): Record<string, string> {
   const headers: Record<string, string> = {
@@ -173,7 +171,7 @@ export async function addItemToWishlist(
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
       errorData.message ||
-        `Failed to add item to wishlist (HTTP ${res.status})`,
+      `Failed to add item to wishlist (HTTP ${res.status})`,
     );
   }
 
@@ -200,7 +198,7 @@ export async function removeItemFromWishlist(
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
       errorData.message ||
-        `Failed to remove item from wishlist (HTTP ${res.status})`,
+      `Failed to remove item from wishlist (HTTP ${res.status})`,
     );
   }
 
@@ -278,7 +276,7 @@ export async function mergeGuestWishlist(
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
       errorData.message ||
-        `Failed to merge guest wishlist (HTTP ${res.status})`,
+      `Failed to merge guest wishlist (HTTP ${res.status})`,
     );
   }
 

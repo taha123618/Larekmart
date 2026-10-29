@@ -9,11 +9,9 @@ import type {
   TaxJurisdiction,
 } from "@repo/types";
 import { getOrCreateGuestToken } from "./cart.service";
+import { getServiceUrl } from "./gateway.service";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_TAX_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_API_GATEWAY_URL);
 
 const BASE = `${API_BASE}/api/v1/tax`;
 

@@ -7,11 +7,8 @@ import type { KeyboardEvent } from "react";
 import { useAuth } from "@clerk/nextjs";
 import type { SuggestionItem, SuggestionResponse } from "@repo/types";
 import MediaImage from "@/components/MediaImage";
+import { getServiceUrl } from "@/services/gateway.service";
 
-const SEARCH_SERVICE_URL =
-  process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
 const SUGGESTION_LIMIT = 6;
 const DEBOUNCE_MS = 250;
 const RECENT_SEARCHES_KEY = "larekmart:recent-searches";
@@ -61,12 +58,11 @@ const SearchBar = () => {
     setRecents(readRecentSearches());
   }, []);
 
-  // Debounced autocomplete against search-service. Results are fetched from the
-  // service directly (no gateway) and cached there in Redis.
+  // Debounced autocomplete against search-service.
   useEffect(() => {
     const query = value.trim();
 
-    if (!SEARCH_SERVICE_URL || query.length === 0) {
+    if (query.length === 0) {
       setSuggestions([]);
       setIsLoading(false);
       return;
@@ -87,8 +83,9 @@ const SearchBar = () => {
           headers["x-user-id"] = userId;
         }
 
+        const base = getServiceUrl(process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL);
         const res = await fetch(
-          `${SEARCH_SERVICE_URL}/api/v1/search/suggestions?q=${encodeURIComponent(query)}&limit=${SUGGESTION_LIMIT}`,
+          `${base}/api/v1/search/suggestions?q=${encodeURIComponent(query)}&limit=${SUGGESTION_LIMIT}`,
           {
             signal: controller.signal,
             headers,

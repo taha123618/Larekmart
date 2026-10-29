@@ -12,6 +12,7 @@ import {
   fetchCatalogProducts,
   normalizeCatalogProduct,
 } from "@/services/catalog.service";
+import { getServiceUrl } from "@/services/gateway.service";
 
 type ProductListParams = {
   category?: string;
@@ -96,12 +97,11 @@ const fetchSearch = async ({
   if (max_price) query.set("max_price", max_price);
   query.set("sort", SEARCH_SORT[sort ?? "newest"] ?? "relevance");
 
-  const productServiceUrl =
-    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
-    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8090";
+  const productServiceUrl = getServiceUrl(
+    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
+  );
   const res = await fetch(
-    `${productServiceUrl}/products/search?${query.toString()}`,
+    `${productServiceUrl}/api/v1/products/search?${query.toString()}`,
   );
   if (!res.ok) return null;
 

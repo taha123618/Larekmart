@@ -8,6 +8,7 @@ import { CartItemsType, ShippingFormInputs } from "@repo/types";
 import CheckoutForm from "./CheckoutForm";
 import useCartStore from "@/stores/cartStore";
 import { useCurrencyStore } from "@/stores/currencyStore";
+import { getServiceUrl } from "@/services/gateway.service";
 import {
   AlertCircle,
   CreditCard,
@@ -39,13 +40,12 @@ const fetchClientSecret = async (
   currency?: string,
   exchangeRate?: number,
 ): Promise<string> => {
-  const paymentServiceUrl =
-    process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL ||
-    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8090";
+  const paymentServiceUrl = getServiceUrl(
+    process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL,
+  );
 
   const response = await fetch(
-    `${paymentServiceUrl}/sessions/create-checkout-session`,
+    `${paymentServiceUrl}/api/v1/sessions/create-checkout-session`,
     {
       method: "POST",
       body: JSON.stringify({

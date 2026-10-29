@@ -47,6 +47,8 @@ export interface ServiceCacheStats {
   types: CacheTypeStats[];
 }
 
+import { getApiGatewayUrl, getServiceUrl } from "../services/gateway.service";
+
 export interface CacheServiceTarget {
   service: string;
   url: string;
@@ -54,29 +56,27 @@ export interface CacheServiceTarget {
 
 /**
  * Services with cache counters to report. Order and URLs mirror the env vars the
- * rest of the app uses, with the same localhost fallbacks so the page works
- * before `.env` is filled in.
+ * rest of the app uses, with safe runtime gateway fallbacks.
  */
 export function getCacheServiceTargets(): CacheServiceTarget[] {
-  const gatewayUrl =
-    process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090";
+  const gatewayUrl = getApiGatewayUrl();
 
   return [
     {
       service: "search-service",
-      url: process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL || gatewayUrl,
+      url: getServiceUrl(process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL),
     },
     {
       service: "product-service",
-      url: process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || gatewayUrl,
+      url: getServiceUrl(process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL),
     },
     {
       service: "analytic-service",
-      url: process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL || gatewayUrl,
+      url: getServiceUrl(process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL),
     },
     {
       service: "order-service",
-      url: process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || gatewayUrl,
+      url: getServiceUrl(process.env.NEXT_PUBLIC_ORDER_SERVICE_URL),
     },
     {
       service: "inventory-service",

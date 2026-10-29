@@ -1,6 +1,7 @@
 import Link from "next/link";
 import RecommendationSection from "@/components/RecommendationSection";
 import ClearCartOnSuccess from "@/components/ClearCartOnSuccess";
+import { getServiceUrl } from "@/services/gateway.service";
 import {
   CheckCircle2,
   Clock,
@@ -67,16 +68,17 @@ export default async function ReturnPage({
     );
   }
 
-  const paymentServiceUrl =
-    process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL ||
-    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8090";
+  const paymentServiceUrl = getServiceUrl(
+    process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL,
+  );
 
   let status = "complete";
   let paymentStatus = "paid";
 
   try {
-    const res = await fetch(`${paymentServiceUrl}/sessions/${session_id}`, {
+    const res = await fetch(
+      `${paymentServiceUrl}/api/v1/sessions/${session_id}`,
+      {
       cache: "no-store",
     });
     if (res.ok) {

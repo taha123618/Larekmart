@@ -13,10 +13,9 @@ import type {
   UpdateProductPriceInput,
 } from "@repo/types";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_PRICING_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+import { getServiceUrl, buildSafeUrl } from "./gateway.service";
+
+const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_PRICING_SERVICE_URL);
 
 const ADMIN_BASE = `${API_BASE}/api/v1/admin`;
 
@@ -77,7 +76,7 @@ export async function fetchAdminPrices(
 ): Promise<
   Array<ProductPrice & { priceListName?: string; priceListCode?: string }>
 > {
-  const url = new URL(`${ADMIN_BASE}/prices`);
+  const url = buildSafeUrl(`${ADMIN_BASE}/prices`);
   if (priceListId) {
     url.searchParams.set("priceListId", priceListId);
   }
@@ -160,7 +159,7 @@ export async function fetchAdminPriceRules(
   priceListId?: string,
   authToken?: string,
 ): Promise<PriceRule[]> {
-  const url = new URL(`${ADMIN_BASE}/prices/rules`);
+  const url = buildSafeUrl(`${ADMIN_BASE}/prices/rules`);
   if (priceListId) {
     url.searchParams.set("priceListId", priceListId);
   }

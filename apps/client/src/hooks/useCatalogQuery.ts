@@ -11,12 +11,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { CatalogProductQuery } from "@/services/catalog.service";
+import { getServiceUrl } from "@/services/gateway.service";
 
-const CATALOG_BASE =
-  process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
-const BASE = `${CATALOG_BASE}/api/v1/catalog`;
+const BASE = `${getServiceUrl(process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL)}/api/v1/catalog`;
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);

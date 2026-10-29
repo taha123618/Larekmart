@@ -4,15 +4,12 @@ import type {
   CartResponseType,
   CartSummaryType,
 } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
 const GUEST_TOKEN_KEY = "larekmart_guest_token";
 
 export const getCartServiceUrl = (): string => {
-  return (
-    process.env.NEXT_PUBLIC_CART_SERVICE_URL ||
-    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8090"
-  );
+  return getServiceUrl(process.env.NEXT_PUBLIC_CART_SERVICE_URL);
 };
 
 export const getOrCreateGuestToken = (): string => {

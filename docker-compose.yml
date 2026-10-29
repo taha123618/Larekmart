@@ -1323,13 +1323,13 @@ services:
       - "traefik.http.services.api-gateway.loadbalancer.healthcheck.interval=10s"
       - "traefik.http.services.api-gateway.loadbalancer.healthcheck.timeout=3s"
       # Shared Storefront API Router (Strict Host && PathPrefix - Priority 100)
-      - "traefik.http.routers.api-gateway-path.rule=(Host(`${DOMAIN:-localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`)) && (PathPrefix(`/api`) || PathPrefix(`/notifications`) || PathPrefix(`/user-orders`) || PathPrefix(`/order-chart`))"
+      - "traefik.http.routers.api-gateway-path.rule=(Host(`${DOMAIN:-localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`) || Host(`${ADMIN_DOMAIN:-admin.localhost}`)) && (PathPrefix(`/api`) || PathPrefix(`/notifications`) || PathPrefix(`/user-orders`) || PathPrefix(`/order-chart`) || PathPrefix(`/sessions`))"
       - "traefik.http.routers.api-gateway-path.entrypoints=web,websecure"
       - "traefik.http.routers.api-gateway-path.middlewares=sec-headers,compress,rate-limit,retry"
       - "traefik.http.routers.api-gateway-path.service=api-gateway"
       - "traefik.http.routers.api-gateway-path.priority=100"
       # Real-Time WebSocket Router with Session Affinity for Horizontal Scaling
-      - "traefik.http.routers.api-gateway-ws.rule=(Host(`${API_DOMAIN:-api.localhost}`) || Host(`${DOMAIN:-localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`)) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.api-gateway-ws.rule=(Host(`${API_DOMAIN:-api.localhost}`) || Host(`${DOMAIN:-localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`) || Host(`${ADMIN_DOMAIN:-admin.localhost}`)) && PathPrefix(`/ws`)"
       - "traefik.http.routers.api-gateway-ws.entrypoints=web,websecure"
       - "traefik.http.routers.api-gateway-ws.service=api-gateway-ws-svc"
       - "traefik.http.routers.api-gateway-ws.priority=120"
@@ -1350,7 +1350,7 @@ services:
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL:-http://localhost:8090}
+        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL}
     container_name: larekmart-client
     deploy: *heavy-deploy
     restart: unless-stopped
@@ -1390,7 +1390,7 @@ services:
       dockerfile: apps/admin/Dockerfile
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL:-http://localhost:8090}
+        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL}
     container_name: larekmart-admin
     deploy: *heavy-deploy
     restart: unless-stopped

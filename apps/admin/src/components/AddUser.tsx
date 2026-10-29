@@ -24,6 +24,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useMutation } from "@tanstack/react-query";
 import { UserFormSchema } from "@repo/types";
 import { toast } from "react-toastify";
+import { getServiceUrl } from "@/services/gateway.service";
 
 const AddUser = () => {
   const form = useForm<z.infer<typeof UserFormSchema>>({
@@ -42,11 +43,10 @@ const AddUser = () => {
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof UserFormSchema>) => {
       const token = await getToken();
-      const authServiceUrl =
-        process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
-        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-        "http://localhost:8090";
-      const res = await fetch(`${authServiceUrl}/users`, {
+      const authServiceUrl = getServiceUrl(
+        process.env.NEXT_PUBLIC_AUTH_SERVICE_URL,
+      );
+      const res = await fetch(`${authServiceUrl}/api/v1/users`, {
         method: "POST",
         body: JSON.stringify(data),
         headers: {

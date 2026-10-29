@@ -27,6 +27,7 @@ import { Plus, Clock } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import { getServiceUrl } from "@/services/gateway.service";
 
 export interface InventoryItemData {
   id: string;
@@ -66,8 +67,11 @@ export default function InventoryDataTable({
     setIsSweeping(true);
     try {
       const token = await getToken();
+      const inventoryUrl = getServiceUrl(
+        process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL,
+      );
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/inventory/reservations/expire-stale`,
+        `${inventoryUrl}/api/v1/inventory/reservations/expire-stale`,
         {
           method: "POST",
           headers: {

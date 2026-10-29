@@ -3,11 +3,9 @@
  */
 
 import type { Wishlist } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
-const WISHLIST_BASE =
-  process.env.NEXT_PUBLIC_WISHLIST_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const WISHLIST_BASE = getServiceUrl(process.env.NEXT_PUBLIC_WISHLIST_SERVICE_URL);
 
 const BASE = `${WISHLIST_BASE}/api/v1/admin/wishlists`;
 

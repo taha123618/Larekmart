@@ -70,11 +70,25 @@ export const publicRoutes: GatewayRouteConfig[] = [
 
   // 6. Payment Service Sessions & Webhooks
   {
+    prefix: "/api/v1/sessions",
+    target: services.payment.url,
+    serviceName: services.payment.name,
+    timeoutMs: services.payment.timeoutMs,
+    rewritePrefix: "/sessions",
+  },
+  {
     prefix: "/sessions",
     target: services.payment.url,
     serviceName: services.payment.name,
     timeoutMs: services.payment.timeoutMs,
     rewritePrefix: "/sessions",
+  },
+  {
+    prefix: "/api/v1/webhooks",
+    target: services.payment.url,
+    serviceName: services.payment.name,
+    timeoutMs: services.payment.timeoutMs,
+    rewritePrefix: "/webhooks",
   },
   {
     prefix: "/webhooks",

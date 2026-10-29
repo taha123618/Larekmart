@@ -23,6 +23,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "react-toastify";
 import { InventoryRestockSchema } from "@repo/types";
+import { getServiceUrl } from "@/services/gateway.service";
 
 interface RestockSheetProps {
   defaultValues?: {
@@ -54,8 +55,11 @@ export default function RestockSheet({
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof InventoryRestockSchema>) => {
       const token = await getToken();
+      const inventoryUrl = getServiceUrl(
+        process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL,
+      );
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/inventory/restock`,
+        `${inventoryUrl}/api/v1/inventory/restock`,
         {
           method: "POST",
           headers: {

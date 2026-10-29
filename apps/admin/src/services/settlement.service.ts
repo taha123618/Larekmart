@@ -3,11 +3,9 @@
  */
 
 import type { VendorSettlementOverview, PayoutBatch } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_VENDOR_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_VENDOR_SERVICE_URL);
 
 const ADMIN_SETTLEMENTS_BASE = `${API_BASE}/api/v1/admin/settlements`;
 

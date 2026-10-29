@@ -5,13 +5,19 @@
     "NODE_ENV",
     "ADMIN_REGISTRATION_SECRET",
     "ALLOW_ADMIN_CLAIM",
-    "STRIPE_SECRET_KEY"
+    "STRIPE_SECRET_KEY",
+    "INTERNAL_API_GATEWAY_URL",
+    "API_GATEWAY_URL",
+    "INTERNAL_WS_URL"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",
     "ADMIN_REGISTRATION_SECRET",
     "ALLOW_ADMIN_CLAIM",
-    "STRIPE_SECRET_KEY"
+    "STRIPE_SECRET_KEY",
+    "INTERNAL_API_GATEWAY_URL",
+    "API_GATEWAY_URL",
+    "INTERNAL_WS_URL"
   ],
   "tasks": {
     "build": {
@@ -23,7 +29,10 @@
         "NODE_ENV",
         "ADMIN_REGISTRATION_SECRET",
         "ALLOW_ADMIN_CLAIM",
-        "STRIPE_SECRET_KEY"
+        "STRIPE_SECRET_KEY",
+        "INTERNAL_API_GATEWAY_URL",
+        "API_GATEWAY_URL",
+        "INTERNAL_WS_URL"
       ]
     },
     "lint": {

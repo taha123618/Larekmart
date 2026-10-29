@@ -15,6 +15,7 @@ import {
 } from "@/services/recommendation.service";
 import ProductCard from "./ProductCard";
 import { Sparkles, TrendingUp, Flame, ShoppingBag, Clock } from "lucide-react";
+import { getServiceUrl } from "@/services/gateway.service";
 
 interface RecommendationSectionProps {
   title: string;
@@ -92,16 +93,15 @@ export default function RecommendationSection({
         }
 
         // Fetch product details for the recommended IDs
-        const productUrl =
-          process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
-          process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-          "http://localhost:8090";
+        const productUrl = getServiceUrl(
+          process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
+        );
 
         const fetched = await Promise.all(
           recResponse.items.map(async (item) => {
             try {
               const res = await fetch(
-                `${productUrl}/products/${item.productId}`,
+                `${productUrl}/api/v1/products/${item.productId}`,
               );
               if (!res.ok) return null;
               const prod: ProductType = await res.json();

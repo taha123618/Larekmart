@@ -9,11 +9,9 @@ import type {
   BulkPriceQuoteRequest,
   CurrencyRate,
 } from "@repo/types";
+import { getServiceUrl, buildSafeUrl } from "./gateway.service";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_PRICING_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_PRICING_SERVICE_URL);
 
 const BASE = `${API_BASE}/api/v1/prices`;
 
@@ -56,7 +54,7 @@ export async function fetchProductPrice(
   priceListCode?: string,
 ): Promise<ProductPricingDetails | null> {
   try {
-    const url = new URL(`${BASE}/products/${productId}`);
+    const url = buildSafeUrl(`${BASE}/products/${productId}`);
     url.searchParams.set("currency", currency);
     if (priceListCode) {
       url.searchParams.set("priceListCode", priceListCode);

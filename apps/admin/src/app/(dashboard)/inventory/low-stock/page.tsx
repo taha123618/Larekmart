@@ -14,6 +14,7 @@ import RestockSheet from "@/components/RestockSheet";
 import { ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { InventoryItemData } from "@/components/InventoryDataTable";
+import { getServiceUrl } from "@/services/gateway.service";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,11 @@ async function fetchLowStock(
   token: string | null,
 ): Promise<InventoryItemData[]> {
   try {
+    const inventoryUrl = getServiceUrl(
+      process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL,
+    );
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/inventory/low-stock?limit=200`,
+      `${inventoryUrl}/api/v1/inventory/low-stock?limit=200`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

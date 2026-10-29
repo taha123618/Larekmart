@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { ShippingFormInputs, CartItemType } from "@repo/types";
 import useCartStore from "@/stores/cartStore";
+import { getServiceUrl } from "@/services/gateway.service";
 import {
   Truck,
   CheckCircle2,
@@ -50,10 +51,9 @@ export default function CodConfirmationForm({
         throw new Error("You must be signed in to confirm an order.");
       }
 
-      const orderServiceUrl =
-        process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
-        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-        "http://localhost:8090";
+      const orderServiceUrl = getServiceUrl(
+        process.env.NEXT_PUBLIC_ORDER_SERVICE_URL,
+      );
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -67,7 +67,7 @@ export default function CodConfirmationForm({
         headers["x-user-id"] = userId;
       }
 
-      const res = await fetch(`${orderServiceUrl}/orders/cod`, {
+      const res = await fetch(`${orderServiceUrl}/api/v1/orders/cod`, {
         method: "POST",
         headers,
         body: JSON.stringify({

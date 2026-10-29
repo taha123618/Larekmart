@@ -3,6 +3,7 @@ import { Badge } from "./ui/badge";
 import { AnalyticsEventType, OrderType, ProductsType } from "@repo/types";
 import { auth } from "@clerk/nextjs/server";
 import MediaImage from "./MediaImage";
+import { getServiceUrl } from "@/services/gateway.service";
 
 const CardList = async ({ title }: { title: string }) => {
   let products: ProductsType = [];
@@ -14,27 +15,24 @@ const CardList = async ({ title }: { title: string }) => {
 
   if (title === "Popular Products") {
     try {
-      const prodUrl =
-        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
-        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-        "http://localhost:8090";
-      products = await fetch(`${prodUrl}/products?limit=5&popular=true`).then(
-        (res) => (res.ok ? res.json() : []),
+      const prodUrl = getServiceUrl(
+        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
       );
+      products = await fetch(
+        `${prodUrl}/api/v1/products?limit=5&popular=true`,
+      ).then((res) => (res.ok ? res.json() : []));
     } catch {
       products = [];
     }
 
     if (!products || products.length === 0) {
       try {
-        const recUrl =
-          process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL ||
-          process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-          "http://localhost:8090";
-        const prodUrl =
-          process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL ||
-          process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-          "http://localhost:8090";
+        const recUrl = getServiceUrl(
+          process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL,
+        );
+        const prodUrl = getServiceUrl(
+          process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
+        );
         const recRes = await fetch(
           `${recUrl}/api/v1/recommendations/popular?limit=5`,
         );
@@ -46,7 +44,7 @@ const CardList = async ({ title }: { title: string }) => {
                 async (i: { productId?: number; product_id?: number }) => {
                   const id = i.productId ?? i.product_id;
                   if (!id) return null;
-                  const r = await fetch(`${prodUrl}/products/${id}`);
+                  const r = await fetch(`${prodUrl}/api/v1/products/${id}`);
                   return r.ok ? await r.json() : null;
                 },
               ),
@@ -63,11 +61,10 @@ const CardList = async ({ title }: { title: string }) => {
   } else {
     // Attempt to fetch from analytic-service first, fallback to order-service
     try {
-      const analyticUrl =
-        process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL ||
-        process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-        "http://localhost:8090";
-      events = await fetch(`${analyticUrl}/analytics/events?limit=5`, {
+      const analyticUrl = getServiceUrl(
+        process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL,
+      );
+      events = await fetch(`${analyticUrl}/api/v1/analytics/events?limit=5`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -78,11 +75,10 @@ const CardList = async ({ title }: { title: string }) => {
 
     if (events.length === 0) {
       try {
-        const orderUrl =
-          process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
-          process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-          "http://localhost:8090";
-        orders = await fetch(`${orderUrl}/orders?limit=5`, {
+        const orderUrl = getServiceUrl(
+          process.env.NEXT_PUBLIC_ORDER_SERVICE_URL,
+        );
+        orders = await fetch(`${orderUrl}/api/v1/orders?limit=5`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

@@ -10,11 +10,9 @@ import type {
   UserSettingsResponse,
   UpdateSettingsInput,
 } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
-const USER_BASE =
-  process.env.NEXT_PUBLIC_USER_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const USER_BASE = getServiceUrl(process.env.NEXT_PUBLIC_USER_SERVICE_URL);
 
 const BASE = `${USER_BASE}/api/v1/users`;
 

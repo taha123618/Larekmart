@@ -14,16 +14,16 @@ import {
 } from "lucide-react";
 import OrderReturnAction from "@/components/returns/OrderReturnAction";
 import OrderDisputeAction from "@/components/dispute/OrderDisputeAction";
+import { getServiceUrl } from "@/services/gateway.service";
 
 const fetchOrders = async () => {
   const { getToken } = await auth();
   const token = await getToken();
 
-  const orderServiceUrl =
-    process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
-    process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-    "http://localhost:8090";
-  const res = await fetch(`${orderServiceUrl}/user-orders`, {
+  const orderServiceUrl = getServiceUrl(
+    process.env.NEXT_PUBLIC_ORDER_SERVICE_URL,
+  );
+  const res = await fetch(`${orderServiceUrl}/api/v1/user-orders`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

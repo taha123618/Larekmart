@@ -14,11 +14,9 @@ import type {
   CreateTaxCategoryInput,
   CreateTaxExemptionInput,
 } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
-const TAX_BASE =
-  process.env.NEXT_PUBLIC_TAX_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const TAX_BASE = getServiceUrl(process.env.NEXT_PUBLIC_TAX_SERVICE_URL);
 
 const ADMIN_BASE = `${TAX_BASE}/api/v1/admin/tax`;
 const PUBLIC_BASE = `${TAX_BASE}/api/v1/tax`;

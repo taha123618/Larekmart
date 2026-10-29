@@ -3,6 +3,7 @@ import InventoryStatsCards from "@/components/InventoryStatsCards";
 import InventoryDataTable, {
   InventoryItemData,
 } from "@/components/InventoryDataTable";
+import { getServiceUrl } from "@/services/gateway.service";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +11,11 @@ async function fetchInventory(
   token: string | null,
 ): Promise<InventoryItemData[]> {
   try {
+    const inventoryUrl = getServiceUrl(
+      process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL,
+    );
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/inventory/items?limit=500`,
+      `${inventoryUrl}/api/v1/inventory/items?limit=500`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

@@ -33,15 +33,13 @@ import {
   Flame,
 } from "lucide-react";
 import MediaImage from "@/components/MediaImage";
+import { getServiceUrl } from "@/services/gateway.service";
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 
 async function getCatalogHealth(): Promise<{ ok: boolean; status?: string }> {
   try {
-    const base =
-      process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL ||
-      process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8090";
+    const base = getServiceUrl(process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL);
     const res = await fetch(`${base}/ready`, { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as { status?: string };

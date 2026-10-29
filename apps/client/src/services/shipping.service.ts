@@ -1,9 +1,7 @@
 import type { ShippingRate, ShippingMethod, TrackingResult } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
-const SHIPPING_BASE =
-  process.env.NEXT_PUBLIC_SHIPPING_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const SHIPPING_BASE = getServiceUrl(process.env.NEXT_PUBLIC_API_GATEWAY_URL);
 
 const BASE = `${SHIPPING_BASE}/api/v1`;
 

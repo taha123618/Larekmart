@@ -18,12 +18,9 @@
  *   - Storefront overview (full homepage layout)
  */
 
-const CATALOG_BASE =
-  process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+import { getServiceUrl } from "../services/gateway.service";
 
-const BASE = `${CATALOG_BASE}/api/v1/catalog`;
+const BASE = `${getServiceUrl(process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL)}/api/v1/catalog`;
 
 // ─── Types (mirrors CatalogProductCardType from @repo/types) ────────────────
 

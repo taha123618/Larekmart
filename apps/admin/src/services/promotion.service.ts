@@ -11,11 +11,9 @@ import type {
   PromotionRedemption,
   PromotionOverviewResponse,
 } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
-const PROMOTION_BASE =
-  process.env.NEXT_PUBLIC_PROMOTION_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const PROMOTION_BASE = getServiceUrl(process.env.NEXT_PUBLIC_PROMOTION_SERVICE_URL);
 
 const BASE = `${PROMOTION_BASE}/api/v1/admin/promotions`;
 

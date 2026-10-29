@@ -11,16 +11,11 @@ import type {
   ReturnStatus,
   ReturnItemCondition,
 } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
-const GATEWAY_BASE =
-  process.env.NEXT_PUBLIC_RETURN_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const GATEWAY_BASE = getServiceUrl(process.env.NEXT_PUBLIC_RETURN_SERVICE_URL);
 
-const MEDIA_BASE =
-  process.env.NEXT_PUBLIC_MEDIA_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+const MEDIA_BASE = getServiceUrl(process.env.NEXT_PUBLIC_MEDIA_SERVICE_URL);
 
 export interface CustomerReturnItem {
   id: string;

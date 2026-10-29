@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import { OrderType } from "@repo/types";
+import { getServiceUrl } from "@/services/gateway.service";
 
 export const dynamic = "force-dynamic";
 
@@ -9,11 +10,8 @@ const getData = async (): Promise<OrderType[]> => {
   try {
     const { getToken } = await auth();
     const token = await getToken();
-    const orderUrl =
-      process.env.NEXT_PUBLIC_ORDER_SERVICE_URL ||
-      process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-      "http://localhost:8090";
-    const res = await fetch(`${orderUrl}/orders`, {
+    const orderUrl = getServiceUrl(process.env.NEXT_PUBLIC_ORDER_SERVICE_URL);
+    const res = await fetch(`${orderUrl}/api/v1/orders`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

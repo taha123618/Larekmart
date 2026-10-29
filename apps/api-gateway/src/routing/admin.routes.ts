@@ -4,6 +4,14 @@ import type { GatewayRouteConfig } from "@repo/types";
 export const adminRoutes: GatewayRouteConfig[] = [
   // 1. Order Chart & Admin Analytics
   {
+    prefix: "/api/v1/order-chart",
+    target: services.order.url,
+    serviceName: services.order.name,
+    timeoutMs: services.order.timeoutMs,
+    rewritePrefix: "/order-chart",
+    requireAdmin: true,
+  },
+  {
     prefix: "/order-chart",
     target: services.order.url,
     serviceName: services.order.name,

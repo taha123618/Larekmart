@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { History, ArrowUpRight, ShieldAlert } from "lucide-react";
 import Link from "next/link";
+import { getServiceUrl } from "@/services/gateway.service";
 
 export const dynamic = "force-dynamic";
 
@@ -40,8 +41,11 @@ interface MovementRecord {
 
 async function fetchMovements(token: string | null): Promise<MovementRecord[]> {
   try {
+    const inventoryUrl = getServiceUrl(
+      process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL,
+    );
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/inventory/movements?limit=100`,
+      `${inventoryUrl}/api/v1/inventory/movements?limit=100`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

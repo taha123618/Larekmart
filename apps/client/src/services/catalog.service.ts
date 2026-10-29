@@ -19,13 +19,9 @@
  */
 
 import type { ProductType } from "@repo/types";
+import { getServiceUrl } from "./gateway.service";
 
-const CATALOG_BASE =
-  process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
-
-const BASE = `${CATALOG_BASE}/api/v1/catalog`;
+const BASE = `${getServiceUrl(process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL)}/api/v1/catalog`;
 
 // ─── Types (mirrors CatalogProductCardType from @repo/types) ────────────────
 

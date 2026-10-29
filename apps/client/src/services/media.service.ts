@@ -9,10 +9,9 @@
  * storage — binaries never traverse media-service's API).
  */
 
-const MEDIA_BASE =
-  process.env.NEXT_PUBLIC_MEDIA_SERVICE_URL ||
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
-  "http://localhost:8090";
+import { getServiceUrl } from "./gateway.service";
+
+const MEDIA_BASE = getServiceUrl(process.env.NEXT_PUBLIC_MEDIA_SERVICE_URL);
 
 const cache = new Map<string, string | null>();
 
