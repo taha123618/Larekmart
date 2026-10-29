@@ -226,7 +226,7 @@ const start = async () => {
       logger.info(
         `Received ${signal}, shutting down order-service gracefully...`,
       );
-      stopOutboxSweeper();
+      await stopOutboxSweeper();
       try {
         await fastify.close();
         await producer.disconnect();

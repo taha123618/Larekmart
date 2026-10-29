@@ -18,12 +18,15 @@ import {
   markOutboxFailed,
   mongoose,
 } from "@repo/order-db";
+import { DistributedLeaderElector } from "@repo/redis";
 import { producer } from "../src/utils/kafka.js";
 import { redis } from "../src/utils/redis.js";
 import {
   dispatchViaOutbox,
   publishOutboxEvent,
   sweepPendingOutboxEvents,
+  startOutboxSweeper,
+  stopOutboxSweeper,
 } from "../src/outbox/outbox-relay.js";
 
 const MONGO_URI =
@@ -214,6 +217,120 @@ async function runOutboxTests() {
     );
     console.log(
       "✓ Cluster sweeper isolation prevented duplicate sweep execution and duplicate Kafka dispatches.",
+    );
+
+    // 7. Distributed Leader Election Framework & Standby Failover
+    console.log(
+      "7. Testing DistributedLeaderElector singleton & standby failover...",
+    );
+    let podAPromotions = 0;
+    let podADemotions = 0;
+    let podBPromotions = 0;
+    let podBDemotions = 0;
+
+    const testLockKey = "order:outbox:sweeper:leader:framework_test";
+    const electorA = new DistributedLeaderElector({
+      client: redis.client,
+      lockKey: testLockKey,
+      candidateId: "order-pod-alpha",
+      leaseTtlMs: 3000,
+      heartbeatIntervalMs: 800,
+      retryDelayMs: 400,
+      onPromoted: () => {
+        podAPromotions++;
+      },
+      onDemoted: () => {
+        podADemotions++;
+      },
+    });
+
+    const electorB = new DistributedLeaderElector({
+      client: redis.client,
+      lockKey: testLockKey,
+      candidateId: "order-pod-beta",
+      leaseTtlMs: 3000,
+      heartbeatIntervalMs: 800,
+      retryDelayMs: 400,
+      onPromoted: () => {
+        podBPromotions++;
+      },
+      onDemoted: () => {
+        podBDemotions++;
+      },
+    });
+
+    // Step A: Elector A starts and wins cluster leadership
+    await electorA.start();
+    assert.strictEqual(
+      electorA.isCurrentLeader,
+      true,
+      "Pod Alpha must be elected leader",
+    );
+    assert.strictEqual(
+      podAPromotions,
+      1,
+      "Pod Alpha must receive promotion event",
+    );
+
+    // Step B: Elector B starts and must enter standby follower mode
+    await electorB.start();
+    assert.strictEqual(
+      electorB.isCurrentLeader,
+      false,
+      "Pod Beta must remain in standby mode",
+    );
+    assert.strictEqual(
+      podBPromotions,
+      0,
+      "Pod Beta must NOT be promoted while Alpha leads",
+    );
+    console.log(
+      "✓ Pod Alpha elected leader; Pod Beta isolated in standby mode.",
+    );
+
+    // Step C: Verify Redis reports Pod Alpha as active cluster leader
+    const leaderAInfo = await electorA.getLeaderInfo();
+    assert.strictEqual(leaderAInfo.isLeader, true);
+    assert.strictEqual(leaderAInfo.leaderId, "order-pod-alpha");
+
+    // Step D: Pod Alpha steps down / gracefully stops
+    await electorA.stop();
+    assert.strictEqual(
+      electorA.isCurrentLeader,
+      false,
+      "Pod Alpha must relinquish leadership on stop",
+    );
+    assert.strictEqual(
+      podADemotions,
+      1,
+      "Pod Alpha must receive demotion event",
+    );
+
+    // Step E: Pod Beta detects vacant leadership and promotes automatically
+    const betaElected = await electorB.electNow();
+    assert.strictEqual(
+      betaElected,
+      true,
+      "Pod Beta must win election upon Alpha failover",
+    );
+    assert.strictEqual(
+      electorB.isCurrentLeader,
+      true,
+      "Pod Beta is now the active leader",
+    );
+    assert.strictEqual(
+      podBPromotions,
+      1,
+      "Pod Beta must receive promotion event",
+    );
+    console.log("✓ Pod Beta successfully promoted upon leader failover.");
+
+    // Step F: Clean up Pod Beta
+    await electorB.stop();
+    assert.strictEqual(
+      podBDemotions,
+      1,
+      "Pod Beta must receive demotion event",
     );
 
     // Cleanup

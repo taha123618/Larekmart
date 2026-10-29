@@ -15,6 +15,8 @@ Scope rules for AI coding agents working in this package.
 - A **key builder** (`createKeyBuilder`) that owns service key prefixes
 - A **fixed-window rate limiter** (`checkRateLimit`)
 - A **distributed idempotency engine** (`acquireIdempotencyLock`, `commitIdempotencyResponse`, `releaseIdempotencyLock`)
+- **Distributed cluster locking & Redlock majority-quorum consensus** (`acquireClusterLock`, `releaseClusterLock`, `renewClusterLock`, `acquireRedlockConsensus`, `releaseRedlockConsensus`, `renewRedlockConsensus`)
+- A **distributed leader election framework** (`DistributedLeaderElector` / `LeaderElection`) ensuring exactly one active replica executes background singletons (e.g., outbox sweepers) with auto-renew heartbeats and automatic standby failover
 - The re-exported ioredis `Redis` client type
 
 ## 2. What belongs here

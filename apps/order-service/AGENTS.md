@@ -66,7 +66,9 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
   - Always publish domain events via `dispatchViaOutbox(topic, payload, { session })`.
   - Fast path: If published outside an active transaction session, the event is immediately sent to Kafka and marked `PUBLISHED`.
   - Transaction path: When executed within a MongoDB ClientSession, the event is persisted into `OutboxEvent` within the same transaction. Upon commit, it is either dispatched immediately or swept asynchronously.
-  - Background Sweeper: Runs periodically (default 5s) to claim un-dispatched or failed events with an atomic 30s distributed lease lock (`lockedUntil`) to ensure at-least-once delivery without cross-replica race conditions.
+  - Distributed Leader Election: Backed by `DistributedLeaderElector` from `@repo/redis` (`order:outbox:sweeper:leader`, 10s lease TTL, 3s heartbeat renewal). Guarantees that horizontally scaled order-service pods never execute concurrent duplicate sweeper batches. Exactly one active Leader runs the background sweeper loop while follower replicas remain in hot standby mode (0 polling overhead).
+  - Background Sweeper: Runs periodically on the elected leader (default 5s) to claim un-dispatched or failed events with an atomic 30s distributed lease lock (`lockedUntil`) and worker fencing to ensure at-least-once delivery without duplicate stream emissions.
+  - Failover: If the active leader container shuts down or crashes, standby replicas detect the expired/released lease and seamlessly elect a new leader.
   - Retention: Events are automatically pruned after 7 days via MongoDB TTL index on `publishedAt`.
 - This service publishes `order.created`, `order.confirmed`, `order.cancelled`, `payment.refund.requested`, `inventory.reservation.cancelled`, and `tax.calculation.voided`.
 - Use the `{ value: payload }` envelope and read `message.value` in handlers.

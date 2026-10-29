@@ -177,3 +177,29 @@ export async function releaseRedlockConsensus(
   );
   return results.some((r) => r.status === "fulfilled" && r.value === true);
 }
+
+/**
+ * Renews a Redlock consensus lease across all configured Redis nodes using safe Lua evaluation.
+ * Evaluates SAFE_RENEW_LUA on each node and returns true if a majority quorum successfully renewed.
+ */
+export async function renewRedlockConsensus(
+  clients: Redis[],
+  key: string,
+  workerId: string,
+  ttlMs = 5000,
+): Promise<boolean> {
+  if (clients.length === 0) {
+    return false;
+  }
+  const quorum = Math.floor(clients.length / 2) + 1;
+  const results = await Promise.allSettled(
+    clients.map((c) => renewClusterLock(c, key, workerId, ttlMs)),
+  );
+  let renewedCount = 0;
+  for (const res of results) {
+    if (res.status === "fulfilled" && res.value === true) {
+      renewedCount++;
+    }
+  }
+  return renewedCount >= quorum;
+}

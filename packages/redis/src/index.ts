@@ -90,12 +90,17 @@ export {
   renewClusterLock,
   acquireRedlockConsensus,
   releaseRedlockConsensus,
+  renewRedlockConsensus,
 } from "./cluster-lock.js";
 export type {
   ClusterLockOptions,
   RedlockOptions,
   RedlockLease,
 } from "./cluster-lock.js";
+
+// Distributed leader election framework
+export { DistributedLeaderElector, LeaderElection } from "./leader-election.js";
+export type { LeaderElectionOptions, LeaderInfo } from "./leader-election.js";
 
 // Shared types
 export type {

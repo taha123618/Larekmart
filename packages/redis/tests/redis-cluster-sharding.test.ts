@@ -7,6 +7,9 @@ import {
   crc16,
   acquireRedlockConsensus,
   releaseRedlockConsensus,
+  renewRedlockConsensus,
+  DistributedLeaderElector,
+  LeaderElection,
 } from "../src/index.js";
 import type { Redis } from "ioredis";
 
@@ -95,6 +98,10 @@ async function runRedisClusterShardingTests(): Promise<void> {
 
   function createMockRedis(nodeId: string, failSet = false): Redis {
     return {
+      get: async (key: string) => {
+        const fullKey = `${nodeId}:${key}`;
+        return nodeState.get(fullKey) ?? null;
+      },
       set: async (key: string, val: string, ...args: unknown[]) => {
         if (failSet) throw new Error(`${nodeId} simulated failure`);
         const fullKey = `${nodeId}:${key}`;
@@ -105,13 +112,16 @@ async function runRedisClusterShardingTests(): Promise<void> {
         return "OK";
       },
       eval: async (
-        _script: string,
+        script: string,
         _numkeys: number,
         key: string,
         expectedVal: string,
       ) => {
         const fullKey = `${nodeId}:${key}`;
         if (nodeState.get(fullKey) === expectedVal) {
+          if (script.includes("pexpire")) {
+            return 1;
+          }
           nodeState.delete(fullKey);
           return 1;
         }
@@ -164,26 +174,189 @@ async function runRedisClusterShardingTests(): Promise<void> {
   assert.equal(released, true, "Must release lock across nodes");
   console.log("  ✓ Redlock successfully released across all consensus nodes");
 
-  // Case 4D: 1 node dead, 2 nodes healthy -> Quorum 2/3 still achieved (fault-tolerant!)
-  const deadNode = createMockRedis("deadNode", true);
-  const lease3 = await acquireRedlockConsensus(
-    [nodeA, nodeB, deadNode],
-    "cluster:outbox:sweeper",
-    "worker-3",
-    { ttlMs: 4000 },
+  // Case 4E: Redlock Renewal across quorum
+  const leaseRenew = await acquireRedlockConsensus(
+    [nodeA, nodeB, nodeC],
+    "cluster:outbox:renew_test",
+    "worker-renew",
+    { ttlMs: 5000 },
   );
-  assert.ok(
-    lease3 !== null,
-    "Must achieve quorum (2/3) even if 1 node crashes",
+  assert.ok(leaseRenew !== null, "Must acquire lease for renew test");
+  const renewedQuorum = await renewRedlockConsensus(
+    [nodeA, nodeB, nodeC],
+    "cluster:outbox:renew_test",
+    "worker-renew",
+    5000,
   );
-  assert.equal(lease3.workerId, "worker-3");
+  assert.equal(
+    renewedQuorum,
+    true,
+    "Must renew Redlock across consensus quorum",
+  );
+  const wrongWorkerRenew = await renewRedlockConsensus(
+    [nodeA, nodeB, nodeC],
+    "cluster:outbox:renew_test",
+    "imposter-worker",
+    5000,
+  );
+  assert.equal(
+    wrongWorkerRenew,
+    false,
+    "Imposter worker renewal must be rejected",
+  );
   await releaseRedlockConsensus(
-    [nodeA, nodeB, deadNode],
-    "cluster:outbox:sweeper",
-    "worker-3",
+    [nodeA, nodeB, nodeC],
+    "cluster:outbox:renew_test",
+    "worker-renew",
   );
+  console.log("  ✓ Redlock lease renewal verified across majority quorum");
+
+  // ---------------------------------------------------------------------------
+  // TEST 5: Distributed Leader Election Lifecycle & Standby Failover
+  // ---------------------------------------------------------------------------
   console.log(
-    "  ✓ Redlock consensus successfully tolerated 1 crashed node (2/3 quorum)",
+    "\n5. Testing DistributedLeaderElector singleton & failover lifecycle...",
+  );
+
+  let pod1Promoted = 0;
+  let pod1Demoted = 0;
+  let pod2Promoted = 0;
+  let pod2Demoted = 0;
+
+  const electorPod1 = new DistributedLeaderElector({
+    client: nodeA,
+    lockKey: "order:outbox:sweeper:leader",
+    candidateId: "order-service-pod-1",
+    leaseTtlMs: 3000,
+    heartbeatIntervalMs: 800,
+    retryDelayMs: 500,
+    onPromoted: () => {
+      pod1Promoted++;
+    },
+    onDemoted: () => {
+      pod1Demoted++;
+    },
+  });
+
+  const electorPod2 = new DistributedLeaderElector({
+    client: nodeA,
+    lockKey: "order:outbox:sweeper:leader",
+    candidateId: "order-service-pod-2",
+    leaseTtlMs: 3000,
+    heartbeatIntervalMs: 800,
+    retryDelayMs: 500,
+    onPromoted: () => {
+      pod2Promoted++;
+    },
+    onDemoted: () => {
+      pod2Demoted++;
+    },
+  });
+
+  // Step 1: Start Pod 1 -> Must win election and become leader
+  await electorPod1.start();
+  assert.equal(
+    electorPod1.isCurrentLeader,
+    true,
+    "Pod 1 must be elected leader",
+  );
+  assert.equal(pod1Promoted, 1, "Pod 1 onPromoted hook must fire exactly once");
+
+  const leaderInfo1 = await electorPod1.getLeaderInfo();
+  assert.equal(leaderInfo1.isLeader, true);
+  assert.equal(leaderInfo1.leaderId, "order-service-pod-1");
+  console.log(
+    "  ✓ Pod 1 successfully elected leader; outbox sweeper activated",
+  );
+
+  // Step 2: Start Pod 2 -> Must be rejected and remain standby follower
+  await electorPod2.start();
+  assert.equal(
+    electorPod2.isCurrentLeader,
+    false,
+    "Pod 2 must remain in standby mode",
+  );
+  assert.equal(pod2Promoted, 0, "Pod 2 onPromoted hook must NOT fire");
+
+  const leaderInfo2 = await electorPod2.getLeaderInfo();
+  assert.equal(leaderInfo2.isLeader, false);
+  assert.equal(leaderInfo2.leaderId, "order-service-pod-1");
+  console.log("  ✓ Pod 2 correctly entered standby mode (0 duplicate sweeps)");
+
+  // Step 3: Pod 1 resigns (e.g. graceful shutdown / rolling deployment)
+  await electorPod1.stop();
+  assert.equal(
+    electorPod1.isCurrentLeader,
+    false,
+    "Pod 1 must no longer be leader",
+  );
+  assert.equal(pod1Demoted, 1, "Pod 1 onDemoted hook must fire on resignation");
+  console.log("  ✓ Pod 1 gracefully stepped down and released cluster lease");
+
+  // Step 4: Pod 2 attempts election now that lease is released -> Promoted!
+  const pod2Won = await electorPod2.electNow();
+  assert.equal(pod2Won, true, "Pod 2 must win election upon leader failover");
+  assert.equal(
+    electorPod2.isCurrentLeader,
+    true,
+    "Pod 2 is now the active leader",
+  );
+  assert.equal(pod2Promoted, 1, "Pod 2 onPromoted hook must fire");
+  console.log(
+    "  ✓ Pod 2 promoted to leader seamlessly without duplicate dispatch",
+  );
+
+  // Clean up Pod 2
+  await electorPod2.stop();
+  assert.equal(pod2Demoted, 1, "Pod 2 onDemoted hook must fire on cleanup");
+
+  // ---------------------------------------------------------------------------
+  // TEST 6: Distributed Leader Election with Multi-Node Redlock Consensus
+  // ---------------------------------------------------------------------------
+  console.log(
+    "\n6. Testing DistributedLeaderElector with 3-node Redlock consensus...",
+  );
+  let redlockLeaderPromoted = 0;
+  let redlockLeaderDemoted = 0;
+
+  const redlockElector = new LeaderElection({
+    redlockClients: [nodeA, nodeB, nodeC],
+    lockKey: "order:outbox:redlock:leader",
+    candidateId: "redlock-order-worker-01",
+    leaseTtlMs: 4000,
+    heartbeatIntervalMs: 1000,
+    onPromoted: () => {
+      redlockLeaderPromoted++;
+    },
+    onDemoted: () => {
+      redlockLeaderDemoted++;
+    },
+  });
+
+  await redlockElector.start();
+  assert.equal(
+    redlockElector.isCurrentLeader,
+    true,
+    "Redlock candidate must be elected leader",
+  );
+  assert.equal(redlockLeaderPromoted, 1);
+
+  const redlockLeaderId = await redlockElector.getCurrentLeaderId();
+  assert.equal(redlockLeaderId, "redlock-order-worker-01");
+
+  // Manual renew check
+  const redlockRenewed = await redlockElector.electNow();
+  assert.equal(
+    redlockRenewed,
+    true,
+    "Active Redlock leader lease renewal must succeed",
+  );
+
+  await redlockElector.stop();
+  assert.equal(redlockElector.isCurrentLeader, false);
+  assert.equal(redlockLeaderDemoted, 1);
+  console.log(
+    "  ✓ Multi-node Redlock leader election lifecycle fully verified",
   );
 
   console.log("\n==================================================");

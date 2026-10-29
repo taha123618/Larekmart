@@ -301,7 +301,7 @@ Emitted after an order is persisted. Note `amount` is in the smallest currency u
 }
 ```
 
-- Producer: `apps/order-service/src/outbox/outbox-relay.ts` (Transactional Outbox relay with atomic MongoDB transactions & background lease-locked sweeper)
+- Producer: `apps/order-service/src/outbox/outbox-relay.ts` (Transactional Outbox relay with atomic MongoDB transactions & Redis Distributed Leader Election sweeper cluster isolation)
 - Consumers:
   - `apps/email-service/src/index.ts` → order confirmation email (`amount / 100`).
   - `apps/recommendation-service/app/messaging/consumers/event_consumer.py` → behavioral order interaction.
