@@ -46,6 +46,8 @@ spec:
               value: "8001"
             - name: HOST
               value: "0.0.0.0"
+            - name: MONGO_URL
+              value: "$(MONGODB_URI)"
           resources:
             requests:
               cpu: 100m

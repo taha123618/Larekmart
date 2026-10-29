@@ -46,6 +46,8 @@ spec:
               value: "8010"
             - name: DATABASE_URL
               value: "postgresql://postgres:$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/catalog_db?schema=public"
+            - name: DATABASE_READ_REPLICA_URL
+              value: "postgresql://postgres:$(POSTGRES_READ_REPLICA_PASSWORD)@$(POSTGRES_READ_REPLICA_HOST):$(POSTGRES_PORT)/catalog_db?schema=public"
           resources:
             requests:
               cpu: 100m

@@ -75,8 +75,9 @@ export interface OrderDBConnectionOptions {
 export const connectOrderDB = async (options?: OrderDBConnectionOptions) => {
   if (isConnected) return;
 
-  if (!process.env.MONGO_URL) {
-    throw new Error("MONGO_URL is not defined in env file!");
+  const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI;
+  if (!mongoUrl) {
+    throw new Error("MONGO_URL (or MONGODB_URI) is not defined in env file!");
   }
 
   const connectOptions: mongoose.ConnectOptions = {
@@ -92,7 +93,7 @@ export const connectOrderDB = async (options?: OrderDBConnectionOptions) => {
   };
 
   try {
-    await mongoose.connect(process.env.MONGO_URL, connectOptions);
+    await mongoose.connect(mongoUrl, connectOptions);
     isConnected = true;
     console.log("Connected to MongoDB database successfully");
 

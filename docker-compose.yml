@@ -104,7 +104,9 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - larekmart-network
+      larekmart-network:
+        aliases:
+          - postgres-replica
 
   pgbouncer:
     build:
