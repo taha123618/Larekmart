@@ -48,3 +48,97 @@
 - **Encryption in Transit**: All external API traffic requires TLS 1.3; database connections use SSL in production.
 - **Encryption at Rest**: PostgreSQL tables and MongoDB collections use AES-256 transparent data encryption (TDE).
 - **Sanitization in Logs**: No raw auth tokens, secret keys, or credit card numbers are logged to stdout/stderr.
+
+---
+
+## 5. PostgreSQL Read-Replicas & PgBouncer Connection Topology
+
+To sustain high read-to-write ratios during flash sales without saturating the primary transactional database, Larekmart separates operational write traffic from read projections:
+
+```
+[Storefront Browsing / Read Projections]          [Kafka Projectors / Catalog Writers]
+                  │                                                 │
+                  ▼                                                 ▼
+       `catalog-service (readPrisma)`                    `catalog-service (prisma)`
+                  │                                                 │
+                  ▼                                                 ▼
+      [PgBouncer: catalog_db_replica]                    [PgBouncer: catalog_db]
+          (host=postgres-replica)                           (host=postgres)
+                  │                                                 │
+                  ▼                                                 ▼
+     [PostgreSQL Read Replica (Hot Standby)] ◀───(WAL Stream)─── [PostgreSQL Primary Writer]
+```
+
+### Read-Write Client Separation (`@repo/catalog-db`)
+
+- **`readPrisma`**: Connected to `DATABASE_READ_REPLICA_URL` (or PgBouncer `catalog_db_replica` pool on port 6432). Used exclusively by storefront browsing repositories:
+  - `catalog.repository.ts` (`findById`, `findMany`, search, filters, pagination)
+  - `category.repository.ts` (category trees and slugs)
+  - `brand.repository.ts` (brand catalogs)
+  - `collection.repository.ts` (curated storefront collections)
+- **`prisma`**: Connected to `DATABASE_URL` (primary writer pool `catalog_db`). Used exclusively by asynchronous Kafka projection consumers (`product-projector.ts`, `category-projector.ts`, `collection-projector.ts`) to persist updates from the write plane.
+- **Fail-Open Fallback**: If `DATABASE_READ_REPLICA_URL` is unset, `readPrisma` seamlessly falls back to the primary `prisma` instance with zero configuration changes.
+
+---
+
+## 6. MongoDB Orders Horizontal Sharding & Storage I/O Rules
+
+To prevent single-instance storage I/O and RAM bottlenecks as order history expands, `apps/order-service` implements native horizontal collection sharding:
+
+```
+                                [Fastify Order Service Array]
+                                              │
+                                              ▼ (readPreference=secondaryPreferred)
+                                       [mongos Router]
+                                       (Port: 27017)
+                                              │
+                      ┌───────────────────────┼───────────────────────┐
+                      ▼                       ▼                       ▼
+               [Shard Cluster 1]       [Shard Cluster 2]       [Shard Cluster 3]
+               Chunks: Hash 0..33%     Chunks: Hash 34..66%    Chunks: Hash 67..100%
+```
+
+### 1. Hashed Shard Key: `{ userId: "hashed" }`
+
+- **Uniform Distribution**: Order documents are partitioned using a 64-bit MD5-hashed index on `userId`. This ensures incoming writes during flash sales are uniformly spread across all shard nodes rather than creating monotonic insertion bottlenecks (which occur when sharding on monotonically increasing timestamps or ObjectIds).
+- **Targeted Single-Shard Routing**: Customer order history queries (`GET /user-orders`) supply `userId`, enabling the `mongos` router to route queries directly to the specific shard containing that user's chunks—bypassing cross-shard broadcast overhead.
+
+### 2. Scatter-Gather Query Mitigation
+
+Queries that do not contain `userId` naturally broadcast across all shards. To ensure these operations remain sub-millisecond, targeted compound indexes are maintained:
+
+- **Marketplace Seller Queries (`GET /seller-orders`)**:
+  - `OrderSchema.index({ sellerId: 1, createdAt: -1 }, { sparse: true })`
+  - `OrderSchema.index({ "products.sellerId": 1, createdAt: -1 }, { sparse: true })`
+- **Checkout Saga Timeout Sweeper**:
+  - `OrderSchema.index({ status: 1, createdAt: -1 })`
+- **Stripe Webhook Idempotency**:
+  - `OrderSchema.index({ paymentSessionId: 1 }, { sparse: true })`
+
+### 3. Connection Pool Configuration
+
+- `maxPoolSize`: 100 concurrent sockets per container replica.
+- `minPoolSize`: 10 pre-warmed sockets to eliminate cold-start handshake latency.
+- `readPreference`: `secondaryPreferred` to offload analytical and read-heavy queries from primary shard nodes.
+- **Graceful Fallback**: `ensureOrderCollectionSharded()` probes `isMaster.msg === "isdbgrid"` to automatically shard collections when running on a sharded cluster, and degrades gracefully in local single-node development environments.
+
+---
+
+## 7. Redis Cluster Sharding & Distributed Concurrency Guardrails
+
+### 1. Deterministic Hash Tag Structural Convention
+
+Multi-key Lua scripts executed on Redis Cluster require all evaluated keys to hash to the exact same hash slot (0 to 16,383) to avoid `CROSSSLOT` exceptions. Larekmart enforces a multi-tenant hash tag pattern:
+
+$$\text{Key Pattern: } \texttt{stock:available:\{tenant\_id:warehouse\_id\}:productId:variantId}$$
+
+Example: `stock:available:{pk_khi_01}:prod_9981:var_002`  
+Redis evaluates the CRC16 slot solely on `{pk_khi_01}`, pinning all inventory operations for that distribution center to a single shard.
+
+### 2. Distributed Leader Election & Worker Isolation
+
+Background maintenance routines (outbox sweepers, saga timeout workers, cart reap routines, inventory reservation sweepers) utilize `DistributedLeaderElector` and `withClusterLock`:
+
+- **Leader Lease Heartbeats**: Active leader renews its lease every 3,000ms (10,000ms TTL).
+- **Standby Follower Replicas**: Standby containers remain in hot standby mode with zero database cursor overhead and zero duplicate Kafka dispatches.
+- **Automated Failover**: Standby replicas detect vacancy within 2,000ms upon leader termination and promote themselves seamlessly.

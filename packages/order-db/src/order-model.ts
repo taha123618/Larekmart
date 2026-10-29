@@ -92,13 +92,19 @@ const OrderSchema = new Schema(
 );
 
 // Indexes covering the order-service read and horizontal sharding paths:
-// - `{ userId: 1 }`              -> GET /user-orders single-user equality lookup
-// - `{ createdAt: -1 }`          -> GET /orders (recent first) and monthly /order-chart date-range aggregation
-// - `{ userId: "hashed" }`       -> MongoDB horizontal sharding key (distributes write I/O across cluster shards)
-// - `{ userId: 1, createdAt: -1 }` -> Compound index covering user order history sorted by time
-OrderSchema.index({ createdAt: -1 });
+// - `{ userId: "hashed" }`         -> MongoDB horizontal sharding key (distributes write I/O across cluster shards)
+// - `{ userId: 1, createdAt: -1 }`   -> Compound index covering user order history sorted by time (single-shard targeted)
+// - `{ createdAt: -1 }`            -> Timeline sorting and date-range metrics aggregation
+// - `{ paymentSessionId: 1 }`      -> Idempotent lookup for Stripe webhook processing
+// - `{ sellerId: 1, createdAt: -1 }` -> Targeted seller order query index (mitigates cross-shard scatter-gather)
+// - `{ "products.sellerId": 1, createdAt: -1 }` -> Targeted multitenant product line-item queries across shards
+// - `{ status: 1, createdAt: -1 }` -> Saga confirmation timeout sweeper index
 OrderSchema.index({ userId: "hashed" });
 OrderSchema.index({ userId: 1, createdAt: -1 });
+OrderSchema.index({ createdAt: -1 });
+OrderSchema.index({ sellerId: 1, createdAt: -1 }, { sparse: true });
+OrderSchema.index({ "products.sellerId": 1, createdAt: -1 }, { sparse: true });
+OrderSchema.index({ status: 1, createdAt: -1 });
 
 export type OrderSchemaType = InferSchemaType<typeof OrderSchema>;
 

@@ -43,6 +43,39 @@ async function runMongoDBShardingTests() {
   );
   console.log("  ✓ Timeline index { createdAt: -1 } verified");
 
+  const hasSellerIndex = indexes.some(([fields]) => {
+    const f = fields as Record<string, unknown>;
+    return f.sellerId === 1 && f.createdAt === -1;
+  });
+  assert.equal(
+    hasSellerIndex,
+    true,
+    "Expected OrderSchema to define scatter-gather mitigation index { sellerId: 1, createdAt: -1 }",
+  );
+  console.log("  ✓ Scatter-gather mitigation index { sellerId: 1, createdAt: -1 } verified");
+
+  const hasProductSellerIndex = indexes.some(([fields]) => {
+    const f = fields as Record<string, unknown>;
+    return f["products.sellerId"] === 1 && f.createdAt === -1;
+  });
+  assert.equal(
+    hasProductSellerIndex,
+    true,
+    "Expected OrderSchema to define multitenant line-item index { 'products.sellerId': 1, createdAt: -1 }",
+  );
+  console.log("  ✓ Multitenant line-item index { 'products.sellerId': 1, createdAt: -1 } verified");
+
+  const hasStatusIndex = indexes.some(([fields]) => {
+    const f = fields as Record<string, unknown>;
+    return f.status === 1 && f.createdAt === -1;
+  });
+  assert.equal(
+    hasStatusIndex,
+    true,
+    "Expected OrderSchema to define saga sweeper index { status: 1, createdAt: -1 }",
+  );
+  console.log("  ✓ Saga sweeper index { status: 1, createdAt: -1 } verified");
+
   // 2. Validate ensureOrderCollectionSharded standalone detection & graceful handling
   console.log("\n2. Testing ensureOrderCollectionSharded runtime behavior...");
   const shardingResult = await ensureOrderCollectionSharded();
