@@ -55,3 +55,5 @@ export const createProducer = (kafka: Kafka) => {
 
   return { connect, send, disconnect };
 };
+
+export type KafkaProducer = ReturnType<typeof createProducer>;

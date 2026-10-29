@@ -420,17 +420,73 @@ async function testHealthAndMetrics() {
   console.log("  ✓ metrics endpoint returns prometheus format\n");
 }
 
+// ─── Test: Outbox Cluster Sweeper Leader Lease ─────────────────────────────
+import {
+  processOutboxBatch,
+  OUTBOX_CLUSTER_LEADER_KEY,
+} from "../src/workers/outbox.worker.js";
+import { acquireClusterLock } from "@repo/redis";
+import { redis } from "../src/utils/redis.js";
+
+async function testOutboxClusterIsolation() {
+  console.log("5. Transactional Outbox Cluster Isolation & Leader Lease ...");
+
+  const workerPod1 = "return-pod-1:1001:aaa";
+  const workerPod2 = "return-pod-2:2002:bbb";
+
+  // Simulate pod 1 holding the active cluster leader lease
+  const acquired = await acquireClusterLock(
+    redis.client,
+    OUTBOX_CLUSTER_LEADER_KEY,
+    workerPod1,
+    { ttlMs: 5000 },
+  );
+  assert.equal(acquired, true, "Worker pod 1 must acquire cluster leader lease");
+
+  // Mock producer that tracks dispatches
+  let publishedCount = 0;
+  const mockProducer = {
+    send: async () => {
+      publishedCount++;
+    },
+  } as any;
+
+  // Worker pod 2 attempts to sweep while pod 1 holds the lease
+  const pod2Processed = await processOutboxBatch(workerPod2, mockProducer);
+  assert.equal(
+    pod2Processed,
+    0,
+    "Worker pod 2 must be blocked while pod 1 holds cluster leader lease",
+  );
+  assert.equal(
+    publishedCount,
+    0,
+    "Zero messages should be dispatched by contending pod 2",
+  );
+  console.log("  ✓ contending replica 2 blocked from concurrent outbox sweep");
+
+  // Release pod 1 lock
+  const { releaseClusterLock } = await import("@repo/redis");
+  await releaseClusterLock(redis.client, OUTBOX_CLUSTER_LEADER_KEY, workerPod1);
+  console.log("  ✓ cluster leader lease cleanly released\n");
+}
+
 // ─── Runner ───────────────────────────────────────────────────────────────────
 async function run() {
   console.log("=== return-service test suite ===\n");
-  await testProration();
-  await testStateMachine();
-  await testSchemas();
-  await testHealthAndMetrics();
-  await testSecurityAndIdorEnforcement();
-  console.log("==========================================");
-  console.log(" All return-service tests passed! ✓");
-  console.log("==========================================");
+  try {
+    await testProration();
+    await testStateMachine();
+    await testSchemas();
+    await testHealthAndMetrics();
+    await testSecurityAndIdorEnforcement();
+    await testOutboxClusterIsolation();
+    console.log("==========================================");
+    console.log(" All return-service tests passed! ✓");
+    console.log("==========================================");
+  } finally {
+    await redis.close();
+  }
 }
 
 run().catch((err) => {

@@ -224,6 +224,8 @@ export const returnOutbox = mysqlTable("return_outbox", {
   status: varchar("status", { length: 32 }).notNull().default("PENDING"),
   retryCount: int("retry_count").notNull().default(0),
   lastError: text("last_error"),
+  lockedBy: varchar("locked_by", { length: 128 }),
+  lockedUntil: timestamp("locked_until"),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
