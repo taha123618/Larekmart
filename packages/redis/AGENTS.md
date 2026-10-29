@@ -65,7 +65,8 @@ Scope rules for AI coding agents working in this package.
 ## 7. Verification
 
 ```bash
-pnpm --filter @repo/redis check-types
+pnpm --filter @repo/redis test          # Offline unit tests (sharding, Redlock, leader election)
+pnpm --filter @repo/redis check-types   # Typecheck
 pnpm --filter @repo/redis verify:redis   # needs a running Redis (see §6)
 ```
 

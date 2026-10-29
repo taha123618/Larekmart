@@ -65,3 +65,4 @@ Under simulated failure injection, the checkout Saga orchestrator enforces:
 - [x] API Gateway Chaos Guardrails unit and integration tests pass 100% (`apps/api-gateway/tests/resilience/chaos-guardrails.test.ts`).
 - [x] Order Service Multi-DB Saga Chaos Resilience suite passes 100% (`apps/order-service/tests/chaos-saga-resilience.test.ts`).
 - [x] Full monorepo TypeScript compilation passes with zero type errors (`pnpm check-types`).
+

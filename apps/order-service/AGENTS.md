@@ -35,10 +35,13 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 
 - Mongoose via `@repo/order-db`. Use `Order`, `OrderStatus`, `OrderSchemaType`, `OutboxEvent`,
   and `connectOrderDB` as the public surface.
+- Horizontal Sharding & Indexes: `Order` collection enforces horizontal hashed sharding on `{ userId: "hashed" }`.
+  Multi-seller queries and saga status queries are protected by compound scatter-gather mitigation indexes
+  (`{ sellerId: 1, createdAt: -1 }`, `{ "products.sellerId": 1, createdAt: -1 }`, and `{ status: 1, createdAt: -1 }`).
 - Outbox collection (`OutboxEvent`) records all lifecycle events inside atomic MongoDB transactions
   alongside `Order` document changes to guarantee zero event loss (Transactional Outbox pattern).
 - Do not create ad-hoc Mongo clients or bypass the shared model.
-- Order statuses: `success | failed` in the existing model.
+- Order statuses: `pending_confirmation | confirmed | success | failed | cancelled` in the model.
 
 ## Caching
 
@@ -106,5 +109,5 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 ## Verification
 
 - `pnpm --filter order-service check-types`
-- `pnpm --filter order-service test` (runs `order-security`, `checkout-saga`, `transactional-outbox`, and `idempotency` test suites)
+- `pnpm --filter order-service test` (runs `order-security`, `checkout-saga`, `transactional-outbox`, `sharding`, `idempotency`, and `chaos-saga-resilience` test suites)
 - Manual flows against running MongoDB + Kafka.

@@ -200,12 +200,16 @@ Prisma does not support automatic down migrations in `db:deploy` to protect data
 Before signing off on any production release:
 
 - [ ] `pnpm format:check` and `pnpm lint` pass cleanly.
-- [ ] `pnpm check-types` completes without errors across all 30 monorepo projects.
-- [ ] All 9 workspace test suites pass (`pnpm test`).
-- [ ] Go notification service tests pass with `-race` flag.
-- [ ] Python recommendation service passes `ruff`, `mypy`, and `pytest`.
-- [ ] All 18 container images successfully built and scanned by Trivy without CRITICAL CVEs.
-- [ ] Staging synthetic traffic test (`scripts/verify-staging-traffic.sh`) passes with 100% routes healthy.
+- [ ] `pnpm check-types` completes without errors across all 42 monorepo packages.
+- [ ] All 27 workspace test suites pass (`pnpm test`).
+- [ ] Go notification service tests pass with `-race` flag (`go test -race ./...`).
+- [ ] Python recommendation service passes `uv run pytest tests/ -q` (34/34 passing).
+- [ ] All container images successfully built and scanned by Trivy without CRITICAL CVEs.
+- [ ] Kubernetes manifests validate with `kubectl kustomize infrastructure/kubernetes/overlays/production`.
+- [ ] Declarative Chaos Mesh manifests validate with `kubectl kustomize infrastructure/chaos/`.
+- [ ] Horizontal Pod Autoscalers (HPA v2) active for `api-gateway` (3-30 pods), `order-service` (3-25 pods), and `inventory-service` (3-30 pods).
+- [ ] Pod Disruption Budgets (PDBs) verified across core services (`minAvailable: 1-2`).
 - [ ] Production environment approval granted by authorized reviewer.
-- [ ] Zero-downtime rolling update completed across all 17 Kubernetes workloads.
+- [ ] Zero-downtime rolling update completed across all 26 Kubernetes workloads.
 - [ ] Production health check endpoints return HTTP 200.
+

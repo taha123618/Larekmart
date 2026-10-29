@@ -9,7 +9,9 @@ by `order-service` and takes type dependencies from `@repo/types`.
 
 ## Public API
 
-- `Order` model.
+- `Order` model (with horizontal hashed sharding on `{ userId: "hashed" }` and scatter-gather mitigation indexes).
+- `OutboxEvent` model (transactional outbox with 7-day TTL and `lockedUntil` lease fencing).
+- `createOutboxEvent` helper.
 - `OrderStatus`, `OrderSchemaType`.
 - `connectOrderDB` connection helper.
 - `syncOrderIndexes` — reconciles MongoDB's indexes with the schemas.

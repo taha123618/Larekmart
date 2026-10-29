@@ -6,12 +6,13 @@
 
 It handles cross-cutting concerns:
 
-- Reverse proxying to 20 backend microservices via `@fastify/http-proxy`
+- Reverse proxying to 23 backend microservices via `@fastify/http-proxy`
 - Centralized CORS and defensive security headers (`@fastify/cors`, `@fastify/helmet`)
 - Request correlation (`x-request-id`) and untrusted client header stripping (`x-user-id`, `x-user-role`, `x-user-is-super-admin`, `x-user-is-seller`, `x-user-can-manage-sellers`, `x-internal-secret`)
 - Clerk JWT authentication and session claim extraction (`@clerk/fastify`)
 - Internal trusted header injection (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-is-super-admin`, `x-user-can-manage-sellers`) executed strictly _after_ stripping untrusted headers
-- Distributed rate limiting with Redis fallback (`@fastify/rate-limit`)
+- Distributed rate limiting with Redis fallback (`@fastify/rate-limit`) and dynamic adaptive rate-limiting clamping under downstream circuit breaker degradation
+- In-flight concurrency bulkheads (`InFlightBulkhead`, 50 healthy / 5 degraded max concurrent requests) shedding saturated traffic with HTTP 503 + `Retry-After: 15`
 - In-flight request coalescing (`SingleFlightGroup`) protecting against Thundering Herd and Cache Stampedes on high-velocity read/aggregation endpoints
 - Unified error formatting, circuit breakers, and upstream timeout handling
 - Prometheus telemetry & structured JSON logging (`@repo/monitoring`)
@@ -57,5 +58,6 @@ Port: **8090** (standalone / Docker; 8080 reserved for Kafka UI)
 ```bash
 pnpm --filter api-gateway dev           # Start development server with tsx
 pnpm --filter api-gateway check-types   # Typecheck
+pnpm --filter api-gateway test          # Unit, auth, resilience, security & integration tests
 pnpm --filter api-gateway build         # Production build
 ```

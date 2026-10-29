@@ -60,11 +60,6 @@ Current helper surface is intentionally small. Expose helpers, not raw clients.
 ## Verification
 
 ```bash
-pnpm --filter @repo/kafka check-types
-pnpm --filter @repo/kafka test
+pnpm --filter @repo/kafka test          # Unit tests (DLQ routing, poison pills, retry backoff)
+pnpm --filter @repo/kafka check-types   # Type check
 ```
-
-- `pnpm --filter @repo/kafka check-types`
-- Start local Kafka and run a producer/consumer against it; inspect topics in Kafka UI
-  at `:8080`.
-- No general JavaScript test runner exists yet; verify the wrapper with type-checking and a local Kafka producer/consumer flow.

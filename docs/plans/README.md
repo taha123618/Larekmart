@@ -18,8 +18,7 @@ This directory contains the authoritative architectural specifications, executio
 | **[Distributed Mutation Idempotency Key Engine](file:///Users/taha/projects/microservices-ecommerce/docs/plans/distributed-mutation-idempotency-key.md)**                         | `packages/redis`, `apps/order-service`, `apps/payment-service` | IETF-standard `Idempotency-Key` engine; Redis atomic lease locking (`SET NX PX`); 409 Conflict on in-flight duplicates; transparent `Idempotent-Replayed: true` caching.                         |
 | **[Chaos Engineering & Rate Limiting Guardrails](file:///Users/taha/projects/microservices-ecommerce/docs/plans/chaos-engineering-and-rate-limiting-guardrails.md)**             | `infrastructure/chaos`, `apps/api-gateway`, `apps/order-service` | Declarative Chaos Mesh CRDs (MySQL delay, Mongo partition, Kafka pod-kill), API Gateway in-flight concurrency bulkheads, and automated multi-DB Saga rollback verification.                      |
 | **[Hyperscale Data Strategy: Sharding & Replicas](file:///Users/taha/projects/microservices-ecommerce/docs/DATA-STRATEGY.md)**                                                   | `@repo/catalog-db`, `@repo/order-db`, `order-service`           | PostgreSQL read-replica projections via PgBouncer replica pools, MongoDB orders hashed sharding (`{ userId: "hashed" }`), scatter-gather mitigation indexes, and Redis cluster slot pinning.      |
-| **[Deep Architecture Analysis & Testing Report](file:///Users/taha/projects/microservices-ecommerce/docs/plans/deep-architecture-analysis-and-testing-report.md)**                | Monorepo-Wide (39 Workspaces)                                  | Complete system topology, dual-ACK sequence diagrams, and service-by-service test matrix (27/27 test suites passing, 0 TypeScript errors).                                                       |
-
+| **[Deep Architecture Analysis & Testing Report](file:///Users/taha/projects/microservices-ecommerce/docs/plans/deep-architecture-analysis-and-testing-report.md)**                | Monorepo-Wide (42 Workspaces)                                  | Complete system topology, dual-ACK sequence diagrams, and service-by-service test matrix (27/27 test suites passing, 0 TypeScript errors).                                                       |
 
 ---
 
@@ -27,6 +26,8 @@ This directory contains the authoritative architectural specifications, executio
 
 1. **Strictly Asynchronous Inter-Service Communication**: No backend service may perform synchronous HTTP calls to another backend service. All communication flows through `@repo/kafka`.
 2. **Zero Event Loss (Transactional Outbox)**: State changes and domain events must be committed atomically within the same database transaction.
-3. **Poison-Pill Isolation**: Malformed payloads or deterministic schema decode errors must fast-fail directly to `<topic>.dlq` without blocking consumer partitions.
-4. **Idempotency & Replayability**: All state-mutating endpoints (`POST`, `PUT`, `DELETE`) must respect `Idempotency-Key` headers and prevent duplicate database mutations upon network retries.
-5. **Thundering Herd Shielding**: High-velocity read routes and cache misses must use SingleFlight promise coalescing before dispatching upstream network requests.
+3. **Distributed Leader Election & Worker Fencing**: Clustered background sweepers and reapers must acquire single-leader consensus via `@repo/redis` to eliminate redundant cursor scans and duplicate Kafka dispatches.
+4. **Poison-Pill Isolation**: Malformed payloads or deterministic schema decode errors must fast-fail directly to `<topic>.dlq` without blocking consumer partitions.
+5. **Idempotency & Replayability**: All state-mutating endpoints (`POST`, `PUT`, `DELETE`) must respect `Idempotency-Key` headers and prevent duplicate database mutations upon network retries.
+6. **Thundering Herd Shielding**: High-velocity read routes and cache misses must use SingleFlight promise coalescing before dispatching upstream network requests.
+7. **Continuous Chaos Resilience**: Hyperscale consistency guarantees are continuously validated through automated failure simulation (Chaos Mesh CRDs in `infrastructure/chaos/`).

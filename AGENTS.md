@@ -148,7 +148,21 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 - **Thundering-Herd Protection (`SingleFlight`).** High-velocity read aggregation routes
   and cache misses must coalesce in-flight promises via `SingleFlightGroup` before querying
   downstream microservices or databases.
+- **Distributed Leader Election & Worker Concurrency Isolation.** Background sweepers across
+  horizontally scaled microservice pods must acquire single-leader ownership via `DistributedLeaderElector`
+  or `withClusterLock` over `@repo/redis` to prevent duplicate Kafka dispatches and redundant
+  database cursor scans.
+- **Hyperscale Sharding & Read-Replicas.** Projections with high read-to-write ratios (e.g. `catalog-service`)
+  route storefront queries to read-replicas (`readPrisma` via PgBouncer port 6432) while write-plane
+  transactions persist to primary (`prisma`). High-volume MongoDB collections enforce horizontal
+  hashed sharding (`{ userId: "hashed" }`) with compound scatter-gather mitigation indexes for seller
+  and saga queries. Redis keys enforce `{tenant_id:warehouse_id}` multi-tenant hash tag CRC16 slot pinning.
+- **Chaos Engineering & In-Flight Concurrency Bulkheads.** Transactional endpoints (`/checkout`, `/payments`)
+  must enforce in-flight concurrency bulkheads and adaptive rate-limiting clamping at the API gateway
+  when downstream circuit breakers report degraded health. Multi-database Saga rollbacks must be
+  systematically verified with Chaos Mesh failure injections (`infrastructure/chaos`).
 - **Poison-Pill & DLQ Isolation.** Consumer loops must rely on `@repo/kafka` DLQ routing
+
   so malformed payloads (`SyntaxError`, `ZodError`) fast-fail to `<topic>.dlq` without stalling
   partition consumption.
 - **Match existing conventions** before introducing new libraries. Check whether the
@@ -213,8 +227,9 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
   Follow the extension style of the file you are editing.
 - **Type-check before you finish.** Run `pnpm check-types` (or the workspace filter)
   and `pnpm build` for changes that affect a Next.js app or payment-service.
-- **Testing strategy.** Twenty-six workspaces ship real test suites run by `pnpm test`
-  (Turborepo): `@repo/types`, `@repo/kafka`, `api-gateway`, `product-service`, `payment-service`, `auth-service`, `analytic-service`, `search-service`, `inventory-service`, `catalog-service`, `email-service`, `user-service`, `cart-service`, `shipping-service`,
+- **Testing strategy.** Twenty-seven workspaces ship real test suites run by `pnpm test`
+  (Turborepo): `@repo/types`, `@repo/kafka`, `@repo/redis`, `api-gateway`, `product-service`, `payment-service`, `auth-service`, `analytic-service`, `search-service`, `inventory-service`, `catalog-service`, `email-service`, `user-service`, `cart-service`, `shipping-service`,
+
   `order-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, and `seller-service` use standalone tsx-run test files under
   `tests/` (follow the file's internal runner convention, e.g.
   `product-service/tests/product-service.test.ts`); `notification-service` uses `go test ./...`;

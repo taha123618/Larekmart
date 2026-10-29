@@ -6,13 +6,13 @@ Read-optimized product discovery, merchandising, and storefront browsing microse
 
 `catalog-service` owns the CQRS **read models** for the storefront. It consumes `product.*`, `category.*`, and `inventory.*` Kafka events from upstream services and denormalizes them into fast, pre-computed product card read models stored in PostgreSQL. All storefront browsing queries go through this service (backed by Redis caching) rather than hitting `product-service` directly.
 
-| Property  | Value                                          |
-| --------- | ---------------------------------------------- |
-| Port      | `8010`                                         |
-| Runtime   | Fastify 5 + TypeScript                         |
-| Database  | PostgreSQL (`@repo/catalog-db`, Prisma)        |
-| Cache     | Redis (`catalog:v1:` prefix via `@repo/redis`) |
-| Messaging | Kafka (`@repo/kafka`)                          |
+| Property  | Value                                                                             |
+| --------- | --------------------------------------------------------------------------------- |
+| Port      | `8010`                                                                            |
+| Runtime   | Fastify 5 + TypeScript                                                            |
+| Database  | PostgreSQL (`@repo/catalog-db`, `readPrisma` for read-replicas, `prisma` for writes)|
+| Cache     | Redis (`catalog:v1:` prefix via `@repo/redis`)                                    |
+| Messaging | Kafka (`@repo/kafka`)                                                             |
 
 ## Architecture Boundary
 
@@ -68,7 +68,8 @@ All routes are prefixed with `/api/v1/catalog`.
 | `PORT`                      | `8010`                   | HTTP port                    |
 | `HOST`                      | `0.0.0.0`                | Bind address                 |
 | `NODE_ENV`                  | `development`            | Environment                  |
-| `DATABASE_URL`              | —                        | PostgreSQL connection string |
+| `DATABASE_URL`              | —                        | PostgreSQL primary write connection string |
+| `DATABASE_READ_REPLICA_URL` | —                        | PostgreSQL read-replica connection string (or PgBouncer port 6432; falls back to `DATABASE_URL`) |
 | `REDIS_URL`                 | `redis://localhost:6379` | Redis connection string      |
 | `REDIS_KEY_PREFIX`          | `catalog:v1:`            | Redis key namespace          |
 | `KAFKA_BROKERS`             | `localhost:9092`         | Kafka broker addresses       |

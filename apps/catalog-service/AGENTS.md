@@ -156,6 +156,7 @@ This handles consumer restarts and redelivered messages safely.
 ## 7. Rules
 
 - **Projectors are idempotent** — use `ProcessedEvent` table to deduplicate by `eventId`.
+- **Read-Replica Routing** — Storefront discovery queries (in `repositories/`) query via `readPrisma` from `@repo/catalog-db` targeting read replicas (or PgBouncer port 6432), offloading the primary PostgreSQL database. Kafka event projectors write to the primary database via `prisma`.
 - **Never import from another app** — all communication is via Kafka or HTTP (from frontends).
 - **Cache keys follow** `catalog:v1:<type>:<id>` pattern via `CatalogCacheKeys` in `src/cache/catalog-cache.ts`.
 - **Do NOT run migrations here** — run `pnpm --filter @repo/catalog-db db:migrate` from root.

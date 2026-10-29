@@ -464,7 +464,11 @@ kubectl get pods,svc,hpa,ingress -n larekmart-dev
 | ------------- | ------------------- | ---------- | ------------- |
 | `development` | `larekmart-dev`     | 1          | `:dev`        |
 | `staging`     | `larekmart-staging` | 2          | `:staging`    |
-| `production`  | `larekmart`         | 2–10 (HPA) | Immutable SHA |
+| `production`  | `larekmart`         | 2–30 (HPA) | Immutable SHA |
+
+### Chaos Engineering Simulations (Chaos Mesh)
+
+See `infrastructure/chaos/README.md` for failure simulation manifests (tax MySQL latency, MongoDB network partitions, Kafka broker termination, and serial flash-sale workflow).
 
 ---
 

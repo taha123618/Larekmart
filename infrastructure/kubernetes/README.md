@@ -12,7 +12,7 @@ infrastructure/kubernetes/
 │   ├── secrets/                   # Template secret references
 │   ├── ingress.yaml               # SSL-terminated Ingress with CORS & WebSocket support
 │   ├── frontends/                 # Storefront & Admin dashboard
-│   ├── services/                  # 19 microservices deployments & services (including promotion-service, tax-service, return-service & pricing-service)
+│   ├── services/                  # 23 microservices deployments & services (26 total workloads)
 │   ├── workers/                   # Headless Kafka consumers (email-service)
 │   ├── autoscaling/               # Horizontal Pod Autoscalers (HPA)
 │   ├── pdb/                       # Pod Disruption Budgets (minAvailable: 1)
@@ -76,11 +76,13 @@ kubectl apply -k infrastructure/kubernetes/overlays/production
 1. **Zero-Downtime Deployments**:
    - Every Deployment uses `RollingUpdate` with `maxSurge: 25%` and `maxUnavailable: 0`.
    - Liveness, Readiness, and Startup probes prevent traffic from reaching pods until they are ready to accept requests.
-2. **High Availability**:
+2. **High Availability & Pod Disruption Budgets (PDB)**:
    - Deployments default to 2+ replicas across worker nodes.
-   - `PodDisruptionBudget` guarantees at least 1 replica remains active during node upgrades or draining.
-3. **Autoscaling (HPA)**:
-   - High-throughput services (`client`, `catalog-service`, `search-service`, `cart-service`, `order-service`) scale dynamically up to 10 replicas when CPU exceeds 70% or Memory exceeds 80%.
+   - `PodDisruptionBudget` guarantees high availability during node drain or cluster upgrades (`api-gateway-pdb` with `minAvailable: 2`, `inventory-service-pdb` with `minAvailable: 1`).
+3. **Hyperscale Autoscaling (HPA)**:
+   - Critical path services scale dynamically under peak load: `api-gateway` (3–30 pods), `inventory-service` (3–30 pods), `order-service` (3–25 pods), and `client`/`catalog-service`/`search-service` (2–10 pods) when CPU exceeds 70% or Memory exceeds 80%.
+4. **Chaos Engineering & Resilience**:
+   - Resilience against pod evictions, database partitions, and broker failures is continuously validated using declarative Chaos Mesh CRDs (`infrastructure/chaos/`).
 4. **Zero-Trust Network Isolation**:
    - `default-deny-all` blocks arbitrary pod-to-pod communication.
    - Only the Ingress controller and authorized services can communicate on designated ports. Direct service-to-service HTTP is blocked, upholding the asynchronous Kafka architecture.

@@ -2,25 +2,36 @@
 
 Shared Redis infrastructure for Larekmart services. The package owns connection
 creation, service key namespaces, typed cache helpers, namespace-versioned
-invalidation, health probes, and fixed-window rate limiting.
+invalidation, health probes, fixed-window rate limiting, distributed idempotency leases,
+cluster locks, 3-node Redlock consensus, and distributed leader election.
+
+---
 
 ## Public API
 
-- `createRedisService(options)`: service facade containing a namespaced key builder,
-  shared client, `ping()`, and `close()`.
-- `createRedisClient`, `closeRedisClient`, `closeAllRedisClients`: per-URL client
-  lifecycle helpers.
-- `createKeyBuilder(prefix)`: builds keys under a normalized service prefix.
-- `cacheRead`, `cacheSet`, `cacheDel`, `cacheIncr`, `cacheExpire`: best-effort typed
-  cache operations. `cacheRead` distinguishes `hit`, `miss`, and `error`.
-- `bumpNamespaceVersion`, `getNamespaceVersion`: bulk invalidation without scanning
-  or deleting old keys.
-- `checkRateLimit`: fixed-window rate limiting with a guaranteed bucket TTL.
-- `checkRedisConnection` and the `Redis` client type.
+- **Service Facade**:
+  - `createRedisService(options)`: service facade containing a namespaced key builder, shared client, `ping()`, and `close()`.
+  - `createRedisClient`, `closeRedisClient`, `closeAllRedisClients`: per-URL client lifecycle helpers.
+  - `createKeyBuilder(prefix)`: builds keys under a normalized service prefix.
+  - `checkRedisConnection`: health probe returning connectivity status and latency.
+- **Typed Cache Operations**:
+  - `cacheRead`, `cacheSet`, `cacheDel`, `cacheIncr`, `cacheExpire`: best-effort typed cache operations. `cacheRead` distinguishes `hit`, `miss`, and `error`.
+  - `bumpNamespaceVersion`, `getNamespaceVersion`: bulk namespace invalidation without scanning or deleting old keys.
+- **Rate Limiting**:
+  - `checkRateLimit`: fixed-window rate limiting with guaranteed bucket TTL.
+- **Distributed Mutation Idempotency**:
+  - `acquireIdempotencyLock`, `commitIdempotencyResponse`, `releaseIdempotencyLock`: atomic leases enforcing `Idempotency-Key` headers on state mutations with response caching.
+- **Distributed Cluster Locking & Redlock Consensus**:
+  - `acquireClusterLock`, `releaseClusterLock`, `renewClusterLock`, `withClusterLock`: atomic distributed lock wrappers with automatic lease renewal.
+  - `acquireRedlockConsensus`, `releaseRedlockConsensus`, `renewRedlockConsensus`, `withRedlockConsensus`: multi-node majority quorum distributed consensus across independent Redis instances.
+- **Distributed Leader Election**:
+  - `DistributedLeaderElector` / `LeaderElection`: continuous leader coordination with automatic heartbeat renewal and instant standby failover for background singletons (e.g. `order-service` outbox sweeper).
+- **Cluster Sharding & Slot Pinning**:
+  - CRC16 slot hash tagging support (e.g. `{tenant:warehouse}:sku`) ensuring co-located keys map to the same Redis cluster hash slot.
 
-Every service should use `createRedisService` and `redis.keys`; do not import
-`ioredis` directly or hand-write a service prefix. Redis is optional at runtime:
-cache reads fall through to the source of truth when Redis is unavailable.
+Every service should use `createRedisService` and `redis.keys`; do not import `ioredis` directly or hand-write a service prefix. Redis is optional at runtime: cache reads fall through to the source of truth when Redis is unavailable.
+
+---
 
 ## Local Redis
 
@@ -28,19 +39,19 @@ cache reads fall through to the source of truth when Redis is unavailable.
 docker compose -f packages/redis/docker-compose.yml up -d
 ```
 
-The compose file starts Redis 7 on `localhost:6379` without persistence. Cache data
-is disposable and should expire through helper-provided TTLs.
+The compose file starts Redis 7 on `localhost:6379` without persistence. Cache data is disposable and should expire through helper-provided TTLs.
 
-## Integration verification
+---
 
-The opt-in verifier exercises the real server, including key namespacing, TTLs,
-cache outcomes, namespace-version invalidation, rate limiting, and degraded behavior.
-It uses a run-scoped prefix and cleans up its keys.
+## Verification & Testing
 
 ```bash
+# Offline unit test suite (Cluster sharding, CRC16 hashing, Redlock consensus simulation, leader election)
+pnpm --filter @repo/redis test
+
+# Monorepo type check
 pnpm --filter @repo/redis check-types
+
+# Online integration verification (requires active Redis server on localhost:6379)
 pnpm --filter @repo/redis verify:redis
 ```
-
-`verify:redis` requires Redis to be running and exits non-zero on any regression.
-It is intentionally separate from the offline monorepo type-check and build tasks.

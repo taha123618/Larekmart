@@ -95,7 +95,9 @@ apps/api-gateway/
 │   ├── resilience/
 │   │   ├── timeout.ts          # Per-service timeout configurations
 │   │   ├── retry.ts            # Safe idempotent retry policy
-│   │   └── circuit-breaker.ts  # Circuit breaker (CLOSED, OPEN, HALF_OPEN)
+│   │   ├── circuit-breaker.ts  # Circuit breaker (CLOSED, OPEN, HALF_OPEN)
+│   │   ├── singleflight.ts     # Thundering-herd promise coalescing
+│   │   └── in-flight-bulkhead.ts # Dynamic concurrency bulkhead limiter
 │   │
 │   ├── cache/
 │   │   └── redis.ts            # Redis client manager & health check
@@ -115,6 +117,7 @@ apps/api-gateway/
 │   ├── index.test.ts           # Master test runner
 │   ├── unit/                   # Route registry, circuit breaker, and retry tests
 │   ├── auth/                   # Authorization guard tests
+│   ├── resilience/             # Chaos guardrails & in-flight bulkhead tests
 │   ├── security/               # Header sanitization & error scrubbing tests
 │   └── integration/            # Health, metrics & aggregation endpoint tests
 │
@@ -206,6 +209,9 @@ Configured via Redis distributed sliding window with automatic memory fallback:
 1. **Service Timeouts:** Downstream requests enforce strict timeout bounds preventing gateway connection exhaustion (fast search: 3s; catalog/cart/user: 5s; order/shipping: 10s; payment/media: 15s).
 2. **Circuit Breakers:** Per-service circuit breaker tracking (`CLOSED`, `OPEN`, `HALF_OPEN`). After 5 consecutive failures, the circuit trips to `OPEN` for 15 seconds, returning fast 503 errors without overloading struggling services.
 3. **Safe Retries:** Conservative retry policy. Only safe idempotent methods (`GET`, `HEAD`) encountering transient network errors (`ECONNRESET`, `ETIMEDOUT`) are retried. Non-idempotent writes (`POST` orders, `POST` payments) are never automatically retried.
+4. **Thundering-Herd Shielding (`SingleFlightGroup`):** In-flight promise coalescing in `src/resilience/singleflight.ts` deduplicates concurrent cache misses on high-traffic read routes (`GET /api/v1/home`, `GET /api/v1/inventory/:productId/availability`), ensuring only a single request reaches downstream databases while identical concurrent calls share the resolved promise.
+5. **In-Flight Concurrency Bulkheads (`InFlightBulkhead`):** Limits instantaneous concurrent active requests per route category (`50` max concurrent in healthy state; dynamically clamped to `5` during degraded or tripped states). Excess requests are shed immediately with HTTP `503 Service Unavailable` and `Retry-After: 15`, isolating gateway event loops from hanging socket pools during downstream database outages.
+6. **Dynamic Adaptive Rate Limiting:** Rate limit maximums (`getAdaptiveRateLimitForRoute`) inspect downstream circuit breaker health. When `order-service` or `payment-service` experiences degradation, checkout rate limits are automatically clamped from 30 down to 5 req/min, insulating database connection pools until the circuit breaker recovers.
 
 ---
 

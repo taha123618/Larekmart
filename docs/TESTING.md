@@ -6,18 +6,20 @@ This document outlines the testing strategy, current verification mechanisms, an
 
 Larekmart features a unified multi-runtime testing strategy orchestrated via Turborepo (`pnpm test`):
 
-1. **Automated Unit & Integration Test Suites (25 Workspaces in `pnpm test`)**:
+1. **Automated Unit & Integration Test Suites (27 Workspaces in `pnpm test`)**:
    - `@repo/types`: Domain contracts and Zod schema validations (`pnpm --filter @repo/types test`).
-   - `api-gateway`: Route registry, circuit breaker cooldown state machine, retry policy, auth guards, and proxy route integration (`pnpm --filter api-gateway test`).
+   - `@repo/kafka`: Dead-letter queue (DLQ) routing, poison-pill fast-failing, and exponential backoff retries (`pnpm --filter @repo/kafka test`).
+   - `@repo/redis`: Cluster sharding, CRC16 slot pinning, 3-node Redlock consensus, distributed leader election, and `withClusterLock` wrappers (`pnpm --filter @repo/redis test`).
+   - `api-gateway`: Route registry, circuit breaker state machine, SingleFlight coalescing, in-flight concurrency bulkheads, and adaptive rate-limiting guardrails (`pnpm --filter api-gateway test`).
    - `product-service`: Auth guards (user, seller, admin), Clerk token claims, Kafka event payloads (`toProductEventPayload`), and ProductFormSchema (`pnpm --filter product-service test`).
-   - `order-service`: Order security and authorization tests (`pnpm --filter order-service test`).
+   - `order-service`: Order security, Multi-DB Dual-ACK Saga orchestrator, Transactional Outbox sweeper, MongoDB hashed sharding, idempotency, and chaos resilience rollback suite (`pnpm --filter order-service test`).
    - `payment-service`: Hono auth middleware, gateway header propagation, Stripe webhook signature failure handling, and `PaymentSuccessfulType` event schema (`pnpm --filter payment-service test`).
    - `auth-service`: Clerk express integration, user/admin guards, `UserFormSchema`, and user lifecycle events (`pnpm --filter auth-service test`).
    - `analytic-service`: Express auth guards, real-time KPI metrics snapshot calculations, and merchant event aggregation (`pnpm --filter analytic-service test`).
    - `search-service`: Fastify auth guards, OpenSearch payload validation, `BulkIndexRequestSchema`, and reindex parameters (`pnpm --filter search-service test`).
-   - `inventory-service`: Stripe session verification regression guard, Hono auth middleware, multi-warehouse cache aggregation, and inventory reservation schemas (`pnpm --filter inventory-service test`).
-   - `catalog-service`: Read-model cache key formatting, Fastify health/readiness/metrics route injection, and product projection payloads (`pnpm --filter catalog-service test`).
-   - `cart-service`: Financial pricing engine, discount calculators, and threshold boundary tests (`pnpm --filter cart-service test`).
+   - `inventory-service`: Stripe session verification regression guard, Hono auth middleware, multi-warehouse cache aggregation, Redis stock gatekeeper, and reservation schemas (`pnpm --filter inventory-service test`).
+   - `catalog-service`: Read-model cache key formatting, Fastify health/readiness/metrics route injection, product projection payloads, and PostgreSQL read-replica routing (`pnpm --filter catalog-service test`).
+   - `cart-service`: Financial pricing engine, discount calculators, cart expiration worker cluster lock, and threshold boundary tests (`pnpm --filter cart-service test`).
    - `shipping-service`: Constant-time webhook verification and authorization middleware tests (`pnpm --filter shipping-service test`).
    - `user-service`: Profile, address, and account-domain service tests (`pnpm --filter user-service test`).
    - `media-service`: Six offline suites covering object-key traversal safety, magic-byte MIME detection, size limits, cross-owner authorization, and cleanup sweeps (`pnpm --filter media-service test`).
@@ -32,6 +34,7 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `email-service`: Email template interpolation for user signups, order receipts with tax breakdown, KYB notifications, and storefront lifecycle alerts (`pnpm --filter email-service test`).
    - `notification-service`: Native Go test suite for workers, templates, dispatchers, and WebSockets (`go test ./...`).
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
+
 
 2. **Strict TypeScript Compilation**:
    ```bash

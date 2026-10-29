@@ -49,9 +49,7 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
   `email-service`). A topic is subscribed once per consumer instance.
 - **Delivery:** subscriptions use `fromBeginning: true`. A new consumer group therefore
   replays the topic's history — make handlers tolerant of re-processing.
-- **Failure handling:** the consumer wrapper catches errors per message and logs them, so
-  one bad message does not stop the loop. There is no dead-letter topic or retry policy
-  yet; treat handler failures as observable, not fatal.
+- **Failure handling & Dead-Letter Queue (DLQ):** The consumer wrapper in `@repo/kafka` incorporates intelligent poison-pill isolation. Malformed payloads or deterministic schema decode errors (`SyntaxError`, `ZodError`) fast-fail immediately to `<topic>.dlq` on attempt 1 without retry loops. Transient operational errors (database timeouts, lock contention) retry with exponential backoff (1s, 2s, 4s) before routing to `<topic>.dlq` with comprehensive diagnostics headers (`x-original-topic`, `x-error-message`, `x-is-poison-pill`, `x-attempt-count`). Offsets commit cleanly, ensuring partitions never stall.
 
 ## Topic registry
 

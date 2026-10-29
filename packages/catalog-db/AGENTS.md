@@ -8,4 +8,5 @@ PostgreSQL schema and generated Prisma client for `catalog-service` read models.
 
 - Never import code from applications into this package.
 - Generated code in `generated/prisma/**` is created by `prisma generate` and is gitignored.
+- Dual Prisma client pattern: `prisma` is for primary write-plane transactions; `readPrisma` is for read-replica storefront browsing queries.
 - Run `pnpm --filter @repo/catalog-db db:generate` after modifying `prisma/schema.prisma`.
