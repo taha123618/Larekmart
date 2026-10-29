@@ -11,7 +11,8 @@
     "check-types": "tsc --noEmit",
     "test": "tsx --env-file-if-exists=.env tests/seller-service.test.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts"
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
+    "db:deploy": "tsx --env-file-if-exists=.env src/db/migrate.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",

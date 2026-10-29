@@ -9,14 +9,16 @@ import { redis } from "./utils/redis.js";
 async function main() {
   console.log("Starting Larekmart review-service...");
 
-  // 1. Run migrations if DB is accessible
-  try {
-    await runMigrations();
-  } catch (err) {
-    console.warn(
-      "[review-service] Database migration skipped or deferred:",
-      err,
-    );
+  // 1. Run migrations if explicitly requested (opt-in for development via AUTO_MIGRATE=true)
+  if (process.env.AUTO_MIGRATE === "true") {
+    try {
+      await runMigrations();
+    } catch (err) {
+      console.warn(
+        "[review-service] Database migration skipped or deferred:",
+        err,
+      );
+    }
   }
 
   // 2. Initialize Kafka Producers & Consumers

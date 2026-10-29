@@ -60,11 +60,40 @@
       "cache": false
     },
     "db:migrate": {
-      "cache": false,
-      "persistent": true
+      "cache": false
     },
     "db:deploy": {
       "cache": false
+    },
+    "@repo/catalog-db#db:migrate": {
+      "dependsOn": ["@repo/product-db#db:migrate"]
+    },
+    "@repo/catalog-db#db:deploy": {
+      "dependsOn": ["@repo/product-db#db:deploy"]
+    },
+    "seller-service#db:migrate": {
+      "dependsOn": ["@repo/vendor-db#db:migrate"]
+    },
+    "seller-service#db:deploy": {
+      "dependsOn": ["@repo/vendor-db#db:deploy"]
+    },
+    "review-service#db:migrate": {
+      "dependsOn": ["@repo/product-db#db:migrate"]
+    },
+    "review-service#db:deploy": {
+      "dependsOn": ["@repo/product-db#db:deploy"]
+    },
+    "wishlist-service#db:migrate": {
+      "dependsOn": ["@repo/product-db#db:migrate"]
+    },
+    "wishlist-service#db:deploy": {
+      "dependsOn": ["@repo/product-db#db:deploy"]
+    },
+    "pricing-service#db:migrate": {
+      "dependsOn": ["@repo/product-db#db:migrate"]
+    },
+    "pricing-service#db:deploy": {
+      "dependsOn": ["@repo/product-db#db:deploy"]
     }
   }
 }

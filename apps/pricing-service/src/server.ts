@@ -10,14 +10,16 @@ export { buildApp };
 export async function startServer() {
   console.log("[PricingService] Starting Larekmart pricing-service...");
 
-  // 1. Run migrations if DB is accessible
-  try {
-    await runMigrations();
-  } catch (err) {
-    console.warn(
-      "[PricingService] Database migration skipped or deferred:",
-      err,
-    );
+  // 1. Run migrations if explicitly requested (opt-in for development via AUTO_MIGRATE=true)
+  if (process.env.AUTO_MIGRATE === "true") {
+    try {
+      await runMigrations();
+    } catch (err) {
+      console.warn(
+        "[PricingService] Database migration skipped or deferred:",
+        err,
+      );
+    }
   }
 
   // 2. Initialize Kafka Producers & Consumers

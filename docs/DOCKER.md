@@ -314,23 +314,33 @@ When spinning up PostgreSQL for the first time, `docker/postgres/init-multiple-d
 - `vendor_db` (`larekmart_vendor_db`)
 - `seller_db`
 
-To run database migrations against the running containerized databases:
+To run database migrations against the running containerized databases in strict topological dependency order (anti-lock, race-free):
+
+```bash
+# Sequential deterministic migration across all 14 databases
+pnpm db:deploy
+
+# Or check status across databases
+pnpm db:status
+```
+
+Individual service migrations can also be run if isolated changes are made (Stage 1: Core -> Stage 2: Operational -> Stage 3: Projected):
 
 ```bash
 pnpm --filter @repo/product-db db:deploy
 pnpm --filter @repo/inventory-db db:deploy
-pnpm --filter @repo/catalog-db db:deploy
+pnpm --filter @repo/user-db db:deploy
+pnpm --filter @repo/vendor-db db:deploy
 pnpm --filter @repo/shipping-db db:deploy
-pnpm --filter media-service db:migrate
-pnpm --filter review-service db:migrate
-pnpm --filter wishlist-service db:migrate
-pnpm --filter promotion-service db:migrate
-pnpm --filter tax-service db:migrate
-pnpm --filter return-service db:migrate
-pnpm --filter pricing-service db:migrate
-pnpm --filter seller-service db:migrate
-pnpm --filter @repo/vendor-db db:generate
-pnpm --filter @repo/vendor-db db:migrate
+pnpm --filter media-service db:deploy
+pnpm --filter pricing-service db:deploy
+pnpm --filter promotion-service db:deploy
+pnpm --filter tax-service db:deploy
+pnpm --filter return-service db:deploy
+pnpm --filter @repo/catalog-db db:deploy
+pnpm --filter seller-service db:deploy
+pnpm --filter review-service db:deploy
+pnpm --filter wishlist-service db:deploy
 ```
 
 To seed initial catalog data:

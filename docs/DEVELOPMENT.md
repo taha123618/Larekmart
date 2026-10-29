@@ -38,21 +38,8 @@ pnpm run setup
 # 2. Start backing infrastructure in Docker (PostgreSQL with pgvector, MongoDB, Mongo-Express, MySQL tax_db & return_db, Redis, 3-broker Kafka KRaft, OpenSearch, Kafka UI)
 docker compose up -d postgres mongo mongo-express mysql mysql-returns redis kafka-broker-1 kafka-broker-2 kafka-broker-3 opensearch kafka-ui
 
-# 3. Apply database migrations
-pnpm --filter @repo/product-db db:deploy
-pnpm --filter @repo/inventory-db db:deploy
-pnpm --filter @repo/catalog-db db:deploy
-pnpm --filter @repo/shipping-db db:deploy
-pnpm --filter media-service db:migrate
-pnpm --filter review-service db:migrate
-pnpm --filter wishlist-service db:migrate
-pnpm --filter promotion-service db:migrate
-pnpm --filter tax-service db:migrate
-pnpm --filter return-service db:migrate
-pnpm --filter pricing-service db:migrate
-pnpm --filter seller-service db:migrate
-pnpm --filter @repo/vendor-db db:generate
-pnpm --filter @repo/vendor-db db:migrate
+# 3. Apply database migrations sequentially (anti-lock, race-free)
+pnpm db:deploy    # or pnpm db:migrate in development
 
 # 4. Run all services concurrently in development mode
 pnpm dev

@@ -83,61 +83,64 @@ jobs:
       - name: Generate Database Schemas
         run: pnpm db:generate
 
-      - name: Execute Non-Destructive Migrations (Product DB)
+      # ─── STAGE 1: Foundational Master Entity Schemas ───
+      - name: Execute Migrations - Stage 1 (Product DB)
         if: env.PRODUCT_DATABASE_URL != ''
         run: pnpm --filter @repo/product-db db:deploy
 
-      - name: Execute Non-Destructive Migrations (Inventory DB)
+      - name: Execute Migrations - Stage 1 (Inventory DB)
         if: env.INVENTORY_DATABASE_URL != ''
         run: pnpm --filter @repo/inventory-db db:deploy
 
-      - name: Execute Non-Destructive Migrations (Catalog DB)
-        if: env.CATALOG_DATABASE_URL != ''
-        run: pnpm --filter @repo/catalog-db db:deploy
-
-      - name: Execute Non-Destructive Migrations (Shipping DB)
-        if: env.SHIPPING_DATABASE_URL != ''
-        run: pnpm --filter @repo/shipping-db db:deploy
-
-      - name: Execute Non-Destructive Migrations (User DB)
+      - name: Execute Migrations - Stage 1 (User DB)
         if: env.USER_DATABASE_URL != ''
         run: pnpm --filter @repo/user-db db:deploy
 
-      - name: Execute Non-Destructive Migrations (Vendor DB)
+      - name: Execute Migrations - Stage 1 (Vendor DB)
         if: env.VENDOR_DATABASE_URL != ''
         run: pnpm --filter @repo/vendor-db db:deploy
 
-      - name: Execute Non-Destructive Migrations (Media Service)
+      # ─── STAGE 2: Operational & Transactional Schemas ───
+      - name: Execute Migrations - Stage 2 (Shipping DB)
+        if: env.SHIPPING_DATABASE_URL != ''
+        run: pnpm --filter @repo/shipping-db db:deploy
+
+      - name: Execute Migrations - Stage 2 (Media Service)
         if: env.MEDIA_DATABASE_URL != ''
-        run: pnpm --filter media-service db:migrate
+        run: pnpm --filter media-service db:deploy
 
-      - name: Execute Non-Destructive Migrations (Review Service)
-        if: env.REVIEW_DATABASE_URL != ''
-        run: pnpm --filter review-service db:migrate
-
-      - name: Execute Non-Destructive Migrations (Wishlist Service)
-        if: env.WISHLIST_DATABASE_URL != ''
-        run: pnpm --filter wishlist-service db:migrate
-
-      - name: Execute Non-Destructive Migrations (Promotion Service)
-        if: env.PROMOTION_DATABASE_URL != ''
-        run: pnpm --filter promotion-service db:migrate
-
-      - name: Execute Non-Destructive Migrations (Tax Service)
-        if: env.TAX_DATABASE_URL != ''
-        run: pnpm --filter tax-service db:migrate
-
-      - name: Execute Non-Destructive Migrations (Return Service)
-        if: env.RETURN_DATABASE_URL != ''
-        run: pnpm --filter return-service db:migrate
-
-      - name: Execute Non-Destructive Migrations (Pricing Service)
+      - name: Execute Migrations - Stage 2 (Pricing Service)
         if: env.PRICING_DATABASE_URL != ''
-        run: pnpm --filter pricing-service db:migrate
+        run: pnpm --filter pricing-service db:deploy
 
-      - name: Execute Non-Destructive Migrations (Seller Service)
+      - name: Execute Migrations - Stage 2 (Promotion Service)
+        if: env.PROMOTION_DATABASE_URL != ''
+        run: pnpm --filter promotion-service db:deploy
+
+      - name: Execute Migrations - Stage 2 (Tax Service)
+        if: env.TAX_DATABASE_URL != ''
+        run: pnpm --filter tax-service db:deploy
+
+      - name: Execute Migrations - Stage 2 (Return Service)
+        if: env.RETURN_DATABASE_URL != ''
+        run: pnpm --filter return-service db:deploy
+
+      # ─── STAGE 3: Read Projections, Storefronts & Downstream Schemas ───
+      - name: Execute Migrations - Stage 3 (Catalog DB Projections)
+        if: env.CATALOG_DATABASE_URL != ''
+        run: pnpm --filter @repo/catalog-db db:deploy
+
+      - name: Execute Migrations - Stage 3 (Seller Service)
         if: env.SELLER_DATABASE_URL != ''
-        run: pnpm --filter seller-service db:migrate
+        run: pnpm --filter seller-service db:deploy
+
+      - name: Execute Migrations - Stage 3 (Review Service)
+        if: env.REVIEW_DATABASE_URL != ''
+        run: pnpm --filter review-service db:deploy
+
+      - name: Execute Migrations - Stage 3 (Wishlist Service)
+        if: env.WISHLIST_DATABASE_URL != ''
+        run: pnpm --filter wishlist-service db:deploy
 
   # ════════════════════════════════════════════════════════════════
   # STAGE 4: Zero-Downtime Kubernetes Rolling Update & Verification

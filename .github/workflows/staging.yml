@@ -78,61 +78,64 @@ jobs:
       - name: Generate Database Schemas
         run: pnpm db:generate
 
-      - name: Run Prisma Migration Deploy (Product DB)
+      # ─── STAGE 1: Foundational Master Entity Schemas ───
+      - name: Run Prisma Migration Deploy - Stage 1 (Product DB)
         if: env.PRODUCT_DATABASE_URL != ''
         run: pnpm --filter @repo/product-db db:deploy
 
-      - name: Run Prisma Migration Deploy (Inventory DB)
+      - name: Run Prisma Migration Deploy - Stage 1 (Inventory DB)
         if: env.INVENTORY_DATABASE_URL != ''
         run: pnpm --filter @repo/inventory-db db:deploy
 
-      - name: Run Prisma Migration Deploy (Catalog DB)
-        if: env.CATALOG_DATABASE_URL != ''
-        run: pnpm --filter @repo/catalog-db db:deploy
-
-      - name: Run Prisma Migration Deploy (Shipping DB)
-        if: env.SHIPPING_DATABASE_URL != ''
-        run: pnpm --filter @repo/shipping-db db:deploy
-
-      - name: Run Prisma Migration Deploy (User DB)
+      - name: Run Prisma Migration Deploy - Stage 1 (User DB)
         if: env.USER_DATABASE_URL != ''
         run: pnpm --filter @repo/user-db db:deploy
 
-      - name: Run Prisma Migration Deploy (Vendor DB)
+      - name: Run Prisma Migration Deploy - Stage 1 (Vendor DB)
         if: env.VENDOR_DATABASE_URL != ''
         run: pnpm --filter @repo/vendor-db db:deploy
 
-      - name: Run Drizzle Migration Deploy (Media Service)
+      # ─── STAGE 2: Operational & Transactional Schemas ───
+      - name: Run Prisma Migration Deploy - Stage 2 (Shipping DB)
+        if: env.SHIPPING_DATABASE_URL != ''
+        run: pnpm --filter @repo/shipping-db db:deploy
+
+      - name: Run Drizzle Migration Deploy - Stage 2 (Media Service)
         if: env.MEDIA_DATABASE_URL != ''
-        run: pnpm --filter media-service db:migrate
+        run: pnpm --filter media-service db:deploy
 
-      - name: Run Drizzle Migration Deploy (Review Service)
-        if: env.REVIEW_DATABASE_URL != ''
-        run: pnpm --filter review-service db:migrate
-
-      - name: Run Drizzle Migration Deploy (Wishlist Service)
-        if: env.WISHLIST_DATABASE_URL != ''
-        run: pnpm --filter wishlist-service db:migrate
-
-      - name: Run Drizzle Migration Deploy (Promotion Service)
-        if: env.PROMOTION_DATABASE_URL != ''
-        run: pnpm --filter promotion-service db:migrate
-
-      - name: Run Drizzle Migration Deploy (Tax Service)
-        if: env.TAX_DATABASE_URL != ''
-        run: pnpm --filter tax-service db:migrate
-
-      - name: Run Drizzle Migration Deploy (Return Service)
-        if: env.RETURN_DATABASE_URL != ''
-        run: pnpm --filter return-service db:migrate
-
-      - name: Run Drizzle Migration Deploy (Pricing Service)
+      - name: Run Drizzle Migration Deploy - Stage 2 (Pricing Service)
         if: env.PRICING_DATABASE_URL != ''
-        run: pnpm --filter pricing-service db:migrate
+        run: pnpm --filter pricing-service db:deploy
 
-      - name: Run Drizzle Migration Deploy (Seller Service)
+      - name: Run Drizzle Migration Deploy - Stage 2 (Promotion Service)
+        if: env.PROMOTION_DATABASE_URL != ''
+        run: pnpm --filter promotion-service db:deploy
+
+      - name: Run Drizzle Migration Deploy - Stage 2 (Tax Service)
+        if: env.TAX_DATABASE_URL != ''
+        run: pnpm --filter tax-service db:deploy
+
+      - name: Run Drizzle Migration Deploy - Stage 2 (Return Service)
+        if: env.RETURN_DATABASE_URL != ''
+        run: pnpm --filter return-service db:deploy
+
+      # ─── STAGE 3: Read Projections, Storefronts & Downstream Schemas ───
+      - name: Run Prisma Migration Deploy - Stage 3 (Catalog DB Projections)
+        if: env.CATALOG_DATABASE_URL != ''
+        run: pnpm --filter @repo/catalog-db db:deploy
+
+      - name: Run Drizzle Migration Deploy - Stage 3 (Seller Service)
         if: env.SELLER_DATABASE_URL != ''
-        run: pnpm --filter seller-service db:migrate
+        run: pnpm --filter seller-service db:deploy
+
+      - name: Run Drizzle Migration Deploy - Stage 3 (Review Service)
+        if: env.REVIEW_DATABASE_URL != ''
+        run: pnpm --filter review-service db:deploy
+
+      - name: Run Drizzle Migration Deploy - Stage 3 (Wishlist Service)
+        if: env.WISHLIST_DATABASE_URL != ''
+        run: pnpm --filter wishlist-service db:deploy
 
   # ════════════════════════════════════════════════════════════════
   # STAGE 4: Kubernetes Deployment, Rollout Probes & Synthetic Verification

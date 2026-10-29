@@ -66,100 +66,103 @@ jobs:
       - name: Check Migration Status
         if: github.event.inputs.action == 'status'
         run: |
-          echo "=== Product DB Migration Status ==="
+          echo "=== [Stage 1] Product DB Migration Status ==="
           DATABASE_URL="${PRODUCT_DATABASE_URL}" pnpm --filter @repo/product-db exec prisma migrate status || true
-          echo "=== Inventory DB Migration Status ==="
+          echo "=== [Stage 1] Inventory DB Migration Status ==="
           DATABASE_URL="${INVENTORY_DATABASE_URL}" pnpm --filter @repo/inventory-db exec prisma migrate status || true
-          echo "=== Catalog DB Migration Status ==="
-          DATABASE_URL="${CATALOG_DATABASE_URL}" pnpm --filter @repo/catalog-db exec prisma migrate status || true
-          echo "=== Shipping DB Migration Status ==="
-          DATABASE_URL="${SHIPPING_DATABASE_URL}" pnpm --filter @repo/shipping-db exec prisma migrate status || true
-          echo "=== User DB Migration Status ==="
+          echo "=== [Stage 1] User DB Migration Status ==="
           DATABASE_URL="${USER_DATABASE_URL}" pnpm --filter @repo/user-db exec prisma migrate status || true
-          echo "=== Vendor DB Migration Status ==="
+          echo "=== [Stage 1] Vendor DB Migration Status ==="
           DATABASE_URL="${VENDOR_DATABASE_URL}" pnpm --filter @repo/vendor-db exec prisma migrate status || true
+          echo "=== [Stage 2] Shipping DB Migration Status ==="
+          DATABASE_URL="${SHIPPING_DATABASE_URL}" pnpm --filter @repo/shipping-db exec prisma migrate status || true
+          echo "=== [Stage 3] Catalog DB Migration Status ==="
+          DATABASE_URL="${CATALOG_DATABASE_URL}" pnpm --filter @repo/catalog-db exec prisma migrate status || true
 
-      - name: Run product-db migrations
+      # ─── STAGE 1: Foundational Master Entity Schemas ───
+      - name: Run product-db migrations (Stage 1)
         if: github.event.inputs.action == 'deploy'
         run: pnpm --filter @repo/product-db db:deploy
         env:
           DATABASE_URL: ${{ env.PRODUCT_DATABASE_URL }}
 
-      - name: Run inventory-db migrations
+      - name: Run inventory-db migrations (Stage 1)
         if: github.event.inputs.action == 'deploy'
         run: pnpm --filter @repo/inventory-db db:deploy
         env:
           DATABASE_URL: ${{ env.INVENTORY_DATABASE_URL }}
 
-      - name: Run catalog-db migrations
-        if: github.event.inputs.action == 'deploy'
-        run: pnpm --filter @repo/catalog-db db:deploy
-        env:
-          DATABASE_URL: ${{ env.CATALOG_DATABASE_URL }}
-
-      - name: Run shipping-db migrations
-        if: github.event.inputs.action == 'deploy'
-        run: pnpm --filter @repo/shipping-db db:deploy
-        env:
-          DATABASE_URL: ${{ env.SHIPPING_DATABASE_URL }}
-
-      - name: Run user-db migrations
+      - name: Run user-db migrations (Stage 1)
         if: github.event.inputs.action == 'deploy'
         run: pnpm --filter @repo/user-db db:deploy
         env:
           DATABASE_URL: ${{ env.USER_DATABASE_URL }}
 
-      - name: Run media-service (Drizzle) migrations
-        if: github.event.inputs.action == 'deploy' && env.MEDIA_DATABASE_URL != ''
-        run: pnpm --filter media-service db:migrate
-        env:
-          DATABASE_URL: ${{ env.MEDIA_DATABASE_URL }}
-
-      - name: Run review-service (Drizzle) migrations
-        if: github.event.inputs.action == 'deploy' && env.REVIEW_DATABASE_URL != ''
-        run: pnpm --filter review-service db:migrate
-        env:
-          DATABASE_URL: ${{ env.REVIEW_DATABASE_URL }}
-
-      - name: Run wishlist-service (Drizzle) migrations
-        if: github.event.inputs.action == 'deploy' && env.WISHLIST_DATABASE_URL != ''
-        run: pnpm --filter wishlist-service db:migrate
-        env:
-          DATABASE_URL: ${{ env.WISHLIST_DATABASE_URL }}
-
-      - name: Run promotion-service (Drizzle) migrations
-        if: github.event.inputs.action == 'deploy' && env.PROMOTION_DATABASE_URL != ''
-        run: pnpm --filter promotion-service db:migrate
-        env:
-          DATABASE_URL: ${{ env.PROMOTION_DATABASE_URL }}
-
-      - name: Run tax-service (MySQL Drizzle) migrations
-        if: github.event.inputs.action == 'deploy' && env.TAX_DATABASE_URL != ''
-        run: pnpm --filter tax-service db:migrate
-        env:
-          MYSQL_URL: ${{ env.TAX_DATABASE_URL }}
-
-      - name: Run return-service (MySQL Drizzle) migrations
-        if: github.event.inputs.action == 'deploy' && env.RETURN_DATABASE_URL != ''
-        run: pnpm --filter return-service db:migrate
-        env:
-          MYSQL_URL: ${{ env.RETURN_DATABASE_URL }}
-
-      - name: Run pricing-service (PostgreSQL Drizzle) migrations
-        if: github.event.inputs.action == 'deploy' && env.PRICING_DATABASE_URL != ''
-        run: pnpm --filter pricing-service db:migrate
-        env:
-          DATABASE_URL: ${{ env.PRICING_DATABASE_URL }}
-
-      - name: Run vendor-db (Prisma) migrations
+      - name: Run vendor-db migrations (Stage 1)
         if: github.event.inputs.action == 'deploy' && env.VENDOR_DATABASE_URL != ''
         run: pnpm --filter @repo/vendor-db db:deploy
         env:
           DATABASE_URL: ${{ env.VENDOR_DATABASE_URL }}
 
-      - name: Run seller-service (PostgreSQL Drizzle) migrations
+      # ─── STAGE 2: Operational & Transactional Schemas ───
+      - name: Run shipping-db migrations (Stage 2)
+        if: github.event.inputs.action == 'deploy'
+        run: pnpm --filter @repo/shipping-db db:deploy
+        env:
+          DATABASE_URL: ${{ env.SHIPPING_DATABASE_URL }}
+
+      - name: Run media-service (Drizzle) migrations (Stage 2)
+        if: github.event.inputs.action == 'deploy' && env.MEDIA_DATABASE_URL != ''
+        run: pnpm --filter media-service db:deploy
+        env:
+          DATABASE_URL: ${{ env.MEDIA_DATABASE_URL }}
+
+      - name: Run pricing-service (PostgreSQL Drizzle) migrations (Stage 2)
+        if: github.event.inputs.action == 'deploy' && env.PRICING_DATABASE_URL != ''
+        run: pnpm --filter pricing-service db:deploy
+        env:
+          DATABASE_URL: ${{ env.PRICING_DATABASE_URL }}
+
+      - name: Run promotion-service (Drizzle) migrations (Stage 2)
+        if: github.event.inputs.action == 'deploy' && env.PROMOTION_DATABASE_URL != ''
+        run: pnpm --filter promotion-service db:deploy
+        env:
+          DATABASE_URL: ${{ env.PROMOTION_DATABASE_URL }}
+
+      - name: Run tax-service (MySQL Drizzle) migrations (Stage 2)
+        if: github.event.inputs.action == 'deploy' && env.TAX_DATABASE_URL != ''
+        run: pnpm --filter tax-service db:deploy
+        env:
+          MYSQL_URL: ${{ env.TAX_DATABASE_URL }}
+
+      - name: Run return-service (MySQL Drizzle) migrations (Stage 2)
+        if: github.event.inputs.action == 'deploy' && env.RETURN_DATABASE_URL != ''
+        run: pnpm --filter return-service db:deploy
+        env:
+          MYSQL_URL: ${{ env.RETURN_DATABASE_URL }}
+
+      # ─── STAGE 3: Read Projections, Storefronts & Downstream Schemas ───
+      - name: Run catalog-db migrations (Stage 3 Projections)
+        if: github.event.inputs.action == 'deploy'
+        run: pnpm --filter @repo/catalog-db db:deploy
+        env:
+          DATABASE_URL: ${{ env.CATALOG_DATABASE_URL }}
+
+      - name: Run seller-service (PostgreSQL Drizzle) migrations (Stage 3)
         if: github.event.inputs.action == 'deploy' && env.SELLER_DATABASE_URL != ''
-        run: pnpm --filter seller-service db:migrate
+        run: pnpm --filter seller-service db:deploy
         env:
           DATABASE_URL: ${{ env.SELLER_DATABASE_URL }}
+
+      - name: Run review-service (Drizzle) migrations (Stage 3)
+        if: github.event.inputs.action == 'deploy' && env.REVIEW_DATABASE_URL != ''
+        run: pnpm --filter review-service db:deploy
+        env:
+          DATABASE_URL: ${{ env.REVIEW_DATABASE_URL }}
+
+      - name: Run wishlist-service (Drizzle) migrations (Stage 3)
+        if: github.event.inputs.action == 'deploy' && env.WISHLIST_DATABASE_URL != ''
+        run: pnpm --filter wishlist-service db:deploy
+        env:
+          DATABASE_URL: ${{ env.WISHLIST_DATABASE_URL }}
 

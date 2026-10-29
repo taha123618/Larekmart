@@ -174,21 +174,27 @@ pnpm lint                                 # eslint (admin + client only)
 pnpm format                               # prettier write (**/*.{ts,tsx,md,js,json})
 
 # Databases
-pnpm --filter @repo/product-db db:generate   # prisma generate (required before typecheck)
-pnpm --filter @repo/product-db db:migrate    # prisma migrate dev
-pnpm --filter @repo/product-db db:deploy     # prisma migrate deploy
-pnpm --filter @repo/inventory-db db:generate # generate inventory Prisma client
-pnpm --filter @repo/inventory-db db:migrate  # inventory migration in development
-pnpm --filter media-service db:migrate       # media-service Drizzle migrations (media_db)
-pnpm --filter review-service db:migrate      # review-service Drizzle migrations (review_db)
-pnpm --filter wishlist-service db:migrate    # wishlist-service Drizzle migrations (larekmart_wishlist_db)
-pnpm --filter promotion-service db:migrate   # promotion-service Drizzle migrations (larekmart_promotion_db)
-pnpm --filter tax-service db:migrate         # tax-service Drizzle migrations (tax_db)
-pnpm --filter return-service db:migrate      # return-service Drizzle migrations (return_db)
-pnpm --filter pricing-service db:migrate     # pricing-service Drizzle migrations (larekmart_pricing_db)
-pnpm --filter seller-service db:migrate      # seller-service Drizzle migrations (larekmart_seller_db)
-pnpm --filter @repo/vendor-db db:generate    # generate vendor Prisma client
-pnpm --filter @repo/vendor-db db:migrate     # vendor migration in development (larekmart_vendor_db)
+pnpm db:generate                          # generate all Prisma & Drizzle clients
+pnpm db:migrate                           # sequential topological dev migrations across all 14 DBs
+pnpm db:deploy                            # sequential deterministic deploy migrations (production)
+pnpm db:status                            # verify migration status across all databases
+pnpm db:seed                              # seed initial product catalog
+
+# Individual Workspace Migrations (Stage-ordered: 1. Foundational -> 2. Operational -> 3. Projected)
+pnpm --filter @repo/product-db db:migrate    # Stage 1: Core product entities
+pnpm --filter @repo/inventory-db db:migrate  # Stage 1: Stock & warehouses
+pnpm --filter @repo/user-db db:migrate       # Stage 1: Users & profiles
+pnpm --filter @repo/vendor-db db:migrate     # Stage 1: Vendors & onboarding
+pnpm --filter @repo/shipping-db db:migrate   # Stage 2: Shipping & tracking
+pnpm --filter media-service db:migrate       # Stage 2: Media uploads (Drizzle)
+pnpm --filter pricing-service db:migrate     # Stage 2: Pricing rules (Drizzle)
+pnpm --filter promotion-service db:migrate   # Stage 2: Promotions (Drizzle)
+pnpm --filter tax-service db:migrate         # Stage 2: Tax calculation (MySQL Drizzle)
+pnpm --filter return-service db:migrate      # Stage 2: Returns (MySQL Drizzle)
+pnpm --filter @repo/catalog-db db:migrate    # Stage 3: Catalog read projection (after product-db)
+pnpm --filter seller-service db:migrate      # Stage 3: Seller storefronts (after vendor-db)
+pnpm --filter review-service db:migrate      # Stage 3: Reviews (after product-db)
+pnpm --filter wishlist-service db:migrate    # Stage 3: Wishlists (after product-db)
 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
 docker compose up -d --build                 # start entire microservices stack (23 services + backing DBs)
