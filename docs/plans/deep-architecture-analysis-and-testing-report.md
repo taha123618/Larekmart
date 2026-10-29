@@ -377,6 +377,20 @@ Monorepo Typecheck Command:  pnpm check-types
    - `inventory-edge.ts` emits both `{ data: { availableQuantity, ... } }` and top-level fields for universal frontend and client compatibility.
 3. **Centralized Stock Cache Invalidation Propagation**:
    - Synchronized Redis stock counter eviction across `inventory-event.consumer.ts` and `inventory.route.ts`.
+4. **Cloud Mesh Horizontal Autoscaling & Disruption Budgets (`infrastructure/kubernetes`)**:
+   - Standardized `HorizontalPodAutoscaler` v2 definitions for `api-gateway` (3-30 pods), `order-service` (3-25 pods), and `inventory-service` (3-30 pods) with flash-sale aggressive scale-up (0s stabilization) and conservative scale-down (300s stabilization).
+   - Deployed `PodDisruptionBudget` resources protecting 7 critical services with zero-downtime rolling maintenance.
+5. **Distributed Leader Election & Worker Isolation (`@repo/redis`, `order-service`)**:
+   - `DistributedLeaderElector` continuous heartbeat consensus (3s interval, 10s TTL) eliminating duplicate outbox sweeper dispatches across horizontal replicas.
+   - Higher-order lock wrappers (`withClusterLock`, `withRedlockConsensus`) isolating cart expiration, reservation expiry, and saga timeout workers.
+6. **Hyperscale Data Strategy: Sharding & Read-Replicas (`docs/DATA-STRATEGY.md`)**:
+   - PostgreSQL read-replica projections routed via PgBouncer replica pools on port 6432 (`readPrisma` vs `prisma`).
+   - MongoDB orders hashed sharding key `{ userId: "hashed" }` with targeted routing for `GET /user-orders` and scatter-gather mitigation indexes for seller and saga queries.
+   - Redis cluster multi-tenant hash tag CRC16 slot pinning (`stock:available:{pk_khi_01}:productId:variantId`).
+7. **Chaos Engineering & Rate Limiting Guardrails (`infrastructure/chaos`)**:
+   - Declarative Chaos Mesh CRDs (`NetworkChaos`, `PodChaos`, `Workflow`) simulating MySQL tax delay, MongoDB network partitions, Kafka broker termination, and PG packet loss.
+   - API Gateway in-flight concurrency bulkheads (shedding with 503 and `Retry-After: 15`) and adaptive rate limit clamping from 30 to 5 req/min during downstream degradation.
+   - Automated Saga chaos resilience test suite verifying clean rollbacks with zero orphan transactions.
 
 ---
 
@@ -384,9 +398,11 @@ Monorepo Typecheck Command:  pnpm check-types
 
 | Gate                   | Description                                    | Status                   |
 | :--------------------- | :--------------------------------------------- | :----------------------- |
-| **All Test Suites**    | All 26 workspaces with automated tests passed  | **100% PASSED** (26/26)  |
+| **All Test Suites**    | All 27 workspaces with automated tests passed  | **100% PASSED** (27/27)  |
 | **Monorepo Typecheck** | `tsc --noEmit` across all 39 workspaces        | **0 ERRORS** (39/39)     |
 | **Python Tests**       | Pytest in `recommendation-service`             | **34/34 PASSED** (0.86s) |
 | **Go Tests**           | Go test across `notification-service` packages | **100% PASSED**          |
 | **Checkout Saga**      | Multi-DB Dual-ACK Saga simulation suite        | **8/8 PASSED**           |
+| **Chaos Resilience**   | Multi-DB Saga failure injection test suite     | **4/4 SCENARIOS PASSED** |
 | **Git Working Tree**   | Clean, synchronized with `origin/development`  | **CLEAN**                |
+
