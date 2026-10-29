@@ -77,6 +77,14 @@ export type {
   IdempotencyOptions,
 } from "./idempotency.js";
 
+// Distributed cluster lock
+export {
+  acquireClusterLock,
+  releaseClusterLock,
+  renewClusterLock,
+} from "./cluster-lock.js";
+export type { ClusterLockOptions } from "./cluster-lock.js";
+
 // Shared types
 export type {
   RedisClientConfig,

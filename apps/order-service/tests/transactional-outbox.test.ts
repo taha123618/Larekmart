@@ -19,6 +19,7 @@ import {
   mongoose,
 } from "@repo/order-db";
 import { producer } from "../src/utils/kafka.js";
+import { redis } from "../src/utils/redis.js";
 import {
   dispatchViaOutbox,
   publishOutboxEvent,
@@ -176,6 +177,45 @@ async function runOutboxTests() {
       "✓ Sweeper successfully recovered and published pending event.",
     );
 
+    // 6. Cluster Sweeper Isolation & Leader Election Mutex
+    console.log(
+      "6. Testing cluster sweeper isolation across horizontal replicas...",
+    );
+    await createOutboxEvent("test.outbox.event", {
+      orderId: "ord_cluster_test",
+    });
+
+    capturedEvents.length = 0;
+    const worker1Id = "replica-pod-1:1234:aaa";
+    const worker2Id = "replica-pod-2:5678:bbb";
+
+    // Simulate two horizontal container replicas triggering a sweep at the exact same millisecond
+    const [sweepResult1, sweepResult2] = await Promise.all([
+      sweepPendingOutboxEvents(10, worker1Id),
+      sweepPendingOutboxEvents(10, worker2Id),
+    ]);
+
+    // Exactly one replica should have executed the sweep as leader, while the other skipped
+    const totalSwept = sweepResult1 + sweepResult2;
+    assert.strictEqual(
+      totalSwept,
+      1,
+      "Cluster leader lease must ensure exactly ONE replica executes sweep per cycle",
+    );
+    assert.ok(
+      (sweepResult1 === 1 && sweepResult2 === 0) ||
+        (sweepResult1 === 0 && sweepResult2 === 1),
+      "One replica must lead and the other must gracefully skip",
+    );
+    assert.strictEqual(
+      capturedEvents.length,
+      1,
+      "Exactly one Kafka message must be emitted, preventing duplicate stream dispatch",
+    );
+    console.log(
+      "✓ Cluster sweeper isolation prevented duplicate sweep execution and duplicate Kafka dispatches.",
+    );
+
     // Cleanup
     await OutboxEvent.deleteMany({ topic: "test.outbox.event" });
     console.log("\n=======================================================");
@@ -183,6 +223,7 @@ async function runOutboxTests() {
     console.log("=======================================================\n");
   } finally {
     producer.send = originalSend;
+    await redis.close();
     await mongoose.disconnect();
   }
 }

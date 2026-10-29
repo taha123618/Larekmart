@@ -321,11 +321,17 @@ async function runSagaTests() {
     console.log(" All Distributed Multi-DB Saga Tests Passed Successfully! ");
     console.log("=======================================================\n");
   } finally {
+    const { redis } = await import("../src/utils/redis.js");
+    await redis.close();
     await mongoose.disconnect();
   }
 }
 
-runSagaTests().catch((err) => {
-  console.error("❌ Checkout Saga Test Failed:", err);
-  process.exit(1);
-});
+runSagaTests()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("❌ Checkout Saga Test Failed:", err);
+    process.exit(1);
+  });

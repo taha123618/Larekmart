@@ -29,6 +29,7 @@ const OutboxEventSchema = new Schema(
     attempts: { type: Number, default: 0 },
     maxAttempts: { type: Number, default: 5 },
     lockedUntil: { type: Date, default: null },
+    lockedBy: { type: String, default: null, index: true },
     lastError: { type: String, default: null },
     publishedAt: { type: Date, default: null },
   },
@@ -36,7 +37,7 @@ const OutboxEventSchema = new Schema(
 );
 
 // High-performance polling index for claiming pending or expired-lease events:
-OutboxEventSchema.index({ status: 1, lockedUntil: 1, createdAt: 1 });
+OutboxEventSchema.index({ status: 1, lockedUntil: 1, lockedBy: 1, createdAt: 1 });
 
 // Automated 7-day TTL index for pruning published events:
 OutboxEventSchema.index({ publishedAt: 1 }, { expireAfterSeconds: 604800 });
@@ -75,10 +76,12 @@ export async function createOutboxEvent(
 
 /**
  * Atomically claims up to `limit` pending or expired-lease outbox events for processing.
+ * Optionally assigns a workerId lease identifier for cluster fencing.
  */
 export async function claimPendingOutboxEvents(
   limit = 20,
   leaseDurationMs = 30_000,
+  workerId?: string,
 ): Promise<OutboxEventDocument[]> {
   const now = new Date();
   const leaseExpiry = new Date(Date.now() + leaseDurationMs);
@@ -111,6 +114,7 @@ export async function claimPendingOutboxEvents(
         $set: {
           status: "PROCESSING",
           lockedUntil: leaseExpiry,
+          ...(workerId ? { lockedBy: workerId } : {}),
         },
         $inc: { attempts: 1 },
       },
@@ -127,18 +131,28 @@ export async function claimPendingOutboxEvents(
 
 /**
  * Marks an outbox event as successfully published to Kafka.
+ * If workerId is provided, enforces fencing: only the lease holder can transition to PUBLISHED.
  */
 export async function markOutboxPublished(
   eventId: string | mongoose.Types.ObjectId,
-): Promise<void> {
-  await OutboxEvent.findByIdAndUpdate(eventId, {
+  workerId?: string,
+): Promise<boolean> {
+  const query: Record<string, unknown> = { _id: eventId };
+  if (workerId) {
+    query.$or = [{ lockedBy: workerId }, { lockedBy: null }];
+  }
+
+  const updated = await OutboxEvent.findOneAndUpdate(query, {
     $set: {
       status: "PUBLISHED",
       publishedAt: new Date(),
       lockedUntil: null,
+      lockedBy: null,
       lastError: null,
     },
   });
+
+  return !!updated;
 }
 
 /**
@@ -148,9 +162,15 @@ export async function markOutboxFailed(
   eventId: string | mongoose.Types.ObjectId,
   error: unknown,
   retryDelayMs = 5_000,
+  workerId?: string,
 ): Promise<void> {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  const event = await OutboxEvent.findById(eventId);
+  const query: Record<string, unknown> = { _id: eventId };
+  if (workerId) {
+    query.$or = [{ lockedBy: workerId }, { lockedBy: null }];
+  }
+
+  const event = await OutboxEvent.findOne(query);
   if (!event) return;
 
   const isTerminal = event.attempts >= event.maxAttempts;
@@ -159,6 +179,7 @@ export async function markOutboxFailed(
     $set: {
       status: isTerminal ? "FAILED" : "PENDING",
       lockedUntil: isTerminal ? null : new Date(Date.now() + retryDelayMs),
+      lockedBy: null,
       lastError: errorMessage,
     },
   });
