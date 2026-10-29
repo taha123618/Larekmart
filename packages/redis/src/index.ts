@@ -91,6 +91,8 @@ export {
   acquireRedlockConsensus,
   releaseRedlockConsensus,
   renewRedlockConsensus,
+  withClusterLock,
+  withRedlockConsensus,
 } from "./cluster-lock.js";
 export type {
   ClusterLockOptions,

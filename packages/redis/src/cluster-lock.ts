@@ -203,3 +203,50 @@ export async function renewRedlockConsensus(
   }
   return renewedCount >= quorum;
 }
+
+/**
+ * Executes an asynchronous function within the protection of a single-node or Redis Cluster lock.
+ * Automatically acquires the lease before execution and guarantees safe deletion in finally via Lua script.
+ * Returns null if the lock is currently held by another worker.
+ */
+export async function withClusterLock<T>(
+  client: Redis,
+  key: string,
+  workerId: string,
+  fn: () => Promise<T>,
+  options: ClusterLockOptions = {},
+): Promise<T | null> {
+  const acquired = await acquireClusterLock(client, key, workerId, options);
+  if (!acquired) {
+    return null;
+  }
+  try {
+    return await fn();
+  } finally {
+    await releaseClusterLock(client, key, workerId);
+  }
+}
+
+/**
+ * Executes an asynchronous function within the protection of a multi-node Redlock consensus lock.
+ * Automatically acquires the consensus lease across majority quorum before execution and guarantees
+ * release across all consensus nodes in finally.
+ * Returns null if quorum could not be achieved or lease was not acquired.
+ */
+export async function withRedlockConsensus<T>(
+  clients: Redis[],
+  key: string,
+  workerId: string,
+  fn: (lease: RedlockLease) => Promise<T>,
+  options: RedlockOptions = {},
+): Promise<T | null> {
+  const lease = await acquireRedlockConsensus(clients, key, workerId, options);
+  if (!lease) {
+    return null;
+  }
+  try {
+    return await fn(lease);
+  } finally {
+    await releaseRedlockConsensus(clients, key, workerId);
+  }
+}

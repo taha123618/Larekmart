@@ -8,6 +8,8 @@ import {
   acquireRedlockConsensus,
   releaseRedlockConsensus,
   renewRedlockConsensus,
+  withClusterLock,
+  withRedlockConsensus,
   DistributedLeaderElector,
   LeaderElection,
 } from "../src/index.js";
@@ -357,6 +359,63 @@ async function runRedisClusterShardingTests(): Promise<void> {
   assert.equal(redlockLeaderDemoted, 1);
   console.log(
     "  ✓ Multi-node Redlock leader election lifecycle fully verified",
+  );
+
+  // ---------------------------------------------------------------------------
+  // TEST 7: withClusterLock & withRedlockConsensus Higher-Order Execution Wrappers
+  // ---------------------------------------------------------------------------
+  console.log(
+    "\n7. Testing withClusterLock and withRedlockConsensus wrappers...",
+  );
+
+  let executedWork = 0;
+  const lockResult = await withClusterLock(
+    nodeA,
+    "cart:expiration:sweeper:leader",
+    "worker-wrap-1",
+    async () => {
+      executedWork += 10;
+      return "SUCCESS";
+    },
+    { ttlMs: 3000 },
+  );
+  assert.equal(lockResult, "SUCCESS");
+  assert.equal(executedWork, 10);
+
+  // Verify that the lock was cleaned up in finally block (not dangling)
+  const lockKeyDirect = await nodeA.get("cart:expiration:sweeper:leader");
+  assert.equal(
+    lockKeyDirect,
+    null,
+    "withClusterLock must release lock in finally",
+  );
+
+  // Test Redlock wrapper
+  let redlockWorkExecuted = false;
+  const redlockWrapResult = await withRedlockConsensus(
+    [nodeA, nodeB, nodeC],
+    "cluster:redlock:wrap:test",
+    "worker-redlock-wrap-1",
+    async (lease) => {
+      assert.ok(lease.validityMs > 0);
+      assert.equal(lease.workerId, "worker-redlock-wrap-1");
+      redlockWorkExecuted = true;
+      return 42;
+    },
+    { ttlMs: 4000 },
+  );
+  assert.equal(redlockWrapResult, 42);
+  assert.equal(redlockWorkExecuted, true);
+
+  // Verify that Redlock consensus was completely released in finally
+  const redlockLeaseDirect = await nodeA.get("cluster:redlock:wrap:test");
+  assert.equal(
+    redlockLeaseDirect,
+    null,
+    "withRedlockConsensus must release across nodes in finally",
+  );
+  console.log(
+    "  ✓ withClusterLock & withRedlockConsensus clean execution & safe cleanup verified",
   );
 
   console.log("\n==================================================");

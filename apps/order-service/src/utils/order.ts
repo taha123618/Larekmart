@@ -9,7 +9,9 @@ import {
   TaxCalculationVoidedEventPayload,
   InventoryReservationCancelledPayload,
 } from "@repo/types";
-import { dispatchViaOutbox } from "../outbox/outbox-relay.js";
+import { dispatchViaOutbox, OUTBOX_WORKER_ID } from "../outbox/outbox-relay.js";
+import { withClusterLock } from "@repo/redis";
+import { redis } from "./redis.js";
 import { createLogger, captureError, measureAsync } from "@repo/monitoring";
 
 const logger = createLogger("order-service:saga-orchestrator");
@@ -444,34 +446,47 @@ export const markOrderRefunded = async (refundPayload: any) => {
 };
 
 /**
- * 7. Saga Resilience: Sweeper for pending_confirmation orders that timed out
+ * 7. Saga Resilience: Sweeper for pending_confirmation orders that timed out.
+ * Protected by distributed cluster locking so that horizontally scaled replicas
+ * never process the same timed-out saga simultaneously.
  */
 export const processPendingConfirmationTimeouts = async (
   timeoutMs = 60000,
+  workerId = OUTBOX_WORKER_ID,
 ): Promise<number> => {
-  const threshold = new Date(Date.now() - timeoutMs);
-  const stuckOrders = await Order.find({
-    status: "pending_confirmation",
-    createdAt: { $lte: threshold },
-  });
+  const result = await withClusterLock(
+    redis.client,
+    "order:saga:timeout:sweeper:leader",
+    workerId,
+    async () => {
+      const threshold = new Date(Date.now() - timeoutMs);
+      const stuckOrders = await Order.find({
+        status: "pending_confirmation",
+        createdAt: { $lte: threshold },
+      });
 
-  if (stuckOrders.length === 0) return 0;
+      if (stuckOrders.length === 0) return 0;
 
-  logger.warn(
-    `Found ${stuckOrders.length} pending_confirmation orders timed out past ${timeoutMs}ms`,
+      logger.warn(
+        `Found ${stuckOrders.length} pending_confirmation orders timed out past ${timeoutMs}ms`,
+      );
+
+      for (const order of stuckOrders) {
+        await cancelOutOfStockOrder({
+          orderId: order._id.toString(),
+          reservationId: (order as any).reservationId,
+          referenceId: (order as any).paymentSessionId,
+          reason: "TIMEOUT",
+          details: `Dual-ACK confirmation timed out after ${timeoutMs / 1000}s`,
+        });
+      }
+
+      return stuckOrders.length;
+    },
+    { ttlMs: 25_000 },
   );
 
-  for (const order of stuckOrders) {
-    await cancelOutOfStockOrder({
-      orderId: order._id.toString(),
-      reservationId: (order as any).reservationId,
-      referenceId: (order as any).paymentSessionId,
-      reason: "TIMEOUT",
-      details: `Dual-ACK confirmation timed out after ${timeoutMs / 1000}s`,
-    });
-  }
-
-  return stuckOrders.length;
+  return result ?? 0;
 };
 
 export const startPendingConfirmationTimeoutSweeper = (
