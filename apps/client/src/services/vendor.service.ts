@@ -8,9 +8,9 @@ import type {
   VendorStatus,
 } from "@repo/types";
 
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_API_GATEWAY_URL);
+const API_BASE = getApiGatewayUrl();
 
 const VENDORS_BASE = `${API_BASE}/api/v1/vendors`;
 

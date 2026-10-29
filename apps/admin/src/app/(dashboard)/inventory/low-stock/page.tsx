@@ -14,7 +14,7 @@ import RestockSheet from "@/components/RestockSheet";
 import { ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { InventoryItemData } from "@/components/InventoryDataTable";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +22,7 @@ async function fetchLowStock(
   token: string | null,
 ): Promise<InventoryItemData[]> {
   try {
-    const inventoryUrl = getServiceUrl(
-      process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL,
-    );
+    const inventoryUrl = getApiGatewayUrl();
     const res = await fetch(
       `${inventoryUrl}/api/v1/inventory/low-stock?limit=200`,
       {

@@ -73,28 +73,6 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 # Centralized API Gateway (Authoritative Single Entry Point for all services)
 NEXT_PUBLIC_API_GATEWAY_URL=http://localhost:8090
 NEXT_PUBLIC_NOTIFICATION_WS_URL=ws://localhost:8090/ws
-
-# Optional Per-Service Overrides (defaults to NEXT_PUBLIC_API_GATEWAY_URL if omitted)
-# NEXT_PUBLIC_PRODUCT_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_ORDER_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_PAYMENT_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_SEARCH_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_INVENTORY_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_NOTIFICATION_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_CART_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_CATALOG_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_SHIPPING_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_USER_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_MEDIA_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_REVIEW_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_PROMOTION_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_WISHLIST_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_TAX_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_RETURN_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_PRICING_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_VENDOR_SERVICE_URL=http://localhost:8090
-# NEXT_PUBLIC_SELLER_SERVICE_URL=http://localhost:8090
 ```
 
 ## Development Commands

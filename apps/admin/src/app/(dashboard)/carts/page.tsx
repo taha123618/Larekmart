@@ -31,7 +31,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { CartResponseType } from "@repo/types";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 interface CartAdminStats {
   activeCarts: number;
@@ -42,8 +42,7 @@ interface CartAdminStats {
   averageItemsPerCart: number;
 }
 
-const getCartServiceUrl = () =>
-  getServiceUrl(process.env.NEXT_PUBLIC_CART_SERVICE_URL);
+const getCartServiceUrl = () => getApiGatewayUrl();
 
 const CartsAdminPage = () => {
   const { getToken } = useAuth();

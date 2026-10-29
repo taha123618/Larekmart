@@ -16,9 +16,9 @@ import type {
   SharedWishlistResponse,
 } from "@repo/types";
 import { getOrCreateGuestToken } from "./cart.service";
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_API_GATEWAY_URL);
+const API_BASE = getApiGatewayUrl();
 
 function getHeaders(authToken?: string): Record<string, string> {
   const headers: Record<string, string> = {

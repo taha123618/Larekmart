@@ -7,7 +7,7 @@ import { useAuth } from "@clerk/nextjs";
 import { RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 import type { SearchBackfillResponse } from "@repo/types";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 /**
  * Upper bound on continuation windows, so a cursor that never advances can't
@@ -21,9 +21,7 @@ const MAX_WINDOWS = 50;
  * request open.
  */
 const runBackfillWindow = async (token: string | null, afterId?: number) => {
-  const productServiceUrl = getServiceUrl(
-    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-  );
+  const productServiceUrl = getApiGatewayUrl();
   const res = await fetch(
     `${productServiceUrl}/api/v1/products/backfill-search`,
     {

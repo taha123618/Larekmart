@@ -11,11 +11,11 @@ import type {
   ReturnStatus,
   ReturnItemCondition,
 } from "@repo/types";
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const GATEWAY_BASE = getServiceUrl(process.env.NEXT_PUBLIC_RETURN_SERVICE_URL);
+const GATEWAY_BASE = getApiGatewayUrl();
 
-const MEDIA_BASE = getServiceUrl(process.env.NEXT_PUBLIC_MEDIA_SERVICE_URL);
+const MEDIA_BASE = getApiGatewayUrl();
 
 export interface CustomerReturnItem {
   id: string;

@@ -43,7 +43,7 @@ To prevent blank spaces or layout shifts during cold starts or unseeded database
 
 ## 4. Personalized AI Recommendations & Telemetry
 
-- Powered by `recommendation-service` (`NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL` :8008):
+- Powered by `recommendation-service` routed through API Gateway (`NEXT_PUBLIC_API_GATEWAY_URL` :8080):
   - Homepage: Trending, Recommended For You, and Recently Viewed shelves (`RecommendationSection.tsx`).
   - Products catalog: Category-filtered recommendations (`type="category"`).
   - Post-checkout & Orders: Post-purchase and reorder recommendations.

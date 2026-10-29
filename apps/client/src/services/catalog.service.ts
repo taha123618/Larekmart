@@ -19,9 +19,9 @@
  */
 
 import type { ProductType } from "@repo/types";
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const BASE = `${getServiceUrl(process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL)}/api/v1/catalog`;
+const BASE = `${getApiGatewayUrl()}/api/v1/catalog`;
 
 // ─── Types (mirrors CatalogProductCardType from @repo/types) ────────────────
 

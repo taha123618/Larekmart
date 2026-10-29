@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { ShippingFormInputs, CartItemType } from "@repo/types";
 import useCartStore from "@/stores/cartStore";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 import {
   Truck,
   CheckCircle2,
@@ -51,9 +51,7 @@ export default function CodConfirmationForm({
         throw new Error("You must be signed in to confirm an order.");
       }
 
-      const orderServiceUrl = getServiceUrl(
-        process.env.NEXT_PUBLIC_ORDER_SERVICE_URL,
-      );
+      const orderServiceUrl = getApiGatewayUrl();
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",

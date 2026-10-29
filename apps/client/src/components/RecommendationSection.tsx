@@ -15,7 +15,7 @@ import {
 } from "@/services/recommendation.service";
 import ProductCard from "./ProductCard";
 import { Sparkles, TrendingUp, Flame, ShoppingBag, Clock } from "lucide-react";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 interface RecommendationSectionProps {
   title: string;
@@ -93,9 +93,7 @@ export default function RecommendationSection({
         }
 
         // Fetch product details for the recommended IDs
-        const productUrl = getServiceUrl(
-          process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-        );
+        const productUrl = getApiGatewayUrl();
 
         const fetched = await Promise.all(
           recResponse.items.map(async (item) => {

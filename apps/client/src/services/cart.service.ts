@@ -4,12 +4,12 @@ import type {
   CartResponseType,
   CartSummaryType,
 } from "@repo/types";
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
 const GUEST_TOKEN_KEY = "larekmart_guest_token";
 
 export const getCartServiceUrl = (): string => {
-  return getServiceUrl(process.env.NEXT_PUBLIC_CART_SERVICE_URL);
+  return getApiGatewayUrl();
 };
 
 export const getOrCreateGuestToken = (): string => {

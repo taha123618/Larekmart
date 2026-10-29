@@ -13,9 +13,9 @@ import type {
   UpdateProductPriceInput,
 } from "@repo/types";
 
-import { getServiceUrl, buildSafeUrl } from "./gateway.service";
+import { getApiGatewayUrl, buildSafeUrl } from "./gateway.service";
 
-const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_PRICING_SERVICE_URL);
+const API_BASE = getApiGatewayUrl();
 
 const ADMIN_BASE = `${API_BASE}/api/v1/admin`;
 

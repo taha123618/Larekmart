@@ -8,7 +8,7 @@ import axios from "axios";
 import type { NotificationType } from "@repo/types";
 import { Button } from "./ui/button";
 import { useWebSocket, type WebSocketMessage } from "@/hooks/useWebSocket";
-import { getServiceUrl, getNotificationWsUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl, getNotificationWsUrl } from "@/services/gateway.service";
 
 interface NotificationResponse {
   notifications: NotificationType[];
@@ -23,9 +23,7 @@ export default function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const serviceUrl = getServiceUrl(
-    process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL,
-  );
+  const serviceUrl = getApiGatewayUrl();
   const wsUrl = getNotificationWsUrl();
 
   // Fetch Clerk session token

@@ -36,7 +36,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useAuth } from "@clerk/nextjs";
 import { uploadProductImage } from "@/services/media.service";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 // const categories = [
 //   "T-shirts",
@@ -49,9 +49,7 @@ import { getServiceUrl } from "@/services/gateway.service";
 // ] as const;
 
 const fetchCategories = async () => {
-  const productServiceUrl = getServiceUrl(
-    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-  );
+  const productServiceUrl = getApiGatewayUrl();
   const res = await fetch(`${productServiceUrl}/api/v1/categories`);
 
   if (!res.ok) {
@@ -96,9 +94,7 @@ const AddProduct = () => {
 
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof ProductFormSchema>) => {
-      const productServiceUrl = getServiceUrl(
-        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-      );
+      const productServiceUrl = getApiGatewayUrl();
       const token = await getToken();
       const res = await fetch(`${productServiceUrl}/api/v1/products`, {
         method: "POST",

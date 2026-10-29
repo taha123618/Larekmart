@@ -174,7 +174,7 @@ Rather than requiring static build arguments pointing individual microservices t
 NEXT_PUBLIC_API_GATEWAY_URL=http://localhost:8090
 ```
 
-All 23 individual microservice endpoints (`NEXT_PUBLIC_*_SERVICE_URL`) are treated as optional overrides that automatically default to `NEXT_PUBLIC_API_GATEWAY_URL`. Traefik and Fastify dynamically route sub-paths without forcing Next.js rebuilds when backend service topology changes.
+Both storefront and admin frontends route all HTTP operations uniformly through `NEXT_PUBLIC_API_GATEWAY_URL` via `getApiGatewayUrl()`. Traefik and Fastify dynamically route sub-paths without forcing Next.js rebuilds when backend service topology changes.
 
 ---
 

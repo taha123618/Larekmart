@@ -25,7 +25,7 @@ import {
   type ProductPricingDetails,
 } from "@/services/pricing.service";
 import { useCurrencyStore } from "@/stores/currencyStore";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 interface InventoryAvailabilityResponse {
   data?: {
@@ -74,9 +74,7 @@ const ProductInteraction = ({
     const fetchStock = async () => {
       setIsLoadingInventory(true);
       try {
-        const inventoryUrl = getServiceUrl(
-          process.env.NEXT_PUBLIC_API_GATEWAY_URL,
-        );
+        const inventoryUrl = getApiGatewayUrl();
         const res = await fetch(
           `${inventoryUrl}/api/v1/inventory/${product.id}/availability?variantId=${encodeURIComponent(
             variantId,

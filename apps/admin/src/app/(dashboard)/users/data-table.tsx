@@ -23,7 +23,7 @@ import { useState, useMemo } from "react";
 import { Trash2, Search, Store, Users, UserCheck } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation } from "@tanstack/react-query";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 import { User } from "@clerk/nextjs/server";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
@@ -110,9 +110,7 @@ export function DataTable<TData, TValue>({
       await Promise.all(
         selectedRows.map(async (row) => {
           const userId = (row.original as User).id;
-          const authUrl = getServiceUrl(
-            process.env.NEXT_PUBLIC_AUTH_SERVICE_URL,
-          );
+          const authUrl = getApiGatewayUrl();
           await fetch(`${authUrl}/api/v1/users/${userId}`, {
             method: "DELETE",
             headers: {

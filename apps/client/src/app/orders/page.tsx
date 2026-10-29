@@ -14,15 +14,13 @@ import {
 } from "lucide-react";
 import OrderReturnAction from "@/components/returns/OrderReturnAction";
 import OrderDisputeAction from "@/components/dispute/OrderDisputeAction";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 const fetchOrders = async () => {
   const { getToken } = await auth();
   const token = await getToken();
 
-  const orderServiceUrl = getServiceUrl(
-    process.env.NEXT_PUBLIC_ORDER_SERVICE_URL,
-  );
+  const orderServiceUrl = getApiGatewayUrl();
   const res = await fetch(`${orderServiceUrl}/api/v1/user-orders`, {
     headers: {
       Authorization: `Bearer ${token}`,

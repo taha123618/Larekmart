@@ -11,7 +11,7 @@ Detailed rules: `apps/client/AGENTS.md`, `apps/admin/AGENTS.md` and their skills
   you need state, effects, event handlers, or browser APIs.
 - **Auth:** server components use `auth()` from `@clerk/nextjs/server` and attach
   `Authorization: Bearer <token>`; client components use `useAuth().getToken()`.
-- **Service URLs:** always via `process.env.NEXT_PUBLIC_*_SERVICE_URL` — never hardcode hostnames.
+- **Service URLs:** always via `getApiGatewayUrl()` from `@/services/gateway.service` (backed by `NEXT_PUBLIC_API_GATEWAY_URL`) — never hardcode hostnames.
 - **Admin Dashboard:** uses shadcn/ui (`src/components/ui`), TanStack Table for data grids,
   and TanStack Query for mutations. Forms use `react-hook-form` + Zod schemas from `@repo/types`.
 - **Client Storefront:** uses `zustand` with `persist` for cart state, Zod + react-hook-form for forms,

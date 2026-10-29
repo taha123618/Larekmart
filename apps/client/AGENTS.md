@@ -111,7 +111,7 @@ React 19 and Next.js 16 enforce strict hydration equality between server HTML an
   handlers, or browser APIs. Do not make a whole page client just to fetch data.
 - **Fetch service data server-side with `auth().getToken()`** (`@clerk/nextjs/server`).
   Client components that must call services use `useAuth().getToken()`.
-- **Service URLs via env.** Always `process.env.NEXT_PUBLIC_*_SERVICE_URL`. Never hardcode
+- **Service URLs via env.** Always resolve API routes using `getApiGatewayUrl()` from `@/services/gateway.service` (backed by `NEXT_PUBLIC_API_GATEWAY_URL`). Never hardcode
   `localhost:8000` and friends.
 - **Cart is client state only.** Keep it in Zustand + localStorage. Do not introduce server
   state for the cart unless the product/service behavior actually requires it.
@@ -133,13 +133,11 @@ React 19 and Next.js 16 enforce strict hydration equality between server HTML an
 
 ## Backend Calls from this App
 
-This app talks HTTP to `product-service`, `order-service`, `payment-service`,
-`search-service` (autocomplete only), `recommendation-service` (`NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL` :8008),
-`catalog-service` (`NEXT_PUBLIC_CATALOG_SERVICE_URL` :8010), `shipping-service` (`NEXT_PUBLIC_SHIPPING_SERVICE_URL` :8011),
-`user-service` (`NEXT_PUBLIC_USER_SERVICE_URL` :8012), `review-service` (`NEXT_PUBLIC_REVIEW_SERVICE_URL` :8014),
-`wishlist-service` (`NEXT_PUBLIC_WISHLIST_SERVICE_URL` :8015), `promotion-service` (`NEXT_PUBLIC_PROMOTION_SERVICE_URL` :8016),
-`tax-service` (`NEXT_PUBLIC_TAX_SERVICE_URL` :8017), `return-service` (`NEXT_PUBLIC_RETURN_SERVICE_URL` :8018), `pricing-service` (`NEXT_PUBLIC_PRICING_SERVICE_URL` :8019),
-`vendor-service` (`NEXT_PUBLIC_VENDOR_SERVICE_URL` :8020), and `seller-service` (`NEXT_PUBLIC_SELLER_SERVICE_URL` :8021). It never calls `auth-service` directly — Clerk handles user auth.
+This app talks HTTP to microservices uniformly via the API Gateway (`NEXT_PUBLIC_API_GATEWAY_URL` :8080) / Traefik reverse proxy:
+`product-service`, `order-service`, `payment-service`, `search-service`, `recommendation-service`,
+`catalog-service`, `shipping-service`, `user-service`, `review-service`, `wishlist-service`,
+`promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, and `seller-service`.
+It never calls `auth-service` directly — Clerk handles user auth.
 
 Marketplace Vendors & Seller Storefronts:
 
@@ -179,9 +177,8 @@ Customer Returns & RMA Hub:
 Product listing and search:
 
 - `SearchBar` (client component) fetches debounced autocomplete from search-service's
-  `GET /api/v1/search/suggestions` through `NEXT_PUBLIC_SEARCH_SERVICE_URL`. It calls the
-  service **directly** (there is no gateway), supports keyboard navigation, and silently
-  degrades to a plain input when the service is unavailable or the env var is unset.
+  `GET /api/v1/search/suggestions` through API Gateway via `getApiGatewayUrl()`. It
+  supports keyboard navigation and silently degrades to a plain input when the service is unavailable.
 - Suggestions are rich (`SuggestionItem`: id, name, brand, price, images), so selecting one
   deep-links to `/products/<id>`; plain `Enter` runs a text search instead.
 - Recent searches are kept in `localStorage` under `larekmart:recent-searches` and shown

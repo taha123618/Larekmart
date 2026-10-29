@@ -23,7 +23,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "react-toastify";
 import { InventoryAdjustmentSchema } from "@repo/types";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 import {
   Select,
   SelectContent,
@@ -67,9 +67,7 @@ export default function AdjustSheet({
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof InventoryAdjustmentSchema>) => {
       const token = await getToken();
-      const inventoryUrl = getServiceUrl(
-        process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL,
-      );
+      const inventoryUrl = getApiGatewayUrl();
       const res = await fetch(
         `${inventoryUrl}/api/v1/inventory/adjustments`,
         {

@@ -21,11 +21,11 @@ import {
 import type { Shipment, ShippingMethod } from "@repo/types";
 import Link from "next/link";
 import CourierDispatcherSimulator from "@/components/shipping/CourierDispatcherSimulator";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 async function getShippingHealth(): Promise<{ ok: boolean; status?: string }> {
   try {
-    const base = getServiceUrl(process.env.NEXT_PUBLIC_SHIPPING_SERVICE_URL);
+    const base = getApiGatewayUrl();
     const res = await fetch(`${base}/api/v1/health/ready`, {
       cache: "no-store",
     });

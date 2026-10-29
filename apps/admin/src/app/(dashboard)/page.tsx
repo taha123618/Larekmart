@@ -5,7 +5,7 @@ import AppPieChart from "@/components/AppPieChart";
 import CardList from "@/components/CardList";
 import TodoList from "@/components/TodoList";
 import { auth } from "@clerk/nextjs/server";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 import {
   AnalyticsDailyChartType,
   AnalyticsSummaryType,
@@ -16,10 +16,9 @@ const Homepage = async () => {
   const { getToken } = await auth();
   const token = await getToken();
 
-  const orderUrl = getServiceUrl(process.env.NEXT_PUBLIC_ORDER_SERVICE_URL);
-  const analyticUrl = getServiceUrl(
-    process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL,
-  );
+  const gatewayUrl = getApiGatewayUrl();
+  const orderUrl = gatewayUrl;
+  const analyticUrl = gatewayUrl;
 
   const orderChartData = fetch(`${orderUrl}/order-chart`, {
     headers: {

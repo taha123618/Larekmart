@@ -12,9 +12,9 @@ import type {
   PromotionReservation,
 } from "@repo/types";
 import { getOrCreateGuestToken } from "./cart.service";
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_PROMOTION_SERVICE_URL);
+const API_BASE = getApiGatewayUrl();
 
 const BASE = `${API_BASE}/api/v1/promotions`;
 

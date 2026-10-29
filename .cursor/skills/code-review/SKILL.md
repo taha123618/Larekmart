@@ -40,7 +40,7 @@ boundary/contract/security rule), **should-fix**, or **nit**.
 ### Frontend
 
 - [ ] Server Components by default; `"use client"` only where needed.
-- [ ] Service URLs come from `NEXT_PUBLIC_*_SERVICE_URL`, not hardcoded.
+- [ ] Service endpoints resolve via `getApiGatewayUrl()` / `NEXT_PUBLIC_API_GATEWAY_URL`, not hardcoded.
 - [ ] Auth token fetched correctly (`auth().getToken()` on the server,
       `useAuth().getToken()` on the client).
 - [ ] New remote images registered in `next.config.ts`.

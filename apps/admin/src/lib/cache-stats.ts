@@ -47,7 +47,7 @@ export interface ServiceCacheStats {
   types: CacheTypeStats[];
 }
 
-import { getApiGatewayUrl, getServiceUrl } from "../services/gateway.service";
+import { getApiGatewayUrl } from "../services/gateway.service";
 
 export interface CacheServiceTarget {
   service: string;
@@ -55,8 +55,8 @@ export interface CacheServiceTarget {
 }
 
 /**
- * Services with cache counters to report. Order and URLs mirror the env vars the
- * rest of the app uses, with safe runtime gateway fallbacks.
+ * Services with cache counters to report. All queries route uniformly through
+ * the central API gateway with safe runtime fallback.
  */
 export function getCacheServiceTargets(): CacheServiceTarget[] {
   const gatewayUrl = getApiGatewayUrl();
@@ -64,27 +64,27 @@ export function getCacheServiceTargets(): CacheServiceTarget[] {
   return [
     {
       service: "search-service",
-      url: getServiceUrl(process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL),
+      url: gatewayUrl,
     },
     {
       service: "product-service",
-      url: getServiceUrl(process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL),
+      url: gatewayUrl,
     },
     {
       service: "analytic-service",
-      url: getServiceUrl(process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL),
+      url: gatewayUrl,
     },
     {
       service: "order-service",
-      url: getServiceUrl(process.env.NEXT_PUBLIC_ORDER_SERVICE_URL),
+      url: gatewayUrl,
     },
     {
       service: "inventory-service",
-      url: process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || gatewayUrl,
+      url: gatewayUrl,
     },
     {
       service: "recommendation-service",
-      url: process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL || gatewayUrl,
+      url: gatewayUrl,
     },
   ];
 }

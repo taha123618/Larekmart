@@ -9,9 +9,9 @@ import type {
   SubmitRebuttalInput,
   DisputeStatus,
 } from "@repo/types";
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_VENDOR_SERVICE_URL);
+const API_BASE = getApiGatewayUrl();
 
 function getHeaders(authToken?: string): Record<string, string> {
   const headers: Record<string, string> = {

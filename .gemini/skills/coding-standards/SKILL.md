@@ -33,7 +33,7 @@ Monorepo-wide coding standards for Larekmart.
 
 1. **Server Components First**: Use React Server Components by default; add `"use client"` only for client state, browser events, or browser APIs.
 2. **Data Fetching**:
-   - Server Components: `auth().getToken()` with standard `fetch()` using `process.env.NEXT_PUBLIC_*_SERVICE_URL`.
+   - Server Components: `auth().getToken()` with standard `fetch()` using `getApiGatewayUrl()` from `@/services/gateway.service`.
    - Client Components: `useAuth().getToken()` for authenticated requests.
 3. **Forms**: Use `react-hook-form` + `zodResolver` utilizing shared schemas from `@repo/types`.
 4. **Design System**: Use Tailwind CSS v4 design tokens and CSS variables in `src/app/globals.css`. Do not hardcode arbitrary hex codes.

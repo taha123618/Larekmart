@@ -12,7 +12,7 @@ Guidance for customer cart state, shipping rate calculation, Cash on Delivery (C
 - Store Shape: `cart` array of `CartItemType`, `addItem()`, `removeItem()`, `updateQuantity()`, `clearCart()`.
 - Persisted to `localStorage` under `cart-storage` key with Zustand `persist` middleware.
 - SSR Protection: Access to `localStorage` is wrapped in `typeof window !== "undefined"` and dummy fallbacks to prevent Node 22 server warnings.
-- Server Cart Sync: Optimistic client updates synchronized with authoritative `cart-service` (`NEXT_PUBLIC_CART_SERVICE_URL` :8009) when user is authenticated with Clerk.
+- Server Cart Sync: Optimistic client updates synchronized with authoritative `cart-service` via API Gateway (`NEXT_PUBLIC_API_GATEWAY_URL` :8080) when user is authenticated with Clerk.
 
 ## 2. Multi-Carrier Shipping & Address Selection (`ShippingForm.tsx`)
 

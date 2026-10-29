@@ -8,9 +8,9 @@
  * Products reference media by `mediaId` — never by storage URL.
  */
 
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const MEDIA_BASE = getServiceUrl(process.env.NEXT_PUBLIC_MEDIA_SERVICE_URL);
+const MEDIA_BASE = getApiGatewayUrl();
 
 export interface MediaUploadResponse {
   mediaId: string;

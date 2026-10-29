@@ -7,7 +7,7 @@ import { StorefrontView } from "@/components/seller/StorefrontView";
 import type { ProductType } from "@repo/types";
 import Link from "next/link";
 import { Store } from "lucide-react";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 // Fallback demo storefront for instant exploration if database is newly initialized
 function getFallbackStorefront(slug: string): PublicStorefrontResponse {
@@ -57,9 +57,7 @@ function getFallbackStorefront(slug: string): PublicStorefrontResponse {
 
 async function fetchStoreProducts(): Promise<ProductType[]> {
   try {
-    const productServiceUrl = getServiceUrl(
-      process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-    );
+    const productServiceUrl = getApiGatewayUrl();
 
     const res = await fetch(`${productServiceUrl}/api/v1/products?limit=8`, {
       next: { revalidate: 60 },

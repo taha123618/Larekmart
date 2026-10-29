@@ -2,13 +2,11 @@ import { ProductsType } from "@repo/types";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import BackfillSearchButton from "@/components/BackfillSearchButton";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 const getData = async (): Promise<ProductsType> => {
   try {
-    const productUrl = getServiceUrl(
-      process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-    );
+    const productUrl = getApiGatewayUrl();
     const res = await fetch(`${productUrl}/api/v1/products`);
     const data = await res.json();
     return data;

@@ -24,7 +24,7 @@ import { CategoryFormSchema } from "@repo/types";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "react-toastify";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 const AddCategory = () => {
   const form = useForm<z.infer<typeof CategoryFormSchema>>({
@@ -40,9 +40,7 @@ const AddCategory = () => {
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof CategoryFormSchema>) => {
       const token = await getToken();
-      const productServiceUrl = getServiceUrl(
-        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-      );
+      const productServiceUrl = getApiGatewayUrl();
       const res = await fetch(`${productServiceUrl}/api/v1/categories`, {
         method: "POST",
         body: JSON.stringify(data),

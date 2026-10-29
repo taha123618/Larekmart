@@ -28,7 +28,7 @@ already established in the repository.
 | React components   | PascalCase                                    | `AppBarChart`                                                 |
 | Services           | `<entity>-service`                            | `order-service`                                               |
 | Kafka topics       | `<entity>.<past-tense>`                       | `payment.successful`                                          |
-| Env vars           | `SCREAMING_SNAKE`, `NEXT_PUBLIC_` for browser | `NEXT_PUBLIC_ORDER_SERVICE_URL`                               |
+| Env vars           | `SCREAMING_SNAKE`, `NEXT_PUBLIC_` for browser | `NEXT_PUBLIC_API_GATEWAY_URL`                                |
 
 ## Backend
 
@@ -54,7 +54,7 @@ already established in the repository.
   handlers, or browser APIs.
 - **Data fetching:**
   - Server components call services with `fetch()` using
-    `process.env.NEXT_PUBLIC_*_SERVICE_URL` and a Clerk token from `auth().getToken()`.
+    `getApiGatewayUrl()` and a Clerk token from `auth().getToken()`.
   - Client components use `useAuth().getToken()` for authenticated requests, and
     TanStack Query (`useQuery`/`useMutation`) in the admin app for interactive data.
 - **Forms:** `react-hook-form` + `zodResolver` with schemas imported from `@repo/types`.

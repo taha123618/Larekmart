@@ -7,7 +7,7 @@ import type { KeyboardEvent } from "react";
 import { useAuth } from "@clerk/nextjs";
 import type { SuggestionItem, SuggestionResponse } from "@repo/types";
 import MediaImage from "@/components/MediaImage";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 const SUGGESTION_LIMIT = 6;
 const DEBOUNCE_MS = 250;
@@ -83,7 +83,7 @@ const SearchBar = () => {
           headers["x-user-id"] = userId;
         }
 
-        const base = getServiceUrl(process.env.NEXT_PUBLIC_SEARCH_SERVICE_URL);
+        const base = getApiGatewayUrl();
         const res = await fetch(
           `${base}/api/v1/search/suggestions?q=${encodeURIComponent(query)}&limit=${SUGGESTION_LIMIT}`,
           {

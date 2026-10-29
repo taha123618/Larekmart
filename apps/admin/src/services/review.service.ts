@@ -1,7 +1,7 @@
 import type { ReviewStatus } from "@repo/types";
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const REVIEW_BASE = getServiceUrl(process.env.NEXT_PUBLIC_REVIEW_SERVICE_URL);
+const REVIEW_BASE = getApiGatewayUrl();
 
 const BASE = `${REVIEW_BASE}/api/v1/admin/reviews`;
 

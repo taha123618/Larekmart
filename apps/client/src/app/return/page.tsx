@@ -1,7 +1,7 @@
 import Link from "next/link";
 import RecommendationSection from "@/components/RecommendationSection";
 import ClearCartOnSuccess from "@/components/ClearCartOnSuccess";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 import {
   CheckCircle2,
   Clock,
@@ -68,9 +68,7 @@ export default async function ReturnPage({
     );
   }
 
-  const paymentServiceUrl = getServiceUrl(
-    process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL,
-  );
+  const paymentServiceUrl = getApiGatewayUrl();
 
   let status = "complete";
   let paymentStatus = "paid";

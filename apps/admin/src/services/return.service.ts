@@ -3,7 +3,7 @@
  */
 
 import { ReturnStatus, ReturnStatusEnum } from "@repo/types";
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
 export interface AdminReturnItem {
   id: string;
@@ -131,7 +131,7 @@ export interface ReturnOverviewKPIs {
   totalRefundAmount: number;
 }
 
-const RETURN_BASE = getServiceUrl(process.env.NEXT_PUBLIC_RETURN_SERVICE_URL);
+const RETURN_BASE = getApiGatewayUrl();
 
 const ADMIN_RETURN_BASE = `${RETURN_BASE}/api/v1/admin/returns`;
 

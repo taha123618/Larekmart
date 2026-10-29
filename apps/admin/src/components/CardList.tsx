@@ -3,7 +3,7 @@ import { Badge } from "./ui/badge";
 import { AnalyticsEventType, OrderType, ProductsType } from "@repo/types";
 import { auth } from "@clerk/nextjs/server";
 import MediaImage from "./MediaImage";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 const CardList = async ({ title }: { title: string }) => {
   let products: ProductsType = [];
@@ -15,9 +15,7 @@ const CardList = async ({ title }: { title: string }) => {
 
   if (title === "Popular Products") {
     try {
-      const prodUrl = getServiceUrl(
-        process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-      );
+      const prodUrl = getApiGatewayUrl();
       products = await fetch(
         `${prodUrl}/api/v1/products?limit=5&popular=true`,
       ).then((res) => (res.ok ? res.json() : []));
@@ -27,12 +25,8 @@ const CardList = async ({ title }: { title: string }) => {
 
     if (!products || products.length === 0) {
       try {
-        const recUrl = getServiceUrl(
-          process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL,
-        );
-        const prodUrl = getServiceUrl(
-          process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-        );
+        const recUrl = getApiGatewayUrl();
+        const prodUrl = getApiGatewayUrl();
         const recRes = await fetch(
           `${recUrl}/api/v1/recommendations/popular?limit=5`,
         );
@@ -61,9 +55,7 @@ const CardList = async ({ title }: { title: string }) => {
   } else {
     // Attempt to fetch from analytic-service first, fallback to order-service
     try {
-      const analyticUrl = getServiceUrl(
-        process.env.NEXT_PUBLIC_ANALYTIC_SERVICE_URL,
-      );
+      const analyticUrl = getApiGatewayUrl();
       events = await fetch(`${analyticUrl}/api/v1/analytics/events?limit=5`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -75,9 +67,7 @@ const CardList = async ({ title }: { title: string }) => {
 
     if (events.length === 0) {
       try {
-        const orderUrl = getServiceUrl(
-          process.env.NEXT_PUBLIC_ORDER_SERVICE_URL,
-        );
+        const orderUrl = getApiGatewayUrl();
         orders = await fetch(`${orderUrl}/api/v1/orders?limit=5`, {
           headers: {
             Authorization: `Bearer ${token}`,

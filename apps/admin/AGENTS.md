@@ -30,8 +30,8 @@ and uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-for
   - Frontend: `src/middleware.ts` protects the dashboard routes and redirects non-admins.
   - Backend: services still enforce authorization. Do not rely on the frontend gate alone.
 - **Data fetching in server components:** `auth()` from `@clerk/nextjs/server` for session
-  info; fetch service data with `Authorization: Bearer <token>` and
-  `process.env.NEXT_PUBLIC_*_SERVICE_URL`.
+  info; fetch service data with `Authorization: Bearer <token>` via unified API Gateway
+  (`getApiGatewayUrl()` / `NEXT_PUBLIC_API_GATEWAY_URL`).
 - **Interactive screens:** TanStack Query (`useQuery`/`useMutation`) for mutations and
   polling-heavy screens. Forms use `react-hook-form` + Zod.
 - **Tables:** TanStack Table with per-section column definitions.
@@ -65,15 +65,15 @@ This app talks HTTP to:
   not that the index is already rebuilt.
 - `order-service` — orders, order chart.
 - `auth-service` — user admin (list, get, create, delete).
-- `shipping-service` (`NEXT_PUBLIC_SHIPPING_SERVICE_URL` :8011) — logistics dashboard, shipments, multi-carrier adapters, rates, label printing, and tracking.
-- `recommendation-service` (`NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL` :8008) — live health checks (`/health/live`), strategy metrics (`/api/v1/analytics/metrics`), interactive tester (`/api/v1/recommendations/*`), and overview popular product fallback (`/api/v1/recommendations/popular`).
-- `review-service` (`NEXT_PUBLIC_REVIEW_SERVICE_URL` :8014) — review moderation queue (`/api/v1/admin/reviews/pending`), approval/rejection actions (`/api/v1/admin/reviews/:id/moderate`), abuse reports, and rating summary recalibration.
-- `promotion-service` (`NEXT_PUBLIC_PROMOTION_SERVICE_URL` :8016) — promotional campaigns dashboard (`/promotions`), coupon code generation, promotion activation/deactivation, and redemption history.
-- `tax-service` (`NEXT_PUBLIC_TAX_SERVICE_URL` :8017 / `/taxes`) — executive tax compliance dashboard, configurable versioned tax rules, tax jurisdictions, customer exemptions, and calculation audit logs.
-- `return-service` (`NEXT_PUBLIC_RETURN_SERVICE_URL` :8018 / `/returns`) — multi-seller returns management dashboard (`/returns`), RMA review, approval/rejection dialogs, warehouse item inspection modal (disposition and restock decisions), return shipment tracking, and Stripe refund retry execution.
-- `pricing-service` (`NEXT_PUBLIC_PRICING_SERVICE_URL` :8090 / :8019) — authoritative merchandise pricing, seller price lists (B2B & B2C), multi-currency exchange rates, tiered volume pricing rules, and pricing audit history.
-- `vendor-service` (`NEXT_PUBLIC_VENDOR_SERVICE_URL` :8020 / `/vendors`) — legal business entities, merchant onboarding, KYB verification queue, document review, and organization status controls.
-- `seller-service` (`NEXT_PUBLIC_SELLER_SERVICE_URL` :8021 / `/sellers` / `/settings`) — marketplace storefront management, staff permissions, operational settings, policies, seller performance monitoring, and project-wide Super Admin governance (`/settings`, `isSellerEnabled` toggle).
+- `shipping-service` — logistics dashboard, shipments, multi-carrier adapters, rates, label printing, and tracking.
+- `recommendation-service` — live health checks (`/health/live`), strategy metrics (`/api/v1/analytics/metrics`), interactive tester (`/api/v1/recommendations/*`), and overview popular product fallback (`/api/v1/recommendations/popular`).
+- `review-service` — review moderation queue (`/api/v1/admin/reviews/pending`), approval/rejection actions (`/api/v1/admin/reviews/:id/moderate`), abuse reports, and rating summary recalibration.
+- `promotion-service` — promotional campaigns dashboard (`/promotions`), coupon code generation, promotion activation/deactivation, and redemption history.
+- `tax-service` — executive tax compliance dashboard, configurable versioned tax rules, tax jurisdictions, customer exemptions, and calculation audit logs.
+- `return-service` — multi-seller returns management dashboard (`/returns`), RMA review, approval/rejection dialogs, warehouse item inspection modal (disposition and restock decisions), return shipment tracking, and Stripe refund retry execution.
+- `pricing-service` — authoritative merchandise pricing, seller price lists (B2B & B2C), multi-currency exchange rates, tiered volume pricing rules, and pricing audit history.
+- `vendor-service` — legal business entities, merchant onboarding, KYB verification queue, document review, and organization status controls.
+- `seller-service` — marketplace storefront management, staff permissions, operational settings, policies, seller performance monitoring, and project-wide Super Admin governance (`/settings`, `isSellerEnabled` toggle).
 - every caching service — its `/metrics` endpoint, for the **Cache Performance** page
   (`/cache`). That page reads `cache_hits_total` / `cache_misses_total` / `cache_errors_total`
   from search-service, product-service, analytic-service, and order-service, and reports a

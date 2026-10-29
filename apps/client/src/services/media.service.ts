@@ -9,9 +9,9 @@
  * storage — binaries never traverse media-service's API).
  */
 
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const MEDIA_BASE = getServiceUrl(process.env.NEXT_PUBLIC_MEDIA_SERVICE_URL);
+const MEDIA_BASE = getApiGatewayUrl();
 
 const cache = new Map<string, string | null>();
 

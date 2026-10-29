@@ -18,9 +18,9 @@
  *   - Storefront overview (full homepage layout)
  */
 
-import { getServiceUrl } from "../services/gateway.service";
+import { getApiGatewayUrl } from "../services/gateway.service";
 
-const BASE = `${getServiceUrl(process.env.NEXT_PUBLIC_CATALOG_SERVICE_URL)}/api/v1/catalog`;
+const BASE = `${getApiGatewayUrl()}/api/v1/catalog`;
 
 // ─── Types (mirrors CatalogProductCardType from @repo/types) ────────────────
 

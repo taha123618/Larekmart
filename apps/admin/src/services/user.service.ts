@@ -1,7 +1,7 @@
 import type { UserDetailResponse } from "@repo/types";
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const USER_BASE = getServiceUrl(process.env.NEXT_PUBLIC_USER_SERVICE_URL);
+const USER_BASE = getApiGatewayUrl();
 
 const BASE = `${USER_BASE}/api/v1/users/admin/users`;
 

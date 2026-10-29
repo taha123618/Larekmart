@@ -26,16 +26,14 @@ import {
   ShoppingCart,
   Percent,
 } from "lucide-react";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 export const dynamic = "force-dynamic";
 
 async function fetchStrategyMetrics(
   token: string | null,
 ): Promise<StrategyMetricType[]> {
-  const serviceUrl = getServiceUrl(
-    process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL,
-  );
+  const serviceUrl = getApiGatewayUrl();
 
   try {
     const res = await fetch(`${serviceUrl}/api/v1/analytics/metrics`, {
@@ -51,9 +49,7 @@ async function fetchStrategyMetrics(
 }
 
 async function checkEngineHealth(): Promise<boolean> {
-  const serviceUrl = getServiceUrl(
-    process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL,
-  );
+  const serviceUrl = getApiGatewayUrl();
   try {
     const res = await fetch(`${serviceUrl}/health/live`, {
       cache: "no-store",

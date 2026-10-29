@@ -22,7 +22,7 @@ import { Button } from "./ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "react-toastify";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 const CreateItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -60,9 +60,7 @@ export default function AddInventoryItemSheet({
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof CreateItemSchema>) => {
       const token = await getToken();
-      const inventoryUrl = getServiceUrl(
-        process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL,
-      );
+      const inventoryUrl = getApiGatewayUrl();
       const res = await fetch(
         `${inventoryUrl}/api/v1/inventory/items`,
         {

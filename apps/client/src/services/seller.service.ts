@@ -9,9 +9,9 @@ import type {
   SellerStatus,
   StorefrontStatus,
 } from "@repo/types";
-import { getServiceUrl } from "./gateway.service";
+import { getApiGatewayUrl } from "./gateway.service";
 
-const API_BASE = getServiceUrl(process.env.NEXT_PUBLIC_SELLER_SERVICE_URL);
+const API_BASE = getApiGatewayUrl();
 
 const SELLERS_BASE = `${API_BASE}/api/v1/sellers`;
 const STOREFRONTS_BASE = `${API_BASE}/api/v1/storefronts`;

@@ -3,11 +3,9 @@ import type {
   HomeRecommendationsResponseType,
   InteractionCreateType,
 } from "@repo/types";
-import { getServiceUrl, buildSafeUrl } from "./gateway.service";
+import { getApiGatewayUrl, buildSafeUrl } from "./gateway.service";
 
-const RECOMMENDATION_SERVICE_URL = getServiceUrl(
-  process.env.NEXT_PUBLIC_RECOMMENDATION_SERVICE_URL,
-);
+const RECOMMENDATION_SERVICE_URL = getApiGatewayUrl();
 
 export async function getHomeRecommendations(
   userId?: string,

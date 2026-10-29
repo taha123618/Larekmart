@@ -8,13 +8,11 @@ import { SellerBadge } from "@/components/seller/SellerBadge";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getServiceUrl } from "@/services/gateway.service";
+import { getApiGatewayUrl } from "@/services/gateway.service";
 
 const fetchProduct = async (id: string): Promise<ProductType | null> => {
   try {
-    const productServiceUrl = getServiceUrl(
-      process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-    );
+    const productServiceUrl = getApiGatewayUrl();
     const res = await fetch(`${productServiceUrl}/api/v1/products/${id}`, {
       cache: "no-store",
     });
