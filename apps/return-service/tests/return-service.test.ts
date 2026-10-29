@@ -441,7 +441,11 @@ async function testOutboxClusterIsolation() {
     workerPod1,
     { ttlMs: 5000 },
   );
-  assert.equal(acquired, true, "Worker pod 1 must acquire cluster leader lease");
+  assert.equal(
+    acquired,
+    true,
+    "Worker pod 1 must acquire cluster leader lease",
+  );
 
   // Mock producer that tracks dispatches
   let publishedCount = 0;

@@ -21,15 +21,24 @@ async function runRedisClusterShardingTests(): Promise<void> {
   console.log("\n1. Testing CRC16 and slot allocation...");
   // Standard test vector for XMODEM CRC16: "123456789" -> 0x31C3 (12739)
   const vectorCrc = crc16("123456789");
-  assert.equal(vectorCrc, 12739, "CRC16 of '123456789' must equal standard XMODEM 12739");
+  assert.equal(
+    vectorCrc,
+    12739,
+    "CRC16 of '123456789' must equal standard XMODEM 12739",
+  );
 
   const slot1 = calculateClusterSlot("plain_key_without_brackets");
-  assert.ok(slot1 >= 0 && slot1 < 16384, "Cluster slot must be within 0..16383");
+  assert.ok(
+    slot1 >= 0 && slot1 < 16384,
+    "Cluster slot must be within 0..16383",
+  );
 
   // ---------------------------------------------------------------------------
   // TEST 2: Cluster Hash Tag Extraction & Slot Coalescing
   // ---------------------------------------------------------------------------
-  console.log("\n2. Testing Hash Tag extraction and multi-key slot coalescing...");
+  console.log(
+    "\n2. Testing Hash Tag extraction and multi-key slot coalescing...",
+  );
   const k1 = "stock:available:{pk_khi_01}:prod_9981:var_002";
   const k2 = "stock:claim:{pk_khi_01}:ref_shopper_8821";
   const k3 = "stock:lock:{pk_khi_01}:prod_9981:var_002";
@@ -42,8 +51,16 @@ async function runRedisClusterShardingTests(): Promise<void> {
   const slotK2 = calculateClusterSlot(k2);
   const slotK3 = calculateClusterSlot(k3);
 
-  assert.equal(slotK1, slotK2, "Keys sharing {pk_khi_01} must map to identical slot");
-  assert.equal(slotK2, slotK3, "Keys sharing {pk_khi_01} must map to identical slot");
+  assert.equal(
+    slotK1,
+    slotK2,
+    "Keys sharing {pk_khi_01} must map to identical slot",
+  );
+  assert.equal(
+    slotK2,
+    slotK3,
+    "Keys sharing {pk_khi_01} must map to identical slot",
+  );
   console.log(`  ✓ All 3 keys with {pk_khi_01} resolved to slot #${slotK1}`);
 
   // Multi-tenant composite tag: {tenant:warehouse}
@@ -51,7 +68,9 @@ async function runRedisClusterShardingTests(): Promise<void> {
   const mt2 = "stock:claim:{tenant_global:dc_lahore}:order_ref_99";
   assert.equal(extractClusterHashTag(mt1), "tenant_global:dc_lahore");
   assert.equal(calculateClusterSlot(mt1), calculateClusterSlot(mt2));
-  console.log(`  ✓ Multi-tenant tag {tenant_global:dc_lahore} resolved to slot #${calculateClusterSlot(mt1)}`);
+  console.log(
+    `  ✓ Multi-tenant tag {tenant_global:dc_lahore} resolved to slot #${calculateClusterSlot(mt1)}`,
+  );
 
   // ---------------------------------------------------------------------------
   // TEST 3: KeyBuilder Sharded Method
@@ -85,7 +104,12 @@ async function runRedisClusterShardingTests(): Promise<void> {
         nodeState.set(fullKey, val);
         return "OK";
       },
-      eval: async (_script: string, _numkeys: number, key: string, expectedVal: string) => {
+      eval: async (
+        _script: string,
+        _numkeys: number,
+        key: string,
+        expectedVal: string,
+      ) => {
         const fullKey = `${nodeId}:${key}`;
         if (nodeState.get(fullKey) === expectedVal) {
           nodeState.delete(fullKey);
@@ -109,8 +133,13 @@ async function runRedisClusterShardingTests(): Promise<void> {
   );
   assert.ok(lease1 !== null, "Must acquire lease when 3/3 nodes succeed");
   assert.equal(lease1.workerId, "worker-1");
-  assert.ok(lease1.validityMs > 3000, "Validity time must remain within bounds");
-  console.log(`  ✓ 3-node Redlock consensus achieved (validity: ${lease1.validityMs}ms)`);
+  assert.ok(
+    lease1.validityMs > 3000,
+    "Validity time must remain within bounds",
+  );
+  console.log(
+    `  ✓ 3-node Redlock consensus achieved (validity: ${lease1.validityMs}ms)`,
+  );
 
   // Case 4B: Worker-2 attempts to acquire same key -> Conflict (0 nodes acquired)
   const lease2 = await acquireRedlockConsensus(
@@ -119,7 +148,11 @@ async function runRedisClusterShardingTests(): Promise<void> {
     "worker-2",
     { ttlMs: 4000 },
   );
-  assert.equal(lease2, null, "Concurrent worker-2 must be rejected by consensus");
+  assert.equal(
+    lease2,
+    null,
+    "Concurrent worker-2 must be rejected by consensus",
+  );
   console.log("  ✓ Conflicting worker-2 properly rejected by Redlock quorum");
 
   // Case 4C: Safe release of lease1
@@ -139,10 +172,19 @@ async function runRedisClusterShardingTests(): Promise<void> {
     "worker-3",
     { ttlMs: 4000 },
   );
-  assert.ok(lease3 !== null, "Must achieve quorum (2/3) even if 1 node crashes");
+  assert.ok(
+    lease3 !== null,
+    "Must achieve quorum (2/3) even if 1 node crashes",
+  );
   assert.equal(lease3.workerId, "worker-3");
-  await releaseRedlockConsensus([nodeA, nodeB, deadNode], "cluster:outbox:sweeper", "worker-3");
-  console.log("  ✓ Redlock consensus successfully tolerated 1 crashed node (2/3 quorum)");
+  await releaseRedlockConsensus(
+    [nodeA, nodeB, deadNode],
+    "cluster:outbox:sweeper",
+    "worker-3",
+  );
+  console.log(
+    "  ✓ Redlock consensus successfully tolerated 1 crashed node (2/3 quorum)",
+  );
 
   console.log("\n==================================================");
   console.log("🎉 All @repo/redis Cluster Sharding Tests Passed Cleanly!");

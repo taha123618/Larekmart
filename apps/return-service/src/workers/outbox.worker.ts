@@ -8,7 +8,11 @@
  */
 import os from "node:os";
 import crypto from "node:crypto";
-import { createKafkaClient, createProducer, type KafkaProducer } from "@repo/kafka";
+import {
+  createKafkaClient,
+  createProducer,
+  type KafkaProducer,
+} from "@repo/kafka";
 import { acquireClusterLock, releaseClusterLock } from "@repo/redis";
 import { outboxRepository } from "../repositories/outbox.repository.js";
 import { redis } from "../utils/redis.js";
@@ -76,7 +80,11 @@ export async function processOutboxBatch(
     }
   } finally {
     try {
-      await releaseClusterLock(redis.client, OUTBOX_CLUSTER_LEADER_KEY, workerId);
+      await releaseClusterLock(
+        redis.client,
+        OUTBOX_CLUSTER_LEADER_KEY,
+        workerId,
+      );
     } catch {
       // Lease auto-expires
     }
