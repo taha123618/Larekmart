@@ -1,34 +1,13 @@
 {
   "name": "analytic-service",
   "version": "1.0.0",
-  "description": "Analytics microservice for event stream aggregation, metrics persistence, and dashboard analytics API",
-  "main": "src/index.ts",
+  "description": "High-throughput Go analytics microservice for decoupled Kafka event stream ingestion, metrics persistence, and dashboard analytics API",
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm dlx tsx --env-file=.env --watch src/index.ts",
-    "test": "tsx tests/analytic-service.test.ts",
-    "check-types": "tsc --noEmit"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@clerk/express": "^1.7.30",
-    "@repo/kafka": "workspace:*",
-    "@repo/types": "workspace:*",
-    "@repo/monitoring": "workspace:*",
-    "@repo/redis": "workspace:*",
-    "cors": "^2.8.5",
-    "express": "^5.0.3",
-    "pg": "^8.11.3"
-  },
-  "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.3",
-    "@types/node": "^24.5.2",
-    "@types/pg": "^8.11.0",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "dev": "go run ./cmd/analytics/main.go",
+    "test": "go test -v ./...",
+    "build": "go build -o bin/analytics ./cmd/analytics/main.go",
+    "check-types": "go vet ./..."
   }
 }

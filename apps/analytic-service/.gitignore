@@ -1,14 +1,19 @@
 # Dependencies
 node_modules/
 
-# Build & TypeScript
-dist/
-build/
-*.tsbuildinfo
+# Binaries and build outputs
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
-# Environment Variables
-.env*
-!.env.example
+# Test artifacts and coverage
+*.out
+coverage.txt
+coverage.html
+profile.out
 
 # Logs
 logs/
@@ -18,8 +23,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Testing
-coverage/
+# Environment Variables
+.env*
+!.env.example
 
 # OS & Misc
 .DS_Store

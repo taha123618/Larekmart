@@ -1,46 +1,49 @@
 # ==============================================================================
-# Larekmart - Analytic Service Dockerfile
+# Larekmart - Analytic Service (Go) Dockerfile
 # Hardened multi-stage build adhering to Docker Hardened Images (DHI) standards.
 # ==============================================================================
 
-ARG BASE_IMAGE=node:20-alpine
-ARG BUILD_BASE_IMAGE=larekmart-base-node:latest
-# For enterprise DHI environments: docker build --build-arg BASE_IMAGE=dhi.io/node:20 .
+ARG BUILDER_IMAGE=golang:1.22-alpine
+ARG RUNNER_IMAGE=alpine:3.20
+# For enterprise DHI environments:
+#   docker build --build-arg BUILDER_IMAGE=dhi.io/golang:1.22 --build-arg RUNNER_IMAGE=dhi.io/alpine:3.20 .
 
-# Stage 1: Base build environment pre-configured with pnpm and turbo
-FROM ${BUILD_BASE_IMAGE} AS base
+# Stage 1: Build static binary
+FROM ${BUILDER_IMAGE} AS builder
 
-# Stage 2: Turbo pruning to isolate workspace
-FROM base AS builder
-WORKDIR /app
+WORKDIR /src
+
+# Install CA certs and build tools
+RUN apk add --no-cache ca-certificates git
+
+# Cache go modules
+COPY go.mod go.sum* ./
+RUN go mod download
+
+# Copy source
 COPY . .
-RUN turbo prune analytic-service --docker
 
-# Stage 3: Install dependencies
-FROM base AS installer
-WORKDIR /app
-COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install --frozen-lockfile
+# Build static binary
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/analytics ./cmd/analytics/main.go
 
-COPY --from=builder /app/out/full/ .
-RUN pnpm turbo run build --filter=analytic-service... || true
+# Stage 2: Minimal hardened runtime
+FROM ${RUNNER_IMAGE} AS runner
 
-# Stage 4: Minimal hardened production runner (clean runtime, no corepack/pnpm)
-FROM ${BASE_IMAGE} AS runner
-WORKDIR /app
-ENV NODE_ENV=production
+RUN apk add --no-cache ca-certificates tzdata
 
 # Security: Run as unprivileged system user
-RUN (getent group nodejs || addgroup -g 1001 -S nodejs 2>/dev/null || addgroup --system --gid 1001 nodejs) && \
-    (getent passwd expressjs || adduser -u 1001 -S -G nodejs expressjs 2>/dev/null || adduser --system --uid 1001 --ingroup nodejs expressjs 2>/dev/null || adduser --system --uid 1001 -G nodejs expressjs)
-USER expressjs
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY --from=installer --chown=expressjs:nodejs /app/node_modules ./node_modules
-COPY --from=installer --chown=expressjs:nodejs /app/packages ./packages
-COPY --from=installer --chown=expressjs:nodejs /app/apps/analytic-service ./apps/analytic-service
+WORKDIR /app
 
-WORKDIR /app/apps/analytic-service
+COPY --from=builder --chown=appuser:appgroup /bin/analytics /app/analytics
+COPY --from=builder --chown=appuser:appgroup /src/migrations /app/migrations
+
+USER appuser
 
 EXPOSE 8004
-CMD ["node", "--import", "tsx", "src/index.ts"]
+
+ENV APP_ENV=production \
+    PORT=8004
+
+ENTRYPOINT ["/app/analytics"]

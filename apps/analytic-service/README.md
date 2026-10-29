@@ -1,44 +1,60 @@
 # Analytic Service (`apps/analytic-service`)
 
-Hybrid analytics worker and HTTP API service that consumes project-wide Kafka event streams to aggregate real-time metrics, track business KPIs (revenue, orders, user signups, product catalog changes), persist structured audit event logs, and serve analytical queries to the Admin dashboard.
+High-throughput, multithreaded Go analytics microservice and worker that consumes project-wide Kafka event streams to aggregate real-time metrics, track business KPIs (revenue, orders, user signups, product catalog updates, merchant activity), persist structured audit logs via PostgreSQL binary `COPY` protocol, and serve analytical queries to the Admin dashboard.
+
+## Architecture & Design Highlights
+
+1. **Decoupled Kafka Ingestion**:
+   - Written in **Go 1.22** using `segmentio/kafka-go`.
+   - Ingestion is fully decoupled from processing: a dedicated reader goroutine consumes all 38 platform topics and immediately deposits events into a thread-safe, bounded channel queue buffer (10,000 capacity).
+   - Kafka heartbeat loops run uninterrupted in their own goroutine, completely eliminating event-loop starvation, heartbeat timeouts (`session.timeout.ms`), and catastrophic consumer group rebalance storms under peak flash-sale loads.
+
+2. **Binary COPY Micro-Batching (`pgx.CopyFrom`)**:
+   - A dedicated worker pool drains the bounded buffer and persists events in micro-batches (up to 1,000 events or 500ms flush window) using PostgreSQL's native binary COPY protocol (`pgx.CopyFrom`).
+   - Bypasses SQL query parsing, tokenization, and query planning overhead, delivering 5–10x higher write throughput than standard multi-row `INSERT` statements.
+
+3. **Time-Partitioned Storage & BRIN Indexing**:
+   - `analytics_events` table is partitioned by month (`PARTITION BY RANGE (created_at)`).
+   - Employs Block Range Indexes (BRIN) on `created_at` for high compression and zero table-lock contention during retention window pruning (`DROP TABLE` on old partitions).
+
+4. **Lock-Free In-Memory Atomic Counters**:
+   - Real-time KPI summaries (`/analytics/summary`, `/analytics/merchants`) query lock-free atomic counters (`sync/atomic` with CAS bit casting for float64 revenue and tax metrics) for instant `<1ms` response times.
+
+5. **Read-Through Redis Caching**:
+   - Time-series and event feed endpoints (`/analytics/daily-chart`, `/analytics/events`) leverage `redis/go-redis/v9` TTL caching (60s / 15s) with graceful fallback to PostgreSQL if Redis is unavailable.
+
+6. **Zero-Trust Perimeter Authentication**:
+   - Validates `X-Internal-Secret` in constant time (`crypto/subtle.ConstantTimeCompare`) alongside `X-User-Role: admin` forwarded by the API Gateway.
+   - Supports direct Bearer Clerk JWT verification with fail-closed production semantics.
+
+---
 
 ## Tech Stack
 
-- **Runtime & Web Framework**: Node.js (ESM), Express 5
+- **Runtime**: Go 1.22+
+- **HTTP Router**: `go-chi/chi/v5`
 - **Port**: `8004`
-- **Authentication**: `@clerk/express` (Admin-gated queries)
-- **Messaging**: Apache Kafka (`@repo/kafka`)
-- **Shared Types**: `@repo/types`
-- **Persistence**: PostgreSQL (`pg` connection pool with auto-initialization and resilient in-memory aggregation fallback)
-- **Cache**: Redis (`@repo/redis`) — TTL-bounded read-through cache for the dashboard endpoints
+- **Database**: PostgreSQL 16 (Dedicated `postgres-analytics` on port `5433` / `analytics_db`) via `jackc/pgx/v5` (`pgxpool.Pool`)
+- **Messaging**: Apache Kafka (`segmentio/kafka-go`)
+- **Cache**: Redis 7 (`redis/go-redis/v9`)
+- **Telemetry**: Prometheus (`prometheus/client_golang`)
 
-## Event Integrations
-
-The analytic service subscribes to all core event streams emitted across Larekmart microservices:
-
-- **`payment.successful`**: Emitted by `payment-service` upon Stripe webhook confirmation. Aggregates revenue, items sold, and customer checkout activity.
-- **`order.created`**: Emitted by `payment-service` / `order-service` when a customer order is placed and finalized.
-- **`user.created`**: Emitted by `auth-service` upon Clerk user signups. Tracks user registration metrics.
-- **`product.created`**: Emitted by `product-service` upon product addition. Tracks catalog growth.
-- **`product.deleted`**: Emitted by `product-service` upon product deletion.
+---
 
 ## HTTP API Endpoints
 
-| Method | Path                     | Auth Required           | Description                                                        |
-| :----- | :----------------------- | :---------------------- | :----------------------------------------------------------------- |
-| `GET`  | `/health`                | Public                  | Returns service uptime and status                                  |
-| `GET`  | `/analytics/summary`     | Admin (`shouldBeAdmin`) | Returns overall platform KPIs (`AnalyticsSummaryType`)             |
-| `GET`  | `/analytics/daily-chart` | Admin (`shouldBeAdmin`) | Returns daily aggregations over time (`AnalyticsDailyChartType[]`) |
-| `GET`  | `/analytics/events`      | Admin (`shouldBeAdmin`) | Returns latest audit event stream (`AnalyticsEventType[]`)         |
+| Method | Path                     | Auth Required                            | Description                                                       |
+| :----- | :----------------------- | :--------------------------------------- | :---------------------------------------------------------------- |
+| `GET`  | `/health`                | Public                                   | Detailed health status of service, DB, and Redis                  |
+| `GET`  | `/health/live`           | Public                                   | Kubernetes liveness probe                                         |
+| `GET`  | `/health/ready`          | Public                                   | Kubernetes readiness probe                                        |
+| `GET`  | `/metrics`               | Public / Scraper                         | Prometheus metrics endpoint                                       |
+| `GET`  | `/analytics/summary`     | Admin (`X-Internal-Secret` / Bearer JWT) | High-level platform KPIs (revenue, orders, signups, products)     |
+| `GET`  | `/analytics/merchants`   | Admin (`X-Internal-Secret` / Bearer JWT) | Multi-vendor merchant KPIs (total, active, pending, revenue)      |
+| `GET`  | `/analytics/daily-chart` | Admin (`X-Internal-Secret` / Bearer JWT) | Time-series daily revenue, orders, and signups (Redis cached 60s) |
+| `GET`  | `/analytics/events`      | Admin (`X-Internal-Secret` / Bearer JWT) | Recent audit event stream (Redis cached 15s)                      |
 
-## Schema & Tables
-
-When PostgreSQL is connected, the service automatically ensures the following tables exist:
-
-1. `analytics_events`: Raw audit log of events with user, amount, and JSONB metadata.
-2. `analytics_daily_summary`: Daily rollups of revenue, orders, signups, and catalog modifications.
-
-If PostgreSQL is temporarily unavailable, the service logs events to console, maintains real-time in-memory counters with heartbeat reporting, and continues serving cached metrics without crashing the consumer group.
+---
 
 ## Environment Variables
 
@@ -46,23 +62,37 @@ Copy `.env.example` to `.env`:
 
 ```env
 PORT=8004
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ecommerce"
+DATABASE_URL="postgresql://postgres:password123@localhost:5433/analytics_db"
 CLERK_SECRET_KEY=sk_test_...
 CLERK_PUBLISHABLE_KEY=pk_test_...
-
-# Optional — the service serves analytics from PostgreSQL without it
 REDIS_URL=redis://localhost:6379
 REDIS_KEY_PREFIX=analytics:v1:
 ANALYTICS_CHART_CACHE_TTL_SECONDS=60
 ANALYTICS_EVENTS_CACHE_TTL_SECONDS=15
+KAFKA_BROKERS=localhost:9094,localhost:9095,localhost:9096
+CLIENT_URL=http://localhost:3002
+ADMIN_URL=http://localhost:3003
+INTERNAL_SERVICE_SECRET=dev-shared-internal-secret-larekmart
 ```
 
-## Development Commands
+---
+
+## Development & Verification Commands
 
 ```bash
-# Run standalone
+# Run standalone dev server
 pnpm --filter analytic-service dev
+# or: go run ./cmd/analytics/main.go
 
-# Type check
+# Run unit & integration test suites
+pnpm --filter analytic-service test
+# or: go test -v ./...
+
+# Static type and vetting check
 pnpm --filter analytic-service check-types
+# or: go vet ./...
+
+# Build binary
+pnpm --filter analytic-service build
+# or: go build -o bin/analytics ./cmd/analytics/main.go
 ```

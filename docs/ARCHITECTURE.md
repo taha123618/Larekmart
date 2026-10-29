@@ -114,15 +114,15 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 
 - Consumes `user.created` and `order.created`; sends mail via nodemailer (Gmail OAuth2).
 
-**`analytic-service` (Express 5, :8004)** — metrics and event analytics.
+**`analytic-service` (Go 1.22 / Chi, :8004)** — high-throughput metrics and event analytics.
 
-- Routes: `/analytics/summary`, `/analytics/daily-chart`, `/analytics/events`, `/health`.
-- Consumes all domain Kafka event streams.
-- High-Velocity Telemetry Ring Buffer: Implements an in-memory ring buffer (500-event capacity / 1,000ms flush window in `src/services/event-batcher.ts`), executing multi-row parameterized bulk inserts (`INSERT INTO ... VALUES (...), (...)...`) that reduce PostgreSQL write operations by **99.8%** during flash sales, with graceful shutdown flush ensuring 0 event loss.
+- Routes: `/analytics/summary`, `/analytics/merchants`, `/analytics/daily-chart`, `/analytics/events`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
+- Consumes all 38 platform Kafka event streams via `segmentio/kafka-go` with a dedicated reader goroutine.
+- Decoupled Go Pipeline: Ingestion pushes messages into a 10,000-capacity buffered channel, preventing Kafka consumer heartbeat starvation (`session.timeout.ms`) and consumer group rebalances during flash-sale traffic spikes.
+- Binary COPY Batching (`pgx.CopyFrom`): Worker pool micro-batches events (1,000 events / 500ms window) directly into monthly partitioned PostgreSQL tables (`analytics_events` `PARTITION BY RANGE (created_at)`) with Block Range Indexes (BRIN), bypassing query parser/tokenization overhead and reducing DB transactions by >99.8%.
+- Lock-Free Atomic State: In-memory atomic counters (`sync/atomic` with CAS bit casting for float64 revenue and tax) deliver sub-millisecond responses for `/analytics/summary` and `/analytics/merchants`.
 - Isolated Database: Runs on dedicated PostgreSQL instance (`larekmart-postgres-analytics` on port 5433), eliminating telemetry lock contention on core commerce databases.
-- Caching: Redis (`analytics:v1:*` namespace) through `@repo/redis` — TTL-bounded read-through cache for
-  `/analytics/daily-chart` and `/analytics/events`. Entries expire rather than being invalidated per event,
-  because events arrive faster than a write-through invalidation would repopulate them.
+- Caching: Redis (`analytics:v1:*` namespace) via `go-redis/v9` — TTL-bounded read-through cache for `/analytics/daily-chart` and `/analytics/events` with transparent fallback to PostgreSQL.
 
 **`notification-service` (Go 1.22 / Chi, :8005)** — unified notification orchestration.
 
@@ -272,7 +272,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | shipping-service                 | `@repo/shipping-db` (Prisma)  | `shipments`, `shipment_items`, `shipment_packages`, `shipping_methods`, `tracking_events`, `shipping_labels`                                                                      |
 | PostgreSQL | user-service                     | `@repo/user-db` (Prisma)      | `users`, `user_profiles`, `user_addresses`, `user_preferences`, `user_settings`, `processed_events`                                                                               |
 | PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`                                             |
-| PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                                                                     |
+| PostgreSQL | analytic-service                 | `pgxpool.Pool` (Go)           | `analytics_events` (partitioned), `analytics_daily_summary`                                                                                                                       |
 | PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events`                                           |
 | PostgreSQL | media-service                    | Drizzle (`pg`)                | `media`, `media_variants`, `media_uploads`, `media_processing_jobs`, `processed_events`                                                                                           |
 | PostgreSQL | review-service                   | Drizzle (`pg`)                | `reviews`, `review_media`, `review_votes`, `review_reports`, `review_moderation_actions`, `seller_responses`, `product_rating_summaries`                                          |
@@ -290,7 +290,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | catalog-service                  | `@repo/redis` (ioredis)       | `catalog:v1:*` (storefront product & collection cache)                                                                                                                            |
 | Redis      | shipping-service                 | `@repo/redis` (ioredis)       | `shipping:v1:*` (shipping rate cache, tracking cache, webhook idempotency)                                                                                                        |
 | Redis      | user-service                     | `@repo/redis` (ioredis)       | `user:v1:*` (profile, address, preference, settings read-through cache)                                                                                                           |
-| Redis      | analytic-service                 | `@repo/redis` (ioredis)       | `analytics:v1:*` (dashboard read-through cache)                                                                                                                                   |
+| Redis      | analytic-service                 | `go-redis` (Go)               | `analytics:v1:*` (dashboard read-through cache)                                                                                                                                   |
 | Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                                                             |
 | Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                                                                      |
 | Redis      | review-service                   | `@repo/redis` (ioredis)       | `review:*` (product rating summary cache, anti-abuse vote/report limits)                                                                                                          |
@@ -473,6 +473,7 @@ buyer (Browse Seller Store) ── GET /api/v1/sellers/slug/:slug ──▶ sell
 - **CORS:** each service allow-lists the specific frontend origins it serves
 
   (`client` :3002, `admin` :3003).
+
 - **Error shape:** `{ message }` JSON with correct status codes; a global error handler
   exists in the Express services.
 

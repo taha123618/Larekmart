@@ -21,9 +21,9 @@ Monorepo-wide coding standards for Larekmart.
    - `apps/product-service` & `apps/auth-service`: Express 5 (Node.js ESM)
    - `apps/order-service`: Fastify 5 (Node.js ESM)
    - `apps/payment-service`: Hono (Node.js ESM)
-   - `apps/analytic-service`: Express 5 (Node.js ESM)
    - `apps/email-service`: Headless Node.js worker
    - `apps/notification-service`: Go 1.22+ (Chi, pgxpool, go-redis, Gorilla WebSocket, segmentio/kafka-go)
+   - `apps/analytic-service`: Go 1.22+ (Chi, pgxpool, go-redis, segmentio/kafka-go)
 2. **Error Responses**: HTTP endpoints return `{ message: string }` JSON with appropriate HTTP status codes (`400`, `401`, `403`, `404`, `500`).
 3. **Auth Guards**: Apply `shouldBeUser` or `shouldBeAdmin` to protected routes. Derive `userId` from the verified session claims, never from client request bodies.
 4. **Kafka Resiliency**: Wrap consumer handlers in structured error handling (try/catch or Go recover) to prevent unhandled message exceptions from terminating the consumer loop. Always use the `{ value: payload }` envelope.

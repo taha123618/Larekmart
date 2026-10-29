@@ -631,8 +631,8 @@ services:
 
   analytic-service:
     build:
-      context: .
-      dockerfile: apps/analytic-service/Dockerfile
+      context: ./apps/analytic-service
+      dockerfile: Dockerfile
     container_name: larekmart-analytic-service
     deploy: *microservice-deploy
     restart: unless-stopped

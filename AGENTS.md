@@ -83,7 +83,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `payment-service`         | `apps/payment-service`        | Hono                    | 8002 | Stripe checkout sessions, webhooks, Stripe product sync                                                                               |
 | `auth-service`            | `apps/auth-service`           | Express 5               | 8003 | Admin user management proxying Clerk                                                                                                  |
 | `email-service`           | `apps/email-service`          | Node worker             | —    | Consumes Kafka events, sends email (no HTTP)                                                                                          |
-| `analytic-service`        | `apps/analytic-service`       | Express 5               | 8004 | Consumes Kafka events, aggregates metrics & REST API                                                                                  |
+| `analytic-service`        | `apps/analytic-service`       | Go 1.22 (Chi)           | 8004 | Multithreaded Kafka ingestion, pgx.CopyFrom batching, metrics & REST API                                                              |
 | `notification-service`    | `apps/notification-service`   | Go 1.22 (Chi)           | 8005 | Multi-channel notifications, worker pool & WebSockets                                                                                 |
 | `search-service`          | `apps/search-service`         | Fastify 5               | 8006 | OpenSearch product search, filtering, autocomplete & indexing                                                                         |
 | `inventory-service`       | `apps/inventory-service`      | Hono 4                  | 8007 | PostgreSQL stock, reservations, warehouse inventory, and inventory events                                                             |
@@ -165,6 +165,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 
   so malformed payloads (`SyntaxError`, `ZodError`) fast-fail to `<topic>.dlq` without stalling
   partition consumption.
+
 - **Match existing conventions** before introducing new libraries. Check whether the
   dependency already exists in the workspace you are editing.
 - **Keep changes scoped.** Use Turborepo filters for the workspace you touch; do not
@@ -228,11 +229,10 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
 - **Type-check before you finish.** Run `pnpm check-types` (or the workspace filter)
   and `pnpm build` for changes that affect a Next.js app or payment-service.
 - **Testing strategy.** Twenty-seven workspaces ship real test suites run by `pnpm test`
-  (Turborepo): `@repo/types`, `@repo/kafka`, `@repo/redis`, `api-gateway`, `product-service`, `payment-service`, `auth-service`, `analytic-service`, `search-service`, `inventory-service`, `catalog-service`, `email-service`, `user-service`, `cart-service`, `shipping-service`,
-
+  (Turborepo): `@repo/types`, `@repo/kafka`, `@repo/redis`, `api-gateway`, `product-service`, `payment-service`, `auth-service`, `search-service`, `inventory-service`, `catalog-service`, `email-service`, `user-service`, `cart-service`, `shipping-service`,
   `order-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, and `seller-service` use standalone tsx-run test files under
   `tests/` (follow the file's internal runner convention, e.g.
-  `product-service/tests/product-service.test.ts`); `notification-service` uses `go test ./...`;
+  `product-service/tests/product-service.test.ts`); `notification-service` and `analytic-service` use `go test ./...`;
   `recommendation-service` uses pytest via `uv`. There is **no Vitest/Jest anywhere** —
   do not introduce a new runner when extending an existing suite. When adding tests,
   follow `docs/TESTING.md`. Note: `tsc` configs typecheck `src/` only — test files are

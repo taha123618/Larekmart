@@ -37,7 +37,7 @@ Larekmart is implemented as a **pnpm 9 + Turborepo 2 monorepo** with strict boun
 | **`apps/payment-service`**       | Service | Hono (Node ESM)                   | `8002` | `@hono/clerk-auth`, `@repo/kafka`, `@repo/types`, `stripe`          | Stripe API       |
 | **`apps/auth-service`**          | Service | Express 5 (Node ESM)              | `8003` | `@clerk/express`, `@repo/kafka`, `@repo/types`                      | Clerk API        |
 | **`apps/email-service`**         | Worker  | Node.js (ESM)                     | —      | `@repo/kafka`, `@repo/types`, `nodemailer`                          | —                |
-| **`apps/analytic-service`**      | Hybrid  | Express 5 + Node Worker           | `8004` | `@clerk/express`, `@repo/kafka`, `@repo/types`, `pg`                | PostgreSQL / Mem |
+| **`apps/analytic-service`**      | Hybrid  | Go 1.22 + Chi                     | `8004` | `chi`, `pgx/v5`, `kafka-go`, `go-redis/v9`, `prometheus`            | PostgreSQL / Mem |
 | **`packages/kafka`**             | Library | TypeScript (Node ESM)             | —      | `kafkajs`                                                           | —                |
 | **`packages/types`**             | Library | TypeScript                        | —      | `zod`, `@repo/product-db`, `@repo/order-db`                         | —                |
 | **`packages/monitoring`**        | Library | TypeScript (Node ESM)             | —      | — (Zero framework dependencies)                                     | —                |

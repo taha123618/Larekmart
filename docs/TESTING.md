@@ -15,7 +15,7 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `order-service`: Order security, Multi-DB Dual-ACK Saga orchestrator, Transactional Outbox sweeper, MongoDB hashed sharding, idempotency, and chaos resilience rollback suite (`pnpm --filter order-service test`).
    - `payment-service`: Hono auth middleware, gateway header propagation, Stripe webhook signature failure handling, and `PaymentSuccessfulType` event schema (`pnpm --filter payment-service test`).
    - `auth-service`: Clerk express integration, user/admin guards, `UserFormSchema`, and user lifecycle events (`pnpm --filter auth-service test`).
-   - `analytic-service`: Express auth guards, real-time KPI metrics snapshot calculations, and merchant event aggregation (`pnpm --filter analytic-service test`).
+   - `analytic-service`: Go unit test suites covering configuration validation, constant-time auth guards, lock-free atomic KPI state, and bounded-channel micro-batching (`go test -v ./...` or `pnpm --filter analytic-service test`).
    - `search-service`: Fastify auth guards, OpenSearch payload validation, `BulkIndexRequestSchema`, and reindex parameters (`pnpm --filter search-service test`).
    - `inventory-service`: Stripe session verification regression guard, Hono auth middleware, multi-warehouse cache aggregation, Redis stock gatekeeper, and reservation schemas (`pnpm --filter inventory-service test`).
    - `catalog-service`: Read-model cache key formatting, Fastify health/readiness/metrics route injection, product projection payloads, and PostgreSQL read-replica routing (`pnpm --filter catalog-service test`).
@@ -34,7 +34,6 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `email-service`: Email template interpolation for user signups, order receipts with tax breakdown, KYB notifications, and storefront lifecycle alerts (`pnpm --filter email-service test`).
    - `notification-service`: Native Go test suite for workers, templates, dispatchers, and WebSockets (`go test ./...`).
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
-
 
 2. **Strict TypeScript Compilation**:
    ```bash

@@ -4,77 +4,68 @@ Scope: `apps/analytic-service` only. Root rules still apply — start there.
 
 ## What this service is
 
-A hybrid Kafka consumer worker and Express HTTP API service that listens to all primary event streams across the Larekmart e-commerce microservices platform (`payment.successful`, `order.created`, `user.created`, `product.created`, `product.deleted`), updates real-time in-memory counters, persists event audit logs and daily aggregations into PostgreSQL, and serves analytics endpoints to the Admin dashboard.
+A high-throughput **Go 1.22** Kafka consumer worker and Chi HTTP API microservice running on port `8004`. It listens to all 38 primary event streams across the Larekmart platform (`payment.successful`, `order.created`, `user.created`, `product.created`, `product.deleted`, `review.*`, `promotion.*`), updates lock-free in-memory atomic KPI counters, micro-batches raw audit events into PostgreSQL via binary `pgx.CopyFrom`, and serves sub-millisecond analytical queries to the Admin dashboard.
 
 ## Where things live
 
-- `src/index.ts` — worker & HTTP bootstrap, Kafka client/consumer creation, Express server on port `8004`.
-- `src/db.ts` — PostgreSQL connection pool (`pg.Pool`), automatic table initialization (`analytics_events`, `analytics_daily_summary`), and database health status tracker.
-- `src/services/metrics.service.ts` — business logic for processing and recording metrics, DB persistence, in-memory fallback, and query methods for summary/charts/events.
-- `src/routes/analytics.route.ts` — REST API routes for `/analytics/summary`, `/analytics/daily-chart`, and `/analytics/events`.
-- `src/middleware/authMiddleware.ts` — Clerk admin authentication guards (`shouldBeAdmin`).
+- `cmd/analytics/main.go` — Application bootstrap, Chi router wiring, HTTP listener on port `8004`, signal trapping (`SIGINT`/`SIGTERM`), and graceful shutdown draining.
+- `internal/config/config.go` — Type-safe environment variable parsing with sensible development defaults.
+- `internal/db/db.go` — `pgxpool.Pool` connection pool, embedded SQL migration runner, binary `pgx.CopyFrom` persistence, daily summary UPSERTs, and query helpers.
+- `internal/cache/redis.go` — Redis client facade using `redis/go-redis/v9` with TTL caching and graceful fallback.
+- `internal/metrics/store.go` — Lock-free in-memory KPI store (`sync/atomic` with CAS bit casting for float64 values) and fixed circular buffer for instant dashboard queries.
+- `internal/ingestion/batcher.go` — High-velocity bounded channel queue buffer (10,000 capacity) with worker loop flushing on size (1,000 events) or timeout (500ms).
+- `internal/ingestion/consumer.go` — Dedicated background Kafka consumer goroutine reading all 38 topics via `segmentio/kafka-go` without starving heartbeats.
+- `internal/middleware/auth.go` — Zero-trust authentication verifying `X-Internal-Secret` in constant time (`crypto/subtle.ConstantTimeCompare`) and `X-User-Role: admin`, plus direct Bearer token verification.
+- `internal/middleware/cors.go` & `logger.go` — Security headers, CORS configuration, and Prometheus HTTP request metrics middleware.
+- `internal/handlers/analytics.go` — REST handlers for `/analytics/summary`, `/analytics/merchants`, `/analytics/daily-chart`, and `/analytics/events`.
+- `internal/handlers/health.go` — Kubernetes probes (`/health`, `/health/live`, `/health/ready`) and `/metrics`.
+- `internal/observability/metrics.go` — Prometheus counters and histograms.
+- `internal/observability/logger.go` — Structured JSON logger matching monorepo conventions.
+- `migrations/` — Embedded SQL migration files (`embed.FS`).
 
-## Framework and style
+## Framework and Conventions
 
-- Express 5 on port `8004`.
-- ESM (`"type": "module"`).
-- Local imports use explicit `.js` extensions (Node ESM conventions).
+- **Go 1.22+** with `go-chi/chi/v5` router.
+- No single-threaded event loop bottlenecks: Kafka reading, channel buffering, batch writing, and HTTP request handling execute concurrently across dedicated goroutines.
+- Never allow `panic` in HTTP handlers or Kafka worker loops; recover and log structured errors.
 
-## Kafka integration
+## Kafka Integration
 
-- Use `@repo/kafka` (`createKafkaClient`, `createConsumer`); do not instantiate `kafkajs` directly.
+- Uses `segmentio/kafka-go`.
 - Consumer group ID: `analytic-service-group`.
-- Subscriptions handle both `{ value: payload }` envelope and raw payload formats (`message.value || message`).
-- Event topics subscribed:
-  - `payment.successful` (and alias `payment-successful`)
-  - `order.created` (and alias `order-successful`)
-  - `user.created` (and alias `email-successful`)
-  - `product.created`
-  - `product.deleted`
-  - `review.created`
-  - `review.approved`
-  - `review.reported`
-  - `product.rating-summary.updated`
-  - `promotion.created`
-  - `promotion.activated`
-  - `promotion.deactivated`
-  - `promotion.budget_exhausted`
-  - `promotion.reserved`
-  - `promotion.redeemed`
-  - `promotion.released`
-- If modifying topic contracts, update the producer, all consumers, `@repo/types`, and `docs/EVENT-DRIVEN-ARCHITECTURE.md` together.
+- Consumes all 38 platform topics.
+- Dedicated reader goroutine ensures Kafka heartbeats (`session.timeout.ms`) are never blocked by heavy database writes or bursty traffic.
+- Handlers extract payload from both `{ value: payload }` envelope and raw message payloads.
 
 ## Database & Persistence
 
-- Uses `pg.Pool` directly for lightweight, non-blocking inserts and queries.
-- Handles PostgreSQL offline / connection failures gracefully with in-memory accumulation so Kafka consumption and HTTP reads continue operating.
-- Never commit database credentials; use `DATABASE_URL` from `.env`.
+- Connects to dedicated `postgres-analytics` on port `5433` (`analytics_db`).
+- Uses `jackc/pgx/v5` connection pool (`pgxpool.Pool`).
+- Employs binary COPY protocol (`pgx.CopyFrom`) for bulk insertion directly into monthly-partitioned `analytics_events` (`PARTITION BY RANGE (created_at)`).
+- Block Range Indexes (BRIN) on `created_at` provide rapid range filtering and instant partition dropping for data retention.
+- In-memory atomic counters continue operating even if PostgreSQL is temporarily unreachable.
 
 ## Caching
 
-- All Redis access goes through `@repo/redis`; `src/utils/redis.ts` declares the handle with
-  `createRedisService`, and `src/cache/analytics-cache.ts` holds the dashboard cache. Do not
-  import `ioredis` here.
-- Use `redis.client` with the `cacheRead`/`cacheSet` helpers and `redis.keys` to compose keys.
-  Cache counters (`cache_hits_total` / `cache_misses_total` / `cache_errors_total`, `cache_type`
-  labels) come from `createCacheMetrics` in `src/observability/metrics.ts`, which also owns the
-  service logger and metrics registry, and surface at `/metrics`. Read through `cacheRead` so the
-  outcome can be classified — an unreachable Redis is an **error, not a miss**.
-- Cached (read-through): `getDailyAnalytics` and `getRecentEvents`. Call those exported
-  functions — the private `readDailyAnalytics` / `readRecentEvents` helpers bypass the cache.
-- Entries are **TTL-bounded, not invalidated on write**: events arrive continuously, so a
-  namespace bump per event would invalidate faster than the dashboard reads. Keep the windows
-  short and configurable via `ANALYTICS_CHART_CACHE_TTL_SECONDS` /
-  `ANALYTICS_EVENTS_CACHE_TTL_SECONDS`.
-- Redis is optional: misses fall through to PostgreSQL and the in-memory counters, and
-  `/health` reports Redis as `degraded` rather than failing the service.
-
-## Error handling
-
-- Kafka handlers must catch and log errors safely to prevent consumer crash loops.
-- Handle payload schema mismatches with defensive null/undefined checks.
+- Uses `redis/go-redis/v9`.
+- Dashboard queries `/analytics/daily-chart` and `/analytics/events` are read-through cached with TTLs (`ANALYTICS_CHART_CACHE_TTL_SECONDS=60`, `ANALYTICS_EVENTS_CACHE_TTL_SECONDS=15`).
+- Redis connection failures are non-fatal: queries fall through to PostgreSQL transparently.
 
 ## Verification
 
-- `pnpm --filter analytic-service check-types`
-- Local testing with Kafka compose and PostgreSQL.
+- Run unit & integration tests:
+  ```bash
+  go test -v ./...
+  # or
+  pnpm --filter analytic-service test
+  ```
+- Run static vetting:
+  ```bash
+  go vet ./...
+  # or
+  pnpm --filter analytic-service check-types
+  ```
+- Compile binary:
+  ```bash
+  go build -o bin/analytics ./cmd/analytics/main.go
+  ```
