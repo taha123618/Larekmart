@@ -60,3 +60,7 @@ images:
     newTag: v1.0.0
   - name: larekmart/email-service
     newTag: v1.0.0
+
+patches:
+  - path: hpa-inventory.yaml
+  - path: hpa-order.yaml
