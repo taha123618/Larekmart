@@ -1,11 +1,8 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: larekmart-api-gateway-hpa
-  namespace: larekmart-production
-  labels:
-    app.kubernetes.io/name: larekmart
-    app.kubernetes.io/component: api-gateway
+  name: api-gateway-hpa
+  namespace: larekmart
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
