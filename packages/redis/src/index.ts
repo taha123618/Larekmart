@@ -57,8 +57,14 @@ export {
 } from "./cache.js";
 export type { CacheReadResult, CacheReadStatus } from "./cache.js";
 
-// Key builder
-export { createKeyBuilder } from "./key-builder.js";
+// Key builder & Cluster hash tags
+export {
+  createKeyBuilder,
+  crc16,
+  createClusterHashTag,
+  extractClusterHashTag,
+  calculateClusterSlot,
+} from "./key-builder.js";
 export type { KeyBuilder } from "./key-builder.js";
 
 // Idempotency engine
@@ -77,13 +83,19 @@ export type {
   IdempotencyOptions,
 } from "./idempotency.js";
 
-// Distributed cluster lock
+// Distributed cluster lock & Redlock consensus
 export {
   acquireClusterLock,
   releaseClusterLock,
   renewClusterLock,
+  acquireRedlockConsensus,
+  releaseRedlockConsensus,
 } from "./cluster-lock.js";
-export type { ClusterLockOptions } from "./cluster-lock.js";
+export type {
+  ClusterLockOptions,
+  RedlockOptions,
+  RedlockLease,
+} from "./cluster-lock.js";
 
 // Shared types
 export type {

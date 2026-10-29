@@ -1,19 +1,85 @@
 import assert from "node:assert/strict";
+import { calculateClusterSlot, extractClusterHashTag } from "@repo/redis";
 import { redisStockGatekeeper } from "../src/gatekeeper/redis-stock-gatekeeper.js";
 import { redis } from "../src/utils/redis.js";
 
 async function runRedisStockGatekeeperTests(): Promise<void> {
   console.log("==================================================");
-  console.log("⚡ Redis Stock Gatekeeper Invariants & Stress Suite");
+  console.log("⚡ Redis Stock Gatekeeper Sharding & Stress Suite");
   console.log("==================================================");
 
   const testKey = {
     productId: 99901,
     variantId: "var_flash_01",
-    warehouseId: "wh_karachi_main",
+    warehouseId: "pk_khi_01",
+    tenantId: "tenant_pk",
   };
 
   try {
+    // -------------------------------------------------------------------------
+    // TEST 0: Deterministic Cluster Hash Tag Slot Alignment
+    // -------------------------------------------------------------------------
+    console.log("\n0. Testing Redis Cluster Hash Tag slot invariants...");
+    const stockKey = redisStockGatekeeper.getStockKey(testKey);
+    const claimKey = redisStockGatekeeper.getClaimKey("ref_slot_test", testKey);
+    const lockKey = redisStockGatekeeper.getLockKey(testKey);
+
+    assert.equal(
+      stockKey,
+      "stock:available:{tenant_pk:pk_khi_01}:99901:var_flash_01",
+      "Stock key must adhere to blueprint: stock:available:{tenant:wh}:prod:var",
+    );
+    assert.equal(
+      claimKey,
+      "stock:claim:{tenant_pk:pk_khi_01}:ref_slot_test",
+      "Claim key must share the exact hash tag {tenant:wh}",
+    );
+
+    const stockTag = extractClusterHashTag(stockKey);
+    const claimTag = extractClusterHashTag(claimKey);
+    const lockTag = extractClusterHashTag(lockKey);
+
+    assert.equal(stockTag, "tenant_pk:pk_khi_01", "Stock tag must match {tenant:wh}");
+    assert.equal(claimTag, "tenant_pk:pk_khi_01", "Claim tag must match {tenant:wh}");
+    assert.equal(lockTag, "tenant_pk:pk_khi_01", "Lock tag must match {tenant:wh}");
+
+    const stockSlot = calculateClusterSlot(stockKey);
+    const claimSlot = calculateClusterSlot(claimKey);
+    const lockSlot = calculateClusterSlot(lockKey);
+
+    assert.equal(
+      stockSlot,
+      claimSlot,
+      "Stock key and Claim key MUST hash to the identical Redis cluster slot (preventing CROSSSLOT errors)",
+    );
+    assert.equal(
+      stockSlot,
+      lockSlot,
+      "Stock key and Lock key MUST hash to the identical Redis cluster slot",
+    );
+    console.log(
+      `  ✓ Hash Tag {tenant_pk:pk_khi_01} correctly pinned keys to slot #${stockSlot} across shards`,
+    );
+
+    // Also test single warehouse tag without tenantId (e.g. {pk_khi_01})
+    const singleWhKey = {
+      productId: 9981,
+      variantId: "var_002",
+      warehouseId: "pk_khi_01",
+    };
+    const singleWhStockKey = redisStockGatekeeper.getStockKey(singleWhKey);
+    assert.equal(
+      singleWhStockKey,
+      "stock:available:{pk_khi_01}:9981:var_002",
+      "Single warehouse key must format as stock:available:{pk_khi_01}:9981:var_002",
+    );
+    assert.equal(
+      extractClusterHashTag(singleWhStockKey),
+      "pk_khi_01",
+      "Hash tag must be extracted as pk_khi_01",
+    );
+    console.log("  ✓ Blueprint stock:available:{pk_khi_01}:9981:var_002 verified");
+
     // -------------------------------------------------------------------------
     // TEST 1: Direct Set & Pre-check Claim Success
     // -------------------------------------------------------------------------
@@ -37,14 +103,14 @@ async function runRedisStockGatekeeperTests(): Promise<void> {
       assert.equal(claimRes1.remainingQuantity, 7, "Remaining stock must be 7");
     }
 
-    // Verify claim token exists in Redis
-    const claimKey1 = redis.keys.namespace("stock", "claim", ref1);
-    const claimValue1 = await redis.client.get(claimKey1);
+    // Verify claim token exists in Redis at sharded location
+    const shardedClaimKey1 = redisStockGatekeeper.getClaimKey(ref1, testKey);
+    const claimValue1 = await redis.client.get(shardedClaimKey1);
     assert.equal(claimValue1, "3", "Claim token must store claimed quantity");
 
     // Finalize claim
-    await redisStockGatekeeper.finalizeClaim(ref1);
-    const claimAfterFinalize = await redis.client.get(claimKey1);
+    await redisStockGatekeeper.finalizeClaim(ref1, testKey);
+    const claimAfterFinalize = await redis.client.get(shardedClaimKey1);
     assert.equal(
       claimAfterFinalize,
       null,
@@ -113,13 +179,6 @@ async function runRedisStockGatekeeperTests(): Promise<void> {
     );
 
     // Verify counter in Redis is exactly 0
-    const stockKey = redis.keys.namespace(
-      "stock",
-      "available",
-      testKey.productId,
-      testKey.variantId,
-      testKey.warehouseId,
-    );
     const remainingInRedis = await redis.client.get(stockKey);
     assert.equal(
       remainingInRedis,
@@ -163,7 +222,7 @@ async function runRedisStockGatekeeperTests(): Promise<void> {
       "8",
       "Stock must be restored back to 8 after rollback",
     );
-    const failClaimKey = redis.keys.namespace("stock", "claim", failRef);
+    const failClaimKey = redisStockGatekeeper.getClaimKey(failRef, testKey);
     const failClaimValue = await redis.client.get(failClaimKey);
     assert.equal(
       failClaimValue,

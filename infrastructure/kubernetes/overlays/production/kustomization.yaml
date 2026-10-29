@@ -5,8 +5,11 @@ namespace: larekmart
 
 resources:
   - ../../base
+  - hpa-gateway.yaml
 
 images:
+  - name: larekmart/api-gateway
+    newTag: v1.0.0
   - name: larekmart/client
     newTag: v1.0.0
   - name: larekmart/admin

@@ -442,7 +442,7 @@ inventoryRoute.post("/reservations", shouldBeUser, async (c) => {
         userId: c.get("userId"),
       });
       // Finalize Redis claim upon successful DB commit
-      await redisStockGatekeeper.finalizeClaim(parsed.data.referenceId);
+      await redisStockGatekeeper.finalizeClaim(parsed.data.referenceId, itemKey);
     } catch (dbError) {
       // Rollback claimed Redis stock counter immediately
       await redisStockGatekeeper.rollbackClaim({

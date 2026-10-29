@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: larekmart-redis-cluster-config
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: redis-cluster
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: larekmart
+data:
+  redis-cluster.conf: |
+    # Core Cluster Networking
+    cluster-enabled yes
+    cluster-config-file nodes.conf
+    cluster-node-timeout 5000
+    cluster-require-full-coverage no
+
+    # Memory Allocation Guardrails
+    maxmemory 768mb
+    maxmemory-policy volatile-ttl
+
+    # Persistence Tailored to High-Velocity Flash Operations
+    save ""
+    appendonly yes
+    appendfsync everysec
+    no-appendfsync-on-rewrite yes
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
