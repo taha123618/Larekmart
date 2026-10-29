@@ -61,7 +61,9 @@ import {
   XCircle,
   Clock,
   Sparkles,
+  Activity,
 } from "lucide-react";
+import { fetchCommerceAnalytics } from "@/services/analytics.service";
 
 export default function PromotionsAdminDashboardPage() {
   const { getToken } = useAuth();
@@ -110,6 +112,16 @@ export default function PromotionsAdminDashboardPage() {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       return fetchAdminPromotionOverview(token);
+    },
+    staleTime: 30000,
+  });
+
+  // Query: Live Commerce Analytics Telemetry (Go analytic-service :8004)
+  const { data: commerceAnalytics, refetch: refetchCommerce } = useQuery({
+    queryKey: ["admin-commerce-analytics"],
+    queryFn: async () => {
+      const token = await getToken();
+      return fetchCommerceAnalytics(token || undefined);
     },
     staleTime: 30000,
   });
@@ -281,12 +293,25 @@ export default function PromotionsAdminDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 font-medium">
+            <Activity className="h-3 w-3 animate-pulse text-emerald-500" />
+            <span>
+              Savings Telemetry: $
+              {(
+                (commerceAnalytics?.totalDiscountSavings ??
+                  overview?.totalDiscountGiven) ||
+                0
+              ).toLocaleString()}
+            </span>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
               refetchOverview();
               refetchPromotions();
+              refetchCommerce();
             }}
             disabled={isRefreshing}
             className="gap-2"

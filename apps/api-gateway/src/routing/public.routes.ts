@@ -188,4 +188,20 @@ export const publicRoutes: GatewayRouteConfig[] = [
     timeoutMs: services.seller.timeoutMs,
     rewritePrefix: "/api/v1/system-settings",
   },
+
+  // 17. Analytic Service Public Platform Trust & Scale Metrics
+  {
+    prefix: "/api/v1/analytics/public",
+    target: services.analytic.url,
+    serviceName: services.analytic.name,
+    timeoutMs: services.analytic.timeoutMs,
+    rewritePrefix: "/analytics/public",
+  },
+  {
+    prefix: "/analytics/public",
+    target: services.analytic.url,
+    serviceName: services.analytic.name,
+    timeoutMs: services.analytic.timeoutMs,
+    rewritePrefix: "/analytics/public",
+  },
 ];

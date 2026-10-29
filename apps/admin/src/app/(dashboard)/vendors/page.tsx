@@ -14,6 +14,7 @@ import {
   type AdminVendorListItem,
 } from "@/services/vendor.service";
 import { fetchSystemSettings } from "@/services/seller.service";
+import { fetchMerchantAnalytics } from "@/services/analytics.service";
 import type { VendorStatus } from "@repo/types";
 import {
   Card,
@@ -54,6 +55,7 @@ import {
   Clock,
   Ban,
   ArrowRight,
+  Activity,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -136,6 +138,15 @@ export default function VendorsAdminPage() {
       enabled: !!selectedVendorId,
     },
   );
+
+  // 4. Query real-time merchant analytics from Go analytic-service (:8004)
+  const { data: merchantAnalytics, refetch: refetchAnalytics } = useQuery({
+    queryKey: ["admin-merchant-analytics"],
+    queryFn: async () => {
+      const token = await getToken();
+      return fetchMerchantAnalytics(token || undefined);
+    },
+  });
 
   // 4. Query system settings to detect if seller/vendor functionality is enabled
   const { data: systemSettings } = useQuery({
@@ -264,17 +275,20 @@ export default function VendorsAdminPage() {
     );
   });
 
-  // Calculate high-level summary counts
-  const totalVendors = allVendors.length;
-  const verifiedCount = allVendors.filter(
-    (v) => v.status === "VERIFIED",
-  ).length;
-  const pendingCount = allVendors.filter(
-    (v) => v.status === "PENDING_VERIFICATION" || v.status === "DRAFT",
-  ).length;
-  const suspendedCount = allVendors.filter(
-    (v) => v.status === "SUSPENDED",
-  ).length;
+  // Calculate high-level summary counts backed by real-time Go analytic-service (:8004)
+  const totalVendors =
+    merchantAnalytics?.totalVendorsRegistered ?? allVendors.length;
+  const verifiedCount =
+    merchantAnalytics?.totalVendorsVerified ??
+    allVendors.filter((v) => v.status === "VERIFIED").length;
+  const pendingCount =
+    pendingVerifications.length ||
+    allVendors.filter(
+      (v) => v.status === "PENDING_VERIFICATION" || v.status === "DRAFT",
+    ).length;
+  const suspendedCount =
+    merchantAnalytics?.totalVendorsSuspended ??
+    allVendors.filter((v) => v.status === "SUSPENDED").length;
 
   const getStatusBadge = (status: VendorStatus | string) => {
     switch (status) {
@@ -330,6 +344,7 @@ export default function VendorsAdminPage() {
             onClick={() => {
               refetchVendors();
               refetchVerifications();
+              refetchAnalytics();
             }}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
@@ -406,8 +421,9 @@ export default function VendorsAdminPage() {
             <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               {totalVendors}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
-              Across all jurisdictions
+            <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
+              <Activity className="h-3 w-3 text-emerald-500 inline" />
+              Live Analytics Sync
             </p>
           </CardContent>
         </Card>

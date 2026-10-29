@@ -52,7 +52,9 @@ async function runMongoDBShardingTests() {
     true,
     "Expected OrderSchema to define scatter-gather mitigation index { sellerId: 1, createdAt: -1 }",
   );
-  console.log("  ✓ Scatter-gather mitigation index { sellerId: 1, createdAt: -1 } verified");
+  console.log(
+    "  ✓ Scatter-gather mitigation index { sellerId: 1, createdAt: -1 } verified",
+  );
 
   const hasProductSellerIndex = indexes.some(([fields]) => {
     const f = fields as Record<string, unknown>;
@@ -63,7 +65,9 @@ async function runMongoDBShardingTests() {
     true,
     "Expected OrderSchema to define multitenant line-item index { 'products.sellerId': 1, createdAt: -1 }",
   );
-  console.log("  ✓ Multitenant line-item index { 'products.sellerId': 1, createdAt: -1 } verified");
+  console.log(
+    "  ✓ Multitenant line-item index { 'products.sellerId': 1, createdAt: -1 } verified",
+  );
 
   const hasStatusIndex = indexes.some(([fields]) => {
     const f = fields as Record<string, unknown>;

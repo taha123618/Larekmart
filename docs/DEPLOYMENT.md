@@ -212,4 +212,3 @@ Before signing off on any production release:
 - [ ] Production environment approval granted by authorized reviewer.
 - [ ] Zero-downtime rolling update completed across all 26 Kubernetes workloads.
 - [ ] Production health check endpoints return HTTP 200.
-

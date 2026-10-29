@@ -4,7 +4,6 @@ export interface RateLimitPolicy {
   degraded?: boolean;
 }
 
-
 export const RATE_LIMIT_POLICIES: Record<string, RateLimitPolicy> = {
   AUTH: {
     limit: 15,
@@ -91,4 +90,3 @@ export function getAdaptiveRateLimitForRoute(
 
   return policy;
 }
-

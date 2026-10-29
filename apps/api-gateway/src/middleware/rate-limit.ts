@@ -38,7 +38,10 @@ export async function registerRateLimitMiddleware(
     if (!category) return;
 
     const isDegraded = isDownstreamDegraded();
-    const maxConcurrent = InFlightBulkhead.getMaxConcurrent(category, isDegraded);
+    const maxConcurrent = InFlightBulkhead.getMaxConcurrent(
+      category,
+      isDegraded,
+    );
 
     if (!inFlightBulkhead.acquire(category, maxConcurrent)) {
       gatewayBulkheadShedHitsTotal.inc({ category });
@@ -103,4 +106,3 @@ export async function registerRateLimitMiddleware(
     },
   });
 }
-

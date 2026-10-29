@@ -57,6 +57,24 @@ func (h *AnalyticsHandler) GetMerchants(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, metrics)
 }
 
+// GetOperations returns fulfillment, inventory, shipping, and returns operations telemetry.
+func (h *AnalyticsHandler) GetOperations(w http.ResponseWriter, r *http.Request) {
+	metrics := h.store.GetOperationsMetrics()
+	writeJSON(w, http.StatusOK, metrics)
+}
+
+// GetCommerce returns financial, promotional, tax, and checkout conversion telemetry.
+func (h *AnalyticsHandler) GetCommerce(w http.ResponseWriter, r *http.Request) {
+	metrics := h.store.GetCommerceMetrics()
+	writeJSON(w, http.StatusOK, metrics)
+}
+
+// GetPublicMetrics returns public platform trust and social proof metrics (no auth required).
+func (h *AnalyticsHandler) GetPublicMetrics(w http.ResponseWriter, r *http.Request) {
+	metrics := h.store.GetPublicTrustMetrics()
+	writeJSON(w, http.StatusOK, metrics)
+}
+
 // GetDailyChart returns historical daily aggregations with Redis caching.
 func (h *AnalyticsHandler) GetDailyChart(w http.ResponseWriter, r *http.Request) {
 	days := 30

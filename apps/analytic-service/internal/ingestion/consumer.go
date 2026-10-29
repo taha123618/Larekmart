@@ -16,16 +16,24 @@ import (
 var SubscribedTopics = []string{
 	"payment.successful",
 	"payment-successful",
+	"payment.failed",
+	"payment.refund.succeeded",
 	"order.created",
 	"order-successful",
+	"order.updated",
+	"order.cancelled",
 	"user.created",
 	"user.registered",
 	"email-successful",
 	"product.created",
+	"product.updated",
 	"product.deleted",
+	"pricing.price.updated",
+	"pricing.quote_created",
 	"inventory.stock.sold",
 	"inventory.low_stock",
 	"inventory.restocked",
+	"inventory.adjusted",
 	"cart.created",
 	"cart.updated",
 	"cart.merged",
@@ -43,19 +51,37 @@ var SubscribedTopics = []string{
 	"promotion.coupon_applied",
 	"promotion.discount_applied",
 	"promotion.campaign_created",
+	"promotion.redeemed",
 	"tax.calculated",
 	"tax.quote_created",
 	"tax.exempted",
+	"shipment.created",
+	"shipment.label_created",
+	"shipment.shipped",
+	"shipment.in_transit",
+	"shipment.out_for_delivery",
+	"shipment.delivered",
+	"shipment.cancelled",
+	"shipment.failed",
+	"tracking.updated",
 	"return.requested",
+	"return.approved",
 	"return.inspected",
 	"return.completed",
 	"return.rejected",
 	"vendor.registered",
 	"vendor.verified",
 	"vendor.suspended",
+	"vendor.escrow.credited",
+	"vendor.escrow.released",
+	"vendor.payout.requested",
+	"vendor.payout.completed",
 	"seller.created",
 	"seller.activated",
 	"seller.suspended",
+	"dispute.created",
+	"dispute.opened",
+	"dispute.resolved",
 }
 
 // KafkaConsumer coordinates continuous topic consumption without event-loop starvation.
@@ -181,7 +207,7 @@ func extractUserID(payload map[string]interface{}) *string {
 }
 
 func extractAmount(payload map[string]interface{}) float64 {
-	keys := []string{"amount", "total", "price", "revenue", "tax_amount"}
+	keys := []string{"amount", "total", "price", "revenue", "tax_amount", "discountAmount", "refundAmount", "payoutAmount", "shippingRateAmount"}
 	for _, k := range keys {
 		if val, exists := payload[k]; exists && val != nil {
 			switch num := val.(type) {

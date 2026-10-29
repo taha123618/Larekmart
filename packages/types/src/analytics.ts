@@ -13,6 +13,10 @@ export type AnalyticsSummaryType = {
   totalVendorsVerified?: number;
   totalSellersCreated?: number;
   totalSellersActive?: number;
+  totalShipmentsDelivered?: number;
+  deliverySuccessRate?: number;
+  totalReturnsCompleted?: number;
+  totalDiscountsApplied?: number;
   lastEventTime: string;
   isDbConnected: boolean;
 };
@@ -25,6 +29,49 @@ export type MerchantAnalyticsMetricsType = {
   totalSellersActive: number;
   totalSellersSuspended: number;
   lastEventTime: string;
+};
+
+export type OperationsAnalyticsMetricsType = {
+  totalShipmentsCreated: number;
+  totalShipmentsShipped: number;
+  totalShipmentsDelivered: number;
+  totalShipmentsFailed: number;
+  deliverySuccessRate: number;
+  totalStockSold: number;
+  totalLowStockAlerts: number;
+  totalRestocks: number;
+  totalReturnsRequested: number;
+  totalReturnsInspected: number;
+  totalReturnsCompleted: number;
+  totalReturnsRejected: number;
+  totalRefundAmount: number;
+  totalDisputesOpened: number;
+  totalDisputesResolved: number;
+  lastEventTime: string;
+};
+
+export type CommerceAnalyticsMetricsType = {
+  totalRevenue: number;
+  totalOrders: number;
+  totalTaxCalculations: number;
+  totalTaxCollected: number;
+  totalCouponsApplied: number;
+  totalDiscountsApplied: number;
+  totalCampaignsCreated: number;
+  totalDiscountSavings: number;
+  totalCartsCreated: number;
+  totalCartsUpdated: number;
+  totalCartsExpired: number;
+  lastEventTime: string;
+};
+
+export type PublicTrustMetricsType = {
+  activeSellersCount: number;
+  verifiedVendorsCount: number;
+  totalProductsCount: number;
+  deliverySuccessRate: number;
+  ordersFulfilledCount: number;
+  lastUpdated: string;
 };
 
 export type AnalyticsDailyChartType = {

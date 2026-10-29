@@ -4,7 +4,7 @@ Scope: `apps/analytic-service` only. Root rules still apply — start there.
 
 ## What this service is
 
-A high-throughput **Go 1.22** Kafka consumer worker and Chi HTTP API microservice running on port `8004`. It listens to all 38 primary event streams across the Larekmart platform (`payment.successful`, `order.created`, `user.created`, `product.created`, `product.deleted`, `review.*`, `promotion.*`), updates lock-free in-memory atomic KPI counters, micro-batches raw audit events into PostgreSQL via binary `pgx.CopyFrom`, and serves sub-millisecond analytical queries to the Admin dashboard.
+A high-throughput **Go 1.22** Kafka consumer worker and Chi HTTP API microservice running on port `8004`. It listens to 60+ event streams across the Larekmart platform (`payment.*`, `order.*`, `user.*`, `product.*`, `inventory.*`, `shipment.*`, `return.*`, `promotion.*`, `tax.*`, `dispute.*`, `vendor.*`, `seller.*`), updates lock-free in-memory atomic KPI counters, micro-batches raw audit events into PostgreSQL via binary `pgx.CopyFrom`, and serves sub-millisecond analytical queries to the Admin dashboard and Storefront trust indicators.
 
 ## Where things live
 
@@ -17,7 +17,7 @@ A high-throughput **Go 1.22** Kafka consumer worker and Chi HTTP API microservic
 - `internal/ingestion/consumer.go` — Dedicated background Kafka consumer goroutine reading all 38 topics via `segmentio/kafka-go` without starving heartbeats.
 - `internal/middleware/auth.go` — Zero-trust authentication verifying `X-Internal-Secret` in constant time (`crypto/subtle.ConstantTimeCompare`) and `X-User-Role: admin`, plus direct Bearer token verification.
 - `internal/middleware/cors.go` & `logger.go` — Security headers, CORS configuration, and Prometheus HTTP request metrics middleware.
-- `internal/handlers/analytics.go` — REST handlers for `/analytics/summary`, `/analytics/merchants`, `/analytics/daily-chart`, and `/analytics/events`.
+- `internal/handlers/analytics.go` — REST handlers for `/analytics/summary`, `/analytics/merchants`, `/analytics/operations`, `/analytics/commerce`, `/analytics/public`, `/analytics/daily-chart`, and `/analytics/events`.
 - `internal/handlers/health.go` — Kubernetes probes (`/health`, `/health/live`, `/health/ready`) and `/metrics`.
 - `internal/observability/metrics.go` — Prometheus counters and histograms.
 - `internal/observability/logger.go` — Structured JSON logger matching monorepo conventions.

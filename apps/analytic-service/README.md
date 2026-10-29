@@ -43,16 +43,19 @@ High-throughput, multithreaded Go analytics microservice and worker that consume
 
 ## HTTP API Endpoints
 
-| Method | Path                     | Auth Required                            | Description                                                       |
-| :----- | :----------------------- | :--------------------------------------- | :---------------------------------------------------------------- |
-| `GET`  | `/health`                | Public                                   | Detailed health status of service, DB, and Redis                  |
-| `GET`  | `/health/live`           | Public                                   | Kubernetes liveness probe                                         |
-| `GET`  | `/health/ready`          | Public                                   | Kubernetes readiness probe                                        |
-| `GET`  | `/metrics`               | Public / Scraper                         | Prometheus metrics endpoint                                       |
-| `GET`  | `/analytics/summary`     | Admin (`X-Internal-Secret` / Bearer JWT) | High-level platform KPIs (revenue, orders, signups, products)     |
-| `GET`  | `/analytics/merchants`   | Admin (`X-Internal-Secret` / Bearer JWT) | Multi-vendor merchant KPIs (total, active, pending, revenue)      |
-| `GET`  | `/analytics/daily-chart` | Admin (`X-Internal-Secret` / Bearer JWT) | Time-series daily revenue, orders, and signups (Redis cached 60s) |
-| `GET`  | `/analytics/events`      | Admin (`X-Internal-Secret` / Bearer JWT) | Recent audit event stream (Redis cached 15s)                      |
+| Method | Path                     | Auth Required                            | Description                                                                    |
+| :----- | :----------------------- | :--------------------------------------- | :----------------------------------------------------------------------------- |
+| `GET`  | `/health`                | Public                                   | Detailed health status of service, DB, and Redis                               |
+| `GET`  | `/health/live`           | Public                                   | Kubernetes liveness probe                                                      |
+| `GET`  | `/health/ready`          | Public                                   | Kubernetes readiness probe                                                     |
+| `GET`  | `/metrics`               | Public / Scraper                         | Prometheus metrics endpoint                                                    |
+| `GET`  | `/analytics/public`      | Public Storefront                        | Safe platform scale proof (active sellers, verified vendors, fulfillment rate) |
+| `GET`  | `/analytics/summary`     | Admin (`X-Internal-Secret` / Bearer JWT) | High-level platform KPIs (revenue, orders, signups, products)                  |
+| `GET`  | `/analytics/merchants`   | Admin (`X-Internal-Secret` / Bearer JWT) | Multi-vendor merchant KPIs (total, active, pending, revenue)                   |
+| `GET`  | `/analytics/operations`  | Admin (`X-Internal-Secret` / Bearer JWT) | Fulfillment, shipping, inventory, returns, and dispute telemetry               |
+| `GET`  | `/analytics/commerce`    | Admin (`X-Internal-Secret` / Bearer JWT) | Financial, tax collections, promotion savings, and cart telemetry              |
+| `GET`  | `/analytics/daily-chart` | Admin (`X-Internal-Secret` / Bearer JWT) | Time-series daily revenue, orders, and signups (Redis cached 60s)              |
+| `GET`  | `/analytics/events`      | Admin (`X-Internal-Secret` / Bearer JWT) | Recent audit event stream (Redis cached 15s)                                   |
 
 ---
 

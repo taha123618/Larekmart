@@ -60,4 +60,34 @@ func TestStoreAtomicCounters(t *testing.T) {
 	if len(events) != 50 {
 		t.Errorf("expected 50 recent events, got %d", len(events))
 	}
+
+	// 4. Test Operations & Commerce & Public Trust metrics
+	uid := "user_test"
+	s.RecordEvent("shipment.delivered", &uid, 12.0, nil, time.Now())
+	s.RecordEvent("return.completed", &uid, 50.0, nil, time.Now())
+	s.RecordEvent("promotion.discount_applied", &uid, 15.0, nil, time.Now())
+
+	ops := s.GetOperationsMetrics()
+	if ops.TotalShipmentsDelivered != 1 {
+		t.Errorf("expected 1 shipment delivered, got %d", ops.TotalShipmentsDelivered)
+	}
+	if ops.TotalReturnsCompleted != 1 {
+		t.Errorf("expected 1 return completed, got %d", ops.TotalReturnsCompleted)
+	}
+	if ops.TotalRefundAmount != 50.0 {
+		t.Errorf("expected 50.0 refund, got %.2f", ops.TotalRefundAmount)
+	}
+
+	commerce := s.GetCommerceMetrics()
+	if commerce.TotalDiscountsApplied != 1 {
+		t.Errorf("expected 1 discount applied, got %d", commerce.TotalDiscountsApplied)
+	}
+	if commerce.TotalDiscountSavings != 15.0 {
+		t.Errorf("expected 15.0 discount savings, got %.2f", commerce.TotalDiscountSavings)
+	}
+
+	trust := s.GetPublicTrustMetrics()
+	if trust.DeliverySuccessRate <= 0 {
+		t.Errorf("expected valid delivery rate, got %.2f", trust.DeliverySuccessRate)
+	}
 }

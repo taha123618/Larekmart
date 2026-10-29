@@ -39,7 +39,6 @@ export const gatewayBulkheadShedHitsTotal = createCounter(
   "Total requests shed by in-flight concurrency bulkhead under chaos or load saturation",
 );
 
-
 export const gatewayAuthFailuresTotal = createCounter(
   metrics,
   "gateway_auth_failures_total",

@@ -19,7 +19,8 @@ import { ReturnTable } from "@/components/returns/ReturnTable";
 import { ReturnDetailsModal } from "@/components/returns/ReturnDetailsModal";
 import { InspectionModal } from "@/components/returns/InspectionModal";
 import { ApproveRejectDialog } from "@/components/returns/ApproveRejectDialog";
-import { RotateCcw, RefreshCw } from "lucide-react";
+import { RotateCcw, RefreshCw, Activity } from "lucide-react";
+import { fetchOperationsAnalytics } from "@/services/analytics.service";
 
 export default function ReturnsPage() {
   const { getToken } = useAuth();
@@ -57,6 +58,16 @@ export default function ReturnsPage() {
       const token = await getToken();
       return fetchAdminReturns(token || undefined);
     },
+  });
+
+  // Query: Operations Analytics Telemetry (Go analytic-service :8004)
+  const { data: operationsAnalytics, refetch: refetchOperations } = useQuery({
+    queryKey: ["admin-operations-analytics"],
+    queryFn: async () => {
+      const token = await getToken();
+      return fetchOperationsAnalytics(token || undefined);
+    },
+    staleTime: 30000,
   });
 
   const kpis = calculateReturnOverviewKPIs(returns);
@@ -241,16 +252,33 @@ export default function ReturnsPage() {
           </div>
         </div>
 
-        <button
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer shadow-xs self-start sm:self-auto"
-        >
-          <RefreshCw
-            className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-indigo-500" : ""}`}
-          />
-          <span>Refresh Operations</span>
-        </button>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 font-medium">
+            <Activity className="h-3 w-3 animate-pulse text-emerald-500" />
+            <span>
+              Refund Telemetry: $
+              {(
+                (operationsAnalytics?.totalRefundAmount ??
+                  kpis.totalRefundAmount) ||
+                0
+              ).toLocaleString()}
+            </span>
+          </div>
+
+          <button
+            onClick={() => {
+              refetch();
+              refetchOperations();
+            }}
+            disabled={isFetching}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer shadow-xs"
+          >
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-indigo-500" : ""}`}
+            />
+            <span>Refresh Operations</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Overview Cards */}

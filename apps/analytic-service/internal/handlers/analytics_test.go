@@ -71,4 +71,31 @@ func TestAnalyticsHandlerEndpoints(t *testing.T) {
 	if recEvents.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", recEvents.Code)
 	}
+
+	// 5. Test GET /analytics/operations
+	reqOps := httptest.NewRequest("GET", "/analytics/operations", nil)
+	recOps := httptest.NewRecorder()
+	handler.GetOperations(recOps, reqOps)
+
+	if recOps.Code != http.StatusOK {
+		t.Fatalf("expected status 200 for operations, got %d", recOps.Code)
+	}
+
+	// 6. Test GET /analytics/commerce
+	reqComm := httptest.NewRequest("GET", "/analytics/commerce", nil)
+	recComm := httptest.NewRecorder()
+	handler.GetCommerce(recComm, reqComm)
+
+	if recComm.Code != http.StatusOK {
+		t.Fatalf("expected status 200 for commerce, got %d", recComm.Code)
+	}
+
+	// 7. Test GET /analytics/public
+	reqPublic := httptest.NewRequest("GET", "/analytics/public", nil)
+	recPublic := httptest.NewRecorder()
+	handler.GetPublicMetrics(recPublic, reqPublic)
+
+	if recPublic.Code != http.StatusOK {
+		t.Fatalf("expected status 200 for public metrics, got %d", recPublic.Code)
+	}
 }

@@ -35,7 +35,8 @@ export const MIGRATION_STAGES = [
   {
     stage: 1,
     name: "Master Entity & Foundational Domains",
-    description: "Core data models referenced as sources of truth across the cluster",
+    description:
+      "Core data models referenced as sources of truth across the cluster",
     targets: [
       {
         name: "@repo/product-db",
@@ -66,7 +67,8 @@ export const MIGRATION_STAGES = [
   {
     stage: 2,
     name: "Operational & Transactional Services",
-    description: "Domain-specific operational pipelines, media, pricing, promotions, and tax workflows",
+    description:
+      "Domain-specific operational pipelines, media, pricing, promotions, and tax workflows",
     targets: [
       {
         name: "@repo/shipping-db",
@@ -109,7 +111,8 @@ export const MIGRATION_STAGES = [
   {
     stage: 3,
     name: "Read Projections, Storefronts & Downstream Consumers",
-    description: "Read-optimized projection read-models and consumer interactivity tables",
+    description:
+      "Read-optimized projection read-models and consumer interactivity tables",
     targets: [
       {
         name: "@repo/catalog-db",
@@ -170,7 +173,9 @@ function parseArgs() {
   }
 
   if (!["migrate", "deploy", "status"].includes(action)) {
-    console.error(`[Error] Invalid action: "${action}". Valid options: migrate | deploy | status`);
+    console.error(
+      `[Error] Invalid action: "${action}". Valid options: migrate | deploy | status`,
+    );
     process.exit(1);
   }
 
@@ -215,7 +220,10 @@ function runCommand(command, args, cwd) {
 function resolveCommand(target, action) {
   if (action === "status") {
     if (target.type === "prisma") {
-      return { command: "pnpm", args: ["--filter", target.name, "exec", "prisma", "migrate", "status"] };
+      return {
+        command: "pnpm",
+        args: ["--filter", target.name, "exec", "prisma", "migrate", "status"],
+      };
     }
     return { command: "pnpm", args: ["--filter", target.name, "db:migrate"] };
   }
@@ -231,13 +239,20 @@ function resolveCommand(target, action) {
 async function main() {
   const { action, targetWorkspace, targetStage, continueOnError } = parseArgs();
 
-  console.log("================================================================================");
+  console.log(
+    "================================================================================",
+  );
   console.log(` 🛡️  Larekmart Database Migration Orchestrator`);
   console.log(` Action:    [${action.toUpperCase()}]`);
-  console.log(` Mode:      Sequential Topological Execution (Anti-Lock Race Prevention)`);
+  console.log(
+    ` Mode:      Sequential Topological Execution (Anti-Lock Race Prevention)`,
+  );
   if (targetStage) console.log(` Stage:     Stage ${targetStage} only`);
-  if (targetWorkspace) console.log(` Target:    Workspace "${targetWorkspace}"`);
-  console.log("================================================================================\n");
+  if (targetWorkspace)
+    console.log(` Target:    Workspace "${targetWorkspace}"`);
+  console.log(
+    "================================================================================\n",
+  );
 
   const startTime = Date.now();
   let totalMigrated = 0;
@@ -253,15 +268,19 @@ async function main() {
     let stageTargets = stage.targets;
     if (targetWorkspace) {
       stageTargets = stageTargets.filter(
-        (t) => t.name === targetWorkspace || t.cwd.endsWith(targetWorkspace)
+        (t) => t.name === targetWorkspace || t.cwd.endsWith(targetWorkspace),
       );
       if (stageTargets.length === 0) continue;
     }
 
-    console.log(`────────────────────────────────────────────────────────────────────────────────`);
+    console.log(
+      `────────────────────────────────────────────────────────────────────────────────`,
+    );
     console.log(`► STAGE ${stage.stage}: ${stage.name}`);
     console.log(`  ${stage.description}`);
-    console.log(`────────────────────────────────────────────────────────────────────────────────`);
+    console.log(
+      `────────────────────────────────────────────────────────────────────────────────`,
+    );
 
     for (const target of stageTargets) {
       console.log(`\n[${target.name}] → Database: ${target.database}`);
@@ -277,17 +296,34 @@ async function main() {
       const targetDuration = ((Date.now() - targetStart) / 1000).toFixed(2);
 
       if (result.status === 0) {
-        console.log(`  ✓ [${target.name}] Successfully executed in ${targetDuration}s`);
+        console.log(
+          `  ✓ [${target.name}] Successfully executed in ${targetDuration}s`,
+        );
         totalMigrated++;
-        stageResults.push({ name: target.name, success: true, duration: targetDuration });
+        stageResults.push({
+          name: target.name,
+          success: true,
+          duration: targetDuration,
+        });
       } else {
-        console.error(`  ✗ [${target.name}] FAILED with exit code ${result.status} (${targetDuration}s)`);
+        console.error(
+          `  ✗ [${target.name}] FAILED with exit code ${result.status} (${targetDuration}s)`,
+        );
         totalFailed++;
-        stageResults.push({ name: target.name, success: false, duration: targetDuration, code: result.status });
+        stageResults.push({
+          name: target.name,
+          success: false,
+          duration: targetDuration,
+          code: result.status,
+        });
 
         if (!continueOnError) {
-          console.error(`\n[FATAL] Halting migration pipeline due to failure in [${target.name}].`);
-          console.error(`Subsequent dependent schemas will NOT be migrated to prevent corruption.`);
+          console.error(
+            `\n[FATAL] Halting migration pipeline due to failure in [${target.name}].`,
+          );
+          console.error(
+            `Subsequent dependent schemas will NOT be migrated to prevent corruption.`,
+          );
           process.exit(result.status || 1);
         }
       }
@@ -297,13 +333,17 @@ async function main() {
   }
 
   const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
-  console.log("================================================================================");
+  console.log(
+    "================================================================================",
+  );
   console.log(` 🏁 Migration Orchestrator Summary`);
   console.log(` Total Targets: ${totalMigrated + totalFailed}`);
   console.log(` Succeeded:     ${totalMigrated}`);
   console.log(` Failed:        ${totalFailed}`);
   console.log(` Total Time:    ${totalDuration}s`);
-  console.log("================================================================================");
+  console.log(
+    "================================================================================",
+  );
 
   if (totalFailed > 0) {
     process.exit(1);
@@ -314,4 +354,3 @@ main().catch((err) => {
   console.error("[FATAL] Unexpected error in migration orchestrator:", err);
   process.exit(1);
 });
-

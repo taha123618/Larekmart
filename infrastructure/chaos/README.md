@@ -8,13 +8,13 @@ This directory contains declarative **Chaos Mesh** custom resource definitions (
 
 Larekmart coordinates consistency across three distinct database engines (PostgreSQL inventory, MongoDB orders, MySQL tax) and asynchronous Kafka event streams. The chaos experiments below simulate transient network failures, partition drops, and broker crashes to guarantee automated compensations execute without human intervention or data drift.
 
-| Experiment Manifest | Kind | Target Service & Layer | Chaos Type | Tested System Guarantee |
-| :--- | :--- | :--- | :--- | :--- |
-| [`tax-mysql-latency.yaml`](./tax-mysql-latency.yaml) | `NetworkChaos` | `tax-service` → MySQL (3306) | Injected Latency (`3500ms ± 500ms`) | Dual-ACK timeout sweeper triggers clean Saga rollback (`payment.refund` + `inventory.release`). |
-| [`order-mongo-partition.yaml`](./order-mongo-partition.yaml) | `NetworkChaos` | `order-service` ↔ MongoDB (27017) | Network Partition (100% drop) | Transactional outbox durable queueing and idempotent retry backoff with zero message loss. |
-| [`kafka-broker-kill.yaml`](./kafka-broker-kill.yaml) | `PodChaos` | `kafka-cluster` | Pod Kill (`fixed: 1`) | Outbox relay connection retry loop; broker failover recovery without consumer group corruption. |
-| [`inventory-pg-loss.yaml`](./inventory-pg-loss.yaml) | `NetworkChaos` | `inventory-service` → PostgreSQL (5432) | Corrupted Packets (`30%`) & Latency (`200ms`) | Redis stock gatekeeper fast-fail and edge circuit breaker trip. |
-| [`flash-sale-chaos-workflow.yaml`](./flash-sale-chaos-workflow.yaml) | `Workflow` | Multi-tier orchestration | Serial Chaos Pipeline | Full flash-sale lifecycle validation under cascading failure conditions. |
+| Experiment Manifest                                                  | Kind           | Target Service & Layer                  | Chaos Type                                    | Tested System Guarantee                                                                         |
+| :------------------------------------------------------------------- | :------------- | :-------------------------------------- | :-------------------------------------------- | :---------------------------------------------------------------------------------------------- |
+| [`tax-mysql-latency.yaml`](./tax-mysql-latency.yaml)                 | `NetworkChaos` | `tax-service` → MySQL (3306)            | Injected Latency (`3500ms ± 500ms`)           | Dual-ACK timeout sweeper triggers clean Saga rollback (`payment.refund` + `inventory.release`). |
+| [`order-mongo-partition.yaml`](./order-mongo-partition.yaml)         | `NetworkChaos` | `order-service` ↔ MongoDB (27017)      | Network Partition (100% drop)                 | Transactional outbox durable queueing and idempotent retry backoff with zero message loss.      |
+| [`kafka-broker-kill.yaml`](./kafka-broker-kill.yaml)                 | `PodChaos`     | `kafka-cluster`                         | Pod Kill (`fixed: 1`)                         | Outbox relay connection retry loop; broker failover recovery without consumer group corruption. |
+| [`inventory-pg-loss.yaml`](./inventory-pg-loss.yaml)                 | `NetworkChaos` | `inventory-service` → PostgreSQL (5432) | Corrupted Packets (`30%`) & Latency (`200ms`) | Redis stock gatekeeper fast-fail and edge circuit breaker trip.                                 |
+| [`flash-sale-chaos-workflow.yaml`](./flash-sale-chaos-workflow.yaml) | `Workflow`     | Multi-tier orchestration                | Serial Chaos Pipeline                         | Full flash-sale lifecycle validation under cascading failure conditions.                        |
 
 ---
 
@@ -93,4 +93,3 @@ While experiments are executing under active load (e.g., via k6 or synthetic che
 3. **Inventory Zero-Leakage Invariant**:
    - Confirm that reserved inventory units are returned to available stock via `inventory.release` consumer.
    - Verify zero stock drift between Redis gatekeeper counters and PostgreSQL ledger.
-

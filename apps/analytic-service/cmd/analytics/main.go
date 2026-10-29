@@ -87,11 +87,16 @@ func main() {
 
 	// Analytics Admin API Endpoints
 	analyticsHandler := handlers.NewAnalyticsHandler(database, redisClient, store, cfg.ChartCacheTTL, cfg.EventsCacheTTL)
+	// Public trust & social proof metrics for storefront
+	r.Get("/analytics/public", analyticsHandler.GetPublicMetrics)
+
 	r.Route("/analytics", func(r chi.Router) {
 		r.Use(middleware.RequireAdmin(cfg.InternalServiceSecret))
 
 		r.Get("/summary", analyticsHandler.GetSummary)
 		r.Get("/merchants", analyticsHandler.GetMerchants)
+		r.Get("/operations", analyticsHandler.GetOperations)
+		r.Get("/commerce", analyticsHandler.GetCommerce)
 		r.Get("/daily-chart", analyticsHandler.GetDailyChart)
 		r.Get("/events", analyticsHandler.GetRecentEvents)
 	})

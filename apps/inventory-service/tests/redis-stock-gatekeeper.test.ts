@@ -39,9 +39,21 @@ async function runRedisStockGatekeeperTests(): Promise<void> {
     const claimTag = extractClusterHashTag(claimKey);
     const lockTag = extractClusterHashTag(lockKey);
 
-    assert.equal(stockTag, "tenant_pk:pk_khi_01", "Stock tag must match {tenant:wh}");
-    assert.equal(claimTag, "tenant_pk:pk_khi_01", "Claim tag must match {tenant:wh}");
-    assert.equal(lockTag, "tenant_pk:pk_khi_01", "Lock tag must match {tenant:wh}");
+    assert.equal(
+      stockTag,
+      "tenant_pk:pk_khi_01",
+      "Stock tag must match {tenant:wh}",
+    );
+    assert.equal(
+      claimTag,
+      "tenant_pk:pk_khi_01",
+      "Claim tag must match {tenant:wh}",
+    );
+    assert.equal(
+      lockTag,
+      "tenant_pk:pk_khi_01",
+      "Lock tag must match {tenant:wh}",
+    );
 
     const stockSlot = calculateClusterSlot(stockKey);
     const claimSlot = calculateClusterSlot(claimKey);
@@ -78,7 +90,9 @@ async function runRedisStockGatekeeperTests(): Promise<void> {
       "pk_khi_01",
       "Hash tag must be extracted as pk_khi_01",
     );
-    console.log("  ✓ Blueprint stock:available:{pk_khi_01}:9981:var_002 verified");
+    console.log(
+      "  ✓ Blueprint stock:available:{pk_khi_01}:9981:var_002 verified",
+    );
 
     // -------------------------------------------------------------------------
     // TEST 1: Direct Set & Pre-check Claim Success

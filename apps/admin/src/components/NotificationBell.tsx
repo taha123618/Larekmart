@@ -8,7 +8,10 @@ import axios from "axios";
 import type { NotificationType } from "@repo/types";
 import { Button } from "./ui/button";
 import { useWebSocket, type WebSocketMessage } from "@/hooks/useWebSocket";
-import { getApiGatewayUrl, getNotificationWsUrl } from "@/services/gateway.service";
+import {
+  getApiGatewayUrl,
+  getNotificationWsUrl,
+} from "@/services/gateway.service";
 
 interface NotificationResponse {
   notifications: NotificationType[];

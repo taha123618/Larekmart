@@ -43,7 +43,10 @@ export class InFlightBulkhead {
     return null;
   }
 
-  public static getMaxConcurrent(category: string, isDegraded: boolean): number {
+  public static getMaxConcurrent(
+    category: string,
+    isDegraded: boolean,
+  ): number {
     if (category === "checkout") {
       return isDegraded ? 5 : 50;
     }
@@ -55,4 +58,3 @@ export class InFlightBulkhead {
 }
 
 export const inFlightBulkhead = new InFlightBulkhead();
-

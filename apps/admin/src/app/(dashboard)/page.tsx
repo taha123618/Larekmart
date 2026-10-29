@@ -7,10 +7,10 @@ import TodoList from "@/components/TodoList";
 import { auth } from "@clerk/nextjs/server";
 import { getApiGatewayUrl } from "@/services/gateway.service";
 import {
-  AnalyticsDailyChartType,
-  AnalyticsSummaryType,
-  OrderChartType,
-} from "@repo/types";
+  fetchAnalyticsSummary,
+  fetchDailyAnalyticsChart,
+} from "@/services/analytics.service";
+import type { OrderChartType } from "@repo/types";
 
 const Homepage = async () => {
   const { getToken } = await auth();
@@ -18,7 +18,6 @@ const Homepage = async () => {
 
   const gatewayUrl = getApiGatewayUrl();
   const orderUrl = gatewayUrl;
-  const analyticUrl = gatewayUrl;
 
   const orderChartData = fetch(`${orderUrl}/order-chart`, {
     headers: {
@@ -33,30 +32,8 @@ const Homepage = async () => {
     })
     .catch(() => [] as OrderChartType[]);
 
-  const dailyAnalyticsData = fetch(
-    `${analyticUrl}/analytics/daily-chart?days=7`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  )
-    .then(async (response) => {
-      if (!response.ok) return [] as AnalyticsDailyChartType[];
-      return (await response.json()) as AnalyticsDailyChartType[];
-    })
-    .catch(() => [] as AnalyticsDailyChartType[]);
-
-  const summaryAnalyticsData = fetch(`${analyticUrl}/analytics/summary`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-    .then(async (response) => {
-      if (!response.ok) return null;
-      return (await response.json()) as AnalyticsSummaryType;
-    })
-    .catch(() => null);
+  const dailyAnalyticsData = fetchDailyAnalyticsChart(7, token);
+  const summaryAnalyticsData = fetchAnalyticsSummary(token);
 
   return (
     <div className="flex flex-col gap-6">

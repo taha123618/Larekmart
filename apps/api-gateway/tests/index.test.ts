@@ -10,7 +10,6 @@ import { runHealthIntegrationTests } from "./integration/health.test.js";
 import { runInventoryEdgeTests } from "./integration/inventory-edge.test.js";
 import { runChaosGuardrailsTests } from "./resilience/chaos-guardrails.test.js";
 
-
 async function main() {
   console.log("=================================================");
   console.log("🚀 Larekmart API Gateway Test Suite Execution");
@@ -30,7 +29,6 @@ async function main() {
     await runHealthIntegrationTests();
     await runInventoryEdgeTests();
     await runChaosGuardrailsTests();
-
 
     const elapsed = Date.now() - start;
     console.log("\n=================================================");

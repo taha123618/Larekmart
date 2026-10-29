@@ -12,6 +12,7 @@ import {
   fetchFeaturedProducts,
   normalizeCatalogProduct,
 } from "@/services/catalog.service";
+import { fetchMarketplaceTrustMetrics } from "@/services/analytics.service";
 
 const Homepage = async ({
   searchParams,
@@ -19,7 +20,10 @@ const Homepage = async ({
   searchParams: Promise<{ category: string }>;
 }): Promise<React.JSX.Element> => {
   const category = (await searchParams).category;
-  const featured = await fetchFeaturedProducts(4);
+  const [featured, trustMetrics] = await Promise.all([
+    fetchFeaturedProducts(4),
+    fetchMarketplaceTrustMetrics(),
+  ]);
   const flashProducts = featured.map(normalizeCatalogProduct);
 
   return (
@@ -28,7 +32,7 @@ const Homepage = async ({
       <HeroBanner />
 
       {/* 2. MARKETPLACE TRUST GUARANTEES & CONFIDENCE INDICATORS */}
-      <TrustBadges />
+      <TrustBadges metrics={trustMetrics} />
 
       {/* 3. VISUAL CATEGORY HIGHLIGHTS GRID */}
       <MarketplaceCategories />

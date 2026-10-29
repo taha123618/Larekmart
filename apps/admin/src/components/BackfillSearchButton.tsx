@@ -25,13 +25,14 @@ const runBackfillWindow = async (token: string | null, afterId?: number) => {
   const res = await fetch(
     `${productServiceUrl}/api/v1/products/backfill-search`,
     {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ afterId, batchSize: 200, timeBudgetMs: 20000 }),
     },
-    body: JSON.stringify({ afterId, batchSize: 200, timeBudgetMs: 20000 }),
-  });
+  );
 
   if (!res.ok) {
     throw new Error(

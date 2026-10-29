@@ -4,7 +4,13 @@ import {
   RotateCcw,
   Headphones,
   CreditCard,
+  CheckCircle2,
 } from "lucide-react";
+import type { MarketplaceTrustMetrics } from "@/services/analytics.service";
+
+interface TrustBadgesProps {
+  metrics?: MarketplaceTrustMetrics;
+}
 
 const BADGES = [
   {
@@ -44,7 +50,7 @@ const BADGES = [
   },
 ];
 
-export default function TrustBadges() {
+export default function TrustBadges({ metrics }: TrustBadgesProps = {}) {
   return (
     <div className="my-10 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800/80 shadow-xs dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
@@ -74,6 +80,28 @@ export default function TrustBadges() {
           );
         })}
       </div>
+
+      {metrics && (
+        <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2 font-medium">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-slate-900 dark:text-white font-bold">
+              Verified Marketplace Scale:
+            </span>
+            <span>{metrics.activeSellersCount}+ Active Sellers</span>
+            <span>•</span>
+            <span>{metrics.verifiedVendorsCount}+ KYB Verified Vendors</span>
+            <span>•</span>
+            <span>
+              {metrics.totalProductsCount.toLocaleString()}+ Listed Products
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/60">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{metrics.deliverySuccessRate}% Delivery Success Rate</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -37,7 +37,12 @@ const OutboxEventSchema = new Schema(
 );
 
 // High-performance polling index for claiming pending or expired-lease events:
-OutboxEventSchema.index({ status: 1, lockedUntil: 1, lockedBy: 1, createdAt: 1 });
+OutboxEventSchema.index({
+  status: 1,
+  lockedUntil: 1,
+  lockedBy: 1,
+  createdAt: 1,
+});
 
 // Automated 7-day TTL index for pruning published events:
 OutboxEventSchema.index({ publishedAt: 1 }, { expireAfterSeconds: 604800 });

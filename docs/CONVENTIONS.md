@@ -28,7 +28,7 @@ already established in the repository.
 | React components   | PascalCase                                    | `AppBarChart`                                                 |
 | Services           | `<entity>-service`                            | `order-service`                                               |
 | Kafka topics       | `<entity>.<past-tense>`                       | `payment.successful`                                          |
-| Env vars           | `SCREAMING_SNAKE`, `NEXT_PUBLIC_` for browser | `NEXT_PUBLIC_API_GATEWAY_URL`                                |
+| Env vars           | `SCREAMING_SNAKE`, `NEXT_PUBLIC_` for browser | `NEXT_PUBLIC_API_GATEWAY_URL`                                 |
 
 ## Backend
 
