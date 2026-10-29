@@ -88,7 +88,7 @@ func main() {
 	// Analytics Admin API Endpoints
 	analyticsHandler := handlers.NewAnalyticsHandler(database, redisClient, store, cfg.ChartCacheTTL, cfg.EventsCacheTTL)
 	r.Route("/analytics", func(r chi.Router) {
-		r.Use(middleware.RequireAdmin())
+		r.Use(middleware.RequireAdmin(cfg.InternalServiceSecret))
 
 		r.Get("/summary", analyticsHandler.GetSummary)
 		r.Get("/merchants", analyticsHandler.GetMerchants)
