@@ -37,7 +37,14 @@
     },
     "lint": {
       "dependsOn": ["^lint"],
-      "env": ["NODE_ENV", "ADMIN_REGISTRATION_SECRET", "ALLOW_ADMIN_CLAIM"]
+      "env": [
+        "NODE_ENV",
+        "ADMIN_REGISTRATION_SECRET",
+        "ALLOW_ADMIN_CLAIM",
+        "INTERNAL_API_GATEWAY_URL",
+        "API_GATEWAY_URL",
+        "INTERNAL_WS_URL"
+      ]
     },
     "check-types": {
       "dependsOn": ["^check-types"]

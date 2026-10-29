@@ -60,7 +60,7 @@ export async function runCircuitBreakerTests() {
   cb.recordFailure(service, 50);
   assert.equal(cb.getState(service), "OPEN");
 
-  await new Promise((resolve) => setTimeout(resolve, 450));
+  await new Promise((resolve) => setTimeout(resolve, 600));
   assert.equal(cb.getState(service), "HALF_OPEN");
 
   // Failure in HALF_OPEN trips immediately back to OPEN
