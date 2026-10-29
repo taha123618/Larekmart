@@ -9,7 +9,7 @@ import {
   createHttpMonitor,
   createMemoryCheck,
 } from "@repo/monitoring";
-import { prisma } from "@repo/inventory-db";
+import { prisma, disconnectPrisma } from "@repo/inventory-db";
 import { validateInternalServiceSecret } from "@repo/types";
 import inventoryRoute from "./routes/inventory.route.js";
 import { logger, metrics } from "./observability/metrics.js";
@@ -195,7 +195,7 @@ async function shutdown(signal: string): Promise<void> {
     logger.error("Error closing Redis connection", err);
   }
   try {
-    await prisma.$disconnect();
+    await disconnectPrisma();
   } catch (err) {
     logger.error("Error disconnecting Prisma", err);
   }
