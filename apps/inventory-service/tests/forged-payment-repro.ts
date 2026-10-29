@@ -13,10 +13,8 @@
  * Prereqs: Docker daemon running, Kafka compose up, inventory-service running.
  * Run: pnpm --filter inventory-service exec tsx --env-file=.env tests/forged-payment-repro.ts
  */
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@repo/inventory-db";
 import { Kafka } from "kafkajs";
-
-const prisma = new PrismaClient();
 
 const RESERVATION_REF = `repro-forged-${Date.now()}`;
 const TOPIC = "payment.successful";

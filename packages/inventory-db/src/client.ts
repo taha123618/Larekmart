@@ -1,9 +1,11 @@
 import { PrismaClient } from "../generated/prisma";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const globalForPrisma = globalThis as unknown as {
+  inventoryPrisma?: PrismaClient;
+};
 
 export const prisma =
-  globalForPrisma.prisma ||
+  globalForPrisma.inventoryPrisma ||
   new PrismaClient({
     datasources: {
       db: {
@@ -15,7 +17,7 @@ export const prisma =
   });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.inventoryPrisma = prisma;
 }
 
 export async function disconnectPrisma(): Promise<void> {

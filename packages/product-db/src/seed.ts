@@ -1,14 +1,4 @@
-import { PrismaClient } from "../generated/prisma/index.js";
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url:
-        process.env.DATABASE_URL ||
-        "postgresql://postgres:admin123@localhost:5432/larekmart_product_db",
-    },
-  },
-});
+import { prisma } from "./client.js";
 
 export const SEED_CATEGORIES = [
   { name: "Shoes", slug: "shoes" },

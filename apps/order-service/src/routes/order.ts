@@ -31,22 +31,17 @@ const getServerProductPricesPaisa = async (
 ): Promise<Map<number, number>> => {
   const uniqueIds = Array.from(new Set(productIds));
 
-  const { PrismaClient } = await import("@repo/product-db");
-  const prisma = new PrismaClient();
-  try {
-    const products = await prisma.product.findMany({
-      where: { id: { in: uniqueIds } },
-      select: { id: true, price: true },
-    });
+  const { prisma } = await import("@repo/product-db");
+  const products = await prisma.product.findMany({
+    where: { id: { in: uniqueIds } },
+    select: { id: true, price: true },
+  });
 
-    const prices = new Map<number, number>();
-    for (const product of products) {
-      prices.set(product.id, product.price * 100);
-    }
-    return prices;
-  } finally {
-    await prisma.$disconnect();
+  const prices = new Map<number, number>();
+  for (const product of products) {
+    prices.set(product.id, product.price * 100);
   }
+  return prices;
 };
 
 /**

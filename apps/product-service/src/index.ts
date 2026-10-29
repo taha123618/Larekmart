@@ -5,7 +5,7 @@ import { shouldBeUser } from "./middleware/authMiddleware.js";
 import productRouter from "./routes/product.route.js";
 import categoryRouter from "./routes/category.route.js";
 import { consumer, producer } from "./utils/kafka.js";
-import { prisma } from "@repo/product-db";
+import { prisma, disconnectPrisma } from "@repo/product-db";
 import { validateInternalServiceSecret } from "@repo/types";
 import {
   createHealthRegistry,
@@ -135,9 +135,33 @@ const start = async () => {
       "product-service",
     );
     await Promise.all([producer.connect(), consumer.connect()]);
-    app.listen(8000, () => {
+    const server = app.listen(8000, () => {
       logger.info("Product service is running on port 8000");
     });
+
+    const shutdown = async (signal: string) => {
+      logger.info(
+        `Received ${signal}, shutting down product-service gracefully...`,
+      );
+      server.close(async () => {
+        try {
+          await Promise.all([
+            producer.disconnect(),
+            consumer.disconnect(),
+            redis.close(),
+            disconnectPrisma(),
+          ]);
+          logger.info("Product service shut down cleanly.");
+          process.exit(0);
+        } catch (err) {
+          logger.error("Error during product-service shutdown", err);
+          process.exit(1);
+        }
+      });
+    };
+
+    process.on("SIGINT", () => void shutdown("SIGINT"));
+    process.on("SIGTERM", () => void shutdown("SIGTERM"));
   } catch (error) {
     logger.fatal("Failed to initialize product-service", error);
     process.exit(1);

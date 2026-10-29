@@ -228,6 +228,8 @@ const start = async () => {
         await consumer.disconnect();
         await mongoose.disconnect();
         await redis.close();
+        const { disconnectPrisma } = await import("@repo/product-db");
+        await disconnectPrisma();
         logger.info("Order service shut down cleanly.");
         process.exit(0);
       } catch (err) {
