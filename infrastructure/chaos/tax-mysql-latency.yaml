@@ -1,0 +1,31 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: tax-mysql-latency
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: larekmart
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: chaos-engineering
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - larekmart
+    labelSelectors:
+      app.kubernetes.io/name: tax-service
+  delay:
+    latency: "3500ms"
+    jitter: "500ms"
+    correlation: "50"
+  direction: to
+  target:
+    selector:
+      namespaces:
+        - larekmart
+      labelSelectors:
+        app.kubernetes.io/name: mysql
+    mode: all
+  duration: "5m"
+

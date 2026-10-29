@@ -1,0 +1,27 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: order-mongo-partition
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: larekmart
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: chaos-engineering
+spec:
+  action: partition
+  mode: all
+  selector:
+    namespaces:
+      - larekmart
+    labelSelectors:
+      app.kubernetes.io/name: order-service
+  direction: both
+  target:
+    selector:
+      namespaces:
+        - larekmart
+      labelSelectors:
+        app.kubernetes.io/name: mongo
+    mode: all
+  duration: "3m"
+

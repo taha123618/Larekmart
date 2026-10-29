@@ -8,6 +8,8 @@ import { runAuthTests } from "./auth/auth.test.js";
 import { runSecurityTests } from "./security/security.test.js";
 import { runHealthIntegrationTests } from "./integration/health.test.js";
 import { runInventoryEdgeTests } from "./integration/inventory-edge.test.js";
+import { runChaosGuardrailsTests } from "./resilience/chaos-guardrails.test.js";
+
 
 async function main() {
   console.log("=================================================");
@@ -27,6 +29,8 @@ async function main() {
     await runSecurityTests();
     await runHealthIntegrationTests();
     await runInventoryEdgeTests();
+    await runChaosGuardrailsTests();
+
 
     const elapsed = Date.now() - start;
     console.log("\n=================================================");

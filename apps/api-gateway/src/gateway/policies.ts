@@ -1,7 +1,9 @@
 export interface RateLimitPolicy {
   limit: number;
   windowSeconds: number;
+  degraded?: boolean;
 }
+
 
 export const RATE_LIMIT_POLICIES: Record<string, RateLimitPolicy> = {
   AUTH: {
@@ -64,3 +66,29 @@ export function getRateLimitForRoute(prefix: string): RateLimitPolicy {
   }
   return RATE_LIMIT_POLICIES.DEFAULT!;
 }
+
+export function getAdaptiveRateLimitForRoute(
+  prefix: string,
+  isDegraded = false,
+): RateLimitPolicy {
+  const policy = getRateLimitForRoute(prefix);
+  if (!isDegraded) {
+    return policy;
+  }
+
+  // Under downstream chaos / circuit breaker trips, clamp transactional endpoints
+  if (
+    prefix.includes("/checkout") ||
+    prefix.includes("/payments") ||
+    prefix.includes("/sessions")
+  ) {
+    return {
+      limit: Math.min(policy.limit, 5),
+      windowSeconds: policy.windowSeconds,
+      degraded: true,
+    };
+  }
+
+  return policy;
+}
+

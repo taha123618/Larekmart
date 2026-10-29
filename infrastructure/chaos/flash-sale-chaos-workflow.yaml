@@ -1,0 +1,85 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: flash-sale-chaos-workflow
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: larekmart
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: chaos-engineering
+spec:
+  entry: flash-sale-chaos-sequence
+  templates:
+    - name: flash-sale-chaos-sequence
+      templateType: Serial
+      children:
+        - inject-tax-latency
+        - cool-down-pause-1
+        - partition-mongo
+        - cool-down-pause-2
+        - kill-kafka-broker
+
+    - name: inject-tax-latency
+      templateType: NetworkChaos
+      deadline: 2m
+      networkChaos:
+        action: delay
+        mode: all
+        selector:
+          namespaces:
+            - larekmart
+          labelSelectors:
+            app.kubernetes.io/name: tax-service
+        delay:
+          latency: "3000ms"
+          jitter: "500ms"
+        direction: to
+        target:
+          selector:
+            namespaces:
+              - larekmart
+            labelSelectors:
+              app.kubernetes.io/name: mysql
+          mode: all
+
+    - name: cool-down-pause-1
+      templateType: Suspend
+      deadline: 30s
+
+    - name: partition-mongo
+      templateType: NetworkChaos
+      deadline: 90s
+      networkChaos:
+        action: partition
+        mode: all
+        selector:
+          namespaces:
+            - larekmart
+          labelSelectors:
+            app.kubernetes.io/name: order-service
+        direction: both
+        target:
+          selector:
+            namespaces:
+              - larekmart
+            labelSelectors:
+              app.kubernetes.io/name: mongo
+          mode: all
+
+    - name: cool-down-pause-2
+      templateType: Suspend
+      deadline: 30s
+
+    - name: kill-kafka-broker
+      templateType: PodChaos
+      deadline: 60s
+      podChaos:
+        action: pod-kill
+        mode: fixed
+        value: "1"
+        selector:
+          namespaces:
+            - larekmart
+          labelSelectors:
+            app.kubernetes.io/name: kafka-cluster
+

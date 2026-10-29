@@ -33,6 +33,13 @@ export const gatewayRateLimitHitsTotal = createCounter(
   "Total rate limit rejections executed by gateway",
 );
 
+export const gatewayBulkheadShedHitsTotal = createCounter(
+  metrics,
+  "gateway_bulkhead_shed_hits_total",
+  "Total requests shed by in-flight concurrency bulkhead under chaos or load saturation",
+);
+
+
 export const gatewayAuthFailuresTotal = createCounter(
   metrics,
   "gateway_auth_failures_total",

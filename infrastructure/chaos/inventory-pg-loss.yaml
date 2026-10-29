@@ -1,0 +1,32 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: inventory-pg-loss
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: larekmart
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: chaos-engineering
+spec:
+  action: corrupt
+  mode: all
+  selector:
+    namespaces:
+      - larekmart
+    labelSelectors:
+      app.kubernetes.io/name: inventory-service
+  corrupt:
+    corrupt: "30"
+  delay:
+    latency: "200ms"
+    jitter: "50ms"
+  direction: to
+  target:
+    selector:
+      namespaces:
+        - larekmart
+      labelSelectors:
+        app.kubernetes.io/name: postgres
+    mode: all
+  duration: "3m"
+
