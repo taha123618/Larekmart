@@ -12,6 +12,7 @@ import { ToastContainer } from "react-toastify";
 import { ClerkProvider } from "@clerk/nextjs";
 import CartStoreHydration from "@/components/providers/CartStoreHydration";
 import QueryProvider from "@/components/providers/QueryProvider";
+import { RuntimeConfigProvider } from "@/components/providers/RuntimeConfigProvider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import ClientWrapper from "@/wrapper/client-wrapper";
 import ScrollToTop from "@/components/common/ScrollToTop";

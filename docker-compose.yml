@@ -1440,7 +1440,7 @@ services:
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL}
+        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL:-}
     container_name: larekmart-client
     deploy: *heavy-deploy
     restart: unless-stopped
@@ -1448,6 +1448,9 @@ services:
       - "${CLIENT_BIND_IP:-127.0.0.1}:${CLIENT_PORT:-3002}:3002"
     env_file:
       - ./apps/client/.env
+    environment:
+      CLIENT_API_GATEWAY_URL: ${CLIENT_API_GATEWAY_URL:-http://api-gateway:8080}
+      CLIENT_WS_URL: ${CLIENT_WS_URL:-ws://api-gateway:8080/ws}
     healthcheck:
       test:
         [
@@ -1480,7 +1483,7 @@ services:
       dockerfile: apps/admin/Dockerfile
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL}
+        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL:-}
     container_name: larekmart-admin
     deploy: *heavy-deploy
     restart: unless-stopped
@@ -1488,6 +1491,8 @@ services:
       - "${ADMIN_BIND_IP:-127.0.0.1}:${ADMIN_PORT:-3003}:3003"
     env_file:
       - ./apps/admin/.env
+    environment:
+      ADMIN_API_GATEWAY_URL: ${ADMIN_API_GATEWAY_URL:-http://api-gateway:8080}
     healthcheck:
       test:
         [

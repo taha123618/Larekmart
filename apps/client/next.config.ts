@@ -16,6 +16,22 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    const gatewayUrl =
+      process.env.INTERNAL_API_GATEWAY_URL ||
+      process.env.API_GATEWAY_URL ||
+      "http://localhost:8090";
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${gatewayUrl}/api/v1/:path*`,
+      },
+      {
+        source: "/ws/:path*",
+        destination: `${gatewayUrl}/ws/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {
