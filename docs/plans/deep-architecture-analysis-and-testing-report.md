@@ -307,12 +307,12 @@ Monorepo Typecheck Command:  pnpm check-types
 - **Test Command**: `pnpm --filter seller-service test`
 - **Result**: **PASSED (100%)**
 
-### 18. `analytic-service` (Express 5)
+### 18. `analytic-service` (Go 1.22 Chi)
 
-- **Runtime**: Express 5 (`port 8004`)
-- **Database**: PostgreSQL (`analytics_db` on isolated `:5433`)
-- **Scope**: High-velocity telemetry ingestion, in-memory ring buffer, multi-row bulk persistence.
-- **Test Command**: `pnpm --filter analytic-service test`
+- **Runtime**: Go 1.22 (`port 8004`)
+- **Database**: PostgreSQL (`analytics_db` on isolated `:5433` via `jackc/pgx/v5` `pgxpool.Pool`)
+- **Scope**: Multithreaded Kafka ingestion (60+ topics), bounded channel buffer (10,000 capacity), native binary `pgx.CopyFrom` micro-batching, lock-free in-memory atomic KPI store, and REST metrics API.
+- **Test Command**: `pnpm --filter analytic-service test` (or `go test -v ./...`)
 - **Result**: **PASSED (100%)**
 
 ### 19. `notification-service` (Go 1.22 Chi)

@@ -109,7 +109,7 @@ scrape_configs:
       - targets: ["analytic-service:8004"]
         labels:
           service: analytic-service
-          runtime: nodejs
+          runtime: go
 
   - job_name: notification-service
     metrics_path: /metrics

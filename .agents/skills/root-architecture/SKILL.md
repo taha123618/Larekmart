@@ -19,7 +19,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `order-service` (:8001) — orders, MongoDB via Mongoose.
   - `payment-service` (:8002) — Stripe; stateless.
   - `auth-service` (:8003) — Clerk user management; stateless.
-  - `analytic-service` (:8004) — KPI counters, PostgreSQL audit logs & metrics REST API.
+  - `analytic-service` (:8004) — Go 1.22 (Chi), multithreaded Kafka ingestion (60+ topics), binary COPY batching (pgx.CopyFrom), atomic lock-free KPI counters, and REST metrics API.
   - `notification-service` (:8005) — Go (Chi), multi-channel notifications (Email, SMS, Push, In-App), PostgreSQL, Redis, WebSockets.
   - `search-service` (:8006) — Fastify, full-text product search, autocomplete, facets; OpenSearch + Redis cache.
   - `inventory-service` (:8007) — Hono, PostgreSQL stock authority, atomic reservations, warehouse inventory, and Kafka events.

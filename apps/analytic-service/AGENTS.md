@@ -14,7 +14,7 @@ A high-throughput **Go 1.22** Kafka consumer worker and Chi HTTP API microservic
 - `internal/cache/redis.go` — Redis client facade using `redis/go-redis/v9` with TTL caching and graceful fallback.
 - `internal/metrics/store.go` — Lock-free in-memory KPI store (`sync/atomic` with CAS bit casting for float64 values) and fixed circular buffer for instant dashboard queries.
 - `internal/ingestion/batcher.go` — High-velocity bounded channel queue buffer (10,000 capacity) with worker loop flushing on size (1,000 events) or timeout (500ms).
-- `internal/ingestion/consumer.go` — Dedicated background Kafka consumer goroutine reading all 38 topics via `segmentio/kafka-go` without starving heartbeats.
+- `internal/ingestion/consumer.go` — Dedicated background Kafka consumer goroutine reading 60+ topics via `segmentio/kafka-go` without starving heartbeats.
 - `internal/middleware/auth.go` — Zero-trust authentication verifying `X-Internal-Secret` in constant time (`crypto/subtle.ConstantTimeCompare`) and `X-User-Role: admin`, plus direct Bearer token verification.
 - `internal/middleware/cors.go` & `logger.go` — Security headers, CORS configuration, and Prometheus HTTP request metrics middleware.
 - `internal/handlers/analytics.go` — REST handlers for `/analytics/summary`, `/analytics/merchants`, `/analytics/operations`, `/analytics/commerce`, `/analytics/public`, `/analytics/daily-chart`, and `/analytics/events`.
@@ -33,7 +33,7 @@ A high-throughput **Go 1.22** Kafka consumer worker and Chi HTTP API microservic
 
 - Uses `segmentio/kafka-go`.
 - Consumer group ID: `analytic-service-group`.
-- Consumes all 38 platform topics.
+- Consumes 60+ platform topics across all 23 microservices.
 - Dedicated reader goroutine ensures Kafka heartbeats (`session.timeout.ms`) are never blocked by heavy database writes or bursty traffic.
 - Handlers extract payload from both `{ value: payload }` envelope and raw message payloads.
 

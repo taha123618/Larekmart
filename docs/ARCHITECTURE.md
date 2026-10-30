@@ -116,8 +116,8 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 
 **`analytic-service` (Go 1.22 / Chi, :8004)** — high-throughput metrics and event analytics.
 
-- Routes: `/analytics/summary`, `/analytics/merchants`, `/analytics/daily-chart`, `/analytics/events`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
-- Consumes all 38 platform Kafka event streams via `segmentio/kafka-go` with a dedicated reader goroutine.
+- Routes: `/analytics/public`, `/analytics/summary`, `/analytics/merchants`, `/analytics/operations`, `/analytics/commerce`, `/analytics/daily-chart`, `/analytics/events`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
+- Consumes 60+ platform Kafka event streams across all 23 microservices via `segmentio/kafka-go` with dedicated reader goroutines.
 - Decoupled Go Pipeline: Ingestion pushes messages into a 10,000-capacity buffered channel, preventing Kafka consumer heartbeat starvation (`session.timeout.ms`) and consumer group rebalances during flash-sale traffic spikes.
 - Binary COPY Batching (`pgx.CopyFrom`): Worker pool micro-batches events (1,000 events / 500ms window) directly into monthly partitioned PostgreSQL tables (`analytics_events` `PARTITION BY RANGE (created_at)`) with Block Range Indexes (BRIN), bypassing query parser/tokenization overhead and reducing DB transactions by >99.8%.
 - Lock-Free Atomic State: In-memory atomic counters (`sync/atomic` with CAS bit casting for float64 revenue and tax) deliver sub-millisecond responses for `/analytics/summary` and `/analytics/merchants`.

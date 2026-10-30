@@ -13,14 +13,14 @@
 
 ## 2. Bounded Contexts & Data Ownership
 
-| Bounded Context        | Owning Microservice     | Storage Engine   | Access Layer                | Data Lifecycle                                |
-| :--------------------- | :---------------------- | :--------------- | :-------------------------- | :-------------------------------------------- |
-| **Catalog & Products** | `apps/product-service`  | PostgreSQL       | `@repo/product-db` (Prisma) | CRUD with transactional ACID guarantees       |
-| **Orders & Sales**     | `apps/order-service`    | MongoDB          | `@repo/order-db` (Mongoose) | Append-mostly with high write throughput      |
-| **Checkout & Billing** | `apps/payment-service`  | Stripe Vault     | `stripe` Node SDK           | Tokenized sessions with PCI-DSS compliance    |
-| **User Identity**      | `apps/auth-service`     | Clerk Identity   | `@clerk/express` SDK        | Managed user store with JWT session claims    |
-| **Transactional Mail** | `apps/email-service`    | Ephemeral        | Nodemailer / OAuth2         | In-memory message consumption                 |
-| **Platform Analytics** | `apps/analytic-service` | PostgreSQL / Mem | `pg.Pool`                   | Immutable event log + daily rollup aggregates |
+| Bounded Context        | Owning Microservice     | Storage Engine   | Access Layer                | Data Lifecycle                                                  |
+| :--------------------- | :---------------------- | :--------------- | :-------------------------- | :-------------------------------------------------------------- |
+| **Catalog & Products** | `apps/product-service`  | PostgreSQL       | `@repo/product-db` (Prisma) | CRUD with transactional ACID guarantees                         |
+| **Orders & Sales**     | `apps/order-service`    | MongoDB          | `@repo/order-db` (Mongoose) | Append-mostly with high write throughput                        |
+| **Checkout & Billing** | `apps/payment-service`  | Stripe Vault     | `stripe` Node SDK           | Tokenized sessions with PCI-DSS compliance                      |
+| **User Identity**      | `apps/auth-service`     | Clerk Identity   | `@clerk/express` SDK        | Managed user store with JWT session claims                      |
+| **Transactional Mail** | `apps/email-service`    | Ephemeral        | Nodemailer / OAuth2         | In-memory message consumption                                   |
+| **Platform Analytics** | `apps/analytic-service` | PostgreSQL / Mem | `pgxpool` (`jackc/pgx/v5`)  | Partitioned binary COPY audit logs + atomic in-memory KPI store |
 
 ---
 

@@ -34,10 +34,10 @@ apps/auth-service ────┬─▶ @repo/kafka
 apps/email-service ───┬─▶ @repo/kafka
                       └─▶ @repo/types
 
-apps/analytic-service ┬─▶ @repo/kafka
-                      ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
-                      ├─▶ @repo/types
-                      └─▶ pg
+apps/analytic-service (Go) ┬─▶ Kafka (segmentio/kafka-go)
+                           ├─▶ PostgreSQL (jackc/pgx/v5 - pgxpool)
+                           ├─▶ Redis (redis/go-redis/v9)
+                           └─▶ Prometheus (prometheus/client_golang)
 
 apps/notification-service (Go) ┬─▶ Kafka (segmentio/kafka-go)
                                ├─▶ PostgreSQL (pgxpool)

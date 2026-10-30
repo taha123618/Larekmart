@@ -29,6 +29,7 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 | **`pricing-service`**        | Node.js Test Runner / `tsx` | Ten suites via `tests/pricing-service.test.ts`: decimal arithmetic precision, volume tiered pricing, currency conversion, negative price prevention, quote snapshot persistence, Fastify endpoints, and event emission                                                                                           |
 | **`vendor-service`**         | Node.js Test Runner / `tsx` | Legal entity registration, KYB document verification, member access, status transitions, and lifecycle event emission (`tests/vendor-service.test.ts`)                                                                                                                                                           |
 | **`seller-service`**         | Node.js Test Runner / `tsx` | Marketplace storefront profiles, multi-staff permissions, operational settings, metrics snapshots, and Fastify endpoints (`tests/seller-service.test.ts`)                                                                                                                                                        |
+| **`analytic-service`**       | Go Test Tool (`go test`)    | Config validation, constant-time auth guards, lock-free atomic KPI store, bounded-channel micro-batching, and REST handlers (`cmd/...`, `internal/...`)                                                                                                                                                          |
 | **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle, recovery (`internal/*`)                                                                                                                                                                                                                      |
 | **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                  |
 | **`@repo/redis`**            | Integration Verifier        | Key namespacing, cache TTLs, rate limiter, degraded resilience (`src/scripts/verify-redis.ts`)                                                                                                                                                                                                                   |
@@ -56,6 +57,7 @@ pnpm --filter return-service test
 pnpm --filter pricing-service test
 pnpm --filter vendor-service test
 pnpm --filter seller-service test
+pnpm --filter analytic-service test
 pnpm --filter notification-service test
 pnpm --filter recommendation-service test
 

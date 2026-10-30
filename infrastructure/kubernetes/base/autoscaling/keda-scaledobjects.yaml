@@ -100,3 +100,34 @@ spec:
         consumerGroup: notification-service-group
         topic: order.status_updated
         lagThreshold: "50"
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: analytic-service-scaledobject
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: analytic-service-scaledobject
+    app.kubernetes.io/part-of: larekmart
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: analytic-service
+  minReplicaCount: 2
+  maxReplicaCount: 8
+  cooldownPeriod: 300
+  pollingInterval: 15
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-service.larekmart.svc.cluster.local:9092
+        consumerGroup: analytic-service-group
+        topic: order.created
+        lagThreshold: "100"
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-service.larekmart.svc.cluster.local:9092
+        consumerGroup: analytic-service-group
+        topic: payment.successful
+        lagThreshold: "100"

@@ -59,12 +59,12 @@ This document specifies the mandatory cybersecurity standards and implementation
 
 - **Parameterized Queries Everywhere**:
   - Never concatenate user-supplied input into raw SQL queries or strings.
-  - In `apps/analytic-service`, dynamic ranges are strictly parameterized:
+  - In `apps/analytic-service`, dynamic ranges in Go `pgxpool.Pool` queries are strictly parameterized:
     ```sql
     -- SECURE
     SELECT ... WHERE date >= CURRENT_DATE - ($1 * INTERVAL '1 day')
     ```
-  - Always validate, parse, and clamp numeric parameters (e.g., `Math.max(1, Math.min(365, parseInt(days, 10)))`).
+  - Always validate, parse, and clamp numeric parameters (e.g., `daysInt := min(max(1, days), 365)`).
 - **ORM / Query Builder Safety**:
   - Use Prisma and Mongoose typed client methods (`findUnique`, `update`, `create`).
   - Do not use raw `$where` clauses in Mongoose or unparameterized `$queryRawUnsafe` in Prisma.

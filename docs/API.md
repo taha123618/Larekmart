@@ -209,15 +209,30 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ## 5. Analytic Service (`:8004`)
 
+### `GET /analytics/public`
+
+- **Auth**: Public (Unauthenticated / Public Storefront)
+- **Response**: `PublicTrustMetricsType` (`activeSellersCount`, `verifiedKybVendorsCount`, `listedProductsCount`, `deliveredShipmentsCount`, `deliverySuccessRate`)
+
 ### `GET /analytics/summary`
 
 - **Auth**: Admin (`shouldBeAdmin` / `X-Internal-Secret`)
-- **Response**: `AnalyticsSummaryType` (gross revenue, order counts, signups, products created/deleted)
+- **Response**: `AnalyticsSummaryType` (gross revenue, processed orders, signups, products created/deleted, shipments delivered, delivery success rate, returns completed, discounts applied)
 
 ### `GET /analytics/merchants`
 
 - **Auth**: Admin (`shouldBeAdmin` / `X-Internal-Secret`)
 - **Response**: `AnalyticsMerchantsType` (total merchants, active merchants, pending verifications, total merchant revenue)
+
+### `GET /analytics/operations`
+
+- **Auth**: Admin (`shouldBeAdmin` / `X-Internal-Secret`)
+- **Response**: `OperationsAnalyticsMetricsType` (dispatched shipments, delivered shipments, delivery success rate, return requests, returns completed, active disputes, dispute resolution rate, average fulfillment hours)
+
+### `GET /analytics/commerce`
+
+- **Auth**: Admin (`shouldBeAdmin` / `X-Internal-Secret`)
+- **Response**: `CommerceAnalyticsMetricsType` (total tax collected, promotional discounts applied, coupon redemptions count, vendor escrows locked/released, vendor payouts processed, AOV in paisa)
 
 ### `GET /analytics/daily-chart`
 

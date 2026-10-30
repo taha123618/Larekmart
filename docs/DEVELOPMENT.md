@@ -115,7 +115,7 @@ Postgres container provisions via `POSTGRES_MULTIPLE_DATABASES`):
 | order-service                    | 8001               |
 | payment-service                  | 8002               |
 | auth-service                     | 8003               |
-| analytic-service                 | 8004               |
+| analytic-service (Go)            | 8004               |
 | notification-service (Go)        | 8005               |
 | search-service                   | 8006               |
 | inventory-service                | 8007               |
@@ -165,7 +165,7 @@ workspaces you touched. The tool differs per store:
 | `larekmart_catalog_db`        | catalog-service        | Prisma (`@repo/catalog-db`)     | `pnpm --filter @repo/catalog-db db:deploy`                                  |
 | `larekmart_recommendation_db` | recommendation-service | Alembic + SQLAlchemy (pgvector) | `cd apps/recommendation-service && uv run alembic upgrade head`             |
 | `larekmart_notification_db`   | notification-service   | Embedded SQL in `migrations/`   | automatic on startup (`internal/db`); verify with the opt-in test below     |
-| `larekmart_analytics_db`      | analytic-service       | Inline DDL in `src/db.ts`       | automatic on startup                                                        |
+| `larekmart_analytics_db`      | analytic-service       | Embedded SQL in `migrations/`   | automatic on startup (`internal/db`)                                        |
 | `larekmart_order_db`          | order-service          | Mongoose (no migrations)        | collections/indexes sync on connect                                         |
 | `larekmart_cart_db`           | cart-service           | Mongoose (no migrations)        | collections/indexes sync on connect                                         |
 

@@ -6,7 +6,7 @@ High-throughput, multithreaded Go analytics microservice and worker that consume
 
 1. **Decoupled Kafka Ingestion**:
    - Written in **Go 1.22** using `segmentio/kafka-go`.
-   - Ingestion is fully decoupled from processing: a dedicated reader goroutine consumes all 38 platform topics and immediately deposits events into a thread-safe, bounded channel queue buffer (10,000 capacity).
+   - Ingestion is fully decoupled from processing: a dedicated reader goroutine consumes 60+ platform topics across all 23 microservices and immediately deposits events into a thread-safe, bounded channel queue buffer (10,000 capacity).
    - Kafka heartbeat loops run uninterrupted in their own goroutine, completely eliminating event-loop starvation, heartbeat timeouts (`session.timeout.ms`), and catastrophic consumer group rebalance storms under peak flash-sale loads.
 
 2. **Binary COPY Micro-Batching (`pgx.CopyFrom`)**:

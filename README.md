@@ -255,8 +255,8 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
         ▼                                                           │
 ┌───────────────────────┐                                           │
 │   analytic-service    │                                           │
-│   Express :8004       │                                           │
-│   PostgreSQL (pg)     │                                           │
+│   Go (Chi) :8004      │                                           │
+│   PostgreSQL (pgx)    │                                           │
 └───────────────────────┘                                           │
         ▲                                                           │
         └───────────────────────────────────────────────────────────┘
@@ -305,7 +305,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
    - Guaranteed pool quotas prevent non-critical background traffic from starving Tier-1 commerce databases (`product_db`, `inventory_db`, `catalog_db`, `pricing_db`).
    - Prisma packages configure `directUrl` for zero-overhead direct migrations on port 5432 while routing runtime traffic through PgBouncer.
 8. **Decoupled Telemetry Pipeline & Go Ingestion Engine (`analytic-service`)**:
-   - High-throughput **Go 1.22 (Chi)** microservice consuming all 38 platform Kafka event streams with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
+   - High-throughput **Go 1.22 (Chi)** microservice consuming 60+ platform Kafka event streams across all 23 microservices with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
    - Micro-batches events (1,000 events / 500ms window) directly into monthly partitioned PostgreSQL tables (`PARTITION BY RANGE (created_at)`) with BRIN indexing using native binary COPY protocol (`pgx.CopyFrom`), reducing database write overhead by over **99.8%** compared to single-row inserts.
    - Lock-free atomic counters (`sync/atomic` with CAS bit casting for float64 metrics) provide `<1ms` KPI snapshot queries, backed by Redis TTL read-through caching.
    - Graceful shutdown drains in-flight channels and flushes pending micro-batches on `SIGTERM`/`SIGINT` to guarantee zero event loss.
