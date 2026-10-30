@@ -69,14 +69,11 @@ To sustain high read-to-write ratios during flash sales without saturating the p
      [PostgreSQL Read Replica (Hot Standby)] ◀───(WAL Stream)─── [PostgreSQL Primary Writer]
 ```
 
-### Read-Write Client Separation (`@repo/catalog-db`)
+### Read-Write Client Separation & Read-Your-Writes Consistency (`@repo/catalog-db`)
 
-- **`readPrisma`**: Connected to `DATABASE_READ_REPLICA_URL` (or PgBouncer `catalog_db_replica` pool on port 6432). Used exclusively by storefront browsing repositories:
-  - `catalog.repository.ts` (`findById`, `findMany`, search, filters, pagination)
-  - `category.repository.ts` (category trees and slugs)
-  - `brand.repository.ts` (brand catalogs)
-  - `collection.repository.ts` (curated storefront collections)
+- **`readPrisma`**: Connected to `DATABASE_READ_REPLICA_URL` (or PgBouncer `catalog_db_replica` pool on port 6432). Used by default for high-volume storefront browsing queries (`catalog.repository`, `category.repository`, `brand.repository`, `collection.repository`) to offload primary writers.
 - **`prisma`**: Connected to `DATABASE_URL` (primary writer pool `catalog_db`). Used exclusively by asynchronous Kafka projection consumers (`product-projector.ts`, `category-projector.ts`, `collection-projector.ts`) to persist updates from the write plane.
+- **`getCatalogDb(forcePrimary?: boolean)`**: Dynamically selects between `prisma` and `readPrisma`. When a mutating request arrives, API gateway registers a 500ms Read-Your-Writes lease in Redis (`markReadYourWrites`) and injects `x-force-primary: true`. Downstream, `catalog-service` detects the lease via `databaseContext`, bypasses stale Redis read caches, and queries `prisma` directly until replication log lag catches up.
 - **Fail-Open Fallback**: If `DATABASE_READ_REPLICA_URL` is unset, `readPrisma` seamlessly falls back to the primary `prisma` instance with zero configuration changes.
 
 ---

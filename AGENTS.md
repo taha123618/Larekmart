@@ -154,9 +154,11 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
   database cursor scans.
 - **Hyperscale Sharding & Read-Replicas.** Projections with high read-to-write ratios (e.g. `catalog-service`)
   route storefront queries to read-replicas (`readPrisma` via PgBouncer port 6432) while write-plane
-  transactions persist to primary (`prisma`). High-volume MongoDB collections enforce horizontal
-  hashed sharding (`{ userId: "hashed" }`) with compound scatter-gather mitigation indexes for seller
-  and saga queries. Redis keys enforce `{tenant_id:warehouse_id}` multi-tenant hash tag CRC16 slot pinning.
+  transactions persist to primary (`prisma`). To eliminate replication lag anomalies (<50ms WAL latency),
+  an atomic 500ms Read-Your-Writes lease is set in Redis (`markReadYourWrites`) upon mutations, forcing edge
+  requests from mutating clients to query `prisma` directly and bypass stale Redis caches. High-volume MongoDB
+  collections enforce horizontal hashed sharding (`{ userId: "hashed" }`) with compound scatter-gather mitigation
+  indexes for seller and saga queries. Redis keys enforce `{tenant_id:warehouse_id}` multi-tenant hash tag CRC16 slot pinning.
 - **Chaos Engineering & In-Flight Concurrency Bulkheads.** Transactional endpoints (`/checkout`, `/payments`)
   must enforce in-flight concurrency bulkheads and adaptive rate-limiting clamping at the API gateway
   when downstream circuit breakers report degraded health. Multi-database Saga rollbacks must be
