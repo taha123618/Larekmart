@@ -65,6 +65,61 @@ export function crc16(input: string | Uint8Array): number {
 }
 
 /**
+ * Default tenant identifier used when tenant context is omitted in single-tenant/fallback paths.
+ * Guarantees that keys adhere strictly to the dual-token {tenant_id:warehouse_id} CRC16 slot standard.
+ */
+export const DEFAULT_TENANT_ID = process.env.DEFAULT_TENANT_ID || "larekmart";
+
+/**
+ * Strict regex enforcing structural multi-tenant Redis Cluster Hash Tag convention:
+ * Tag content inside {...} must match {<tenant_id>:<warehouse_id>}.
+ * Example matches: "tenant_pk:pk_khi_01", "global:wh_central", "larekmart:store_99"
+ * Rejects legacy un-scoped tags like "pk_khi_01" or multi-bracket keys like "{productId}:{variantId}:{warehouseId}".
+ */
+export const TENANT_WAREHOUSE_TAG_PATTERN = /^[a-zA-Z0-9_\-]+:[a-zA-Z0-9_\-]+$/;
+
+/**
+ * Formats a deterministic Redis Cluster Hash Tag adhering to {tenant_id:warehouse_id}.
+ *
+ * Guarantees that regardless of input variations (naked warehouse, pre-bracketed, or explicit tenant),
+ * the returned tag is structurally enclosed in `{tenant_id:warehouse_id}`.
+ *
+ * @example
+ * createTenantWarehouseHashTag("pk_khi_01") // -> "{larekmart:pk_khi_01}"
+ * createTenantWarehouseHashTag("pk_khi_01", "tenant_pk") // -> "{tenant_pk:pk_khi_01}"
+ * createTenantWarehouseHashTag("{tenant_pk:pk_khi_01}") // -> "{tenant_pk:pk_khi_01}"
+ * createTenantWarehouseHashTag("{pk_khi_01}") // -> "{larekmart:pk_khi_01}"
+ */
+export function createTenantWarehouseHashTag(
+  warehouseId: string,
+  tenantId?: string,
+): string {
+  const effectiveTenant =
+    tenantId && tenantId.trim().length > 0
+      ? tenantId.trim()
+      : DEFAULT_TENANT_ID;
+
+  const raw = warehouseId.trim();
+
+  // Handle case where input is already wrapped in brackets
+  if (raw.startsWith("{") && raw.endsWith("}")) {
+    const inner = raw.slice(1, -1);
+    if (inner.includes(":")) {
+      return raw;
+    }
+    // Legacy single token inside brackets: {pk_khi_01} -> upgrade to {tenant:pk_khi_01}
+    return `{${effectiveTenant}:${inner}}`;
+  }
+
+  // Handle case where input already has tenant:warehouse format without outer brackets
+  if (raw.includes(":")) {
+    return `{${raw}}`;
+  }
+
+  return `{${effectiveTenant}:${raw}}`;
+}
+
+/**
  * Wraps composite identifiers into a deterministic Redis Cluster Hash Tag `{...}`.
  *
  * @example
@@ -122,6 +177,20 @@ export interface KeyBuilder {
   sharded(tag: string | number, ...segments: (string | number)[]): string;
 
   /**
+   * Builds a cluster-sharded key strictly bound to structural {tenant_id:warehouse_id}.
+   * Ensures inventory and stock operations resolve to the identical CRC16 slot across multi-tenant shards.
+   *
+   * @example
+   * builder.shardedTenant("pk_khi_01", "tenant_pk", "available", 9981, "var_002")
+   * // → "<prefix>{tenant_pk:pk_khi_01}:available:9981:var_002"
+   */
+  shardedTenant(
+    warehouseId: string,
+    tenantId?: string,
+    ...segments: (string | number)[]
+  ): string;
+
+  /**
    * Builds a simple flat key: `<prefix><name>`.
    */
   simple(name: string): string;
@@ -150,6 +219,14 @@ export function createKeyBuilder(prefix: string): KeyBuilder {
     },
     sharded(tag: string | number, ...segments: (string | number)[]): string {
       const hashTag = createClusterHashTag(tag);
+      return `${normalized}${hashTag}:${segments.join(":")}`;
+    },
+    shardedTenant(
+      warehouseId: string,
+      tenantId?: string,
+      ...segments: (string | number)[]
+    ): string {
+      const hashTag = createTenantWarehouseHashTag(warehouseId, tenantId);
       return `${normalized}${hashTag}:${segments.join(":")}`;
     },
     simple(name: string): string {

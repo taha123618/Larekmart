@@ -293,9 +293,10 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
      - Concurrent attempt: returns `409 Conflict` ("Mutation currently in-flight").
      - Replayed attempt: transparently serves cached response with header `Idempotent-Replayed: true` with 0 database or Kafka interaction.
 5. **High-Velocity Redis Stock Gatekeeper (Flash Sale Engine)**:
-   - Evaluates stock availability directly in Redis using atomic Lua decrement scripts (`stock:available:{productId}:{variantId}:{warehouseId}`).
+   - Evaluates stock availability directly in Redis using atomic Lua decrement scripts (`stock:available:{tenant_id:warehouse_id}:productId:variantId`).
+   - Strictly enforces dual-token `{tenant_id:warehouse_id}` CRC16 slot-tagging conventions to prevent multi-key `CROSSSLOT` exceptions across distributed Redis clusters.
    - Fast-fails requests under 0 stock in <1ms without touching PostgreSQL connection pools or acquiring table row locks.
-   - In-memory claim tokens (`stock:claim:{referenceId}`) hold reservations during checkout; failures automatically invoke compensation rollbacks (`INCRBY`).
+   - In-memory claim tokens (`stock:claim:{tenant_id:warehouse_id}:referenceId`) hold reservations during checkout; failures automatically invoke compensation rollbacks (`INCRBY`).
 6. **Kafka Consumer Poison-Pill Isolation & Dead-Letter Queue (DLQ)**:
    - Malformed payloads, corrupted bytes, and schema violations (`SyntaxError`, `ZodError`) fast-fail immediately to `<topic>.dlq` on attempt 1 without retry delays.
    - Transient errors (DB connection blips, lock contention) retry with exponential backoff (1s, 2s, 4s) before routing to DLQ with comprehensive audit headers (`x-original-topic`, `x-error-message`, `x-is-poison-pill`, `x-attempt-count`).

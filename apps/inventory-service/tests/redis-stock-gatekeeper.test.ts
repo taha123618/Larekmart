@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { calculateClusterSlot, extractClusterHashTag } from "@repo/redis";
+import {
+  calculateClusterSlot,
+  extractClusterHashTag,
+  assertClusterSlotAlignment,
+  CrossSlotValidationError,
+  InvalidHashTagError,
+  TENANT_WAREHOUSE_TAG_PATTERN,
+} from "@repo/redis";
 import { redisStockGatekeeper } from "../src/gatekeeper/redis-stock-gatekeeper.js";
 import { redis } from "../src/utils/redis.js";
 
@@ -73,7 +80,7 @@ async function runRedisStockGatekeeperTests(): Promise<void> {
       `  ✓ Hash Tag {tenant_pk:pk_khi_01} correctly pinned keys to slot #${stockSlot} across shards`,
     );
 
-    // Also test single warehouse tag without tenantId (e.g. {pk_khi_01})
+    // Also test single warehouse tag without tenantId -> defaults strictly to {larekmart:pk_khi_01}
     const singleWhKey = {
       productId: 9981,
       variantId: "var_002",
@@ -82,16 +89,67 @@ async function runRedisStockGatekeeperTests(): Promise<void> {
     const singleWhStockKey = redisStockGatekeeper.getStockKey(singleWhKey);
     assert.equal(
       singleWhStockKey,
-      "stock:available:{pk_khi_01}:9981:var_002",
-      "Single warehouse key must format as stock:available:{pk_khi_01}:9981:var_002",
+      "stock:available:{larekmart:pk_khi_01}:9981:var_002",
+      "Single warehouse key must format with default tenant as stock:available:{larekmart:pk_khi_01}:9981:var_002",
     );
     assert.equal(
       extractClusterHashTag(singleWhStockKey),
-      "pk_khi_01",
-      "Hash tag must be extracted as pk_khi_01",
+      "larekmart:pk_khi_01",
+      "Hash tag must be extracted as larekmart:pk_khi_01",
+    );
+    assert.ok(
+      TENANT_WAREHOUSE_TAG_PATTERN.test(
+        extractClusterHashTag(singleWhStockKey)!,
+      ),
+      "Default tenant hash tag must satisfy structural {tenant_id:warehouse_id} convention",
     );
     console.log(
-      "  ✓ Blueprint stock:available:{pk_khi_01}:9981:var_002 verified",
+      "  ✓ Blueprint stock:available:{larekmart:pk_khi_01}:9981:var_002 verified",
+    );
+
+    // -------------------------------------------------------------------------
+    // TEST 0B: Guardrails Against Cross-Slot & Invalid Tag Failures
+    // -------------------------------------------------------------------------
+    console.log(
+      "\n0B. Testing CROSSSLOT & structural hash tag validation guards...",
+    );
+    const conflictingWhKey = {
+      productId: 99901,
+      variantId: "var_flash_01",
+      warehouseId: "pk_lhr_02", // Different warehouse -> conflicting CRC16 slot
+      tenantId: "tenant_pk",
+    };
+    const conflictingStockKey =
+      redisStockGatekeeper.getStockKey(conflictingWhKey);
+
+    assert.notEqual(
+      calculateClusterSlot(stockKey),
+      calculateClusterSlot(conflictingStockKey),
+      "Keys with different warehouse tags must map to different cluster slots",
+    );
+
+    assert.throws(
+      () => {
+        assertClusterSlotAlignment([stockKey, conflictingStockKey]);
+      },
+      CrossSlotValidationError,
+      "Evaluating keys from conflicting slots must throw CrossSlotValidationError",
+    );
+    console.log(
+      "  ✓ CrossSlotValidationError properly thrown on mismatched slots",
+    );
+
+    // Test rejection of legacy keys like {productId}:{variantId}:{warehouseId}
+    const legacyKey = "stock:available:{99901}:{var_flash_01}:{pk_khi_01}";
+    assert.throws(
+      () => {
+        assertClusterSlotAlignment([legacyKey, claimKey]);
+      },
+      InvalidHashTagError,
+      "Legacy multi-bracket keys must be rejected by structural validation",
+    );
+    console.log(
+      "  ✓ InvalidHashTagError properly thrown on non-{tenant:wh} keys",
     );
 
     // -------------------------------------------------------------------------

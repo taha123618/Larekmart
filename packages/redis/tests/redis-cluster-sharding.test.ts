@@ -2,8 +2,16 @@ import assert from "node:assert/strict";
 import {
   createKeyBuilder,
   createClusterHashTag,
+  createTenantWarehouseHashTag,
   extractClusterHashTag,
   calculateClusterSlot,
+  validateClusterHashTag,
+  assertClusterSlotAlignment,
+  evalClusterSafe,
+  evalTenantWarehouseSafe,
+  CrossSlotValidationError,
+  InvalidHashTagError,
+  TENANT_WAREHOUSE_TAG_PATTERN,
   crc16,
   acquireRedlockConsensus,
   releaseRedlockConsensus,
@@ -80,7 +88,7 @@ async function runRedisClusterShardingTests(): Promise<void> {
   // ---------------------------------------------------------------------------
   // TEST 3: KeyBuilder Sharded Method
   // ---------------------------------------------------------------------------
-  console.log("\n3. Testing KeyBuilder.sharded()...");
+  console.log("\n3. Testing KeyBuilder.sharded() and shardedTenant()...");
   const builder = createKeyBuilder("inventory:v1");
   const shardedKey = builder.sharded("pk_isb_01", "available", 554, "var_blue");
   assert.equal(
@@ -90,6 +98,113 @@ async function runRedisClusterShardingTests(): Promise<void> {
   );
   assert.equal(extractClusterHashTag(shardedKey), "pk_isb_01");
   console.log("  ✓ KeyBuilder.sharded generated correct slot-pinned key");
+
+  const shardedTenantKey = builder.shardedTenant(
+    "pk_isb_01",
+    "tenant_pk",
+    "available",
+    554,
+    "var_blue",
+  );
+  assert.equal(
+    shardedTenantKey,
+    "inventory:v1:{tenant_pk:pk_isb_01}:available:554:var_blue",
+    "KeyBuilder.shardedTenant must format as <prefix>{tenant:wh}:segment:segment",
+  );
+  assert.equal(extractClusterHashTag(shardedTenantKey), "tenant_pk:pk_isb_01");
+  console.log(
+    "  ✓ KeyBuilder.shardedTenant generated structural multi-tenant key",
+  );
+
+  // ---------------------------------------------------------------------------
+  // TEST 3B: Strict Structural Hash Tag Validation & Formatting
+  // ---------------------------------------------------------------------------
+  console.log(
+    "\n3B. Testing structural {tenant_id:warehouse_id} validation and formatting...",
+  );
+  // Test formatting variations
+  assert.equal(
+    createTenantWarehouseHashTag("wh_01", "tenant_a"),
+    "{tenant_a:wh_01}",
+    "createTenantWarehouseHashTag must join tenant and warehouse",
+  );
+  assert.equal(
+    createTenantWarehouseHashTag("wh_01"),
+    "{larekmart:wh_01}",
+    "createTenantWarehouseHashTag without tenant must default to {larekmart:wh_01}",
+  );
+  assert.equal(
+    createTenantWarehouseHashTag("{tenant_b:wh_02}"),
+    "{tenant_b:wh_02}",
+    "createTenantWarehouseHashTag must preserve valid bracketed tag",
+  );
+  assert.equal(
+    createTenantWarehouseHashTag("{legacy_single}"),
+    "{larekmart:legacy_single}",
+    "createTenantWarehouseHashTag must upgrade legacy single-token bracketed tag",
+  );
+
+  // Validate cluster hash tag
+  const validKey = "stock:available:{tenant_pk:wh_khi}:99:v1";
+  assert.equal(
+    validateClusterHashTag(validKey, TENANT_WAREHOUSE_TAG_PATTERN),
+    "tenant_pk:wh_khi",
+  );
+
+  // Rejection of invalid hash tags
+  assert.throws(
+    () => validateClusterHashTag("unbracketed_plain_key"),
+    InvalidHashTagError,
+    "Keys without brackets must throw InvalidHashTagError",
+  );
+  assert.throws(
+    () => validateClusterHashTag("stock:available:{only_warehouse}:99:v1"),
+    InvalidHashTagError,
+    "Naked warehouse tag must violate structural pattern",
+  );
+  assert.throws(
+    () => validateClusterHashTag("stock:available:{prod_1}:{var_2}:{wh_3}"),
+    InvalidHashTagError,
+    "Multi-bracket key must violate structural pattern",
+  );
+  console.log(
+    "  ✓ validateClusterHashTag properly enforced {tenant_id:warehouse_id} structural contract",
+  );
+
+  // ---------------------------------------------------------------------------
+  // TEST 3C: Cross-Slot Alignment & evalClusterSafe Guard
+  // ---------------------------------------------------------------------------
+  console.log(
+    "\n3C. Testing assertClusterSlotAlignment and evalClusterSafe guard...",
+  );
+  const alignedKey1 = "stock:available:{tenant_global:central_wh}:item_101";
+  const alignedKey2 = "stock:claim:{tenant_global:central_wh}:claim_9981";
+  const alignedKey3 = "stock:lock:{tenant_global:central_wh}:item_101";
+
+  const slotAligned = assertClusterSlotAlignment([
+    alignedKey1,
+    alignedKey2,
+    alignedKey3,
+  ]);
+  assert.equal(
+    slotAligned,
+    calculateClusterSlot(alignedKey1),
+    "All aligned keys must resolve to common slot",
+  );
+  console.log(
+    `  ✓ Aligned keys successfully confirmed on slot #${slotAligned}`,
+  );
+
+  // Test slot collision / mismatch rejection
+  const misalignedKey = "stock:available:{tenant_global:other_wh}:item_101";
+  assert.throws(
+    () => assertClusterSlotAlignment([alignedKey1, misalignedKey]),
+    CrossSlotValidationError,
+    "Keys with different slots must throw CrossSlotValidationError",
+  );
+  console.log(
+    "  ✓ CrossSlotValidationError properly intercepted mismatched slots",
+  );
 
   // ---------------------------------------------------------------------------
   // TEST 4: Redlock Majority Quorum Consensus Mock Simulation

@@ -1,5 +1,14 @@
 import { getInventoryItem } from "@repo/inventory-db";
-import { createClusterHashTag } from "@repo/redis";
+import {
+  createTenantWarehouseHashTag,
+  validateClusterHashTag,
+  assertClusterSlotAlignment,
+  evalTenantWarehouseSafe,
+  CrossSlotValidationError,
+  InvalidHashTagError,
+  DEFAULT_TENANT_ID,
+  TENANT_WAREHOUSE_TAG_PATTERN,
+} from "@repo/redis";
 import { logger, inventoryMetrics } from "../observability/metrics.js";
 import { redis } from "../utils/redis.js";
 import { writeCentralizedStockCache } from "../cache/inventory-cache.js";
@@ -76,18 +85,14 @@ export interface GatekeeperItemKey {
 export class RedisStockGatekeeper {
   /**
    * Generates deterministic Redis Cluster Hash Tag {tenant_id:warehouse_id}.
-   * If warehouseId already contains '{...}', it is preserved.
-   * If tenantId is provided: '{tenantId:warehouseId}'
-   * Otherwise: '{warehouseId}' (e.g. '{pk_khi_01}')
+   * Strictly enforces dual-token structural bracket tagging {tenant_id:warehouse_id} across all keys.
+   * If tenantId is omitted, defaults to DEFAULT_TENANT_ID ("larekmart").
+   * Validates structure against TENANT_WAREHOUSE_TAG_PATTERN.
    */
   public getClusterHashTag(warehouseId: string, tenantId?: string): string {
-    if (warehouseId.startsWith("{") && warehouseId.endsWith("}")) {
-      return warehouseId;
-    }
-    if (tenantId) {
-      return createClusterHashTag(tenantId, warehouseId);
-    }
-    return createClusterHashTag(warehouseId);
+    const tag = createTenantWarehouseHashTag(warehouseId, tenantId);
+    validateClusterHashTag(tag, TENANT_WAREHOUSE_TAG_PATTERN);
+    return tag;
   }
 
   /**
@@ -144,9 +149,16 @@ export class RedisStockGatekeeper {
     const stockKey = this.getStockKey(itemKey);
     const claimKey = this.getClaimKey(referenceId, itemKey);
 
+    // Enforce pre-execution cross-slot validation: guaranteed CRC16 slot alignment & {tenant:wh} tag enforcement
+    assertClusterSlotAlignment([stockKey, claimKey], {
+      requireStructuralTag: true,
+      tagPattern: TENANT_WAREHOUSE_TAG_PATTERN,
+    });
+
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const rawResult = (await redis.client.eval(
+        const rawResult = (await evalTenantWarehouseSafe(
+          redis.client,
           RESERVE_LUA,
           2,
           stockKey,
@@ -184,6 +196,19 @@ export class RedisStockGatekeeper {
           continue;
         }
       } catch (err) {
+        if (
+          err instanceof CrossSlotValidationError ||
+          err instanceof InvalidHashTagError
+        ) {
+          logger.error(
+            "FATAL: Redis Gatekeeper rejected request due to CROSSSLOT / Hash Tag violation",
+            {
+              error: err.message,
+              stack: err.stack,
+            },
+          );
+          throw err;
+        }
         logger.warn(
           "Redis Gatekeeper precheck failed, falling back to database evaluation",
           { error: err instanceof Error ? err.message : String(err) },
@@ -284,7 +309,8 @@ export class RedisStockGatekeeper {
 
     try {
       inventoryMetrics.gatekeeperRollbacksTotal.inc();
-      await redis.client.eval(
+      await evalTenantWarehouseSafe(
+        redis.client,
         ROLLBACK_LUA,
         2,
         stockKey,
@@ -297,6 +323,12 @@ export class RedisStockGatekeeper {
         quantity,
       });
     } catch (error) {
+      if (
+        error instanceof CrossSlotValidationError ||
+        error instanceof InvalidHashTagError
+      ) {
+        throw error;
+      }
       logger.error("Failed to rollback Redis gatekeeper stock claim", {
         itemKey,
         referenceId,
@@ -316,7 +348,8 @@ export class RedisStockGatekeeper {
     const stockKey = this.getStockKey(key);
 
     try {
-      const updatedStock = (await redis.client.eval(
+      const updatedStock = (await evalTenantWarehouseSafe(
+        redis.client,
         INCREMENT_LUA,
         1,
         stockKey,
@@ -331,6 +364,12 @@ export class RedisStockGatekeeper {
         );
       }
     } catch (error) {
+      if (
+        error instanceof CrossSlotValidationError ||
+        error instanceof InvalidHashTagError
+      ) {
+        throw error;
+      }
       logger.warn("Failed to increment Redis gatekeeper stock counter", {
         key,
         quantity,

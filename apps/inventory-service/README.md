@@ -47,8 +47,9 @@ To strictly prevent race conditions, overselling, and database connection pool s
 Incoming checkout reservations (`POST /api/v1/inventory/reservations`) first pass through an atomic Redis Lua script (`RESERVE_LUA` in `src/gatekeeper/redis-stock-gatekeeper.ts`):
 
 - **<1ms Fast Rejection**: If `availableQuantity < requestedQuantity`, the request is rejected immediately with HTTP 409 without touching PostgreSQL.
-- **Atomic Claim**: If stock is available, Redis decrements the stock counter and registers a temporary claim token (`stock:claim:{referenceId}`) with a 60-second TTL.
-- **Cold-Start Protection**: If the counter is missing in Redis, a 2-second distributed mutex (`stock:lock:...`) loads ground truth from PostgreSQL once and initializes the counter, protecting the DB from thundering herds.
+- **Cluster-Safe Dual-Token Hash Tagging**: All Redis keys strictly enforce structural `{tenant_id:warehouse_id}` hash tag pinning (e.g. `stock:available:{tenant_pk:pk_khi_01}:prod:var` and `stock:claim:{tenant_pk:pk_khi_01}:referenceId`). This guarantees that multi-key Lua executions (`RESERVE_LUA`, `ROLLBACK_LUA`) always map to identical CRC16 slots, completely preventing fatal `CROSSSLOT` exceptions when transitioning to distributed multi-node Redis clusters.
+- **Atomic Claim**: If stock is available, Redis decrements the stock counter and registers a temporary claim token (`stock:claim:{tenant_id:warehouse_id}:referenceId`) with a 60-second TTL.
+- **Cold-Start Protection**: If the counter is missing in Redis, a 2-second distributed mutex (`stock:lock:{tenant_id:warehouse_id}:prod:var`) loads ground truth from PostgreSQL once and initializes the counter, protecting the DB from thundering herds.
 
 ### 2. PostgreSQL Authoritative Ledger & Compensation Rollback
 

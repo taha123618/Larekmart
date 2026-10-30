@@ -62,10 +62,24 @@ export {
   createKeyBuilder,
   crc16,
   createClusterHashTag,
+  createTenantWarehouseHashTag,
   extractClusterHashTag,
   calculateClusterSlot,
+  DEFAULT_TENANT_ID,
+  TENANT_WAREHOUSE_TAG_PATTERN,
 } from "./key-builder.js";
 export type { KeyBuilder } from "./key-builder.js";
+
+// Redis Cluster Cross-Slot & Hash Tag Validation Guardrails
+export {
+  CrossSlotValidationError,
+  InvalidHashTagError,
+  validateClusterHashTag,
+  assertClusterSlotAlignment,
+  evalClusterSafe,
+  evalTenantWarehouseSafe,
+} from "./cluster-validator.js";
+export type { ClusterSlotAlignmentOptions } from "./cluster-validator.js";
 
 // Idempotency engine
 export {

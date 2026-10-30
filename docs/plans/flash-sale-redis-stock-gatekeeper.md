@@ -50,17 +50,21 @@ sequenceDiagram
 
 ## 3. Detailed Component Architecture
 
-### A. Redis Key Schema
+### A. Redis Key Schema (Cluster-Safe Structural Hash Tagging)
 
-- **Stock Counter**: `stock:available:{productId}:{variantId}:{warehouseId}` (Integer).
-- **Claim Token**: `stock:claim:{referenceId}` (String holding claimed quantity, TTL: 60s).
-- **Cold Load Mutex**: `stock:lock:{productId}:{variantId}:{warehouseId}` (String, TTL: 2s).
+To guarantee that multi-key Lua scripts (`RESERVE_LUA`, `ROLLBACK_LUA`) never fail with `CROSSSLOT Keys in request don't hash to the same slot` in a multi-node Redis Cluster, all mutation keys strictly enforce the dual-token CRC16 slot-tagging convention `{tenant_id:warehouse_id}`:
+
+- **Stock Counter**: `stock:available:{tenant_id:warehouse_id}:productId:variantId` (Integer).
+- **Claim Token**: `stock:claim:{tenant_id:warehouse_id}:referenceId` (String holding claimed quantity, TTL: 60s).
+- **Cold Load Mutex**: `stock:lock:{tenant_id:warehouse_id}:productId:variantId` (String, TTL: 2s).
+
+Both `stock:available` and `stock:claim` share the exact identical `{tenant_id:warehouse_id}` bracket tag, pinning them to the exact same cluster hash slot ($0 \dots 16383$).
 
 ### B. Redis Lua Script (Atomic Reservation Pre-Check)
 
 ```lua
--- KEYS[1]: stock:available:{productId}:{variantId}:{warehouseId}
--- KEYS[2]: stock:claim:{referenceId}
+-- KEYS[1]: stock:available:{tenant_id:warehouse_id}:productId:variantId
+-- KEYS[2]: stock:claim:{tenant_id:warehouse_id}:referenceId
 -- ARGV[1]: requestedQuantity
 -- ARGV[2]: claimTtlSeconds (e.g. 60)
 
@@ -86,9 +90,9 @@ return { 1, remaining } -- Code 1: Success, returns remaining stock
 ### C. Cold Cache Initialization (Distributed Mutex)
 
 1. If Lua returns `-1` (key missing):
-2. Acquire `stock:lock:{productId}:{variantId}:{warehouseId}` with 2-second TTL.
+2. Acquire `stock:lock:{tenant_id:warehouse_id}:productId:variantId` with 2-second TTL.
 3. Fetch ground truth `availableQuantity` from PostgreSQL `inventoryItem`.
-4. `SET stock:available:... availableQuantity`.
+4. `SET stock:available:{tenant_id:warehouse_id}:productId:variantId availableQuantity`.
 5. Release mutex and re-execute reservation Lua script.
 
 ### D. Compensation & Release Handling
