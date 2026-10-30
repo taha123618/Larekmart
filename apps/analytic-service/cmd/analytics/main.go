@@ -49,26 +49,44 @@ func main() {
 		defer database.Close()
 	}
 
-	// 2. Initialize Redis Client
+	// 2. Initialize ClickHouse Columnar Client
+	var clickhouseClient *db.ClickHouseClient
+	if cfg.ClickHouseEnabled && cfg.ClickHouseURL != "" {
+		chCtx, chCancel := context.WithTimeout(ctx, 3*time.Second)
+		ch, chErr := db.NewClickHouseClient(cfg.ClickHouseURL)
+		if chErr == nil && ch.Ping(chCtx) == nil {
+			clickhouseClient = ch
+			log.Info("Connected to ClickHouse columnar analytics engine", map[string]interface{}{
+				"url": cfg.ClickHouseURL,
+			})
+		} else {
+			log.Warn("ClickHouse not reachable; continuing with PostgreSQL/in-memory fallback", map[string]interface{}{
+				"url": cfg.ClickHouseURL,
+			})
+		}
+		chCancel()
+	}
+
+	// 3. Initialize Redis Client
 	redisClient := cache.New(cfg.RedisURL, cfg.RedisKeyPrefix)
 	defer redisClient.Close()
 
-	// 3. Initialize In-Memory Metrics Store
+	// 4. Initialize In-Memory Metrics Store
 	store := metrics.NewStore()
 
-	// 4. Initialize & Start Ingestion Batcher
+	// 5. Initialize & Start Ingestion Batcher
 	batcher := ingestion.NewBatcher(database, cfg.BatchSize, cfg.FlushInterval, cfg.QueueCapacity)
 	batcher.Start()
 	defer batcher.Stop()
 
-	// 5. Initialize & Start Kafka Consumer Ingestion Loop
+	// 6. Initialize & Start Kafka Consumer Ingestion Loop
 	consumer := ingestion.NewKafkaConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID, store, batcher)
 	consumer.Start(ctx)
 	defer func() {
 		_ = consumer.Close()
 	}()
 
-	// 6. Assemble Chi HTTP Router
+	// 7. Assemble Chi HTTP Router
 	r := chi.NewRouter()
 
 	r.Use(chimw.RequestID)
@@ -79,14 +97,14 @@ func main() {
 	r.Use(chimw.Recoverer)
 
 	// Health & Metrics Endpoints
-	healthHandler := handlers.NewHealthHandler(database, redisClient)
+	healthHandler := handlers.NewHealthHandler(database, clickhouseClient, redisClient)
 	r.Get("/health", healthHandler.Check)
 	r.Get("/health/live", healthHandler.Live)
 	r.Get("/health/ready", healthHandler.Ready)
 	r.Handle("/metrics", promhttp.Handler())
 
 	// Analytics Admin API Endpoints
-	analyticsHandler := handlers.NewAnalyticsHandler(database, redisClient, store, cfg.ChartCacheTTL, cfg.EventsCacheTTL)
+	analyticsHandler := handlers.NewAnalyticsHandler(database, clickhouseClient, redisClient, store, cfg.ChartCacheTTL, cfg.EventsCacheTTL)
 	// Public trust & social proof metrics for storefront
 	r.Get("/analytics/public", analyticsHandler.GetPublicMetrics)
 

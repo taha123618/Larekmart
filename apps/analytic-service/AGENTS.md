@@ -11,6 +11,7 @@ A high-throughput **Go 1.22** Kafka consumer worker and Chi HTTP API microservic
 - `cmd/analytics/main.go` — Application bootstrap, Chi router wiring, HTTP listener on port `8004`, signal trapping (`SIGINT`/`SIGTERM`), and graceful shutdown draining.
 - `internal/config/config.go` — Type-safe environment variable parsing with sensible development defaults.
 - `internal/db/db.go` — `pgxpool.Pool` connection pool, embedded SQL migration runner, binary `pgx.CopyFrom` persistence, daily summary UPSERTs, and query helpers.
+- `internal/db/clickhouse.go` — ClickHouse HTTP client connection pool querying native columnar `MergeTree` tables and continuous materialized views.
 - `internal/cache/redis.go` — Redis client facade using `redis/go-redis/v9` with TTL caching and graceful fallback.
 - `internal/metrics/store.go` — Lock-free in-memory KPI store (`sync/atomic` with CAS bit casting for float64 values) and fixed circular buffer for instant dashboard queries.
 - `internal/ingestion/batcher.go` — High-velocity bounded channel queue buffer (10,000 capacity) with worker loop flushing on size (1,000 events) or timeout (500ms).
@@ -39,11 +40,12 @@ A high-throughput **Go 1.22** Kafka consumer worker and Chi HTTP API microservic
 
 ## Database & Persistence
 
-- Connects to dedicated `postgres-analytics` on port `5433` (`analytics_db`).
+- **Primary Columnar Engine**: Connects to ClickHouse (port `8123` HTTP / `9000` Native) on `analytics_db`. Uses `ReplacingMergeTree` partitioned by month and `SummingMergeTree` for daily aggregates. ClickHouse consumes natively from Kafka via `ENGINE = Kafka` with materialized views for **zero-compute streaming**.
+- **Relational Fallback Storage**: Connects to dedicated `postgres-analytics` on port `5433` (`analytics_db`).
 - Uses `jackc/pgx/v5` connection pool (`pgxpool.Pool`).
 - Employs binary COPY protocol (`pgx.CopyFrom`) for bulk insertion directly into monthly-partitioned `analytics_events` (`PARTITION BY RANGE (created_at)`).
 - Block Range Indexes (BRIN) on `created_at` provide rapid range filtering and instant partition dropping for data retention.
-- In-memory atomic counters continue operating even if PostgreSQL is temporarily unreachable.
+- In-memory atomic counters continue operating even if PostgreSQL or ClickHouse is temporarily unreachable.
 
 ## Caching
 

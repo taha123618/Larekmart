@@ -13,9 +13,9 @@ High-throughput, multithreaded Go analytics microservice and worker that consume
    - A dedicated worker pool drains the bounded buffer and persists events in micro-batches (up to 1,000 events or 500ms flush window) using PostgreSQL's native binary COPY protocol (`pgx.CopyFrom`).
    - Bypasses SQL query parsing, tokenization, and query planning overhead, delivering 5–10x higher write throughput than standard multi-row `INSERT` statements.
 
-3. **Time-Partitioned Storage & BRIN Indexing**:
-   - `analytics_events` table is partitioned by month (`PARTITION BY RANGE (created_at)`).
-   - Employs Block Range Indexes (BRIN) on `created_at` for high compression and zero table-lock contention during retention window pruning (`DROP TABLE` on old partitions).
+3. **Time-Partitioned Storage & Columnar Analytics Engine**:
+   - Primary analytical data resides in **ClickHouse** (port `8123` HTTP / `9000` TCP) utilizing `ReplacingMergeTree` columnar storage with `toYYYYMM` partitioning and native Kafka streaming engine (`ENGINE = Kafka`) with materialized views for **0% compute overhead on backend nodes**.
+   - PostgreSQL 16 (`analytics_events` table) acts as dual-path transactional analytical storage, partitioned by month (`PARTITION BY RANGE (created_at)`) with Block Range Indexes (BRIN).
 
 4. **Lock-Free In-Memory Atomic Counters**:
    - Real-time KPI summaries (`/analytics/summary`, `/analytics/merchants`) query lock-free atomic counters (`sync/atomic` with CAS bit casting for float64 revenue and tax metrics) for instant `<1ms` response times.
@@ -34,7 +34,8 @@ High-throughput, multithreaded Go analytics microservice and worker that consume
 - **Runtime**: Go 1.22+
 - **HTTP Router**: `go-chi/chi/v5`
 - **Port**: `8004`
-- **Database**: PostgreSQL 16 (Dedicated `postgres-analytics` on port `5433` / `analytics_db`) via `jackc/pgx/v5` (`pgxpool.Pool`)
+- **Primary Columnar Database**: ClickHouse 24.8+ (`clickhouse:8123` HTTP / `9000` Native) with native Kafka engine streaming
+- **Relational Fallback Database**: PostgreSQL 16 (Dedicated `postgres-analytics` on port `5433` / `analytics_db`) via `jackc/pgx/v5` (`pgxpool.Pool`)
 - **Messaging**: Apache Kafka (`segmentio/kafka-go`)
 - **Cache**: Redis 7 (`redis/go-redis/v9`)
 - **Telemetry**: Prometheus (`prometheus/client_golang`)

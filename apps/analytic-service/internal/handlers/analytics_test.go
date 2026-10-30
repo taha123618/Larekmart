@@ -16,7 +16,7 @@ func TestAnalyticsHandlerEndpoints(t *testing.T) {
 	uid := "user_handler_test"
 	store.RecordEvent("payment.successful", &uid, 120.00, map[string]interface{}{"orderId": "o_test"}, time.Now())
 
-	handler := NewAnalyticsHandler(nil, nil, store, 60*time.Second, 15*time.Second)
+	handler := NewAnalyticsHandler(nil, nil, nil, store, 60*time.Second, 15*time.Second)
 
 	// 1. Test GET /analytics/summary
 	reqSummary := httptest.NewRequest("GET", "/analytics/summary", nil)

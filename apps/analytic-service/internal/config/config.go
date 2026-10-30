@@ -11,6 +11,8 @@ import (
 type Config struct {
 	Port                       string
 	DatabaseURL                string
+	ClickHouseURL              string
+	ClickHouseEnabled          bool
 	RedisURL                   string
 	RedisKeyPrefix             string
 	ChartCacheTTL              time.Duration
@@ -32,6 +34,8 @@ type Config struct {
 func Load() *Config {
 	port := getEnv("PORT", "8004")
 	dbURL := getEnv("DATABASE_URL", "postgresql://postgres:password123@localhost:5433/analytics_db?sslmode=disable")
+	clickhouseURL := getEnv("CLICKHOUSE_URL", "http://default:clickhouse123@localhost:8123/analytics_db")
+	clickhouseEnabled := getEnvAsBool("CLICKHOUSE_ENABLED", true)
 	redisURL := getEnv("REDIS_URL", "redis://localhost:6379")
 	redisPrefix := getEnv("REDIS_KEY_PREFIX", "analytics:v1:")
 
@@ -50,6 +54,8 @@ func Load() *Config {
 	return &Config{
 		Port:                  port,
 		DatabaseURL:           dbURL,
+		ClickHouseURL:         clickhouseURL,
+		ClickHouseEnabled:     clickhouseEnabled,
 		RedisURL:              redisURL,
 		RedisKeyPrefix:        redisPrefix,
 		ChartCacheTTL:         time.Duration(chartTTLSec) * time.Second,
@@ -81,6 +87,18 @@ func getEnvAsInt(key string, defaultVal int) int {
 		return defaultVal
 	}
 	val, err := strconv.Atoi(valStr)
+	if err != nil {
+		return defaultVal
+	}
+	return val
+}
+
+func getEnvAsBool(key string, defaultVal bool) bool {
+	valStr := os.Getenv(key)
+	if valStr == "" {
+		return defaultVal
+	}
+	val, err := strconv.ParseBool(valStr)
 	if err != nil {
 		return defaultVal
 	}

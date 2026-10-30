@@ -157,6 +157,42 @@ services:
     networks:
       - larekmart-network
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: larekmart-clickhouse
+    deploy: *search-deploy
+    restart: unless-stopped
+    ports:
+      - "${CLICKHOUSE_HTTP_BIND_IP:-127.0.0.1}:8123:8123"
+      - "${CLICKHOUSE_TCP_BIND_IP:-127.0.0.1}:9000:9000"
+    environment:
+      CLICKHOUSE_DB: analytics_db
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse123}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./docker/clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
   mysql:
     build:
       context: ./docker/mysql
@@ -655,6 +691,8 @@ services:
       - "CLIENT_URL=${CLIENT_URL:-http://localhost:3002}"
       - "ADMIN_URL=${ADMIN_URL:-http://localhost:3003}"
       - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
+      - "CLICKHOUSE_URL=http://${CLICKHOUSE_USER:-default}:${CLICKHOUSE_PASSWORD:-clickhouse123}@clickhouse:8123/analytics_db"
+      - "CLICKHOUSE_ENABLED=true"
     env_file:
       - ./apps/analytic-service/.env
     healthcheck:
@@ -669,6 +707,8 @@ services:
       start_period: 15s
     depends_on:
       postgres-analytics:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -1475,6 +1515,8 @@ volumes:
     name: larekmart_postgres_data
   postgres_analytics_data:
     name: larekmart_postgres_analytics_data
+  clickhouse_data:
+    name: larekmart_clickhouse_data
   mongo_data:
     name: larekmart_mongo_data
   redis_data:

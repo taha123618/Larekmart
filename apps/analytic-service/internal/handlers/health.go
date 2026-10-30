@@ -12,17 +12,19 @@ import (
 
 // HealthHandler serves liveness, readiness, and overall health status.
 type HealthHandler struct {
-	db        *db.Database
-	redis     *cache.RedisClient
-	startTime time.Time
+	db         *db.Database
+	clickhouse *db.ClickHouseClient
+	redis      *cache.RedisClient
+	startTime  time.Time
 }
 
 // NewHealthHandler creates a HealthHandler instance.
-func NewHealthHandler(database *db.Database, r *cache.RedisClient) *HealthHandler {
+func NewHealthHandler(database *db.Database, ch *db.ClickHouseClient, r *cache.RedisClient) *HealthHandler {
 	return &HealthHandler{
-		db:        database,
-		redis:     r,
-		startTime: time.Now(),
+		db:         database,
+		clickhouse: ch,
+		redis:      r,
+		startTime:  time.Now(),
 	}
 }
 
@@ -36,13 +38,22 @@ func (h *HealthHandler) Check(w http.ResponseWriter, r *http.Request) {
 		pgStatus = "degraded"
 	}
 
+	chStatus := "disabled"
+	if h.clickhouse != nil {
+		if err := h.clickhouse.Ping(ctx); err == nil {
+			chStatus = "healthy"
+		} else {
+			chStatus = "degraded"
+		}
+	}
+
 	redisStatus := "healthy"
 	if h.redis == nil || h.redis.Ping(ctx) != nil {
 		redisStatus = "degraded"
 	}
 
 	status := "healthy"
-	if pgStatus == "degraded" {
+	if pgStatus == "degraded" && chStatus == "degraded" {
 		status = "degraded"
 	}
 
@@ -54,8 +65,9 @@ func (h *HealthHandler) Check(w http.ResponseWriter, r *http.Request) {
 		"version":   "1.0.0",
 		"uptimeSec": int(time.Since(h.startTime).Seconds()),
 		"dependencies": map[string]string{
-			"postgres": pgStatus,
-			"redis":    redisStatus,
+			"postgres":   pgStatus,
+			"clickhouse": chStatus,
+			"redis":      redisStatus,
 		},
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 	})

@@ -19,6 +19,7 @@ var log = observability.NewLogger("analytic-service:handlers")
 // AnalyticsHandler handles admin analytics HTTP routes.
 type AnalyticsHandler struct {
 	db             *db.Database
+	clickhouse     *db.ClickHouseClient
 	redis          *cache.RedisClient
 	store          *metrics.Store
 	chartCacheTTL  time.Duration
@@ -26,9 +27,10 @@ type AnalyticsHandler struct {
 }
 
 // NewAnalyticsHandler creates an AnalyticsHandler instance.
-func NewAnalyticsHandler(database *db.Database, r *cache.RedisClient, s *metrics.Store, chartTTL, eventsTTL time.Duration) *AnalyticsHandler {
+func NewAnalyticsHandler(database *db.Database, ch *db.ClickHouseClient, r *cache.RedisClient, s *metrics.Store, chartTTL, eventsTTL time.Duration) *AnalyticsHandler {
 	return &AnalyticsHandler{
 		db:             database,
+		clickhouse:     ch,
 		redis:          r,
 		store:          s,
 		chartCacheTTL:  chartTTL,
@@ -92,14 +94,23 @@ func (h *AnalyticsHandler) GetDailyChart(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// 2. Query PostgreSQL
+	// 2. Query ClickHouse first (Columnar vectorization), fallback to PostgreSQL
 	var result []models.AnalyticsDailyChart
-	if h.db != nil {
-		dbCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-		defer cancel()
+	if h.clickhouse != nil {
+		chCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		var err error
+		result, err = h.clickhouse.GetDailyAnalytics(chCtx, days)
+		cancel()
+		if err != nil {
+			log.Warn("Failed to query daily analytics from ClickHouse; falling back to PostgreSQL", map[string]interface{}{"error": err.Error()})
+		}
+	}
 
+	if len(result) == 0 && h.db != nil {
+		dbCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 		var err error
 		result, err = h.db.GetDailyAnalytics(dbCtx, days)
+		cancel()
 		if err != nil {
 			log.Warn("Failed to query daily analytics from database", map[string]interface{}{"error": err.Error()})
 		}
@@ -143,14 +154,23 @@ func (h *AnalyticsHandler) GetRecentEvents(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 2. Query PostgreSQL
+	// 2. Query ClickHouse first (Columnar vectorization), fallback to PostgreSQL
 	var events []models.AnalyticsEvent
-	if h.db != nil {
-		dbCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-		defer cancel()
+	if h.clickhouse != nil {
+		chCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		var err error
+		events, err = h.clickhouse.GetRecentEvents(chCtx, limit)
+		cancel()
+		if err != nil {
+			log.Warn("Failed to query recent events from ClickHouse; falling back to PostgreSQL", map[string]interface{}{"error": err.Error()})
+		}
+	}
 
+	if len(events) == 0 && h.db != nil {
+		dbCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 		var err error
 		events, err = h.db.GetRecentEvents(dbCtx, limit)
+		cancel()
 		if err != nil {
 			log.Warn("Failed to query recent events from database", map[string]interface{}{"error": err.Error()})
 		}

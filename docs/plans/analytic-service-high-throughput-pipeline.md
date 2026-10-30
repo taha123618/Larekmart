@@ -191,9 +191,9 @@ func (b *Batcher) flush(ctx context.Context, batch []*models.AnalyticEvent) erro
 
 ---
 
-## 5. Columnar Engine Migration Blueprint (ClickHouse / Apache Pinot)
+## 5. Columnar Engine Migration & Native Kafka Streaming (ClickHouse)
 
-While PostgreSQL with `pgx.CopyFrom` satisfies up to 100,000 events/minute, massive global marketplace scale (1,000,000+ events/minute) benefits from a true open-source columnar analytics engine.
+While PostgreSQL with `pgx.CopyFrom` satisfies up to 100,000 events/minute, massive global marketplace scale (1,000,000+ events/minute) benefits from a true open-source columnar analytics engine. ClickHouse is now provisioned in `docker-compose.yml` (`image: clickhouse/clickhouse-server:24.8-alpine`) with automated DDL initialization via `docker/clickhouse/init.sql`.
 
 ### 5.1 ClickHouse Kafka Engine Architecture
 
@@ -208,33 +208,36 @@ ClickHouse natively integrates with Apache Kafka, eliminating the application-le
                                            (Compressed Columnar Storage)
 ```
 
-#### 1. ClickHouse Kafka Engine Schema:
+#### 1. ClickHouse Kafka Engine Schema (`docker/clickhouse/init.sql`):
 
 ```sql
-CREATE TABLE default.kafka_analytics_events_queue (
+CREATE TABLE IF NOT EXISTS analytics_db.kafka_analytics_events_queue (
     event_type String,
-    entity_id  String,
-    user_id    String,
-    payload    String,
-    timestamp  DateTime64(3, 'UTC')
+    user_id    Nullable(String),
+    entity_id  Nullable(String),
+    amount     Nullable(Float64),
+    metadata   Nullable(String),
+    timestamp  Nullable(DateTime64(3, 'UTC'))
 ) ENGINE = Kafka
 SETTINGS kafka_broker_list = 'kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092',
-         kafka_topic_list = 'order.created,payment.successful,cart.updated,inventory.stock.sold',
-         kafka_group_name = 'clickhouse-analytics-ingestion',
+         kafka_topic_list = 'order.created,payment.successful,cart.updated,inventory.stock.sold,user.created,review.created,pricing.price.updated',
+         kafka_group_name = 'clickhouse-analytics-ingestion-group',
          kafka_format = 'JSONEachRow',
-         kafka_num_consumers = 3;
+         kafka_num_consumers = 3,
+         kafka_skip_broken_messages = 100;
 ```
 
 #### 2. ClickHouse Primary MergeTree Storage:
 
 ```sql
-CREATE TABLE default.analytics_events (
+CREATE TABLE IF NOT EXISTS analytics_db.analytics_events (
     id         UUID DEFAULT generateUUIDv4(),
     event_type LowCardinality(String),
-    entity_id  String,
-    user_id    String,
-    payload    String,
-    timestamp  DateTime64(3, 'UTC'),
+    user_id    String DEFAULT '',
+    entity_id  String DEFAULT '',
+    amount     Float64 DEFAULT 0.0,
+    metadata   String DEFAULT '{}',
+    timestamp  DateTime64(3, 'UTC') DEFAULT now64(),
     created_at DateTime DEFAULT now()
 ) ENGINE = ReplacingMergeTree()
 PARTITION BY toYYYYMM(timestamp)
@@ -245,23 +248,49 @@ SETTINGS index_granularity = 8192;
 #### 3. Materialized View for Zero-Compute Ingestion:
 
 ```sql
-CREATE MATERIALIZED VIEW default.mv_kafka_to_analytics_events TO default.analytics_events AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS analytics_db.mv_kafka_to_analytics_events
+TO analytics_db.analytics_events AS
 SELECT
     generateUUIDv4() AS id,
     event_type,
-    entity_id,
-    user_id,
-    payload,
-    timestamp,
+    coalesce(user_id, '') AS user_id,
+    coalesce(entity_id, '') AS entity_id,
+    coalesce(amount, 0.0) AS amount,
+    coalesce(metadata, '{}') AS metadata,
+    coalesce(timestamp, now64()) AS timestamp,
     now() AS created_at
-FROM default.kafka_analytics_events_queue;
+FROM analytics_db.kafka_analytics_events_queue;
 ```
 
-**Benefits of ClickHouse / Pinot Phase**:
+#### 4. Continuous Rollup Aggregations (SummingMergeTree):
+
+```sql
+CREATE TABLE IF NOT EXISTS analytics_db.analytics_daily_summary (
+    date          Date,
+    event_type    LowCardinality(String),
+    total_events  UInt64,
+    total_revenue Float64
+) ENGINE = SummingMergeTree((total_events, total_revenue))
+PARTITION BY toYYYYMM(date)
+ORDER BY (date, event_type);
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS analytics_db.mv_kafka_to_daily_summary
+TO analytics_db.analytics_daily_summary AS
+SELECT
+    toDate(coalesce(timestamp, now64())) AS date,
+    event_type,
+    count() AS total_events,
+    sum(coalesce(amount, 0.0)) AS total_revenue
+FROM analytics_db.kafka_analytics_events_queue
+GROUP BY date, event_type;
+```
+
+**Benefits of ClickHouse Architecture**:
 
 - **Zero App Compute**: Events stream directly from Kafka into ClickHouse with 0% CPU consumption on Go or Node.js backends.
 - **10x-50x Storage Compression**: Columnar compression (ZSTD/LZ4) reduces event disk footprint by 80-90% compared to row-based PostgreSQL.
 - **Vectorized Aggregation**: Queries across 100M+ historical rows complete in under 50 milliseconds.
+- **Zero-Downtime Dual-Engine Resilience**: `analytic-service` connects directly to ClickHouse via high-performance connection pool (`internal/db/clickhouse.go`) with automated fallback to PostgreSQL or in-memory stores if ClickHouse is offline.
 
 ---
 
