@@ -18,7 +18,7 @@ import {
   markOutboxFailed,
   mongoose,
 } from "@repo/order-db";
-import { DistributedLeaderElector } from "@repo/redis";
+import { DistributedLeaderElector, LeaderFencingError } from "@repo/redis";
 import { producer } from "../src/utils/kafka.js";
 import { redis } from "../src/utils/redis.js";
 import {
@@ -331,6 +331,95 @@ async function runOutboxTests() {
       podBDemotions,
       1,
       "Pod Beta must receive demotion event",
+    );
+
+    // 8. Testing Fencing Token Database Verification & Heartbeat Drift Self-Fencing
+    console.log(
+      "8. Testing Fencing Token Database Verification & Heartbeat Drift Rejection...",
+    );
+    const fencingEvent = await createOutboxEvent("test.outbox.event", {
+      orderId: "ord_fencing_token_test",
+    });
+
+    // Worker with fencing token 10 claims the event
+    const claimedByTen = await claimPendingOutboxEvents(
+      1,
+      30_000,
+      "worker-epoch-10",
+      10,
+    );
+    const matchedFencingDoc = claimedByTen.find(
+      (e) => e._id.toString() === fencingEvent._id.toString(),
+    );
+    assert.ok(
+      matchedFencingDoc,
+      "Event must be claimed by worker with fencing token 10",
+    );
+    assert.strictEqual(
+      matchedFencingDoc.fencingToken,
+      10,
+      "Event document must record fencingToken = 10",
+    );
+
+    // Stale worker with fencing token 9 attempts to publish -> must be rejected at MongoDB boundary
+    const stalePublishResult = await markOutboxPublished(
+      fencingEvent._id.toString(),
+      "worker-epoch-9",
+      9,
+    );
+    assert.strictEqual(
+      stalePublishResult,
+      false,
+      "MongoDB must reject stale worker update when fencingToken (9) is strictly less than active document fencingToken (10)",
+    );
+
+    // Active worker with fencing token 10 completes publish successfully
+    const validPublishResult = await markOutboxPublished(
+      fencingEvent._id.toString(),
+      "worker-epoch-10",
+      10,
+    );
+    assert.strictEqual(
+      validPublishResult,
+      true,
+      "Valid worker with fencingToken = 10 must succeed",
+    );
+    const fencingPublishedDoc = await OutboxEvent.findById(fencingEvent._id);
+    assert.strictEqual(fencingPublishedDoc?.status, "PUBLISHED");
+    console.log(
+      "✓ MongoDB strictly enforces fencingToken monotonic validation against stale leaders.",
+    );
+
+    // Verify DistributedLeaderElector heartbeat drift detection
+    const driftingLockKey = "order:outbox:sweeper:leader:drift_test";
+    const driftElector = new DistributedLeaderElector({
+      client: redis.client,
+      lockKey: driftingLockKey,
+      candidateId: "drift-pod",
+      leaseTtlMs: 2000,
+      heartbeatIntervalMs: 500,
+      maxClockDriftMs: 80, // tight window for fast test
+    });
+
+    await driftElector.start();
+    assert.strictEqual(driftElector.isCurrentLeader, true);
+    assert.strictEqual(driftElector.isLeadershipValid, true);
+
+    // Simulate an event loop freeze: wait 150ms without updating heartbeat
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    assert.strictEqual(
+      driftElector.isLeadershipValid,
+      false,
+      "Leadership must become invalid once clock drift exceeds maxClockDriftMs",
+    );
+    assert.throws(
+      () => driftElector.assertLeadershipValid(),
+      LeaderFencingError,
+      "assertLeadershipValid must throw LeaderFencingError when drifted",
+    );
+    await driftElector.stop();
+    console.log(
+      "✓ Heartbeat drift detection triggers proactive leader self-fencing.",
     );
 
     // Cleanup

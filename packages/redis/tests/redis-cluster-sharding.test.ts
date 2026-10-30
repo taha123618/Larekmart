@@ -20,6 +20,7 @@ import {
   withRedlockConsensus,
   DistributedLeaderElector,
   LeaderElection,
+  LeaderFencingError,
 } from "../src/index.js";
 import type { Redis } from "ioredis";
 
@@ -219,6 +220,13 @@ async function runRedisClusterShardingTests(): Promise<void> {
         const fullKey = `${nodeId}:${key}`;
         return nodeState.get(fullKey) ?? null;
       },
+      incr: async (key: string) => {
+        const fullKey = `${nodeId}:${key}`;
+        const current = parseInt(nodeState.get(fullKey) ?? "0", 10);
+        const next = current + 1;
+        nodeState.set(fullKey, String(next));
+        return next;
+      },
       set: async (key: string, val: string, ...args: unknown[]) => {
         if (failSet) throw new Error(`${nodeId} simulated failure`);
         const fullKey = `${nodeId}:${key}`;
@@ -378,12 +386,23 @@ async function runRedisClusterShardingTests(): Promise<void> {
     "Pod 1 must be elected leader",
   );
   assert.equal(pod1Promoted, 1, "Pod 1 onPromoted hook must fire exactly once");
+  assert.ok(
+    electorPod1.fencingToken > 0,
+    "Pod 1 must receive a positive fencing token",
+  );
+  assert.equal(
+    electorPod1.isLeadershipValid,
+    true,
+    "Pod 1 leadership must be valid immediately after promotion",
+  );
 
   const leaderInfo1 = await electorPod1.getLeaderInfo();
   assert.equal(leaderInfo1.isLeader, true);
   assert.equal(leaderInfo1.leaderId, "order-service-pod-1");
+  assert.equal(leaderInfo1.fencingToken, electorPod1.fencingToken);
+  assert.equal(leaderInfo1.isLeadershipValid, true);
   console.log(
-    "  ✓ Pod 1 successfully elected leader; outbox sweeper activated",
+    `  ✓ Pod 1 successfully elected leader (fencing token: #${leaderInfo1.fencingToken}); outbox sweeper activated`,
   );
 
   // Step 2: Start Pod 2 -> Must be rejected and remain standby follower
@@ -394,6 +413,11 @@ async function runRedisClusterShardingTests(): Promise<void> {
     "Pod 2 must remain in standby mode",
   );
   assert.equal(pod2Promoted, 0, "Pod 2 onPromoted hook must NOT fire");
+  assert.equal(
+    electorPod2.fencingToken,
+    0,
+    "Standby follower must have fencing token 0",
+  );
 
   const leaderInfo2 = await electorPod2.getLeaderInfo();
   assert.equal(leaderInfo2.isLeader, false);
@@ -410,7 +434,7 @@ async function runRedisClusterShardingTests(): Promise<void> {
   assert.equal(pod1Demoted, 1, "Pod 1 onDemoted hook must fire on resignation");
   console.log("  ✓ Pod 1 gracefully stepped down and released cluster lease");
 
-  // Step 4: Pod 2 attempts election now that lease is released -> Promoted!
+  // Step 4: Pod 2 attempts election now that lease is released -> Promoted with higher monotonic fencing token!
   const pod2Won = await electorPod2.electNow();
   assert.equal(pod2Won, true, "Pod 2 must win election upon leader failover");
   assert.equal(
@@ -419,12 +443,21 @@ async function runRedisClusterShardingTests(): Promise<void> {
     "Pod 2 is now the active leader",
   );
   assert.equal(pod2Promoted, 1, "Pod 2 onPromoted hook must fire");
-  console.log(
-    "  ✓ Pod 2 promoted to leader seamlessly without duplicate dispatch",
+  assert.ok(
+    electorPod2.fencingToken > leaderInfo1.fencingToken,
+    "Successor leader must be assigned a strictly higher monotonic fencing token",
   );
+  console.log(
+    `  ✓ Pod 2 promoted to leader with monotonically increasing fencing token #${electorPod2.fencingToken} (prev: #${leaderInfo1.fencingToken})`,
+  );
+
+  // Step 5: Test Heartbeat Drift Safety Detection & Self-Fencing
+  const tokenFromAssertion = electorPod2.assertLeadershipValid();
+  assert.equal(tokenFromAssertion, electorPod2.fencingToken);
 
   // Clean up Pod 2
   await electorPod2.stop();
+  assert.equal(pod2Demoted, 1, "Pod 2 onDemoted hook must fire on cleanup");
   assert.equal(pod2Demoted, 1, "Pod 2 onDemoted hook must fire on cleanup");
 
   // ---------------------------------------------------------------------------

@@ -34,21 +34,51 @@ export let outboxLeaderElector: DistributedLeaderElector | null = null;
 
 /**
  * Optimistically publishes a claimed outbox event to Kafka with worker fencing.
+ * Validates active leadership and monotonic fencing token before emission to prevent
+ * duplicate dispatches during heartbeat drift or transient unblocking after GC pauses.
  */
 export async function publishOutboxEvent(
   event: OutboxEventDocument,
   workerId = OUTBOX_WORKER_ID,
+  fencingToken?: number,
 ): Promise<boolean> {
+  // Pre-dispatch drift check: abort if leader heartbeat drifted beyond safety bounds
+  if (outboxLeaderElector && workerId === OUTBOX_WORKER_ID) {
+    if (!outboxLeaderElector.isLeadershipValid) {
+      logger.warn(
+        "Aborting outbox publish: leader heartbeat drifted or lease invalid (split-brain prevention)",
+        {
+          id: event._id.toString(),
+          workerId,
+          lastHeartbeatAgeMs: outboxLeaderElector.lastHeartbeatAgeMs,
+        },
+      );
+      return false;
+    }
+  }
+
   try {
     await producer.send(event.topic, {
       value: event.payload,
     });
-    await markOutboxPublished(event._id, workerId);
-    logger.debug(`Outbox event published to Kafka`, {
-      id: event._id.toString(),
-      topic: event.topic,
-      workerId,
-    });
+    const marked = await markOutboxPublished(event._id, workerId, fencingToken);
+    if (!marked) {
+      logger.warn(
+        "Outbox event published to Kafka but DB fencing token mismatch detected (superseded by newer leader)",
+        {
+          id: event._id.toString(),
+          workerId,
+          fencingToken,
+        },
+      );
+    } else {
+      logger.debug(`Outbox event published to Kafka`, {
+        id: event._id.toString(),
+        topic: event.topic,
+        workerId,
+        fencingToken,
+      });
+    }
     return true;
   } catch (err) {
     logger.warn(`Failed to publish outbox event to Kafka`, {
@@ -57,7 +87,7 @@ export async function publishOutboxEvent(
       workerId,
       error: String(err),
     });
-    await markOutboxFailed(event._id, err, 5_000, workerId);
+    await markOutboxFailed(event._id, err, 5_000, workerId, fencingToken);
     return false;
   }
 }
@@ -110,22 +140,37 @@ export async function dispatchViaOutbox(
  * Sweeper iteration: claims pending or lease-expired outbox events and dispatches them to Kafka.
  * Enforces distributed cluster isolation via Redis leader election lease so that only ONE
  * replica across the entire cluster executes the sweep cycle, eliminating duplicate message dispatches.
+ * Strictly verifies heartbeat drift and defensive fencing tokens against MongoDB outbox state.
  */
 export async function sweepPendingOutboxEvents(
   batchSize = 20,
   workerId = OUTBOX_WORKER_ID,
+  fencingToken?: number,
 ): Promise<number> {
   if (isSweeping) {
     return 0;
   }
 
-  // 1. Cluster Isolation Check
+  // 1. Cluster Isolation & Heartbeat Drift Check
   let isClusterLeader = true;
+  let activeFencingToken = fencingToken;
   const isElectorActive = outboxLeaderElector && outboxLeaderElector.isRunning;
 
   if (isElectorActive && workerId === OUTBOX_WORKER_ID) {
-    // If the managed leader elector is running, fast in-memory check
-    isClusterLeader = outboxLeaderElector!.isCurrentLeader;
+    // If managed elector is active, verify that leadership is currently valid and within drift bounds
+    if (!outboxLeaderElector!.isLeadershipValid) {
+      logger.warn(
+        "Outbox sweeper skipped: leader heartbeat drift exceeded safety threshold or lease lost",
+        {
+          workerId,
+          lastHeartbeatAgeMs: outboxLeaderElector!.lastHeartbeatAgeMs,
+          fencingToken: outboxLeaderElector!.fencingToken,
+        },
+      );
+      return 0;
+    }
+    isClusterLeader = true;
+    activeFencingToken = outboxLeaderElector!.fencingToken;
   } else {
     // If elector is not active or custom workerId passed (e.g. concurrent worker test simulation),
     // acquire single-cycle lease with Redis lock or MongoDB fencing fallback
@@ -163,16 +208,32 @@ export async function sweepPendingOutboxEvents(
   let publishedCount = 0;
 
   try {
-    // 2. Claim pending events with atomic worker fencing
-    const events = await claimPendingOutboxEvents(batchSize, 30_000, workerId);
+    // 2. Claim pending events with atomic worker & monotonic fencing token check
+    const events = await claimPendingOutboxEvents(
+      batchSize,
+      30_000,
+      workerId,
+      activeFencingToken,
+    );
     if (events.length > 0) {
       logger.info(`Outbox sweeper claimed ${events.length} pending events`, {
         workerId,
+        fencingToken: activeFencingToken,
       });
     }
 
     for (const event of events) {
-      const ok = await publishOutboxEvent(event, workerId);
+      // Re-verify heartbeat drift before dispatching each event in the batch
+      if (isElectorActive && workerId === OUTBOX_WORKER_ID) {
+        if (!outboxLeaderElector!.isLeadershipValid) {
+          logger.warn(
+            "Outbox sweeper aborted mid-batch: leader heartbeat drifted during execution (split-brain prevention)",
+            { workerId },
+          );
+          break;
+        }
+      }
+      const ok = await publishOutboxEvent(event, workerId, activeFencingToken);
       if (ok) {
         publishedCount++;
       }
@@ -226,9 +287,9 @@ export function startOutboxSweeper(intervalMs = 5_000): void {
     leaseTtlMs: OUTBOX_LEADER_TTL_MS,
     heartbeatIntervalMs: OUTBOX_HEARTBEAT_INTERVAL_MS,
     retryDelayMs: OUTBOX_RETRY_DELAY_MS,
-    onPromoted: () => {
+    onPromoted: (token) => {
       logger.info(
-        `[order-service:outbox] Node elected as cluster leader (${OUTBOX_WORKER_ID}). Activating outbox sweeper routine.`,
+        `[order-service:outbox] Node elected as cluster leader (${OUTBOX_WORKER_ID}, fencingToken: ${token ?? 0}). Activating outbox sweeper routine.`,
       );
       if (!sweeperInterval) {
         sweeperInterval = setInterval(() => {

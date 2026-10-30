@@ -115,7 +115,11 @@ export type {
 } from "./cluster-lock.js";
 
 // Distributed leader election framework
-export { DistributedLeaderElector, LeaderElection } from "./leader-election.js";
+export {
+  DistributedLeaderElector,
+  LeaderElection,
+  LeaderFencingError,
+} from "./leader-election.js";
 export type { LeaderElectionOptions, LeaderInfo } from "./leader-election.js";
 
 // Shared types
