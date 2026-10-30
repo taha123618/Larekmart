@@ -17,8 +17,20 @@ async function bootstrap() {
     adapter,
   );
 
+  const allowedOrigins = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
+
   app.enableCors({
-    origin: "*",
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        env.NODE_ENV !== "production"
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"), false);
+      }
+    },
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
@@ -28,6 +40,7 @@ async function bootstrap() {
       "x-user-email",
       "x-internal-secret",
     ],
+    credentials: true,
   });
 
   app.enableShutdownHooks();

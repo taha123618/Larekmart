@@ -17,6 +17,11 @@ const EnvSchema = z
     KAFKA_BROKERS: z
       .string()
       .default("localhost:9094,localhost:9095,localhost:9096"),
+    ALLOWED_ORIGINS: z
+      .string()
+      .default(
+        "http://localhost:3000,http://localhost:3002,http://localhost:3003",
+      ),
     GATEWAY_INTERNAL_SECRET: z
       .string()
       .default(
