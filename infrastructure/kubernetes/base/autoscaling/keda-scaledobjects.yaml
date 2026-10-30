@@ -118,6 +118,21 @@ spec:
   maxReplicaCount: 8
   cooldownPeriod: 300
   pollingInterval: 15
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 15
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Percent
+              value: 25
+              periodSeconds: 60
   triggers:
     - type: kafka
       metadata:
@@ -125,9 +140,13 @@ spec:
         consumerGroup: analytic-service-group
         topic: order.created
         lagThreshold: "100"
+      authenticationRef:
+        name: keda-kafka-auth
     - type: kafka
       metadata:
         bootstrapServers: kafka-service.larekmart.svc.cluster.local:9092
         consumerGroup: analytic-service-group
         topic: payment.successful
         lagThreshold: "100"
+      authenticationRef:
+        name: keda-kafka-auth

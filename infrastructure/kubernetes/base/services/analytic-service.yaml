@@ -44,6 +44,30 @@ spec:
           env:
             - name: PORT
               value: "8004"
+            - name: APP_ENV
+              value: "production"
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/analytics_db?sslmode=disable"
+            - name: REDIS_URL
+              value: "$(REDIS_URL)"
+            - name: REDIS_KEY_PREFIX
+              value: "analytics:v1:"
+            - name: KAFKA_BROKERS
+              value: "$(KAFKA_BROKERS)"
+            - name: KAFKA_GROUP_ID
+              value: "analytic-service-group"
+            - name: ANALYTICS_BATCH_SIZE
+              value: "1000"
+            - name: ANALYTICS_FLUSH_INTERVAL_MS
+              value: "500"
+            - name: ANALYTICS_QUEUE_CAPACITY
+              value: "10000"
+            - name: ANALYTICS_WORKER_COUNT
+              value: "4"
+            - name: CLIENT_URL
+              value: "https://shop.larekmart.com"
+            - name: ADMIN_URL
+              value: "https://admin.larekmart.com"
           resources:
             requests:
               cpu: 100m
