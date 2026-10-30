@@ -236,6 +236,75 @@ async function runTests() {
 
   console.log("✓ isSeller schemas, defaults, and consumer handlers verified");
 
+  // 9. Zero-Trust Internal & Admin Middleware Gating
+  console.log("\n[Test 9] Zero-Trust Internal & Admin Middleware Gating");
+  const { shouldBeInternalOrAdmin } = await import(
+    "../src/middleware/auth.middleware.js"
+  );
+
+  // Case A: Proxied non-admin user with internal secret -> Must be rejected (403)
+  let statusSet = 0;
+  let bodySent: any = null;
+  const mockReplyNonAdmin = {
+    status(code: number) {
+      statusSet = code;
+      return {
+        send(b: any) {
+          bodySent = b;
+        },
+      };
+    },
+  };
+  const mockReqNonAdmin = {
+    headers: {
+      "x-internal-secret": "dev-shared-internal-secret-larekmart",
+      "x-user-id": "cust_123",
+      "x-user-role": "user",
+    },
+  } as any;
+  await shouldBeInternalOrAdmin(mockReqNonAdmin, mockReplyNonAdmin as any);
+  assert.equal(
+    statusSet,
+    403,
+    "Non-admin user proxied with internal secret must return 403",
+  );
+  console.log(
+    "  ✓ Zero-Trust verified: Non-admin user proxied with internal secret rejected with 403",
+  );
+
+  // Case B: Proxied admin user with internal secret -> Passes (sets user role to admin)
+  statusSet = 0;
+  const mockReplyAdmin = {
+    status(code: number) {
+      statusSet = code;
+      return { send() {} };
+    },
+  };
+  const mockReqAdmin = {
+    headers: {
+      "x-internal-secret": "dev-shared-internal-secret-larekmart",
+      "x-user-id": "admin_123",
+      "x-user-role": "admin",
+    },
+  } as any;
+  await shouldBeInternalOrAdmin(mockReqAdmin, mockReplyAdmin as any);
+  assert.equal(statusSet, 0, "Admin user must pass without error");
+  assert.equal(mockReqAdmin.userRole, "admin");
+  console.log("  ✓ Proxied admin authorized successfully");
+
+  // Case C: Pure internal machine-to-machine call -> Passes without user headers
+  statusSet = 0;
+  const mockReqM2M = {
+    headers: {
+      "x-internal-secret": "dev-shared-internal-secret-larekmart",
+    },
+  } as any;
+  await shouldBeInternalOrAdmin(mockReqM2M, mockReplyAdmin as any);
+  assert.equal(statusSet, 0, "Pure M2M call must pass without error");
+  console.log(
+    "  ✓ Pure machine-to-machine internal call authorized successfully",
+  );
+
   await app.close();
   console.log("\n=== ALL USER SERVICE TESTS PASSED SUCCESSFULLY! ===\n");
   process.exit(0);

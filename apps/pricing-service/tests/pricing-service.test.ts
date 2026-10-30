@@ -343,6 +343,86 @@ async function runTests() {
   assert.equal(overrideItem.lineTotal, 225);
   console.log("  ✓ Override price rule calculated accurately");
 
+  // ────────────────────────────────────────────────────────────
+  // Test 7: Zero-Trust Perimeter Authorization & Transport Secret Rejection
+  // ────────────────────────────────────────────────────────────
+  console.log(
+    "\n[Test 7] Zero-Trust Perimeter Authorization & Transport Secret Rejection",
+  );
+  const authApp = await buildApp();
+  const testSecret = "dev-shared-internal-secret-larekmart";
+
+  // Case A: Unauthenticated request without secret -> 403 Forbidden
+  const unauthRes = await authApp.inject({
+    method: "POST",
+    url: "/api/v1/admin/price-lists",
+    payload: {},
+  });
+  assert.equal(
+    unauthRes.statusCode,
+    403,
+    "Unauthenticated admin request must return 403",
+  );
+  console.log("  ✓ Unauthenticated admin request rejected with 403");
+
+  // Case B: Regular user proxied via API Gateway (gateway attaches internal secret) -> MUST BE REJECTED (403)
+  const proxiedUserRes = await authApp.inject({
+    method: "POST",
+    url: "/api/v1/admin/price-lists",
+    headers: {
+      "x-internal-secret": testSecret,
+      "x-user-role": "user",
+      "x-user-id": "cust_456",
+    },
+    payload: {},
+  });
+  assert.equal(
+    proxiedUserRes.statusCode,
+    403,
+    "Proxied non-admin user must NOT gain admin access solely from gateway transport secret",
+  );
+  console.log(
+    "  ✓ Zero-Trust verified: Non-admin proxied user rejected with 403 despite valid internal secret",
+  );
+
+  // Case C: Admin user proxied via API Gateway -> Passes auth guard (reaches 400 schema validation)
+  const proxiedAdminRes = await authApp.inject({
+    method: "POST",
+    url: "/api/v1/admin/price-lists",
+    headers: {
+      "x-internal-secret": testSecret,
+      "x-user-role": "admin",
+      "x-user-id": "admin_999",
+    },
+    payload: {},
+  });
+  assert.equal(
+    proxiedAdminRes.statusCode,
+    400,
+    "Proxied admin passes auth guard and reaches body schema validation (400)",
+  );
+  console.log("  ✓ Proxied administrator successfully authorized");
+
+  // Case D: Pure internal machine-to-machine call (no user context headers) -> Passes auth guard (400)
+  const internalM2MRes = await authApp.inject({
+    method: "POST",
+    url: "/api/v1/admin/price-lists",
+    headers: {
+      "x-internal-secret": testSecret,
+    },
+    payload: {},
+  });
+  assert.equal(
+    internalM2MRes.statusCode,
+    400,
+    "Pure internal machine-to-machine call passes auth guard and reaches body schema validation (400)",
+  );
+  console.log(
+    "  ✓ Pure machine-to-machine internal service call successfully authorized",
+  );
+
+  await authApp.close();
+
   console.log("\n==================================================");
   console.log("  ALL PRICING-SERVICE TESTS PASSED SUCCESSFULLY!  ");
   console.log("==================================================\n");

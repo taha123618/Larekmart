@@ -24,29 +24,42 @@ export function isInternalService(request: FastifyRequest): boolean {
 }
 
 /**
- * Guard requiring either internal service secret or admin session claims
+ * Guard requiring either internal service secret or admin session claims.
+ * Enforces Zero-Trust: If user context headers (x-user-role or x-user-id) are present,
+ * access is only granted if the user possesses the admin role and is routed via a trusted context.
+ * Internal service secrets alone NEVER bypass admin authorization when acting on behalf of a user.
  */
 export async function requireAdminOrInternal(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  if (isInternalService(request)) {
+  const isInternal = isInternalService(request);
+  const userRole = request.headers["x-user-role"] as string | undefined;
+  const userId = request.headers["x-user-id"] as string | undefined;
+
+  // Zero-Trust: Proxied user requests with user identity headers must strictly have admin role
+  if (userRole !== undefined || userId !== undefined) {
+    if (userRole === "admin" && isInternal) {
+      return;
+    }
+    reply
+      .status(403)
+      .send({ message: "Forbidden: Admin or internal access required" });
     return;
   }
 
-  // Check Clerk auth session claims if available
+  // Pure machine-to-machine internal service call (no user context)
+  if (isInternal) {
+    return;
+  }
+
+  // Direct Clerk auth session claims verification (e.g., during direct/ingress calls)
   const auth = (
     request as unknown as {
       auth?: { sessionClaims?: { metadata?: { role?: string } } };
     }
   ).auth;
   if (auth?.sessionClaims?.metadata?.role === "admin") {
-    return;
-  }
-
-  // Check role header forwarded by trusted API Gateway
-  const userRole = request.headers["x-user-role"];
-  if (userRole === "admin" && isInternalService(request)) {
     return;
   }
 

@@ -319,7 +319,49 @@ async function runTaxServiceTestSuite() {
   );
   console.log("✓ Admin route protection verified");
 
-  // D. Admin with valid internal secret: passes auth guard (fails gracefully on DB in test)
+  // D1. Zero-Trust Verification: Non-admin proxied user with gateway transport secret must be rejected (403)
+  const proxiedUserAdminRes = await app.inject({
+    method: "POST",
+    url: "/api/v1/admin/tax/rules",
+    headers: {
+      "x-internal-secret": validSecret,
+      "x-user-role": "user",
+      "x-user-id": "cust_123",
+    },
+    payload: {
+      rate: "0.05",
+    },
+  });
+  assert.equal(
+    proxiedUserAdminRes.statusCode,
+    403,
+    "Non-admin user proxied via API Gateway must be rejected despite valid internal secret",
+  );
+  console.log(
+    "✓ Zero-Trust verified: Non-admin proxied user rejected with 403",
+  );
+
+  // D2. Proxied admin user with gateway transport secret passes auth guard (reaches schema validator 400)
+  const proxiedAdminRes = await app.inject({
+    method: "POST",
+    url: "/api/v1/admin/tax/rules",
+    headers: {
+      "x-internal-secret": validSecret,
+      "x-user-role": "admin",
+      "x-user-id": "admin_123",
+    },
+    payload: {
+      rate: "invalid_rate",
+    },
+  });
+  assert.equal(
+    proxiedAdminRes.statusCode,
+    400,
+    "Proxied admin passes auth guard and reaches schema validator (400)",
+  );
+  console.log("✓ Proxied admin route execution verified");
+
+  // D3. Pure machine-to-machine internal service call: passes auth guard (reaches schema validator 400)
   const authAdminRes = await app.inject({
     method: "POST",
     url: "/api/v1/admin/tax/rules",
@@ -336,7 +378,9 @@ async function runTaxServiceTestSuite() {
     400,
     "With valid secret, request reaches schema validator (400)",
   );
-  console.log("✓ Admin route authenticated execution verified");
+  console.log(
+    "✓ Pure machine-to-machine admin route authenticated execution verified",
+  );
 
   // E. Health endpoint
   const healthRes = await app.inject({
