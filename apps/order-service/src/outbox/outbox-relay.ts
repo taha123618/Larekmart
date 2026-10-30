@@ -42,14 +42,19 @@ export async function publishOutboxEvent(
   workerId = OUTBOX_WORKER_ID,
   fencingToken?: number,
 ): Promise<boolean> {
-  // Pre-dispatch drift check: abort if leader heartbeat drifted beyond safety bounds
-  if (outboxLeaderElector && workerId === OUTBOX_WORKER_ID) {
+  // Pre-dispatch drift check: abort sweeper publish if leader heartbeat drifted beyond safety bounds
+  if (
+    (typeof fencingToken === "number" || isSweeping) &&
+    outboxLeaderElector &&
+    workerId === OUTBOX_WORKER_ID
+  ) {
     if (!outboxLeaderElector.isLeadershipValid) {
       logger.warn(
-        "Aborting outbox publish: leader heartbeat drifted or lease invalid (split-brain prevention)",
+        "Aborting outbox sweeper publish: leader heartbeat drifted or lease invalid (split-brain prevention)",
         {
           id: event._id.toString(),
           workerId,
+          fencingToken,
           lastHeartbeatAgeMs: outboxLeaderElector.lastHeartbeatAgeMs,
         },
       );
