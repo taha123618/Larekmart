@@ -54,5 +54,5 @@ through that map, not through the stale `main` field.
 ## Verification
 
 - `pnpm --filter @repo/types check-types`
+- `pnpm --filter @repo/types test` (runs schema contract tests covering Zod schemas, gateway headers, disputes, returns, seller, and vendor models)
 - After changing exports, run `pnpm check-types` from the root to catch downstream breaks.
-- No general JavaScript test runner exists yet. Prefer pure unit tests for Zod schemas when a JavaScript test runner is introduced.

@@ -44,8 +44,17 @@ Guidance for developing in `apps/order-service` (Fastify 5, port 8001).
 
 - Handles message idempotency safely given `fromBeginning: true`.
 
-## 3. Verification
+## 3. Transactional Outbox & Leader Election
+
+- All domain state mutations (`POST /orders/cod`, `payment.successful`) persist outbox events to MongoDB (`OutboxEvent`) within the same ACID transaction session.
+- **Distributed Leader Election (`DistributedLeaderElector`)**:
+  - Horizontal pods elect a single active sweeper leader using key `order:outbox:sweeper:leader` with 10s TTL and 3s heartbeat renewals.
+  - Heartbeat renewals run inside an isolated, high-priority background loop completely decoupled from application request I/O.
+  - Generates a monotonically increasing `fencingToken` verified by MongoDB atomic update conditions before batch claims, preventing heartbeat drift from triggering duplicate Kafka dispatches.
+
+## 4. Verification
 
 ```bash
 pnpm --filter order-service check-types
+pnpm --filter order-service test
 ```

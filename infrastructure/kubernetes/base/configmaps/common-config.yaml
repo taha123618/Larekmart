@@ -47,3 +47,8 @@ data:
   REVIEW_SERVICE_URL: "http://review-service.larekmart.svc.cluster.local:8014"
   WISHLIST_SERVICE_URL: "http://wishlist-service.larekmart.svc.cluster.local:8015"
   PROMOTION_SERVICE_URL: "http://promotion-service.larekmart.svc.cluster.local:8016"
+  TAX_SERVICE_URL: "http://tax-service.larekmart.svc.cluster.local:8017"
+  RETURN_SERVICE_URL: "http://return-service.larekmart.svc.cluster.local:8018"
+  PRICING_SERVICE_URL: "http://pricing-service.larekmart.svc.cluster.local:8019"
+  VENDOR_SERVICE_URL: "http://vendor-service.larekmart.svc.cluster.local:8020"
+  SELLER_SERVICE_URL: "http://seller-service.larekmart.svc.cluster.local:8021"

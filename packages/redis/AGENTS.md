@@ -16,7 +16,9 @@ Scope rules for AI coding agents working in this package.
 - A **fixed-window rate limiter** (`checkRateLimit`)
 - A **distributed idempotency engine** (`acquireIdempotencyLock`, `commitIdempotencyResponse`, `releaseIdempotencyLock`)
 - **Distributed cluster locking & Redlock majority-quorum consensus** (`acquireClusterLock`, `releaseClusterLock`, `renewClusterLock`, `acquireRedlockConsensus`, `releaseRedlockConsensus`, `renewRedlockConsensus`)
-- A **distributed leader election framework** (`DistributedLeaderElector` / `LeaderElection`) ensuring exactly one active replica executes background singletons (e.g., outbox sweepers) with auto-renew heartbeats and automatic standby failover
+- A **distributed leader election framework** (`DistributedLeaderElector` / `LeaderElection`) ensuring exactly one active replica executes background singletons (e.g., outbox sweepers) with auto-renew heartbeats, monotonically increasing `fencingToken` guards, and automatic standby failover
+- **Cluster Sharding & Hash-Tag Validation** (`assertClusterSlotAlignment`, `extractHashTag`, `CrossSlotValidationError`) ensuring multi-key Redis transactions pin to identical CRC16 hash slots (e.g. `{tenant_id:warehouse_id}`) in clustered topologies
+- **Read-Your-Writes Consistency Leases** (`markReadYourWrites`, `isReadYourWritesActive`, `clearReadYourWrites`, `DEFAULT_RYW_TTL_MS`) enabling temporary 500ms session leases that force primary database reads and bypass asynchronous replica lag
 - The re-exported ioredis `Redis` client type
 
 ## 2. What belongs here

@@ -897,6 +897,13 @@ services:
       - "8010"
     ports:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8010:8010"
+    environment:
+      - "DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres:5432/catalog_db?schema=public"
+      - "DATABASE_READ_REPLICA_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/catalog_db?schema=public"
+      - "REDIS_URL=redis://redis:6379"
+      - "REDIS_KEY_PREFIX=catalog:v1:"
+      - "KAFKA_BROKERS=kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092"
+      - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
     env_file:
       - ./apps/catalog-service/.env
     healthcheck:

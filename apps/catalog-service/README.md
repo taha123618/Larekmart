@@ -91,7 +91,23 @@ pnpm --filter catalog-service dev
 
 # Type check
 pnpm --filter catalog-service check-types
+
+# Run SQA test suite (unit + integration + consistency plane)
+pnpm --filter catalog-service test
 ```
+
+## Read-Your-Writes (RYW) Consistency Plane
+
+Storefront queries by default route to PostgreSQL read-replicas (`readPrisma` via PgBouncer port 6432) to prevent read contention on primary database writers.
+
+When a client executes a state mutation (such as checkout, cart adjustments, or reviews), the API Gateway automatically sets an atomic 500ms Read-Your-Writes lease in Redis (`markReadYourWrites`) and forwards `x-force-primary: true`.
+
+Within `catalog-service`:
+
+1. The Fastify hook in `src/plugins/fastify.ts` checks `x-force-primary` and validates `isReadYourWritesActive` in Redis.
+2. If active, `request.forcePrimary = true` and `databaseContext` sets `forcePrimary: true`.
+3. Domain services bypass stale Redis read caches and query `prisma` (primary master writer) directly via `getDatabaseClient(true)`.
+4. The service responds with header `X-Consistency-Plane: primary-master`, eliminating replication lag anomalies (<50ms WAL latency).
 
 ## Project Structure
 

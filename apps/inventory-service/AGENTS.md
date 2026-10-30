@@ -36,6 +36,7 @@ all inventory state is persisted through `@repo/inventory-db` in PostgreSQL.
   - If PostgreSQL transaction fails, the Redis counter is immediately rolled back (`ROLLBACK_LUA`) to prevent stock leakage.
   - Cold cache misses are lazily populated from PostgreSQL using a 2-second distributed mutex (`stock:lock:...`) to prevent thundering herds.
   - Released or expired reservations atomically increment the Redis stock counter (`INCREMENT_LUA`).
+  - **Cluster Hash-Tagging Invariant**: All multi-key operations and Lua evaluations MUST pin dependent keys to the same CRC16 slot using `{tenant_id:warehouse_id}` brackets. Assert slot alignment via `assertClusterSlotAlignment` before evaluating Lua logic to prevent fatal `CROSSSLOT` failures on clustered deployments.
 - Use `@repo/inventory-db` operations; never read a quantity and then write an unconditional replacement.
 - Reservations use a conditional atomic update requiring sufficient available stock.
 - Publish `inventory.*` Kafka events only after the database transaction commits. Event publication is observable but does not make Redis or Kafka authoritative.

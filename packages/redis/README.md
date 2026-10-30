@@ -25,9 +25,12 @@ cluster locks, 3-node Redlock consensus, and distributed leader election.
   - `acquireClusterLock`, `releaseClusterLock`, `renewClusterLock`, `withClusterLock`: atomic distributed lock wrappers with automatic lease renewal.
   - `acquireRedlockConsensus`, `releaseRedlockConsensus`, `renewRedlockConsensus`, `withRedlockConsensus`: multi-node majority quorum distributed consensus across independent Redis instances.
 - **Distributed Leader Election**:
-  - `DistributedLeaderElector` / `LeaderElection`: continuous leader coordination with automatic heartbeat renewal and instant standby failover for background singletons (e.g. `order-service` outbox sweeper).
+  - `DistributedLeaderElector` / `LeaderElection`: continuous leader coordination with automatic heartbeat renewal, monotonically increasing `fencingToken` guards, and instant standby failover for background singletons (e.g. `order-service` outbox sweeper).
 - **Cluster Sharding & Slot Pinning**:
   - CRC16 slot hash tagging support (e.g. `{tenant:warehouse}:sku`) ensuring co-located keys map to the same Redis cluster hash slot.
+  - `assertClusterSlotAlignment(keys)`, `extractHashTag(key)`, `CrossSlotValidationError`: validates multi-key commands upfront to prevent runtime `CROSSSLOT` exceptions.
+- **Read-Your-Writes Consistency Leases**:
+  - `markReadYourWrites`, `isReadYourWritesActive`, `clearReadYourWrites`, `DEFAULT_RYW_TTL_MS`: registers and checks atomic 500ms client session leases to force edge/storefront reads to the primary database writer and bypass stale caches.
 
 Every service should use `createRedisService` and `redis.keys`; do not import `ioredis` directly or hand-write a service prefix. Redis is optional at runtime: cache reads fall through to the source of truth when Redis is unavailable.
 

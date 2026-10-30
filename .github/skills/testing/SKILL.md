@@ -32,7 +32,9 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 | **`analytic-service`**       | Go Test Tool (`go test`)    | Config validation, constant-time auth guards, lock-free atomic KPI store, bounded-channel micro-batching, and REST handlers (`cmd/...`, `internal/...`)                                                                                                                                                          |
 | **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle, recovery (`internal/*`)                                                                                                                                                                                                                      |
 | **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                  |
-| **`@repo/redis`**            | Integration Verifier        | Key namespacing, cache TTLs, rate limiter, degraded resilience (`src/scripts/verify-redis.ts`)                                                                                                                                                                                                                   |
+| **`catalog-service`**        | Node.js Test Runner / `tsx` | Eight suites via `tests/catalog-service.test.ts`: key naming invariants, Fastify health probes, Prometheus metrics, projector contracts, PostgreSQL replica fallback, getCatalogDb consistency switching, Fastify RYW header hook, Redis session lease lifecycle, and cache bypass                               |
+| **`api-gateway`**            | Node.js Test Runner / `tsx` | Eleven suites via `tests/index.test.ts`: route registry, dynamic circuit breaker, sliding-window metrics, rate limiting, request correlation, health endpoints, in-flight bulkheads, adaptive rate-limiting, edge inventory caching, and proxy security                                                          |
+| **`@repo/redis`**            | Node.js Test Runner / `tsx` | Eight offline suites via `tests/redis-cluster-sharding.test.ts`: CRC16 hash tag calculation, cross-slot alignment assertions, Redlock 3-node consensus simulation, distributed leader elector with fencing tokens, atomic cluster locking, and Read-Your-Writes consistency leases                               |
 
 ---
 
@@ -44,6 +46,9 @@ pnpm test
 
 # 2. Run tests for a specific workspace
 pnpm --filter @repo/types test
+pnpm --filter @repo/redis test
+pnpm --filter api-gateway test
+pnpm --filter catalog-service test
 pnpm --filter user-service test
 pnpm --filter order-service test
 pnpm --filter cart-service test

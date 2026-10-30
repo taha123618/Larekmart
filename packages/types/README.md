@@ -25,9 +25,11 @@ Centralized type definitions, Kafka payload contracts, and shared Zod validation
 - **Shared Constants & Enums**:
   - `colors`, `sizes`, `OrderStatus`
   - `CustomJwtSessionClaims`
+  - `GATEWAY_HEADERS` (internal routing, security headers, `FORCE_PRIMARY`, `READ_YOUR_WRITES`, `CLIENT_SESSION_ID`)
 
 ## Development Commands
 
 ```bash
 pnpm --filter @repo/types check-types
+pnpm --filter @repo/types test
 ```

@@ -178,3 +178,44 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
    - Run migrations: `pnpm --filter return-service db:migrate`.
    - Inspect pending outbox events: verify `return_outbox` table where `status = 'PENDING'` is being processed by the outbox worker loop.
    - Metrics: inspect Prometheus metrics at `http://localhost:8018/metrics` (`returns_total`, `refunds_processed_total`, `outbox_published_total`).
+
+## 9. Analytic Service (Go 1.22 Chi :8004) & Kafka Ingestion
+
+### Issue: Kafka consumer rebalance storm or batch ingestion lag
+
+1. **Consumer Heartbeat & Goroutine Isolation**:
+   - Dedicated reader goroutines consume from Apache Kafka via `segmentio/kafka-go` using group `analytic-service-group`.
+   - Kafka heartbeats run in dedicated background loops, completely decoupled from database execution to prevent `session.timeout.ms` expirations.
+2. **Batch Queue & Worker Draining**:
+   - Messages push into bounded in-memory channel queue buffer (10,000 capacity).
+   - Workers drain channel and persist via `pgx.CopyFrom` in micro-batches (up to 1,000 events or 500ms timeout).
+   - If queue fills (>8,000 items), inspect PostgreSQL write latency or ClickHouse connectivity.
+3. **Observability**:
+   - Check Prometheus metrics at `http://localhost:8004/metrics`: `analytics_events_ingested_total`, `analytics_batch_duration_seconds`, `analytics_queue_length`.
+
+## 10. Redis Clustered Multi-Key Transactions & Slot Tagging
+
+### Issue: Fatal CROSSSLOT Keys in request don't hash to the same slot
+
+1. **Cluster CRC16 Slot Alignment**:
+   - Multi-key Lua scripts in `inventory-service` must enforce hash-tag wrapping `{tenant_id:warehouse_id}`.
+   - Check key format using `extractHashTag(key)` and assert slot alignment via `assertClusterSlotAlignment(keys)`.
+   - Keys without identical hash tags will hash to different cluster slots, causing Redis cluster instances to abort execution immediately.
+
+## 11. Transactional Outbox Sweeper Drift & Fencing Tokens
+
+### Issue: Duplicate Kafka outbox emissions or overlapping sweeper loops
+
+1. **Leader Election Drift**:
+   - Outbox sweeper instances in `order-service` use `DistributedLeaderElector` from `@repo/redis` (`order:outbox:sweeper:leader`, 10s lease TTL, 3s heartbeat renewal).
+   - Lease heartbeats execute inside decoupled, high-priority asynchronous background loops with monotonically increasing fencing tokens (`fencingToken`).
+   - Database state mutation queries check fencing tokens before committing batch status changes, discarding stale sweeper ticks.
+
+## 12. Asynchronous Read-Replica Synchronization & Read-Your-Writes Consistency
+
+### Issue: Storefront users see stale stock or pricing after update (<50ms WAL lag)
+
+1. **Read-Your-Writes Lease Verification**:
+   - When a customer mutates state, API Gateway automatically registers a 500ms lease in Redis (`markReadYourWrites`) and sets `x-force-primary: true`.
+   - Downstream `catalog-service` inspects `isReadYourWritesActive` and routes queries to `prisma` (primary master writer), bypassing `readPrisma` and stale Redis read caches.
+   - Verify response header: Requests served via primary write-plane include `X-Consistency-Plane: primary-master`.
