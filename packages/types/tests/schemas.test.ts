@@ -270,6 +270,9 @@ async function runSchemaTests() {
   assert.equal(GATEWAY_HEADERS.IS_SUPER_ADMIN, "x-user-is-super-admin");
   assert.equal(GATEWAY_HEADERS.IS_SELLER, "x-user-is-seller");
   assert.equal(GATEWAY_HEADERS.CAN_MANAGE_SELLERS, "x-user-can-manage-sellers");
+  assert.equal(GATEWAY_HEADERS.FORCE_PRIMARY, "x-force-primary");
+  assert.equal(GATEWAY_HEADERS.READ_YOUR_WRITES, "x-read-your-writes");
+  assert.equal(GATEWAY_HEADERS.CLIENT_SESSION_ID, "x-session-id");
 
   // SEC-03 Internal Secret Production Fail-Closed Tests
   assert.doesNotThrow(() => {

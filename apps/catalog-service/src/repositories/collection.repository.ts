@@ -1,6 +1,6 @@
-import { readPrisma as prisma } from "@repo/catalog-db";
 import type { CatalogCollectionType } from "@repo/types";
 import { mapCollection } from "../utils/mappers.js";
+import { getDatabaseClient } from "../utils/database-context.js";
 
 const collectionInclude = {
   _count: {
@@ -21,8 +21,11 @@ const collectionInclude = {
 };
 
 export class CollectionRepository {
-  async findAllCollections(): Promise<CatalogCollectionType[]> {
-    const collections = await prisma.catalogCollection.findMany({
+  async findAllCollections(
+    forcePrimary?: boolean,
+  ): Promise<CatalogCollectionType[]> {
+    const db = getDatabaseClient(forcePrimary);
+    const collections = await db.catalogCollection.findMany({
       where: { status: "ACTIVE" },
       orderBy: { sortOrder: "asc" },
       include: {
@@ -37,8 +40,10 @@ export class CollectionRepository {
 
   async findCollectionBySlug(
     slug: string,
+    forcePrimary?: boolean,
   ): Promise<CatalogCollectionType | null> {
-    const collection = await prisma.catalogCollection.findFirst({
+    const db = getDatabaseClient(forcePrimary);
+    const collection = await db.catalogCollection.findFirst({
       where: {
         slug,
         status: "ACTIVE",
@@ -49,8 +54,12 @@ export class CollectionRepository {
     return collection ? mapCollection(collection as any) : null;
   }
 
-  async findCollectionById(id: string): Promise<CatalogCollectionType | null> {
-    const collection = await prisma.catalogCollection.findFirst({
+  async findCollectionById(
+    id: string,
+    forcePrimary?: boolean,
+  ): Promise<CatalogCollectionType | null> {
+    const db = getDatabaseClient(forcePrimary);
+    const collection = await db.catalogCollection.findFirst({
       where: {
         id,
         status: "ACTIVE",

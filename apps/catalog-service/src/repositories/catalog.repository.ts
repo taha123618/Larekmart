@@ -1,10 +1,10 @@
-import { readPrisma as prisma } from "@repo/catalog-db";
 import type { Prisma } from "@repo/catalog-db";
 import type {
   CatalogProductQueryType,
   CatalogPaginatedResponseType,
 } from "@repo/types";
 import { mapProductCard } from "../utils/mappers.js";
+import { getDatabaseClient } from "../utils/database-context.js";
 
 const productInclude = {
   brand: true,
@@ -15,6 +15,7 @@ const productInclude = {
 export class CatalogRepository {
   async findProducts(
     query: CatalogProductQueryType,
+    forcePrimary?: boolean,
   ): Promise<CatalogPaginatedResponseType> {
     const {
       page = 1,
@@ -102,9 +103,10 @@ export class CatalogRepository {
         break;
     }
 
+    const db = getDatabaseClient(forcePrimary);
     const [total, products] = await Promise.all([
-      prisma.catalogProduct.count({ where }),
-      prisma.catalogProduct.findMany({
+      db.catalogProduct.count({ where }),
+      db.catalogProduct.findMany({
         where,
         orderBy,
         skip,
@@ -128,8 +130,9 @@ export class CatalogRepository {
     };
   }
 
-  async findProductById(productIdOrId: string) {
-    const product = await prisma.catalogProduct.findFirst({
+  async findProductById(productIdOrId: string, forcePrimary?: boolean) {
+    const db = getDatabaseClient(forcePrimary);
+    const product = await db.catalogProduct.findFirst({
       where: {
         OR: [{ productId: productIdOrId }, { id: productIdOrId }],
         isActive: true,
@@ -139,8 +142,9 @@ export class CatalogRepository {
     return product ? mapProductCard(product) : null;
   }
 
-  async findProductBySlug(slug: string) {
-    const product = await prisma.catalogProduct.findFirst({
+  async findProductBySlug(slug: string, forcePrimary?: boolean) {
+    const db = getDatabaseClient(forcePrimary);
+    const product = await db.catalogProduct.findFirst({
       where: {
         slug,
         isActive: true,
@@ -150,8 +154,9 @@ export class CatalogRepository {
     return product ? mapProductCard(product) : null;
   }
 
-  async findFeaturedProducts(limit = 12) {
-    const products = await prisma.catalogProduct.findMany({
+  async findFeaturedProducts(limit = 12, forcePrimary?: boolean) {
+    const db = getDatabaseClient(forcePrimary);
+    const products = await db.catalogProduct.findMany({
       where: {
         isFeatured: true,
         isActive: true,
@@ -163,8 +168,9 @@ export class CatalogRepository {
     return products.map(mapProductCard);
   }
 
-  async findNewArrivals(limit = 12) {
-    const products = await prisma.catalogProduct.findMany({
+  async findNewArrivals(limit = 12, forcePrimary?: boolean) {
+    const db = getDatabaseClient(forcePrimary);
+    const products = await db.catalogProduct.findMany({
       where: {
         isNew: true,
         isActive: true,
@@ -176,8 +182,9 @@ export class CatalogRepository {
     return products.map(mapProductCard);
   }
 
-  async findBestSellers(limit = 12) {
-    const products = await prisma.catalogProduct.findMany({
+  async findBestSellers(limit = 12, forcePrimary?: boolean) {
+    const db = getDatabaseClient(forcePrimary);
+    const products = await db.catalogProduct.findMany({
       where: {
         isActive: true,
       },
@@ -193,14 +200,18 @@ export class CatalogRepository {
     page = 1,
     limit = 24,
     sort = "newest",
+    forcePrimary?: boolean,
   ): Promise<CatalogPaginatedResponseType> {
-    return this.findProducts({
-      category: categoryIdOrSlug,
-      page,
-      limit,
-      sort: sort as any,
-      availability: "all",
-    });
+    return this.findProducts(
+      {
+        category: categoryIdOrSlug,
+        page,
+        limit,
+        sort: sort as any,
+        availability: "all",
+      },
+      forcePrimary,
+    );
   }
 }
 

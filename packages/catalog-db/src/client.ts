@@ -53,3 +53,16 @@ export async function disconnectPrisma(): Promise<void> {
   }
   await Promise.all(disconnects);
 }
+
+/**
+ * Resolves the appropriate Prisma client based on consistency requirements.
+ * When `forcePrimary` is true (e.g. active Read-Your-Writes consistency lease),
+ * returns `prisma` (primary master writer). Otherwise returns `readPrisma`
+ * (read replica pool via PgBouncer).
+ */
+export function getCatalogDb(forcePrimary?: boolean): PrismaClient {
+  if (forcePrimary) {
+    return prisma;
+  }
+  return readPrisma;
+}

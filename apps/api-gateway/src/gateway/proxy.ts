@@ -11,6 +11,12 @@ import {
 import { GATEWAY_HEADERS } from "@repo/types";
 import { gatewayProxyRequestsTotal } from "../observability/metrics.js";
 import { circuitBreaker } from "../resilience/circuit-breaker.js";
+import {
+  isReadYourWritesActive,
+  markReadYourWrites,
+  DEFAULT_RYW_TTL_MS,
+} from "@repo/redis";
+import { redis } from "../utils/redis.js";
 
 export const NON_CRITICAL_SERVICES = new Set<string>([
   "review-service",
@@ -69,6 +75,28 @@ export async function registerProxyRoutes(
           await requireSeller(req, reply);
         } else if (route.requireAuth) {
           await requireAuth(req, reply);
+        }
+
+        // Check for active Read-Your-Writes consistency lease
+        const rywClientId =
+          req.authUserId ||
+          (req.headers[GATEWAY_HEADERS.CLIENT_SESSION_ID] as string) ||
+          (req.headers[GATEWAY_HEADERS.GUEST_TOKEN] as string) ||
+          req.ip;
+        if (rywClientId) {
+          try {
+            const isRyw = await isReadYourWritesActive(
+              redis.client,
+              rywClientId,
+            );
+            if (isRyw) {
+              (
+                req as FastifyRequest & { _readYourWritesActive?: boolean }
+              )._readYourWritesActive = true;
+            }
+          } catch {
+            // Non-blocking degradation
+          }
         }
       };
 
@@ -158,6 +186,34 @@ export async function registerProxyRoutes(
           } else {
             circuitBreaker.recordSuccess(route.serviceName, latencyMs);
           }
+
+          // If this was a successful state-mutating request (POST, PUT, PATCH, DELETE),
+          // register a temporary Read-Your-Writes consistency lease in Redis (500ms TTL)
+          // so subsequent edge/storefront reads from this client query the primary master pool.
+          if (
+            (request.method === "POST" ||
+              request.method === "PUT" ||
+              request.method === "PATCH" ||
+              request.method === "DELETE") &&
+            status >= 200 &&
+            status < 300
+          ) {
+            const rywClientId =
+              request.authUserId ||
+              (request.headers[GATEWAY_HEADERS.CLIENT_SESSION_ID] as string) ||
+              (request.headers[GATEWAY_HEADERS.GUEST_TOKEN] as string) ||
+              request.ip;
+            if (rywClientId) {
+              markReadYourWrites(redis.client, rywClientId, {
+                ttlMs: DEFAULT_RYW_TTL_MS,
+              }).catch((err) => {
+                logger.warn("Failed to mark Read-Your-Writes lease in Redis", {
+                  clientId: rywClientId,
+                  error: String(err),
+                });
+              });
+            }
+          }
         },
         rewriteRequestHeaders: (originalReq, headers) => {
           // Stamp the wall-clock start time so onError/onResponse can compute latency
@@ -183,6 +239,8 @@ export async function registerProxyRoutes(
           delete rewritten[GATEWAY_HEADERS.IS_SUPER_ADMIN];
           delete rewritten[GATEWAY_HEADERS.IS_SELLER];
           delete rewritten[GATEWAY_HEADERS.CAN_MANAGE_SELLERS];
+          delete rewritten[GATEWAY_HEADERS.FORCE_PRIMARY];
+          delete rewritten[GATEWAY_HEADERS.READ_YOUR_WRITES];
           delete rewritten["x-user-id"];
           delete rewritten["x-user-role"];
           delete rewritten["x-user-is-super-admin"];
@@ -190,6 +248,20 @@ export async function registerProxyRoutes(
           delete rewritten["x-user-can-manage-sellers"];
           delete rewritten["x-internal-secret"];
           delete rewritten["x-user-permissions"];
+          delete rewritten["x-force-primary"];
+          delete rewritten["x-read-your-writes"];
+
+          // If client has an active Read-Your-Writes lease, force downstream queries to primary master
+          if (
+            (
+              originalReq as FastifyRequest & {
+                _readYourWritesActive?: boolean;
+              }
+            )._readYourWritesActive
+          ) {
+            rewritten[GATEWAY_HEADERS.FORCE_PRIMARY] = "true";
+            rewritten[GATEWAY_HEADERS.READ_YOUR_WRITES] = "true";
+          }
 
           // Inject verified internal gateway secret for downstream services
           rewritten[GATEWAY_HEADERS.INTERNAL_SECRET] =

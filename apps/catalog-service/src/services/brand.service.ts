@@ -9,18 +9,40 @@ import {
 } from "../cache/catalog-cache.js";
 import { brandRepository } from "../repositories/brand.repository.js";
 import { catalogRepository } from "../repositories/catalog.repository.js";
+import { databaseContext } from "../utils/database-context.js";
+
+export interface BrandQueryOptions {
+  forcePrimary?: boolean;
+}
 
 export class BrandService {
-  async getAllBrands(): Promise<CatalogBrandType[]> {
-    return brandRepository.findAllBrands();
+  async getAllBrands(options?: BrandQueryOptions): Promise<CatalogBrandType[]> {
+    const forcePrimary =
+      options?.forcePrimary ??
+      databaseContext.getStore()?.forcePrimary ??
+      false;
+    return brandRepository.findAllBrands(forcePrimary);
   }
 
-  async getBrandByIdOrSlug(idOrSlug: string): Promise<CatalogBrandType | null> {
+  async getBrandByIdOrSlug(
+    idOrSlug: string,
+    options?: BrandQueryOptions,
+  ): Promise<CatalogBrandType | null> {
+    const forcePrimary =
+      options?.forcePrimary ??
+      databaseContext.getStore()?.forcePrimary ??
+      false;
     const cacheKey = CatalogCacheKeys.brand(idOrSlug);
-    const cached = await getCached<CatalogBrandType>(cacheKey);
-    if (cached) return cached;
 
-    const brand = await brandRepository.findBrandByIdOrSlug(idOrSlug);
+    if (!forcePrimary) {
+      const cached = await getCached<CatalogBrandType>(cacheKey);
+      if (cached) return cached;
+    }
+
+    const brand = await brandRepository.findBrandByIdOrSlug(
+      idOrSlug,
+      forcePrimary,
+    );
     if (brand) {
       await setCached(cacheKey, brand);
     }
@@ -32,14 +54,22 @@ export class BrandService {
     page = 1,
     limit = 24,
     sort = "newest",
+    options?: BrandQueryOptions,
   ): Promise<CatalogPaginatedResponseType> {
-    return catalogRepository.findProducts({
-      brand: idOrSlug,
-      page,
-      limit,
-      sort: sort as any,
-      availability: "all",
-    });
+    const forcePrimary =
+      options?.forcePrimary ??
+      databaseContext.getStore()?.forcePrimary ??
+      false;
+    return catalogRepository.findProducts(
+      {
+        brand: idOrSlug,
+        page,
+        limit,
+        sort: sort as any,
+        availability: "all",
+      },
+      forcePrimary,
+    );
   }
 }
 

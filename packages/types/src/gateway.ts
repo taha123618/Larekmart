@@ -14,6 +14,9 @@ export const GATEWAY_HEADERS = {
   GUEST_TOKEN: "x-guest-token",
   FORWARDED_FOR: "x-forwarded-for",
   IDEMPOTENCY_KEY: "idempotency-key",
+  FORCE_PRIMARY: "x-force-primary",
+  READ_YOUR_WRITES: "x-read-your-writes",
+  CLIENT_SESSION_ID: "x-session-id",
 } as const;
 
 export type GatewayHeaderKey =

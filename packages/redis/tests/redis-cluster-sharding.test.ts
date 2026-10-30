@@ -21,6 +21,11 @@ import {
   DistributedLeaderElector,
   LeaderElection,
   LeaderFencingError,
+  markReadYourWrites,
+  isReadYourWritesActive,
+  clearReadYourWrites,
+  buildReadYourWritesKey,
+  DEFAULT_RYW_TTL_MS,
 } from "../src/index.js";
 import type { Redis } from "ioredis";
 
@@ -235,6 +240,16 @@ async function runRedisClusterShardingTests(): Promise<void> {
         }
         nodeState.set(fullKey, val);
         return "OK";
+      },
+      exists: async (key: string) => {
+        const fullKey = `${nodeId}:${key}`;
+        return nodeState.has(fullKey) ? 1 : 0;
+      },
+      del: async (key: string) => {
+        const fullKey = `${nodeId}:${key}`;
+        const had = nodeState.has(fullKey);
+        nodeState.delete(fullKey);
+        return had ? 1 : 0;
       },
       eval: async (
         script: string,
@@ -564,6 +579,58 @@ async function runRedisClusterShardingTests(): Promise<void> {
   );
   console.log(
     "  ✓ withClusterLock & withRedlockConsensus clean execution & safe cleanup verified",
+  );
+
+  // ---------------------------------------------------------------------------
+  // TEST 8: Read-Your-Writes Consistency Parameters & Replica Bypass Leases
+  // ---------------------------------------------------------------------------
+  console.log(
+    "\n8. Testing Read-Your-Writes consistency parameters & replica bypass leases...",
+  );
+
+  const testClientId = "user_clerk_9921_flash";
+  const expectedKey = `ryw:${testClientId}`;
+  assert.equal(
+    buildReadYourWritesKey(testClientId),
+    expectedKey,
+    "buildReadYourWritesKey must prefix clientId with ryw:",
+  );
+
+  // Initial state: No lease active
+  const initialActive = await isReadYourWritesActive(nodeA, testClientId);
+  assert.equal(
+    initialActive,
+    false,
+    "Read-Your-Writes lease must be inactive initially",
+  );
+
+  // Register mutation lease (e.g. 500ms TTL)
+  const marked = await markReadYourWrites(nodeA, testClientId, { ttlMs: 500 });
+  assert.equal(marked, true, "markReadYourWrites must return true on success");
+
+  // Subsequent check: Lease is active
+  const activeNow = await isReadYourWritesActive(nodeA, testClientId);
+  assert.equal(
+    activeNow,
+    true,
+    "Read-Your-Writes lease must be active after mutation",
+  );
+  console.log(
+    "  ✓ Mutation lease successfully registered (500ms TTL); forces primary master routing",
+  );
+
+  // Clear lease voluntarily
+  const cleared = await clearReadYourWrites(nodeA, testClientId);
+  assert.equal(cleared, true, "clearReadYourWrites must return true");
+
+  const activeAfterClear = await isReadYourWritesActive(nodeA, testClientId);
+  assert.equal(
+    activeAfterClear,
+    false,
+    "Read-Your-Writes lease must be inactive after clear",
+  );
+  console.log(
+    "  ✓ Read-Your-Writes lease cleared; reverts back to read-replica connection pool",
   );
 
   console.log("\n==================================================");

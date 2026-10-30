@@ -122,6 +122,17 @@ export {
 } from "./leader-election.js";
 export type { LeaderElectionOptions, LeaderInfo } from "./leader-election.js";
 
+// Read-Your-Writes consistency parameters
+export {
+  DEFAULT_RYW_TTL_MS,
+  RYW_PREFIX,
+  buildReadYourWritesKey,
+  markReadYourWrites,
+  isReadYourWritesActive,
+  clearReadYourWrites,
+} from "./read-your-writes.js";
+export type { ReadYourWritesOptions } from "./read-your-writes.js";
+
 // Shared types
 export type {
   RedisClientConfig,

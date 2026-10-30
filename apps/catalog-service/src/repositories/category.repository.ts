@@ -1,10 +1,13 @@
-import { readPrisma as prisma } from "@repo/catalog-db";
 import type { CatalogCategoryItemType } from "@repo/types";
 import { mapCategoryItem } from "../utils/mappers.js";
+import { getDatabaseClient } from "../utils/database-context.js";
 
 export class CategoryRepository {
-  async findCategoryTree(): Promise<CatalogCategoryItemType[]> {
-    const categories = await prisma.catalogCategory.findMany({
+  async findCategoryTree(
+    forcePrimary?: boolean,
+  ): Promise<CatalogCategoryItemType[]> {
+    const db = getDatabaseClient(forcePrimary);
+    const categories = await db.catalogCategory.findMany({
       where: { isActive: true },
       orderBy: { position: "asc" },
       include: {
@@ -35,8 +38,11 @@ export class CategoryRepository {
     return roots;
   }
 
-  async findAllCategories(): Promise<CatalogCategoryItemType[]> {
-    const categories = await prisma.catalogCategory.findMany({
+  async findAllCategories(
+    forcePrimary?: boolean,
+  ): Promise<CatalogCategoryItemType[]> {
+    const db = getDatabaseClient(forcePrimary);
+    const categories = await db.catalogCategory.findMany({
       where: { isActive: true },
       orderBy: { position: "asc" },
       include: {
@@ -52,8 +58,10 @@ export class CategoryRepository {
 
   async findCategoryByIdOrSlug(
     idOrSlug: string,
+    forcePrimary?: boolean,
   ): Promise<CatalogCategoryItemType | null> {
-    const category = await prisma.catalogCategory.findFirst({
+    const db = getDatabaseClient(forcePrimary);
+    const category = await db.catalogCategory.findFirst({
       where: {
         OR: [{ id: idOrSlug }, { slug: idOrSlug }],
         isActive: true,
