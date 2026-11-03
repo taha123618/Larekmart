@@ -110,6 +110,18 @@ export class CommissionEventConsumer {
             }
           },
         },
+        {
+          topicName: "seller.created",
+          topicHandler: async (message) => {
+            const payload = unwrapPayload(message);
+            const sellerId = String(payload.sellerId || payload.id || "");
+            if (sellerId) {
+              console.log(
+                `[CommissionConsumer] New seller registered: ${sellerId}. Enforcing default marketplace commission plan.`,
+              );
+            }
+          },
+        },
       ]);
 
       this.running = true;

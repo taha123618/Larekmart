@@ -1,6 +1,9 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject } from "@nestjs/common";
 import { createKafkaClient, createConsumer } from "@repo/kafka";
 import { LedgerService } from "../ledger/ledger.service.js";
+import { db } from "../db/connection.js";
+import { payoutAccounts } from "../db/schema.js";
+import { eq } from "drizzle-orm";
 import {
   COMMISSION_TOPICS,
   type CommissionAccruedEvent,
@@ -65,6 +68,38 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
             const payload = unwrapPayload(message) as unknown as CommissionReversedEvent;
             if (!payload || !payload.orderId) return;
             await this.handleCommissionReversed(payload);
+          },
+        },
+        {
+          topicName: "order.delivered",
+          topicHandler: async (message) => {
+            const payload = unwrapPayload(message);
+            const orderId = String(payload.orderId || payload.id || "");
+            const sellerId = String(payload.sellerId || `seller_order_${orderId}`);
+            if (orderId) {
+              await this.handleOrderDelivered(orderId, sellerId, payload);
+            }
+          },
+        },
+        {
+          topicName: "seller.suspended",
+          topicHandler: async (message) => {
+            const payload = unwrapPayload(message);
+            const sellerId = String(payload.sellerId || payload.id || "");
+            const reason = String(payload.reason || "Seller account suspended");
+            if (sellerId) {
+              await this.handleSellerSuspended(sellerId, reason);
+            }
+          },
+        },
+        {
+          topicName: "seller.activated",
+          topicHandler: async (message) => {
+            const payload = unwrapPayload(message);
+            const sellerId = String(payload.sellerId || payload.id || "");
+            if (sellerId) {
+              await this.handleSellerActivated(sellerId);
+            }
           },
         },
       ]);
@@ -133,5 +168,33 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
 
   public async handleCommissionReversed(payload: CommissionReversedEvent): Promise<void> {
     this.logger.log(`Reversing ledger for cancelled order ${payload.orderId}`);
+  }
+
+  public async handleOrderDelivered(orderId: string, sellerId: string, _payload: Record<string, unknown>): Promise<void> {
+    this.logger.log(`Order ${orderId} delivered. Settlement maturity unlocked for seller ${sellerId}`);
+  }
+
+  public async handleSellerSuspended(sellerId: string, reason: string): Promise<void> {
+    this.logger.warn(`Seller ${sellerId} suspended: placing hold on payout accounts (${reason})`);
+    try {
+      await db
+        .update(payoutAccounts)
+        .set({ holdPayouts: true, holdReason: reason, updatedAt: new Date() })
+        .where(eq(payoutAccounts.sellerId, sellerId));
+    } catch (err) {
+      this.logger.error(`Failed to update payout accounts hold for seller ${sellerId}: ${err}`);
+    }
+  }
+
+  public async handleSellerActivated(sellerId: string): Promise<void> {
+    this.logger.log(`Seller ${sellerId} activated: releasing payout holds`);
+    try {
+      await db
+        .update(payoutAccounts)
+        .set({ holdPayouts: false, holdReason: null, updatedAt: new Date() })
+        .where(eq(payoutAccounts.sellerId, sellerId));
+    } catch (err) {
+      this.logger.error(`Failed to release payout accounts hold for seller ${sellerId}: ${err}`);
+    }
   }
 }

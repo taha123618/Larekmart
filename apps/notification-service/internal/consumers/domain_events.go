@@ -157,6 +157,14 @@ func (h *DomainEventHandler) dispatchDomainNotification(ctx context.Context, top
 		return h.handleSellerCreated(ctx, payload)
 	case "seller.activated":
 		return h.handleSellerActivated(ctx, payload)
+	case "payout.scheduled":
+		return h.handlePayoutScheduled(ctx, payload)
+	case "payout.completed":
+		return h.handlePayoutCompleted(ctx, payload)
+	case "payout.failed":
+		return h.handlePayoutFailed(ctx, payload)
+	case "commission.accrued":
+		return h.handleCommissionAccrued(ctx, payload)
 	case "shipping.tracking.updated", "tracking.updated", "shipment.in_transit", "shipment.out_for_delivery", "shipment.delivered":
 		return h.handleShippingTrackingUpdated(ctx, topic, payload)
 	case "notification.dispatch":
@@ -499,6 +507,116 @@ func (h *DomainEventHandler) handleSellerActivated(ctx context.Context, payload 
 	return err
 }
 
+func (h *DomainEventHandler) handlePayoutScheduled(ctx context.Context, payload map[string]interface{}) error {
+	sellerID, _ := payload["sellerId"].(string)
+	if sellerID == "" {
+		return nil
+	}
+	amount := payload["amount"]
+	currency := payload["currency"]
+	if currency == nil {
+		currency = "PKR"
+	}
+	payoutNumber := payload["payoutNumber"]
+	if payoutNumber == nil {
+		payoutNumber = payload["payoutId"]
+	}
+
+	title := "Payout Scheduled"
+	body := fmt.Sprintf("Your payout #%v for %v %v has been scheduled for settlement disbursement.", payoutNumber, currency, amount)
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   sellerID,
+		Type:     "payout_scheduled",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityNormal,
+	})
+	return err
+}
+
+func (h *DomainEventHandler) handlePayoutCompleted(ctx context.Context, payload map[string]interface{}) error {
+	sellerID, _ := payload["sellerId"].(string)
+	if sellerID == "" {
+		return nil
+	}
+	amount := payload["amount"]
+	currency := payload["currency"]
+	if currency == nil {
+		currency = "PKR"
+	}
+	payoutNumber := payload["payoutNumber"]
+	if payoutNumber == nil {
+		payoutNumber = payload["payoutId"]
+	}
+
+	title := "Payout Transferred Successfully"
+	body := fmt.Sprintf("Your payout #%v of %v %v has been transferred and confirmed by the clearing network.", payoutNumber, currency, amount)
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   sellerID,
+		Type:     "payout_completed",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityHigh,
+	})
+	return err
+}
+
+func (h *DomainEventHandler) handlePayoutFailed(ctx context.Context, payload map[string]interface{}) error {
+	sellerID, _ := payload["sellerId"].(string)
+	if sellerID == "" {
+		return nil
+	}
+	reason := payload["failureReason"]
+	payoutNumber := payload["payoutNumber"]
+	if payoutNumber == nil {
+		payoutNumber = payload["payoutId"]
+	}
+
+	title := "Payout Transfer Failed"
+	body := fmt.Sprintf("Your payout #%v could not be completed: %v. Please verify your banking details.", payoutNumber, reason)
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   sellerID,
+		Type:     "payout_failed",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityUrgent,
+	})
+	return err
+}
+
+func (h *DomainEventHandler) handleCommissionAccrued(ctx context.Context, payload map[string]interface{}) error {
+	sellerID, _ := payload["sellerId"].(string)
+	if sellerID == "" {
+		return nil
+	}
+	orderID := payload["orderId"]
+	commission := payload["totalCommission"]
+	currency := payload["currency"]
+	if currency == nil {
+		currency = "PKR"
+	}
+
+	title := "Commission Accrued"
+	body := fmt.Sprintf("Commission of %v %v has been calculated and accrued for Order #%v.", currency, commission, orderID)
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   sellerID,
+		Type:     "commission_accrued",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityLow,
+	})
+
+	return err
+}
+
 func extractOrComputeEventID(topic string, key, rawValue []byte, payload map[string]interface{}) string {
 	if id, ok := payload["eventId"].(string); ok && id != "" {
 		return id
@@ -529,6 +647,10 @@ func extractSourceService(topic string) string {
 		return "vendor-service"
 	case "seller.created", "seller.activated", "seller.updated", "seller.suspended", "seller.storefront.updated":
 		return "seller-service"
+	case "payout.scheduled", "payout.processing", "payout.completed", "payout.failed", "payout.reconciled":
+		return "payout-service"
+	case "commission.calculated", "commission.accrued", "commission.adjusted", "commission.reversed":
+		return "commission-service"
 	case "shipping.tracking.updated", "tracking.updated", "shipment.in_transit", "shipment.out_for_delivery", "shipment.delivered", "shipment.created", "shipment.shipped":
 		return "shipping-service"
 	default:
