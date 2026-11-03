@@ -50,8 +50,9 @@ export interface ReplicaWalSource {
 
 export const replicaWal: ReplicaWalSource = {
   async getLsn(): Promise<string | null> {
-    const rows = await readPrisma.$queryRaw<Array<{ lsn: string | null }>>
-      `SELECT pg_last_wal_replay_lsn()::text AS lsn`;
+    const rows = await readPrisma.$queryRaw<
+      Array<{ lsn: string | null }>
+    >`SELECT pg_last_wal_replay_lsn()::text AS lsn`;
     return rows[0]?.lsn ?? null;
   },
 };

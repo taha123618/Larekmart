@@ -6,6 +6,7 @@ injected latency `catalog-service → postgres-replica`)
 **Executed by:** AI agent on the local development host
 **Verdict:** ✅ **PASS (local live topology)** — LSN-aware Read-Your-Writes failover held under
 every injected condition; k8s run delayed (see "k8s drill status").
+
 ---
 
 ## 1. Executive summary
@@ -28,13 +29,13 @@ During an injected standby replay-backlog, catalog-service behaved exactly as de
 
 The manifest targets real k8s Chaos Mesh, but the available cluster could not be used:
 
-| Check | Result |
-| --- | --- |
-| `kubectl config get-contexts` | one context: `minikube` |
-| `kubectl get nodes` | connection refused `127.0.0.1:57378` (cluster stopped) |
-| `docker daemon` | **not running** (`docker.sock` missing) — minikube's docker driver cannot restart |
-| Chaos Mesh CRDs in cluster | unverifiable (cluster unreachable) |
-| k8s app manifests / standby topology in repo | none — compose `postgres-replica` is an alias to the primary |
+| Check                                        | Result                                                                            |
+| -------------------------------------------- | --------------------------------------------------------------------------------- |
+| `kubectl config get-contexts`                | one context: `minikube`                                                           |
+| `kubectl get nodes`                          | connection refused `127.0.0.1:57378` (cluster stopped)                            |
+| `docker daemon`                              | **not running** (`docker.sock` missing) — minikube's docker driver cannot restart |
+| Chaos Mesh CRDs in cluster                   | unverifiable (cluster unreachable)                                                |
+| k8s app manifests / standby topology in repo | none — compose `postgres-replica` is an alias to the primary                      |
 
 **Not a code or manifest defect.** Restarting the Docker daemon + `minikube start` +
 `helm install chaos-mesh` + deploying a real standby topology is outside unattended scope.
@@ -52,7 +53,7 @@ What made this a real e2e and not a unit test:
 - **Real Redis:** gateway-equivalent session marking via `@repo/redis`
   `markReadYourWritesWithLSN` (LSN checkpoint + 500ms time lease).
 - **Replica probe:** the production `replicaWal` probe (`pg_last_wal_replay_lsn()` on the
-  standby) was left unmodified. Standby lag was injected by substituting the probe *seam*
+  standby) was left unmodified. Standby lag was injected by substituting the probe _seam_
   with a stand-in that reports the live primary WAL clock frozen 64 KiB back — the exact
   observation a replay-frozen standby would report. Local compose has no true hot standby
   (PgBouncer fronts the primary), which is itself the validated fail-safe condition of
@@ -60,15 +61,15 @@ What made this a real e2e and not a unit test:
 
 ## 3. Scenario results
 
-| # | Scenario (injection) | Expected | Actual | Result |
-| --- | --- | --- | --- | --- |
-| A | Replay position **unavailable** (real local topology) | fail safe → `primary-master` | `x-consistency-plane: primary-master` | ✅ |
-| B1 | Standby **frozen 64 KiB behind** primary | session LSN ahead → `primary-master` | header present | ✅ |
-| B2 | Standby **caught up** (replay ≥ session LSN, time lease expired) | back to replica (header dropped) | header `null` | ✅ |
-| C | Bystander with **no mutation history** | replica plane untouched | header `null` | ✅ |
-| D1 | **Flash-sale storm:** 4 concurrent checkout writes (real inserts) + immediate reads + 2 bystander reads, standby lagging | buyers on `primary-master` (time lease), bystanders on replica | all 6 headers correct, concurrently | ✅ |
-| D2 | Same buyers, **after the 500ms lease expired**, standby still lagging | LSN guard alone keeps `primary-master` | all 4 headers present | ✅ |
-| D3 | Lag **cleared**, leases expired | all buyers return to replica plane | all headers `null` | ✅ |
+| #   | Scenario (injection)                                                                                                     | Expected                                                       | Actual                                | Result |
+| --- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------- | ------ |
+| A   | Replay position **unavailable** (real local topology)                                                                    | fail safe → `primary-master`                                   | `x-consistency-plane: primary-master` | ✅     |
+| B1  | Standby **frozen 64 KiB behind** primary                                                                                 | session LSN ahead → `primary-master`                           | header present                        | ✅     |
+| B2  | Standby **caught up** (replay ≥ session LSN, time lease expired)                                                         | back to replica (header dropped)                               | header `null`                         | ✅     |
+| C   | Bystander with **no mutation history**                                                                                   | replica plane untouched                                        | header `null`                         | ✅     |
+| D1  | **Flash-sale storm:** 4 concurrent checkout writes (real inserts) + immediate reads + 2 bystander reads, standby lagging | buyers on `primary-master` (time lease), bystanders on replica | all 6 headers correct, concurrently   | ✅     |
+| D2  | Same buyers, **after the 500ms lease expired**, standby still lagging                                                    | LSN guard alone keeps `primary-master`                         | all 4 headers present                 | ✅     |
+| D3  | Lag **cleared**, leases expired                                                                                          | all buyers return to replica plane                             | all headers `null`                    | ✅     |
 
 Full run: `EXIT=0` ("Replication-lag failover chaos e2e passed cleanly!"). Both catalog
 test files are strict-clean under the workspace compiler flags; the assembled
@@ -83,7 +84,7 @@ test files are strict-clean under the workspace compiler flags; the assembled
   the primary.
 - **Two-layer defense confirmed in sequence:** the 500ms time lease covers the instant
   post-mutation window; the LSN comparison takes over everything beyond it. Scenario D2
-  exercised the LSN layer *alone*, which is the layer that survives long replication
+  exercised the LSN layer _alone_, which is the layer that survives long replication
   drift (the original failure mode this design targets).
 - **Recovery required both conditions:** `markReadYourWritesWithLSN` refreshing the time
   lease means a lag-cleared standby still routes primary until the lease expires — the
@@ -127,6 +128,6 @@ kubectl delete -f infrastructure/chaos/catalog-replica-replication-lag.yaml
 
 ---
 
-*Files touched by this drill round:*
+_Files touched by this drill round:_
 `apps/catalog-service/tests/catalog-lag-chaos-e2e.test.ts` (Scenario D),
 `infrastructure/chaos/catalog-replica-replication-lag.yaml`, this report.

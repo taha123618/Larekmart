@@ -20,11 +20,19 @@ import {
   gateway5xxTotal,
 } from "./observability/metrics.js";
 
-function parseTrustProxy(value: string): boolean | number | string {
+function parseTrustProxy(
+  value: string,
+): boolean | string | string[] | ((address: string, hop: number) => boolean) {
   if (value === "true") return true;
   if (value === "false" || value === "") return false;
   const hops = Number(value);
-  return Number.isInteger(hops) && hops >= 0 ? hops : value;
+  if (Number.isInteger(hops) && hops >= 0) {
+    return (_address: string, hop: number) => hop < hops;
+  }
+  if (value.includes(",")) {
+    return value.split(",").map((s) => s.trim());
+  }
+  return value;
 }
 
 export async function buildApp(): Promise<FastifyInstance> {

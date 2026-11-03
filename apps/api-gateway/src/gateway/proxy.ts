@@ -218,19 +218,25 @@ export async function registerProxyRoutes(
               // by write services and cache it per client session in Redis. This
               // becomes the baseline for LSN-aware replica lag enforcement in
               // read-replica consumers (e.g. catalog-service).
-              const lsnHeaderRaw =
-                (res as { headers?: Record<string, string | string[] | undefined> })
-                  .headers?.[GATEWAY_HEADERS.DB_LSN];
-              const lsn = Array.isArray(lsnHeaderRaw) ? lsnHeaderRaw[0] : lsnHeaderRaw;
+              const lsnHeaderRaw = (
+                res as {
+                  headers?: Record<string, string | string[] | undefined>;
+                }
+              ).headers?.[GATEWAY_HEADERS.DB_LSN];
+              const lsn = Array.isArray(lsnHeaderRaw)
+                ? lsnHeaderRaw[0]
+                : lsnHeaderRaw;
               if (lsn && lsn.trim() !== "") {
-                markReadYourWritesWithLSN(redis.client, rywClientId, lsn.trim()).catch(
-                  (err) => {
-                    logger.warn("Failed to mark Read-Your-Writes LSN in Redis", {
-                      clientId: rywClientId,
-                      error: String(err),
-                    });
-                  },
-                );
+                markReadYourWritesWithLSN(
+                  redis.client,
+                  rywClientId,
+                  lsn.trim(),
+                ).catch((err) => {
+                  logger.warn("Failed to mark Read-Your-Writes LSN in Redis", {
+                    clientId: rywClientId,
+                    error: String(err),
+                  });
+                });
               }
             }
           }

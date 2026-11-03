@@ -74,9 +74,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   const originalJson = res.json.bind(res) as (body: unknown) => Response;
   res.json = (body: unknown) => {
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      prisma
-        .$queryRaw<Array<{ lsn: string | null }>>
-          `SELECT pg_current_wal_lsn()::text AS lsn`
+      prisma.$queryRaw<
+        Array<{ lsn: string | null }>
+      >`SELECT pg_current_wal_lsn()::text AS lsn`
         .then((rows) => {
           const lsn = rows[0]?.lsn;
           if (lsn) res.setHeader(GATEWAY_HEADERS.DB_LSN, lsn);

@@ -46,8 +46,9 @@ export async function configureFastifyPlugins(
       reply.statusCode < 300
     ) {
       try {
-        const rows = await prisma.$queryRaw<Array<{ lsn: string | null }>>
-          `SELECT pg_current_wal_lsn()::text AS lsn`;
+        const rows = await prisma.$queryRaw<
+          Array<{ lsn: string | null }>
+        >`SELECT pg_current_wal_lsn()::text AS lsn`;
         const lsn = rows[0]?.lsn;
         if (lsn) reply.header(GATEWAY_HEADERS.DB_LSN, lsn);
       } catch {

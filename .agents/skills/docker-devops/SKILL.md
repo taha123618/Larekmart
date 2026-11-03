@@ -394,11 +394,11 @@ kubectl get workflows.chaos-mesh.org -n larekmart  # watch a drill
 
 Key scenarios:
 
-| Manifest                                  | What it injects                                                            |
-| ----------------------------------------- | -------------------------------------------------------------------------- |
-| `flash-sale-mixed-traffic.yaml`           | **Parallel** order-plane latency + catalog replica replication lag during checkout |
-| `catalog-replica-replication-lag.yaml`    | Read-plane lag only, to exercise LSN-aware primary fallback                |
-| `checkout-saga-failure.yaml`              | Checkout Saga rollback across order/payment/inventory                      |
+| Manifest                               | What it injects                                                                    |
+| -------------------------------------- | ---------------------------------------------------------------------------------- |
+| `flash-sale-mixed-traffic.yaml`        | **Parallel** order-plane latency + catalog replica replication lag during checkout |
+| `catalog-replica-replication-lag.yaml` | Read-plane lag only, to exercise LSN-aware primary fallback                        |
+| `checkout-saga-failure.yaml`           | Checkout Saga rollback across order/payment/inventory                              |
 
 `flash-sale-mixed-traffic.yaml` is a serial `Workflow`: a `Parallel` branch degrades
 `order-service ↔ mongo` and `catalog-service → postgres-replica` at the same time, then a

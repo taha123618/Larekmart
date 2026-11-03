@@ -82,7 +82,11 @@ const envSchema = z
     }
 
     try {
-      validateClerkSecretKey(data.CLERK_SECRET_KEY, data.NODE_ENV, "api-gateway");
+      validateClerkSecretKey(
+        data.CLERK_SECRET_KEY,
+        data.NODE_ENV,
+        "api-gateway",
+      );
     } catch (err: any) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

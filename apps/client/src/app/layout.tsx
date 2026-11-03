@@ -57,35 +57,37 @@ export default function RootLayout({
           suppressHydrationWarning
         >
           <QueryProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <ClientWrapper>
-                <CartStoreHydration />
-                <CartDrawer />
-                <WishlistDrawer />
-                <QuickViewModal />
+            <RuntimeConfigProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                disableTransitionOnChange
+              >
+                <ClientWrapper>
+                  <CartStoreHydration />
+                  <CartDrawer />
+                  <WishlistDrawer />
+                  <QuickViewModal />
 
-                {/* FULL-WIDTH MARKETPLACE NAVIGATION */}
-                <Navbar />
+                  {/* FULL-WIDTH MARKETPLACE NAVIGATION */}
+                  <Navbar />
 
-                {/* MAIN CONTENT CONTAINER */}
-                <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  {children}
-                </main>
+                  {/* MAIN CONTENT CONTAINER */}
+                  <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    {children}
+                  </main>
 
-                {/* FULL-WIDTH FOOTER */}
-                <Footer />
+                  {/* FULL-WIDTH FOOTER */}
+                  <Footer />
 
-                {/* SCROLL TO TOP FLOATING BUTTON & PROGRESS */}
-                <ScrollToTop />
+                  {/* SCROLL TO TOP FLOATING BUTTON & PROGRESS */}
+                  <ScrollToTop />
 
-                <ToastContainer position="bottom-right" theme="dark" />
-              </ClientWrapper>
-            </ThemeProvider>
+                  <ToastContainer position="bottom-right" theme="dark" />
+                </ClientWrapper>
+              </ThemeProvider>
+            </RuntimeConfigProvider>
           </QueryProvider>
         </body>
       </html>

@@ -1,10 +1,7 @@
 import type { FastifyError, FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import { GATEWAY_HEADERS } from "@repo/types";
-import {
-  getSessionLSN,
-  isReadYourWritesActive,
-} from "@repo/redis";
+import { getSessionLSN, isReadYourWritesActive } from "@repo/redis";
 import { logger } from "../observability/metrics.js";
 import { redis } from "../utils/redis.js";
 import {
@@ -75,10 +72,7 @@ export async function configureFastifyPlugins(
 
     if (!forcePrimary && rywClientId) {
       try {
-        forcePrimary = await isReadYourWritesActive(
-          redis.client,
-          rywClientId,
-        );
+        forcePrimary = await isReadYourWritesActive(redis.client, rywClientId);
       } catch {
         // Graceful non-blocking degradation
       }

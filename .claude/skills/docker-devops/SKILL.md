@@ -382,7 +382,38 @@ docker exec larekmart-mongo mongorestore --uri="mongodb://root:example@localhost
 
 ---
 
-## 13. Troubleshooting
+## 13. Chaos Engineering & Mixed-Traffic Drills
+
+Chaos assets live in `infrastructure/chaos/` and are rendered with Kustomize:
+
+```bash
+kubectl kustomize infrastructure/chaos/            # render/validate only
+kubectl apply -k infrastructure/chaos/             # apply to a non-prod cluster
+kubectl get workflows.chaos-mesh.org -n larekmart  # watch a drill
+```
+
+Key scenarios:
+
+| Manifest                               | What it injects                                                                    |
+| -------------------------------------- | ---------------------------------------------------------------------------------- |
+| `flash-sale-mixed-traffic.yaml`        | **Parallel** order-plane latency + catalog replica replication lag during checkout |
+| `catalog-replica-replication-lag.yaml` | Read-plane lag only, to exercise LSN-aware primary fallback                        |
+| `checkout-saga-failure.yaml`           | Checkout Saga rollback across order/payment/inventory                              |
+
+`flash-sale-mixed-traffic.yaml` is a serial `Workflow`: a `Parallel` branch degrades
+`order-service ↔ mongo` and `catalog-service → postgres-replica` at the same time, then a
+60s `Suspend` observes recovery. Expected invariants:
+
+- Checkout fast-sheds with HTTP `503` + `Retry-After: 15` once the bulkhead/adaptive limit
+  clamps — it must not create duplicate or partially-paid orders.
+- Storefront reads fail over to the primary through the `x-db-lsn` guard; no stale-product
+  regressions after the lease expires.
+- Kafka consumers recover without DLQ spikes once latency clears.
+
+Always validate with `kubectl kustomize` before applying, and never run destructive chaos
+against production without an explicit window and rollback plan.
+
+## 14. Troubleshooting
 
 ### Container not starting
 

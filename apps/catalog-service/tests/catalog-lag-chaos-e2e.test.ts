@@ -64,8 +64,9 @@ function waitForLeaseExpiry(): Promise<void> {
 
 /** The exact WAL query PostgreSQL-backed write services stamp as x-db-lsn. */
 async function capturePrimaryWalLsn(): Promise<string> {
-  const rows = await prisma.$queryRaw<Array<{ lsn: string }>>
-    `SELECT pg_current_wal_lsn()::text AS lsn`;
+  const rows = await prisma.$queryRaw<
+    Array<{ lsn: string }>
+  >`SELECT pg_current_wal_lsn()::text AS lsn`;
   const lsn = rows[0]?.lsn;
   if (!lsn) throw new Error("pg_current_wal_lsn() returned no position");
   return lsn;
@@ -81,8 +82,9 @@ interface ProbeCheck {
 
 /** Preflight: abort loudly if any live dependency of the e2e is unavailable. */
 async function preflight(): Promise<ProbeCheck> {
-  const primaryRows = await prisma.$queryRaw<Array<{ alive: number }>>
-    `SELECT 1 AS alive`;
+  const primaryRows = await prisma.$queryRaw<
+    Array<{ alive: number }>
+  >`SELECT 1 AS alive`;
   const replicaRows = await readPrisma.$queryRaw<
     Array<{ alive: number; inRecovery: boolean; replay: string | null }>
   >`SELECT 1 AS alive, pg_is_in_recovery() AS "inRecovery", pg_last_wal_replay_lsn()::text AS replay`;
@@ -103,7 +105,11 @@ async function runChaosE2e(): Promise<void> {
   console.log("==================================================");
 
   const probe = await preflight();
-  assert.equal(probe.primaryAlive, true, "PostgreSQL primary must be reachable");
+  assert.equal(
+    probe.primaryAlive,
+    true,
+    "PostgreSQL primary must be reachable",
+  );
   assert.equal(
     probe.replicaEndpointAlive,
     true,
@@ -144,9 +150,12 @@ async function runChaosE2e(): Promise<void> {
     assert.equal(marked, true, "Gateway-equivalent LSN cache must succeed");
     await waitForLeaseExpiry();
 
-    const resA = await fetch(`${baseUrl}/api/v1/catalog/products?page=1&limit=2`, {
-      headers: { [GATEWAY_HEADERS.CLIENT_SESSION_ID]: sessionA },
-    });
+    const resA = await fetch(
+      `${baseUrl}/api/v1/catalog/products?page=1&limit=2`,
+      {
+        headers: { [GATEWAY_HEADERS.CLIENT_SESSION_ID]: sessionA },
+      },
+    );
     assert.equal(resA.status, 200, "Products read must succeed over real HTTP");
     assert.equal(
       resA.headers.get("x-consistency-plane"),
@@ -160,7 +169,9 @@ async function runChaosE2e(): Promise<void> {
     // The stand-in replays the REAL primary WAL clock minus a controlled
     // backlog: exactly what a Chaos-Mesh-frozen standby would report.
     // -------------------------------------------------------------------------
-    console.log("\nB. Standby lagging (64KiB backlog) → primary; recovered → replica");
+    console.log(
+      "\nB. Standby lagging (64KiB backlog) → primary; recovered → replica",
+    );
 
     const sessionB = chaosSessions.lagging;
     const mutationLsnB = await capturePrimaryWalLsn();
@@ -178,9 +189,12 @@ async function runChaosE2e(): Promise<void> {
       return lsnToString(safeSub(parseLSN(current), FALLBACK_LAG_BYTES));
     };
 
-    const resB1 = await fetch(`${baseUrl}/api/v1/catalog/products?page=1&limit=2`, {
-      headers: { [GATEWAY_HEADERS.CLIENT_SESSION_ID]: sessionB },
-    });
+    const resB1 = await fetch(
+      `${baseUrl}/api/v1/catalog/products?page=1&limit=2`,
+      {
+        headers: { [GATEWAY_HEADERS.CLIENT_SESSION_ID]: sessionB },
+      },
+    );
     assert.equal(resB1.status, 200);
     assert.equal(
       resB1.headers.get("x-consistency-plane"),
@@ -198,9 +212,12 @@ async function runChaosE2e(): Promise<void> {
     replicaWal.getLsn = capturePrimaryWalLsn; // Fully-replayed standby position
     await waitForLeaseExpiry();
 
-    const resB2 = await fetch(`${baseUrl}/api/v1/catalog/products?page=1&limit=2`, {
-      headers: { [GATEWAY_HEADERS.CLIENT_SESSION_ID]: sessionB2 },
-    });
+    const resB2 = await fetch(
+      `${baseUrl}/api/v1/catalog/products?page=1&limit=2`,
+      {
+        headers: { [GATEWAY_HEADERS.CLIENT_SESSION_ID]: sessionB2 },
+      },
+    );
     assert.equal(resB2.status, 200);
     assert.equal(
       resB2.headers.get("x-consistency-plane"),
@@ -214,7 +231,9 @@ async function runChaosE2e(): Promise<void> {
     // -------------------------------------------------------------------------
     console.log("\nC. No mutation history → baseline replica plane preserved");
 
-    const resC = await fetch(`${baseUrl}/api/v1/catalog/products?page=1&limit=2`);
+    const resC = await fetch(
+      `${baseUrl}/api/v1/catalog/products?page=1&limit=2`,
+    );
     assert.equal(resC.status, 200);
     assert.equal(
       resC.headers.get("x-consistency-plane"),
@@ -248,7 +267,9 @@ async function runChaosE2e(): Promise<void> {
     // Re-freeze the standby 64KiB behind the primary (lag injection active).
     const queryFlashLagStandby = capturePrimaryWalLsn;
     replicaWal.getLsn = async () =>
-      lsnToString(safeSub(parseLSN(await queryFlashLagStandby()), FALLBACK_LAG_BYTES));
+      lsnToString(
+        safeSub(parseLSN(await queryFlashLagStandby()), FALLBACK_LAG_BYTES),
+      );
 
     const BUYER_COUNT = 4;
     const buyerSessions = Array.from(
@@ -341,7 +362,8 @@ async function runChaosE2e(): Promise<void> {
   } finally {
     replicaWal.getLsn = originalGetLsn;
     // Cleanup gateway-contract session state from the live Redis
-    const straySessions = Object.values(chaosSessions).concat(flashBuyerSessions);
+    const straySessions =
+      Object.values(chaosSessions).concat(flashBuyerSessions);
     for (const session of straySessions) {
       await redis.client.del(
         buildReadYourWritesLsnKey(session),
@@ -349,9 +371,7 @@ async function runChaosE2e(): Promise<void> {
       );
     }
     // Drop the WAL-mutation scratch surface created for the checkout storm
-    await prisma.$executeRawUnsafe(
-      `DROP TABLE IF EXISTS _chaos_flash_scratch`,
-    );
+    await prisma.$executeRawUnsafe(`DROP TABLE IF EXISTS _chaos_flash_scratch`);
     await app.close();
   }
 

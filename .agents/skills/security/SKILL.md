@@ -115,6 +115,7 @@ This document specifies the mandatory cybersecurity standards and implementation
 - **Strict CORS Origin Allowlist**:
   - **NEVER** use `origin: true` or `origin: "*"` when `credentials: true` is enabled.
   - Always validate the incoming `Origin` against configured frontends (`CORS_ORIGIN`, `CLIENT_URL`, `ADMIN_URL`). The shared helper `resolveCorsOrigins` in `@repo/types` centralizes this; use it for Fastify/Hono CORS callbacks rather than hardcoding wildcards:
+
     ```typescript
     import { resolveCorsOrigins } from "@repo/types";
 
@@ -123,6 +124,7 @@ This document specifies the mandatory cybersecurity standards and implementation
         `${process.env.CLIENT_URL || "http://localhost:3002"},${process.env.ADMIN_URL || "http://localhost:3003"}`,
     );
     ```
+
 - **HTTP Security Headers**:
   - Ensure all Next.js applications and API services emit standard security headers:
     - `X-Content-Type-Options: nosniff`

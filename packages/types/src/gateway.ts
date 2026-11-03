@@ -84,8 +84,8 @@ export function validateInternalServiceSecret(
       !secret ||
       INSECURE_INTERNAL_SECRET_PLACEHOLDERS.includes(secret as any) ||
       /placeholder|change[_-]?me|replace[_-]?me|__required|example|dummy/i.test(
-      secret,
-    ) ||
+        secret,
+      ) ||
       secret.trim().length < 16
     ) {
       throw new Error(
@@ -107,7 +107,11 @@ export function validateClerkSecretKey(
 ): void {
   if (nodeEnv !== "production") return;
 
-  if (!secret || isInsecureClerkSecretKey(secret) || !secret.startsWith("sk_")) {
+  if (
+    !secret ||
+    isInsecureClerkSecretKey(secret) ||
+    !secret.startsWith("sk_")
+  ) {
     throw new Error(
       `[${serviceName}] FATAL: In production, CLERK_SECRET_KEY must be configured with a real Clerk secret key. Placeholder, mock, or missing values are rejected.`,
     );

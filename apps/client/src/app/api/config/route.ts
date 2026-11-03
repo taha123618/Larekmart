@@ -17,14 +17,10 @@ export interface RuntimeConfigResponse {
  */
 export async function GET(): Promise<NextResponse<RuntimeConfigResponse>> {
   const apiGatewayUrl =
-    process.env.CLIENT_API_GATEWAY_URL ||
-    process.env.API_GATEWAY_URL ||
-    "";
+    process.env.CLIENT_API_GATEWAY_URL || process.env.API_GATEWAY_URL || "";
 
   const wsUrl =
-    process.env.CLIENT_WS_URL ||
-    process.env.NOTIFICATION_WS_URL ||
-    "";
+    process.env.CLIENT_WS_URL || process.env.NOTIFICATION_WS_URL || "";
 
   return NextResponse.json(
     {
@@ -39,4 +35,3 @@ export async function GET(): Promise<NextResponse<RuntimeConfigResponse>> {
     },
   );
 }
-

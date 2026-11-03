@@ -176,7 +176,11 @@ export async function requireSellerStaffOrAdmin(
     return;
   }
   const role = getUserRole(request);
-  if (role === "admin" || role === "super_admin" || isMachineToMachine(request)) {
+  if (
+    role === "admin" ||
+    role === "super_admin" ||
+    isMachineToMachine(request)
+  ) {
     return;
   }
 

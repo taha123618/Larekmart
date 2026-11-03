@@ -108,7 +108,9 @@ async function runLsnFallbackTests(): Promise<void> {
   // ---------------------------------------------------------------------------
   // TEST 2: Plugin integration — session LSN drives primary/replica routing
   // ---------------------------------------------------------------------------
-  console.log("\n2. Testing Fastify LSN-aware routing via request injection...");
+  console.log(
+    "\n2. Testing Fastify LSN-aware routing via request injection...",
+  );
 
   const app = Fastify({ logger: false });
   await configureFastifyPlugins(app);

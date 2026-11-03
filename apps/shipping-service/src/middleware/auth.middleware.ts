@@ -44,7 +44,8 @@ export async function requireAdminOrInternal(
         // Pure machine-to-machine call: no user identity is asserted.
         ctx.state.userId =
           typeof userId === "string" ? userId : "internal-service";
-        ctx.state.userRole = typeof role === "string" ? role : "internal-service";
+        ctx.state.userRole =
+          typeof role === "string" ? role : "internal-service";
         return next();
       }
     } catch {

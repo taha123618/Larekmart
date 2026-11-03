@@ -19,7 +19,7 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 | **`user-service`**           | Node.js Test Runner / `tsx` | Profile/address/preferences service logic (`tests/user-service.test.ts`)                                                                                                                                                                                                                                         |
 | **`order-service`**          | Node.js Test Runner / `tsx` | Order security and authorization (`tests/order-security.test.ts`)                                                                                                                                                                                                                                                |
 | **`cart-service`**           | Node.js Test Runner / `tsx` | Pricing engine, promotional discounts, coupon rules, threshold boundaries (`tests/pricing.test.ts`)                                                                                                                                                                                                              |
-| **`shipping-service`**       | Node.js Test Runner / `tsx` | Constant-time webhook verification, RBAC middleware, carrier integration smoke test                                                                                                                                                                                                                              |
+| **`shipping-service`**       | Node.js Test Runner / `tsx` | Constant-time webhook verification, RBAC/M2M middleware, RS256 direct-token claims + expiry, carrier integration smoke test                                                                                                                                                                                      |
 | **`media-service`**          | Node.js Test Runner / `tsx` | Six offline suites via `tests/index.test.ts`: unit validation, storage contract, HTTP API, Kafka messaging, workers, integration schema, plus the full lifecycle suite (`tests/media-service.test.ts`) — object keys, magic bytes, authorization, URL strategy, worker claim SQL, index strategy, cleanup sweeps |
 | **`review-service`**         | Node.js Test Runner / `tsx` | Five offline suites via `tests/index.test.ts`: domain unit validation, anti-abuse voting/reporting, Fastify API routes, Kafka messaging publishers & consumers, database schema & constraints (`tests/review-service.test.ts`)                                                                                   |
 | **`wishlist-service`**       | Node.js Test Runner / `tsx` | Nine suites via `tests/wishlist-service.test.ts`: health probes, auth guards, Zod contracts, default wishlist creation, item deduplication, named wishlists, item move, guest migration, and unguessable token shares                                                                                            |
@@ -29,8 +29,8 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 | **`pricing-service`**        | Node.js Test Runner / `tsx` | Ten suites via `tests/pricing-service.test.ts`: decimal arithmetic precision, volume tiered pricing, currency conversion, negative price prevention, quote snapshot persistence, Fastify endpoints, and event emission                                                                                           |
 | **`vendor-service`**         | Node.js Test Runner / `tsx` | Legal entity registration, KYB document verification, member access, status transitions, and lifecycle event emission (`tests/vendor-service.test.ts`)                                                                                                                                                           |
 | **`seller-service`**         | Node.js Test Runner / `tsx` | Marketplace storefront profiles, multi-staff permissions, operational settings, metrics snapshots, and Fastify endpoints (`tests/seller-service.test.ts`)                                                                                                                                                        |
-| **`analytic-service`**       | Go Test Tool (`go test`)    | Config validation, constant-time auth guards, lock-free atomic KPI store, bounded-channel micro-batching, and REST handlers (`cmd/...`, `internal/...`)                                                                                                                                                          |
-| **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle, recovery (`internal/*`)                                                                                                                                                                                                                      |
+| **`analytic-service`**       | Go Test Tool (`go test`)    | Config validation (production secret fail-closed), constant-time gateway auth, RS256/expiry token verification, lock-free atomic KPI store, bounded-channel micro-batching, and REST handlers (`cmd/...`, `internal/...`)                                                                                        |
+| **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle/origin checks, RS256/expiry token verification, forged-token rejection, recovery (`internal/*`)                                                                                                                                               |
 | **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                  |
 | **`catalog-service`**        | Node.js Test Runner / `tsx` | Eight suites via `tests/catalog-service.test.ts`: key naming invariants, Fastify health probes, Prometheus metrics, projector contracts, PostgreSQL replica fallback, getCatalogDb consistency switching, Fastify RYW header hook, Redis session lease lifecycle, and cache bypass                               |
 | **`api-gateway`**            | Node.js Test Runner / `tsx` | Eleven suites via `tests/index.test.ts`: route registry, dynamic circuit breaker, sliding-window metrics, rate limiting, request correlation, health endpoints, in-flight bulkheads, adaptive rate-limiting, edge inventory caching, and proxy security                                                          |
@@ -77,6 +77,9 @@ pnpm lint
 
 # 6. Production builds
 pnpm build
+
+# 7. Validate chaos manifests without touching a cluster
+kubectl kustomize infrastructure/chaos/
 ```
 
 ---
@@ -100,6 +103,10 @@ When adding or updating tests, adhere to these quality engineering principles:
 - Pricing calculations must prevent negative subtotals or grand totals. Discounts must clamp to the subtotal.
 - Cryptographic comparisons (signatures, digests) must be verified using constant-time algorithms (`crypto.timingSafeEqual`).
 - Endpoint access control tests must verify that non-admin and unauthenticated requests receive `401` or `403`.
+- Token tests must include a forged/unsigned token and an expired `exp` case. Gateway
+  internal-secret-only requests must be `403` for proxied users (only pure M2M is allowed).
+- Go tests that exercise local identity headers must set the explicit `*_DEV_AUTH_BYPASS=true`
+  flag; forged JWTs must always be rejected with or without the flag.
 
 ---
 
