@@ -311,8 +311,8 @@ Pick from this set only. If a runtime situation doesn't match, fall back to
 | ↻     | rebuild iteration (`attempt N/3`)        |
 | ✅    | pass / merged / lane-complete            |
 | ⛔    | blocked transition (Ready → Blocked)     |
-| ♻     | reap stale lock + assignee swept         |
-| ⚠     | block-rate / rebuild-cap / generic alert |
+| ♻    | reap stale lock + assignee swept         |
+| ⚠    | block-rate / rebuild-cap / generic alert |
 | 💀    | zombie worker killed                     |
 
 **Block reason tags (Blocked column suffixes, ▎Block reasons):**
@@ -323,7 +323,7 @@ Pick from this set only. If a runtime situation doesn't match, fall back to
 | 🔐    | missing creds / API key                   |
 | 💳    | quota / billing                           |
 | ❓    | ambiguous AC (lint flagged)               |
-| ⚙     | infra / tooling issue                     |
+| ⚙    | infra / tooling issue                     |
 | 🚫    | unparsed "other" reason — fallback        |
 
 ### §J — Timestamp format (locked)

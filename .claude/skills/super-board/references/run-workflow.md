@@ -73,6 +73,7 @@ Do not schedule automatic retries of the stopped run.
 ## Orchestrator delegation contract (NON-NEGOTIABLE, adapted)
 
 The interactive session that runs this backend is the orchestrator. It:
+
 - polls the board, claims assignees, launches workflow waves, reconciles
   results, posts notifications, and reports to the user between waves;
 - does NOT do product work, patch lane skills mid-run, or hold per-card
@@ -81,9 +82,10 @@ The interactive session that runs this backend is the orchestrator. It:
 ## Preconditions (before the first wave)
 
 Run the same preconditions as `run.md` §Preconditions, minus PID checks:
+
 1. Config exists and validates against `config-schema.json`.
 2. Production-merge guard: refuse `base_branch: main` + `human_approves_merge:
-   false` when deploy markers exist (same rule as super-board-run.sh).
+false` when deploy markers exist (same rule as super-board-run.sh).
 3. Worktree check: if legacy `.worktrees/issue-*` exists, halt for inspection/move
    as described in run.md. Scan only board worktrees under `.claude/worktrees/`;
    when their named branch is gone use `git worktree remove` without force. Preserve
@@ -96,21 +98,21 @@ Run the same preconditions as `run.md` §Preconditions, minus PID checks:
 5. Wave marker FIRST, then the legacy check (lock-before-look closes the
    TOCTOU window where both backends pass each other's checks at once):
    a. Atomically create `.claude/super-board/inflight/workflow-wave.lock`
-      (mkdir -p the directory) containing the config slug and start time:
-      `(set -C; printf 'SLUG=%s\nSTARTED=%s\n' <slug> "$(date -u +%FT%TZ)" > <lock>)`.
-      Before replacing an existing marker, check `/workflows` and verify the PID
-      in `.claude/super-board/codex-wave.pid` (plain numeric PID) with `kill -0` plus its process command.
-      Only if neither backend has an active wave and no repo-local Codex lane
-      remains is the marker stale from a crashed run — replace it.
-      Remove the lock when the run ends or stops. The legacy dispatcher
-      refuses to start (and halts mid-run) while it exists.
+   (mkdir -p the directory) containing the config slug and start time:
+   `(set -C; printf 'SLUG=%s\nSTARTED=%s\n' <slug> "$(date -u +%FT%TZ)" > <lock>)`.
+   Before replacing an existing marker, check `/workflows` and verify the PID
+   in `.claude/super-board/codex-wave.pid` (plain numeric PID) with `kill -0` plus its process command.
+   Only if neither backend has an active wave and no repo-local Codex lane
+   remains is the marker stale from a crashed run — replace it.
+   Remove the lock when the run ends or stops. The legacy dispatcher
+   refuses to start (and halts mid-run) while it exists.
    b. THEN verify no legacy run is active: BOTH
-      `pgrep -f 'super-board-run.sh'` (the legacy dispatcher idles between
-      dispatches with zero workers alive) and
-      `pgrep -f 'claude -p .*super-board run'` are empty, AND `/workflows`
-      shows no running super-board-wave, AND no `super-board-codex-wave.sh` or
-      `super-board-codex-lane.sh` process belongs to this repo. If a legacy run is detected,
-      remove the lock just created and stop — the legacy run won.
+   `pgrep -f 'super-board-run.sh'` (the legacy dispatcher idles between
+   dispatches with zero workers alive) and
+   `pgrep -f 'claude -p .*super-board run'` are empty, AND `/workflows`
+   shows no running super-board-wave, AND no `super-board-codex-wave.sh` or
+   `super-board-codex-lane.sh` process belongs to this repo. If a legacy run is detected,
+   remove the lock just created and stop — the legacy run won.
 6. Crash-recovery sweep (the workflow backend's equivalent of the legacy
    reaper): with no wave running, strip `bot_identity` from any
    Review/QA/Ready/Building card that still carries it
@@ -142,7 +144,7 @@ Repeat until a done condition or halt gate fires:
      Fallback never grants merge ownership; use explicit `run --codex` for all lanes.
      Plan as usual, take the `build` and `qa` cards (`review` cards wait), and for ONE
      card at a time claim it, run `bash .claude/bin/super-board-codex-lane.sh --config
-     <config-path> --card '<card JSON>' --lane <build|qa>`, read its JSON exit like a lane
+<config-path> --card '<card JSON>' --lane <build|qa>`, read its JSON exit like a lane
      result, then reconcile (step 5). Re-run the usage check between cards; on exit 0
      return to normal waves. The report line says `🔁 codex fallback`. Without
      `usage_fallback: "codex"` the launcher refuses (exit 78) unless `--codex` is given.
@@ -167,6 +169,7 @@ Repeat until a done condition or halt gate fires:
    session's own turns. Claude Code's built-in pause at 100% remains the
    backstop — the guard exists so a wave does not start that the limit would
    cut off mid-lane. The legacy `claude-p` dispatcher does not run this guard.
+
 2. **Plan the wave** —
    `bash .claude/bin/super-board-wave-plan.sh --config <config-path>` →
    The planner returns `cards`, `sweep`, `resume`, `refreshApproval`, `flag` and `stranded`. **Act on
@@ -191,7 +194,7 @@ Repeat until a done condition or halt gate fires:
    redispatch that card until its work is preserved. Otherwise keep the branch and PR,
    move the card to `Ready`, and comment:
    `[orchestrator] [report] ↩️ back to Ready · stranded in Building` / `Did: found no live
-   worker` / `✅ Done: card moved to Ready · branch <name> kept` / `Next: builder`
+worker` / `✅ Done: card moved to Ready · branch <name> kept` / `Next: builder`
    (writing-standard.md § 4). The next Builder continues on the branch.
    **Builder pre-flight.** No card goes Ready → Building unchecked. The wave's first phase
    (`Pre-flight` in `super-board-wave.js`, before `runLane('build')`) runs one cheap sub-agent per
@@ -207,6 +210,7 @@ Repeat until a done condition or halt gate fires:
    after a wave that hit the hourly limit. If `cards` is empty and
    Building/QA/Review counts are 0 → done. If empty but cards sit in Blocked
    only → report and stop.
+
 3. **Claim** — for each card, `gh issue edit <n> --add-assignee <bot_identity>`,
    then VERIFY: re-read assignees (`gh issue view <n> --json assignees`) and
    proceed only if the list is exactly `[<bot_identity>]`. Adding an assignee
@@ -249,16 +253,18 @@ Repeat until a done condition or halt gate fires:
      ❌ #18 failed: build lane returned no result — retried next wave
    Next: wave 4 (3 cards)   |   ⏸ paused until 14:05   |   ✅ board drained
    ```
+
    A throttle hit adds one line: `🐢 GitHub hourly limit hit — max_workers 3 → 2 (config saved)`.
    Merged and bounced cards are counts, not lines — they need nobody. Every
    `human-gate`/`blocked` card gets its line and its owner: that is the
    human's queue. Never report a card as done that is not on the base branch.
+
 7. **Halt gates** — stop with a report if: 3 consecutive waves made zero
    progress (every card bounced/failed); block-rate exceeds
    `block_rate_alert_pct` of initial Ready; or the user says stop. The halt
    note is four lines: `🛑 halted — <gate>` · the evidence (counts, the cards
    that kept bouncing) · what is left in flight or claimed · `Resume:
-   /super-board run <slug> [--codex[=<model>]] [--low|--high]` (retain the run's choice) and who must act first.
+/super-board run <slug> [--codex[=<model>]] [--low|--high]` (retain the run's choice) and who must act first.
 8. Loop to 1. For unattended cadence, the user may wrap this loop in /loop;
    the orchestrator must still stop at halt gates.
 
@@ -323,11 +329,11 @@ the policy. Pair auto-merge with a non-production `base_branch`.
 >
 > Pick one deliberately:
 >
-> | Intent | `human_approves_merge` | Allowlist `gh pr merge` | Reviewer's terminal state |
-> | --- | --- | --- | --- |
-> | Attended — you click each merge | `false` | no | pauses on a prompt |
-> | Unattended auto-merge | `false` | **yes** | card → Done, merge confirmed (money/auth/schema, live migrations → 🙋 Blocked for you) |
-> | Human merges later, agent never does | `true` (or `merge_policy.default: "human"`) | no | card stays in Review |
+> | Intent                               | `human_approves_merge`                      | Allowlist `gh pr merge` | Reviewer's terminal state                                                              |
+> | ------------------------------------ | ------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------- |
+> | Attended — you click each merge      | `false`                                     | no                      | pauses on a prompt                                                                     |
+> | Unattended auto-merge                | `false`                                     | **yes**                 | card → Done, merge confirmed (money/auth/schema, live migrations → 🙋 Blocked for you) |
+> | Human merges later, agent never does | `true` (or `merge_policy.default: "human"`) | no                      | card stays in Review                                                                   |
 >
 > Row 2 is the only combination that lands code with nobody watching, and it
 > requires a non-production `base_branch` — the run script's production-merge

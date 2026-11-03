@@ -21,13 +21,13 @@ Adapted from BuilderIO/skills (MIT, visual-recap and visual-plan); diagram style
 
 ## Modes
 
-| Command | Does |
-|---|---|
-| `/visual` | detect the mode |
-| `/visual recap [base]` | what this branch changed against `base` |
-| `/visual plan [file]` | a plan as a page; makes no source edits |
+| Command                                | Does                                     |
+| -------------------------------------- | ---------------------------------------- |
+| `/visual`                              | detect the mode                          |
+| `/visual recap [base]`                 | what this branch changed against `base`  |
+| `/visual plan [file]`                  | a plan as a page; makes no source edits  |
 | `/visual map [skills-dir or map.json]` | drill-down map of a skill pack or system |
-| `/visual <path or thing>` | explore and map it |
+| `/visual <path or thing>`              | explore and map it                       |
 
 ## Install
 

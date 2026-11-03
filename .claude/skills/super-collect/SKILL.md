@@ -12,12 +12,12 @@ config and files onto that project's board.
 
 ## Invocation
 
-| Command | Does |
-|---|---|
-| `/super-collect` | every source enabled in `collect.sources` |
+| Command                               | Does                                                                                          |
+| ------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `/super-collect`                      | every source enabled in `collect.sources`                                                     |
 | `/super-collect <source> [<source>…]` | just those: `sentry`, `posthog`, `github`, `prs`, `architecture`, or a custom source's `name` |
-| `--since 30d` / `--since 2026-09-01` | window; default `collect.window_days`, else 14 days |
-| `--yes` | file without the confirm step (never skips verify or dedupe) |
+| `--since 30d` / `--since 2026-09-01`  | window; default `collect.window_days`, else 14 days                                           |
+| `--yes`                               | file without the confirm step (never skips verify or dedupe)                                  |
 
 Default is **dry-run**: show the plan table, file on confirm.
 
@@ -39,14 +39,14 @@ Scripts live in `.claude/skills/super-collect/scripts/` (`S=` below). Every fetc
 
 ## Sources
 
-| Source | Fetch | Candidate → ticket |
-|---|---|---|
-| `sentry` | `python3 $S/collect_sentry.py list --since <w>` — Sentry REST, Bearer token (scopes `event:read project:read`): org issues list, then `event <id>` / `tags <id>` for evidence | one unresolved issue → `bug`, fp `err|sentry|<id>` |
-| `posthog` | `python3 $S/collect_posthog.py list --since <w>` — HogQL `POST {host}/api/projects/{id}/query/` | one signal group → see table below |
-| `github` | `gh issue list --state open --json number,title,body,labels,url --limit 300`, minus issues on the board and `source:*` labels | real work → **adopt** (`--adopt <n>`), never copied |
-| `prs` | `python3 $S/collect_prs.py list --since <w>` — one GraphQL search `is:pr is:merged merged:>=DATE`, paginated, with comments, reviews and review threads (human and bot), super-review reports flagged (`<!-- super-review:report -->`) | one recurring root cause → `fix` / `refactor` / `feature`, fp `prs|<boundary>|<cause>` |
-| `architecture` | read-only finder sub-agent (below) | one finding → `refactor`, fp `arch|<module>|<problem>` |
-| custom (`collect.custom[]`) | `python3 $S/collect_custom.py list --since <w>` — http and cli sources run in the script; an `mcp` source comes back `status: agent`: call that server's read/list tool yourself (read-only), then pipe its JSON into `collect_custom.py normalize --name <n>` | one candidate → `bug` (errors, incidents) or `feature` (requests), `--source custom`, fp `custom|<name>|<key>` (the script emits it) |
+| Source                      | Fetch                                                                                                                                                                                                                                                          | Candidate → ticket                                                                               |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------- | ---------------------------- |
+| `sentry`                    | `python3 $S/collect_sentry.py list --since <w>` — Sentry REST, Bearer token (scopes `event:read project:read`): org issues list, then `event <id>` / `tags <id>` for evidence                                                                                  | one unresolved issue → `bug`, fp `err                                                            | sentry     | <id>`                        |
+| `posthog`                   | `python3 $S/collect_posthog.py list --since <w>` — HogQL `POST {host}/api/projects/{id}/query/`                                                                                                                                                                | one signal group → see table below                                                               |
+| `github`                    | `gh issue list --state open --json number,title,body,labels,url --limit 300`, minus issues on the board and `source:*` labels                                                                                                                                  | real work → **adopt** (`--adopt <n>`), never copied                                              |
+| `prs`                       | `python3 $S/collect_prs.py list --since <w>` — one GraphQL search `is:pr is:merged merged:>=DATE`, paginated, with comments, reviews and review threads (human and bot), super-review reports flagged (`<!-- super-review:report -->`)                         | one recurring root cause → `fix` / `refactor` / `feature`, fp `prs                               | <boundary> | <cause>`                     |
+| `architecture`              | read-only finder sub-agent (below)                                                                                                                                                                                                                             | one finding → `refactor`, fp `arch                                                               | <module>   | <problem>`                   |
+| custom (`collect.custom[]`) | `python3 $S/collect_custom.py list --since <w>` — http and cli sources run in the script; an `mcp` source comes back `status: agent`: call that server's read/list tool yourself (read-only), then pipe its JSON into `collect_custom.py normalize --name <n>` | one candidate → `bug` (errors, incidents) or `feature` (requests), `--source custom`, fp `custom | <name>     | <key>` (the script emits it) |
 
 ### custom sources
 
@@ -63,14 +63,14 @@ by the script — never work around that.
 The signal set is a table in `collect_posthog.py` (`SIGNALS`) plus the config's
 `collect.posthog.failure_events`; narrow it with `collect.posthog.signals`.
 
-| Signal | Grouped by | Files when | Ticket |
-|---|---|---|---|
-| `exception` | `$exception` by `issue_id` (follows merges) | ≥ `min_users` (5) people | `bug`, label `error` |
-| failure events | each configured `{event, fail}` (e.g. `push_completed` with `properties.status = 'failed'`) | ≥ 5 people, or failing-people rate ≥ `failure_rate` (10%) | `bug`, label `error` |
-| `rageclick` | `$rageclick` by URL + element | ≥ 5 people | `bug`, label `ux` |
-| `dead_click` | `$dead_click` by URL + element | ≥ 5 people | `bug`, labels `ux`, `needs-triage` (high false-positive rate) |
-| `web_vitals` | p75 per pathname | ≥ 50 samples and p75 LCP > 4 s, INP > 500 ms or CLS > 0.25 | `bug`, label `perf` |
-| `survey` | raw `survey sent` responses (only when surveys exist) | you theme them; one theme from ≥ 3 people | `feature` |
+| Signal         | Grouped by                                                                                  | Files when                                                 | Ticket                                                        |
+| -------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------- |
+| `exception`    | `$exception` by `issue_id` (follows merges)                                                 | ≥ `min_users` (5) people                                   | `bug`, label `error`                                          |
+| failure events | each configured `{event, fail}` (e.g. `push_completed` with `properties.status = 'failed'`) | ≥ 5 people, or failing-people rate ≥ `failure_rate` (10%)  | `bug`, label `error`                                          |
+| `rageclick`    | `$rageclick` by URL + element                                                               | ≥ 5 people                                                 | `bug`, label `ux`                                             |
+| `dead_click`   | `$dead_click` by URL + element                                                              | ≥ 5 people                                                 | `bug`, labels `ux`, `needs-triage` (high false-positive rate) |
+| `web_vitals`   | p75 per pathname                                                                            | ≥ 50 samples and p75 LCP > 4 s, INP > 500 ms or CLS > 0.25 | `bug`, label `perf`                                           |
+| `survey`       | raw `survey sent` responses (only when surveys exist)                                       | you theme them; one theme from ≥ 3 people                  | `feature`                                                     |
 
 Each candidate carries a `replay` link (latest `$session_id`) — put it in Evidence. Funnel
 drop-off and abandonment spikes are **report only**: `collect_posthog.py funnel --since <w>` →
@@ -124,7 +124,7 @@ and the window; nothing from other candidates. It checks, in order:
 3. **Already fixed** — a closed issue or merged PR that matches
    (`gh pr list --state merged --search "<symptom> in:title,body"`, plus the fingerprint), and
    then from the fix's merge date or release: Sentry `status: resolved` with `seenAfterRelease:
-   false`; PostHog `stopped: true` (zero hits and ≥ 3 days of traffic since the merge; with
+false`; PostHog `stopped: true` (zero hits and ≥ 3 days of traffic since the merge; with
    `version_property`, no hits on versions after the fix). A refactor already landed counts too.
 4. **Duplicate** — same symptom + same route/module as a card in the snapshot or an open issue.
 

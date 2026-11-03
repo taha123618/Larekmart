@@ -56,3 +56,12 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+
+# super-board local runtime state & recovery caches
+.claude/super-board/active
+.claude/super-board/onboard-answers.json
+.claude/super-board/onboard-staged/
+.claude/super-board/backup/
+.claude/super-board/inflight/
+.claude/super-board/migrations/
+.claude/super-board/upgrade.json

@@ -2,24 +2,24 @@
 
 The checker gives every problem one `type`. The workflow attaches this table's default `route` to each problem and suggests a chain. The **fixer** makes the final call: it can merge, reorder or swap commands when the code shows a better fit, and records what it actually ran in `commands`.
 
-| `type` | Signal | Command |
-|---|---|---|
-| `cluttered` | too much on screen, duplicate actions, chrome competing with the task | `distill` |
-| `bland` | safe, generic, forgettable; the brief asks for more presence | `bolder` |
-| `too-loud` | too many colors, weights, borders, shadows or badges; shouting | `quieter` |
-| `dull-color` | gray, flat, monochrome where color should carry meaning | `colorize` |
-| `spacing-hierarchy` | cramped or loose spacing, weak hierarchy, poor grouping or alignment | `layout` |
-| `typography` | fonts, type scale, weights, line length, figures | `typeset` |
-| `responsive` | breaks at 390, breakpoints, touch targets, sideways scroll | `adapt` |
-| `performance` | slow, janky, layout shift, heavy images or bundles | `optimize` |
-| `first-run-empty` | empty state or first-run that does not point to the next action | `onboard` |
-| `confusing-copy` | labels, errors, status words or instructions that confuse | `clarify` |
-| `edge-cases` | long content, errors, loading, i18n, overflow | `harden` |
-| `accessibility` | contrast, focus, names, keyboard, headings | `harden` |
-| `needs-motion` | state changes with no feedback; the brief asks for motion | `animate` |
-| `personality` | correct but lifeless; the brief asks for character | `delight` |
-| `drift` | the same pattern copied 3+ times, raw values next to tokens, one-off components | `extract` |
-| `polish` | small misalignments and inconsistencies, no structural change | `polish` |
+| `type`              | Signal                                                                          | Command    |
+| ------------------- | ------------------------------------------------------------------------------- | ---------- |
+| `cluttered`         | too much on screen, duplicate actions, chrome competing with the task           | `distill`  |
+| `bland`             | safe, generic, forgettable; the brief asks for more presence                    | `bolder`   |
+| `too-loud`          | too many colors, weights, borders, shadows or badges; shouting                  | `quieter`  |
+| `dull-color`        | gray, flat, monochrome where color should carry meaning                         | `colorize` |
+| `spacing-hierarchy` | cramped or loose spacing, weak hierarchy, poor grouping or alignment            | `layout`   |
+| `typography`        | fonts, type scale, weights, line length, figures                                | `typeset`  |
+| `responsive`        | breaks at 390, breakpoints, touch targets, sideways scroll                      | `adapt`    |
+| `performance`       | slow, janky, layout shift, heavy images or bundles                              | `optimize` |
+| `first-run-empty`   | empty state or first-run that does not point to the next action                 | `onboard`  |
+| `confusing-copy`    | labels, errors, status words or instructions that confuse                       | `clarify`  |
+| `edge-cases`        | long content, errors, loading, i18n, overflow                                   | `harden`   |
+| `accessibility`     | contrast, focus, names, keyboard, headings                                      | `harden`   |
+| `needs-motion`      | state changes with no feedback; the brief asks for motion                       | `animate`  |
+| `personality`       | correct but lifeless; the brief asks for character                              | `delight`  |
+| `drift`             | the same pattern copied 3+ times, raw values next to tokens, one-off components | `extract`  |
+| `polish`            | small misalignments and inconsistencies, no structural change                   | `polish`   |
 
 ## Chaining
 

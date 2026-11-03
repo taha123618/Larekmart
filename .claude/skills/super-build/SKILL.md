@@ -59,12 +59,14 @@ SOURCE_COLUMN="${BUILD_LOOP_SOURCE_COLUMN:-Ready}"
 `super-board-card.sh items` is the `gh project item-list` shape for ~1 GraphQL point per 100 cards (item-list spends 101) — without bodies.
 
 For each Ready item:
+
 - Capture `content.number` (issue #), `content.title` and `labels`; read the body over REST: `gh api repos/{owner}/{repo}/issues/<N> --jq .body`.
 - **Skip** issues with the `loop:in-progress` label (in flight in another orchestrator) or `loop:halted` label (manually paused) or `human-gated` label (requires manual handling).
 - Parse `body` for `Depends on: #N1, #N2` lines (case-insensitive). If any dep is still open AND not in the current Ready set, the issue is blocked — leave it for a future run.
 - Parse `body` for an optional `Skills:` line (e.g. `Skills: mattpocock-skills:tdd, verification-before-completion`). If absent, the worker uses defaults from the preamble.
 
 **Ordering:**
+
 1. **Board order first** — `items` returns cards in the human's manual board order. Respect that. If the user wants Issue X before Issue Y, they drag X above Y on the board.
 2. **Tiebreaker (rare):** within the same drag-position, sort by priority extracted from title regex `^\[?(P[1-4])\]?`: `P1` < `P2` < `P4` < `P3` < no priority. Then issue number ascending.
 
@@ -73,6 +75,7 @@ If `Ready` is empty: print `📭 Project board "Ready" column is empty — nothi
 ### 2. Ensure required labels exist (idempotent)
 
 Once per run, before first dispatch:
+
 ```bash
 gh label create loop:in-progress --color FFA500 --description "Currently being worked on by /super-build" 2>/dev/null || true
 gh label create loop:halted --color B60205 --description "Manually paused — /super-build will skip" 2>/dev/null || true
@@ -88,22 +91,27 @@ Report once per wave: `▶️ Super Build dispatching: Issues [#N1, #N2, #N3] (p
 For each issue N in the ready set (up to the cap at a time):
 
 a. **Lock the issue:**
+
 ```bash
 gh issue edit N --add-label loop:in-progress
 ```
 
 b. **Announce on the issue** (so a human reading the issue page knows it's being worked):
+
 ```bash
 gh issue comment N --body "🤖 Dispatched by /super-build — worker spinning up in worktree \`.claude/worktrees/issue-N\` on branch \`loop/issue-N\`. Skills: <skills-line-from-body-or-defaults>."
 ```
 
 c. **Dispatch:**
+
 ```bash
 bash .claude/skills/super-build/scripts/super-build-dispatch.sh N
 ```
+
 …via Bash with `run_in_background: true`. Capture each shell ID.
 
 The dispatcher (this skill's `scripts/super-build-dispatch.sh`) handles:
+
 - `git worktree add -b loop/issue-N .claude/worktrees/issue-N <base-branch>`
 - `gh issue view N --json title,body,labels` to compose the worker prompt
 - prepend `references/worker-preamble.md` + append working-directory footer
@@ -122,6 +130,7 @@ After creating either a complete or partial PR below, follow
 handoff complete. Add file summaries and critical inline notes on the PR, not in source.
 
 **On dispatcher exit 0 (success):**
+
 - `git -C .claude/worktrees/issue-N push -u origin loop/issue-N`
 - `gh pr create --draft --base <base-branch> --head loop/issue-N --title "<emoji> [<type>] <scope>: <subject>" --body-file <body.md>` — title in commit-subject format, body = the marker-block template from `skills/super-board/references/run.md` (writing-standard.md § 2), `Closes #N` in the status card, `Docs:` bullets in Solution
 - `gh issue edit N --remove-label loop:in-progress`
@@ -132,6 +141,7 @@ handoff complete. Add file summaries and critical inline notes on the PR, not in
 - Recompute ready set; if new issues are now unblocked, dispatch in the next wave (respecting the worker cap)
 
 **On dispatcher exit 5 (intentional WIP-PARTIAL — open a partial PR, do NOT close):**
+
 - `git -C .claude/worktrees/issue-N push -u origin loop/issue-N`
 - `gh pr create --draft --base <base-branch> --head loop/issue-N --title "🚧 [wip] <scope>: <slice from worker's final message>"` — the status card says `Refs #N`, never `Closes`, so the merge does not close the issue.
 - `gh issue edit N --remove-label loop:in-progress --add-label human-gated`
@@ -140,6 +150,7 @@ handoff complete. Add file summaries and critical inline notes on the PR, not in
 - **Continue dispatching the next issue in the wave.** A WIP-PARTIAL is NOT a halt. The worker did intentional, scoped work and the orchestrator advances.
 
 **On dispatcher exit 2 or 3 (worker failed or no done-commit):**
+
 - `gh issue edit N --remove-label loop:in-progress`
 - `gh issue comment N --body "[builder] [report] ❌ failed · exit <X>\nDid: worker ran; worktree \`.claude/worktrees/issue-N\` kept\n❌ Not done: <one line from the log>\nNext: Eric\n\n<details><summary>log tail</summary>\n\n\`\`\`\n$(tail -50 .planning/super-build-logs/issue-N.log)\n\`\`\`\n</details>"`
 - Report to the user with `tail -50` of `.planning/super-build-logs/issue-N.log`
@@ -147,6 +158,7 @@ handoff complete. Add file summaries and critical inline notes on the PR, not in
 - Halt the loop
 
 **On dispatcher exit 4 (HUMAN GATE TRIPPED):**
+
 - `gh issue edit N --remove-label loop:in-progress --add-label human-gated`
 - `gh issue comment N --body "🔴 HUMAN GATE TRIPPED — needs manual handling. See worktree \`.claude/worktrees/issue-N\`."`
 - Report: `🔴 Issue #N tripped HUMAN GATE — needs manual handling`
@@ -162,13 +174,16 @@ Every Ready issue should be executable without live clarification. Preferred iss
 
 ```markdown
 ## Goal
+
 <one-sentence outcome>
 
 ## Acceptance Criteria
+
 - [ ] <observable behavior or artifact>
 - [ ] <test/verification expectation>
 
 ## Notes / Constraints
+
 - Depends on: #123, #456
 - Skills: mattpocock-skills:tdd, verification-before-completion
 - Human gates: <deploy, destructive DB action, product decision, etc.>
@@ -192,6 +207,7 @@ The preamble at `references/worker-preamble.md` is the worker contract: decision
 ## Recovery / re-entry
 
 If the user invokes `/super-build` after a partial run:
+
 - Re-read `gh issue list`. Issues already closed are skipped automatically.
 - If legacy `.worktrees/issue-N` exists, stop and inspect it before dispatch. Preserve edits and use `git worktree move` to the matching `.claude/worktrees/issue-N` path; never delete the old folder to make a fresh dispatch fit.
 - If `.claude/worktrees/issue-N` exists for an N that's still open: a previous worker was interrupted. Default: notify the user and ask before auto-resuming (a re-dispatch overwrites the previous attempt's branch).
@@ -222,12 +238,15 @@ If the user invokes `/super-build` after a partial run:
 When invoked by super-board (env `SUPER_BOARD_RUN=1` set by the runner, or invocation contains "super-board run"), follow these rules instead of the standalone defaults:
 
 ### State protocol
+
 - Read context from: issue body + ALL issue comments + linked PR description + PR comments + PR review threads. NEVER from local state files for inter-lane coordination.
 - Respect the worktree path super-board hands you (typically `.claude/worktrees/issue-<N>-build/`). Don't create your own.
 - Respect the single branch super-board hands you (`issue-<N>-<slug>`). Don't create alternate branches.
 
 ### Lifecycle (Builder, first pass)
+
 Follow spec `.claude/skills/super-board/references/run.md` → Builder (first pass). Summary:
+
 1. Worktree off `config.base_branch`.
 2. Branch `issue-<N>-<slug>` from `config.base_branch`.
 3. Docs check (section below) — if the ticket touches a third-party surface, an upgrade, or auth/billing, read the current official docs first.
@@ -238,6 +257,7 @@ Follow spec `.claude/skills/super-board/references/run.md` → Builder (first pa
 8. Move card Ready/Building → QA.
 
 ### Keep each PR small (every ticket)
+
 Each PR stays under the merge size cap: `merge_policy.auto_max_lines` (default 400 changed lines,
 additions + deletions; lockfiles, generated files, snapshots and migration SQL do not count — see
 `merge_policy.size_exclude`). A PR over the cap is never auto-merged: the merge gate parks it in
@@ -251,7 +271,9 @@ slices (each thin end to end, under the cap, with its own ACs), which slice this
 split proposed in PR #<P>", `block-template.md`). Never pad past the cap to "finish" the ticket.
 
 ### Lifecycle (Builder, rebuild)
+
 Triggered when card returns to Ready/Building with `loop:rebuild-N` label.
+
 1. Read PR review threads on this branch's PR; filter `[builder]` prefix.
 2. For each unresolved `[builder]` thread: read file:line + suggested fix → apply → resolve thread via:
    ```bash
@@ -262,7 +284,9 @@ Triggered when card returns to Ready/Building with `loop:rebuild-N` label.
 5. Refresh [PR author notes](../super-board/references/pr-author-notes.md), rewrite your PR body blocks (`super-board-pr-body.sh`), post `[builder] [report]` PR + issue comments. Move card Ready/Building → QA.
 
 ### Docs before outside-tool code (every ticket)
+
 Before writing code, decide whether the ticket touches any of:
+
 - a third-party API, SDK, library, CLI or cloud service (calling it, configuring it, adding it);
 - a dependency or framework **upgrade**;
 - **auth or billing** (OAuth/scopes, sessions, tokens, webhooks, payments, plans).
@@ -270,7 +294,7 @@ Before writing code, decide whether the ticket touches any of:
 If yes, read the **current official docs** for the exact surface and version first — context7
 when available, otherwise web search to the vendor's own docs, migration guide or changelog.
 Check the installed version (`package.json` / lockfile, `npm view <pkg> version` for a new dep)
-and read the docs for that major. Repo docs and existing call sites come first for how *this*
+and read the docs for that major. Repo docs and existing call sites come first for how _this_
 repo uses it; vendor docs settle what the tool does. Not Stack Overflow, not old blog posts,
 not memory.
 
@@ -280,14 +304,19 @@ affected code `unverified against current docs`, and keep the change minimal. No
 touched → `Docs: none needed — no third-party surface`.
 
 ### Failure → handoff comment must include `root-cause-hash:` line
+
 On any failure-handoff comment, include:
+
 ```
 root-cause-hash: <sha256 first 12 hex chars>
 ```
+
 Hash inputs (joined with `|`): lane (`build`) | error class | first 3 unique normalized file:line frames. See `.claude/skills/super-board/references/run.md` → Root-cause hash.
 
 ### Never merge
+
 Builder NEVER squash-merges. Reviewer owns merge.
 
 ### Block exits use the §4 mandatory template
+
 When moving a card to Blocked (or dropping it: closed as not planned, Done, 🤷), populate the full template from `.claude/skills/super-board/references/block-template.md`. A 1-line "needs creds" comment is a contract violation.

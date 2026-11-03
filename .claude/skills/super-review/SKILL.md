@@ -137,18 +137,19 @@ remembers"); R-ids never change.
 
 ```markdown
 <!-- super-review:report -->
+
 [reviewer] [report] <✅ merge-ready | ❌ bounced | 🛑 blocked | 🙋 human-gated | ⚠️ unverified> · round <N>
 Did: <scope reviewed · base · verification command + result>
 ✅ Done: <prior findings fixed, hypotheses that held — each with file:line or command>
-❌ Not done: <open findings by id, or what you could not verify and why>   (omit when nothing)
+❌ Not done: <open findings by id, or what you could not verify and why> (omit when nothing)
 Next: <builder | qa | Eric | none>
 
-| ID | Owner | Class | Where | Finding | Status |
-|---|---|---|---|---|---|
-| R1 | builder | Bug | `src/cart.py:12` | <finding> | ✅ fixed |
-| R2 | builder | Bug | `src/cart.py:31` | <finding> | ❌ not fixed |
-| R3 | qa | Verification miss | `tests/test_cart.py:8` | <finding> · blocker | open |
-| R4 | builder | Over-engineering | `src/fmt.py:1` | <what it builds> → <smaller thing> · should fix, never blocks alone | open |
+| ID  | Owner   | Class             | Where                  | Finding                                                             | Status       |
+| --- | ------- | ----------------- | ---------------------- | ------------------------------------------------------------------- | ------------ |
+| R1  | builder | Bug               | `src/cart.py:12`       | <finding>                                                           | ✅ fixed     |
+| R2  | builder | Bug               | `src/cart.py:31`       | <finding>                                                           | ❌ not fixed |
+| R3  | qa      | Verification miss | `tests/test_cart.py:8` | <finding> · blocker                                                 | open         |
+| R4  | builder | Over-engineering  | `src/fmt.py:1`         | <what it builds> → <smaller thing> · should fix, never blocks alone | open         |
 ```
 
 - Owner: `builder` (Super Build) · `qa` (Super QA) · `ui` (UI ticket; a human runs
@@ -286,15 +287,18 @@ will not stack duplicates.
 When invoked by super-board (env `SUPER_BOARD_RUN=1` or invocation contains "super-board run"):
 
 ### State protocol
+
 - Read from issue + PR comments + PR review threads.
 - **GitHub budget** — every "move card" is `.claude/bin/super-board-card.sh --config <cfg> move <N> <Status>` (1 GraphQL point; `gh project item-list` / `field-list` cost ~100–200). Comments, labels and PR reads go over REST; [rate-limit-etiquette.md](../super-board/references/rate-limit-etiquette.md) → "Price list" has the calls.
 - Respect handed-down worktree at `.claude/worktrees/issue-<N>-review/` and branch `issue-<N>-<slug>`.
 
 ### Two card types
+
 - **Built card (`feature`, `bug`, no label):** review the diff (code + tests).
 - **`qa` card:** review the QA report quality and any test diff; there is no product-code diff.
 
 ### Lifecycle (Reviewer)
+
 See `.claude/skills/super-board/references/run.md` → Reviewer. Summary of the sub-steps:
 
 1. Worktree from current state of `issue-<N>-<slug>`.
@@ -323,7 +327,7 @@ See `.claude/skills/super-board/references/run.md` → Reviewer. Summary of the 
    - **Over-engineering only** (from `ponytail:ponytail-review`, see super-review step 3) → list it in the report, open no thread, and carry on to the merge decision; it never bounces a card alone. When the card bounces for another finding anyway, open a `[builder]` thread for each Over-engineering finding too, so the rebuild trims it.
    - **Code-side new finding** → new `[builder]`-prefixed thread, move card Review → Ready (`loop:rebuild-N`).
    - **Test-side new finding** → new `[qa]`-prefixed thread, move card Review → QA (`loop:rebuild-N`).
-   - **Blocker finding (destructive schema, contract, money, auth, live-DB migration) or rebuild cap hit** → full §4 Block template, move card Review → Blocked. A *clean* PR that merely touches money, auth or schema is not a finding: run the merge protocol, and the gate's `merge_policy` hands it to a human (exit 7 → 🙋 Blocked).
+   - **Blocker finding (destructive schema, contract, money, auth, live-DB migration) or rebuild cap hit** → full §4 Block template, move card Review → Blocked. A _clean_ PR that merely touches money, auth or schema is not a finding: run the merge protocol, and the gate's `merge_policy` hands it to a human (exit 7 → 🙋 Blocked).
 8. Write the Reviewer report (marker `<!-- super-review:report -->`, ids on every finding) — edit the existing report comment in place, post a new one only on the first review. It is the next re-review's `prior_report`.
 9. Clean up worktree.
 
@@ -338,7 +342,7 @@ two complete builds. In order, no shortcuts:
    keeps a person on every merge — the gate returns exit 7 below):
    record `gh pr view <PR> --json headRefOid` when review passes, then
    `super-board-merge-gate.sh --config <cfg> --pr <PR> --expect-head <sha> --subject "<PR title>"
-   --body-file <msg.md>` (it merges with `--match-head-commit`; the message is the PR title plus the
+--body-file <msg.md>` (it merges with `--match-head-commit`; the message is the PR title plus the
    commit bullets and `Closes #N` — writing-standard.md § 1). Exit 6 = the head moved after review → your evidence is void;
    leave the card in **Review** with a `[reviewer]` comment naming both shas.
    The gate owns the merge decision (config `merge_policy`, `migrations`):
@@ -369,6 +373,7 @@ two complete builds. In order, no shortcuts:
    `gh pr view <PR> --json state,mergeCommit` must report `MERGED` plus a commit sha,
    and that sha must be an ancestor of the base branch
    (`git merge-base --is-ancestor <sha> origin/<base>`).
+
 4. Only then: close the issue, move card Review → **Done**, post the ✅ comment citing
    the merge commit sha.
 5. Merge refused (failing checks, conflicts, branch protection) → card Review →
@@ -380,21 +385,25 @@ landed-work halt gate reads `Done` as its definition of progress, so a card mark
 without a confirmed merge makes a runaway look like a healthy run.
 
 ### Prefix discipline
+
 - Every new review thread Reviewer writes MUST start with its owner lane — `[builder]`, `[qa]`, or `[reviewer]` — then a label: `[blocker]`, `[issue]`, `[suggestion]`, `[nit]`, `[question]`, `[praise]` (writing-standard.md § 4). Older PRs may carry `[QA]` / `[review]`; read them as `[qa]` / `[reviewer]`.
 - Unprefixed **top-level** human PR comments → treat as 🧑 Block reason. Move card Review → Blocked with the full §4 template.
 - Inline human review-thread replies → context only, no Block.
 
 ### `super-truth` is folded into super-review
+
 The standalone `super-truth` skill is removed (spec §10 item 8.9). The adversarial pattern is now built in — see next section.
 
 ## Adversarial mode (folded from super-truth)
 
 Activated per `config.truth_gate`:
+
 - `off` — never adversarial.
 - `non-trivial` (default) — diff ≥10 lines OR labels in `{security, migration, payments, auth}` trigger adversarial.
 - `always` — every card.
 
 When activated, spawn 2 sub-agents in parallel:
+
 - **Code-grounder.** Verify cited file:line still exists and matches claims.
 - **Historian.** `git blame` the changed lines; check for ADRs / prior incidents.
 
@@ -431,8 +440,10 @@ sub-agents'.
 **Aggregation rule: take the MINIMUM of the two scores.** Rationale: one strong skeptic should be enough to block.
 
 Compare aggregate to `config.truth_threshold` (default `70`):
+
 - **Below threshold** → Reviewer MUST NOT approve. Open `[reviewer]`-prefixed PR thread quoting the lowest-confidence sub-agent finding. Write the full §4 Block template comment. Move card Review → Blocked with reason 🛡 truth-check failed (confidence X/100). The bot's "Why I cannot decide" line names the specific sub-agent finding it could not confirm.
 - **Above threshold** → continue to approval decision.
 
 ### Block/Skip exits use the §4 mandatory template
+
 Same rule as super-build/super-qa.

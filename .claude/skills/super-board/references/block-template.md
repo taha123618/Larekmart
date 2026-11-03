@@ -4,10 +4,10 @@
 
 ## When / who moves cards there
 
-| Where | When | Who |
-|---|---|---|
-| Blocked | Card needs human action, or waits on another card | Any lane, from any workflow column |
-| Done (closed as not planned) | Card dropped on purpose: out of scope, won't do | Any lane; 🤷 comment below |
+| Where                        | When                                              | Who                                |
+| ---------------------------- | ------------------------------------------------- | ---------------------------------- |
+| Blocked                      | Card needs human action, or waits on another card | Any lane, from any workflow column |
+| Done (closed as not planned) | Card dropped on purpose: out of scope, won't do   | Any lane; 🤷 comment below         |
 
 Once moved, the card waits. **A card blocked only on other cards no longer waits for a human:**
 the wave planner sweeps `Blocked` at the start of every wave, and any card whose `## Blocked by`
@@ -20,7 +20,7 @@ record of what they were waiting for was English prose in a comment nobody re-re
 
 ## Required Block comment template (mandatory on every transition into Blocked)
 
-The bot must write a structured comment on **both the issue and the PR** (if a PR exists) explaining *why* it moved the card and *what it couldn't safely decide*. Exception: a 🙋 merge approval uses one canonical issue request below; the PR links to it without duplicating its machine lines. Format:
+The bot must write a structured comment on **both the issue and the PR** (if a PR exists) explaining _why_ it moved the card and _what it couldn't safely decide_. Exception: a 🙋 merge approval uses one canonical issue request below; the PR links to it without duplicating its machine lines. Format:
 
 ```
 [<role>] [blocker] 🛑 blocked · <reason emoji> <one-line reason>
@@ -62,7 +62,7 @@ same rule: **prose above for the human, one parseable line below for the loop.**
   alone. Use this for every `🔐`, `💳`, `🔑`, `🧑`, `🎨` and `🙋` block.
 
 Write the numbers alone. **Never `blocked-by: none — but #26 must merge first`**: a line that says
-none and then names an issue is read as *no blocker* by the sweep and as *one blocker* by a human,
+none and then names an issue is read as _no blocker_ by the sweep and as _one blocker_ by a human,
 and the sweep is the one that acts. That exact shape shipped on a real board and is the reason
 `super-board-deps.sh` refuses to guess at it.
 
@@ -76,19 +76,19 @@ closed as not planned (`gh issue close <N> --reason "not planned"`) and moves to
 
 ## Reason emoji vocabulary
 
-| Emoji | Class                       | Examples                                                                 |
-|-------|-----------------------------|--------------------------------------------------------------------------|
-| 🔐    | Credentials / secrets       | missing API key, expired token, no test login                            |
-| 💳    | Billing / quota             | paid API rate-limit hit, free tier exhausted, requires plan upgrade      |
-| 🔑    | Permissions / access        | gh scope denied, org admin required, write access missing                |
-| ❓    | Ambiguity / spec gap        | two valid interpretations, AC contradicts PROJECT.md, dependency unclear |
-| 🛡    | Safety / destructive        | would drop a table, would push to prod, would rotate live secrets        |
-| 🧑    | Human review needed         | unresolved human PR comment, design decision, branding choice            |
-| 🤷    | Out-of-scope                | wrong project, deferred to other milestone, manual-only ticket           |
-| 📦    | Wrong-place                 | belongs on a different board / repo                                      |
-| 🎨    | Pure design                 | no measurable AC; needs design pass first                                |
-| 👯    | Duplicate                   | pre-flight: a merged PR already delivers it, or an open PR / card is building it |
-| ⏳    | Sequenced                   | pre-flight: an open PR touches the same files — waits on the issue that PR closes |
+| Emoji | Class                       | Examples                                                                                                                                                                                                                                                              |
+| ----- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🔐    | Credentials / secrets       | missing API key, expired token, no test login                                                                                                                                                                                                                         |
+| 💳    | Billing / quota             | paid API rate-limit hit, free tier exhausted, requires plan upgrade                                                                                                                                                                                                   |
+| 🔑    | Permissions / access        | gh scope denied, org admin required, write access missing                                                                                                                                                                                                             |
+| ❓    | Ambiguity / spec gap        | two valid interpretations, AC contradicts PROJECT.md, dependency unclear                                                                                                                                                                                              |
+| 🛡    | Safety / destructive        | would drop a table, would push to prod, would rotate live secrets                                                                                                                                                                                                     |
+| 🧑    | Human review needed         | unresolved human PR comment, design decision, branding choice                                                                                                                                                                                                         |
+| 🤷    | Out-of-scope                | wrong project, deferred to other milestone, manual-only ticket                                                                                                                                                                                                        |
+| 📦    | Wrong-place                 | belongs on a different board / repo                                                                                                                                                                                                                                   |
+| 🎨    | Pure design                 | no measurable AC; needs design pass first                                                                                                                                                                                                                             |
+| 👯    | Duplicate                   | pre-flight: a merged PR already delivers it, or an open PR / card is building it                                                                                                                                                                                      |
+| ⏳    | Sequenced                   | pre-flight: an open PR touches the same files — waits on the issue that PR closes                                                                                                                                                                                     |
 | 🙋    | Needs you (human-only step) | merge gate exit 7 (merge_policy: money/auth/schema/size — review and merge it, or comment `done` to approve) or exit 8: a migration for a DB the robot may not touch, an allowed migrate command failed, a `needs-you:` step in the PR body, `migrations.human_steps` |
 
 ## 🙋 Needs you — a command only a human may run
@@ -125,6 +125,7 @@ blocked-by: -
 Example (what the person sees on GitHub):
 
 > **🙋 Your turn on #812 — Add plan column**
+>
 > - [ ] Run `npx prisma migrate deploy` on the **live** database
 > - [ ] Comment `done` here
 >
@@ -171,4 +172,4 @@ A human can still merge a PR manually under the repository's normal rules.
 
 ## Hard rule
 
-**The bot is forbidden from moving any card to Blocked, or dropping it to Done, *without* this full template populated. A 1-line "needs creds" comment is a contract violation and fails Reviewer's thread gate.**
+**The bot is forbidden from moving any card to Blocked, or dropping it to Done, _without_ this full template populated. A 1-line "needs creds" comment is a contract violation and fails Reviewer's thread gate.**

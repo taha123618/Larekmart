@@ -18,12 +18,12 @@ board fixes them.
 
 ## Usage
 
-| Command | Does |
-|---|---|
-| `/super-collect` | every source enabled in the config |
-| `/super-collect sentry` | one source (or several) |
-| `--since 30d` / `--since 2026-09-01` | window, default 14 days |
-| `--yes` | file without the confirm step |
+| Command                              | Does                               |
+| ------------------------------------ | ---------------------------------- |
+| `/super-collect`                     | every source enabled in the config |
+| `/super-collect sentry`              | one source (or several)            |
+| `--since 30d` / `--since 2026-09-01` | window, default 14 days            |
+| `--yes`                              | file without the confirm step      |
 
 Dry-run is the default: you see what would be filed, then confirm.
 

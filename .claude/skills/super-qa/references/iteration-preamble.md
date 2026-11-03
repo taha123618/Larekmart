@@ -5,6 +5,7 @@ clarifying answers.
 ## Mission
 
 Run **one iteration** of the loop:
+
 1. **Regression** — re-run every spec in `e2e/paths/`. Fix any reds via TDD.
 2. **Explore** — pop the top `[ ]` item from `docs/super-qa/queue.md`,
    classify it, write a spec, run it, mark `[x]` or `[b]`, walk the page,
@@ -16,6 +17,7 @@ Run **one iteration** of the loop:
 ## Your iteration
 
 You will receive (after this preamble):
+
 - Iteration number N
 - Working directory (the repo root — NO worktree)
 - Active branch (whatever the orchestrator has checked out, default `main`)
@@ -73,7 +75,7 @@ reproduces the failure**:
    repository, reducer + store). Reproduces only now? → integration test,
    Vitest. The defect is in the seam, not either side.
 3. **Drive a real browser.** Reproduces only here? → e2e, Playwright. Legitimate
-   when the browser *is* the thing that broke: hydration mismatch, focus
+   when the browser _is_ the thing that broke: hydration mismatch, focus
    management, navigation, a CSS rule that hides the control, a client-only
    race.
 4. **Only reproduces against a live third party.** Do **not** write an e2e that
@@ -86,14 +88,14 @@ the bug lives. An e2e pinning a pure-logic defect is slower, flakier, and when
 it goes red it points at a page instead of at the function, so the next person
 debugs the wrong file. Locality of failure is the whole point.
 
-`testing-strategy` is the reference for what a given component type is *worth*
+`testing-strategy` is the reference for what a given component type is _worth_
 covering (API endpoints, data paths, frontend, infra) and what to skip (trivial
 getters, framework code, one-off scripts). Consult it for coverage judgment —
 it does not decide the layer, the ladder above does.
 
 **Then two checks before the test counts as done:**
 
-- **Red for the right reason.** Run it against the *unfixed* code and read the
+- **Red for the right reason.** Run it against the _unfixed_ code and read the
   failure message. It must name the actual defect. A test that goes red on a
   timeout, a missing selector, or a setup error is not pinning the bug — it is
   pinning your test harness.
@@ -177,7 +179,7 @@ If a page's "expected content" hasn't been documented yet, the worker
 must add a one-line entry to `docs/super-qa/page-types.md` under
 "Locked overrides" before writing the spec, e.g.
 
-  `/orders → list-page (expects: ≥1 row OR empty-state "No orders yet")`
+`/orders → list-page (expects: ≥1 row OR empty-state "No orders yet")`
 
 This documents the contract so future iters don't drift.
 
@@ -185,14 +187,14 @@ This documents the contract so future iters don't drift.
 
 For every spec run, the report-fixture must capture and persist:
 
-| Artifact | Path | Why |
-|----------|------|-----|
-| Screenshot per `report.step()` | `docs/super-qa/report/<slug>/tc-N/<locale>/*.jpg` | UI regression baseline (already wired) |
-| Console errors | `docs/super-qa/report/<slug>/tc-N/<locale>/console.log` | Hard-fail input + bug-report attachment |
-| Page errors (uncaught JS) | same path, `pageerrors.log` | Hard-fail input |
-| Network HAR | `docs/super-qa/report/<slug>/tc-N/<locale>/network.har` | 4xx/5xx detection + request replay |
-| Network summary JSON | `docs/super-qa/report/<slug>/tc-N/<locale>/network.json` | grep-friendly: `{url, method, status, size}[]` |
-| Sentry probe | `docs/super-qa/report/<slug>/tc-N/sentry-events.json` | Server-side errors with `source=super-qa` tag, filtered by start/end timestamp |
+| Artifact                       | Path                                                     | Why                                                                            |
+| ------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Screenshot per `report.step()` | `docs/super-qa/report/<slug>/tc-N/<locale>/*.jpg`        | UI regression baseline (already wired)                                         |
+| Console errors                 | `docs/super-qa/report/<slug>/tc-N/<locale>/console.log`  | Hard-fail input + bug-report attachment                                        |
+| Page errors (uncaught JS)      | same path, `pageerrors.log`                              | Hard-fail input                                                                |
+| Network HAR                    | `docs/super-qa/report/<slug>/tc-N/<locale>/network.har`  | 4xx/5xx detection + request replay                                             |
+| Network summary JSON           | `docs/super-qa/report/<slug>/tc-N/<locale>/network.json` | grep-friendly: `{url, method, status, size}[]`                                 |
+| Sentry probe                   | `docs/super-qa/report/<slug>/tc-N/sentry-events.json`    | Server-side errors with `source=super-qa` tag, filtered by start/end timestamp |
 
 The fixture **already captures** all of the above via
 `e2e/lib/report-fixture.ts`. Disk writes are gated behind
@@ -208,7 +210,7 @@ assertions ("Per-spec expectations" above) onto the 5 existing specs in
 `e2e/paths/` (login, dashboard, orders, orders-new, order-detail). One
 commit:
 
-  `🧪 [test] super-qa: retrofit forensics assertions onto existing specs`
+`🧪 [test] super-qa: retrofit forensics assertions onto existing specs`
 
 When a `[b]` is filed, the bug body produced for `super-qa-file-bug.sh`
 MUST carry these artifacts in its folded Evidence table (writing-standard.md § 3):
@@ -230,6 +232,7 @@ npx playwright test e2e/paths/ --config=e2e/playwright.smoke.config.ts
 Read the result. For each red spec:
 
 **Retry policy (flake guard):**
+
 1. **Auth-drop pre-check (before any retry).** If the failure signal is
    401/403 on an auth-required page, the spec may have hit a session-expiry
    flake rather than a real auth bug. **Re-run the auth bootstrap once**
@@ -253,6 +256,7 @@ Read the result. For each red spec:
    "FLAKY-NEEDS-INVESTIGATION".
 
 For real reds:
+
 - File the bug to `iteration-N.md` Section 1 (Regression failures).
 - **File a GitHub issue immediately** (see "Filing bugs to GitHub" below) and
   capture the returned issue number. Reference the GH issue in the
@@ -284,6 +288,7 @@ acceptable; a fix can silently disable a feature to make a wrong spec pass.
      missing element by selector, copy/text mismatch, layout/UX issue.
 
 2. **Open a fix branch off the active branch:**
+
    ```bash
    git switch -c fix/super-qa-iter-${N}-${slug}-${ISSUE_N}
    ```
@@ -293,6 +298,7 @@ acceptable; a fix can silently disable a feature to make a wrong spec pass.
    code. Then re-run `npm run lint` + `npm run check` — must stay green.
 
 4. **Commit + push + open PR:**
+
    ```bash
    git add -p   # stage only fix-relevant hunks
    git commit -m "🐛 [fix] <area>: <one-line bug summary>" -m "- <what changed>
@@ -318,11 +324,13 @@ acceptable; a fix can silently disable a feature to make a wrong spec pass.
    and Why it matters. Confirm them before handing the PR to review.
 
 5. **Run reviewer skills against the PR (parallel where possible):**
+
    ```bash
    # /review — primary code review
    # /plan-eng-review — architectural sanity, regression risk
    # /security-review — only if PR touches auth/RLS/payments
    ```
+
    Capture each reviewer's verdict in the PR comments. If any reviewer
    flags a blocking issue, leave the PR open with `needs-human-review`
    label and move on.
@@ -341,12 +349,14 @@ acceptable; a fix can silently disable a feature to make a wrong spec pass.
      PR number + reviewer verdicts + auto-merge eligibility.
 
 **On the active branch (the loop's working branch), only commit:**
+
 - The forensics fixture extension (iter 2 onwards, separate commit)
 - The per-iter close-out commit `🧪 [test] super-qa: iter N (X bugs, Y items, Z PRs opened)`
 - The per-iter `iteration-N.md` + `QA-REPORT.md` + `queue.md` updates
 - New `e2e/paths/<slug>.spec.ts` files (these ARE the deliverable)
 
 **Never on the active branch:**
+
 - A change to production code (`client/`, `server/`, `shared/`) — those
   go through PRs.
 - A `🚧 [wip] super-qa:` commit for an unresolved fix — close the fix branch and leave
@@ -355,6 +365,7 @@ acceptable; a fix can silently disable a feature to make a wrong spec pass.
 ### Phase 2 — Explore (bounded)
 
 **Budget:**
+
 - Default 5 cells popped per iter.
 - Wall-clock cap 30 min from iter start.
 - When wall-clock hits mid-cell, finish the current cell, write the report,
@@ -383,56 +394,58 @@ acceptable; a fix can silently disable a feature to make a wrong spec pass.
    (c) hand-curated override in `page-types.md` if present.
 
 2.5. **Encode product requirements as test cases (MANDATORY).** A spec that
-   only checks "page renders" is render-test, not feature-test. Before
-   writing the spec:
+only checks "page renders" is render-test, not feature-test. Before
+writing the spec:
 
-   ```bash
-   # 1. Find SPEC sections relevant to this route/feature
-   grep -in "<route>\|<feature-name>\|<page-name>" docs/SPEC.md
-   # 2. Read matching sections (offset+limit, NEVER full file)
-   ```
+```bash
+# 1. Find SPEC sections relevant to this route/feature
+grep -in "<route>\|<feature-name>\|<page-name>" docs/SPEC.md
+# 2. Read matching sections (offset+limit, NEVER full file)
+```
 
-   For each documented behavior the page must support (e.g. "blacklist a
-   customer with reason", "create order with delivery date validation",
-   "filter list by date range"), encode it as a TC:
-   - `TC-1` — Happy path render (always; classification-driven non-blank
-     guard from "Per-spec expectations" applies here)
-   - `TC-2..N` — One per documented requirement found in SPEC.md
+For each documented behavior the page must support (e.g. "blacklist a
+customer with reason", "create order with delivery date validation",
+"filter list by date range"), encode it as a TC:
 
-   **If `docs/SPEC.md` has no section matching this route:**
-   - Log `MISSING-SPEC: <route>` to `iteration-N.md` Section 1.
-   - File a low-priority docs issue with title `📝 QA docs <route> — Missing SPEC section` and labels `docs`, `source:qa`, `priority:low`, `qa:docs`, and `area:<area>`.
-   - Write a render-only smoke spec for now (TC-1 only). Continue.
+- `TC-1` — Happy path render (always; classification-driven non-blank
+  guard from "Per-spec expectations" applies here)
+- `TC-2..N` — One per documented requirement found in SPEC.md
 
-   **If iter 1 (read-only smoke):** TC-1 only — read requirements but do
-   NOT encode mutating TCs yet. Capture them as TODO comments inside the
-   spec file (`// TODO iter 2+: TC-2 — blacklist with reason (SPEC §4.7)`)
-   so iter 2+ knows what to add.
+**If `docs/SPEC.md` has no section matching this route:**
 
-   **Why:** without this step the loop produces a wall of green smoke tests
-   that prove nothing about whether features actually work. Render success
-   ≠ feature success.
+- Log `MISSING-SPEC: <route>` to `iteration-N.md` Section 1.
+- File a low-priority docs issue with title `📝 QA docs <route> — Missing SPEC section` and labels `docs`, `source:qa`, `priority:low`, `qa:docs`, and `area:<area>`.
+- Write a render-only smoke spec for now (TC-1 only). Continue.
+
+**If iter 1 (read-only smoke):** TC-1 only — read requirements but do
+NOT encode mutating TCs yet. Capture them as TODO comments inside the
+spec file (`// TODO iter 2+: TC-2 — blacklist with reason (SPEC §4.7)`)
+so iter 2+ knows what to add.
+
+**Why:** without this step the loop produces a wall of green smoke tests
+that prove nothing about whether features actually work. Render success
+≠ feature success.
 
 3. **Write the spec** at `e2e/paths/<slug>.spec.ts`. Use the test recipe
    for the classified type. Spec convention:
 
    ```ts
-   import { test, expect } from '../lib/report-fixture'
+   import { test, expect } from "../lib/report-fixture";
 
-   const PAGE = { page: '<Human page name>', route: '<route>' }
+   const PAGE = { page: "<Human page name>", route: "<route>" };
 
-   test('TC-1 — Happy path', async ({ page, report }) => {
-     await report.path('<slug>', '<one-line description>', {
+   test("TC-1 — Happy path", async ({ page, report }) => {
+     await report.path("<slug>", "<one-line description>", {
        ...PAGE,
        tc: 1,
-       tcTitle: 'Happy path',
-     })
-     await report.step('Navigate to <route>', async () => {
-       await page.goto('<route>')
+       tcTitle: "Happy path",
+     });
+     await report.step("Navigate to <route>", async () => {
+       await page.goto("<route>");
        // assertions ...
-     })
+     });
      // ... more steps ...
-   })
+   });
    ```
 
    Rules:
@@ -464,9 +477,11 @@ acceptable; a fix can silently disable a feature to make a wrong spec pass.
      to the brittle selector.
 
 4. **Run JUST your spec:**
+
    ```bash
    npx playwright test e2e/paths/<slug>.spec.ts --config=e2e/playwright.smoke.config.ts
    ```
+
    Apply the same retry policy as Phase 1.
 
 5. **Mark the queue line:**
@@ -484,58 +499,59 @@ acceptable; a fix can silently disable a feature to make a wrong spec pass.
      with the one-line reason inline.
 
 5.5. **UX visual-review pass (MANDATORY for every green cell).** Functional
-   greens can still ship terrible UX — overflowed grids, cluttered cards,
-   broken alignment, low-contrast text, content cut off at viewport edges.
-   These bugs do not surface in console errors or HTTP statuses. They have
-   to be SEEN.
+greens can still ship terrible UX — overflowed grids, cluttered cards,
+broken alignment, low-contrast text, content cut off at viewport edges.
+These bugs do not surface in console errors or HTTP statuses. They have
+to be SEEN.
 
-   **For each green cell, dispatch a vision sub-agent over the screenshots
-   collected at `docs/super-qa/report/<slug>/tc-N/<locale>/*.jpg`:**
+**For each green cell, dispatch a vision sub-agent over the screenshots
+collected at `docs/super-qa/report/<slug>/tc-N/<locale>/*.jpg`:**
 
-   ```
-   Use the Agent tool with subagent_type='general-purpose'. Prompt:
+```
+Use the Agent tool with subagent_type='general-purpose'. Prompt:
 
-   You are a UX reviewer. Look at these screenshots from
-   docs/super-qa/report/<slug>/tc-1/en/*.jpg. The page renders without errors —
-   that's not what I'm asking. Tell me whether anything looks visually
-   wrong:
+You are a UX reviewer. Look at these screenshots from
+docs/super-qa/report/<slug>/tc-1/en/*.jpg. The page renders without errors —
+that's not what I'm asking. Tell me whether anything looks visually
+wrong:
 
-   - Content overflowing its container (horizontal scroll where there
-     shouldn't be, text bleeding past card edges, table cells truncated
-     with no ellipsis)
-   - Cluttered layout (too many elements packed without breathing room,
-     grid columns squashed below readable width, badge/chip pile-ups)
-   - Alignment issues (form labels misaligned with inputs, columns not
-     lined up across rows, asymmetric padding)
-   - Low contrast or unreadable text (gray-on-gray, dark mode bleed-
-     through, placeholder text indistinguishable from filled values)
-   - Mobile-unfriendly behavior at 1440×900 (hamburger menu when not
-     needed, content shifted off-screen, modal not centered)
-   - Inconsistent typography or color vs. DESIGN.md (read DESIGN.md briefly
-     for the canonical palette + scale before reviewing)
+- Content overflowing its container (horizontal scroll where there
+  shouldn't be, text bleeding past card edges, table cells truncated
+  with no ellipsis)
+- Cluttered layout (too many elements packed without breathing room,
+  grid columns squashed below readable width, badge/chip pile-ups)
+- Alignment issues (form labels misaligned with inputs, columns not
+  lined up across rows, asymmetric padding)
+- Low contrast or unreadable text (gray-on-gray, dark mode bleed-
+  through, placeholder text indistinguishable from filled values)
+- Mobile-unfriendly behavior at 1440×900 (hamburger menu when not
+  needed, content shifted off-screen, modal not centered)
+- Inconsistent typography or color vs. DESIGN.md (read DESIGN.md briefly
+  for the canonical palette + scale before reviewing)
 
-   For each finding output:
-   - Priority: medium (blocks or materially hurts usage) or low (cosmetic but worth tracking)
-   - Location: which screenshot, which element/region
-   - Why it's wrong: 1 sentence
-   - Suggested fix: 1 sentence
+For each finding output:
+- Priority: medium (blocks or materially hurts usage) or low (cosmetic but worth tracking)
+- Location: which screenshot, which element/region
+- Why it's wrong: 1 sentence
+- Suggested fix: 1 sentence
 
-   Cap output at 250 words. If everything looks fine, say "no UX issues"
-   and that's it.
-   ```
+Cap output at 250 words. If everything looks fine, say "no UX issues"
+and that's it.
+```
 
-   **Process the verdict:**
-   - If "no UX issues" → log one line in `iteration-N.md` Section 6:
-     `<slug>: UX clean`. Continue.
-   - For each finding → file a GH issue via `super-qa-file-bug.sh` with
-     kind `ux`, category `visual`, priority per the agent's call, and suggested owner `ui-refine-loop` (a UI ticket — a human can run `/ui-refine-loop`; the board never triggers it). Body includes
-     the finding's location + why + suggested fix. The cell still counts
-     as `[x]` (functional green); UX bugs are a separate stream from
-     functional bugs.
+**Process the verdict:**
 
-   Skip the UX pass if the cell was iter-1 read-only smoke AND the page
-   is already documented in `DESIGN.md` (we're trusting the design lock
-   for known-good pages).
+- If "no UX issues" → log one line in `iteration-N.md` Section 6:
+  `<slug>: UX clean`. Continue.
+- For each finding → file a GH issue via `super-qa-file-bug.sh` with
+  kind `ux`, category `visual`, priority per the agent's call, and suggested owner `ui-refine-loop` (a UI ticket — a human can run `/ui-refine-loop`; the board never triggers it). Body includes
+  the finding's location + why + suggested fix. The cell still counts
+  as `[x]` (functional green); UX bugs are a separate stream from
+  functional bugs.
+
+Skip the UX pass if the cell was iter-1 read-only smoke AND the page
+is already documented in `DESIGN.md` (we're trusting the design lock
+for known-good pages).
 
 6. **Decrement budget.**
 
@@ -545,25 +561,24 @@ When a cell goes green and you walk the rendered page for children, push
 items that match these rules — and **only** these:
 
 (a) **Any in-app `<a href>`** whose target route matches a route in
-    `client/src/routes.ts` AND isn't already in `queue.md` (any state).
-    Strip query strings; keep dynamic params (`:id`) replaced with the
-    actual id you saw, recorded as `[ ] /customers/abc123 (from /customers row click)`.
+`client/src/routes.ts` AND isn't already in `queue.md` (any state).
+Strip query strings; keep dynamic params (`:id`) replaced with the
+actual id you saw, recorded as `[ ] /customers/abc123 (from /customers row click)`.
 
-(b) **Any `<button>` or interactive element** whose click triggers either:
-    - A route navigation (use Playwright's `page.on('framenavigated', …)`
-      or `page.waitForURL`), OR
-    - A `[role="dialog"]` element appearing in the DOM (modal/drawer).
-    Push as a synthetic queue item: `[ ] <parent-route> <button-text> drawer`
-    or similar — slug is the parent slug + `-` + the kebab-cased button text.
+(b) **Any `<button>` or interactive element** whose click triggers either: - A route navigation (use Playwright's `page.on('framenavigated', …)`
+or `page.waitForURL`), OR - A `[role="dialog"]` element appearing in the DOM (modal/drawer).
+Push as a synthetic queue item: `[ ] <parent-route> <button-text> drawer`
+or similar — slug is the parent slug + `-` + the kebab-cased button text.
 
 (c) **Any `[role="tab"]` panel** that exposes a different content surface
-    when activated. Push as `[ ] <parent-route> <tab-label> tab`.
+when activated. Push as `[ ] <parent-route> <tab-label> tab`.
 
 **Cap children pushed per cell at 10.** If a page has more, push the first
 10 in DOM order and add a one-line note in `iteration-N.md`:
 `Skipped <K> children on <parent> due to per-page cap (10).`
 
 **Skip:**
+
 - `mailto:` and `tel:` links.
 - External `https://` to non-app domains.
 - JS-only no-op buttons (no nav, no dialog, no DOM mutation that changes
@@ -595,7 +610,7 @@ detection (do NOT batch at end of iter):
    filer refuses a body that misses a section:
    - `## Problem` — 1–3 sentences: what is wrong and where.
    - `## Context` — `- **Where:** <page>, \`<route>\``, then lettered steps one per
-     line (`  - a. Log in as the QA bot`, including login state), `- **Who:**`, and
+line (` - a. Log in as the QA bot`, including login state), `- **Who:**`, and
      the screenshot embedded by a raw URL pinned to a commit.
    - `## Evidence` — the folded 12-row table (Error + stack · Request / trace ID ·
      Sentry · PostHog replay · Logs · Screenshots · HAR / API sample · Env + release ·
@@ -606,12 +621,13 @@ detection (do NOT batch at end of iter):
    - `## Acceptance Criteria` — `- [ ]` checklist: user-visible fix + regression
      coverage + Super QA rerun.
    - `## Risk` — 🟢/🟡/🔴 + one line.
-   The owner goes in `--suggested-skill` (`super-build` for implementation,
-   `ui-refine-loop` for a UI ticket a human runs, `super-qa` for harness/test-only,
-   `super-review` for release-readiness), the dedupe key in `--fingerprint`
-   (`<slug>|<test-case>|<failure-signature>`).
+     The owner goes in `--suggested-skill` (`super-build` for implementation,
+     `ui-refine-loop` for a UI ticket a human runs, `super-qa` for harness/test-only,
+     `super-review` for release-readiness), the dedupe key in `--fingerprint`
+     (`<slug>|<test-case>|<failure-signature>`).
 
 2. **File the issue + auto-promote to Ready:**
+
    ```bash
    ISSUE_N=$(scripts/super-qa-file-bug.sh \
      --title "<one-line title>" \
@@ -626,6 +642,7 @@ detection (do NOT batch at end of iter):
      --fingerprint "<slug>|<tc>|<failure-signature>" \
      --suggested-skill super-build)
    ```
+
    The issue title will be board-readable, for example `🐛 [bug] imports: CSV upload fails after submit`, and the labels will include `bug`, `source:qa`, `priority:<high|medium|low>`, optional `area:<area>`, optional `qa:<category>`, and optional `skill:<owner>`. The script validates required body sections and dedupes by fingerprint: if the same open `source:qa` issue already exists, it comments with the new evidence and returns the existing issue number instead of creating a duplicate card.
 
    The script prints the new issue number on stdout and drops the issue card
@@ -648,6 +665,7 @@ detection (do NOT batch at end of iter):
      entry is the durable record.
 
 **Priority guidance for the `--priority` flag:**
+
 - `high` — site-down, login broken, money corruption, data loss, critical feature broken, critical-path spec blocked, RBAC/security leak.
 - `medium` — feature degraded, important edge case fails, a11y/i18n issue that affects real usage.
 - `low` — cosmetic, copy, low-impact polish, documentation/testability cleanup.
@@ -659,7 +677,7 @@ re-label later via `gh issue edit`.
 
 **Write `docs/super-qa/iter/iteration-N.md` with these sections:**
 
-```markdown
+````markdown
 # Iteration N — super-qa
 
 **Date:** YYYY-MM-DD
@@ -676,11 +694,11 @@ re-label later via `gh issue edit`.
 
 ## Section 2 — Explore (cells processed)
 
-| Cell | Type | Result | Spec | Children pushed |
-|------|------|--------|------|-----------------|
-| /customers/:id (abc123) | detail-page | green | customer-detail.spec.ts | 4 |
-| /customers/:id "Edit" button | modal | bug | customer-detail-edit-modal.spec.ts | 0 |
-| ... | ... | ... | ... | ... |
+| Cell                         | Type        | Result | Spec                               | Children pushed |
+| ---------------------------- | ----------- | ------ | ---------------------------------- | --------------- |
+| /customers/:id (abc123)      | detail-page | green  | customer-detail.spec.ts            | 4               |
+| /customers/:id "Edit" button | modal       | bug    | customer-detail-edit-modal.spec.ts | 0               |
+| ...                          | ...         | ...    | ...                                | ...             |
 
 ## Section 3 — Bugs found
 
@@ -700,6 +718,7 @@ title: <one-line bug title>
 file: client/path/file.tsx:42
 deferred_reason: <only if status: deferred>
 ```
+````
 
 If `gh_issue` is `PENDING`, the GH API call failed at file-time — that bug
 exists ONLY in this iteration file and must be hand-filed by the human or
@@ -711,9 +730,9 @@ re-tried next iter.
 
 ## Section 4 — Fixes applied
 
-| Bug | GH Issue | Commit | Re-test |
-|-----|----------|--------|---------|
-| B-N.1 | #42 | <sha> | green |
+| Bug   | GH Issue | Commit | Re-test |
+| ----- | -------- | ------ | ------- |
+| B-N.1 | #42      | <sha>  | green   |
 
 ## Section 5 — Queue snapshot
 
@@ -736,18 +755,21 @@ prior iteration files.)
 ## Section 8 — Summary
 
 Files touched, commits this iter (one-line each), notable findings.
-```
+
+````
 
 **Regenerate the dashboard:**
 ```bash
 npm run qa:report:render
-```
+````
 
 **Quality bar (must stay green before commit):**
+
 - `npm run lint`
 - `npm run check`
 
 **Stage explicitly (NEVER `git add .`):**
+
 ```bash
 git add e2e/paths/<new-or-modified specs> \
         docs/super-qa/iter/iteration-N.md \
@@ -758,10 +780,13 @@ git add e2e/paths/<new-or-modified specs> \
 ```
 
 **Final commit (mandatory format — orchestrator parses):**
+
 ```
 🧪 [test] super-qa: iter N (X bugs, Y items, Z PRs opened)
 ```
+
 where:
+
 - `X` = total bugs found in this iter (regression + explore combined)
 - `Y` = total cells popped from queue this iter (the "items processed")
 
@@ -809,5 +834,4 @@ under the loop's budget — it needs human eyes.
 
 ---
 
-ITERATION METADATA FOLLOWS:
----
+## ITERATION METADATA FOLLOWS:

@@ -50,32 +50,32 @@ Progress: ✅ onboard  →  ✅ lint  →  🤖 run (you are here)
 
 ## Preconditions (verified before any worker dispatches)
 
-| Check | Action on fail |
-|---|---|
-| Active config exists | Halt: "Run `super-board onboard` first." |
-| Project + required columns exist | Halt: "Project / columns missing. Run `super-board onboard` to repair." |
-| `gh auth` valid with required scopes | Halt: "Re-auth: `gh auth refresh -s project,read:project,repo`." |
-| `pre-flight.md` all items `[✓]` | Halt: "Pre-flight incomplete — fix these: [list]." |
-| No issues missing ACs in active columns | Halt: "N issues need clarification. Run `super-board lint`." |
-| Clean git working tree on base branch | Halt: "Working tree dirty. Stash or commit before running." |
-| Legacy worktrees | If `.worktrees/issue-*` exists, halt before dispatch. Stop its worker, inspect/preserve edits, then `git worktree move` it to the matching `.claude/worktrees/` path. Never delete it as part of an upgrade. |
-| Stale worktree scan | Scan only `.claude/worktrees/issue-<N>` and `issue-<N>-build/qa/review`. If its named branch is gone, use `git worktree remove` without force. Keep detached, dirty, locked, unregistered, or unrelated folders; log failures for inspection. A missing board label alone is not permission to delete work. |
-| Production-merge guard | If `base_branch == "main"` AND `human_approves_merge == false` AND `merge_policy.default != "human"` AND `merge_policy.allow_auto_on_production != true` AND production-detection signals fire (see onboard → base branch), halt with: `🛡 Refusing to start: would auto-merge to production main. Set merge_policy.default: "human", switch base_branch to staging, or re-run super-board onboard to opt in explicitly.` |
-| Orphan-worker scan (added 2026-05-22 after #381 worker storm) | `pgrep -f 'claude -p .*super-board run'` must return zero. If any super-board worker is already alive from a prior crashed run, halt with: `🛑 ${N} super-board workers already running. Stop them first: pkill -f 'claude -p .*super-board run'`. The dispatcher must never run while orphan workers exist — they will collide on assignee claims and produce duplicate PRs. |
-| Database reach | Run every `migrations.checks[env]` for an env in `allowed_envs` (read-only, e.g. `supabase migration list --db-url …`). On failure halt with its error: "Migrate URL for <env> does not connect — fix it before a wave builds work the gate cannot land." |
-| GraphQL rate-limit guard | Before each tick, `sb_gh_guard_check` (super-board-gh-guard.sh — it reads GraphQL's own `rateLimit`, because `gh api rate_limit` misreports the GraphQL bucket). If GraphQL remaining < 200, sleep until reset. Prevents the runner from dying mid-loop when the user has burned quota in another tool. |
+| Check                                                         | Action on fail                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active config exists                                          | Halt: "Run `super-board onboard` first."                                                                                                                                                                                                                                                                                                                                                                                  |
+| Project + required columns exist                              | Halt: "Project / columns missing. Run `super-board onboard` to repair."                                                                                                                                                                                                                                                                                                                                                   |
+| `gh auth` valid with required scopes                          | Halt: "Re-auth: `gh auth refresh -s project,read:project,repo`."                                                                                                                                                                                                                                                                                                                                                          |
+| `pre-flight.md` all items `[✓]`                               | Halt: "Pre-flight incomplete — fix these: [list]."                                                                                                                                                                                                                                                                                                                                                                        |
+| No issues missing ACs in active columns                       | Halt: "N issues need clarification. Run `super-board lint`."                                                                                                                                                                                                                                                                                                                                                              |
+| Clean git working tree on base branch                         | Halt: "Working tree dirty. Stash or commit before running."                                                                                                                                                                                                                                                                                                                                                               |
+| Legacy worktrees                                              | If `.worktrees/issue-*` exists, halt before dispatch. Stop its worker, inspect/preserve edits, then `git worktree move` it to the matching `.claude/worktrees/` path. Never delete it as part of an upgrade.                                                                                                                                                                                                              |
+| Stale worktree scan                                           | Scan only `.claude/worktrees/issue-<N>` and `issue-<N>-build/qa/review`. If its named branch is gone, use `git worktree remove` without force. Keep detached, dirty, locked, unregistered, or unrelated folders; log failures for inspection. A missing board label alone is not permission to delete work.                                                                                                               |
+| Production-merge guard                                        | If `base_branch == "main"` AND `human_approves_merge == false` AND `merge_policy.default != "human"` AND `merge_policy.allow_auto_on_production != true` AND production-detection signals fire (see onboard → base branch), halt with: `🛡 Refusing to start: would auto-merge to production main. Set merge_policy.default: "human", switch base_branch to staging, or re-run super-board onboard to opt in explicitly.` |
+| Orphan-worker scan (added 2026-05-22 after #381 worker storm) | `pgrep -f 'claude -p .*super-board run'` must return zero. If any super-board worker is already alive from a prior crashed run, halt with: `🛑 ${N} super-board workers already running. Stop them first: pkill -f 'claude -p .*super-board run'`. The dispatcher must never run while orphan workers exist — they will collide on assignee claims and produce duplicate PRs.                                             |
+| Database reach                                                | Run every `migrations.checks[env]` for an env in `allowed_envs` (read-only, e.g. `supabase migration list --db-url …`). On failure halt with its error: "Migrate URL for <env> does not connect — fix it before a wave builds work the gate cannot land."                                                                                                                                                                 |
+| GraphQL rate-limit guard                                      | Before each tick, `sb_gh_guard_check` (super-board-gh-guard.sh — it reads GraphQL's own `rateLimit`, because `gh api rate_limit` misreports the GraphQL bucket). If GraphQL remaining < 200, sleep until reset. Prevents the runner from dying mid-loop when the user has burned quota in another tool.                                                                                                                   |
 
 ## Lanes and label routing
 
 One board shape (v3.0.0): Backlog · Ready · Building · QA · Review · Blocked · Done. A card's
 label picks its path — three labels, no per-board variant:
 
-| Label | Path | Why |
-|---|---|---|
-| `feature` | Ready → Building → QA → Review → Done | new behaviour: build, test, review |
-| `bug` | Ready → Building → QA → Review → Done | a fix: same lanes |
-| `qa` | Ready → QA → Review → Done | test what already exists; skips Building |
-| none | as `feature` | the classifier adds `feature` or `bug`; it never adds `qa` |
+| Label     | Path                                  | Why                                                        |
+| --------- | ------------------------------------- | ---------------------------------------------------------- |
+| `feature` | Ready → Building → QA → Review → Done | new behaviour: build, test, review                         |
+| `bug`     | Ready → Building → QA → Review → Done | a fix: same lanes                                          |
+| `qa`      | Ready → QA → Review → Done            | test what already exists; skips Building                   |
+| none      | as `feature`                          | the classifier adds `feature` or `bug`; it never adds `qa` |
 
 `super-board-wave-plan.sh` puts `lane` (`build` / `qa` / `review`) and `labels` on every picked
 card; `super-board-wave.js` sends a `qa` card from Ready straight to the Tester. The legacy runner
@@ -141,25 +141,29 @@ with `.claude/bin/super-board-pr-body.sh --pr <P> --block <name> --expect-head <
 read it — re-read, then redo the edit. Builder opens the PR with every block filled
 (`super-board-pr-body.sh --skeleton` prints the empty markers).
 
-| Block | Builder | Tester | Reviewer |
-|---|---|---|---|
-| `status` (alert card) | writes | rewrites on exit | rewrites on exit |
-| `problem` (lettered steps under Where, screenshot embedded) | writes from the ticket's Context | — | — |
-| `solution` (plain bullets, `Docs:` bullets last) | writes, updates on rebuild | — | — |
-| `ac` (checklist + one proof line each) | writes all unchecked | ticks with proof, or leaves unchecked with the reason | unticks one it disproved |
-| `history` (Lane · Done · Time · Details) | appends a row | appends a row | appends a row |
-| `visual` (Before \| After, UI only) | — | writes | — |
-| `risk` (🟢/🟡/🔴 + one line) | writes | — | adjusts |
-| `redcheck` (only when merged with a failing check) | — | — | writes |
+| Block                                                       | Builder                          | Tester                                                | Reviewer                 |
+| ----------------------------------------------------------- | -------------------------------- | ----------------------------------------------------- | ------------------------ |
+| `status` (alert card)                                       | writes                           | rewrites on exit                                      | rewrites on exit         |
+| `problem` (lettered steps under Where, screenshot embedded) | writes from the ticket's Context | —                                                     | —                        |
+| `solution` (plain bullets, `Docs:` bullets last)            | writes, updates on rebuild       | —                                                     | —                        |
+| `ac` (checklist + one proof line each)                      | writes all unchecked             | ticks with proof, or leaves unchecked with the reason | unticks one it disproved |
+| `history` (Lane · Done · Time · Details)                    | appends a row                    | appends a row                                         | appends a row            |
+| `visual` (Before \| After, UI only)                         | —                                | writes                                                | —                        |
+| `risk` (🟢/🟡/🔴 + one line)                                | writes                           | —                                                     | adjusts                  |
+| `redcheck` (only when merged with a failing check)          | —                                | —                                                     | writes                   |
 
 ```markdown
 <!-- sb:status -->
+
 > [!NOTE]
 > ⏳ In QA · round 1 · ✅ 0/2 AC · Closes #<N> · head `<sha>`
+
 <!-- /sb:status -->
 
 <!-- sb:problem -->
+
 ## Problem
+
 - **Where:** <page>, `<route>`
   - a. <step>
   - b. <step>
@@ -167,32 +171,43 @@ read it — re-read, then redo the edit. Builder opens the PR with every block f
 - **What happened:** <one line>
 
 ![<page> · desktop](https://github.com/<OWNER>/<REPO>/raw/<sha>/<path>.png)
+
 <!-- /sb:problem -->
 
 <!-- sb:solution -->
+
 ## Solution
+
 - <one change per bullet>
-- Docs: <url> — <the one fact it settled>   (or: Docs: none needed — no third-party surface)
+- Docs: <url> — <the one fact it settled> (or: Docs: none needed — no third-party surface)
 <!-- /sb:solution -->
 
 <!-- sb:ac -->
+
 ## Acceptance criteria
+
 - [ ] <AC1 text>\
-  ↳ not verified yet: QA has not run
+       ↳ not verified yet: QA has not run
 - [ ] <AC2 text>\
-  ↳ not verified yet: QA has not run
+     ↳ not verified yet: QA has not run
 <!-- /sb:ac -->
 
 <!-- sb:history -->
+
 ## Iteration history
-| Lane | Done | Time | Details |
-|---|---|---|---|
-| 🔨 builder | ✅ | <super-board-pr-body.sh --time> | draft · `<sha>` |
+
+| Lane       | Done | Time                            | Details         |
+| ---------- | ---- | ------------------------------- | --------------- |
+| 🔨 builder | ✅   | <super-board-pr-body.sh --time> | draft · `<sha>` |
+
 <!-- /sb:history -->
 
 <!-- sb:risk -->
+
 ## Risk
+
 🟢 **Low** · <one line: what could break and what limits it>
+
 <!-- /sb:risk -->
 ```
 
@@ -223,10 +238,10 @@ e2e/streaming/ttfb.spec.ts:18   [qa] [issue] spec asserts status only — add a 
 
 **Resolution rules (each lane only scans the current branch's PR):**
 
-| Lane exiting | Must resolve | Refusal action |
-|---|---|---|
-| Builder (Building → QA) | All `[builder]` threads on this PR | Stay in Building, fix, then exit |
-| Tester (QA → Review) | All `[qa]` threads on this PR | Stay in QA, fix, then exit |
+| Lane exiting               | Must resolve                                                                | Refusal action                                                                          |
+| -------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Builder (Building → QA)    | All `[builder]` threads on this PR                                          | Stay in Building, fix, then exit                                                        |
+| Tester (QA → Review)       | All `[qa]` threads on this PR                                               | Stay in QA, fix, then exit                                                              |
 | Reviewer (approving merge) | All findings and human requests; any conversations GitHub requires resolved | Bounce: `[builder]` open → Ready; `[qa]` open → QA; unresolved human decision → Blocked |
 
 Threads are resolved via `gh api graphql` `resolveReviewThread` mutation when the fix is committed.
@@ -253,13 +268,13 @@ in a sub-agent, before touching a worktree.
 
 The script asks four questions and the agent adds a fifth; the agent owns the judgement:
 
-| # | Question | Mechanical signal (script) | Agent adds |
-|---|---|---|---|
-| 1 | Already done? | merged PR closes `#N`; merged PR / closed issue with the same `fingerprint:` or title | a merged PR that delivers the same behaviour under other words |
-| 2 | Already in progress? | open PR on another branch closes `#N` or has the same title; a card in Building/QA/Review (or a lower-numbered Ready peer) with the same title | same feature, different words — not merely the same files |
-| 3 | File overlap? | open PR touches files the card names; a lower-numbered card in the same `--issues` batch names the same files | expected files from reading the issue (`--files`); the same overlap with a Ready peer in another batch |
-| 4 | Unclear? | no `## Acceptance Criteria` bullets | AC that contradicts the current code (cite `file:line`) |
-| 5 | Too big? | — | likely over ~400 changed lines (`merge_policy.auto_max_lines`; lockfiles, generated, snapshots, migration SQL excluded) or spans many areas (UI + API + DB + jobs …) — lint.md criterion 15 |
+| #   | Question             | Mechanical signal (script)                                                                                                                     | Agent adds                                                                                                                                                                                  |
+| --- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Already done?        | merged PR closes `#N`; merged PR / closed issue with the same `fingerprint:` or title                                                          | a merged PR that delivers the same behaviour under other words                                                                                                                              |
+| 2   | Already in progress? | open PR on another branch closes `#N` or has the same title; a card in Building/QA/Review (or a lower-numbered Ready peer) with the same title | same feature, different words — not merely the same files                                                                                                                                   |
+| 3   | File overlap?        | open PR touches files the card names; a lower-numbered card in the same `--issues` batch names the same files                                  | expected files from reading the issue (`--files`); the same overlap with a Ready peer in another batch                                                                                      |
+| 4   | Unclear?             | no `## Acceptance Criteria` bullets                                                                                                            | AC that contradicts the current code (cite `file:line`)                                                                                                                                     |
+| 5   | Too big?             | —                                                                                                                                              | likely over ~400 changed lines (`merge_policy.auto_max_lines`; lockfiles, generated, snapshots, migration SQL excluded) or spans many areas (UI + API + DB + jobs …) — lint.md criterion 15 |
 
 **Two Ready cards that overlap each other, neither with an open PR, go one at a time.** The
 lower-numbered card proceeds; only the other is sequenced, with `blocked-by: #<lower>`, and the
@@ -272,16 +287,16 @@ The agent may turn a `proceed` into a `hold` on evidence. It may turn a mechanic
 
 **Outcomes — never drop a card silently:**
 
-| Verdict | Action | Block template (`block-template.md`) |
-|---|---|---|
-| `proceed` | nothing; the Builder starts | — |
-| `hold` — done | move card to Blocked | `👯` · names the merged PR / closed issue · Owner: Eric (close as duplicate) · `blocked-by: -` |
-| `hold` — in progress | move card to Blocked | `👯` · names the open PR / card · `blocked-by: <the issue that PR or card closes>` — the sweep returns it when that closes, and pre-flight then finds it done |
-| `hold` — unclear | move card to Blocked | `❓` · the missing AC or the contradiction with `file:line` · `blocked-by: -` |
-| `hold` — too big | move card to Blocked | `❓` · "too big — likely over <cap> changed lines / spans <areas>" · suggests splitting with `/to-tickets` into vertical slices, each under the cap · `blocked-by: -` |
-| `sequence` — `blockedBy` non-empty | move card to Blocked | `⏳` · the overlapping PR and files · `blocked-by: <blockedBy>` — the wave-start sweep frees it |
-| `sequence` — `blockedBy` empty | proceed (card stays Ready, return column `Ready`), comment `⚠️ expected conflict with PR #<P> on <files> — the merge gate will rebase` | — |
-| `halted` | script exit 79: required evidence unavailable; leave the card untouched, stop this run, resume explicitly after recovery | — |
+| Verdict                            | Action                                                                                                                                 | Block template (`block-template.md`)                                                                                                                                  |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `proceed`                          | nothing; the Builder starts                                                                                                            | —                                                                                                                                                                     |
+| `hold` — done                      | move card to Blocked                                                                                                                   | `👯` · names the merged PR / closed issue · Owner: Eric (close as duplicate) · `blocked-by: -`                                                                        |
+| `hold` — in progress               | move card to Blocked                                                                                                                   | `👯` · names the open PR / card · `blocked-by: <the issue that PR or card closes>` — the sweep returns it when that closes, and pre-flight then finds it done         |
+| `hold` — unclear                   | move card to Blocked                                                                                                                   | `❓` · the missing AC or the contradiction with `file:line` · `blocked-by: -`                                                                                         |
+| `hold` — too big                   | move card to Blocked                                                                                                                   | `❓` · "too big — likely over <cap> changed lines / spans <areas>" · suggests splitting with `/to-tickets` into vertical slices, each under the cap · `blocked-by: -` |
+| `sequence` — `blockedBy` non-empty | move card to Blocked                                                                                                                   | `⏳` · the overlapping PR and files · `blocked-by: <blockedBy>` — the wave-start sweep frees it                                                                       |
+| `sequence` — `blockedBy` empty     | proceed (card stays Ready, return column `Ready`), comment `⚠️ expected conflict with PR #<P> on <files> — the merge gate will rebase` | —                                                                                                                                                                     |
+| `halted`                           | script exit 79: required evidence unavailable; leave the card untouched, stop this run, resume explicitly after recovery               | —                                                                                                                                                                     |
 
 A card the pre-flight agent returns no verdict for is treated as `skipped` (a verdict, not a
 column), never built unchecked. `qa` cards are not pre-flighted: nothing is built.
@@ -295,8 +310,8 @@ column), never built unchecked. `qa` cards are not pre-flighted: nothing is buil
    (the card came back from Building after a stopped run): then check it out, keep its
    commits and open PR, and continue from where it stopped.
 3. Read issue body + ALL comments + PROJECT.md.
-3b. Touches a third-party API/SDK, an upgrade, or auth/billing? Read the current official docs
-    for the installed version first (super-build → "Docs before outside-tool code").
+   3b. Touches a third-party API/SDK, an upgrade, or auth/billing? Read the current official docs
+   for the installed version first (super-build → "Docs before outside-tool code").
 4. Implement smallest safe change covering ACs, under the PR size cap
    (`merge_policy.auto_max_lines`, default 400 changed lines). Growing past it mid-build → stop,
    push what you have, propose the split (vertical slices via `/to-tickets`) in a PR comment and
@@ -326,7 +341,7 @@ column), never built unchecked. `qa` cards are not pre-flighted: nothing is buil
 2. `target.url` set → health-check it first. Unhealthy → Block.
 3. Read issue + PR + Builder's handoff comment.
 4. Build issue-scoped test plan: one observable test per AC.
-4b. **Test-gap check** (super-qa → "Test-gap check (after build)"): map every AC to unit / component / e2e tests, hunt edge cases, write the High gaps red-first. A High gap that needs app code changed → Fail (step 7) with the gap list. Medium/Low go in the handoff under `Test gaps (not written)`.
+   4b. **Test-gap check** (super-qa → "Test-gap check (after build)"): map every AC to unit / component / e2e tests, hunt edge cases, write the High gaps red-first. A High gap that needs app code changed → Fail (step 7) with the gap list. Medium/Low go in the handoff under `Test gaps (not written)`.
 5. Run the tests. Capture evidence to `docs/super-board/runs/issue-<N>-qa-v<N>/`. For UI/visual ACs, capture screenshots at the standard viewports (1920×1080 desktop, 1024×768 tablet, 375×667 mobile). Commit the screenshots to the issue branch BEFORE writing the comment (the markdown image URLs depend on the files being present on the branch).
 6. **Pass** → commit test files + screenshots to same branch + push → tick the `ac` block with proof lines, write `visual` for UI, append a `history` row, rewrite `status` → `[qa] [report] ✅` PR comment with results + evidence path **+ inline screenshot embeds** (see "Screenshot embed format" below) → issue comment with the SAME inline screenshot embeds → move card QA → Review. Clean up worktree.
 7. **Fail** → leave failing ACs unchecked with the reason, append a `history` row, rewrite `status` → `[qa] [report] ❌` PR comment with per-AC expected/actual + repro file:line + evidence path + "what fixed should look like" **+ inline screenshot embeds of the broken state** → issue comment with the same inline screenshots (showing what's wrong) → increment rebuild counter → move card QA → Ready (label `loop:rebuild-N`). Clean up worktree.
@@ -336,14 +351,15 @@ column), never built unchecked. `qa` cards are not pre-flighted: nothing is buil
 Inline screenshots in the GitHub comment using raw-URL markdown so they render directly on the issue/PR page without anyone having to clone the repo:
 
 ```markdown
-| Viewport | Screenshot |
-|---|---|
+| Viewport          | Screenshot                                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- |
 | Desktop 1920×1080 | ![desktop](https://github.com/<OWNER>/<REPO>/raw/<SHA>/docs/super-board/runs/issue-<N>-qa-v<V>/desktop.png) |
-| Tablet 1024×768  | ![tablet](https://github.com/<OWNER>/<REPO>/raw/<SHA>/docs/super-board/runs/issue-<N>-qa-v<V>/tablet.png) |
-| Mobile 375×667   | ![mobile](https://github.com/<OWNER>/<REPO>/raw/<SHA>/docs/super-board/runs/issue-<N>-qa-v<V>/mobile.png) |
+| Tablet 1024×768   | ![tablet](https://github.com/<OWNER>/<REPO>/raw/<SHA>/docs/super-board/runs/issue-<N>-qa-v<V>/tablet.png)   |
+| Mobile 375×667    | ![mobile](https://github.com/<OWNER>/<REPO>/raw/<SHA>/docs/super-board/runs/issue-<N>-qa-v<V>/mobile.png)   |
 ```
 
 Substitution rules:
+
 - `<OWNER>/<REPO>` — read from `git remote get-url origin` (parse owner/name).
 - `<SHA>` — the commit that added the screenshots (`git rev-parse HEAD` right after committing them), never a branch name: the branch is deleted on merge and a branch URL breaks. Push before you post.
 - `<N>` and `<V>` — issue number + QA version (`v1`, `v2`, ...).
@@ -376,16 +392,19 @@ If a screenshot file is >5MB, downscale to ≤1920px wide before committing; Git
    - Both open → bounce to whichever is older; the other gets picked up later.
    - Clean up worktree, exit.
 3. Read the issue ACs and the raw diff (code + test files) FIRST and write 2–4 hypotheses of your own — what must hold, where it would break. Only then read the PR description, the `[builder] [report]` comment and Tester's handoff, and check each claim like a hypothesis. Spot-check Tester's evidence (one screenshot at least), read CLAUDE.md / AGENTS.md.
-3b. **Prior-report check (review remembers — added 2.5.0).** Load the last Reviewer report on this PR as `prior_report`. One call:
+   3b. **Prior-report check (review remembers — added 2.5.0).** Load the last Reviewer report on this PR as `prior_report`. One call:
+
    ```
    gh pr view <PR> --json comments \
      --jq '[.comments[] | select(.body | contains("<!-- super-review:report -->"))] | last | {url, body} // {}'
    ```
+
    - Empty → first review of this card. Skip to step 4; behave exactly as before.
    - Non-empty → the card was bounced and rebuilt. **Round 1** walks every finding in `prior_report` and marks each one `fixed` / `not fixed` / `no longer applies` (code it pointed at is gone or the AC changed), citing the file:line that proves it. A resolved thread is not proof — check the code.
    - Any `not fixed` → bounce again now: re-open one thread per unfixed finding with its original prefix (`[builder]` → Ready, `[qa]` → QA, both → `[builder]` first), `loop:rebuild-N`, and update the Reviewer report: those rows go to `❌ not fixed`. Skip the fresh pass; it would review code that is about to change.
    - An unfixed **Over-engineering** finding alone does not bounce; carry it into the new report's Findings.
    - All `fixed` / `no longer applies` → continue to step 4 for a fresh pass. Do not re-raise a prior finding marked `no longer applies`.
+
 4. Review the code (logic, conventions). Review the tests (right thing tested? testable assertions? meaningful coverage?).
 5. **Reviewer-side test rerun** (always — closes the Tester self-verification gap):
    - Pull `issue-<N>-<slug>` into the review worktree.
@@ -407,7 +426,7 @@ If a screenshot file is >5MB, downscale to ≤1920px wide before committing; Git
    - **Code-side new finding** → open new `[builder]`-prefixed PR thread, comment, move card Review → Ready (label `loop:rebuild-N`).
    - **Test-side new finding** → open new `[qa]`-prefixed PR thread, comment, move card Review → QA (label `loop:rebuild-N`).
    - **CI-budget block (💳, added 2026-05-22)** — if remote CI jobs `failed_to_start` due to `Actions budget` AND `config.auto_merge_on_ci_budget_block` is true AND local-evidence is strong (truth ≥ threshold, Tester suite green on rerun in step 5, all `[builder]`/`[qa]` threads clean) → **squash-merge anyway** on local evidence; do NOT move to Blocked. Write the PR's `redcheck` block (`> [!WARNING]` · `🔴 Merged with a failing check: <check> · CI budget block`) and a `[reviewer] [report] ✅ merged · CI-budget bypass` comment on the PR and the issue citing: (a) the failed CI run ID, (b) the Tester pass-count, (c) the truth-gate score. Reason: CI failure-to-start ≠ test failure; with strong local evidence, parking the card wastes pipeline time. This bypass is ONLY for `💳` — never for `🛡` truth-fail, `🔐` missing creds, or `🧑` human-only decisions.
-   - **Human-gate / Blocker finding (destructive schema, API contract, money, auth, live-DB migration) / rebuild cap hit (config.rebuild_cap)** → write the full Block template (see §4), move card Review → Blocked. A clean PR that only *touches* money, auth or schema is not a blocker — run the merge protocol; the gate's `merge_policy` routes it to a human (exit 7 → 🙋 Blocked).
+   - **Human-gate / Blocker finding (destructive schema, API contract, money, auth, live-DB migration) / rebuild cap hit (config.rebuild_cap)** → write the full Block template (see §4), move card Review → Blocked. A clean PR that only _touches_ money, auth or schema is not a blocker — run the merge protocol; the gate's `merge_policy` routes it to a human (exit 7 → 🙋 Blocked).
 8. Write the **Reviewer report** on every exit from step 3b on — bounce, block, human gate, merge (a Gate 1 thread bounce reviews nothing and writes none). It is ONE comment per PR, **edited in place** each round: find it by the marker (step 3b's lookup, plus `.url` — the number after `#issuecomment-` is its id) and `gh api -X PATCH repos/<owner>/<repo>/issues/comments/<id> -F body=@<file>`; post a new comment only when none exists. It is what step 3b reads next time, so the first line is the stable marker and every finding keeps its id (writing-standard.md § 4):
 
    ```
@@ -424,7 +443,9 @@ If a screenshot file is >5MB, downscale to ≤1920px wide before committing; Git
    | R2 | qa | Verification miss | `e2e/streaming/ttfb.spec.ts:18` | <one line> | ❌ not fixed |
    | R3 | builder | Over-engineering | `src/api/retry.ts:1` | <what it builds → smaller thing> (should fix, not blocking) | open |
    ```
+
    Status words in the header: `merge-ready` · `bounced` · `blocked` · `human-gated` · `merged`. Keep every row across rounds; update its Status (`open` · `✅ fixed` · `❌ not fixed` · `no longer applies`). New findings take the next free id. Every finding names its class — Gap / Bug / Verification miss / Scope drift / Over-engineering (super-review → "Classify findings"); a checked hypothesis that held is not a finding, it goes on the `✅ Done` line.
+
 9. Clean up worktree.
 
 ### Merge protocol (Reviewer only — added 2026-08-06, issue #9)
@@ -630,16 +651,16 @@ The three locks (assignee, in-flight file, lane PID) are defense in depth: any o
 
 ## Halt gates
 
-| Gate | Action |
-|---|---|
-| `config.rebuild_cap` reached on same card + same root-cause hash | Move card to Blocked with full §4 template (reason 🛡), continue run |
-| No card progresses for 3 ticks AND no lane is idle | Halt, dump state |
-| Auth expires mid-run | Halt, ping user with refresh instruction |
-| Pre-flight check fails on re-validation | Halt with the specific missing item |
-| Merge conflict, or a stale branch the merge gate rejects | Move card to **`Ready`** with the `loop:rebase` label — NOT Blocked. See "The rebase pass" below |
-| User-defined time/budget window reached | Graceful halt: finish in-flight workers, no new dispatches |
-| Destructive action would be required (prod deploy, db drop, secret rotation) | Halt, never proceed; move card to Blocked with reason 🛡 |
-| Block-rate alert: Blocked count > `config.block_rate_alert_pct` of initial Ready | Post the breakdown in the run report, continue run |
+| Gate                                                                             | Action                                                                                           |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `config.rebuild_cap` reached on same card + same root-cause hash                 | Move card to Blocked with full §4 template (reason 🛡), continue run                             |
+| No card progresses for 3 ticks AND no lane is idle                               | Halt, dump state                                                                                 |
+| Auth expires mid-run                                                             | Halt, ping user with refresh instruction                                                         |
+| Pre-flight check fails on re-validation                                          | Halt with the specific missing item                                                              |
+| Merge conflict, or a stale branch the merge gate rejects                         | Move card to **`Ready`** with the `loop:rebase` label — NOT Blocked. See "The rebase pass" below |
+| User-defined time/budget window reached                                          | Graceful halt: finish in-flight workers, no new dispatches                                       |
+| Destructive action would be required (prod deploy, db drop, secret rotation)     | Halt, never proceed; move card to Blocked with reason 🛡                                         |
+| Block-rate alert: Blocked count > `config.block_rate_alert_pct` of initial Ready | Post the breakdown in the run report, continue run                                               |
 
 ### The rebase pass
 
@@ -724,6 +745,7 @@ Different hash on the same card resets the counter — the bot recognizes that p
 ## Done conditions
 
 The loop exits cleanly when:
+
 - All active-pipeline columns are empty; OR
 - Only Blocked/Done cards remain (Backlog is not part of a run); OR
 - A halt gate fires.
@@ -775,6 +797,7 @@ A worker that cannot satisfy this checklist must NOT release its claim. It eithe
 During the 2026-05-21 production run, several workers exited cleanly (process terminated, in-flight lock reaped) but **had not moved their card to the next column**. The dispatcher correctly re-dispatched (lane idle + card still in source column = re-fire) — but each retry burned a full lane cycle (~10 min) before the next worker tried again. The #382 Reviewer took **5 attempts × ~10 min = ~50 min** to move a card that the first attempt should have moved.
 
 Suspected causes:
+
 - Worker lost the response to a column move and exited "cleanly" without confirming its outcome. Preserve the unknown outcome and pause; do not claim success or blindly repeat the mutation.
 - Worker's super-build/super-qa/super-review skill silently caught the move error and proceeded to assignee-release without surfacing the failure.
 
@@ -792,11 +815,11 @@ Different from the multi-attempt-move issue above: there the worker exited witho
 
 Every tick — both cheap and expensive — `sweep_lane_zombies` runs `check_lane_zombie` for each lane. For each lane whose PID is alive AND whose claimed issue's current column is NOT in the lane's expected source set:
 
-| Lane    | Expected source columns | Anything else means → |
-|---------|-------------------------|-----------------------|
-| build   | Ready, Building         | zombie                |
-| qa      | QA                      | zombie                |
-| review  | Review                  | zombie                |
+| Lane   | Expected source columns | Anything else means → |
+| ------ | ----------------------- | --------------------- |
+| build  | Ready, Building         | zombie                |
+| qa     | QA                      | zombie                |
+| review | Review                  | zombie                |
 
 On zombie detection: `SIGTERM` + 1s + `SIGKILL` the PID, remove the inflight lock, idempotently sweep the assignee, clear the lane PID/issue vars, log `💀 zombie <lane> worker on #<N> (pid=<P>) — card moved to '<col>'; killing`. Uses the cached project items only — zero extra API calls per tick.
 

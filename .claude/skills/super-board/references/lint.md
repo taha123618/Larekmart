@@ -68,14 +68,14 @@ PHASE 7 — Final summary + session-reset nudge
 
 ## Phase 0 edge cases
 
-| State | Lint's response |
-|---|---|
-| 0 configs exist | Halt: "Run `super-board onboard` first." |
-| 1 config, project still on GitHub | Use it, 1-liner confirm |
-| 2+ configs | List by description, ask which |
-| Config exists but project deleted | Halt: "Project #N no longer exists. Run `super-board onboard` to recreate." |
-| Config exists, columns missing | Halt: "Columns missing: [X, Y]. Run `super-board onboard` to repair." |
-| User deleted config but project still on GitHub | Nothing to load; user runs `onboard` and picks "use existing project". |
+| State                                           | Lint's response                                                             |
+| ----------------------------------------------- | --------------------------------------------------------------------------- |
+| 0 configs exist                                 | Halt: "Run `super-board onboard` first."                                    |
+| 1 config, project still on GitHub               | Use it, 1-liner confirm                                                     |
+| 2+ configs                                      | List by description, ask which                                              |
+| Config exists but project deleted               | Halt: "Project #N no longer exists. Run `super-board onboard` to recreate." |
+| Config exists, columns missing                  | Halt: "Columns missing: [X, Y]. Run `super-board onboard` to repair."       |
+| User deleted config but project still on GitHub | Nothing to load; user runs `onboard` and picks "use existing project".      |
 
 ---
 
@@ -83,26 +83,26 @@ PHASE 7 — Final summary + session-reset nudge
 
 An issue is flagged if any of these apply. An issue can fail multiple criteria; all firing criteria are surfaced in Phase 4.
 
-| # | Criterion | Example fail | What lint suggests |
-|---|---|---|---|
-| 1 | No `## Acceptance Criteria` section | Body has description only | Draft 3-5 ACs from title + body + PROJECT.md |
-| 2 | ACs section empty | `## Acceptance Criteria\n\n(none yet)` | Same as #1 |
-| 3 | Unmeasurable adjectives | "snappier", "polished", "modern" | Replace with measurable threshold |
-| 4 | Subjective verbs, no observable outcome | "improve UX", "make it pop" | Rewrite as user-observable behavior |
-| 5 | Vague quantifiers, no unit | "loads quickly", "many results" | Add unit/threshold |
-| 6 | Missing trigger + outcome pair | "chat works" | Reformat as Given/When/Then |
-| 7 | Missing test surface | QA issue with no URL/page; Build issue with no file hint | Add the surface |
-| 8 | Ambiguous scope (`etc.`, `TODO`, `TBD`) | "Tabs, dropdowns, modals, etc." | Enumerate or split |
-| 9 | Multiple unrelated features bundled (>3 disconnected ACs) | Auth + billing + UI polish in one ticket | Recommend splitting |
-| 10 | Title ↔ body mismatch | Title says login, body says signup | Ask which is correct |
-| 11 | Out-of-scope vs PROJECT.md | AC for a feature the project explicitly excludes | Drop it (close as not planned, Done, 🤷) or rewrite |
-| 12 | Sub-agent ambiguity flag | "this could mean ≥2 different things" | Surface both interpretations |
-| 13 | `## Blocked by` missing, empty, or unparseable | No section; or `- None — but #26 must merge first` | Rewrite to `- #N — why` bullets, or a bare `- None.` |
-| 14 | An AC proves behaviour against a fake, and no card owns the real thing | "proven with a fake repository, no database" | Name the ticket that builds it, or offer to file one |
-| 15 | Too big: likely over ~400 changed lines (`merge_policy.auto_max_lines`), or spans many areas | "Add billing page, webhook handler, admin UI and email templates" | Hold with ❓ and split via `/to-tickets` into vertical slices |
-| 16 | Ticket sections missing (writing-standard.md § 3): `## Problem`, `## Context`, `## Fix`, `## Risk` — and `## Evidence` (the folded 12-row table) on a bug | Body has "What to build" and ACs only | Rewrite into the ticket format; draft Problem/Fix from the body, ask for Who and Risk |
-| 17 | Acceptance Criteria not a checklist | ACs as prose or plain `-` bullets | Rewrite as `- [ ] <checkable outcome>`, one per line |
-| 18 | Context steps not lettered under Where, more than one step per line, or chained with arrows | "Where: /x — sign in → open Receipts → drop file" | Rewrite as `- **Where:** …` then `  - a. Sign in` / `  - b. …`, one per line; embed the screenshot (raw URL pinned to a sha), never link it |
+| #   | Criterion                                                                                                                                                 | Example fail                                                      | What lint suggests                                                                                                                          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | No `## Acceptance Criteria` section                                                                                                                       | Body has description only                                         | Draft 3-5 ACs from title + body + PROJECT.md                                                                                                |
+| 2   | ACs section empty                                                                                                                                         | `## Acceptance Criteria\n\n(none yet)`                            | Same as #1                                                                                                                                  |
+| 3   | Unmeasurable adjectives                                                                                                                                   | "snappier", "polished", "modern"                                  | Replace with measurable threshold                                                                                                           |
+| 4   | Subjective verbs, no observable outcome                                                                                                                   | "improve UX", "make it pop"                                       | Rewrite as user-observable behavior                                                                                                         |
+| 5   | Vague quantifiers, no unit                                                                                                                                | "loads quickly", "many results"                                   | Add unit/threshold                                                                                                                          |
+| 6   | Missing trigger + outcome pair                                                                                                                            | "chat works"                                                      | Reformat as Given/When/Then                                                                                                                 |
+| 7   | Missing test surface                                                                                                                                      | QA issue with no URL/page; Build issue with no file hint          | Add the surface                                                                                                                             |
+| 8   | Ambiguous scope (`etc.`, `TODO`, `TBD`)                                                                                                                   | "Tabs, dropdowns, modals, etc."                                   | Enumerate or split                                                                                                                          |
+| 9   | Multiple unrelated features bundled (>3 disconnected ACs)                                                                                                 | Auth + billing + UI polish in one ticket                          | Recommend splitting                                                                                                                         |
+| 10  | Title ↔ body mismatch                                                                                                                                    | Title says login, body says signup                                | Ask which is correct                                                                                                                        |
+| 11  | Out-of-scope vs PROJECT.md                                                                                                                                | AC for a feature the project explicitly excludes                  | Drop it (close as not planned, Done, 🤷) or rewrite                                                                                         |
+| 12  | Sub-agent ambiguity flag                                                                                                                                  | "this could mean ≥2 different things"                             | Surface both interpretations                                                                                                                |
+| 13  | `## Blocked by` missing, empty, or unparseable                                                                                                            | No section; or `- None — but #26 must merge first`                | Rewrite to `- #N — why` bullets, or a bare `- None.`                                                                                        |
+| 14  | An AC proves behaviour against a fake, and no card owns the real thing                                                                                    | "proven with a fake repository, no database"                      | Name the ticket that builds it, or offer to file one                                                                                        |
+| 15  | Too big: likely over ~400 changed lines (`merge_policy.auto_max_lines`), or spans many areas                                                              | "Add billing page, webhook handler, admin UI and email templates" | Hold with ❓ and split via `/to-tickets` into vertical slices                                                                               |
+| 16  | Ticket sections missing (writing-standard.md § 3): `## Problem`, `## Context`, `## Fix`, `## Risk` — and `## Evidence` (the folded 12-row table) on a bug | Body has "What to build" and ACs only                             | Rewrite into the ticket format; draft Problem/Fix from the body, ask for Who and Risk                                                       |
+| 17  | Acceptance Criteria not a checklist                                                                                                                       | ACs as prose or plain `-` bullets                                 | Rewrite as `- [ ] <checkable outcome>`, one per line                                                                                        |
+| 18  | Context steps not lettered under Where, more than one step per line, or chained with arrows                                                               | "Where: /x — sign in → open Receipts → drop file"                 | Rewrite as `- **Where:** …` then `  - a. Sign in` / `  - b. …`, one per line; embed the screenshot (raw URL pinned to a sha), never link it |
 
 ---
 
@@ -114,14 +114,14 @@ those judge whether a **human** can act on a ticket, these judge whether the **l
 **13 — the dependency line.** The wave planner reads `## Blocked by` to decide what may start and to
 sweep cards whose blockers have closed. Three shapes defeat it, and all three were on the board:
 
-| On the ticket | A human reads | The planner reads |
-|---|---|---|
-| *(no section at all)* | "probably nothing blocks it" | unknown — fail safe, never starts |
-| `## Blocked by` then nothing | "nothing blocks it" | unknown — fail safe, never starts |
-| `- None — but #26 must merge first` | **one blocker** | **no blockers** — starts it early |
+| On the ticket                       | A human reads                | The planner reads                 |
+| ----------------------------------- | ---------------------------- | --------------------------------- |
+| _(no section at all)_               | "probably nothing blocks it" | unknown — fail safe, never starts |
+| `## Blocked by` then nothing        | "nothing blocks it"          | unknown — fail safe, never starts |
+| `- None — but #26 must merge first` | **one blocker**              | **no blockers** — starts it early |
 
 The third is the dangerous one, because the two readings disagree and the planner's is the one that
-acts. Note the source: the `to-tickets` template offers *"None — can start immediately"* as its
+acts. Note the source: the `to-tickets` template offers _"None — can start immediately"_ as its
 example, so this shape is produced by following the instructions. Lint must catch it on the way in.
 
 Accept exactly two forms. Bullets — `- #32 — the price feed` — or a single `- None.` on its own.
@@ -134,7 +134,7 @@ against a fake repository — its own stated sixth criterion, correct and delibe
 writer had no ticket number. It was found two tickets later when another card's Tester hit the wall,
 and filed by hand.
 
-When an AC contains *fake*, *stub*, *mock*, `notBuiltYet`, or "no database / no network" as the
+When an AC contains _fake_, _stub_, _mock_, `notBuiltYet`, or "no database / no network" as the
 proof method, ask one question: **which card builds the real one?** A number is an answer. "Later"
 is not.
 
@@ -159,17 +159,17 @@ ticket closes, or becomes the first slice, once the user approves the split.
 
 ## Phase 4 — skill routing
 
-| Flagged pattern | Skill dispatched |
-|---|---|
-| QA ticket, vague test surface | `qa-test-planner` |
-| Feature ticket, undefined UX | `shape` |
-| Copy / microcopy / error message AC | `clarify` |
-| Bug ticket, no repro steps | `mattpocock-skills:diagnosing-bugs` |
-| Issue needing fundamental rethink (criteria #10, #11) | `mattpocock-skills:grilling` |
-| Issue with multiple interpretations (criterion #12) | `mattpocock-skills:grilling` |
-| Ticket too big (criterion #15) | `/to-tickets` (split into vertical slices) |
-| Ticket format (criteria #16–18) | Inline rewrite into `ticket-format.md` (sub-agent in lint itself) |
-| Catch-all (none of above) | Inline draft (sub-agent in lint itself) |
+| Flagged pattern                                       | Skill dispatched                                                  |
+| ----------------------------------------------------- | ----------------------------------------------------------------- |
+| QA ticket, vague test surface                         | `qa-test-planner`                                                 |
+| Feature ticket, undefined UX                          | `shape`                                                           |
+| Copy / microcopy / error message AC                   | `clarify`                                                         |
+| Bug ticket, no repro steps                            | `mattpocock-skills:diagnosing-bugs`                               |
+| Issue needing fundamental rethink (criteria #10, #11) | `mattpocock-skills:grilling`                                      |
+| Issue with multiple interpretations (criterion #12)   | `mattpocock-skills:grilling`                                      |
+| Ticket too big (criterion #15)                        | `/to-tickets` (split into vertical slices)                        |
+| Ticket format (criteria #16–18)                       | Inline rewrite into `ticket-format.md` (sub-agent in lint itself) |
+| Catch-all (none of above)                             | Inline draft (sub-agent in lint itself)                           |
 
 One sub-agent per issue. User stays in control of pacing.
 
@@ -177,13 +177,13 @@ One sub-agent per issue. User stays in control of pacing.
 
 ## Phase 4 — PM-friendly translation table
 
-| Don't say | Say |
-|---|---|
-| "Acceptance criteria" | "What we'll check" |
+| Don't say                    | Say                                         |
+| ---------------------------- | ------------------------------------------- |
+| "Acceptance criteria"        | "What we'll check"                          |
 | "AC #2 is non-deterministic" | "Step 2 doesn't say what 'pass' looks like" |
-| "TDD-style red-green" | (don't mention) |
-| "Happy path coverage" | "The main flow works" |
-| "Regression test" | "Make sure it still works for old users" |
+| "TDD-style red-green"        | (don't mention)                             |
+| "Happy path coverage"        | "The main flow works"                       |
+| "Regression test"            | "Make sure it still works for old users"    |
 
 Per-issue interaction example:
 

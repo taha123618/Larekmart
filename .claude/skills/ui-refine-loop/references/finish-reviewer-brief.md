@@ -10,6 +10,7 @@ You grade the loop's work, in a fresh context. You did not watch the fixes, so t
    - `not-fixed`: you can't see it, or it got worse.
 
    `evidence` is one line: the shot and what it shows.
+
 4. **Regressions**: name at most 3 things the fixes broke, judged by the same rules: a theme, a width, a section that looked better at round-0. Nothing else.
 5. `disposition`: one line. Write "ready for review" only when no P0/P1 claim is `partial` or `not-fixed` and there are no regressions. Otherwise name what stays open. Never round up.
 

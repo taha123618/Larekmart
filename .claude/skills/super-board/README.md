@@ -18,13 +18,13 @@ Drives a GitHub Project board on its own: drag a card into `Ready`, and it comes
 
 ## Verbs
 
-| Command | Does |
-|---|---|
-| `/super-board onboard` | One-time setup; checks the board's columns, writes the config |
-| `/super-board lint` | Flags vague or missing ACs and unreadable `Blocked by` lines before a run |
-| `/super-board status` | Read-only 80-column board snapshot (~1.3s, pure Python) |
-| `/super-board run <slug> [--low\|--high]` | The loop; also the resume command |
-| `/super-board stop` | Posts "stopped mid-flight" notes, releases claims, stops workers |
+| Command                                   | Does                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------- |
+| `/super-board onboard`                    | One-time setup; checks the board's columns, writes the config             |
+| `/super-board lint`                       | Flags vague or missing ACs and unreadable `Blocked by` lines before a run |
+| `/super-board status`                     | Read-only 80-column board snapshot (~1.3s, pure Python)                   |
+| `/super-board run <slug> [--low\|--high]` | The loop; also the resume command                                         |
+| `/super-board stop`                       | Posts "stopped mid-flight" notes, releases claims, stops workers          |
 
 ## Install
 

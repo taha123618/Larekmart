@@ -8,16 +8,16 @@ Invoked as `/super-board onboard` (get.sh / install.sh) or `/super-board:super-b
 
 ## Design rules
 
-| Rule | How |
-|---|---|
-| Wizard | 8 numbered steps. Each opens with the agenda strip and `N of 8 · <emoji> <Name> — <one short why>`, then one `AskUserQuestion` |
-| Minimal text | what it found in one line, then the question. Details go in an option's description or one dim line under it — never a paragraph |
-| Recommended first | every question puts its recommended option FIRST, labelled `(Recommended)`, so Enter takes it |
-| One tool | ask with `AskUserQuestion` (≤ 4 questions per call, ≤ 4 options per question; the built-in "Other" box is the free-text option). NEVER free-text a choice that has options |
-| Fix, don't ask | a must-have (skills, scripts, workflows, guard hooks, settings entries, old folders, config keys, labels, columns) is fixed with NO question and listed under "Fixed for you". Only system tools and sign-ins are asked — through Claude Code's own permission prompt on the exact command |
-| Save as you go | every answer is written to `.claude/super-board/onboard-answers.json` the moment it is given |
-| Write once | files in the repo (config, settings.json allow lines, AGENTS.md, CLAUDE.md, docs) change only at step 8, after "Write everything". GitHub-side actions the user just picked (create or extend the board, create `staging`) run in their own step |
-| Secrets | NEVER read, grep, cat or source a dotenv file. Key names only, via `.claude/bin/super-board-env-check.sh` |
+| Rule              | How                                                                                                                                                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Wizard            | 8 numbered steps. Each opens with the agenda strip and `N of 8 · <emoji> <Name> — <one short why>`, then one `AskUserQuestion`                                                                                                                                                             |
+| Minimal text      | what it found in one line, then the question. Details go in an option's description or one dim line under it — never a paragraph                                                                                                                                                           |
+| Recommended first | every question puts its recommended option FIRST, labelled `(Recommended)`, so Enter takes it                                                                                                                                                                                              |
+| One tool          | ask with `AskUserQuestion` (≤ 4 questions per call, ≤ 4 options per question; the built-in "Other" box is the free-text option). NEVER free-text a choice that has options                                                                                                                 |
+| Fix, don't ask    | a must-have (skills, scripts, workflows, guard hooks, settings entries, old folders, config keys, labels, columns) is fixed with NO question and listed under "Fixed for you". Only system tools and sign-ins are asked — through Claude Code's own permission prompt on the exact command |
+| Save as you go    | every answer is written to `.claude/super-board/onboard-answers.json` the moment it is given                                                                                                                                                                                               |
+| Write once        | files in the repo (config, settings.json allow lines, AGENTS.md, CLAUDE.md, docs) change only at step 8, after "Write everything". GitHub-side actions the user just picked (create or extend the board, create `staging`) run in their own step                                           |
+| Secrets           | NEVER read, grep, cat or source a dotenv file. Key names only, via `.claude/bin/super-board-env-check.sh`                                                                                                                                                                                  |
 
 **Scripts.** `SB=.claude/bin` after an install. Plugin install before step 1 has run: the plugin's
 own copy, `PACK=$(dirname "$(find ~/.claude/plugins -path '*super-board*' -name install.sh -not -path
@@ -25,14 +25,14 @@ own copy, `PACK=$(dirname "$(find ~/.claude/plugins -path '*super-board*' -name 
 super-board plugin files. Run the one-line installer (get.sh) or ./install.sh <this-dir> from a
 checkout, then re-run onboard.`
 
-| Script | Used in |
-|---|---|
-| `python3 $SB/super-board-setup.py check / fix --text` | 1 Checks |
-| `python3 $SB/super-board-setup.py board-rank / board-migrate / names` | 1 (upgrade), 3 Board |
-| `python3 $SB/super-board-setup.py branch` | 4 Branch |
-| `python3 $SB/super-board-agents-md.py …` | 5 AGENTS.md |
-| `python3 $SB/super-board-settings.py allow … --dry-run` | 6 Policies |
-| `python3 .claude/skills/super-collect/scripts/collect_custom.py classify / ping / add` | 7 Bug sources |
+| Script                                                                                 | Used in              |
+| -------------------------------------------------------------------------------------- | -------------------- |
+| `python3 $SB/super-board-setup.py check / fix --text`                                  | 1 Checks             |
+| `python3 $SB/super-board-setup.py board-rank / board-migrate / names`                  | 1 (upgrade), 3 Board |
+| `python3 $SB/super-board-setup.py branch`                                              | 4 Branch             |
+| `python3 $SB/super-board-agents-md.py …`                                               | 5 AGENTS.md          |
+| `python3 $SB/super-board-settings.py allow … --dry-run`                                | 6 Policies           |
+| `python3 .claude/skills/super-collect/scripts/collect_custom.py classify / ping / add` | 7 Bug sources        |
 
 ---
 
@@ -60,16 +60,16 @@ checkout, then re-run onboard.`
 ⏺ 3 of 8 · 🗂️ Board — the robot takes tickets from here.
 ```
 
-| # | Header line |
-|---|---|
-| 1 | `1 of 8 · 🔍 Checks — install or update what the board needs.` |
-| 2 | `2 of 8 · 🔑 GitHub — sign in so I can manage boards.` |
-| 3 | `3 of 8 · 🗂️ Board — the robot takes tickets from here.` |
-| 4 | `4 of 8 · 🌿 Branch — where finished work merges.` |
-| 5 | `5 of 8 · 📜 AGENTS.md — Claude reads AGENTS.md; CLAUDE.md becomes "@AGENTS.md".` |
-| 6 | `6 of 8 · 🛡️ Policies — what the robot may do alone.` |
-| 7 | `7 of 8 · 📥 Bug sources — where to find problems to fix.` |
-| 8 | `8 of 8 · ✅ Review — nothing is written until you say so.` |
+| #   | Header line                                                                       |
+| --- | --------------------------------------------------------------------------------- |
+| 1   | `1 of 8 · 🔍 Checks — install or update what the board needs.`                    |
+| 2   | `2 of 8 · 🔑 GitHub — sign in so I can manage boards.`                            |
+| 3   | `3 of 8 · 🗂️ Board — the robot takes tickets from here.`                          |
+| 4   | `4 of 8 · 🌿 Branch — where finished work merges.`                                |
+| 5   | `5 of 8 · 📜 AGENTS.md — Claude reads AGENTS.md; CLAUDE.md becomes "@AGENTS.md".` |
+| 6   | `6 of 8 · 🛡️ Policies — what the robot may do alone.`                             |
+| 7   | `7 of 8 · 📥 Bug sources — where to find problems to fix.`                        |
+| 8   | `8 of 8 · ✅ Review — nothing is written until you say so.`                       |
 
 **Resume** — an answers file with `last_step` and no finished config. Saved answers first, then
 the question:
@@ -100,13 +100,30 @@ the step-8 table, then "Onboard found an existing setup. What now?" [Keep all �
 `.claude/super-board/onboard-answers.json` (gitignored — step 8 adds it):
 
 ```json
-{ "version": 2, "updated": "<iso>", "last_step": "policies",
-  "answers": { "github": {"login": "erictech", "remote": "github.com/erictech/my-app"},
-               "board": {"owner": "erictech", "number": 4, "title": "Ledgerly Roadmap", "reused": true},
-               "base_branch": "staging", "agents": "merged",
-               "policies": {"merge_default": "auto", "protect_main": true, "allowed_envs": ["test", "staging"]},
-               "permissions": "add", "collect": ["sentry", "github", "prs", "architecture", "linear"],
-               "custom": [{"name": "linear", "kind": "mcp", "target": "linear"}] } }
+{
+  "version": 2,
+  "updated": "<iso>",
+  "last_step": "policies",
+  "answers": {
+    "github": { "login": "erictech", "remote": "github.com/erictech/my-app" },
+    "board": {
+      "owner": "erictech",
+      "number": 4,
+      "title": "Ledgerly Roadmap",
+      "reused": true
+    },
+    "base_branch": "staging",
+    "agents": "merged",
+    "policies": {
+      "merge_default": "auto",
+      "protect_main": true,
+      "allowed_envs": ["test", "staging"]
+    },
+    "permissions": "add",
+    "collect": ["sentry", "github", "prs", "architecture", "linear"],
+    "custom": [{ "name": "linear", "kind": "mcp", "target": "linear" }]
+  }
+}
 ```
 
 Write it atomically (temp file + rename) after every answer. A halt never loses work.
@@ -368,16 +385,16 @@ and a committed symlink breaks on Windows.
 
 **Deterministic — always via the script** (`.claude/bin/super-board-agents-md.py`):
 
-| Need | Command |
-|---|---|
-| What exists, pointer or not | `detect` |
-| Back up every instruction file first | `backup` → `.claude/super-board/backup/<ts>/` |
-| Rule units to map | `units --file AGENTS.md --file CLAUDE.md [--file …]` |
-| Lossless gate | `coverage --units mapped.json --target <staged AGENTS.md> --target <staged CLAUDE.md>` |
-| Size + markers | `check --file <staged AGENTS.md>` (≤ 200 lines, one marker pair) |
-| Write | `write --src <staged> --dest AGENTS.md` (atomic) |
-| CLAUDE.md pointer | `pointer --tail <claude-only.md> --force` (only after backup + approval) |
-| super-board section | `block` (`--create` when AGENTS.md is new) |
+| Need                                 | Command                                                                                |
+| ------------------------------------ | -------------------------------------------------------------------------------------- |
+| What exists, pointer or not          | `detect`                                                                               |
+| Back up every instruction file first | `backup` → `.claude/super-board/backup/<ts>/`                                          |
+| Rule units to map                    | `units --file AGENTS.md --file CLAUDE.md [--file …]`                                   |
+| Lossless gate                        | `coverage --units mapped.json --target <staged AGENTS.md> --target <staged CLAUDE.md>` |
+| Size + markers                       | `check --file <staged AGENTS.md>` (≤ 200 lines, one marker pair)                       |
+| Write                                | `write --src <staged> --dest AGENTS.md` (atomic)                                       |
+| CLAUDE.md pointer                    | `pointer --tail <claude-only.md> --force` (only after backup + approval)               |
+| super-board section                  | `block` (`--create` when AGENTS.md is new)                                             |
 
 **Semantic — the agent, by these rules:**
 
@@ -418,23 +435,23 @@ The user never sees a raw stack trace — they get a diagnosis and the exact nex
 halt says what was tried, what failed, the exact fix, and "re-run `/super-board onboard` — your
 answers are kept and it resumes at <step>".
 
-| Step | Failure | What the user sees |
-|---|---|---|
-| 1 | Pack files not found (plugin) | `🛑 Can't find the super-board plugin files. Run the one-line installer (get.sh) or ./install.sh <this-dir> from a checkout, then re-run onboard.` |
-| 1 | A tool install declined (git, gh) | `Without <tool> the board can't <why>. Your answers are saved — run <command>, then re-run onboard.` |
-| 1 | Node declined, or `npx skills add` fails | `⚠️ Matt Pocock's skills aren't installed — lanes use built-in checklists. Later: <command>.` Continues. |
-| 1 | Workflow still fails `node --check` after the re-copy | `🛑 .claude/workflows/super-board-wave.js is corrupt. Re-run ./install.sh <this-dir> — don't hand-edit it.` |
-| 1 | settings.json invalid JSON | `✋ .claude/settings.json is not valid JSON; I left it untouched. Fix it, then re-run — only the settings entries repeat.` |
-| 2 | Scope refused in the browser | `🔑 GitHub asked for project,read:project,repo and you said no. Without them I can't read or move cards. Re-run: gh auth refresh -s project,read:project,repo.` |
-| 2 | Repo create refused | `📦 GitHub refused to create the repo (org admin required, or the free-repo quota). Pick an existing repo, or create one in the web UI, then re-run.` |
-| 3 | Org project denied | `🔑 You can't create projects under <org>. Ask an org admin, or use your account: gh project create --owner @me.` |
-| 3 | Board read-only | `🔑 That board is read-only for your account. Get write access, or pick another.` |
-| 3 | board-migrate exits 2 | Show its `error` and recovery-file path. Some changes may already be applied. Keep the board stopped and the recovery file; fix the access/read/write failure, then re-run the same command from the same project root. A concurrent-edit conflict needs review of the saved original/desired state; never delete the record to bypass it. |
-| 4 | `git push origin main:staging` rejected | `🌿 Couldn't create staging (<reason>). Create it on GitHub, or pick main.` |
-| 5 | `coverage` exits 1 | Not an error: fix the mapping, re-run `coverage`, then show the result. |
-| 5 | Two managed blocks / dangling marker | `✋ AGENTS.md has <n> super-board markers. Leave one begin/end pair (or none) and re-run.` |
-| 7 | A ping fails | One ❌ line with the reason and what to add; the source is left out; onboard continues. |
-| 8 | File not writable | `🛑 Can't write <path> — check permissions.` Answers kept; re-run resumes at Review. |
+| Step | Failure                                               | What the user sees                                                                                                                                                                                                                                                                                                                         |
+| ---- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | Pack files not found (plugin)                         | `🛑 Can't find the super-board plugin files. Run the one-line installer (get.sh) or ./install.sh <this-dir> from a checkout, then re-run onboard.`                                                                                                                                                                                         |
+| 1    | A tool install declined (git, gh)                     | `Without <tool> the board can't <why>. Your answers are saved — run <command>, then re-run onboard.`                                                                                                                                                                                                                                       |
+| 1    | Node declined, or `npx skills add` fails              | `⚠️ Matt Pocock's skills aren't installed — lanes use built-in checklists. Later: <command>.` Continues.                                                                                                                                                                                                                                   |
+| 1    | Workflow still fails `node --check` after the re-copy | `🛑 .claude/workflows/super-board-wave.js is corrupt. Re-run ./install.sh <this-dir> — don't hand-edit it.`                                                                                                                                                                                                                                |
+| 1    | settings.json invalid JSON                            | `✋ .claude/settings.json is not valid JSON; I left it untouched. Fix it, then re-run — only the settings entries repeat.`                                                                                                                                                                                                                 |
+| 2    | Scope refused in the browser                          | `🔑 GitHub asked for project,read:project,repo and you said no. Without them I can't read or move cards. Re-run: gh auth refresh -s project,read:project,repo.`                                                                                                                                                                            |
+| 2    | Repo create refused                                   | `📦 GitHub refused to create the repo (org admin required, or the free-repo quota). Pick an existing repo, or create one in the web UI, then re-run.`                                                                                                                                                                                      |
+| 3    | Org project denied                                    | `🔑 You can't create projects under <org>. Ask an org admin, or use your account: gh project create --owner @me.`                                                                                                                                                                                                                          |
+| 3    | Board read-only                                       | `🔑 That board is read-only for your account. Get write access, or pick another.`                                                                                                                                                                                                                                                          |
+| 3    | board-migrate exits 2                                 | Show its `error` and recovery-file path. Some changes may already be applied. Keep the board stopped and the recovery file; fix the access/read/write failure, then re-run the same command from the same project root. A concurrent-edit conflict needs review of the saved original/desired state; never delete the record to bypass it. |
+| 4    | `git push origin main:staging` rejected               | `🌿 Couldn't create staging (<reason>). Create it on GitHub, or pick main.`                                                                                                                                                                                                                                                                |
+| 5    | `coverage` exits 1                                    | Not an error: fix the mapping, re-run `coverage`, then show the result.                                                                                                                                                                                                                                                                    |
+| 5    | Two managed blocks / dangling marker                  | `✋ AGENTS.md has <n> super-board markers. Leave one begin/end pair (or none) and re-run.`                                                                                                                                                                                                                                                 |
+| 7    | A ping fails                                          | One ❌ line with the reason and what to add; the source is left out; onboard continues.                                                                                                                                                                                                                                                    |
+| 8    | File not writable                                     | `🛑 Can't write <path> — check permissions.` Answers kept; re-run resumes at Review.                                                                                                                                                                                                                                                       |
 
 ---
 

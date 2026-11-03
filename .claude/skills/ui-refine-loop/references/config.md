@@ -61,12 +61,12 @@ A sign-in-form login whose credentials come from env and are picked per state:
 ```js
 // scripts/refine-auth.mjs
 export default async function signIn({ page, base, env }) {
-  const p = env.USER_PREFIX || 'E2E_PRIMARY'
-  await page.goto(`${base}/sign-in`)
-  await page.getByLabel('Email').fill(env[`${p}_EMAIL`])
-  await page.getByLabel('Password').fill(env[`${p}_PASSWORD`])
-  await page.getByRole('button', { name: /sign in/i }).click()
-  await page.waitForURL((u) => !u.pathname.includes('/sign-in'))
+  const p = env.USER_PREFIX || "E2E_PRIMARY";
+  await page.goto(`${base}/sign-in`);
+  await page.getByLabel("Email").fill(env[`${p}_EMAIL`]);
+  await page.getByLabel("Password").fill(env[`${p}_PASSWORD`]);
+  await page.getByRole("button", { name: /sign in/i }).click();
+  await page.waitForURL((u) => !u.pathname.includes("/sign-in"));
 }
 ```
 

@@ -18,6 +18,7 @@ This is Impeccable critique's Assessment A, minus its ceremony.
    - `composition`: spacing rhythm, alignment, grouping, and density at both widths.
 
    `designTotal` is the sum, out of 20. Do not score Nielsen heuristics; they are not this loop's signal.
+
 4. **Problems**: up to 8, typed and ranked (format below). Each one names the theme, viewport and section where it shows.
 
 Header line in your head, not your output: `Assessment A · isolated`.

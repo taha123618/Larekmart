@@ -20,18 +20,18 @@ One block per target, written by the grill. Until a block exists, the direction 
 
 ## Taste rules
 
-| id | Rule |
-|---|---|
-| T1 | **Stay in the visual world.** Tokens, fonts, radii and shared components stay unless Direction names them. Refinement, not redesign. |
-| T2 | **The primary task leads.** The first thing the eye lands on is what the visitor came for: the key figure, the main action, the content. |
-| T3 | **One color per meaning, from tokens.** Two shades for one meaning is a bug, and so is a raw value next to a token. Color marks meaning, not decoration. |
-| T4 | **One spacing scale, one type scale.** Every gap and size comes from the repo's scale. Related things sit closer than unrelated things. |
-| T5 | **Aligned edges.** Content reads along a left edge. Labels, figures and actions line up across rows and sections. |
-| T6 | **Both themes are real.** Dark mode gets the same hierarchy and contrast as light. Nothing disappears, glows or turns muddy. |
-| T7 | **Both widths are real.** At 390 nothing clips, scrolls sideways or shrinks below a 24px tap target. Tables scroll or collapse inside themselves. |
-| T8 | **Cut before you add.** Remove duplicate actions, redundant copy and decorative chrome before adding a section, a color or an animation. |
-| T9 | **Honest copy.** Labels say what things do. Errors say what failed and how to fix it. Claims match the product. |
-| T10 | **Reuse, then extend.** Use the repo's shared components and extend them by prop. A one-off copy is a problem even when it looks good. |
+| id  | Rule                                                                                                                                                     |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T1  | **Stay in the visual world.** Tokens, fonts, radii and shared components stay unless Direction names them. Refinement, not redesign.                     |
+| T2  | **The primary task leads.** The first thing the eye lands on is what the visitor came for: the key figure, the main action, the content.                 |
+| T3  | **One color per meaning, from tokens.** Two shades for one meaning is a bug, and so is a raw value next to a token. Color marks meaning, not decoration. |
+| T4  | **One spacing scale, one type scale.** Every gap and size comes from the repo's scale. Related things sit closer than unrelated things.                  |
+| T5  | **Aligned edges.** Content reads along a left edge. Labels, figures and actions line up across rows and sections.                                        |
+| T6  | **Both themes are real.** Dark mode gets the same hierarchy and contrast as light. Nothing disappears, glows or turns muddy.                             |
+| T7  | **Both widths are real.** At 390 nothing clips, scrolls sideways or shrinks below a 24px tap target. Tables scroll or collapse inside themselves.        |
+| T8  | **Cut before you add.** Remove duplicate actions, redundant copy and decorative chrome before adding a section, a color or an animation.                 |
+| T9  | **Honest copy.** Labels say what things do. Errors say what failed and how to fix it. Claims match the product.                                          |
+| T10 | **Reuse, then extend.** Use the repo's shared components and extend them by prop. A one-off copy is a problem even when it looks good.                   |
 
 ## Slop tells
 

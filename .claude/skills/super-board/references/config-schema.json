@@ -73,7 +73,15 @@
   // Aliases tolerated; canonicalized at read time. There is no Skipped column:
   // a card dropped on purpose is closed as not planned and moved to Done with a
   // 🤷 comment. Onboard adds any missing option and keeps every card.
-  "columns": ["Backlog", "Ready", "Building", "QA", "Review", "Blocked", "Done"],
+  "columns": [
+    "Backlog",
+    "Ready",
+    "Building",
+    "QA",
+    "Review",
+    "Blocked",
+    "Done"
+  ],
 
   // The three type labels (v3.0.0). Onboard creates them on the repo. Routing:
   //   qa      → Ready → QA → Review → Done (skips Building: test what exists)
@@ -120,12 +128,32 @@
     // Globs left out of the size count. Setting this replaces the defaults
     // below; [] counts every file.
     "size_exclude": [
-      "**/package-lock.json", "**/yarn.lock", "**/pnpm-lock.yaml", "**/bun.lockb", "**/bun.lock",
-      "**/npm-shrinkwrap.json", "**/Cargo.lock", "**/poetry.lock", "**/uv.lock", "**/Pipfile.lock",
-      "**/Gemfile.lock", "**/composer.lock", "**/go.sum", "**/Podfile.lock", "**/pubspec.lock",
-      "**/generated/**", "**/__generated__/**", "**/*.generated.*", "**/*.gen.*",
-      "**/*.min.js", "**/*.min.css", "**/*.map", "**/*.pb.go", "**/*_pb2.py",
-      "**/__snapshots__/**", "**/*.snap"
+      "**/package-lock.json",
+      "**/yarn.lock",
+      "**/pnpm-lock.yaml",
+      "**/bun.lockb",
+      "**/bun.lock",
+      "**/npm-shrinkwrap.json",
+      "**/Cargo.lock",
+      "**/poetry.lock",
+      "**/uv.lock",
+      "**/Pipfile.lock",
+      "**/Gemfile.lock",
+      "**/composer.lock",
+      "**/go.sum",
+      "**/Podfile.lock",
+      "**/pubspec.lock",
+      "**/generated/**",
+      "**/__generated__/**",
+      "**/*.generated.*",
+      "**/*.gen.*",
+      "**/*.min.js",
+      "**/*.min.css",
+      "**/*.map",
+      "**/*.pb.go",
+      "**/*_pb2.py",
+      "**/__snapshots__/**",
+      "**/*.snap"
     ],
     // ALWAYS human, whatever `default` says. A PR matching ANY label, path glob
     // or keyword (case-insensitive, searched in the diff's ADDED lines only) of
@@ -134,19 +162,36 @@
     // Setting this key replaces the whole default set; {} turns it off.
     // Globs: `**/` = any dirs (incl. none), `**` = anything, `*` = one segment.
     "always_human": {
-      "money":  { "labels": ["money", "payments", "billing", "pricing"],
-                  "paths": ["**/billing/**", "**/payments/**", "**/stripe/**", "**/checkout/**"],
-                  "keywords": ["stripe.", "payment_intent", "price_id", "invoice.create"] },
-      "auth":   { "labels": ["auth", "security"],
-                  "paths": ["**/auth/**", "**/authz/**", "**/permissions/**"],
-                  "keywords": ["jwt.sign", "bcrypt", "password_hash", "service_role"] },
+      "money": {
+        "labels": ["money", "payments", "billing", "pricing"],
+        "paths": [
+          "**/billing/**",
+          "**/payments/**",
+          "**/stripe/**",
+          "**/checkout/**"
+        ],
+        "keywords": ["stripe.", "payment_intent", "price_id", "invoice.create"]
+      },
+      "auth": {
+        "labels": ["auth", "security"],
+        "paths": ["**/auth/**", "**/authz/**", "**/permissions/**"],
+        "keywords": ["jwt.sign", "bcrypt", "password_hash", "service_role"]
+      },
       // Destructive schema changes ONLY (DROP / TRUNCATE / RENAME, or the
       // `schema` label) need a human. Additive migrations (new table, new
       // column, new index) are not "schema": they follow the `migrations` DB-env
       // rule below. A live database is always human, whatever the change.
-      "schema": { "labels": ["schema", "destructive"],
-                  "paths": [],
-                  "keywords": ["drop table", "drop column", "truncate table", "rename column", "drop schema"] }
+      "schema": {
+        "labels": ["schema", "destructive"],
+        "paths": [],
+        "keywords": [
+          "drop table",
+          "drop column",
+          "truncate table",
+          "rename column",
+          "drop schema"
+        ]
+      }
     },
     // true only when the user explicitly chose auto-merge onto a
     // production-detected base in onboard. run.md's production-merge guard
@@ -166,8 +211,14 @@
   // In one line, for the user: the robot migrates the DBs you allow to test its
   // work; a live database, or a destructive schema change, waits for you.
   "migrations": {
-    "globs": ["supabase/migrations/**", "prisma/migrations/**", "drizzle/**",
-              "**/migrations/*.sql", "db/migrate/**", "alembic/versions/**"],
+    "globs": [
+      "supabase/migrations/**",
+      "prisma/migrations/**",
+      "drizzle/**",
+      "**/migrations/*.sql",
+      "db/migrate/**",
+      "alembic/versions/**"
+    ],
     // Which databases the robot may migrate. Any of "test", "staging", "live".
     // Default ["test", "staging"]. Onboard asks (multi-select).
     "allowed_envs": ["test", "staging"],
@@ -336,7 +387,13 @@
       "min_users": 5,
       // Optional: narrow the built-in signal table (collect_posthog.py SIGNALS):
       // exception, rageclick, dead_click, web_vitals, survey. Absent = all.
-      "signals": ["exception", "rageclick", "dead_click", "web_vitals", "survey"],
+      "signals": [
+        "exception",
+        "rageclick",
+        "dead_click",
+        "web_vitals",
+        "survey"
+      ],
       // Project-defined app failure events. `fail` is a HogQL condition; omit it
       // when every occurrence is a failure. Filed at >= min_users people, or when
       // failing people / all people on that event >= failure_rate.
@@ -344,7 +401,7 @@
         { "event": "push_completed", "fail": "properties.status = 'failed'" },
         { "event": "payment_failed" }
       ],
-      "failure_rate": 0.10,
+      "failure_rate": 0.1,
       // Optional event property holding the app version / SHA; the verifier
       // uses it to confirm zero hits on versions after a fix.
       "version_property": "app_version",
@@ -374,10 +431,28 @@
     //   map      — optional dot-paths into each record: items (the list), id,
     //              title, body, url, count. Absent = best guess per record.
     "custom": [
-      { "name": "linear", "kind": "mcp", "target": "linear", "map": { "items": "issues" } },
-      { "name": "statuspage", "kind": "http", "target": "https://status.example.com/api/v2/incidents.json",
-        "map": { "items": "incidents", "id": "id", "title": "name", "url": "shortlink" } },
-      { "name": "vercel-logs", "kind": "cli", "target": "vercel logs --output json" }
+      {
+        "name": "linear",
+        "kind": "mcp",
+        "target": "linear",
+        "map": { "items": "issues" }
+      },
+      {
+        "name": "statuspage",
+        "kind": "http",
+        "target": "https://status.example.com/api/v2/incidents.json",
+        "map": {
+          "items": "incidents",
+          "id": "id",
+          "title": "name",
+          "url": "shortlink"
+        }
+      },
+      {
+        "name": "vercel-logs",
+        "kind": "cli",
+        "target": "vercel logs --output json"
+      }
     ]
   },
 

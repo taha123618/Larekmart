@@ -4,7 +4,7 @@ Adapted from BuilderIO/skills `visual-recap` and `visual-plan` (MIT): their sect
 
 ## Recap: a branch, PR, or diff
 
-The page is built *from* a diff, at a higher altitude than line-by-line review, so a reviewer sees the shape before the lines.
+The page is built _from_ a diff, at a higher altitude than line-by-line review, so a reviewer sees the shape before the lines.
 
 1. `title` + `subtitle`: the outcome, not "Changes to X".
 2. `summary`: what changed and why, the decisions visible in the diff, in 1–3 paragraphs.

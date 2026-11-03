@@ -7,20 +7,20 @@ This file is the worker-side contract. Every worker MUST follow it.
 ## Price list
 
 GraphQL is charged in points, not requests: a query's cost is the nodes it
-*could* return, so one nested connection multiplies. Measured 2026-10-04 with
+_could_ return, so one nested connection multiplies. Measured 2026-10-04 with
 `rateLimit(dryRun:true){cost}` on gh 2.101 and a 131-card board, when a 3-card
 wave spent ~2,850 of 5,000 points (~950 a card) and the board stalled an hour:
 
-| Call | GraphQL points |
-|---|---|
-| `gh project item-list` | 101 per 100 cards — **~203** on this board |
-| `gh project field-list` | **101** (it fetches 100 items it never prints) |
-| `gh project view` | 2 |
-| `gh issue view` · `gh pr view` · `gh pr list` · review-thread query | 1 |
-| `gh issue comment` · `gh pr comment` · `gh issue edit` · `gh pr ready` | ~2 (lookup + mutation) |
-| `super-board-card.sh move` | 1 (3 the first time an issue is seen) |
-| `super-board-card.sh status` · `items` | 1 · ~1 per 100 cards |
-| `gh api repos/...` (REST) | 0 — the separate 5,000/hr core bucket |
+| Call                                                                   | GraphQL points                                 |
+| ---------------------------------------------------------------------- | ---------------------------------------------- |
+| `gh project item-list`                                                 | 101 per 100 cards — **~203** on this board     |
+| `gh project field-list`                                                | **101** (it fetches 100 items it never prints) |
+| `gh project view`                                                      | 2                                              |
+| `gh issue view` · `gh pr view` · `gh pr list` · review-thread query    | 1                                              |
+| `gh issue comment` · `gh pr comment` · `gh issue edit` · `gh pr ready` | ~2 (lookup + mutation)                         |
+| `super-board-card.sh move`                                             | 1 (3 the first time an issue is seen)          |
+| `super-board-card.sh status` · `items`                                 | 1 · ~1 per 100 cards                           |
+| `gh api repos/...` (REST)                                              | 0 — the separate 5,000/hr core bucket          |
 
 The rules that follow from it:
 
@@ -30,20 +30,21 @@ The rules that follow from it:
   `field-list` and `view` belong to onboarding.
 - **REST for everything REST can do** (`{owner}/{repo}` fills from the checkout):
 
-  | Need | REST call |
-  |---|---|
-  | comment on an issue or PR | `gh api repos/{owner}/{repo}/issues/<N>/comments -F body=@<file>` |
-  | edit a comment | `gh api -X PATCH repos/{owner}/{repo}/issues/comments/<id> -F body=@<file>` |
-  | read comments | `gh api repos/{owner}/{repo}/issues/<N>/comments --paginate` |
-  | add / remove a label | `gh api repos/{owner}/{repo}/issues/<N>/labels -f 'labels[]=<l>'` · `gh api -X DELETE repos/{owner}/{repo}/issues/<N>/labels/<l>` |
-  | read an issue | `gh api repos/{owner}/{repo}/issues/<N>` |
-  | read a PR (head sha, body, draft, mergeable) | `gh api repos/{owner}/{repo}/pulls/<N>` |
-  | PR files · CI | `gh api repos/{owner}/{repo}/pulls/<N>/files` · `gh api repos/{owner}/{repo}/commits/<sha>/check-runs` |
-  | find a PR by branch | `gh api 'repos/{owner}/{repo}/pulls?head=<owner>:<branch>&state=all'` |
-  | close an issue | `gh api -X PATCH repos/{owner}/{repo}/issues/<N> -f state=closed -f state_reason=completed` |
+  | Need                                         | REST call                                                                                                                         |
+  | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+  | comment on an issue or PR                    | `gh api repos/{owner}/{repo}/issues/<N>/comments -F body=@<file>`                                                                 |
+  | edit a comment                               | `gh api -X PATCH repos/{owner}/{repo}/issues/comments/<id> -F body=@<file>`                                                       |
+  | read comments                                | `gh api repos/{owner}/{repo}/issues/<N>/comments --paginate`                                                                      |
+  | add / remove a label                         | `gh api repos/{owner}/{repo}/issues/<N>/labels -f 'labels[]=<l>'` · `gh api -X DELETE repos/{owner}/{repo}/issues/<N>/labels/<l>` |
+  | read an issue                                | `gh api repos/{owner}/{repo}/issues/<N>`                                                                                          |
+  | read a PR (head sha, body, draft, mergeable) | `gh api repos/{owner}/{repo}/pulls/<N>`                                                                                           |
+  | PR files · CI                                | `gh api repos/{owner}/{repo}/pulls/<N>/files` · `gh api repos/{owner}/{repo}/commits/<sha>/check-runs`                            |
+  | find a PR by branch                          | `gh api 'repos/{owner}/{repo}/pulls?head=<owner>:<branch>&state=all'`                                                             |
+  | close an issue                               | `gh api -X PATCH repos/{owner}/{repo}/issues/<N> -f state=closed -f state_reason=completed`                                       |
 
   Review threads (`isResolved`) and draft → ready have no REST form; they stay
   GraphQL at 1–2 points each.
+
 - **One read per decision.** Read a thing when a step needs it; a `sleep` loop
   around `gh` spends a point every turn of the loop.
 

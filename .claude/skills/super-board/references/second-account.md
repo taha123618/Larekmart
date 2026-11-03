@@ -54,13 +54,13 @@ For an org-owned Project, have its admin grant the bot Write access in the org's
 Signed in as the bot, open Settings → Developer settings → Personal access tokens →
 Tokens (classic) → Generate new token (classic). Expiry: **30 days**.
 
-| Tick exactly | Why |
-|---|---|
-| `repo` | Repo, issues and pull requests |
-| `project` | Read and move Project cards |
-| `read:org` | Required by `gh auth login` |
-| `gist` | Listed by `gh auth login` as a minimum scope |
-| `workflow` | Work on workflow files |
+| Tick exactly | Why                                          |
+| ------------ | -------------------------------------------- |
+| `repo`       | Repo, issues and pull requests               |
+| `project`    | Read and move Project cards                  |
+| `read:org`   | Required by `gh auth login`                  |
+| `gist`       | Listed by `gh auth login` as a minimum scope |
+| `workflow`   | Work on workflow files                       |
 
 DON'T tick everything. A real run included `delete_repo` and `admin:enterprise` — far too much.
 Missing `read:org` fails with `missing required scope 'read:org'`.

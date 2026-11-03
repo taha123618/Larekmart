@@ -18,11 +18,11 @@ The Builder: turns a `Ready` card into a branch, the smallest safe change, tests
 
 ## Standalone flags
 
-| Command | Does |
-|---|---|
-| `/super-build` | Process every `Ready` issue in board order |
-| `/super-build --only N` | Execute only issue #N |
-| `/super-build --dry-run` | Print the dispatch plan, change nothing |
+| Command                  | Does                                       |
+| ------------------------ | ------------------------------------------ |
+| `/super-build`           | Process every `Ready` issue in board order |
+| `/super-build --only N`  | Execute only issue #N                      |
+| `/super-build --dry-run` | Print the dispatch plan, change nothing    |
 
 ## Install
 

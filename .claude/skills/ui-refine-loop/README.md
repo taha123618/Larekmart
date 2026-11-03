@@ -28,11 +28,11 @@ It isn't for new pages or full redesigns. The loop refines the existing visual w
 
 Standalone only: you start it. The super-board lanes never run it.
 
-| Command | Does |
-|---|---|
-| `/ui-refine-loop <route>` | reads, grills, loops 5 rounds, opens a draft PR |
+| Command                                      | Does                                                |
+| -------------------------------------------- | --------------------------------------------------- |
+| `/ui-refine-loop <route>`                    | reads, grills, loops 5 rounds, opens a draft PR     |
 | `/ui-refine-loop <component path> "<brief>"` | the same for a component, judged against your brief |
-| `... --rounds N` | change the round cap |
+| `... --rounds N`                             | change the round cap                                |
 
 ## Install
 

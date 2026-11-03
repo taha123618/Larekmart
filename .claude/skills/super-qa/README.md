@@ -16,11 +16,11 @@ The Tester: proves a card's acceptance criteria with tests and evidence, or send
 
 ## Standalone flags
 
-| Command | Does |
-|---|---|
-| `/super-qa` | 10 iterations |
-| `/super-qa 5` | 5 iterations |
-| `/super-qa --resume` | Continue from the last iteration |
+| Command                         | Does                               |
+| ------------------------------- | ---------------------------------- |
+| `/super-qa`                     | 10 iterations                      |
+| `/super-qa 5`                   | 5 iterations                       |
+| `/super-qa --resume`            | Continue from the last iteration   |
 | `/super-qa --continue-on-error` | Don't halt on one failed iteration |
 
 ## Install

@@ -30,27 +30,27 @@ Closes #<N>
 Co-Authored-By: …
 ```
 
-| Field | Rule | Required |
-|---|---|---|
-| Subject | `<emoji> [<type>] <scope>: <subject>` · imperative · ≤ 72 chars | yes |
-| Body | 1–4 short bullets: what changed, what proves it | yes, except trivial commits |
-| `Closes #N` | when the commit finishes a ticket | when it applies |
-| `--- decision ---` trailer | a rung-3 fork (super-build decision policy) | when it applies |
+| Field                      | Rule                                                            | Required                    |
+| -------------------------- | --------------------------------------------------------------- | --------------------------- |
+| Subject                    | `<emoji> [<type>] <scope>: <subject>` · imperative · ≤ 72 chars | yes                         |
+| Body                       | 1–4 short bullets: what changed, what proves it                 | yes, except trivial commits |
+| `Closes #N`                | when the commit finishes a ticket                               | when it applies             |
+| `--- decision ---` trailer | a rung-3 fork (super-build decision policy)                     | when it applies             |
 
-| Emoji | Type | Use for |
-|---|---|---|
-| ✨ | `feat` | new behaviour |
-| 🐛 | `fix` | bug fix |
-| 🔧 | `chore` | tooling, config, loop markers |
-| ♻️ | `refactor` | same behaviour, better shape |
-| 🧪 | `test` | tests only |
-| ⚡ | `perf` | faster, same behaviour |
-| 📝 | `docs` | docs only |
-| 👷 | `ci` | CI pipelines |
-| 💄 | `ui` | visual polish, screenshots |
-| 🔒 | `security` | auth, secrets, hardening |
-| ⏪ | `revert` | revert a commit |
-| 🚧 | `wip` | partial work, checkpoints |
+| Emoji | Type       | Use for                       |
+| ----- | ---------- | ----------------------------- |
+| ✨    | `feat`     | new behaviour                 |
+| 🐛    | `fix`      | bug fix                       |
+| 🔧    | `chore`    | tooling, config, loop markers |
+| ♻️    | `refactor` | same behaviour, better shape  |
+| 🧪    | `test`     | tests only                    |
+| ⚡    | `perf`     | faster, same behaviour        |
+| 📝    | `docs`     | docs only                     |
+| 👷    | `ci`       | CI pipelines                  |
+| 💄    | `ui`       | visual polish, screenshots    |
+| 🔒    | `security` | auth, secrets, hardening      |
+| ⏪    | `revert`   | revert a commit               |
+| 🚧    | `wip`      | partial work, checkpoints     |
 
 Subject regex (checked by `tests/test_writing_format.py`):
 `^(✨|🐛|🔧|♻️|🧪|⚡|📝|👷|💄|🔒|⏪|🚧) \[(feat|fix|chore|refactor|test|perf|docs|ci|ui|security|revert|wip)\] [a-z0-9][a-z0-9._/-]*: \S`
@@ -58,12 +58,12 @@ The emoji must match its type.
 
 Machine-read subjects (scripts grep these exact shapes):
 
-| Commit | Subject |
-|---|---|
-| Builder done | `🔧 [chore] loop: close #<N> — <summary>` |
-| Builder partial | `🚧 [wip] loop: #<N> partial — <slice or reason>` |
+| Commit                  | Subject                                                              |
+| ----------------------- | -------------------------------------------------------------------- |
+| Builder done            | `🔧 [chore] loop: close #<N> — <summary>`                            |
+| Builder partial         | `🚧 [wip] loop: #<N> partial — <slice or reason>`                    |
 | super-qa iteration done | `🧪 [test] super-qa: iter <N> (<X> bugs, <Y> items, <Z> PRs opened)` |
-| super-qa checkpoint | `🚧 [wip] super-qa: iter <N> — <one-liner>` |
+| super-qa checkpoint     | `🚧 [wip] super-qa: iter <N> — <one-liner>`                          |
 
 **Squash merge.** Subject = the PR title. Body = the PR's commit bullets, deduplicated, plus
 `Closes #N`. The merge gate takes them as `--subject` and `--body-file`.
@@ -87,16 +87,16 @@ Closes #790
 `.claude/bin/super-board-pr-body.sh` (it refuses when the PR head moved since you read it).
 `super-board-pr-body.sh --skeleton` prints an empty body with every marker.
 
-| Block | Marker | Written by | When | Required |
-|---|---|---|---|---|
-| Red check | `<!-- sb:redcheck -->` | reviewer | merged with a failing check | when it applies |
-| Status | `<!-- sb:status -->` | every lane | rewritten on every exit | yes |
-| Problem | `<!-- sb:problem -->` | builder | PR open (from the ticket's Context) | yes |
-| Solution | `<!-- sb:solution -->` | builder | PR open, each rebuild | yes |
-| Acceptance criteria | `<!-- sb:ac -->` | builder writes, qa ticks + proof, reviewer unticks a disproved one | each lane | yes |
-| Iteration history | `<!-- sb:history -->` | every lane appends one row | every exit | yes |
-| Before \| After | `<!-- sb:visual -->` | qa, or ui-refine-loop `pr-shots.sh` | UI changes | UI only |
-| Risk | `<!-- sb:risk -->` | builder writes, reviewer adjusts | PR open, review | yes |
+| Block               | Marker                 | Written by                                                         | When                                | Required        |
+| ------------------- | ---------------------- | ------------------------------------------------------------------ | ----------------------------------- | --------------- |
+| Red check           | `<!-- sb:redcheck -->` | reviewer                                                           | merged with a failing check         | when it applies |
+| Status              | `<!-- sb:status -->`   | every lane                                                         | rewritten on every exit             | yes             |
+| Problem             | `<!-- sb:problem -->`  | builder                                                            | PR open (from the ticket's Context) | yes             |
+| Solution            | `<!-- sb:solution -->` | builder                                                            | PR open, each rebuild               | yes             |
+| Acceptance criteria | `<!-- sb:ac -->`       | builder writes, qa ticks + proof, reviewer unticks a disproved one | each lane                           | yes             |
+| Iteration history   | `<!-- sb:history -->`  | every lane appends one row                                         | every exit                          | yes             |
+| Before \| After     | `<!-- sb:visual -->`   | qa, or ui-refine-loop `pr-shots.sh`                                | UI changes                          | UI only         |
+| Risk                | `<!-- sb:risk -->`     | builder writes, reviewer adjusts                                   | PR open, review                     | yes             |
 
 Each block closes with `<!-- /sb:<name> -->`.
 
@@ -109,11 +109,11 @@ Each block closes with `<!-- /sb:<name> -->`.
 
 **Status card** — a GitHub alert, one line:
 
-| State | Alert | Line |
-|---|---|---|
-| building, in QA, in review | `> [!NOTE]` | `⏳ In review · round 1 · ✅ 2/3 AC · Closes #790 · head \`3f9c2a1\`` |
-| merged | `> [!TIP]` | `✅ Merged · \`9c41e07\`` |
-| blocked, red check | `> [!WARNING]` | `🛑 Blocked · needs Eric` |
+| State                      | Alert          | Line                                                                  |
+| -------------------------- | -------------- | --------------------------------------------------------------------- |
+| building, in QA, in review | `> [!NOTE]`    | `⏳ In review · round 1 · ✅ 2/3 AC · Closes #790 · head \`3f9c2a1\`` |
+| merged                     | `> [!TIP]`     | `✅ Merged · \`9c41e07\``                                             |
+| blocked, red check         | `> [!WARNING]` | `🛑 Blocked · needs Eric`                                             |
 
 A partial PR writes `Refs #N`, never `Closes #N`.
 
@@ -192,27 +192,27 @@ under Risk.
 
 **Title:** `<emoji> [<kind>] <scope>: <what is wrong or wanted>` · ≤ 70 chars, no ticket number.
 
-| Kind | Title tag |
-|---|---|
-| bug | `🐛 [bug]` |
-| feature | `✨ [feat]` |
-| ux | `💄 [ui]` |
-| tests | `🧪 [test]` |
-| docs | `📝 [docs]` |
+| Kind                | Title tag       |
+| ------------------- | --------------- |
+| bug                 | `🐛 [bug]`      |
+| feature             | `✨ [feat]`     |
+| ux                  | `💄 [ui]`       |
+| tests               | `🧪 [test]`     |
+| docs                | `📝 [docs]`     |
 | tech-debt, refactor | `♻️ [refactor]` |
-| security | `🔒 [security]` |
+| security            | `🔒 [security]` |
 
 **Sections**, in order:
 
-| Section | Content | Required |
-|---|---|---|
-| `## Problem` | 1–3 sentences: what is wrong or missing, from the user's side | yes |
-| `## Context` | `- **Where:**` + lettered steps (one per line), `- **Who:**`, screenshot embedded | yes · screenshot for UI |
-| `## Evidence` | the folded 12-row table below | bugs |
-| `## Fix` | the intended change in 1–3 lines. No implementation plan | yes |
-| `## Acceptance Criteria` | 2–5 `- [ ]` items, each checkable by a test | yes |
-| `## Risk` | 🟢/🟡/🔴 level + one line | yes |
-| `## Blocked by` | `- #N — why` bullets, or exactly `- None.` | yes |
+| Section                  | Content                                                                           | Required                |
+| ------------------------ | --------------------------------------------------------------------------------- | ----------------------- |
+| `## Problem`             | 1–3 sentences: what is wrong or missing, from the user's side                     | yes                     |
+| `## Context`             | `- **Where:**` + lettered steps (one per line), `- **Who:**`, screenshot embedded | yes · screenshot for UI |
+| `## Evidence`            | the folded 12-row table below                                                     | bugs                    |
+| `## Fix`                 | the intended change in 1–3 lines. No implementation plan                          | yes                     |
+| `## Acceptance Criteria` | 2–5 `- [ ]` items, each checkable by a test                                       | yes                     |
+| `## Risk`                | 🟢/🟡/🔴 level + one line                                                         | yes                     |
+| `## Blocked by`          | `- #N — why` bullets, or exactly `- None.`                                        | yes                     |
 
 Example:
 
@@ -281,6 +281,7 @@ file. Use the same three labels, one short sentence each, in plain English:
 
 ```markdown
 <!-- super-board:author-note v1 key=file-summary -->
+
 **Purpose:** This file checks whether a code change may be merged.
 **What changed:** It asks for fresh approval if the AI edits the code after approval.
 **Why it matters:** Your earlier approval cannot allow code you have not reviewed.
@@ -307,12 +308,12 @@ Did: <what this lane did, one line>
 Next: <owner>
 ```
 
-| Field | Values |
-|---|---|
-| role (who writes it) | `builder` · `qa` · `reviewer` · `collect` · `orchestrator` |
-| label | `blocker` · `issue` · `suggestion` · `nit` · `question` · `praise` · `report` |
-| status emoji | ✅ pass/done · ❌ fail · ⏳ in progress · 🛑 blocked · 🙋 needs you · ↩️ moved back · ⚠️ warning |
-| Next | `builder` · `qa` · `reviewer` · `Eric` · `none` |
+| Field                | Values                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| role (who writes it) | `builder` · `qa` · `reviewer` · `collect` · `orchestrator`                                       |
+| label                | `blocker` · `issue` · `suggestion` · `nit` · `question` · `praise` · `report`                    |
+| status emoji         | ✅ pass/done · ❌ fail · ⏳ in progress · 🛑 blocked · 🙋 needs you · ↩️ moved back · ⚠️ warning |
+| Next                 | `builder` · `qa` · `reviewer` · `Eric` · `none`                                                  |
 
 Header regex: `^\[(builder|qa|reviewer|collect|orchestrator)\] \[(blocker|issue|suggestion|nit|question|praise|report)\] \S`
 

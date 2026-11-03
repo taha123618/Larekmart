@@ -34,14 +34,14 @@ The bootstrap is **non-interactive**. If the curl returns an existing-user error
 
 State for the QA↔Build loop lives in a GitHub Project named **`Super Ultimate QA`** (auto-discovered by title at the user/org level). It has six Status columns:
 
-| Column   | Meaning                                              |
-|----------|------------------------------------------------------|
-| Queue    | Work the next iteration will pick up                 |
-| Testing  | Feature currently being explored or verified         |
-| Done     | Spec passing, no action needed                       |
-| Bug      | Failing spec; Super Build picks these up next        |
-| Flaky    | Only passes on retry; quarantine + investigate       |
-| Skip     | Out of scope; documented and parked                  |
+| Column  | Meaning                                        |
+| ------- | ---------------------------------------------- |
+| Queue   | Work the next iteration will pick up           |
+| Testing | Feature currently being explored or verified   |
+| Done    | Spec passing, no action needed                 |
+| Bug     | Failing spec; Super Build picks these up next  |
+| Flaky   | Only passes on retry; quarantine + investigate |
+| Skip    | Out of scope; documented and parked            |
 
 This board is the durable, machine-readable state for the loop. `docs/super-qa/queue.md` remains the BFS route seed and audit log, but **all actionable findings land on the project board** so the build lane can pick them up without parsing markdown.
 
@@ -180,6 +180,7 @@ The script adds the issue to the resolved `Super Ultimate QA` project and moves 
 The `iteration-N.md` Section 3 is the per-iter audit (with `gh_issue: <N>` back-references); the GH issue is the durable tracker. The fix-commit message includes `(closes #<N>)` so the issue auto-closes on merge.
 
 **Triage all loop-filed findings:**
+
 ```bash
 gh issue list -l source:qa --state open
 ```
@@ -192,20 +193,25 @@ Every auto-filed finding must give a future headless Claude/Super Build session 
 
 ```markdown
 ## Summary
+
 <one sentence: what is wrong and where>
 
 ## Repro steps
+
 1. <exact login/route/action>
 2. <next action>
 3. <observed failure>
 
 ## Expected behavior
+
 <what should happen, citing SPEC.md, DESIGN.md, or product intent when possible>
 
 ## Actual behavior
+
 <what happened instead>
 
 ## Evidence
+
 - Screenshot: <embedded image or repo/raw path>
 - Console: <0 errors or paste relevant lines / path to console.log>
 - Network: <failed requests or path to network.json/HAR>
@@ -213,11 +219,13 @@ Every auto-filed finding must give a future headless Claude/Super Build session 
 - Spec: `<e2e/paths/...spec.ts>`
 
 ## Suggested fix path
+
 - Suggested owner: `super-build` | `super-qa` | `super-review` | `ui-refine-loop` (UI ticket — a human can run `/ui-refine-loop`; the board never triggers it)
 - Suggested skills: `mattpocock-skills:diagnosing-bugs`, `mattpocock-skills:tdd`, `verification-before-completion`
 - Notes for implementer: <first suspected file/function, if known>
 
 ## Acceptance criteria
+
 - [ ] <user-visible behavior fixed>
 - [ ] <Playwright/regression coverage added or updated>
 - [ ] <Super QA rerun passes this route>
@@ -254,14 +262,14 @@ If any of those fire → cell is `[b]` → bug filed.
 
 Per-spec forensics captured by `e2e/lib/report-fixture.ts`:
 
-| Artifact | Path |
-|----------|------|
-| Screenshot per `report.step()` | `docs/super-qa/report/<slug>/tc-N/<locale>/*.jpg` |
-| Console errors | `docs/super-qa/report/<slug>/tc-N/<locale>/console.log` |
-| Page errors | `docs/super-qa/report/<slug>/tc-N/<locale>/pageerrors.log` |
-| Network HAR | `docs/super-qa/report/<slug>/tc-N/<locale>/network.har` |
-| Network summary | `docs/super-qa/report/<slug>/tc-N/<locale>/network.json` |
-| Sentry probe | `docs/super-qa/report/<slug>/tc-N/sentry-events.json` |
+| Artifact                       | Path                                                       |
+| ------------------------------ | ---------------------------------------------------------- |
+| Screenshot per `report.step()` | `docs/super-qa/report/<slug>/tc-N/<locale>/*.jpg`          |
+| Console errors                 | `docs/super-qa/report/<slug>/tc-N/<locale>/console.log`    |
+| Page errors                    | `docs/super-qa/report/<slug>/tc-N/<locale>/pageerrors.log` |
+| Network HAR                    | `docs/super-qa/report/<slug>/tc-N/<locale>/network.har`    |
+| Network summary                | `docs/super-qa/report/<slug>/tc-N/<locale>/network.json`   |
+| Sentry probe                   | `docs/super-qa/report/<slug>/tc-N/sentry-events.json`      |
 
 The fixture (`e2e/lib/report-fixture.ts`) **already captures** console
 errors, page errors, failed requests, network summary, and Sentry events,
@@ -273,6 +281,7 @@ exposes everything via `report.forensics.*` (e.g.
 ## Algorithm
 
 ### 1. Determine iteration count
+
 - If user provides arg (e.g. `/super-qa 5`), use that count.
 - If `--resume`, start at `max(existing iteration-*.md) + 1`.
 - Default: **10 iterations, sequential**. (Concurrency is unsafe — workers
@@ -284,6 +293,7 @@ Report once: `🐛 Super QA starting — N iterations`.
 ### 2. For each iteration N (sequential)
 
 **2a. Pre-flight**
+
 - `next_n = max(existing iteration-*.md numbers in docs/super-qa/iter/) + 1`. If none exist, start at 1.
 - Confirm working tree is clean (`git status` has no staged/unstaged tracked
   changes — untracked files are OK). If dirty → halt and notify.
@@ -297,6 +307,7 @@ Launch one sub-agent (Agent tool) in the repo root, no worktree, with
 prompt = `references/iteration-preamble.md` + a per-iteration footer (iter
 num, base SHA, mandatory final-commit format) and `SUPER_QA_FORENSICS=1`.
 When it returns, classify the iteration:
+
 - `0` iter complete — a `🧪 [test] super-qa: iter N` commit is on the current branch.
 - `2` worker failed — it errored and left no done or WIP marker.
 - `3` no done-commit — it finished but no `🧪 [test] super-qa: iter N` commit exists.
@@ -309,11 +320,13 @@ Report: `🔍 Iter N launched`.
 **2c. Wait, then advance**
 
 On status 0:
+
 - Read the close-out commit subject to extract `(X bugs, Y items)`.
 - Report: `✅ Iter N done — X bugs, Y items processed`.
 - Loop to next iteration.
 
 On status 2 / 3 / 4 / 5:
+
 - Report the worker's last output (its final 50 lines).
 - Halt the loop (unless `--continue-on-error` was passed).
 - Exit 4 (HUMAN GATE) is mandatory halt regardless — see "critical paths"
@@ -331,8 +344,8 @@ Stop when **any** of:
 - User interrupts.
 
 **Notification trigger (NOT a stop):** after 3 consecutive iters with zero
-bugs found, report a summary like *"diminishing returns: 3 iters, 0
-bugs, N items still in queue — continuing"*. The loop continues until the
+bugs found, report a summary like _"diminishing returns: 3 iters, 0
+bugs, N items still in queue — continuing"_. The loop continues until the
 queue actually drains (or `N` is reached). The user can interrupt manually
 if they accept the diminishing returns.
 
@@ -345,6 +358,7 @@ Coverage % is reported every iter as a progress indicator, never a gate.
 ### 4. Final report
 
 After termination (or on halt):
+
 - Aggregate: total iters, items moved from `[ ]` → `[x]` / `[b]` / `[!]`,
   total bugs found, total fixed, queue size now.
 - Report a summary linking to all `docs/super-qa/iter/iteration-*.md`
@@ -361,6 +375,7 @@ green. This is the "verify what we already have" step.
 
 **Phase 2 — Explore.** Until the budget is hit (default: 5 cells popped
 OR 30 min wall-clock):
+
 1. Pop the top `[ ]` item from `queue.md`.
 2. Classify via the URL-pattern heuristic in `docs/super-qa/page-types.md`.
 3. Write a spec at `e2e/paths/<slug>.spec.ts` using the test recipe for that type.
@@ -389,6 +404,7 @@ A bug on `/customers/:id` shouldn't block exploration of `/orders` or
 `/dashboard`. Maximum coverage per iter; one bug never halts the loop.
 
 Fix can happen:
+
 - **Same iter** — if budget allows, the worker runs TDD on the bug after
   the explore phase.
 - **Next iter** — if budget exhausted, the bug sits in `iteration-N.md` and
@@ -429,12 +445,12 @@ in-flight queue items.
 
 ## Multi-step user journeys — `docs/super-qa/flows.md`
 
-`critical-paths.md` is the *money-flow guard* (login, checkout, payment) —
+`critical-paths.md` is the _money-flow guard_ (login, checkout, payment) —
 small, hand-curated, mandatory human gate if red >2 iters. It is **not** a
 coverage layer.
 
 `docs/super-qa/flows.md` is a separate, broader hand-curated list of
-*multi-step user journeys* the BFS crawler doesn't reliably exercise on its
+_multi-step user journeys_ the BFS crawler doesn't reliably exercise on its
 own. Examples:
 
 - create user → set role → user logs in → sees their assigned region
@@ -516,7 +532,7 @@ The worker (per `references/iteration-preamble.md`) must load and follow:
 - `mattpocock-skills:diagnosing-bugs`
 - `verification-before-completion` (no Matt Pocock equivalent — kept as-is)
 - `testing-strategy` — coverage judgment per component type, and what to skip.
-  Consult it for *what is worth testing*; it does not pick the layer. The
+  Consult it for _what is worth testing_; it does not pick the layer. The
   localisation ladder in `references/iteration-preamble.md` picks the layer.
 - `vitest` — mechanics for unit and integration tests in a TS/JS repo. 19
   references (`core-expect`, `features-mocking`, `features-coverage`,
@@ -541,6 +557,7 @@ If you intentionally want a single board for both lanes, set `BUILD_LOOP_PROJECT
 The default target is the app target configured by `BASE_URL`. Treat production URLs as production and prefer preview/staging for mutating flows.
 
 Safety rails (enforced by the iteration preamble):
+
 - Test user: configure via app env, for example `QA_BOT_EMAIL` / `QA_BOT_PASSWORD`.
 - All written test data is prefixed `[TEST] ` so it's greppable.
 - Sentry tag `source=super-qa` on errors.
@@ -616,41 +633,48 @@ When invoked by super-board (env `SUPER_BOARD_RUN=1` or invocation contains "sup
 - **GitHub budget** — every "move card" is `.claude/bin/super-board-card.sh --config <cfg> move <N> <Status>` (1 GraphQL point; `gh project item-list` / `field-list` cost ~100–200). Comments, labels and PR reads go over REST; [rate-limit-etiquette.md](../super-board/references/rate-limit-etiquette.md) → "Price list" has the calls.
 
 ### State protocol (same as super-build)
+
 - Read from issue + PR comments + PR review threads.
 - Respect handed-down worktree + branch.
 - After pushing tests, evidence or fixes to a PR, refresh [PR author notes](../super-board/references/pr-author-notes.md) before the handoff. Keep file summaries current and explain critical changed sections on the PR.
 
 ### Card types
+
 - **Built card (`feature`, `bug`, no label):** worktree at `.claude/worktrees/issue-<N>-qa/` checked out at Builder's branch tip.
 - **`qa` card (skipped Building):** move it Ready → QA yourself, create `issue-<N>-<slug>` from the base branch, test what is already there (run.md → "qa cards").
 - **A live URL with no repo** is not a board card: `/super-qa <url>` runs standalone.
 
 ### Lifecycle (Tester, first pass)
+
 See `.claude/skills/super-board/references/run.md` → Tester (first pass — repo-backed). Summary:
+
 1. Pull latest of base; checkout `issue-<N>-<slug>` into worktree (a `qa` card: create it from the base).
 2. Read issue + PR + Builder's handoff.
 3. Build issue-scoped test plan: ONE observable test per AC.
-3b. Run the **Test-gap check** (above) against the Builder's diff; its High gaps join the plan.
+   3b. Run the **Test-gap check** (above) against the Builder's diff; its High gaps join the plan.
 4. Run tests. Capture evidence to `docs/super-board/runs/issue-<N>-qa-v<N>/`. **For any UI-affecting issue, capture at least one screenshot per AC** (Playwright `page.screenshot` or `browse --screenshot`). Save with descriptive names: `ac1-<short-desc>.png`, not `screenshot1.png`.
 5. **Commit the evidence directory** to the issue branch alongside test files (`git add docs/super-board/runs/issue-<N>-qa-v<N>/ && git commit && git push`). This is non-optional — without it, the inline image markdown in the issue comment won't render on GitHub.
 6. **Pass** → tick the PR's `ac` block with proof lines, write `visual` for UI, append a `history` row, rewrite `status` (`super-board-pr-body.sh`) → `[qa] [report] ✅` PR comment with results + evidence path → **issue comment with screenshot evidence** (see "Issue-comment evidence format" below) → move QA → Review. Clean up worktree.
 7. **Fail** → leave failing ACs unchecked with the reason, append a `history` row, rewrite `status` → `[qa] [report] ❌` PR comment with per-AC expected/actual + repro file:line + evidence path + "what fixed should look like" → issue comment with the failure screenshots → increment rebuild counter → move QA → Ready (label `loop:rebuild-N`). Clean up worktree.
 
 ### Pass-handoff PR comment MUST include the test command
+
 Every Pass-handoff PR comment includes a `Local tests:` line with the EXACT command Reviewer will re-run as the self-verification gate:
+
 ```
 Local tests:  npm test --run streaming
 ```
+
 This is non-optional. Reviewer re-runs this command; red → bounce back to QA.
 
 ### Issue-comment evidence format (REQUIRED — both pass and fail)
 
-The Tester's issue comment is the user's primary visibility into "is this actually fixed." A bare directory path is not sufficient — the user wants to *see* the proof on the issue page.
+The Tester's issue comment is the user's primary visibility into "is this actually fixed." A bare directory path is not sufficient — the user wants to _see_ the proof on the issue page.
 
 **The canonical template lives in `.claude/skills/super-board/references/run.md` → "Screenshot embed format" (right after Tester first pass).** Do not duplicate it here; both lanes (super-board Tester + standalone super-qa) follow that exact format. Summary of rules workers must obey:
 
 - Capture screenshots at the standard viewports for UI ACs: **desktop 1920×1080, tablet 1024×768, mobile 375×667**.
-- Commit the screenshots to the issue branch and push *before* writing the comment — inline image URLs won't render unless the file is on GitHub.
+- Commit the screenshots to the issue branch and push _before_ writing the comment — inline image URLs won't render unless the file is on GitHub.
 - Use the `https://github.com/<OWNER>/<REPO>/raw/<SHA>/...` URL form, `<SHA>` = the commit that added the screenshots, so images keep rendering after the branch is deleted on merge. Resolve `<OWNER>/<REPO>` from `git remote get-url origin`.
 - Embed the same screenshots in BOTH the PR timeline comment AND the issue comment — the issue page is the user's primary view.
 - Name the evidence folder once (`runs/issue-<N>-qa-v<V>/`) — no file lists.
@@ -659,6 +683,7 @@ The Tester's issue comment is the user's primary visibility into "is this actual
 - Failure comments use the same format with broken-state screenshots (e.g., `before-fix-desktop.png`).
 
 ### Lifecycle (Tester, rebuild — when Reviewer bounced for [qa] thread fixes)
+
 1. Read PR review threads; filter `[qa]` prefix.
 2. For each unresolved `[qa]` thread: apply fix to test files → resolve thread via `gh api graphql resolveReviewThread`.
 3. Re-run full test suite for the ticket.
@@ -667,7 +692,9 @@ The Tester's issue comment is the user's primary visibility into "is this actual
 6. Update the PR's `ac`, `history`, `status` blocks; post `[qa] [report]` PR + issue comments (writing-standard.md § 4). Move QA → Review.
 
 ### Failure → `root-cause-hash:` line required
+
 Hash lane = `qa`. Same input definition as super-build.
 
 ### Block/Skip exits use the §4 mandatory template
+
 Same rule as super-build.

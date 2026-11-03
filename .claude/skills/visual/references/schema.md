@@ -4,48 +4,105 @@ Every field is optional except `kind` and `title`. Text fields take light inline
 
 ```jsonc
 {
-  "kind": "recap",                       // recap | plan | explore
-  "title": "Add /visual skill",          // ≤ ~70 chars
+  "kind": "recap", // recap | plan | explore
+  "title": "Add /visual skill", // ≤ ~70 chars
   "subtitle": "One command that turns a branch, plan, or folder into a visual page",
-  "slug": "visual-skill",                // output filename stem; defaults to title
-  "source": "docs/plan.md",              // plan/explore: what the page was built from
-  "base": "main",                        // recap: diff base (default main/master)
+  "slug": "visual-skill", // output filename stem; defaults to title
+  "source": "docs/plan.md", // plan/explore: what the page was built from
+  "base": "main", // recap: diff base (default main/master)
   "summary": "1–3 paragraphs: outcome, why, key decisions.",
 
-  "keyChanges": [                        // the left column; 3–7 items
-    { "title": "Renderer draws archify-style SVG", "tag": "added",   // added|changed|removed|fix|refactor|docs|risk
-      "detail": "Why it matters, one or two sentences.", "files": ["assets/template.html"] }
+  "keyChanges": [
+    // the left column; 3–7 items
+    {
+      "title": "Renderer draws archify-style SVG",
+      "tag": "added", // added|changed|removed|fix|refactor|docs|risk
+      "detail": "Why it matters, one or two sentences.",
+      "files": ["assets/template.html"],
+    },
   ],
 
   // recap: OMIT `files` — render fills them from git (status, +/-, area).
   // plan/explore: list them by hand.
-  "files": [ { "path": "src/api/users.ts", "status": "add", "note": "new route handlers" } ],
+  "files": [
+    {
+      "path": "src/api/users.ts",
+      "status": "add",
+      "note": "new route handlers",
+    },
+  ],
   "fileNotes": { "src/api/users.ts": "short note shown under the row (recap)" },
-  "areas": { "src/api/": "API", ".agents/skills/visual/": "visual skill" },   // optional path-prefix → group label
+  "areas": { "src/api/": "API", ".agents/skills/visual/": "visual skill" }, // optional path-prefix → group label
 
-  "diagrams": [ { "title": "…", "caption": "…", "nodes": [], "edges": [], "groups": [] } ],   // see Diagrams
+  "diagrams": [
+    { "title": "…", "caption": "…", "nodes": [], "edges": [], "groups": [] },
+  ], // see Diagrams
 
   "endpoints": [
-    { "method": "POST", "path": "/api/users", "summary": "Create a user", "change": "added",
-      "auth": "session", "request": { "email": "a@b.co" }, "response": { "id": "usr_123" } }
-  ],                                     // method also accepts WS, SSE, CLI, CMD, EVENT
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "summary": "Create a user",
+      "change": "added",
+      "auth": "session",
+      "request": { "email": "a@b.co" },
+      "response": { "id": "usr_123" },
+    },
+  ], // method also accepts WS, SSE, CLI, CMD, EVENT
 
-  "steps": [ { "title": "Add the route", "detail": "Reuses `requireSession`; adds …", "files": ["src/api/users.ts"] } ],
+  "steps": [
+    {
+      "title": "Add the route",
+      "detail": "Reuses `requireSession`; adds …",
+      "files": ["src/api/users.ts"],
+    },
+  ],
 
   "hunks": [
     // recap: render pulls the real hunk from git. `contains` picks the hunk and centres the window.
-    { "file": "src/api/users.ts", "contains": "export async function POST", "summary": "Validates then inserts",
-      "maxLines": 60, "notes": [ { "match": "zod.parse", "text": "Rejects bad input before the DB call" } ] },
+    {
+      "file": "src/api/users.ts",
+      "contains": "export async function POST",
+      "summary": "Validates then inserts",
+      "maxLines": 60,
+      "notes": [
+        {
+          "match": "zod.parse",
+          "text": "Rejects bad input before the DB call",
+        },
+      ],
+    },
     // plan/explore: a sketch or real excerpt by hand.
-    { "file": "src/api/users.ts", "lang": "ts", "code": "export async function POST(req) {\n  …\n}", "start": 1,
-      "notes": [ { "line": 2, "text": "…" } ] }
+    {
+      "file": "src/api/users.ts",
+      "lang": "ts",
+      "code": "export async function POST(req) {\n  …\n}",
+      "start": 1,
+      "notes": [{ "line": 2, "text": "…" }],
+    },
   ],
 
-  "risks": [ { "level": "high", "text": "Changes the session cookie name — logs everyone out" } ],   // high|med|low
-  "tests": [ { "text": "Create a user with a bad email → 400", "cmd": "pnpm test users" } ],
-  "questions": [ { "q": "Soft-delete or hard-delete?", "default": "Soft-delete", "why": "audit trail" } ],
-  "sections": [ { "title": "Notes", "body": "free markdown, last resort" } ],
-  "labels": { "key": "Override a section heading" }
+  "risks": [
+    {
+      "level": "high",
+      "text": "Changes the session cookie name — logs everyone out",
+    },
+  ], // high|med|low
+  "tests": [
+    {
+      "text": "Create a user with a bad email → 400",
+      "cmd": "pnpm test users",
+    },
+  ],
+  "questions": [
+    {
+      "q": "Soft-delete or hard-delete?",
+      "default": "Soft-delete",
+      "why": "audit trail",
+    },
+  ],
+  "sections": [{ "title": "Notes", "body": "free markdown, last resort" }],
+  "labels": { "key": "Override a section heading" },
 }
 ```
 
@@ -81,33 +138,62 @@ The drill-down map takes its own file: shared nodes and edges, plus views that e
 ```jsonc
 {
   "title": "super-board skill map",
-  "root": "overview",                      // optional; default = the view with no parent
-  "sourcesBase": "_skills/vendor/super-board/",   // optional prefix for node `source` paths (from the repo root)
+  "root": "overview", // optional; default = the view with no parent
+  "sourcesBase": "_skills/vendor/super-board/", // optional prefix for node `source` paths (from the repo root)
   // publishing the page away from the checkout (GitHub Pages)? `render --map map.json --source-base
   // https://github.com/OWNER/REPO/blob/main/ [--source-root <pack dir>]` links each source under the
   // source root to that URL (`:12-20` → `#L12-L20`); sources outside it show as text, no link
-  "authors": { "mattpocock": { "name": "Matt Pocock", "url": "https://github.com/mattpocock" } },  // avatars are fetched once and inlined by render
+  "authors": {
+    "mattpocock": {
+      "name": "Matt Pocock",
+      "url": "https://github.com/mattpocock",
+    },
+  }, // avatars are fetched once and inlined by render
   "nodes": [
-    { "id": "super-board", "label": "/super-board",
-      "kind": "public",                    // public | lane | external | verb | script | hook | board
+    {
+      "id": "super-board",
+      "label": "/super-board",
+      "kind": "public", // public | lane | external | verb | script | hook | board
       "verbs": ["onboard", "run", "stop"], // chips on the node and in the panel
-      "what": "One line: what it does.", "when": "What triggers it.", "how": "How it works (markdown).",
-      "source": "skills/super-board/SKILL.md",      // string or array; `:line` suffixes are fine
+      "what": "One line: what it does.",
+      "when": "What triggers it.",
+      "how": "How it works (markdown).",
+      "source": "skills/super-board/SKILL.md", // string or array; `:line` suffixes are fine
       "sublabel": "optional line under the label",
-      "opensView": "super-board",          // optional; otherwise a view with the node's id opens
-      "author": "EricTechPro",             // optional GitHub login; external skills show the author's avatar
-      "origin": "mattpocock-skills",       // optional: where an external skill comes from
-      "credits": ["BuilderIO"] }           // optional: further authors listed in the panel
+      "opensView": "super-board", // optional; otherwise a view with the node's id opens
+      "author": "EricTechPro", // optional GitHub login; external skills show the author's avatar
+      "origin": "mattpocock-skills", // optional: where an external skill comes from
+      "credits": ["BuilderIO"],
+    }, // optional: further authors listed in the panel
   ],
-  "edges": [ { "id": "e1", "from": "super-board", "to": "super-build", "label": "dispatches", "when": "each wave" } ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "super-board",
+      "to": "super-build",
+      "label": "dispatches",
+      "when": "each wave",
+    },
+  ],
   "views": [
-    { "id": "overview", "parent": null, "title": "super-board", "caption": "optional one line", "nodeIds": ["super-board", "super-build"] },
-    { "id": "super-board", "parent": "overview", "title": "/super-board", "nodeIds": ["super-board", "..."],
-      "edges": ["e1"],                     // optional: edge ids or edge objects; default = every model edge between its nodes
-      "render": "sequence",                // optional: edges are the run order and get step numbers
-      "lanes": [ { "title": "Ask", "nodeIds": ["grilling"] } ],   // optional swimlanes; false turns derived lanes off
-      "layout": { "super-board": [0, 0] } }  // optional [col,row] per node; default = layered auto-layout
-  ]
+    {
+      "id": "overview",
+      "parent": null,
+      "title": "super-board",
+      "caption": "optional one line",
+      "nodeIds": ["super-board", "super-build"],
+    },
+    {
+      "id": "super-board",
+      "parent": "overview",
+      "title": "/super-board",
+      "nodeIds": ["super-board", "..."],
+      "edges": ["e1"], // optional: edge ids or edge objects; default = every model edge between its nodes
+      "render": "sequence", // optional: edges are the run order and get step numbers
+      "lanes": [{ "title": "Ask", "nodeIds": ["grilling"] }], // optional swimlanes; false turns derived lanes off
+      "layout": { "super-board": [0, 0] },
+    }, // optional [col,row] per node; default = layered auto-layout
+  ],
 }
 ```
 

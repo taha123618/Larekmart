@@ -21,22 +21,22 @@ Ticket ambiguity is now caught upstream, where a human is actually present:
 The vocabulary every super-board worker uses. Left column is the intent; right
 column is the skill to invoke.
 
-| Intent | Skill |
-| --- | --- |
-| Which skill / flow fits this situation | `mattpocock-skills:ask-matt` |
-| Build a feature or fix a bug test-first | `mattpocock-skills:tdd` |
-| Deliver a ticket against a spec or acceptance criteria | `mattpocock-skills:implement` |
-| Root-cause a hard bug or perf regression | `mattpocock-skills:diagnosing-bugs` |
-| Review a diff before approving it | `mattpocock-skills:code-review` |
-| Turn a settled discussion into a spec | `mattpocock-skills:to-spec` |
-| Break a spec into tracer-bullet tickets | `mattpocock-skills:to-tickets` |
-| Design a module interface / find deepening opportunities | `mattpocock-skills:codebase-design` |
-| Pin domain terminology or record an ADR | `mattpocock-skills:domain-modeling` |
-| Resolve an in-progress merge/rebase conflict | `mattpocock-skills:resolving-merge-conflicts` |
-| Prove a claim before calling work done | `verification-before-completion` |
-| Decide *which kind* of test a change needs | `testing-strategy` |
-| Write a unit or integration test (TS/JS) | `vitest` |
-| Write a browser e2e spec | `playwright-best-practices` |
+| Intent                                                   | Skill                                         |
+| -------------------------------------------------------- | --------------------------------------------- |
+| Which skill / flow fits this situation                   | `mattpocock-skills:ask-matt`                  |
+| Build a feature or fix a bug test-first                  | `mattpocock-skills:tdd`                       |
+| Deliver a ticket against a spec or acceptance criteria   | `mattpocock-skills:implement`                 |
+| Root-cause a hard bug or perf regression                 | `mattpocock-skills:diagnosing-bugs`           |
+| Review a diff before approving it                        | `mattpocock-skills:code-review`               |
+| Turn a settled discussion into a spec                    | `mattpocock-skills:to-spec`                   |
+| Break a spec into tracer-bullet tickets                  | `mattpocock-skills:to-tickets`                |
+| Design a module interface / find deepening opportunities | `mattpocock-skills:codebase-design`           |
+| Pin domain terminology or record an ADR                  | `mattpocock-skills:domain-modeling`           |
+| Resolve an in-progress merge/rebase conflict             | `mattpocock-skills:resolving-merge-conflicts` |
+| Prove a claim before calling work done                   | `verification-before-completion`              |
+| Decide _which kind_ of test a change needs               | `testing-strategy`                            |
+| Write a unit or integration test (TS/JS)                 | `vitest`                                      |
+| Write a browser e2e spec                                 | `playwright-best-practices`                   |
 
 The last four have no equivalent in the Matt Pocock pack and are kept as-is.
 Everything else routes through `mattpocock-skills:*`.
@@ -44,11 +44,11 @@ Everything else routes through `mattpocock-skills:*`.
 **Interactive-only, never inside a worker.** These need a human at the keyboard
 and belong to the `lint` verb, not to a lane:
 
-| Intent | Skill | Runs in |
-| --- | --- | --- |
-| Stress-test a vague or ambiguous ticket | `mattpocock-skills:grilling` | `super-board lint` |
-| Feature ticket with undefined UX | `shape` | `super-board lint` |
-| Copy / microcopy / error-message wording | `clarify` | `super-board lint` |
+| Intent                                   | Skill                        | Runs in            |
+| ---------------------------------------- | ---------------------------- | ------------------ |
+| Stress-test a vague or ambiguous ticket  | `mattpocock-skills:grilling` | `super-board lint` |
+| Feature ticket with undefined UX         | `shape`                      | `super-board lint` |
+| Copy / microcopy / error-message wording | `clarify`                    | `super-board lint` |
 
 If a worker reaches for one of these, that is the signal the ticket should have
 been caught by `lint`. Take the human gate instead — see below.
@@ -56,7 +56,7 @@ been caught by `lint`. Take the human gate instead — see below.
 **Testing is three layers, not one skill.** They answer different questions:
 
 - **Discipline** — `mattpocock-skills:tdd`. Seams, red-green order, assertion
-  anti-patterns. Deliberately agnostic about the *kind* of test, which is why
+  anti-patterns. Deliberately agnostic about the _kind_ of test, which is why
   it is not enough alone.
 - **Placement** — the localisation ladder. Walk down and stop at the first rung
   that still reproduces: (1) call the module directly → unit; (2) wire real
@@ -66,7 +66,7 @@ been caught by `lint`. Take the human gate instead — see below.
 - **Mechanics** — the repo decides the library, so read `package.json`. TS/JS
   unit and integration → `vitest`. Browser e2e → `playwright-best-practices`.
 
-`testing-strategy` informs *coverage* (what a component type is worth testing,
+`testing-strategy` informs _coverage_ (what a component type is worth testing,
 what to skip) — it does not decide placement.
 
 Two gates before a test counts as done: it must go **red for the right reason**
@@ -85,16 +85,16 @@ The type labels below are the ones this system already files: `super-qa` stamps
 `bug`, `feature`, `ux`, `tests`, `docs`, `tech-debt`; `super-review` stamps
 `refactor`. No new vocabulary.
 
-| Type label | Skills the worker loads |
-| --- | --- |
-| `bug` | `mattpocock-skills:diagnosing-bugs` → `mattpocock-skills:tdd` |
-| `feature` | `mattpocock-skills:implement` → `mattpocock-skills:tdd` → `mattpocock-skills:codebase-design` |
-| `ux` | `mattpocock-skills:implement` → `mattpocock-skills:tdd` |
-| `refactor` | `mattpocock-skills:codebase-design` → `mattpocock-skills:tdd` |
-| `tech-debt` | `mattpocock-skills:codebase-design` → `mattpocock-skills:tdd` |
-| `tests` | `mattpocock-skills:tdd` (no product code — mechanics only) |
-| `docs` | none of the above; **skip `tdd`** — there is no behaviour to pin |
-| *(no type label)* | `mattpocock-skills:tdd` |
+| Type label        | Skills the worker loads                                                                       |
+| ----------------- | --------------------------------------------------------------------------------------------- |
+| `bug`             | `mattpocock-skills:diagnosing-bugs` → `mattpocock-skills:tdd`                                 |
+| `feature`         | `mattpocock-skills:implement` → `mattpocock-skills:tdd` → `mattpocock-skills:codebase-design` |
+| `ux`              | `mattpocock-skills:implement` → `mattpocock-skills:tdd`                                       |
+| `refactor`        | `mattpocock-skills:codebase-design` → `mattpocock-skills:tdd`                                 |
+| `tech-debt`       | `mattpocock-skills:codebase-design` → `mattpocock-skills:tdd`                                 |
+| `tests`           | `mattpocock-skills:tdd` (no product code — mechanics only)                                    |
+| `docs`            | none of the above; **skip `tdd`** — there is no behaviour to pin                              |
+| _(no type label)_ | `mattpocock-skills:tdd`                                                                       |
 
 Order matters where it is listed: diagnose before you write the red test, and
 implement against the spec before you reach for design vocabulary.
@@ -139,7 +139,7 @@ fails, apply this fallback and carry on:
 4. Never cut validation, security, data-loss protection or accessibility to shrink a diff.
 5. Mark a deliberate corner with a `ponytail:` comment naming its ceiling.
 
-Ponytail picks *how little* to write. It never overrides an acceptance
+Ponytail picks _how little_ to write. It never overrides an acceptance
 criterion, the `tdd` red test, or the decision ladder below.
 
 ## The decision ladder
