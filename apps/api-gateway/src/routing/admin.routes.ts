@@ -189,4 +189,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/commissions",
     requireAdmin: true,
   },
+
+  // 15. Payout Service Admin Management
+  {
+    prefix: "/api/v1/admin/payouts",
+    target: services.payout.url,
+    serviceName: services.payout.name,
+    timeoutMs: services.payout.timeoutMs,
+    rewritePrefix: "/api/v1/admin/payouts",
+    requireAdmin: true,
+  },
 ];

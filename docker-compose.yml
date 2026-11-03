@@ -94,7 +94,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
       POSTGRES_DB: ${POSTGRES_DB:-product_db}
-      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db,commission_db}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db,commission_db,payout_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -1378,6 +1378,39 @@ services:
     networks:
       - larekmart-network
 
+  payout-service:
+    build:
+      context: .
+      dockerfile: apps/payout-service/Dockerfile
+    container_name: larekmart-payout-service
+    deploy: *microservice-deploy
+    restart: unless-stopped
+    expose:
+      - "8023"
+    ports:
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:${PAYOUT_SERVICE_PORT:-8023}:8023"
+    env_file:
+      - ./apps/payout-service/.env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8023/health || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
   # ============================================================================
   # API Gateway (Centralized API Gateway for the Application)
   # ============================================================================
@@ -1419,6 +1452,7 @@ services:
       - "VENDOR_SERVICE_URL=http://vendor-service:8020"
       - "SELLER_SERVICE_URL=http://seller-service:8021"
       - "COMMISSION_SERVICE_URL=http://commission-service:8022"
+      - "PAYOUT_SERVICE_URL=http://payout-service:8023"
       - "REDIS_URL=redis://redis:6379"
     healthcheck:
       test:

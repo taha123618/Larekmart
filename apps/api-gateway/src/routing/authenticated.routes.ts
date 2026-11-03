@@ -167,7 +167,33 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     requireAuth: true,
   },
 
-  // 13. Seller Service Merchant & Storefront Routes
+  // 13. Seller Payouts & Balance (payout-service)
+  {
+    prefix: "/api/v1/sellers/me/payouts",
+    target: services.payout.url,
+    serviceName: services.payout.name,
+    timeoutMs: services.payout.timeoutMs,
+    rewritePrefix: "/api/v1/sellers/me/payouts",
+    requireAuth: true,
+  },
+  {
+    prefix: "/api/v1/sellers/me/balance",
+    target: services.payout.url,
+    serviceName: services.payout.name,
+    timeoutMs: services.payout.timeoutMs,
+    rewritePrefix: "/api/v1/sellers/me/balance",
+    requireAuth: true,
+  },
+  {
+    prefix: "/api/v1/sellers/me/statements",
+    target: services.payout.url,
+    serviceName: services.payout.name,
+    timeoutMs: services.payout.timeoutMs,
+    rewritePrefix: "/api/v1/sellers/me/statements",
+    requireAuth: true,
+  },
+
+  // 14. Seller Service Merchant & Storefront Routes
   {
     prefix: "/api/v1/sellers",
     target: services.seller.url,
@@ -177,7 +203,7 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     requireAuth: true,
   },
 
-  // 14. Marketplace Disputes
+  // 15. Marketplace Disputes
   {
     prefix: "/api/v1/disputes",
     target: services.vendor.url,

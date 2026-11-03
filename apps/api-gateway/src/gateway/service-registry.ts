@@ -122,6 +122,11 @@ export const services = {
     url: env.COMMISSION_SERVICE_URL,
     timeoutMs: 10000,
   },
+  payout: {
+    name: "payout-service",
+    url: env.PAYOUT_SERVICE_URL,
+    timeoutMs: 10000,
+  },
 } as const satisfies Record<string, ServiceTarget>;
 
 export const downstreamServices = services;

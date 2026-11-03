@@ -8,7 +8,7 @@ and the relevant scoped `AGENTS.md`.
 ## 1. What this is
 
 **Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . It is a
-**pnpm + Turborepo monorepo** with two Next.js frontends, 24 backend services, and
+**pnpm + Turborepo monorepo** with two Next.js frontends, 25 backend services, and
 shared internal packages. Cross-service communication is **asynchronous via Kafka**;
 there are no service-to-service HTTP calls.
 
@@ -33,7 +33,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`, `apps/api-gateway/AGENTS.md`
-   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`
+   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`, `payout-service`
    - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `vendor-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.
@@ -102,6 +102,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `vendor-service`          | `apps/vendor-service`         | NestJS 10 (Fastify)     | 8020 | Legal business entities, merchant onboarding, KYB verification, documents & lifecycle state management                                |
 | `seller-service`          | `apps/seller-service`         | Fastify 5               | 8021 | Marketplace storefront configuration, staff & permissions, operational settings, performance snapshots & seller events                |
 | `commission-service`      | `apps/commission-service`      | Fastify 5               | 8022 | Marketplace commission plans, rule versioning, percentage/fixed fees, min/max limits & settlement quotes                              |
+| `payout-service`          | `apps/payout-service`          | NestJS 11 (Fastify)     | 8023 | Seller payouts, double-entry ledger, settlement batches, reserve holds & provider reconciliation                                      |
 | `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                                                                                 |
 | `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                                                                         |
 | `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                                                                           |
@@ -243,6 +244,7 @@ pnpm --filter return-service db:migrate      # Stage 2: Returns (MySQL Drizzle)
 pnpm --filter @repo/catalog-db db:migrate    # Stage 3: Catalog read projection (after product-db)
 pnpm --filter seller-service db:migrate      # Stage 3: Seller storefronts (after vendor-db)
 pnpm --filter commission-service db:migrate  # Stage 3: Marketplace commissions (after seller-service)
+pnpm --filter payout-service db:migrate      # Stage 3: Seller payouts & ledger (after commission-service)
 pnpm --filter review-service db:migrate      # Stage 3: Reviews (after product-db)
 pnpm --filter wishlist-service db:migrate    # Stage 3: Wishlists (after product-db)
 
@@ -265,7 +267,7 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
   and `pnpm build` for changes that affect a Next.js app or payment-service.
 - **Testing strategy.** Twenty-seven workspaces ship real test suites run by `pnpm test`
   (Turborepo): `@repo/types`, `@repo/kafka`, `@repo/redis`, `api-gateway`, `product-service`, `payment-service`, `auth-service`, `search-service`, `inventory-service`, `catalog-service`, `email-service`, `user-service`, `cart-service`, `shipping-service`,
-  `order-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, and `commission-service` use standalone tsx-run test files under
+  `order-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`, and `payout-service` use standalone tsx-run test files under
   `tests/` (follow the file's internal runner convention, e.g.
   `product-service/tests/product-service.test.ts`); `notification-service` and `analytic-service` use `go test ./...`;
   `recommendation-service` uses pytest via `uv`. There is **no Vitest/Jest anywhere** —

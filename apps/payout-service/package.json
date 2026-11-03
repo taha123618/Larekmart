@@ -1,0 +1,40 @@
+{
+  "name": "payout-service",
+  "version": "1.0.0",
+  "description": "Larekmart Payout Service: seller payouts, double-entry ledger, settlement batches, and provider reconciliation",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env --watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "check-types": "tsc --noEmit",
+    "test": "NODE_ENV=test tsx --env-file-if-exists=.env tests/payout-service.test.ts",
+    "db:migrate": "tsx src/db/migrate.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.2.8",
+    "@nestjs/core": "^11.2.8",
+    "@nestjs/platform-fastify": "^11.2.8",
+    "@repo/kafka": "workspace:*",
+    "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "@repo/types": "workspace:*",
+    "decimal.js": "^10.5.0",
+    "drizzle-orm": "^0.40.0",
+    "fastify": "^5.12.7",
+    "pg": "^8.13.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "uuid": "^11.1.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^22.13.0",
+    "@types/pg": "^8.11.11",
+    "@types/uuid": "^10.0.0",
+    "drizzle-kit": "^0.30.5",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
