@@ -28,23 +28,51 @@ Larekmart is implemented as a **pnpm 9 + Turborepo 2 monorepo** with strict boun
 
 ## 2. Workspace Specifications & Runtime Matrix
 
-| Workspace                        | Type    | Runtime / Framework               | Port   | Primary Dependencies                                                | Storage          |
-| :------------------------------- | :------ | :-------------------------------- | :----- | :------------------------------------------------------------------ | :--------------- |
-| **`apps/client`**                | App     | Next.js 15 (App Router), React 19 | `3002` | `@clerk/nextjs`, `@repo/types`, `zustand`, `stripe`                 | LocalStorage     |
-| **`apps/admin`**                 | App     | Next.js 15 (App Router), React 19 | `3003` | `@clerk/nextjs`, `@repo/types`, `@tanstack/react-table`, `recharts` | —                |
-| **`apps/product-service`**       | Service | Express 5 (Node ESM)              | `8000` | `@clerk/express`, `@repo/product-db`, `@repo/kafka`, `@repo/types`  | PostgreSQL       |
-| **`apps/order-service`**         | Service | Fastify 5 (Node ESM)              | `8001` | `@clerk/fastify`, `@repo/order-db`, `@repo/kafka`, `@repo/types`    | MongoDB          |
-| **`apps/payment-service`**       | Service | Hono (Node ESM)                   | `8002` | `@hono/clerk-auth`, `@repo/kafka`, `@repo/types`, `stripe`          | Stripe API       |
-| **`apps/auth-service`**          | Service | Express 5 (Node ESM)              | `8003` | `@clerk/express`, `@repo/kafka`, `@repo/types`                      | Clerk API        |
-| **`apps/email-service`**         | Worker  | Node.js (ESM)                     | —      | `@repo/kafka`, `@repo/types`, `nodemailer`                          | —                |
-| **`apps/analytic-service`**      | Hybrid  | Go 1.22 + Chi                     | `8004` | `chi`, `pgx/v5`, `kafka-go`, `go-redis/v9`, `prometheus`            | PostgreSQL / Mem |
-| **`packages/kafka`**             | Library | TypeScript (Node ESM)             | —      | `kafkajs`                                                           | —                |
-| **`packages/types`**             | Library | TypeScript                        | —      | `zod`, `@repo/product-db`, `@repo/order-db`                         | —                |
-| **`packages/monitoring`**        | Library | TypeScript (Node ESM)             | —      | — (Zero framework dependencies)                                     | —                |
-| **`packages/product-db`**        | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
-| **`packages/order-db`**          | Library | TypeScript (Mongoose)             | —      | `mongoose`                                                          | MongoDB          |
-| **`packages/eslint-config`**     | Config  | ESLint Flat Config (v9)           | —      | `@eslint/js`, `typescript-eslint`, `@next/eslint-plugin-next`       | —                |
-| **`packages/typescript-config`** | Config  | Shared tsconfig bases             | —      | `typescript@5.9.2`                                                  | —                |
+| Workspace                         | Type    | Runtime / Framework               | Port   | Primary Dependencies                                                | Storage          |
+| :-------------------------------- | :------ | :-------------------------------- | :----- | :------------------------------------------------------------------ | :--------------- |
+| **`apps/client`**                 | App     | Next.js 16 (App Router), React 19 | `3002` | `@clerk/nextjs`, `@repo/types`, `zustand`, `stripe`                 | LocalStorage     |
+| **`apps/admin`**                  | App     | Next.js 15 (App Router), React 19 | `3003` | `@clerk/nextjs`, `@repo/types`, `@tanstack/react-table`, `recharts` | —                |
+| **`apps/api-gateway`**            | Gateway | Fastify 5 (Node ESM)              | `8080` | `@fastify/http-proxy`, `@clerk/fastify`, `@repo/redis`, `opossum`   | Redis            |
+| **`apps/product-service`**        | Service | Express 5 (Node ESM)              | `8000` | `@clerk/express`, `@repo/product-db`, `@repo/kafka`, `@repo/types`  | PostgreSQL       |
+| **`apps/order-service`**          | Service | Fastify 5 (Node ESM)              | `8001` | `@clerk/fastify`, `@repo/order-db`, `@repo/kafka`, `@repo/types`    | MongoDB          |
+| **`apps/payment-service`**        | Service | Hono (Node ESM)                   | `8002` | `@hono/clerk-auth`, `@repo/kafka`, `@repo/types`, `stripe`          | Stripe API       |
+| **`apps/auth-service`**           | Service | Express 5 (Node ESM)              | `8003` | `@clerk/express`, `@repo/kafka`, `@repo/types`                      | Clerk API        |
+| **`apps/email-service`**          | Worker  | Node.js (ESM)                     | —      | `@repo/kafka`, `@repo/types`, `nodemailer`                          | —                |
+| **`apps/analytic-service`**       | Hybrid  | Go 1.22 + Chi                     | `8004` | `chi`, `pgx/v5`, `kafka-go`, `go-redis/v9`, `prometheus`            | PostgreSQL / Mem |
+| **`apps/notification-service`**   | Service | Go 1.22 + Chi                     | `8005` | `chi`, `pgx/v5`, `kafka-go`, `gorilla/websocket`                    | PostgreSQL       |
+| **`apps/search-service`**         | Service | Fastify 5 (Node ESM)              | `8006` | `@repo/opensearch`, `@repo/kafka`, `@repo/redis`                    | OpenSearch       |
+| **`apps/inventory-service`**      | Service | Hono 4 (Node ESM)                 | `8007` | `@repo/inventory-db`, `@repo/redis`, `@repo/kafka`                  | PostgreSQL       |
+| **`apps/recommendation-service`** | Service | Python 3.12+ (FastAPI)            | `8008` | `fastapi`, `sqlalchemy`, `asyncpg`, `pgvector`, `celery`            | PostgreSQL       |
+| **`apps/cart-service`**           | Service | Express 5 (Node ESM)              | `8009` | `@repo/cart-db`, `@repo/redis`, `@repo/kafka`                       | MongoDB          |
+| **`apps/catalog-service`**        | Service | Fastify 5 (Node ESM)              | `8010` | `@repo/catalog-db`, `@repo/redis`, `@repo/kafka`                    | PostgreSQL       |
+| **`apps/shipping-service`**       | Service | Koa (Node ESM)                    | `8011` | `@repo/shipping-db`, `@repo/redis`, `@repo/kafka`                   | PostgreSQL       |
+| **`apps/user-service`**           | Service | Fastify 5 (Node ESM)              | `8012` | `@repo/user-db`, `@repo/redis`, `@repo/kafka`                       | PostgreSQL       |
+| **`apps/media-service`**          | Service | Hono 4 (Node ESM)                 | `8013` | `drizzle-orm`, `@aws-sdk/client-s3`, `sharp`                        | MinIO / S3       |
+| **`apps/review-service`**         | Service | Fastify 5 (Node ESM)              | `8014` | `drizzle-orm`, `@repo/redis`, `@repo/kafka`                         | PostgreSQL       |
+| **`apps/wishlist-service`**       | Service | Fastify 5 (Node ESM)              | `8015` | `drizzle-orm`, `@repo/redis`, `@repo/kafka`                         | PostgreSQL       |
+| **`apps/promotion-service`**      | Service | Hono 4 (Node ESM)                 | `8016` | `drizzle-orm`, `@repo/redis`, `@repo/kafka`                         | PostgreSQL       |
+| **`apps/tax-service`**            | Service | Fastify 5 (Node ESM)              | `8017` | `drizzle-orm`, `mysql2`, `@repo/redis`, `@repo/kafka`               | MySQL            |
+| **`apps/return-service`**         | Service | Koa 2 (Node ESM)                  | `8018` | `drizzle-orm`, `mysql2`, `@repo/redis`, `@repo/kafka`               | MySQL            |
+| **`apps/pricing-service`**        | Service | Fastify 5 (Node ESM)              | `8019` | `drizzle-orm`, `decimal.js`, `@repo/redis`, `@repo/kafka`           | PostgreSQL       |
+| **`apps/vendor-service`**         | Service | NestJS 11 (Fastify 5)             | `8020` | `@repo/vendor-db`, `@repo/redis`, `@repo/kafka`                     | PostgreSQL       |
+| **`apps/seller-service`**         | Service | Fastify 5 (Node ESM)              | `8021` | `drizzle-orm`, `@repo/redis`, `@repo/kafka`                         | PostgreSQL       |
+| **`apps/commission-service`**     | Service | Fastify 5 (Node ESM)              | `8022` | `drizzle-orm`, `decimal.js`, `@repo/redis`, `@repo/kafka`           | PostgreSQL       |
+| **`apps/payout-service`**         | Service | NestJS 11 (Fastify 5)             | `8023` | `drizzle-orm`, `decimal.js`, `@repo/redis`, `@repo/kafka`           | PostgreSQL       |
+| **`packages/kafka`**              | Library | TypeScript (Node ESM)             | —      | `kafkajs`                                                           | —                |
+| **`packages/types`**              | Library | TypeScript                        | —      | `zod`, `@repo/product-db`, `@repo/order-db`                         | —                |
+| **`packages/monitoring`**         | Library | TypeScript (Node ESM)             | —      | — (Zero framework dependencies)                                     | —                |
+| **`packages/redis`**              | Library | TypeScript (Node ESM)             | —      | `ioredis`                                                           | Redis            |
+| **`packages/opensearch`**         | Library | TypeScript (Node ESM)             | —      | `@opensearch-project/opensearch`                                    | OpenSearch       |
+| **`packages/product-db`**         | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
+| **`packages/inventory-db`**       | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
+| **`packages/order-db`**           | Library | TypeScript (Mongoose)             | —      | `mongoose`                                                          | MongoDB          |
+| **`packages/cart-db`**            | Library | TypeScript (Mongoose)             | —      | `mongoose`                                                          | MongoDB          |
+| **`packages/catalog-db`**         | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
+| **`packages/shipping-db`**        | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
+| **`packages/user-db`**            | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
+| **`packages/vendor-db`**          | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
+| **`packages/eslint-config`**      | Config  | ESLint Flat Config (v9)           | —      | `@eslint/js`, `typescript-eslint`, `@next/eslint-plugin-next`       | —                |
+| **`packages/typescript-config`**  | Config  | Shared tsconfig bases             | —      | `typescript@5.9.2`                                                  | —                |
 
 ---
 

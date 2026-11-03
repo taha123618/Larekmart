@@ -34,7 +34,7 @@ A high-throughput **Go 1.22** Kafka consumer worker and Chi HTTP API microservic
 
 - Uses `segmentio/kafka-go`.
 - Consumer group ID: `analytic-service-group`.
-- Consumes 60+ platform topics across all 23 microservices.
+- Consumes 70+ platform topics across all 25 microservices.
 - Dedicated reader goroutine ensures Kafka heartbeats (`session.timeout.ms`) are never blocked by heavy database writes or bursty traffic.
 - Handlers extract payload from both `{ value: payload }` envelope and raw message payloads.
 

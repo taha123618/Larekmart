@@ -18,7 +18,7 @@
 
 ---
 
-**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale (Amazon, AliExpress, and Daraz). It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-three backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, and sellers; MongoDB for orders and carts; MySQL 8.0 with dedicated, isolated instances for tax compliance on port 3306 and returns management on port 3307).
+**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale (Amazon, AliExpress, and Daraz). It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-five backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, sellers, commissions, and payouts; MongoDB for orders and carts; MySQL 8.0 with dedicated, isolated instances for tax compliance on port 3306 and returns management on port 3307).
 
 Engineered to endure massive high-concurrency shopping festivals (e.g., 11.11 flash sales with 5,000+ req/sec on hot items), the platform features a **Distributed Multi-DB Checkout Saga (Dual-ACK)**, **Transactional Outbox** event publishing with **Defensive Monotonic Fencing Tokens**, **Distributed Leader Election for Outbox Sweepers**, **API Gateway Thundering-Herd Protection (`SingleFlight`)**, **In-Flight Concurrency Bulkheads & Adaptive Rate Limiting**, **PostgreSQL Read-Replica Projections with 500ms Read-Your-Writes (RYW) Consistency Leases**, **MongoDB Orders Horizontal Sharding**, **High-Velocity Redis Stock Gatekeeper with Cluster Hash-Tag Slot Pinning (`{tenant_id:warehouse_id}`)**, **Zero-Trust Perimeter Identity Stripping & Constant-Time Secret Verification**, **Kafka Dead-Letter Queue (DLQ) Resilience**, **PgBouncer Transaction Pooling (Port 6432)**, **Declarative Chaos Mesh Engineering (Serial + Parallel Mixed-Traffic Order/Read Drills)**, and **Telemetry Ring Buffer Micro-Batching** (reducing DB write queries by 99.8%).
 
@@ -266,7 +266,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 
 > **Zero Trust Perimeter & Event-Driven Core**: Cross-service communication is strictly asynchronous through Kafka events; backend services never make synchronous HTTP calls to one another. All public traffic enters through `api-gateway`, which enforces rate limits, validates Clerk sessions, scrubs spoofed headers, and injects verified identity claims signed with `x-internal-secret`. The gateway boots independently of downstream services, leveraging Opossum circuit breakers for graceful degradation (returning degraded stub payloads for non-critical reads such as reviews, wishlists, and recommendations during outages) while strictly failing closed with structured 503 responses on transactional endpoints. Downstream services verify transport authenticity in constant time and strictly decouple gateway transport secrets from administrative end-user privileges. For deep architectural specifications, see [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) (event schemas), [`SECURITY.md`](SECURITY.md) (perimeter & cryptographic standards), and [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md) (vulnerability analysis & remediation log).
 
-> **Deterministic Anti-Starvation Resource Boundaries**: All 41 service containers in `docker-compose.yml` (23 microservices, 3 Kafka KRaft brokers, OpenSearch, PostgreSQL, and MySQL) enforce granular CPU and RAM limits and reservations (`deploy.resources.limits` & `reservations`) using 6 standardized profiles, preventing host memory starvation and Linux OOM killer termination under peak marketplace loads.
+> **Deterministic Anti-Starvation Resource Boundaries**: All 43 service containers in `docker-compose.yml` (25 microservices, 3 Kafka KRaft brokers, OpenSearch, PostgreSQL, and MySQL) enforce granular CPU and RAM limits and reservations (`deploy.resources.limits` & `reservations`) using 6 standardized profiles, preventing host memory starvation and Linux OOM killer termination under peak marketplace loads.
 
 ### ⚡ Daraz-Scale High-Concurrency Architecture & Resilience Engineering
 
@@ -307,7 +307,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
    - Guaranteed pool quotas prevent non-critical background traffic from starving Tier-1 commerce databases (`product_db`, `inventory_db`, `catalog_db`, `pricing_db`).
    - Prisma packages configure `directUrl` for zero-overhead direct migrations on port 5432 while routing runtime traffic through PgBouncer.
 8. **Decoupled Telemetry Pipeline & Go Ingestion Engine (`analytic-service`)**:
-   - High-throughput **Go 1.22 (Chi)** microservice consuming 60+ platform Kafka event streams across all 23 microservices with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
+   - High-throughput **Go 1.22 (Chi)** microservice consuming 70+ platform Kafka event streams across all 25 microservices with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
    - Micro-batches events (1,000 events / 500ms window) directly into monthly partitioned PostgreSQL tables (`PARTITION BY RANGE (created_at)`) with BRIN indexing using native binary COPY protocol (`pgx.CopyFrom`), reducing database write overhead by over **99.8%** compared to single-row inserts.
    - Lock-free atomic counters (`sync/atomic` with CAS bit casting for float64 metrics) provide `<1ms` KPI snapshot queries, backed by Redis TTL read-through caching.
    - Graceful shutdown drains in-flight channels and flushes pending micro-batches on `SIGTERM`/`SIGINT` to guarantee zero event loss.
@@ -331,7 +331,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - API Gateway enforces **In-Flight Concurrency Bulkheads** (clamping concurrent checkout requests from 50 to 5) and adaptive rate limiting (clamping from 30 to 5 req/min) during downstream degradation, fast-rejecting with **HTTP 503** and `Retry-After: 15` to protect database pools.
 13. **Zero-Trust Perimeter Authorization & Transport Secret Decoupling**:
     - API Gateway unconditionally strips client-supplied identity and transport headers (`x-user-id`, `x-user-role`, `x-internal-secret`) before forwarding traffic downstream.
-    - All 23 microservices enforce constant-time cryptographic verification (`crypto.timingSafeEqual` with SHA-256 pre-hashing) on internal transport secrets, eliminating timing-oracle attack surfaces.
+    - All 25 microservices enforce constant-time cryptographic verification (`crypto.timingSafeEqual` with SHA-256 pre-hashing) on internal transport secrets, eliminating timing-oracle attack surfaces.
     - Downstream services strictly decouple gateway transport secrets from end-user authorization: proxied user requests require explicit `userRole === "admin"` claims; internal transport secrets alone never grant administrative access on behalf of an end user.
 14. **Enterprise Supply-Chain & Runtime Vulnerability Hardening**:
     - Upgraded `vendor-service` to **NestJS 11 on Fastify 5**, eliminating four high-severity middleware bypass advisories (`GHSA-r4wm-x892-vjmx`, `GHSA-wf42-42fg-fg84`, `GHSA-6v32-fjc9-9qf6`, `GHSA-9c5c-9qcx-q35q`).
@@ -455,7 +455,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | **`@repo/user-db`** | PostgreSQL user-domain persistence via Prisma: profiles, addresses, preferences, settings. | `user-service` |
 | **`@repo/vendor-db`** | PostgreSQL vendor-domain persistence via Prisma: legal entities, business profiles, KYB documents & history. | `vendor-service` |
 | **`@repo/eslint-config`** | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`). | `admin`, `client` |
-| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`). | All 39 workspaces |
+| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`). | All 43 workspaces |
 
 ---
 
@@ -542,8 +542,8 @@ pnpm dev
 | **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                        |
 | **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                 |
 | **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                            |
-| **Type Check**      | `pnpm check-types`                                          | Run strict TypeScript type checks across all 39 workspaces                          |
-| **Test Suites**     | `pnpm test`                                                 | Run unit and integration test suites across 27 workspaces (Node, Go, Python)        |
+| **Type Check**      | `pnpm check-types`                                          | Run strict TypeScript type checks across all 43 workspaces                          |
+| **Test Suites**     | `pnpm test`                                                 | Run unit and integration test suites across 29 workspaces (Node, Go, Python)        |
 | **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                      |
 | **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                         |
 | **Format Check**    | `pnpm format:check`                                         | Verify Prettier formatting compliance across the codebase                           |

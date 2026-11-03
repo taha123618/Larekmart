@@ -167,4 +167,4 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
 
 ## 11. Comprehensive Security Audit Report
 
-For an in-depth, code-level vulnerability analysis, IDOR inspection, and defense-in-depth verification across all 23 microservices and frontends, consult the dedicated [Comprehensive Security Audit Report](SECURITY-AUDIT-REPORT.md).
+For an in-depth, code-level vulnerability analysis, IDOR inspection, and defense-in-depth verification across all 25 microservices and frontends, consult the dedicated [Comprehensive Security Audit Report](SECURITY-AUDIT-REPORT.md).

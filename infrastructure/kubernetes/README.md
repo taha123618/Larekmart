@@ -12,7 +12,7 @@ infrastructure/kubernetes/
 │   ├── secrets/                   # Template secret references
 │   ├── ingress.yaml               # SSL-terminated Ingress with CORS & WebSocket support
 │   ├── frontends/                 # Storefront & Admin dashboard
-│   ├── services/                  # 23 microservices deployments & services (26 total workloads)
+│   ├── services/                  # 25 microservices deployments & services (28 total workloads)
 │   ├── workers/                   # Headless Kafka consumers (email-service)
 │   ├── autoscaling/               # Horizontal Pod Autoscalers (HPA)
 │   ├── pdb/                       # Pod Disruption Budgets (minAvailable: 1)

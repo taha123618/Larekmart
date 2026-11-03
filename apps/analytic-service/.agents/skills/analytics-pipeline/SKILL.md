@@ -15,14 +15,15 @@ Guidance for developing the event consumption and pipeline logic in `apps/analyt
 - Worker goroutines drain the channel buffer and persist events in micro-batches (up to 1,000 events or 500ms timeout) using PostgreSQL binary `pgx.CopyFrom`.
 - Dedicated Kafka heartbeat loops run uninterrupted in their own goroutines, preventing `session.timeout.ms` expirations and consumer group rebalances during heavy traffic spikes.
 
-## 2. Event Subscriptions (60+ Topics)
+## 2. Event Subscriptions (70+ Topics)
 
-The analytics pipeline listens to event streams across all 23 microservices:
+The analytics pipeline listens to event streams across all 25 microservices:
 
 - **Orders & Payments**: `order.created`, `order.paid`, `order.confirmed`, `order.cancelled`, `payment.successful`, `payment.failed`, `payment.refund.succeeded`.
 - **Shipments & Logistics**: `shipment.created`, `shipment.dispatched`, `shipment.delivered`, `shipment.failed`.
 - **Returns & Exchanges**: `return.requested`, `return.approved`, `return.rejected`, `return.inspected`, `return.completed`.
 - **Promotions & Taxes**: `promotion.redeemed`, `tax.calculated`.
+- **Commissions & Payouts**: `commission.calculated`, `commission.accrued`, `commission.adjusted`, `commission.reversed`, `payout.scheduled`, `payout.processing`, `payout.completed`, `payout.failed`, `payout.reconciled`.
 - **Merchants & Stores**: `vendor.registered`, `vendor.verified`, `vendor.rejected`, `vendor.escrow.locked`, `vendor.escrow.released`, `vendor.payout.requested`, `vendor.payout.completed`, `seller.created`, `seller.activated`, `seller.suspended`, `seller.storefront.updated`.
 - **Disputes**: `dispute.created`, `dispute.rebutted`, `dispute.resolved`.
 - **Inventory & Catalog**: `product.created`, `product.updated`, `product.deleted`, `stock.reserved`, `stock.released`.

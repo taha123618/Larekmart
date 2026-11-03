@@ -26,7 +26,7 @@ workflow, and deployment notes.
 # Option A: Full Containerized Ecosystem (Single Command)
 # ------------------------------------------------------------------------------
 docker compose up -d --build
-# Starts all databases, Redis, 3-broker Kafka cluster, OpenSearch, Kafka UI, 23 microservices, and 2 Next.js apps with Traefik edge routing.
+# Starts all databases, Redis, 3-broker Kafka cluster, OpenSearch, Kafka UI, 25 microservices, and 2 Next.js apps with Traefik edge routing.
 # See docs/DOCKER.md for full operations guide.
 
 # ------------------------------------------------------------------------------
@@ -166,6 +166,9 @@ workspaces you touched. The tool differs per store:
 | `larekmart_recommendation_db` | recommendation-service | Alembic + SQLAlchemy (pgvector) | `cd apps/recommendation-service && uv run alembic upgrade head`             |
 | `larekmart_notification_db`   | notification-service   | Embedded SQL in `migrations/`   | automatic on startup (`internal/db`); verify with the opt-in test below     |
 | `larekmart_analytics_db`      | analytic-service       | Embedded SQL in `migrations/`   | automatic on startup (`internal/db`)                                        |
+| `larekmart_seller_db`         | seller-service         | Drizzle ORM                     | `pnpm --filter seller-service db:migrate`                                   |
+| `larekmart_commission_db`     | commission-service     | Drizzle ORM                     | `pnpm --filter commission-service db:migrate`                               |
+| `larekmart_payout_db`         | payout-service         | Drizzle ORM                     | `pnpm --filter payout-service db:migrate`                                   |
 | `larekmart_order_db`          | order-service          | Mongoose (no migrations)        | collections/indexes sync on connect                                         |
 | `larekmart_cart_db`           | cart-service           | Mongoose (no migrations)        | collections/indexes sync on connect                                         |
 
@@ -292,6 +295,10 @@ migration (adjust the role/port to your setup), then apply each store's migratio
 
 ```bash
 for db in larekmart_product_db larekmart_inventory_db larekmart_catalog_db \
+          larekmart_shipping_db larekmart_user_db larekmart_vendor_db \
+          larekmart_media_db larekmart_review_db larekmart_wishlist_db \
+          larekmart_promotion_db larekmart_pricing_db larekmart_seller_db \
+          larekmart_commission_db larekmart_payout_db \
           larekmart_analytics_db larekmart_notification_db larekmart_recommendation_db; do
   createdb "$db"
 done
