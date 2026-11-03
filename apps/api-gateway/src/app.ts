@@ -1,4 +1,7 @@
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, {
+  type FastifyInstance,
+  type FastifyServerOptions,
+} from "fastify";
 import { env } from "./config/env.js";
 import { registerRequestIdMiddleware } from "./middleware/request-id.js";
 import { registerTracingMiddleware } from "./middleware/tracing.js";
@@ -20,9 +23,7 @@ import {
   gateway5xxTotal,
 } from "./observability/metrics.js";
 
-function parseTrustProxy(
-  value: string,
-): boolean | string | string[] | ((address: string, hop: number) => boolean) {
+function parseTrustProxy(value: string): FastifyServerOptions["trustProxy"] {
   if (value === "true") return true;
   if (value === "false" || value === "") return false;
   const hops = Number(value);
