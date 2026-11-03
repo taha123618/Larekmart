@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/taha123618/Larekmart/apps/analytic-service/internal/models"
 )
 
 func TestClickHouseClient(t *testing.T) {
@@ -13,6 +16,13 @@ func TestClickHouseClient(t *testing.T) {
 		if r.URL.Path == "/ping" {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("Ok.\n"))
+			return
+		}
+
+		// Insert or query endpoint
+		if r.Method == http.MethodPost && r.URL.Query().Get("query") != "" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(""))
 			return
 		}
 
@@ -55,5 +65,24 @@ func TestClickHouseClient(t *testing.T) {
 	if analytics[0].TotalOrders != 10 {
 		t.Errorf("expected 10 orders, got %d", analytics[0].TotalOrders)
 	}
-}
 
+	// 3. Test InsertEventsBatch
+	amt := 99.99
+	uid := "user_ch_123"
+	events := []models.BufferedAnalyticsEvent{
+		{
+			EventType: "order.created",
+			UserID:    &uid,
+			Amount:    &amt,
+			Metadata:  map[string]interface{}{"order_id": "ord_999"},
+			CreatedAt: time.Now(),
+		},
+	}
+	inserted, err := ch.InsertEventsBatch(ctx, events)
+	if err != nil {
+		t.Fatalf("expected successful batch insert, got: %v", err)
+	}
+	if inserted != 1 {
+		t.Errorf("expected 1 inserted event, got %d", inserted)
+	}
+}

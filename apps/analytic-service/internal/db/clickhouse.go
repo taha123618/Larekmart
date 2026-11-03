@@ -263,3 +263,81 @@ func (ch *ClickHouseClient) GetRecentEvents(ctx context.Context, limit int) ([]m
 
 	return result, nil
 }
+
+// InsertEventsBatch writes a micro-batch block of rows directly to ClickHouse
+// using newline-delimited JSONEachRow format, ensuring high-throughput block appends
+// without excessive part creation on disk.
+func (ch *ClickHouseClient) InsertEventsBatch(ctx context.Context, events []models.BufferedAnalyticsEvent) (int64, error) {
+	if len(events) == 0 {
+		return 0, nil
+	}
+
+	var buf bytes.Buffer
+	for _, e := range events {
+		metaBytes, err := json.Marshal(e.Metadata)
+		if err != nil {
+			metaBytes = []byte("{}")
+		}
+
+		uid := ""
+		if e.UserID != nil {
+			uid = *e.UserID
+		}
+
+		amt := 0.0
+		if e.Amount != nil {
+			amt = *e.Amount
+		}
+
+		row := map[string]interface{}{
+			"event_type": e.EventType,
+			"user_id":    uid,
+			"entity_id":  "",
+			"amount":     amt,
+			"metadata":   string(metaBytes),
+			"timestamp":  e.CreatedAt.UTC().Format("2006-01-02 15:04:05.000"),
+			"created_at": e.CreatedAt.UTC().Format("2006-01-02 15:04:05"),
+		}
+
+		line, err := json.Marshal(row)
+		if err != nil {
+			continue
+		}
+		buf.Write(line)
+		buf.WriteByte('\n')
+	}
+
+	if buf.Len() == 0 {
+		return 0, nil
+	}
+
+	params := url.Values{}
+	params.Set("database", ch.database)
+	params.Set("query", fmt.Sprintf("INSERT INTO %s.analytics_events (event_type, user_id, entity_id, amount, metadata, timestamp, created_at) FORMAT JSONEachRow", ch.database))
+	if ch.username != "" {
+		params.Set("user", ch.username)
+	}
+	if ch.password != "" {
+		params.Set("password", ch.password)
+	}
+
+	reqURL := fmt.Sprintf("%s/?%s", ch.baseURL, params.Encode())
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, &buf)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create clickhouse batch insert request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := ch.httpClient.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("clickhouse batch insert execution error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return 0, fmt.Errorf("clickhouse batch insert error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	return int64(len(events)), nil
+}

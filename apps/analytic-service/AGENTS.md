@@ -40,7 +40,8 @@ A high-throughput **Go 1.22** Kafka consumer worker and Chi HTTP API microservic
 
 ## Database & Persistence
 
-- **Primary Columnar Engine**: Connects to ClickHouse (port `8123` HTTP / `9000` Native) on `analytics_db`. Uses `ReplacingMergeTree` partitioned by month and `SummingMergeTree` for daily aggregates. ClickHouse consumes natively from Kafka via `ENGINE = Kafka` with materialized views for **zero-compute streaming**.
+- **Primary Columnar Engine**: Connects to ClickHouse (port `8123` HTTP / `9000` Native) on `analytics_db`. Uses `ReplacingMergeTree` partitioned by month and `SummingMergeTree` for daily aggregates. ClickHouse consumes natively from Kafka via `ENGINE = Kafka` with materialized views for **zero-compute streaming**. Enforces defensive micro-batching buffer limits (minimum block chunks of 10,000+ rows or regulated 500ms temporal flush windows via `ANALYTICS_BATCH_SIZE=10000`, `ANALYTICS_QUEUE_CAPACITY=50000`) and table settings (`parts_to_delay_insert = 300`, `parts_to_throw_insert = 600`) to eliminate `Too many parts in all data parts in table` I/O saturation during 11.11 flash-sale campaigns.
+- **Kafka Consumer Topography Alignment**: Kafka consumer worker pools must strictly align with broker partition topography (`ANALYTICS_WORKER_COUNT <= KAFKA_NUM_PARTITIONS`, default 3). Worker counts exceeding partition count are clamped automatically on startup to prevent thread starvation and consumer group rebalance loops.
 - **Relational Fallback Storage**: Connects to dedicated `postgres-analytics` on port `5433` (`analytics_db`).
 - Uses `jackc/pgx/v5` connection pool (`pgxpool.Pool`).
 - Employs binary COPY protocol (`pgx.CopyFrom`) for bulk insertion directly into monthly-partitioned `analytics_events` (`PARTITION BY RANGE (created_at)`).

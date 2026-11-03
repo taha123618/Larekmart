@@ -15,6 +15,7 @@ var log = observability.NewLogger("analytic-service:batcher")
 // EventBatcher coordinates high-throughput in-memory buffering and bulk database persistence.
 type EventBatcher struct {
 	db            *db.Database
+	ch            *db.ClickHouseClient
 	queue         chan models.BufferedAnalyticsEvent
 	maxBatchSize  int
 	flushInterval time.Duration
@@ -25,19 +26,20 @@ type EventBatcher struct {
 }
 
 // NewBatcher creates an EventBatcher with specified batch size and flush interval.
-func NewBatcher(database *db.Database, maxBatchSize int, flushInterval time.Duration, queueCapacity int) *EventBatcher {
+func NewBatcher(database *db.Database, clickhouseClient *db.ClickHouseClient, maxBatchSize int, flushInterval time.Duration, queueCapacity int) *EventBatcher {
 	if maxBatchSize <= 0 {
-		maxBatchSize = 1000
+		maxBatchSize = 10000
 	}
 	if flushInterval <= 0 {
 		flushInterval = 500 * time.Millisecond
 	}
 	if queueCapacity <= 0 {
-		queueCapacity = 10000
+		queueCapacity = 50000
 	}
 
 	return &EventBatcher{
 		db:            database,
+		ch:            clickhouseClient,
 		queue:         make(chan models.BufferedAnalyticsEvent, queueCapacity),
 		maxBatchSize:  maxBatchSize,
 		flushInterval: flushInterval,
@@ -159,6 +161,16 @@ func (b *EventBatcher) flushBatch(batch []models.BufferedAnalyticsEvent) {
 
 	observability.BatchFlushDuration.Observe(duration)
 	observability.BatchEventsFlushedTotal.Add(float64(count))
+
+	// Defensive micro-batch persistence to ClickHouse columnar storage
+	if b.ch != nil {
+		if _, chErr := b.ch.InsertEventsBatch(ctx, batch); chErr != nil {
+			log.Warn("Failed to stream micro-batch to ClickHouse (continuing with PostgreSQL authoritative log):", map[string]interface{}{
+				"error": chErr.Error(),
+				"count": len(batch),
+			})
+		}
+	}
 
 	// Aggregate incremental metrics for daily summary
 	var revenue float64

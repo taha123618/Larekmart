@@ -86,15 +86,20 @@ var SubscribedTopics = []string{
 
 // KafkaConsumer coordinates continuous topic consumption without event-loop starvation.
 type KafkaConsumer struct {
-	reader  *kafka.Reader
-	store   *metrics.Store
-	batcher *EventBatcher
-	cancel  context.CancelFunc
-	wg      sync.WaitGroup
+	reader      *kafka.Reader
+	store       *metrics.Store
+	batcher     *EventBatcher
+	workerCount int
+	cancel      context.CancelFunc
+	wg          sync.WaitGroup
 }
 
 // NewKafkaConsumer initializes a segmentio/kafka-go reader subscribing to all domain streams.
-func NewKafkaConsumer(brokers []string, groupID string, store *metrics.Store, batcher *EventBatcher) *KafkaConsumer {
+func NewKafkaConsumer(brokers []string, groupID string, store *metrics.Store, batcher *EventBatcher, workerCount int) *KafkaConsumer {
+	if workerCount <= 0 {
+		workerCount = 1
+	}
+
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:        brokers,
 		GroupID:        groupID,
@@ -106,32 +111,41 @@ func NewKafkaConsumer(brokers []string, groupID string, store *metrics.Store, ba
 	})
 
 	return &KafkaConsumer{
-		reader:  reader,
-		store:   store,
-		batcher: batcher,
+		reader:      reader,
+		store:       store,
+		batcher:     batcher,
+		workerCount: workerCount,
 	}
 }
 
-// Start launches the dedicated goroutine reader loop.
+// Start launches the dedicated goroutine reader loops aligned with partition concurrency.
 func (c *KafkaConsumer) Start(ctx context.Context) {
 	loopCtx, cancel := context.WithCancel(ctx)
 	c.cancel = cancel
 
-	c.wg.Add(1)
-	go c.consumeLoop(loopCtx)
+	workers := c.workerCount
+	if workers <= 0 {
+		workers = 1
+	}
 
-	log.Info("KafkaConsumer background ingestion loop started", map[string]interface{}{
+	for i := 0; i < workers; i++ {
+		c.wg.Add(1)
+		go c.consumeLoop(loopCtx, i)
+	}
+
+	log.Info("KafkaConsumer background ingestion loops started", map[string]interface{}{
 		"topicsCount": len(SubscribedTopics),
+		"workerCount": workers,
 	})
 }
 
-func (c *KafkaConsumer) consumeLoop(ctx context.Context) {
+func (c *KafkaConsumer) consumeLoop(ctx context.Context, workerID int) {
 	defer c.wg.Done()
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Info("Kafka consumer loop shutting down")
+			log.Info("Kafka consumer loop shutting down", map[string]interface{}{"workerID": workerID})
 			return
 		default:
 		}
@@ -141,7 +155,10 @@ func (c *KafkaConsumer) consumeLoop(ctx context.Context) {
 			if ctx.Err() != nil {
 				return
 			}
-			log.Warn("Kafka fetch message error (retrying):", map[string]interface{}{"error": err.Error()})
+			log.Warn("Kafka fetch message error (retrying):", map[string]interface{}{
+				"error":    err.Error(),
+				"workerID": workerID,
+			})
 			time.Sleep(200 * time.Millisecond)
 			continue
 		}

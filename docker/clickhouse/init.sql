@@ -24,7 +24,10 @@ CREATE TABLE IF NOT EXISTS analytics_db.analytics_events (
 ) ENGINE = ReplacingMergeTree()
 PARTITION BY toYYYYMM(timestamp)
 ORDER BY (event_type, timestamp, id)
-SETTINGS index_granularity = 8192;
+SETTINGS index_granularity = 8192,
+         parts_to_delay_insert = 300,
+         parts_to_throw_insert = 600,
+         max_parts_in_total = 1000;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 2. Daily Continuous Aggregate Rollup Table (SummingMergeTree)
@@ -55,6 +58,8 @@ SETTINGS kafka_broker_list = 'kafka-broker-1:9092,kafka-broker-2:9092,kafka-brok
          kafka_group_name = 'clickhouse-analytics-ingestion-group',
          kafka_format = 'JSONEachRow',
          kafka_num_consumers = 3,
+         kafka_max_block_size = 10000,
+         kafka_poll_timeout_ms = 500,
          kafka_skip_broken_messages = 100;
 
 -- ─────────────────────────────────────────────────────────────────────────────

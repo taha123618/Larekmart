@@ -8,8 +8,8 @@ import (
 )
 
 func TestEventBatcherQueueAndDrain(t *testing.T) {
-	// Pass nil db for in-memory queue testing
-	batcher := NewBatcher(nil, 50, 50*time.Millisecond, 200)
+	// Pass nil db and clickhouse client for in-memory queue testing
+	batcher := NewBatcher(nil, nil, 50, 50*time.Millisecond, 200)
 	batcher.Start()
 
 	if batcher.QueueLength() != 0 {

@@ -9,25 +9,26 @@ import (
 
 // Config encapsulates runtime configuration parameters for analytic-service.
 type Config struct {
-	Port                       string
-	DatabaseURL                string
-	ClickHouseURL              string
-	ClickHouseEnabled          bool
-	RedisURL                   string
-	RedisKeyPrefix             string
-	ChartCacheTTL              time.Duration
-	EventsCacheTTL             time.Duration
-	KafkaBrokers               []string
-	KafkaGroupID               string
-	ClientURL                  string
-	AdminURL                   string
-	InternalServiceSecret      string
-	ClerkSecretKey             string
-	AppEnv                     string
-	BatchSize                  int
-	FlushInterval              time.Duration
-	QueueCapacity              int
-	WorkerCount                int
+	Port                  string
+	DatabaseURL           string
+	ClickHouseURL         string
+	ClickHouseEnabled     bool
+	RedisURL              string
+	RedisKeyPrefix        string
+	ChartCacheTTL         time.Duration
+	EventsCacheTTL        time.Duration
+	KafkaBrokers          []string
+	KafkaGroupID          string
+	KafkaNumPartitions    int
+	ClientURL             string
+	AdminURL              string
+	InternalServiceSecret string
+	ClerkSecretKey        string
+	AppEnv                string
+	BatchSize             int
+	FlushInterval         time.Duration
+	QueueCapacity         int
+	WorkerCount           int
 }
 
 // Load reads and parses configuration from environment variables with sensible defaults.
@@ -46,10 +47,16 @@ func Load() *Config {
 	kafkaBrokers := splitAndTrim(kafkaBrokersStr, ",")
 	kafkaGroupID := getEnv("KAFKA_GROUP_ID", "analytic-service-group")
 
-	batchSize := getEnvAsInt("ANALYTICS_BATCH_SIZE", 1000)
+	batchSize := getEnvAsInt("ANALYTICS_BATCH_SIZE", 10000)
 	flushIntervalMs := getEnvAsInt("ANALYTICS_FLUSH_INTERVAL_MS", 500)
-	queueCapacity := getEnvAsInt("ANALYTICS_QUEUE_CAPACITY", 10000)
-	workerCount := getEnvAsInt("ANALYTICS_WORKER_COUNT", 4)
+	queueCapacity := getEnvAsInt("ANALYTICS_QUEUE_CAPACITY", 50000)
+	kafkaNumPartitions := getEnvAsInt("KAFKA_NUM_PARTITIONS", 3)
+	workerCount := getEnvAsInt("ANALYTICS_WORKER_COUNT", 3)
+
+	// Keep consumer worker counts strictly aligned with partition counts to prevent consumer thread starvation
+	if workerCount > kafkaNumPartitions && kafkaNumPartitions > 0 {
+		workerCount = kafkaNumPartitions
+	}
 
 	return &Config{
 		Port:                  port,
@@ -62,6 +69,7 @@ func Load() *Config {
 		EventsCacheTTL:        time.Duration(eventsTTLSec) * time.Second,
 		KafkaBrokers:          kafkaBrokers,
 		KafkaGroupID:          kafkaGroupID,
+		KafkaNumPartitions:    kafkaNumPartitions,
 		ClientURL:             getEnv("CLIENT_URL", "http://localhost:3002"),
 		AdminURL:              getEnv("ADMIN_URL", "http://localhost:3003"),
 		InternalServiceSecret: getEnv("INTERNAL_SERVICE_SECRET", "dev-shared-internal-secret-larekmart"),

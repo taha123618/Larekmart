@@ -6,11 +6,19 @@ const globalForPrisma = globalThis as unknown as {
 
 export function normalizePrismaUrl(url?: string): string | undefined {
   if (!url) return undefined;
-  if (url.includes(":6432") && !url.includes("pgbouncer=true")) {
-    const sep = url.includes("?") ? "&" : "?";
-    return `${url}${sep}pgbouncer=true`;
+  let normalized = url;
+  if (normalized.includes(":6432") && !normalized.includes("pgbouncer=true")) {
+    const sep = normalized.includes("?") ? "&" : "?";
+    normalized = `${normalized}${sep}pgbouncer=true`;
   }
-  return url;
+  if (
+    (normalized.includes(":6432") || normalized.includes("pgbouncer=true")) &&
+    !normalized.includes("statement_cache_size=0")
+  ) {
+    const sep = normalized.includes("?") ? "&" : "?";
+    normalized = `${normalized}${sep}statement_cache_size=0`;
+  }
+  return normalized;
 }
 
 const dbUrl = normalizePrismaUrl(process.env.DATABASE_URL);

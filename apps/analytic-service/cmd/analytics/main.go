@@ -74,13 +74,13 @@ func main() {
 	// 4. Initialize In-Memory Metrics Store
 	store := metrics.NewStore()
 
-	// 5. Initialize & Start Ingestion Batcher
-	batcher := ingestion.NewBatcher(database, cfg.BatchSize, cfg.FlushInterval, cfg.QueueCapacity)
+	// 5. Initialize & Start Ingestion Batcher (defensive micro-batching into PostgreSQL and ClickHouse)
+	batcher := ingestion.NewBatcher(database, clickhouseClient, cfg.BatchSize, cfg.FlushInterval, cfg.QueueCapacity)
 	batcher.Start()
 	defer batcher.Stop()
 
-	// 6. Initialize & Start Kafka Consumer Ingestion Loop
-	consumer := ingestion.NewKafkaConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID, store, batcher)
+	// 6. Initialize & Start Kafka Consumer Ingestion Loop (concurrency aligned with KAFKA_NUM_PARTITIONS)
+	consumer := ingestion.NewKafkaConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID, store, batcher, cfg.WorkerCount)
 	consumer.Start(ctx)
 	defer func() {
 		_ = consumer.Close()

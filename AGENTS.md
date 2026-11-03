@@ -183,10 +183,17 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
   and distributed Redis buffering (`early_ack:inv:${ref}`, `early_ack:tax:${ref}`) to reconcile
   out-of-order event arrivals when downstream services ACK before MongoDB order creation completes,
   preventing false-positive cancellation and refund loops.
-- **Universal PgBouncer Connection Multiplexing.** All PostgreSQL microservices connect through
-  PgBouncer on port 6432 (`DATABASE_URL=...:6432/db?schema=public&pgbouncer=true`), automatically
-  normalizing connections via `normalizePrismaUrl` to disable prepared statement caching in
-  transaction pooling mode and protect PostgreSQL from connection exhaustion.
+- **Universal PgBouncer Connection Multiplexing & Statement Cache Suppression.** All PostgreSQL microservices connect through
+  PgBouncer on port 6432 (`DATABASE_URL=...:6432/db?schema=public&pgbouncer=true&statement_cache_size=0`), automatically
+  normalizing connections via `normalizePrismaUrl` to disable prepared statement caching (`statement_cache_size=0`) in
+  transaction pooling mode, eliminating `Prepared statement does not exist (unnamed)` exceptions and protecting PostgreSQL from connection exhaustion.
+- **Kafka Partition & Worker Scale Alignment.** Consumer worker pools (e.g. `analytic-service`) must strictly align with broker
+  topic partition topographies (`ANALYTICS_WORKER_COUNT <= KAFKA_NUM_PARTITIONS`, default 3). Any worker count exceeding partition
+  counts is clamped automatically on startup to prevent idle thread starvation and perpetual consumer group metadata rebalance storms.
+- **ClickHouse High-Throughput Micro-Batching.** Streaming analytics writes into ClickHouse must enforce minimum block chunks
+  of 10,000+ rows (`ANALYTICS_BATCH_SIZE=10000`, `ANALYTICS_QUEUE_CAPACITY=50000`) or 500ms regulated temporal flush windows, alongside
+  `ReplacingMergeTree` settings (`parts_to_delay_insert = 300`, `parts_to_throw_insert = 600`) to eliminate `Too many parts in all data parts in table`
+  storage I/O deadlocks during 11.11 flash-sale campaigns.
 - **Hybrid Kafka Entity-Keyed Partitioning & Refund Idempotency.** Checkout saga events must
   pass an entity partition key (`options: { key: orderId || sessionId }`) to enforce strict FIFO
   causal ordering per order, while catalog broadcast updates use entropy-salted keys. Saga compensation
