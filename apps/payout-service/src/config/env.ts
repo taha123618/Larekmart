@@ -6,7 +6,7 @@ const EnvSchema = z.object({
   DATABASE_URL: z
     .string()
     .default(
-      "postgresql://postgres:postgres@localhost:5432/payout_db?schema=public",
+      "postgresql://postgres:postgres@localhost:5432/larekmart_payout_db?schema=public",
     ),
   REDIS_URL: z.string().default("redis://localhost:6379"),
   KAFKA_BROKERS: z.string().default("localhost:9092"),
