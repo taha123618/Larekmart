@@ -15,12 +15,12 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `order-service`: Order security, Multi-DB Dual-ACK Saga orchestrator, Transactional Outbox sweeper, MongoDB hashed sharding, idempotency, and chaos resilience rollback suite (`pnpm --filter order-service test`).
    - `payment-service`: Hono auth middleware, gateway header propagation, Stripe webhook signature failure handling, and `PaymentSuccessfulType` event schema (`pnpm --filter payment-service test`).
    - `auth-service`: Clerk express integration, user/admin guards, `UserFormSchema`, and user lifecycle events (`pnpm --filter auth-service test`).
-   - `analytic-service`: Go unit test suites covering configuration validation, constant-time auth guards, lock-free atomic KPI state, and bounded-channel micro-batching (`go test -v ./...` or `pnpm --filter analytic-service test`).
+   - `analytic-service`: Go unit test suites covering configuration validation (production secret fail-closed), constant-time gateway auth, RS256/expiry token verification, lock-free atomic KPI state, and bounded-channel micro-batching (`go test -v ./...` or `pnpm --filter analytic-service test`).
    - `search-service`: Fastify auth guards, OpenSearch payload validation, `BulkIndexRequestSchema`, and reindex parameters (`pnpm --filter search-service test`).
    - `inventory-service`: Stripe session verification regression guard, Hono auth middleware, multi-warehouse cache aggregation, Redis stock gatekeeper, and reservation schemas (`pnpm --filter inventory-service test`).
    - `catalog-service`: Read-model cache key formatting, Fastify health/readiness/metrics route injection, product projection payloads, and PostgreSQL read-replica routing (`pnpm --filter catalog-service test`).
    - `cart-service`: Financial pricing engine, discount calculators, cart expiration worker cluster lock, and threshold boundary tests (`pnpm --filter cart-service test`).
-   - `shipping-service`: Constant-time webhook verification and authorization middleware tests (`pnpm --filter shipping-service test`).
+   - `shipping-service`: Constant-time webhook verification, M2M/admin authorization, RS256 direct-token claims, and expired-token rejection tests (`pnpm --filter shipping-service test`).
    - `user-service`: Profile, address, and account-domain service tests (`pnpm --filter user-service test`).
    - `media-service`: Six offline suites covering object-key traversal safety, magic-byte MIME detection, size limits, cross-owner authorization, and cleanup sweeps (`pnpm --filter media-service test`).
    - `review-service`: Product reviews, rating calculations, verified purchases, anti-abuse voting, and moderation tests (`pnpm --filter review-service test`).
@@ -32,7 +32,7 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `vendor-service`: Legal entity registration, KYB document verification, member access, status transitions, and lifecycle event emission (`pnpm --filter vendor-service test`).
    - `seller-service`: Marketplace storefront profiles, multi-staff permissions, operational settings, metrics snapshots, and Fastify endpoints (`pnpm --filter seller-service test`).
    - `email-service`: Email template interpolation for user signups, order receipts with tax breakdown, KYB notifications, and storefront lifecycle alerts (`pnpm --filter email-service test`).
-   - `notification-service`: Native Go test suite for workers, templates, dispatchers, and WebSockets (`go test ./...`).
+   - `notification-service`: Native Go test suite for workers, templates, dispatchers, WebSocket lifecycle/origin checks, and RS256 JWT verification including forged-token rejection (`go test ./...`).
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
 
 2. **Strict TypeScript Compilation**:
@@ -97,6 +97,11 @@ When writing automated tests in Larekmart, adhere to the following architecture:
 ### 4. End-to-End (E2E) Testing Layer
 
 - **Playwright** is recommended for cross-browser testing of customer checkout and admin dashboard flows.
+- **Chaos drills** are the E2E layer for degraded infrastructure. Validate manifests with
+  `kubectl kustomize infrastructure/chaos/` and run `flash-sale-mixed-traffic.yaml` on a
+  non-production cluster to exercise order-plane latency and catalog replica lag in parallel.
+  Assert gateway fast-shed (503 + `Retry-After`), no duplicate/partial orders, and LSN-guarded
+  storefront reads with no stale-product regressions.
 
 ## Adding Tests to a Workspace
 

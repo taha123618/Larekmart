@@ -122,7 +122,7 @@ export {
 } from "./leader-election.js";
 export type { LeaderElectionOptions, LeaderInfo } from "./leader-election.js";
 
-// Read-Your-Writes consistency parameters
+// Read-Your-Writes consistency parameters (time-lease + LSN-aware variants)
 export {
   DEFAULT_RYW_TTL_MS,
   RYW_PREFIX,
@@ -130,6 +130,11 @@ export {
   markReadYourWrites,
   isReadYourWritesActive,
   clearReadYourWrites,
+  RYW_LSN_PREFIX,
+  buildReadYourWritesLsnKey,
+  markReadYourWritesWithLSN,
+  getSessionLSN,
+  parseLSN,
 } from "./read-your-writes.js";
 export type { ReadYourWritesOptions } from "./read-your-writes.js";
 

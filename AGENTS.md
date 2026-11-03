@@ -59,7 +59,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 2. **Maintain Boundary Isolation**: Never import code from an application into another application or package.
 3. **Follow Event Standards**: For Kafka changes, update the producer, all consumers, `@repo/types`, and `docs/EVENT-DRIVEN-ARCHITECTURE.md` together. Always use the `{ value: payload }` envelope and ensure handlers read `message.value`.
 4. **Preserve TypeScript Strictness**: Do not use `any` or `@ts-ignore` to silence type errors.
-5. **Enforce Security**: Derive `userId` from verified Clerk sessions, strip client-supplied identity/claim headers at the gateway before forwarding, verify direct Bearer tokens cryptographically (failing closed in production), never treat an internal gateway secret as an admin privilege bypass for users, and verify webhook signatures with constant-time comparisons.
+5. **Enforce Security**: Derive `userId` from verified Clerk sessions, strip client-supplied identity/claim headers at the gateway before forwarding, verify direct Bearer tokens cryptographically (failing closed in production), never treat an internal gateway secret as an admin privilege bypass for users, and verify webhook signatures with constant-time comparisons. Never use `CLERK_SECRET_KEY` as an HMAC key: verify Clerk RS256 tokens with `CLERK_JWT_KEY` (or an explicit `CLERK_JWT_HMAC_KEY` test fixture) and enforce `exp`/`nbf`. Development identity bypasses (headers/query params) must be opt-in via explicit env flags and disabled in production. Gateway rate-limit keys must use verified identity or trusted client IP — never a client-supplied header — and `TRUST_PROXY` must match the real proxy topology.
 6. **Handle Errors Safely**: Return structured `{ message }` JSON from HTTP services. Catch and log async errors in Kafka handlers to prevent consumer loop crashes.
 
 ### After Making Changes
@@ -156,13 +156,20 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
   route storefront queries to read-replicas (`readPrisma` via PgBouncer port 6432) while write-plane
   transactions persist to primary (`prisma`). To eliminate replication lag anomalies (<50ms WAL latency),
   an atomic 500ms Read-Your-Writes lease is set in Redis (`markReadYourWrites`) upon mutations, forcing edge
-  requests from mutating clients to query `prisma` directly and bypass stale Redis caches. High-volume MongoDB
+  requests from mutating clients to query `prisma` directly and bypass stale Redis caches. PostgreSQL-backed
+  write services additionally stamp `x-db-lsn` (`GATEWAY_HEADERS.DB_LSN`, `pg_current_wal_lsn()`) onto successful
+  mutation responses; the API Gateway caches it per client session (`markReadYourWritesWithLSN`) so `catalog-service`
+  can compare the session LSN against the replica's `pg_last_wal_replay_lsn()` and fail over onto the primary while
+  the replica lags. MongoDB-backed services (order, cart) rely on the 500ms time lease only. High-volume MongoDB
   collections enforce horizontal hashed sharding (`{ userId: "hashed" }`) with compound scatter-gather mitigation
   indexes for seller and saga queries. Redis keys enforce `{tenant_id:warehouse_id}` multi-tenant hash tag CRC16 slot pinning.
 - **Chaos Engineering & In-Flight Concurrency Bulkheads.** Transactional endpoints (`/checkout`, `/payments`)
   must enforce in-flight concurrency bulkheads and adaptive rate-limiting clamping at the API gateway
   when downstream circuit breakers report degraded health. Multi-database Saga rollbacks must be
-  systematically verified with Chaos Mesh failure injections (`infrastructure/chaos`).
+  systematically verified with Chaos Mesh failure injections (`infrastructure/chaos`). The mixed-traffic
+  drill (`flash-sale-mixed-traffic.yaml`) runs order-plane latency and read-plane replica lag in
+  parallel during a flash-sale checkout and asserts both checkout fast-shed and catalog primary
+  failover; keep the chaos scenarios, `infrastructure/chaos/README.md`, and the chaos plan in sync.
 - **Poison-Pill & DLQ Isolation.** Consumer loops must rely on `@repo/kafka` DLQ routing
 
   so malformed payloads (`SyntaxError`, `ZodError`) fast-fail to `<topic>.dlq` without stalling

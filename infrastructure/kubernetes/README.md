@@ -83,6 +83,7 @@ kubectl apply -k infrastructure/kubernetes/overlays/production
    - Critical path services scale dynamically under peak load: `api-gateway` (3–30 pods), `inventory-service` (3–30 pods), `order-service` (3–25 pods), and `client`/`catalog-service`/`search-service` (2–10 pods) when CPU exceeds 70% or Memory exceeds 80%.
 4. **Chaos Engineering & Resilience**:
    - Resilience against pod evictions, database partitions, and broker failures is continuously validated using declarative Chaos Mesh CRDs (`infrastructure/chaos/`).
+   - The mixed-traffic drill (`flash-sale-mixed-traffic.yaml`) degrades order-plane latency and catalog replica lag in parallel during checkout, verifying gateway fast-shed and LSN-aware primary fallback. Render with `kubectl kustomize infrastructure/chaos/` before applying.
 5. **Zero-Trust Network Isolation**:
    - `default-deny-all` blocks arbitrary pod-to-pod communication.
    - Only the Ingress controller and authorized services can communicate on designated ports. Direct service-to-service HTTP is blocked, upholding the asynchronous Kafka architecture.

@@ -22,13 +22,15 @@ To guarantee that automated compensations and rollbacks execute without human in
 
 The failure injection suite utilizes CNCF **Chaos Mesh** CRDs configured for the `larekmart` Kubernetes namespace:
 
-| Manifest                         | Kind           | Injected Failure                      | Target Component                 | Resilience Guarantee Tested                                                                                              |
-| :------------------------------- | :------------- | :------------------------------------ | :------------------------------- | :----------------------------------------------------------------------------------------------------------------------- |
-| `tax-mysql-latency.yaml`         | `NetworkChaos` | `3500ms ± 500ms` delay on port 3306   | `tax-service` → MySQL            | Dual-ACK timeout sweeper activates and safely triggers `inventory.reservation.cancelled` and `payment.refund.requested`. |
-| `order-mongo-partition.yaml`     | `NetworkChaos` | 100% packet drop (bidirectional)      | `order-service` ↔ MongoDB       | Transactional outbox durable queueing; retry backoff prevents message loss during DB network cuts.                       |
-| `kafka-broker-kill.yaml`         | `PodChaos`     | Random pod termination (`fixed: 1`)   | `kafka-cluster` pods             | Outbox relay publisher gracefully handles disconnections, queues events in MongoDB, and delivers upon broker reconnect.  |
-| `inventory-pg-loss.yaml`         | `NetworkChaos` | 30% packet corruption & 200ms latency | `inventory-service` → PostgreSQL | Redis stock gatekeeper fast-fail prevents PostgreSQL connection pool saturation.                                         |
-| `flash-sale-chaos-workflow.yaml` | `Workflow`     | Serial orchestration pipeline         | Multi-tier components            | End-to-end flash-sale resilience under sequential failure conditions.                                                    |
+| Manifest                               | Kind           | Injected Failure                        | Target Component                                        | Resilience Guarantee Tested                                                                                              |
+| :------------------------------------- | :------------- | :-------------------------------------- | :------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------- |
+| `tax-mysql-latency.yaml`               | `NetworkChaos` | `3500ms ± 500ms` delay on port 3306     | `tax-service` → MySQL                                   | Dual-ACK timeout sweeper activates and safely triggers `inventory.reservation.cancelled` and `payment.refund.requested`. |
+| `order-mongo-partition.yaml`           | `NetworkChaos` | 100% packet drop (bidirectional)        | `order-service` ↔ MongoDB                              | Transactional outbox durable queueing; retry backoff prevents message loss during DB network cuts.                       |
+| `kafka-broker-kill.yaml`               | `PodChaos`     | Random pod termination (`fixed: 1`)     | `kafka-cluster` pods                                    | Outbox relay publisher gracefully handles disconnections, queues events in MongoDB, and delivers upon broker reconnect.  |
+| `inventory-pg-loss.yaml`               | `NetworkChaos` | 30% packet corruption & 200ms latency   | `inventory-service` → PostgreSQL                        | Redis stock gatekeeper fast-fail prevents PostgreSQL connection pool saturation.                                         |
+| `catalog-replica-replication-lag.yaml` | `NetworkChaos` | `1500ms ± 600ms` delay on the standby   | `catalog-service` → PostgreSQL replica                  | LSN-aware Read-Your-Writes failover keeps checkout sessions on the primary while bystanders stay on the replica.         |
+| `flash-sale-chaos-workflow.yaml`       | `Workflow`     | Serial orchestration pipeline           | Multi-tier components                                   | End-to-end flash-sale resilience under sequential failure conditions.                                                    |
+| `flash-sale-mixed-traffic.yaml`        | `Workflow`     | Parallel order + read plane degradation | `order-service` ↔ MongoDB, `catalog-service` → replica | Flash-sale checkout storm keeps sharded order writes durable while catalog read routing fails over per session.          |
 
 ---
 
@@ -65,7 +67,7 @@ Under simulated failure injection, the checkout Saga orchestrator enforces:
 
 ## 5. Verification & Acceptance Criteria
 
-- [x] All 5 Chaos Mesh CRD manifests validate via `kubectl kustomize infrastructure/chaos/`.
+- [x] All 7 Chaos Mesh CRD manifests validate via `kubectl kustomize infrastructure/chaos/`.
 - [x] API Gateway Chaos Guardrails unit and integration tests pass 100% (`apps/api-gateway/tests/resilience/chaos-guardrails.test.ts`).
 - [x] Order Service Multi-DB Saga Chaos Resilience suite passes 100% (`apps/order-service/tests/chaos-saga-resilience.test.ts`).
 - [x] Full monorepo TypeScript compilation passes with zero type errors (`pnpm check-types`).

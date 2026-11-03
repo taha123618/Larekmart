@@ -26,13 +26,25 @@ export async function requireAdminOrInternal(
         .digest();
       if (crypto.timingSafeEqual(hashProvided, hashInternal)) {
         const role = ctx.headers["x-user-role"] || ctx.headers["X-User-Role"];
+        const userId = ctx.headers["x-user-id"] || ctx.headers["X-User-Id"];
+
+        // A proxied user request (identity header present) must be an admin.
+        // The gateway transport secret never escalates a user to admin.
+        if (userId && role !== "admin") {
+          ctx.status = 403;
+          ctx.body = { message: "Administrator privileges required" };
+          return;
+        }
         if (role && role !== "admin") {
           ctx.status = 403;
           ctx.body = { message: "Administrator privileges required" };
           return;
         }
-        ctx.state.userId = ctx.headers["x-user-id"] || "internal";
-        ctx.state.userRole = typeof role === "string" ? role : "admin";
+
+        // Pure machine-to-machine call: no user identity is asserted.
+        ctx.state.userId =
+          typeof userId === "string" ? userId : "internal-service";
+        ctx.state.userRole = typeof role === "string" ? role : "internal-service";
         return next();
       }
     } catch {
@@ -43,9 +55,6 @@ export async function requireAdminOrInternal(
   const authHeader = ctx.headers["authorization"] as string | undefined;
   const currentEnv = process.env.NODE_ENV || env.NODE_ENV;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    if (currentEnv === "development" && !internalSecret) {
-      return next(); // Permissive in dev if no secret configured
-    }
     ctx.status = 401;
     ctx.body = {
       message: "Authentication required: missing or invalid Bearer token",
@@ -58,58 +67,75 @@ export async function requireAdminOrInternal(
   if (parts.length === 3) {
     try {
       const jwtKey = process.env.CLERK_JWT_KEY;
-      const clerkSecret = process.env.CLERK_SECRET_KEY;
-      const key = jwtKey || clerkSecret;
-      const isProduction =
-        (process.env.NODE_ENV || env.NODE_ENV) === "production";
+      // The Clerk secret key is NOT an HMAC signing key. Only an explicit
+      // HS256 key (tests/local fixtures) may be used for symmetric checks.
+      const hmacKey = process.env.CLERK_JWT_HMAC_KEY;
+      const isProduction = currentEnv === "production";
+      const isTest = currentEnv === "test";
 
-      // If a signing key is configured, verify signature cryptographically
-      if (key) {
-        const signedData = `${parts[0]}.${parts[1]}`;
-        const signature = Buffer.from(parts[2]!, "base64url");
+      const signedData = `${parts[0]}.${parts[1]}`;
+      const signature = Buffer.from(parts[2]!, "base64url");
+      let verified = false;
 
-        let verified = false;
-        if (key.includes("-----BEGIN")) {
-          try {
-            const verifier = crypto.createVerify("RSA-SHA256");
-            verifier.update(signedData);
-            verified = verifier.verify(key, signature);
-          } catch {
-            verified = false;
-          }
-        } else {
-          try {
-            const expectedSig = crypto
-              .createHmac("sha256", key)
-              .update(signedData)
-              .digest();
-            verified =
-              signature.length === expectedSig.length &&
-              crypto.timingSafeEqual(signature, expectedSig);
-          } catch {
-            verified = false;
-          }
+      if (jwtKey && jwtKey.includes("-----BEGIN")) {
+        try {
+          const verifier = crypto.createVerify("RSA-SHA256");
+          verifier.update(signedData);
+          verified = verifier.verify(jwtKey, signature);
+        } catch {
+          verified = false;
         }
-
-        if (!verified) {
-          ctx.status = 401;
-          ctx.body = { message: "Invalid or tampered token signature" };
-          return;
+      } else if (hmacKey) {
+        try {
+          const expectedSig = crypto
+            .createHmac("sha256", hmacKey)
+            .update(signedData)
+            .digest();
+          verified =
+            signature.length === expectedSig.length &&
+            crypto.timingSafeEqual(signature, expectedSig);
+        } catch {
+          verified = false;
         }
-      } else if (isProduction) {
+      } else if (!isTest) {
+        // Fail closed in production AND development when no key is configured.
         ctx.status = 401;
         ctx.body = {
-          message: "Cryptographic signing key required in production",
+          message: "Cryptographic signing key required to verify tokens",
         };
         return;
       }
 
-      const payloadJson = Buffer.from(parts[1]!, "base64url").toString("utf8");
-      const claims = JSON.parse(payloadJson);
-      const role = claims?.metadata?.role || claims?.role;
+      if ((jwtKey || hmacKey) && !verified) {
+        ctx.status = 401;
+        ctx.body = { message: "Invalid or tampered token signature" };
+        return;
+      }
 
+      const payloadJson = Buffer.from(parts[1]!, "base64url").toString("utf8");
+      const claims = JSON.parse(payloadJson) as {
+        sub?: string;
+        exp?: number;
+        nbf?: number;
+        role?: string;
+        metadata?: { role?: string };
+      };
+      const now = Math.floor(Date.now() / 1000);
+
+      if (typeof claims.exp !== "number" || claims.exp <= now) {
+        ctx.status = 401;
+        ctx.body = { message: "Token is missing an expiry or has expired" };
+        return;
+      }
+      if (typeof claims.nbf === "number" && claims.nbf > now + 30) {
+        ctx.status = 401;
+        ctx.body = { message: "Token is not yet valid" };
+        return;
+      }
+
+      const role = claims.metadata?.role || claims.role;
       if (role === "admin") {
-        ctx.state.userId = claims?.sub;
+        ctx.state.userId = claims.sub;
         ctx.state.userRole = role;
         return next();
       }

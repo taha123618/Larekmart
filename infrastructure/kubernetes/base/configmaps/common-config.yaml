@@ -5,8 +5,14 @@ metadata:
   namespace: larekmart
 data:
   NODE_ENV: "production"
+  APP_ENV: "production"
   LOG_LEVEL: "info"
   PORT: "8000"
+
+  # API Gateway is fronted by the ingress controller: trust exactly one proxy
+  # hop so client IPs are resolved without accepting arbitrary X-Forwarded-For.
+  TRUST_PROXY: "1"
+  CORS_ORIGIN: "https://larekmart.com,https://admin.larekmart.com"
 
   # Kafka Message Bus
   KAFKA_BROKERS: "kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"

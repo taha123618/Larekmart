@@ -21,10 +21,20 @@ mirror for Cursor; when they disagree, `AGENTS.md` wins.
 - **Service integration is Kafka-only.** No direct HTTP calls between backend services.
   Producers send `{ value: payload }`; consumers read `message.value`.
 - **Auth is Clerk.** Backends gate routes with `shouldBeUser` / `shouldBeAdmin`; admin
-  requires `sessionClaims.metadata.role === "admin"`.
+  requires `sessionClaims.metadata.role === "admin"`. Never use `CLERK_SECRET_KEY` as an
+  HMAC key: verify direct Bearer tokens with `CLERK_JWT_KEY` (RS256) or an explicit
+  `CLERK_JWT_HMAC_KEY` test fixture, and enforce `exp`/`nbf`. Dev identity bypasses must be
+  explicit opt-in env flags, never implied by a missing `NODE_ENV`.
+- **Trust boundaries.** Strip client identity headers at the gateway, never let the internal
+  secret grant admin to a proxied user, and never key rate limits on client-supplied headers.
+  `TRUST_PROXY` must match the real proxy hop count.
 - **Never** commit secrets or `.env` files, edit `packages/product-db/generated/**`, or
   weaken TypeScript strictness.
 - **Scope your instructions:** read the `AGENTS.md` in the workspace you are editing
   (`apps/*/AGENTS.md`, `packages/*/AGENTS.md`) before making changes.
 - **Verify:** `pnpm check-types` always; add `pnpm build` (Next apps, payment-service)
   and `pnpm lint` (admin, client) when relevant; run test suites with `pnpm test` (`docs/TESTING.md`).
+- **Chaos:** multi-database sagas and mixed traffic are validated with the Chaos Mesh
+  manifests in `infrastructure/chaos/` (including `flash-sale-mixed-traffic.yaml`, which runs
+  order-plane latency and catalog replica lag in parallel during checkout). Keep the manifests,
+  README, and docs/plans in sync.

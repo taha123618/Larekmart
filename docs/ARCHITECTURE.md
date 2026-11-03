@@ -67,6 +67,10 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
   `recommendation-service` with graceful partial degradation.
 - **Security**: Strips client-supplied internal headers before routing; enforces role gates
   (public, authenticated, admin, seller) and verifies Super Admin status and `manage_sellers` administrative delegations.
+  Rate-limit keys derive from the verified `authUserId`, a SHA-256 hash of the bearer token, or the
+  trusted client IP — never from a client-supplied identity header. `TRUST_PROXY` defaults to
+  `false` and must be set to the real hop count (`1` behind the ingress) so `X-Forwarded-For`
+  cannot be spoofed to bypass limits.
 
 ### Services
 
@@ -441,6 +445,13 @@ buyer (Browse Seller Store) ── GET /api/v1/sellers/slug/:slug ──▶ sell
 
 - **Auth:** Clerk everywhere. Backends guard with `shouldBeUser`/`shouldBeAdmin`;
   authorization is enforced server-side, with the admin middleware as UX defense.
+  Gateway-proxied requests carry verified claims under `x-internal-secret`; the internal
+  secret authenticates the transport, never grants admin to a proxied user. Direct Bearer
+  tokens are verified as Clerk RS256 JWTs against `CLERK_JWT_KEY` with `exp`/`nbf` checks
+  (an explicit `CLERK_JWT_HMAC_KEY` fixture is test-only). The Clerk secret key is never
+  used as an HMAC key. Local identity bypasses require explicit
+  `ANALYTIC_DEV_AUTH_BYPASS` / `NOTIFICATION_DEV_AUTH_BYPASS` /
+  `RECOMMENDATION_DEV_AUTH_BYPASS` flags and are disabled in production.
 - **Configuration:** environment variables per workspace; `.env.example` is the contract.
 - **Observability:** structured logging, health checks, metrics, and telemetry across all workspaces powered by `@repo/monitoring`.
 - **Search infrastructure:** all OpenSearch SDK usage, index mappings, query DSL builders,
@@ -468,11 +479,12 @@ buyer (Browse Seller Store) ── GET /api/v1/sellers/slug/:slug ──▶ sell
 - **Event Resilience & Dead-Letter Queue (DLQ):** `@repo/kafka` incorporates intelligent poison-pill isolation. Malformed payloads or deterministic schema violations (`SyntaxError`, `ZodError`) fast-fail immediately to `<topic>.dlq` on attempt 1 without retry loops. Transient errors (database lock contention, connection failovers) retry with exponential backoff (1s, 2s, 4s) before routing to DLQ with comprehensive metadata headers (`x-original-topic`, `x-error-message`, `x-is-poison-pill`, `x-attempt-count`). Offsets commit cleanly, preventing consumer partition stalls.
 - **Transactional Outbox Pattern:** Services performing dual writes (e.g. `order-service` saving an order in MongoDB and publishing `order.created` to Kafka) persist the event to an `OutboxEvent` collection within the same ACID transaction. An optimistic fast-path publishes immediately, while a background sweeper running every 5 seconds reclaims unpublished events via atomic lease locks (`lockedUntil`), guaranteeing at-least-once event delivery across network outages or process crashes.
 - **Distributed Leader Election & Sweeper Cluster Isolation:** Background outbox sweepers (`order-service`), cart reapers (`cart-service`), reservation expirations (`inventory-service`), and saga timeouts acquire single-active cluster ownership via `DistributedLeaderElector` or `withClusterLock` over `@repo/redis`. Continuous heartbeats (3s interval, 10s lease TTL) ensure hot standby replicas take over within 2,000ms upon leader termination, completely eliminating duplicate Kafka message dispatches across horizontally scaled Kubernetes pods.
-- **Hyperscale Data Architecture & Sharding Rules:** To prevent storage I/O and RAM bottlenecks, read-heavy storefront projections (`catalog-service`) route read queries to PostgreSQL read-replicas (`readPrisma` via PgBouncer port 6432) while Kafka projection writes persist to primary (`prisma`). To eliminate replication lag anomalies (<50ms WAL latency), an atomic 500ms Read-Your-Writes lease is set in Redis (`markReadYourWrites`) upon mutations, forcing edge requests from mutating clients to query `prisma` directly and bypass stale Redis caches. High-volume MongoDB collections (`order-service`) enforce horizontal hashed sharding (`{ userId: "hashed" }`) with compound scatter-gather mitigation indexes for seller and saga queries. Redis cluster keys enforce `{tenant_id:warehouse_id}` multi-tenant hash tags for CRC16 slot pinning.
-- **Chaos Engineering & In-Flight Concurrency Bulkheads:** Multi-database checkout Saga resilience is verified continuously via CNCF Chaos Mesh manifests (`infrastructure/chaos/`). The API Gateway enforces in-flight concurrency bulkheads (clamping concurrent checkout requests from 50 to 5) and adaptive rate-limiting (clamping from 30 to 5 req/min) during downstream degradation, fast-shedding with HTTP 503 and `Retry-After: 15` to protect database pools.
+- **Hyperscale Data Architecture & Sharding Rules:** To prevent storage I/O and RAM bottlenecks, read-heavy storefront projections (`catalog-service`) route read queries to PostgreSQL read-replicas (`readPrisma` via PgBouncer port 6432) while Kafka projection writes persist to primary (`prisma`). To eliminate replication lag anomalies (<50ms WAL latency), an atomic 500ms Read-Your-Writes lease is set in Redis (`markReadYourWrites`) upon mutations, forcing edge requests from mutating clients to query `prisma` directly and bypass stale Redis caches. PostgreSQL-backed writers additionally return `x-db-lsn` (`pg_current_wal_lsn()`), which the gateway caches per client session; `catalog-service` compares that LSN with the replica's `pg_last_wal_replay_lsn()` and falls back to the primary while the replica lags. High-volume MongoDB collections (`order-service`) enforce horizontal hashed sharding (`{ userId: "hashed" }`) with compound scatter-gather mitigation indexes for seller and saga queries. Redis cluster keys enforce `{tenant_id:warehouse_id}` multi-tenant hash tags for CRC16 slot pinning.
+- **Chaos Engineering & In-Flight Concurrency Bulkheads:** Multi-database checkout Saga resilience is verified continuously via CNCF Chaos Mesh manifests (`infrastructure/chaos/`). The API Gateway enforces in-flight concurrency bulkheads (clamping concurrent checkout requests from 50 to 5) and adaptive rate-limiting (clamping from 30 to 5 req/min) during downstream degradation, fast-shedding with HTTP 503 and `Retry-After: 15` to protect database pools. The **mixed-traffic drill** (`infrastructure/chaos/flash-sale-mixed-traffic.yaml`) runs order-plane latency and catalog replica lag in a `Parallel` branch during flash-sale checkout, then a 60s `Suspend` observes recovery; success requires both checkout fast-shed and LSN-guarded storefront reads with no stale-product regressions.
 - **CORS:** each service allow-lists the specific frontend origins it serves
 
-  (`client` :3002, `admin` :3003).
+  (`client` :3002, `admin` :3003) via `resolveCorsOrigins`/explicit callbacks. Wildcards are
+  rejected when credentials are enabled.
 
 - **Error shape:** `{ message }` JSON with correct status codes; a global error handler
   exists in the Express services.

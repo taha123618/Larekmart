@@ -80,7 +80,8 @@ async function runSellerServiceTests() {
     assert.equal(unauthAdminRes.statusCode, 403);
     console.log("  ✓ Admin routes strictly reject non-admin users with 403");
 
-    // Admin route with internal service secret passes auth guard
+    // Admin route with ONLY the internal transport secret (no user identity or
+    // admin role) must NOT be treated as an admin privilege escalation.
     const authInternalRes = await app.inject({
       method: "GET",
       url: "/api/v1/admin/sellers",
@@ -88,9 +89,8 @@ async function runSellerServiceTests() {
         "x-internal-secret": env.INTERNAL_SERVICE_SECRET,
       },
     });
-    assert.notEqual(authInternalRes.statusCode, 401);
-    assert.notEqual(authInternalRes.statusCode, 403);
-    console.log("  ✓ Internal service secret correctly authenticates requests");
+    assert.equal(authInternalRes.statusCode, 403);
+    console.log("  ✓ Internal secret alone cannot escalate to admin (403)");
 
     // ────────────────────────────────────────────────────────────
     // Test 3: Input Validation & Boundary Enforcement

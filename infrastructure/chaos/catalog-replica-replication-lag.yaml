@@ -1,0 +1,32 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: catalog-replica-replication-lag
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: larekmart
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: chaos-engineering
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - larekmart
+    labelSelectors:
+      app.kubernetes.io/name: catalog-service
+  delay:
+    # Simulate WAL replay backlog drift on the standby: reads routed through
+    # PgBouncer to postgres-replica stall past the 500ms RYW time lease.
+    latency: "1500ms"
+    jitter: "600ms"
+    correlation: "60"
+  direction: to
+  target:
+    selector:
+      namespaces:
+        - larekmart
+      labelSelectors:
+        app.kubernetes.io/name: postgres-replica
+    mode: all
+  duration: "5m"

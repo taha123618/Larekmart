@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import { env } from "./config/env.js";
 import { registerRequestIdMiddleware } from "./middleware/request-id.js";
 import { registerTracingMiddleware } from "./middleware/tracing.js";
 import { registerSecurityMiddleware } from "./middleware/security.js";
@@ -19,11 +20,18 @@ import {
   gateway5xxTotal,
 } from "./observability/metrics.js";
 
+function parseTrustProxy(value: string): boolean | number | string {
+  if (value === "true") return true;
+  if (value === "false" || value === "") return false;
+  const hops = Number(value);
+  return Number.isInteger(hops) && hops >= 0 ? hops : value;
+}
+
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
     logger: false,
     disableRequestLogging: true,
-    trustProxy: true,
+    trustProxy: parseTrustProxy(env.TRUST_PROXY),
     bodyLimit: 5 * 1024 * 1024, // 5MB body limit
   });
 

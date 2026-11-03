@@ -14,6 +14,7 @@ import { circuitBreaker } from "../resilience/circuit-breaker.js";
 import {
   isReadYourWritesActive,
   markReadYourWrites,
+  markReadYourWritesWithLSN,
   DEFAULT_RYW_TTL_MS,
 } from "@repo/redis";
 import { redis } from "../utils/redis.js";
@@ -212,6 +213,25 @@ export async function registerProxyRoutes(
                   error: String(err),
                 });
               });
+
+              // Capture the upstream WAL LSN high-water mark (x-db-lsn) emitted
+              // by write services and cache it per client session in Redis. This
+              // becomes the baseline for LSN-aware replica lag enforcement in
+              // read-replica consumers (e.g. catalog-service).
+              const lsnHeaderRaw =
+                (res as { headers?: Record<string, string | string[] | undefined> })
+                  .headers?.[GATEWAY_HEADERS.DB_LSN];
+              const lsn = Array.isArray(lsnHeaderRaw) ? lsnHeaderRaw[0] : lsnHeaderRaw;
+              if (lsn && lsn.trim() !== "") {
+                markReadYourWritesWithLSN(redis.client, rywClientId, lsn.trim()).catch(
+                  (err) => {
+                    logger.warn("Failed to mark Read-Your-Writes LSN in Redis", {
+                      clientId: rywClientId,
+                      error: String(err),
+                    });
+                  },
+                );
+              }
             }
           }
         },
@@ -250,6 +270,9 @@ export async function registerProxyRoutes(
           delete rewritten["x-user-permissions"];
           delete rewritten["x-force-primary"];
           delete rewritten["x-read-your-writes"];
+          // x-db-lsn is an untrusted client header — only upstream service
+          // responses (captured in onResponse) may establish an LSN baseline.
+          delete rewritten[GATEWAY_HEADERS.DB_LSN];
 
           // If client has an active Read-Your-Writes lease, force downstream queries to primary master
           if (

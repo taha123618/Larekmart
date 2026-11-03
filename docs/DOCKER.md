@@ -468,7 +468,7 @@ kubectl get pods,svc,hpa,ingress -n larekmart-dev
 
 ### Chaos Engineering Simulations (Chaos Mesh)
 
-See `infrastructure/chaos/README.md` for failure simulation manifests (tax MySQL latency, MongoDB network partitions, Kafka broker termination, and serial flash-sale workflow).
+See `infrastructure/chaos/README.md` for failure simulation manifests (tax MySQL latency, MongoDB network partitions, Kafka broker termination, the serial flash-sale workflow, and the parallel mixed-traffic order/read routing drill).
 
 ---
 

@@ -20,7 +20,7 @@
 
 **Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale (Amazon, AliExpress, and Daraz). It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-three backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, and sellers; MongoDB for orders and carts; MySQL 8.0 with dedicated, isolated instances for tax compliance on port 3306 and returns management on port 3307).
 
-Engineered to endure massive high-concurrency shopping festivals (e.g., 11.11 flash sales with 5,000+ req/sec on hot items), the platform features a **Distributed Multi-DB Checkout Saga (Dual-ACK)**, **Transactional Outbox** event publishing with **Defensive Monotonic Fencing Tokens**, **Distributed Leader Election for Outbox Sweepers**, **API Gateway Thundering-Herd Protection (`SingleFlight`)**, **In-Flight Concurrency Bulkheads & Adaptive Rate Limiting**, **PostgreSQL Read-Replica Projections with 500ms Read-Your-Writes (RYW) Consistency Leases**, **MongoDB Orders Horizontal Sharding**, **High-Velocity Redis Stock Gatekeeper with Cluster Hash-Tag Slot Pinning (`{tenant_id:warehouse_id}`)**, **Zero-Trust Perimeter Identity Stripping & Constant-Time Secret Verification**, **Kafka Dead-Letter Queue (DLQ) Resilience**, **PgBouncer Transaction Pooling (Port 6432)**, **Declarative Chaos Mesh Engineering**, and **Telemetry Ring Buffer Micro-Batching** (reducing DB write queries by 99.8%).
+Engineered to endure massive high-concurrency shopping festivals (e.g., 11.11 flash sales with 5,000+ req/sec on hot items), the platform features a **Distributed Multi-DB Checkout Saga (Dual-ACK)**, **Transactional Outbox** event publishing with **Defensive Monotonic Fencing Tokens**, **Distributed Leader Election for Outbox Sweepers**, **API Gateway Thundering-Herd Protection (`SingleFlight`)**, **In-Flight Concurrency Bulkheads & Adaptive Rate Limiting**, **PostgreSQL Read-Replica Projections with 500ms Read-Your-Writes (RYW) Consistency Leases**, **MongoDB Orders Horizontal Sharding**, **High-Velocity Redis Stock Gatekeeper with Cluster Hash-Tag Slot Pinning (`{tenant_id:warehouse_id}`)**, **Zero-Trust Perimeter Identity Stripping & Constant-Time Secret Verification**, **Kafka Dead-Letter Queue (DLQ) Resilience**, **PgBouncer Transaction Pooling (Port 6432)**, **Declarative Chaos Mesh Engineering (Serial + Parallel Mixed-Traffic Order/Read Drills)**, and **Telemetry Ring Buffer Micro-Batching** (reducing DB write queries by 99.8%).
 
 The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js frontends, polyglot Node, Go, and Python services, and shared internal packages managed with unified tooling, strict TypeScript typing, declarative Kustomize Kubernetes deployments (`infrastructure/kubernetes`), and CNCF Chaos Mesh simulations (`infrastructure/chaos`).
 
@@ -319,12 +319,15 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
 10. **PostgreSQL Read-Replicas & Read-Your-Writes (RYW) Consistency (`@repo/catalog-db`, `@repo/redis`)**:
     - Separates operational write transactions from high-volume storefront browsing reads: `readPrisma` routes read-heavy traffic (`catalog`, `category`, `brand`, `collection`) through PgBouncer read-replica pools (`catalog_db_replica` on port 6432), while `prisma` routes Kafka projection writes to the primary writer (`catalog_db`).
     - Eliminates replication lag anomalies (<50ms WAL latency) via an atomic 500ms Read-Your-Writes lease set in Redis (`markReadYourWrites`) upon mutations, forcing edge requests from mutating clients to query `prisma` directly and bypass stale replica caches until replication catches up.
+    - Adds an **LSN-aware lag guard** for traffic that outlives the 500ms lease: the gateway checkpoints each mutation's `x-db-lsn`, and `catalog-service` compares it with the standby's `pg_last_wal_replay_lsn()`. Sessions ahead of replay stay on `primary-master`; unavailable or malformed replay positions fail safe to primary; reads return to the replica automatically once replay catches up.
     - Provides seamless fallback to primary when replica URLs are omitted.
 11. **MongoDB Orders Horizontal Sharding & Storage I/O Rules (`@repo/order-db`)**:
     - Distributes high-velocity order history across MongoDB cluster shards using an MD5-hashed shard key (`{ userId: "hashed" }`), eliminating monotonic insertion bottlenecks.
     - Single-shard targeted routing for customer queries (`GET /user-orders`) and compound scatter-gather mitigation indexes (`{ sellerId: 1, createdAt: -1 }`, `{ "products.sellerId": 1, createdAt: -1 }`, `{ status: 1, createdAt: -1 }`) for sub-millisecond cross-shard range scans.
 12. **Chaos Engineering & In-Flight Concurrency Bulkheads (`infrastructure/chaos`, `api-gateway`)**:
-    - Declarative CNCF Chaos Mesh experiments (`NetworkChaos`, `PodChaos`, `Workflow`) systematically simulate MySQL tax latency (3500ms), MongoDB network partitions, Kafka broker kills, and PG packet loss.
+    - Declarative CNCF Chaos Mesh experiments (`NetworkChaos`, `PodChaos`, `Workflow`) systematically simulate MySQL tax latency (3500ms), MongoDB network partitions, Kafka broker kills, PostgreSQL packet loss, and standby replication lag.
+    - `flash-sale-chaos-workflow.yaml` runs the serial tax → MongoDB → Kafka failure pipeline, while `flash-sale-mixed-traffic.yaml` degrades the **order write/read plane** (`order-service` ↔ sharded MongoDB) and the **catalog read plane** (`catalog-service` → PostgreSQL replica) **in parallel** during the same checkout storm.
+    - Mixed-traffic invariants: acknowledged checkout writes stay durable and idempotent across `{ userId: "hashed" }` shards, buyer reads carry `x-consistency-plane: primary-master` while the replica lags, anonymous bystander reads stay on the replica, and every session returns to the replica plane once replay catches up.
     - API Gateway enforces **In-Flight Concurrency Bulkheads** (clamping concurrent checkout requests from 50 to 5) and adaptive rate limiting (clamping from 30 to 5 req/min) during downstream degradation, fast-rejecting with **HTTP 503** and `Retry-After: 15` to protect database pools.
 13. **Zero-Trust Perimeter Authorization & Transport Secret Decoupling**:
     - API Gateway unconditionally strips client-supplied identity and transport headers (`x-user-id`, `x-user-role`, `x-internal-secret`) before forwarding traffic downstream.
@@ -604,6 +607,27 @@ bun run test:staging:traffic
 bash scripts/verify-staging-traffic.sh https://staging.larekmart.com
 ```
 
+#### E. Chaos Engineering & Mixed-Traffic Routing Drills
+
+```bash
+# Validate every Chaos Mesh manifest offline (no cluster required)
+kubectl kustomize infrastructure/chaos/
+
+# Serial flash-sale failure pipeline (tax latency -> Mongo partition -> Kafka kill)
+kubectl apply -f infrastructure/chaos/flash-sale-chaos-workflow.yaml
+kubectl get workflows.chaos-mesh.org -n larekmart -w
+
+# Parallel mixed-traffic drill: order routing + catalog read routing under checkout load
+kubectl apply -f infrastructure/chaos/flash-sale-mixed-traffic.yaml
+kubectl get workflows.chaos-mesh.org -n larekmart flash-sale-mixed-traffic -w
+kubectl get networkchaos -n larekmart -l larekmart.io/traffic-profile=flash-sale-mixed
+
+# Local read-routing companion (real Redis + PostgreSQL, no cluster required)
+pnpm --filter catalog-service test
+```
+
+See [`infrastructure/chaos/README.md`](infrastructure/chaos/README.md) for the checkout/bystander traffic profile and the per-plane pass/fail invariants.
+
 For complete ingress routing architecture, network policies, and horizontal autoscaling details, see [`infrastructure/kubernetes/README.md`](infrastructure/kubernetes/README.md).
 
 ---
@@ -641,37 +665,37 @@ Workspace Skills (<workspace>/.agents/skills/*)
 
 ## Documentation Index
 
-| Document                                                                                                                   | Purpose & Scope                                                                                      |
-| -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [`docs/BRD.md`](docs/BRD.md)                                                                                               | Business Requirement Document: goals, ROI, conversion KPIs, financial compliance                     |
-| [`docs/PRD.md`](docs/PRD.md)                                                                                               | Product Requirement Document: user personas, journeys, accessibility, MVP roadmap                    |
-| [`docs/FRD.md`](docs/FRD.md)                                                                                               | Functional Requirement Document: API specs, state machines, Kafka event contracts                    |
-| [`docs/TRD.md`](docs/TRD.md)                                                                                               | Technical Requirement Document: topology, port matrix, SLAs, strict TS standards                     |
-| [`docs/MRD.md`](docs/MRD.md)                                                                                               | Model Requirement Document: DB schemas (Postgres, Mongo), @repo/types, ML models                     |
-| [`docs/DATA-STRATEGY.md`](docs/DATA-STRATEGY.md)                                                                           | Data Strategy Document: polyglot governance, event consistency, PII protection                       |
-| [`docs/AI-EVALUATION-FRAMEWORK.md`](docs/AI-EVALUATION-FRAMEWORK.md)                                                       | AI Evaluation Framework: agent scoring rubrics, benchmark suites, verification steps                 |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                                                                             | High-level system architecture, service responsibilities, and request flows                          |
-| [`docs/API.md`](docs/API.md)                                                                                               | Comprehensive API endpoint registry across all backend services                                      |
-| [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md)                                                   | Kafka topic registry, payload contracts, and event schemas                                           |
-| [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md)                                                                             | Dependency graph, boundaries, and import constraints                                                 |
-| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)                                                                               | Local development setup, port registry, and environment variables matrix                             |
-| [`docs/RULES.md`](docs/RULES.md)                                                                                           | Monorepo engineering rules, dependency boundaries, event envelopes, and security gates               |
-| [`docs/DESIGN.md`](docs/DESIGN.md)                                                                                         | UI/UX design system, design tokens, responsive breakpoints, component specs & motion                 |
-| [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)                                                                               | Coding style, naming patterns, and design principles                                                 |
-| [`docs/SECURITY.md`](docs/SECURITY.md)                                                                                     | Security policies, Clerk authorization, and Stripe webhook verification                              |
-| [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md)                                                           | Comprehensive Security Audit Report: vulnerability analysis & remediation plan                       |
-| [`docs/TESTING.md`](docs/TESTING.md)                                                                                       | Testing strategy, verification commands, and automated test setup                                    |
-| [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)                                                                             | Contribution standards, git workflow, and definition of done                                         |
-| [`docs/adr/README.md`](docs/adr/README.md)                                                                                 | Architecture Decision Records (ADRs)                                                                 |
-| [`docs/DOCKER.md`](docs/DOCKER.md)                                                                                         | Complete Docker operations manual, reverse-proxy ingress & network topology                          |
-| [`docs/ROOTPRINT.md`](docs/ROOTPRINT.md)                                                                                   | Rootprint, MinIO S3, and Quickwit distributed log analytics guide                                    |
-| [`docs/comparisons/README.md`](docs/comparisons/README.md)                                                                 | Infrastructure decisions: DevOps stack, Ingress routers, and Observability                           |
-| [`docs/comparisons/DEVOPS-INFRASTRUCTURE-STACK-COMPARISON.md`](docs/comparisons/DEVOPS-INFRASTRUCTURE-STACK-COMPARISON.md) | Full-stack evaluation: Docker vs. K8s vs. GitHub Actions vs. Ingress                                 |
-| [`docs/comparisons/REVERSE-PROXY-INGRESS-COMPARISON.md`](docs/comparisons/REVERSE-PROXY-INGRESS-COMPARISON.md)             | Reverse proxy evaluation: Caddy vs. NGINX vs. Traefik                                                |
-| [`docs/comparisons/OBSERVABILITY-STACK-COMPARISON.md`](docs/comparisons/OBSERVABILITY-STACK-COMPARISON.md)                 | Observability evaluation: Dozzle vs. Rootprint vs. CNCF Prometheus/Grafana/Loki                      |
-| [`docs/plans/README.md`](docs/plans/README.md)                                                                             | High-Concurrency Daraz-Scale Architecture Plans, Multi-DB Saga, Outbox, & DLQ Index                  |
-| [`infrastructure/chaos/README.md`](infrastructure/chaos/README.md)                                                         | Chaos Engineering Playbook: Chaos Mesh CRDs, failure injections, and automated rollback verification |
-| [`infrastructure/kubernetes/README.md`](infrastructure/kubernetes/README.md)                                               | Kubernetes Cloud Mesh Operations: Declarative Kustomize overlays, HPAs, and Pod Disruption Budgets   |
+| Document                                                                                                                   | Purpose & Scope                                                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`docs/BRD.md`](docs/BRD.md)                                                                                               | Business Requirement Document: goals, ROI, conversion KPIs, financial compliance                                                            |
+| [`docs/PRD.md`](docs/PRD.md)                                                                                               | Product Requirement Document: user personas, journeys, accessibility, MVP roadmap                                                           |
+| [`docs/FRD.md`](docs/FRD.md)                                                                                               | Functional Requirement Document: API specs, state machines, Kafka event contracts                                                           |
+| [`docs/TRD.md`](docs/TRD.md)                                                                                               | Technical Requirement Document: topology, port matrix, SLAs, strict TS standards                                                            |
+| [`docs/MRD.md`](docs/MRD.md)                                                                                               | Model Requirement Document: DB schemas (Postgres, Mongo), @repo/types, ML models                                                            |
+| [`docs/DATA-STRATEGY.md`](docs/DATA-STRATEGY.md)                                                                           | Data Strategy Document: polyglot governance, event consistency, PII protection                                                              |
+| [`docs/AI-EVALUATION-FRAMEWORK.md`](docs/AI-EVALUATION-FRAMEWORK.md)                                                       | AI Evaluation Framework: agent scoring rubrics, benchmark suites, verification steps                                                        |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                                                                             | High-level system architecture, service responsibilities, and request flows                                                                 |
+| [`docs/API.md`](docs/API.md)                                                                                               | Comprehensive API endpoint registry across all backend services                                                                             |
+| [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md)                                                   | Kafka topic registry, payload contracts, and event schemas                                                                                  |
+| [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md)                                                                             | Dependency graph, boundaries, and import constraints                                                                                        |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)                                                                               | Local development setup, port registry, and environment variables matrix                                                                    |
+| [`docs/RULES.md`](docs/RULES.md)                                                                                           | Monorepo engineering rules, dependency boundaries, event envelopes, and security gates                                                      |
+| [`docs/DESIGN.md`](docs/DESIGN.md)                                                                                         | UI/UX design system, design tokens, responsive breakpoints, component specs & motion                                                        |
+| [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)                                                                               | Coding style, naming patterns, and design principles                                                                                        |
+| [`docs/SECURITY.md`](docs/SECURITY.md)                                                                                     | Security policies, Clerk authorization, and Stripe webhook verification                                                                     |
+| [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md)                                                           | Comprehensive Security Audit Report: vulnerability analysis & remediation plan                                                              |
+| [`docs/TESTING.md`](docs/TESTING.md)                                                                                       | Testing strategy, verification commands, and automated test setup                                                                           |
+| [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)                                                                             | Contribution standards, git workflow, and definition of done                                                                                |
+| [`docs/adr/README.md`](docs/adr/README.md)                                                                                 | Architecture Decision Records (ADRs)                                                                                                        |
+| [`docs/DOCKER.md`](docs/DOCKER.md)                                                                                         | Complete Docker operations manual, reverse-proxy ingress & network topology                                                                 |
+| [`docs/ROOTPRINT.md`](docs/ROOTPRINT.md)                                                                                   | Rootprint, MinIO S3, and Quickwit distributed log analytics guide                                                                           |
+| [`docs/comparisons/README.md`](docs/comparisons/README.md)                                                                 | Infrastructure decisions: DevOps stack, Ingress routers, and Observability                                                                  |
+| [`docs/comparisons/DEVOPS-INFRASTRUCTURE-STACK-COMPARISON.md`](docs/comparisons/DEVOPS-INFRASTRUCTURE-STACK-COMPARISON.md) | Full-stack evaluation: Docker vs. K8s vs. GitHub Actions vs. Ingress                                                                        |
+| [`docs/comparisons/REVERSE-PROXY-INGRESS-COMPARISON.md`](docs/comparisons/REVERSE-PROXY-INGRESS-COMPARISON.md)             | Reverse proxy evaluation: Caddy vs. NGINX vs. Traefik                                                                                       |
+| [`docs/comparisons/OBSERVABILITY-STACK-COMPARISON.md`](docs/comparisons/OBSERVABILITY-STACK-COMPARISON.md)                 | Observability evaluation: Dozzle vs. Rootprint vs. CNCF Prometheus/Grafana/Loki                                                             |
+| [`docs/plans/README.md`](docs/plans/README.md)                                                                             | High-Concurrency Daraz-Scale Architecture Plans, Multi-DB Saga, Outbox, & DLQ Index                                                         |
+| [`infrastructure/chaos/README.md`](infrastructure/chaos/README.md)                                                         | Chaos Engineering Playbook: Chaos Mesh CRDs, serial & parallel mixed-traffic order/read routing drills, and automated rollback verification |
+| [`infrastructure/kubernetes/README.md`](infrastructure/kubernetes/README.md)                                               | Kubernetes Cloud Mesh Operations: Declarative Kustomize overlays, HPAs, and Pod Disruption Budgets                                          |
 
 ---
 

@@ -44,11 +44,20 @@ A comprehensive architectural and source-code security audit was conducted acros
 
 ```
 VULNERABILITY HIERARCHY
+├── [CRIT] SEC-06: analytic-service accepted forged JWTs and defaulted to a known admin secret [RESOLVED]
 ├── [HIGH] SEC-01: IDOR & Unscoped Query in Order Service (GET /seller-orders) [RESOLVED & VERIFIED]
-├── [HIGH] SEC-02: Missing Seller Attribution & Cross-Seller Product Mutation
+├── [HIGH] SEC-02: Missing Seller Attribution & Cross-Seller Product Mutation [RESOLVED]
+├── [HIGH] SEC-07: notification-service dev identity/WebSocket-origin bypass + Clerk-secret HMAC [RESOLVED]
+├── [HIGH] SEC-08: recommendation-service unverified JWT and dev ownership/admin bypass [RESOLVED]
+├── [HIGH] SEC-09: Internal secret alone granted admin to proxied users (seller/vendor/shipping) [RESOLVED]
+├── [HIGH] SEC-10: Gateway trusted arbitrary X-Forwarded-For (`trustProxy: true`) [RESOLVED]
 ├── [MED]  SEC-03: Production Boot Validation for INTERNAL_SERVICE_SECRET      [RESOLVED & VERIFIED]
+├── [MED]  SEC-11: Wildcard CORS with credentials in five Fastify services [RESOLVED]
+├── [MED]  SEC-12: Clerk secret key used as HMAC fallback (shipping/return) [RESOLVED]
+├── [MED]  SEC-13: Production-usable placeholder values in K8s Secret templates [RESOLVED]
 ├── [LOW]  SEC-04: Network Perimeter Isolation of Microservice Ports
-└── [LOW]  SEC-05: Route-Specific Rate Limiting on Merchant Onboarding
+├── [LOW]  SEC-05: Route-Specific Rate Limiting on Merchant Onboarding
+└── [LOW]  SEC-14: Residual transitive dependency advisories (zod v3, nested fastify/postcss) [TRACKED]
 ```
 
 ---

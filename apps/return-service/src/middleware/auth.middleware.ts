@@ -23,19 +23,25 @@ export function isInternalService(ctx: Context): boolean {
   return safeTimingCompare(secret, env.GATEWAY_INTERNAL_SECRET);
 }
 
-function verifyJwtToken(
-  token: string,
-): { sub?: string; role?: string; metadata?: { role?: string } } | null {
+interface JwtClaims {
+  sub?: string;
+  userId?: string;
+  exp?: number;
+  nbf?: number;
+  role?: string;
+  metadata?: { role?: string };
+}
+
+function verifyJwtToken(token: string): JwtClaims | null {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
 
   const jwtKey = process.env.CLERK_JWT_KEY;
-  const clerkSecret = process.env.CLERK_SECRET_KEY;
-  const key = jwtKey || clerkSecret;
-  if (!key) {
-    // Fail-closed: cannot verify token without key
-    return null;
-  }
+  // The Clerk secret key is NOT an HMAC signing key. Symmetric verification is
+  // only available through an explicit fixture key (tests/local harnesses).
+  const hmacKey = process.env.CLERK_JWT_HMAC_KEY;
+  const nodeEnv = process.env.NODE_ENV || env.NODE_ENV;
+  const isTest = nodeEnv === "test";
 
   const signedData = `${parts[0]}.${parts[1]}`;
   let signature: Buffer;
@@ -46,18 +52,18 @@ function verifyJwtToken(
   }
 
   let verified = false;
-  if (key.includes("-----BEGIN")) {
+  if (jwtKey && jwtKey.includes("-----BEGIN")) {
     try {
       const verifier = crypto.createVerify("RSA-SHA256");
       verifier.update(signedData);
-      verified = verifier.verify(key, signature);
+      verified = verifier.verify(jwtKey, signature);
     } catch {
       verified = false;
     }
-  } else {
+  } else if (hmacKey) {
     try {
       const expectedSig = crypto
-        .createHmac("sha256", key)
+        .createHmac("sha256", hmacKey)
         .update(signedData)
         .digest();
       verified =
@@ -66,13 +72,22 @@ function verifyJwtToken(
     } catch {
       verified = false;
     }
+  } else if (!isTest) {
+    // Fail closed in production AND development when no key is configured.
+    return null;
   }
 
-  if (!verified) return null;
+  if ((jwtKey || hmacKey) && !verified) return null;
 
   try {
     const payloadJson = Buffer.from(parts[1]!, "base64url").toString("utf8");
-    return JSON.parse(payloadJson);
+    const claims = JSON.parse(payloadJson) as JwtClaims;
+    const now = Math.floor(Date.now() / 1000);
+
+    if (typeof claims.exp !== "number" || claims.exp <= now) return null;
+    if (typeof claims.nbf === "number" && claims.nbf > now + 30) return null;
+
+    return claims;
   } catch {
     return null;
   }
@@ -100,8 +115,8 @@ export async function shouldBeUser(ctx: Context, next: Next): Promise<void> {
   if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
     const token = authHeader.substring(7).trim();
     const claims = verifyJwtToken(token);
-    if (claims && (claims.sub || (claims as any).userId)) {
-      ctx.state.userId = claims.sub || (claims as any).userId;
+    if (claims && (claims.sub || claims.userId)) {
+      ctx.state.userId = claims.sub || claims.userId;
       ctx.state.userRole = claims.metadata?.role || claims.role || "user";
       return next();
     }

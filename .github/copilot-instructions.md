@@ -32,6 +32,13 @@ Next.js apps (`client` :3002, `admin` :3003), 23 backend services (`product-serv
 - Integrate backend services **only** through Kafka via `@repo/kafka`, publishing
   `{ value: payload }` and reading `message.value` in handlers.
 - Use Clerk for authentication; guard mutating routes with `shouldBeUser`/`shouldBeAdmin`.
+- Never use `CLERK_SECRET_KEY` as an HMAC key. Verify direct Bearer tokens with
+  `CLERK_JWT_KEY` (RS256) or an explicit `CLERK_JWT_HMAC_KEY` test fixture, and enforce
+  `exp`/`nbf`. Development identity bypasses must be explicit opt-in env flags, never
+  implied by a missing `NODE_ENV`.
+- Keep trust boundaries intact: strip client identity headers at the gateway, never let the
+  internal secret grant admin to a proxied user, and never key rate limits on
+  client-supplied headers. `TRUST_PROXY` must match the real proxy hop count.
 - Read config from environment variables; document new keys in the workspace `.env.example`.
 - Preserve TypeScript strictness (`noUncheckedIndexedAccess`, `isolatedModules`).
 - Return structured `{ message }` errors in HTTP services; catch errors in Kafka handlers.
@@ -42,6 +49,9 @@ Next.js apps (`client` :3002, `admin` :3003), 23 backend services (`product-serv
 - Run `pnpm build` for Next.js apps (`admin`, `client`) and `payment-service`.
 - Run `pnpm lint` for `admin` and `client`.
 - Update relevant `AGENTS.md` and `docs/` files when contracts, architecture, or behavior change.
+- When touching resilience, update the Chaos Mesh manifests in `infrastructure/chaos/`
+  (including the parallel `flash-sale-mixed-traffic.yaml` order-plane + replica-lag drill)
+  and keep `infrastructure/chaos/README.md` and the chaos plan in sync.
 
 ## Never
 

@@ -5,7 +5,10 @@ import { shouldBeAdmin } from "./middleware/authMiddleware.js";
 import userRoute from "./routes/user.route.js";
 import { producer } from "./utils/kafka.js";
 import { startAuthConsumer } from "./consumer.js";
-import { validateInternalServiceSecret } from "@repo/types";
+import {
+  validateClerkSecretKey,
+  validateInternalServiceSecret,
+} from "@repo/types";
 import {
   createLogger,
   createHealthRegistry,
@@ -89,6 +92,11 @@ const start = async () => {
   try {
     validateInternalServiceSecret(
       process.env.INTERNAL_SERVICE_SECRET,
+      process.env.NODE_ENV,
+      "auth-service",
+    );
+    validateClerkSecretKey(
+      process.env.CLERK_SECRET_KEY,
       process.env.NODE_ENV,
       "auth-service",
     );

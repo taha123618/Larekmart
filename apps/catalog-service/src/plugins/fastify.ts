@@ -1,10 +1,17 @@
 import type { FastifyError, FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import { GATEWAY_HEADERS } from "@repo/types";
-import { isReadYourWritesActive } from "@repo/redis";
+import {
+  getSessionLSN,
+  isReadYourWritesActive,
+} from "@repo/redis";
 import { logger } from "../observability/metrics.js";
 import { redis } from "../utils/redis.js";
-import { databaseContext } from "../utils/database-context.js";
+import {
+  databaseContext,
+  isReplicaLagging,
+  replicaWal,
+} from "../utils/database-context.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -48,7 +55,8 @@ export async function configureFastifyPlugins(
     ],
   });
 
-  // Read-Your-Writes consistency hook: inspect gateway header or active Redis lease
+  // Read-Your-Writes consistency hook: inspect gateway header, active Redis
+  // time-lease, and the session's cached WAL LSN high-water mark.
   fastify.addHook("onRequest", async (request) => {
     const forcePrimaryHeader =
       request.headers[GATEWAY_HEADERS.FORCE_PRIMARY] === "true" ||
@@ -56,24 +64,41 @@ export async function configureFastifyPlugins(
 
     let forcePrimary = forcePrimaryHeader;
 
-    if (!forcePrimary) {
-      const rywClientId =
-        (request.headers[GATEWAY_HEADERS.USER_ID] as string) ||
-        (request.headers[GATEWAY_HEADERS.CLIENT_SESSION_ID] as string) ||
-        (request.headers[GATEWAY_HEADERS.GUEST_TOKEN] as string) ||
-        (request.headers["x-user-id"] as string) ||
-        (request.headers["x-session-id"] as string) ||
-        (request.headers["x-guest-token"] as string) ||
-        request.ip;
+    const rywClientId =
+      (request.headers[GATEWAY_HEADERS.USER_ID] as string) ||
+      (request.headers[GATEWAY_HEADERS.CLIENT_SESSION_ID] as string) ||
+      (request.headers[GATEWAY_HEADERS.GUEST_TOKEN] as string) ||
+      (request.headers["x-user-id"] as string) ||
+      (request.headers["x-session-id"] as string) ||
+      (request.headers["x-guest-token"] as string) ||
+      request.ip;
 
-      if (rywClientId) {
+    if (!forcePrimary && rywClientId) {
+      try {
+        forcePrimary = await isReadYourWritesActive(
+          redis.client,
+          rywClientId,
+        );
+      } catch {
+        // Graceful non-blocking degradation
+      }
+
+      // LSN-aware replica lag guard: the 500ms time lease can expire while a
+      // heavily loaded replica is still behind the write service's WAL position
+      // (11.11 batch writes, vendor catalog sync). If the session recorded a
+      // mutation LSN, only serve from the replica once it has replayed past
+      // that point; otherwise force the primary connection.
+      if (!forcePrimary) {
         try {
-          forcePrimary = await isReadYourWritesActive(
-            redis.client,
-            rywClientId,
-          );
+          const sessionLsn = await getSessionLSN(redis.client, rywClientId);
+          if (sessionLsn) {
+            const replicaLsn = await replicaWal.getLsn();
+            if (isReplicaLagging(sessionLsn, replicaLsn)) {
+              forcePrimary = true;
+            }
+          }
         } catch {
-          // Graceful non-blocking degradation
+          // Graceful non-blocking degradation: fall back to time-lease routing
         }
       }
     }

@@ -122,8 +122,13 @@ async function runSecurityTests() {
   // Case C: Standard user claims (non-admin)
   process.env.NODE_ENV = "test";
   nextCalled = false;
+  const futureExp = Math.floor(Date.now() / 1000) + 3600;
   const userPayload = Buffer.from(
-    JSON.stringify({ sub: "user_123", metadata: { role: "user" } }),
+    JSON.stringify({
+      sub: "user_123",
+      exp: futureExp,
+      metadata: { role: "user" },
+    }),
   ).toString("base64url");
   const mockCtxUser = {
     headers: { authorization: `Bearer header.${userPayload}.signature` },
@@ -143,7 +148,11 @@ async function runSecurityTests() {
   // Case D: Admin claims in dev/test environment
   nextCalled = false;
   const adminPayload = Buffer.from(
-    JSON.stringify({ sub: "admin_456", metadata: { role: "admin" } }),
+    JSON.stringify({
+      sub: "admin_456",
+      exp: futureExp,
+      metadata: { role: "admin" },
+    }),
   ).toString("base64url");
   const mockCtxAdmin = {
     headers: { authorization: `Bearer header.${adminPayload}.signature` },
@@ -181,18 +190,23 @@ async function runSecurityTests() {
     "Expected 401 when key is missing in production",
   );
 
-  // Case E: Cryptographic JWT signature verification when CLERK_SECRET_KEY is configured
+  // Case E: Cryptographic JWT signature verification with an explicit HS256 fixture key.
+  // CLERK_SECRET_KEY is intentionally NOT accepted as an HMAC key.
   console.log("3. Testing cryptographic JWT signature verification...");
-  process.env.CLERK_SECRET_KEY = "test_clerk_hmac_secret_key_12345";
+  process.env.CLERK_JWT_HMAC_KEY = "test_clerk_hmac_secret_key_12345";
 
   const headerB64 = Buffer.from(
     JSON.stringify({ alg: "HS256", typ: "JWT" }),
   ).toString("base64url");
   const payloadB64 = Buffer.from(
-    JSON.stringify({ sub: "admin_crypt", metadata: { role: "admin" } }),
+    JSON.stringify({
+      sub: "admin_crypt",
+      exp: futureExp,
+      metadata: { role: "admin" },
+    }),
   ).toString("base64url");
   const validSig = crypto
-    .createHmac("sha256", process.env.CLERK_SECRET_KEY)
+    .createHmac("sha256", process.env.CLERK_JWT_HMAC_KEY)
     .update(`${headerB64}.${payloadB64}`)
     .digest("base64url");
 
@@ -225,7 +239,34 @@ async function runSecurityTests() {
   });
   assert.equal(nextCalled, false, "Forged signature must be rejected");
   assert.equal(mockCtxForged.status, 401, "Expected 401 for forged signature");
-  delete process.env.CLERK_SECRET_KEY;
+  delete process.env.CLERK_JWT_HMAC_KEY;
+
+  // Case F: Expired cryptographically valid token must be rejected.
+  process.env.CLERK_JWT_HMAC_KEY = "test_clerk_hmac_secret_key_12345";
+  const expiredPayload = Buffer.from(
+    JSON.stringify({
+      sub: "admin_expired",
+      exp: Math.floor(Date.now() / 1000) - 60,
+      metadata: { role: "admin" },
+    }),
+  ).toString("base64url");
+  const expiredSig = crypto
+    .createHmac("sha256", process.env.CLERK_JWT_HMAC_KEY)
+    .update(`${headerB64}.${expiredPayload}`)
+    .digest("base64url");
+  nextCalled = false;
+  const mockCtxExpired = {
+    headers: {
+      authorization: `Bearer ${headerB64}.${expiredPayload}.${expiredSig}`,
+    },
+    state: {},
+  } as any;
+  await requireAdminOrInternal(mockCtxExpired, async () => {
+    nextCalled = true;
+  });
+  assert.equal(nextCalled, false, "Expired token must be rejected");
+  assert.equal(mockCtxExpired.status, 401, "Expected 401 for expired token");
+  delete process.env.CLERK_JWT_HMAC_KEY;
 
   // 4. Test HMAC-SHA256 Webhook Payload Binding
   console.log("4. Testing Webhook HMAC-SHA256 Payload Binding...");
