@@ -225,6 +225,30 @@ Configured `directUrl = env("DIRECT_URL")` across all 6 Prisma database packages
 
 ---
 
+## Phase 5: Flash-Sale Concurrency Hardening (4-Pillar Architecture)
+
+### 5.1 Asynchronous Cryptographic Event Attestation
+
+- **Problem**: `inventory-service` executed synchronous `stripe.checkout.sessions.retrieve()` inside the Kafka consumer loop, hitting Stripe's 100 req/s rate limit and stalling partitions.
+- **Resolution**: `payment-service` computes an HMAC-SHA256 signature (`createEventAttestation`) using `INTERNAL_SERVICE_SECRET`. Consuming services verify locally in `<0.01ms` via `verifyEventAttestation`, completely eliminating synchronous third-party API dependencies.
+
+### 5.2 Optimistic Saga Correlation & Early ACK Jittered Buffering
+
+- **Problem**: If `inventory.stock.sold` or `tax.calculation.completed` arrived milliseconds before MongoDB finished writing the initial order, the event was silently dropped, triggering false-positive refund cancellations after 60s.
+- **Resolution**: Implemented `findOrderWithRetry` (exponential backoff + jitter) and Redis early ACK buffering (`early_ack:inv:${ref}`, `early_ack:tax:${ref}`). In `createOrder`, pre-existing early ACKs are immediately reconciled upon order creation.
+
+### 5.3 Universal PgBouncer :6432 Multiplexing
+
+- **Problem**: Direct connections on port 5432 risked PostgreSQL `max_connections` exhaustion during horizontal autoscaling, while PgBouncer `transaction` mode crashed without `pgbouncer=true`.
+- **Resolution**: Standardized connection strings across all 6 Prisma DB packages with automatic `normalizePrismaUrl` to guarantee `?pgbouncer=true` on port 6432 connections.
+
+### 5.4 Hybrid Kafka Entity-Keyed Partitioning & Idempotent Refunds
+
+- **Problem**: Keyless Kafka messages resulted in round-robin partition distribution, breaking causal in-order processing per order, while checkout refund compensations lacked Stripe idempotency keys.
+- **Resolution**: Added `KafkaSendOptions: { key?: string }` to `producer.send()`. Order sagas are partitioned by `orderId || sessionId` to guarantee strict FIFO causality per order. Added `{ idempotencyKey: 'saga-refund-${orderId}' }` to `stripe.refunds.create()`.
+
+---
+
 ## Verification & Acceptance Criteria
 
 - [x] TypeScript strict compilation passes across `@repo/types`, `order-service`, `payment-service`, `inventory-service`, `analytic-service`, `catalog-service`, `search-service`.

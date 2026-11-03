@@ -307,7 +307,7 @@ Emitted after an order is persisted. Note `amount` is in the smallest currency u
 
 ### `payment.successful`
 
-Emitted from the verified Stripe webhook on `checkout.session.completed`.
+Emitted from the verified Stripe webhook on `checkout.session.completed`. Carries a cryptographic HMAC-SHA256 attestation token signed by `payment-service` with `INTERNAL_SERVICE_SECRET`, allowing downstream consumers (`inventory-service`, `order-service`) to verify authenticity locally in `<0.01ms` without making synchronous HTTP calls to Stripe. Partitioned by `sessionId`.
 
 ```jsonc
 {
@@ -320,14 +320,19 @@ Emitted from the verified Stripe webhook on `checkout.session.completed`.
     "amount": 5990,
     "status": "success",
     "products": [{ "name": "CoreFit T-Shirt", "quantity": 1, "price": 5900 }],
+    "attestation": {
+      "signature": "a1b2c3d4e5f6...",
+      "timestamp": "2026-11-04T00:18:47.000Z",
+      "signer": "payment-service",
+    },
   },
 }
 ```
 
-- Producer: `apps/payment-service/src/routes/webhooks.route.ts`
+- Producer: `apps/payment-service/src/routes/webhooks.route.ts` (keyed by `sessionId`)
 - Consumers:
-  - `apps/order-service/src/utils/subscriptions.ts` → `createOrder`
-  - `apps/inventory-service/src/workers/inventory-event.consumer.ts` → `confirmReservationsByReference` (converts reserved stock to sold stock)
+  - `apps/order-service/src/utils/subscriptions.ts` → `createOrder` (with optimistic early ACK reconciliation)
+  - `apps/inventory-service/src/workers/inventory-event.consumer.ts` → `confirmReservationsByReference` (verifies cryptographic attestation locally before debiting stock)
 
 ### `order.confirmed`
 

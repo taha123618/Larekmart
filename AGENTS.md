@@ -171,9 +171,26 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
   parallel during a flash-sale checkout and asserts both checkout fast-shed and catalog primary
   failover; keep the chaos scenarios, `infrastructure/chaos/README.md`, and the chaos plan in sync.
 - **Poison-Pill & DLQ Isolation.** Consumer loops must rely on `@repo/kafka` DLQ routing
-
   so malformed payloads (`SyntaxError`, `ZodError`) fast-fail to `<topic>.dlq` without stalling
   partition consumption.
+- **Asynchronous Cryptographic Event Attestation.** Critical cross-service financial events
+  (`payment.successful`) must carry an HMAC-SHA256 attestation token (`createEventAttestation`
+  signed with `INTERNAL_SERVICE_SECRET`). Consuming services (`inventory-service`, `order-service`)
+  verify attestation locally in `<0.01ms` via `verifyEventAttestation`, completely eliminating
+  external API synchronous calls (e.g. Stripe rate limits) from consumer event loops.
+- **Saga ACK Resilience & Optimistic Buffering.** Distributed multi-database saga consumers
+  (`inventory.stock.sold`, `tax.calculation.completed`) must enforce exponential backoff retries
+  and distributed Redis buffering (`early_ack:inv:${ref}`, `early_ack:tax:${ref}`) to reconcile
+  out-of-order event arrivals when downstream services ACK before MongoDB order creation completes,
+  preventing false-positive cancellation and refund loops.
+- **Universal PgBouncer Connection Multiplexing.** All PostgreSQL microservices connect through
+  PgBouncer on port 6432 (`DATABASE_URL=...:6432/db?schema=public&pgbouncer=true`), automatically
+  normalizing connections via `normalizePrismaUrl` to disable prepared statement caching in
+  transaction pooling mode and protect PostgreSQL from connection exhaustion.
+- **Hybrid Kafka Entity-Keyed Partitioning & Refund Idempotency.** Checkout saga events must
+  pass an entity partition key (`options: { key: orderId || sessionId }`) to enforce strict FIFO
+  causal ordering per order, while catalog broadcast updates use entropy-salted keys. Saga compensation
+  refunds must pass `{ idempotencyKey: 'saga-refund-${orderId}' }` to prevent duplicate customer refunds.
 
 - **Match existing conventions** before introducing new libraries. Check whether the
   dependency already exists in the workspace you are editing.
