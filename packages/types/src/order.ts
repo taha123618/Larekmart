@@ -11,6 +11,12 @@ export type OrderChartType = {
   successful: number;
 };
 
+export type EventAttestationType = {
+  signature: string;
+  timestamp: string;
+  signer: string;
+};
+
 export type PaymentSuccessfulType = {
   sessionId?: string | null;
   referenceId?: string | null;
@@ -45,6 +51,7 @@ export type PaymentSuccessfulType = {
     quantity?: number | null;
     price?: number | null;
   }[];
+  attestation?: EventAttestationType | null;
 };
 
 export type OrderCreatedType = {

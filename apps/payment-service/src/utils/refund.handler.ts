@@ -129,24 +129,33 @@ export async function handleCheckoutRefundRequest(payload: {
         );
       }
 
-      const refund = await stripe.refunds.create({
-        payment_intent: paymentIntentId,
-        reason: "requested_by_customer",
-        metadata: { orderId, sagaCompensation: "true", reason },
-      });
+      const refund = await stripe.refunds.create(
+        {
+          payment_intent: paymentIntentId,
+          reason: "requested_by_customer",
+          metadata: { orderId, sagaCompensation: "true", reason },
+        },
+        {
+          idempotencyKey: `saga-refund-${orderId}`,
+        },
+      );
       refundId = refund.id;
     }
 
-    await producer.send("payment.refund.completed", {
-      value: {
-        orderId,
-        refundId,
-        paymentSessionId,
-        amount: amount ?? 0,
-        status: "succeeded",
-        completedAt: new Date().toISOString(),
+    await producer.send(
+      "payment.refund.completed",
+      {
+        value: {
+          orderId,
+          refundId,
+          paymentSessionId,
+          amount: amount ?? 0,
+          status: "succeeded",
+          completedAt: new Date().toISOString(),
+        },
       },
-    });
+      { key: orderId },
+    );
 
     console.log(
       `[payment-service] Emitted payment.refund.completed for order ${orderId} (Refund ID: ${refundId})`,
@@ -157,16 +166,20 @@ export async function handleCheckoutRefundRequest(payload: {
       `[payment-service] Checkout Saga refund failed for order ${orderId}:`,
       errorMsg,
     );
-    await producer.send("payment.refund.completed", {
-      value: {
-        orderId,
-        refundId: "",
-        paymentSessionId,
-        amount: amount ?? 0,
-        status: "failed",
-        error: errorMsg,
-        completedAt: new Date().toISOString(),
+    await producer.send(
+      "payment.refund.completed",
+      {
+        value: {
+          orderId,
+          refundId: "",
+          paymentSessionId,
+          amount: amount ?? 0,
+          status: "failed",
+          error: errorMsg,
+          completedAt: new Date().toISOString(),
+        },
       },
-    });
+      { key: orderId },
+    );
   }
 }

@@ -4,14 +4,26 @@ const globalForPrisma = globalThis as unknown as {
   productPrisma?: PrismaClient;
 };
 
+export function normalizePrismaUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  if (url.includes(":6432") && !url.includes("pgbouncer=true")) {
+    const sep = url.includes("?") ? "&" : "?";
+    return `${url}${sep}pgbouncer=true`;
+  }
+  return url;
+}
+
+const rawUrl =
+  process.env.DATABASE_URL ||
+  "postgresql://postgres:admin123@localhost:5432/larekmart_product_db";
+const dbUrl = normalizePrismaUrl(rawUrl);
+
 export const prisma =
   globalForPrisma.productPrisma ||
   new PrismaClient({
     datasources: {
       db: {
-        url:
-          process.env.DATABASE_URL ||
-          "postgresql://postgres:admin123@localhost:5432/larekmart_product_db",
+        url: dbUrl,
       },
     },
   });

@@ -3,6 +3,10 @@ import { createLogger, captureError, measureAsync } from "@repo/monitoring";
 
 const logger = createLogger("kafka-producer");
 
+export interface KafkaSendOptions {
+  key?: string;
+}
+
 export const createProducer = (kafka: Kafka) => {
   const producer: Producer = kafka.producer();
 
@@ -20,12 +24,21 @@ export const createProducer = (kafka: Kafka) => {
     }
   };
 
-  const send = async (topic: string, message: object) => {
+  const send = async (
+    topic: string,
+    message: object,
+    options?: KafkaSendOptions,
+  ) => {
     try {
       await measureAsync(`kafka.send.${topic}`, async () => {
         await producer.send({
           topic,
-          messages: [{ value: JSON.stringify(message) }],
+          messages: [
+            {
+              key: options?.key,
+              value: JSON.stringify(message),
+            },
+          ],
         });
       });
       logger.debug(`Kafka message sent to topic [${topic}]`);

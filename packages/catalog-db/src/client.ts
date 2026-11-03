@@ -5,9 +5,19 @@ const globalForPrisma = globalThis as unknown as {
   catalogReadPrisma?: PrismaClient;
 };
 
-const writeUrl = process.env.DATABASE_URL;
-const readUrl =
-  process.env.DATABASE_READ_REPLICA_URL || process.env.DATABASE_URL;
+export function normalizePrismaUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  if (url.includes(":6432") && !url.includes("pgbouncer=true")) {
+    const sep = url.includes("?") ? "&" : "?";
+    return `${url}${sep}pgbouncer=true`;
+  }
+  return url;
+}
+
+const writeUrl = normalizePrismaUrl(process.env.DATABASE_URL);
+const readUrl = normalizePrismaUrl(
+  process.env.DATABASE_READ_REPLICA_URL || process.env.DATABASE_URL,
+);
 
 /**
  * Primary read-write Prisma client.

@@ -11,6 +11,7 @@ import {
 import { invalidateInventoryCache } from "../cache/inventory-cache.js";
 import { inventoryMetrics, logger } from "../observability/metrics.js";
 import { consumer, producer } from "../utils/kafka.js";
+import { verifyEventAttestation } from "@repo/kafka";
 import { verifyPaidCheckoutSession } from "../utils/stripe-verify.js";
 import { redisStockGatekeeper } from "../gatekeeper/redis-stock-gatekeeper.js";
 
@@ -46,26 +47,55 @@ export async function startInventoryEventConsumer(): Promise<void> {
             `Processing payment.successful event for reference: ${referenceId}`,
           );
 
-          // Application-level producer verification: never trust the event
-          // alone. The reference must be a checkout session that Stripe
-          // itself reports as paid before any stock changes hands.
-          const verification = await verifyPaidCheckoutSession(referenceId);
-          if (!verification.verified) {
+          // Application-level producer verification:
+          // 1. If payload carries cryptographic HMAC event attestation, verify it locally (<0.01ms)
+          // 2. Fall back to synchronous Stripe API check only if attestation is missing (e.g. legacy events or dev mocks)
+          let isVerified = false;
+          let rejectionReason: string | undefined;
+
+          if (payload.attestation) {
+            const attestationResult = verifyEventAttestation(payload);
+            if (attestationResult.verified) {
+              isVerified = true;
+              logger.debug(
+                `payment.successful cryptographically verified via attestation for reference: ${referenceId}`,
+              );
+            } else {
+              isVerified = false;
+              rejectionReason = attestationResult.reason;
+              logger.warn(
+                `Cryptographic attestation failed for reference ${referenceId}: ${attestationResult.reason}`,
+              );
+            }
+          } else {
+            logger.info(
+              `Missing attestation on payment.successful; falling back to Stripe API verification for reference ${referenceId}`,
+            );
+            const verification = await verifyPaidCheckoutSession(referenceId);
+            isVerified = verification.verified;
+            rejectionReason = verification.reason;
+          }
+
+          if (!isVerified) {
             logger.warn(
-              `Rejected payment.successful for reference ${referenceId}: ${verification.reason}`,
+              `Rejected payment.successful for reference ${referenceId}: ${rejectionReason}`,
             );
             inventoryMetrics.paymentVerificationRejectedTotal.inc();
-            await producer.send("inventory.reservation.failed", {
-              value: {
-                reservationId: referenceId,
-                referenceId: payload.sessionId || payload.referenceId,
-                reason: "VERIFICATION_REJECTED",
-                details:
-                  verification.reason ||
-                  "Stripe paid session verification failed",
-                occurredAt: new Date().toISOString(),
+            await producer.send(
+              "inventory.reservation.failed",
+              {
+                value: {
+                  reservationId: referenceId,
+                  referenceId: payload.sessionId || payload.referenceId,
+                  reason: "VERIFICATION_REJECTED",
+                  details:
+                    rejectionReason ||
+                    "Payment session attestation and verification failed",
+                  occurredAt: new Date().toISOString(),
+                },
               },
-            });
+              { key: referenceId },
+            );
             return;
           }
 
@@ -94,23 +124,27 @@ export async function startInventoryEventConsumer(): Promise<void> {
 
             for (const item of confirmed) {
               try {
-                await producer.send("inventory.stock.sold", {
-                  value: {
-                    inventoryItemId: item.inventoryItemId,
-                    productId: item.inventoryItem.productId,
-                    variantId: item.inventoryItem.variantId,
-                    warehouseId: item.inventoryItem.warehouseId,
-                    quantity: item.inventoryItem.quantity,
-                    availableQuantity: item.inventoryItem.availableQuantity,
-                    reservedQuantity: item.inventoryItem.reservedQuantity,
-                    soldQuantity: item.inventoryItem.soldQuantity,
-                    status: item.inventoryItem.status,
-                    occurredAt: new Date().toISOString(),
-                    reservationId: item.id,
-                    referenceType: item.referenceType,
-                    referenceId: item.referenceId,
+                await producer.send(
+                  "inventory.stock.sold",
+                  {
+                    value: {
+                      inventoryItemId: item.inventoryItemId,
+                      productId: item.inventoryItem.productId,
+                      variantId: item.inventoryItem.variantId,
+                      warehouseId: item.inventoryItem.warehouseId,
+                      quantity: item.inventoryItem.quantity,
+                      availableQuantity: item.inventoryItem.availableQuantity,
+                      reservedQuantity: item.inventoryItem.reservedQuantity,
+                      soldQuantity: item.inventoryItem.soldQuantity,
+                      status: item.inventoryItem.status,
+                      occurredAt: new Date().toISOString(),
+                      reservationId: item.id,
+                      referenceType: item.referenceType,
+                      referenceId: item.referenceId,
+                    },
                   },
-                });
+                  { key: item.referenceId || referenceId },
+                );
               } catch (pubErr) {
                 logger.error(
                   "Failed to publish inventory.stock.sold event",

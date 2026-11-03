@@ -17,6 +17,65 @@ import { createLogger, captureError, measureAsync } from "@repo/monitoring";
 const logger = createLogger("order-service:saga-orchestrator");
 
 /**
+ * Retries finding an order with exponential backoff and jitter to resolve transient
+ * race conditions where downstream ACKs arrive before MongoDB persistence completes.
+ */
+async function findOrderWithRetry(
+  query: any,
+  maxAttempts = 4,
+  baseDelayMs = 50,
+): Promise<any> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const order = await Order.findOne(query);
+    if (order) return order;
+    if (attempt < maxAttempts) {
+      const jitter = Math.random() * 25;
+      const delay = baseDelayMs * Math.pow(2.2, attempt - 1) + jitter;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  return null;
+}
+
+/**
+ * Buffers early saga ACKs in Redis when received prior to MongoDB order document creation.
+ */
+async function recordEarlyAck(
+  key: string,
+  value: string,
+  ttlSeconds = 300,
+): Promise<void> {
+  try {
+    await redis.client.set(key, value, "EX", ttlSeconds);
+    logger.info(
+      `Buffered early saga ACK in Redis [${key}] (TTL ${ttlSeconds}s)`,
+    );
+  } catch (err) {
+    logger.warn(
+      `Failed to buffer early saga ACK in Redis [${key}]: ${String(err)}`,
+    );
+  }
+}
+
+/**
+ * Retrieves and consumes (deletes) a buffered early saga ACK from Redis.
+ */
+async function consumeEarlyAck(key: string): Promise<string | null> {
+  try {
+    const val = await redis.client.get(key);
+    if (val) {
+      await redis.client.del(key);
+    }
+    return val;
+  } catch (err) {
+    logger.warn(
+      `Failed to read early saga ACK from Redis [${key}]: ${String(err)}`,
+    );
+    return null;
+  }
+}
+
+/**
  * 1. Initial Saga Phase: Create Order in PENDING_CONFIRMATION upon payment.successful
  */
 export const createOrder = async (orderPayload: any) => {
@@ -79,6 +138,81 @@ export const createOrder = async (orderPayload: any) => {
       `Order initialized in PENDING_CONFIRMATION with ID: ${savedOrder._id} (TaxStatus: ${orderDoc.taxStatus}, InvStatus: pending)`,
     );
 
+    // Reconcile any early ACKs that arrived from Kafka while MongoDB was saving
+    const earlyRefs = [
+      sessionId,
+      reservationId,
+      savedOrder._id.toString(),
+    ].filter(Boolean) as string[];
+    let earlyInvSold = false;
+    let earlyTaxCompleted = false;
+
+    for (const ref of earlyRefs) {
+      if (!earlyInvSold) {
+        const invAck = await consumeEarlyAck(`early_ack:inv:${ref}`);
+        if (invAck === "sold") earlyInvSold = true;
+      }
+      if (!earlyTaxCompleted) {
+        const taxAck = await consumeEarlyAck(`early_ack:tax:${ref}`);
+        if (taxAck) earlyTaxCompleted = true;
+      }
+    }
+
+    if (earlyInvSold) {
+      (savedOrder as any).inventoryStatus = "sold";
+      (savedOrder as any).sagaHistory.push({
+        state: "pending_confirmation",
+        trigger: "early_ack:inventory.stock.sold",
+        timestamp: new Date(),
+      });
+    }
+
+    if (earlyTaxCompleted) {
+      (savedOrder as any).taxStatus = "completed";
+      (savedOrder as any).sagaHistory.push({
+        state: "pending_confirmation",
+        trigger: "early_ack:tax.calculation.completed",
+        timestamp: new Date(),
+      });
+    }
+
+    const isTaxSettled =
+      !(savedOrder as any).taxCalculationId ||
+      (savedOrder as any).taxStatus === "completed";
+    const isInvSettled = (savedOrder as any).inventoryStatus === "sold";
+
+    if (isTaxSettled && isInvSettled) {
+      savedOrder.status = "confirmed";
+      (savedOrder as any).sagaHistory.push({
+        state: "confirmed",
+        trigger: "dual_ack:early_reconciled",
+        timestamp: new Date(),
+      });
+      await savedOrder.save();
+      logger.info(
+        `Order ${savedOrder._id} Dual-ACK achieved via early ACK reconciliation: transitioned to CONFIRMED.`,
+      );
+
+      const confirmedPayload: OrderConfirmedPayload = {
+        orderId: savedOrder._id.toString(),
+        userId: savedOrder.userId,
+        email: savedOrder.email,
+        paymentSessionId: (savedOrder as any).paymentSessionId,
+        reservationId: (savedOrder as any).reservationId,
+        amount: savedOrder.amount,
+        products: savedOrder.products,
+        shippingAddress: (savedOrder as any).shippingAddress,
+        confirmedAt: new Date().toISOString(),
+      };
+
+      await dispatchViaOutbox(
+        "order.confirmed",
+        confirmedPayload as unknown as Record<string, unknown>,
+      );
+    } else if (earlyInvSold || earlyTaxCompleted) {
+      await savedOrder.save();
+    }
+
     await dispatchViaOutbox("order.created", {
       orderId: savedOrder._id.toString(),
       userId: savedOrder.userId,
@@ -119,11 +253,15 @@ export const confirmOrder = async (inventorySoldPayload: any) => {
       ? { reservationId, status: "pending_confirmation" }
       : { paymentSessionId: referenceId, status: "pending_confirmation" };
 
-    const order = await Order.findOne(query);
+    const order = await findOrderWithRetry(query);
     if (!order) {
       logger.info(
-        `No pending_confirmation order found matching reservation ${reservationId} or reference ${referenceId}`,
+        `No pending_confirmation order found matching reservation ${reservationId} or reference ${referenceId}; buffering early inventory ACK in Redis`,
       );
+      const earlyRef = reservationId || referenceId;
+      if (earlyRef) {
+        await recordEarlyAck(`early_ack:inv:${earlyRef}`, "sold");
+      }
       return;
     }
 
@@ -195,11 +333,15 @@ export const handleTaxCompleted = async (
       ? { _id: referenceId, status: "pending_confirmation" }
       : { taxCalculationId: calculationId, status: "pending_confirmation" };
 
-    const order = await Order.findOne(query);
+    const order = await findOrderWithRetry(query);
     if (!order) {
       logger.info(
-        `No pending_confirmation order found matching tax calculation ${calculationId} / reference ${referenceId}`,
+        `No pending_confirmation order found matching tax calculation ${calculationId} / reference ${referenceId}; buffering early tax ACK in Redis`,
       );
+      const earlyRef = referenceId || calculationId;
+      if (earlyRef) {
+        await recordEarlyAck(`early_ack:tax:${earlyRef}`, calculationId);
+      }
       return;
     }
 

@@ -63,9 +63,19 @@ export async function publishOutboxEvent(
   }
 
   try {
-    await producer.send(event.topic, {
-      value: event.payload,
-    });
+    const partitionKey =
+      (event.payload as any)?.orderId ||
+      (event.payload as any)?.paymentSessionId ||
+      (event.payload as any)?.reservationId ||
+      event._id.toString();
+
+    await producer.send(
+      event.topic,
+      {
+        value: event.payload,
+      },
+      partitionKey ? { key: String(partitionKey) } : undefined,
+    );
     const marked = await markOutboxPublished(event._id, workerId, fencingToken);
     if (!marked) {
       logger.warn(
