@@ -26,6 +26,8 @@ This document specifies the mandatory cybersecurity standards and implementation
 - **Super Admin Governance & Delegated Administration**:
   - Global platform controls (`PATCH /api/v1/admin/system-settings` for `isSellerEnabled`) and delegation management (`POST/DELETE /api/v1/admin/delegations`) are strictly restricted to Super Administrators (`role === "super_admin"` or `claims.isSuperAdmin === true`).
   - Manage Admins can be granted the `manage_sellers` delegation scope in `admin_delegations`. When present, `api-gateway` injects `x-user-can-manage-sellers: true` downstream, authorizing them to review vendors and update seller statuses without granting global Super Admin privileges.
+- **Onboarding Rate Limiting (SEC-05)**:
+  - Seller and vendor onboarding endpoints (`/api/v1/sellers/*`, `/api/v1/vendors/*`, `/onboarding`) enforce an explicit `ONBOARDING` rate limiting policy (10 requests per minute) in `api-gateway` to prevent credential stuffing, automated merchant dossier spam, and KYB flood attacks.
 - **Internal Service Verification & API Gateway Perimeter**:
   - Direct HTTP calls between microservices are prohibited for business flows (use Kafka).
   - All public traffic enters through the centralized API Gateway (`apps/api-gateway`). The Gateway unconditionally strips client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-is-super-admin`, `x-user-can-manage-sellers`) _prior_ to injecting upstream headers to prevent identity spoofing and header injection.
@@ -55,6 +57,8 @@ This document specifies the mandatory cybersecurity standards and implementation
     ```
   - In `cart-service`, operations must strictly bind to the authenticated `userId` from the verified session or an unguessable guest session UUID.
   - In `seller-service`, operations on `/api/v1/sellers/:sellerId` strictly verify that the caller is the seller primary user, an authorized staff member with required granular permissions, or an admin.
+  - In `product-service` (SEC-02), marketplace products carry an indexed `sellerId` column. On creation (`POST /products`), `sellerId` is stamped with `req.userId`. On update (`PUT /products/:id`) and deletion (`DELETE /products/:id`), ownership is strictly enforced: `product.sellerId === req.userId` (or admin). Non-owner sellers are rejected with `403 Forbidden`.
+  - In query lookups across user-facing endpoints (orders, carts, wishlists, reviews, returns, profiles), queries must scope by `userId` (SEC-01) rather than accepting unverified user identifiers from query parameters.
   - Administrative endpoints (e.g. `GET /admin/stats`, `GET /admin/recent` in `cart-service`, `GET /api/v1/admin/sellers` in `seller-service`) must be gated with `requireAdmin`.
 
 ---

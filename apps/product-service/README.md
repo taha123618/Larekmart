@@ -15,14 +15,18 @@ Microservice managing the marketplace product and category catalog.
 
 - `GET /products`: List products with filtering by category, search, and pagination.
 - `GET /products/:id`: Get product details by ID.
-- `POST /products`: Create product and emit `product.created`.
-- `PUT /products/:id`: Update product (admin only).
-- `DELETE /products/:id`: Delete product and emit `product.deleted` (admin only).
+- `POST /products`: Create product and emit `product.created` (associates `sellerId` with creator and emits `x-db-lsn` header).
+- `PUT /products/:id`: Update product (seller owner or admin; non-owners receive `403 Forbidden`; emits `x-db-lsn` header).
+- `DELETE /products/:id`: Delete product and emit `product.deleted` (seller owner or admin; non-owners receive `403 Forbidden`; emits `x-db-lsn` header).
 - `GET /categories`: List categories.
 - `POST /categories`: Create category (admin only).
 - `PUT /categories/:id`: Update category (admin only).
 - `DELETE /categories/:id`: Delete category (admin only).
 - `GET /health`: Health check (`status`, `uptime`, `timestamp`).
+
+## Replication Consistency & WAL LSN Tracking
+
+All mutating database operations (`POST`, `PUT`, `DELETE` on products) stamp the current PostgreSQL Write-Ahead Log (WAL) position into the `x-db-lsn` response header (`pg_current_wal_lsn()`). The API Gateway captures this value into Redis via `markReadYourWritesWithLSN`, allowing downstream read projections like `catalog-service` to detect replica lag against `pg_last_wal_replay_lsn()` and automatically fail over to the primary database when the replica drifts.
 
 ## Event Integrations
 

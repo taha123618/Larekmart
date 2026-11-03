@@ -38,6 +38,12 @@ exposes a read-only OpenSearch-backed search endpoint (`GET /products/search`) t
   setup.
 - Marketplace mutations use `shouldBeSellerOrAdmin`: `POST /products`, `PUT /products/:id`,
   `DELETE /products/:id`.
+- **Seller Product Attribution & Ownership (SEC-02)**: On `POST /products`, `sellerId` is
+  automatically set to `req.userId`. On `PUT /products/:id` and `DELETE /products/:id`,
+  ownership is strictly verified: sellers may only modify or delete products where
+  `product.sellerId === req.userId`. If a seller attempts to mutate another seller's product,
+  the controller rejects the operation with `403 Forbidden` (`"You do not have permission to modify this product"`).
+  Admins (`sessionClaims.metadata.role === "admin"`) bypass this ownership check.
 - Admin-only operations use `shouldBeAdmin`: `POST /products/backfill-search`,
   `POST/PUT/DELETE /categories/...`.
 
@@ -46,7 +52,10 @@ exposes a read-only OpenSearch-backed search endpoint (`GET /products/search`) t
 - Prisma via `@repo/product-db`. Do not create ad-hoc DB Clients or bypass the generated
   client.
 - Do not edit `packages/product-db/generated/**`. Change the Prisma schema and regenerate.
-- Models of interest: `Product`, `Category`.
+- Models of interest: `Product` (includes `sellerId String?` indexed with `@@index([sellerId])`), `Category`.
+- **WAL LSN Header Emission**: Every successful product mutation (`POST`, `PUT`, `DELETE /products`) executes
+  `SELECT pg_current_wal_lsn()::text` and sets the `x-db-lsn` response header. This enables edge Read-Your-Writes
+  LSN comparison downstream to prevent replica lag anomalies.
 
 ## Events
 

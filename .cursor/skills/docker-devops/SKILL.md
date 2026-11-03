@@ -75,9 +75,10 @@ All service Dockerfiles use Turbo Prune multi-stage builds:
 3. `deps` — installs production-only workspace dependencies
 4. `runner` — minimal production image with `tsx` + `src/` source (ESM monorepo)
 
-### ⚠️ Non-Root Security
+### ⚠️ Non-Root Security & Port Isolation (SEC-04)
 
 All containers use UID 1000 (nodejs / appuser). Never run as root.
+In `docker-compose.yml`, infrastructure ports exposed to the host system bind strictly to the loopback interface (`127.0.0.1:5432:5432`, `127.0.0.1:6379:6379`, `127.0.0.1:27017:27017`) rather than `0.0.0.0` to eliminate unauthorized local network access to development databases.
 
 ### Container-Internal Service Discovery
 
@@ -107,6 +108,14 @@ env_file:
 // packages/kafka/src/client.ts already reads process.env.KAFKA_BROKERS
 // Set this env var to "kafka:9092" inside any Docker service/container
 ```
+
+### Dynamic Runtime Configuration for Next.js Frontends
+
+Next.js frontends (`client` and `admin`) eliminate compile-time baking of gateway URLs:
+
+- `client`: `CLIENT_API_GATEWAY_URL` and `CLIENT_WS_URL`
+- `admin`: `ADMIN_API_GATEWAY_URL` and `ADMIN_WS_URL`
+  These environment variables are read at runtime by the `/api/config` route handler and hydrated into client state via `<RuntimeConfigProvider>`, enabling the same built container images to run across development, staging, and production environments.
 
 ### Docker Hardened Images (DHI) & Docker Scout Workflow
 

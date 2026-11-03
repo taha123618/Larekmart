@@ -18,7 +18,7 @@ Scope rules for AI coding agents working in this package.
 - **Distributed cluster locking & Redlock majority-quorum consensus** (`acquireClusterLock`, `releaseClusterLock`, `renewClusterLock`, `acquireRedlockConsensus`, `releaseRedlockConsensus`, `renewRedlockConsensus`)
 - A **distributed leader election framework** (`DistributedLeaderElector` / `LeaderElection`) ensuring exactly one active replica executes background singletons (e.g., outbox sweepers) with auto-renew heartbeats, monotonically increasing `fencingToken` guards, and automatic standby failover
 - **Cluster Sharding & Hash-Tag Validation** (`assertClusterSlotAlignment`, `extractHashTag`, `CrossSlotValidationError`) ensuring multi-key Redis transactions pin to identical CRC16 hash slots (e.g. `{tenant_id:warehouse_id}`) in clustered topologies
-- **Read-Your-Writes Consistency Leases** (`markReadYourWrites`, `isReadYourWritesActive`, `clearReadYourWrites`, `DEFAULT_RYW_TTL_MS`) enabling temporary 500ms session leases that force primary database reads and bypass asynchronous replica lag
+- **Read-Your-Writes Consistency Leases & Dynamic WAL LSN Tracking** (`markReadYourWrites`, `isReadYourWritesActive`, `clearReadYourWrites`, `markReadYourWritesWithLSN`, `getSessionLSN`, `parseLSN`, `DEFAULT_RYW_TTL_MS`) enabling temporary session leases and PostgreSQL WAL LSN tracking that force primary database reads and bypass asynchronous replica lag when drift is detected
 - The re-exported ioredis `Redis` client type
 
 ## 2. What belongs here

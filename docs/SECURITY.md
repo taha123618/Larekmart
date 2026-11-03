@@ -41,8 +41,15 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
   - Propagates verified seller context downstream via `x-user-is-seller` and delegated management capability via `x-user-can-manage-sellers`.
 - **Distributed Rate Limiting**:
   - Enforced per authenticated user, bearer token (SHA-256 hash), or trusted client IP via Redis sliding window / token bucket.
-  - Keys never use client-supplied `x-user-id` or `X-Forwarded-For` directly. `TRUST_PROXY` defaults to `false` and is set to `1` only behind the trusted ingress, preventing limit bypass through header rotation.
-  - Configured with separate limits for sensitive routes (`auth`, `search`, `orders`, `media`, `general`).
+  - Keys never use client-supplied `x-user-id` or `X-Forwarded-For` directly. `TRUST_PROXY` parses via `FastifyServerOptions["trustProxy"]` (hop counts, boolean, CIDR) so `X-Forwarded-For` cannot be spoofed to bypass limits.
+  - Configured with separate limits for sensitive routes (`auth`, `search`, `orders`, `media`, `general`, and `onboarding` tier at 10 req/min for merchant registration and KYB dossiers — SEC-05).
+- **Seller Product Attribution & IDOR Protection (SEC-02)**:
+  - Marketplace products in `@repo/product-db` and `product-service` require `sellerId` attribution on creation (`POST /products`).
+  - Product mutations (`PUT /products/:id`, `DELETE /products/:id`) verify `product.sellerId === req.userId` (or admin), returning `403 Forbidden` for non-owners.
+- **Dynamic PostgreSQL WAL LSN Tracking & Read-Your-Writes**:
+  - Mutating database write operations stamp `x-db-lsn` response headers (`pg_current_wal_lsn()`). The API Gateway caches session LSNs in Redis (`markReadYourWritesWithLSN`), enabling read projections to detect replica lag against `pg_last_wal_replay_lsn()` and dynamically fail over to the primary database.
+- **Multi-Node Redis Cluster Slot Pinning**:
+  - Redis multi-key Lua scripts and commands enforce CRC16 slot hash tagging (`{tenant_id:warehouse_id}`). `@repo/redis` enforces `assertClusterSlotAlignment` to catch missing bracket constraints upfront and eliminate `CROSSSLOT` exceptions.
 - **Resilience & Information Disclosure Mitigation**:
   - Opossum circuit breakers isolate failing downstream services.
   - Idempotent GET/HEAD requests support bounded retries with exponential backoff.

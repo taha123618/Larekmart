@@ -46,15 +46,25 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ### `POST /products`
 
-- **Auth**: Admin (`shouldBeAdmin`)
+- **Auth**: Seller or Admin (`shouldBeSellerOrAdmin`)
 - **Body**: `ProductFormSchema`
-- **Side Effect**: Emits `product.created` Kafka event
+- **Side Effect**: Emits `product.created` Kafka event, assigns creator `sellerId: req.userId`, and emits `x-db-lsn` response header
+- **Response**: `ProductType`
 
 ### `PUT /products/:id`
 
-- **Auth**: Admin (`shouldBeAdmin`)
+- **Auth**: Seller Owner or Admin (`shouldBeSellerOrAdmin`)
 - **Body**: Partial `ProductFormSchema`
+- **Ownership**: Strictly verifies `product.sellerId === req.userId` for sellers; non-owners receive `403 Forbidden`
+- **Side Effect**: Emits `x-db-lsn` response header
 - **Response**: Updated `ProductType`
+
+### `DELETE /products/:id`
+
+- **Auth**: Seller Owner or Admin (`shouldBeSellerOrAdmin`)
+- **Ownership**: Strictly verifies `product.sellerId === req.userId` for sellers; non-owners receive `403 Forbidden`
+- **Side Effect**: Emits `product.deleted` Kafka event and `x-db-lsn` response header
+- **Response**: `{ message: "Product deleted" }`
 
 ### `POST /products/backfill-search`
 

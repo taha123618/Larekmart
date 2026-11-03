@@ -1493,6 +1493,7 @@ services:
       - ./apps/admin/.env
     environment:
       ADMIN_API_GATEWAY_URL: ${ADMIN_API_GATEWAY_URL:-http://api-gateway:8080}
+      ADMIN_WS_URL: ${ADMIN_WS_URL:-ws://api-gateway:8080/ws}
     healthcheck:
       test:
         [

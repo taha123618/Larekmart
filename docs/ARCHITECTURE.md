@@ -77,9 +77,10 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 **`product-service` (Express 5, :8000)** — the catalog.
 
 - Routes: `/products` (GET list, GET one, GET `/search` OpenSearch-backed, POST create,
-  PUT/DELETE admin, POST `/backfill-search` admin), `/categories` (GET public, mutations
+  PUT/DELETE seller owner or admin, POST `/backfill-search` admin), `/categories` (GET public, mutations
   admin), `/health`, `/test`.
-- Persistence: Prisma → PostgreSQL (`Product`, `Category`).
+- Persistence: Prisma → PostgreSQL (`Product`, `Category`). Products contain an indexed `sellerId` column enforcing multi-vendor ownership (`403 Forbidden` for non-owners) and catalog scoping (SEC-02).
+- WAL Synchronization: Emits `x-db-lsn` response header (`pg_current_wal_lsn()`) on state mutations to support edge Read-Your-Writes LSN tracking.
 - Publishes `product.created` and `product.deleted` for Stripe sync.
 - Reads the shared OpenSearch product index through `@repo/opensearch` for `GET /products/search`;
   index writes stay owned by search-service.

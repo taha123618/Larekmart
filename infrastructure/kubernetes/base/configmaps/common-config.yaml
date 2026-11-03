@@ -35,6 +35,12 @@ data:
   MONGODB_PORT: "27017"
   MONGODB_DATABASE: "larekmart_orders"
 
+  # Frontend Dynamic Runtime Ingress Endpoints
+  CLIENT_API_GATEWAY_URL: ""
+  CLIENT_WS_URL: "wss://larekmart.com/ws"
+  ADMIN_API_GATEWAY_URL: ""
+  ADMIN_WS_URL: "wss://admin.larekmart.com/ws"
+
   # Internal Service Discovery URLs
   PRODUCT_SERVICE_URL: "http://product-service.larekmart.svc.cluster.local:8000"
   ORDER_SERVICE_URL: "http://order-service.larekmart.svc.cluster.local:8001"
