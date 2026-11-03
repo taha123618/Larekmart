@@ -6,7 +6,30 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { env } from "../config/env.js";
-import crypto from "crypto";
+import crypto from "node:crypto";
+
+/**
+ * Constant-time comparison using SHA-256 hash digests to prevent timing attacks
+ * and secret length leakage.
+ */
+export function safeTimingCompare(a?: string, b?: string): boolean {
+  if (!a || !b) return false;
+  try {
+    const hashA = crypto.createHash("sha256").update(a).digest();
+    const hashB = crypto.createHash("sha256").update(b).digest();
+    return crypto.timingSafeEqual(hashA, hashB);
+  } catch {
+    return false;
+  }
+}
+
+export function isInternalService(request: {
+  headers: Record<string, unknown>;
+}): boolean {
+  const secret = request.headers["x-internal-secret"];
+  if (typeof secret !== "string") return false;
+  return safeTimingCompare(secret, env.INTERNAL_SERVICE_SECRET);
+}
 
 @Injectable()
 export class InternalSecretGuard implements CanActivate {
@@ -18,13 +41,7 @@ export class InternalSecretGuard implements CanActivate {
       throw new UnauthorizedException("Missing internal service secret");
     }
 
-    const expectedBuffer = Buffer.from(env.INTERNAL_SERVICE_SECRET);
-    const providedBuffer = Buffer.from(providedSecret);
-
-    if (
-      expectedBuffer.length !== providedBuffer.length ||
-      !crypto.timingSafeEqual(expectedBuffer, providedBuffer)
-    ) {
+    if (!safeTimingCompare(providedSecret, env.INTERNAL_SERVICE_SECRET)) {
       throw new UnauthorizedException("Invalid internal service secret");
     }
 
@@ -36,13 +53,34 @@ export class InternalSecretGuard implements CanActivate {
 export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const userRole = request.headers["x-user-role"];
+    const isInternal = isInternalService(request);
+    const isDevOrTest =
+      env.NODE_ENV === "development" || env.NODE_ENV === "test";
 
-    if (userRole !== "admin") {
+    // In production, caller identity must arrive through trusted gateway
+    if (!isInternal && !isDevOrTest) {
+      throw new ForbiddenException(
+        "Invalid or missing internal service secret",
+      );
+    }
+
+    const userRole = request.headers["x-user-role"];
+    const userId = request.headers["x-user-id"];
+
+    // Zero-Trust: If user identity is present, user must strictly possess admin role
+    if (userRole !== undefined || userId !== undefined) {
+      if (userRole === "admin") {
+        return true;
+      }
       throw new ForbiddenException("Administrative access required");
     }
 
-    return true;
+    // Pure machine-to-machine internal call with no user identity
+    if (isInternal) {
+      return true;
+    }
+
+    throw new ForbiddenException("Administrative access required");
   }
 }
 
@@ -50,18 +88,24 @@ export class AdminGuard implements CanActivate {
 export class SellerGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const userId = request.headers["x-user-id"] || request.headers["x-seller-id"];
+    const isInternal = isInternalService(request);
+    const isDevOrTest =
+      env.NODE_ENV === "development" || env.NODE_ENV === "test";
 
-    if (!userId) {
-      // In development or test, allow a fallback if header is absent
-      if (env.NODE_ENV !== "production") {
-        request.sellerId = "seller_dev_mock";
-        return true;
-      }
+    if (!isInternal && !isDevOrTest) {
+      throw new UnauthorizedException(
+        "Invalid or missing internal service secret",
+      );
+    }
+
+    const userId =
+      request.headers["x-user-id"] || request.headers["x-seller-id"];
+
+    if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
       throw new UnauthorizedException("Authentication required");
     }
 
-    request.sellerId = String(userId);
+    request.sellerId = String(userId).trim();
     return true;
   }
 }

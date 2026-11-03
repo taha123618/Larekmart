@@ -1,8 +1,8 @@
 # Comprehensive Security Audit Report
 
 **Target Codebase:** Larekmart Monorepo Microservices E-Commerce Platform  
-**Target Environment:** 23 Backend Microservices, 2 Next.js Frontends (`apps/client`, `apps/admin`), Centralized API Gateway (`apps/api-gateway`), Apache Kafka Event Mesh, PostgreSQL, MongoDB, Redis, and OpenSearch.  
-**Audit Date:** October 2026  
+**Target Environment:** 25 Backend Microservices, 2 Next.js Frontends (`apps/client`, `apps/admin`), Centralized API Gateway (`apps/api-gateway`), Apache Kafka Event Mesh, PostgreSQL, MongoDB, Redis, and OpenSearch.  
+**Audit Date:** November 2026  
 **Auditor:** Antigravity AI Security Analysis Agent
 
 ---
@@ -13,7 +13,7 @@ A comprehensive architectural and source-code security audit was conducted acros
 
 ### Key Metrics & Security Posture
 
-- **Total Workspaces Analyzed:** 42 (23 services, 2 frontends, 17 shared libraries/configs)
+- **Total Workspaces Analyzed:** 43 (25 backend microservices, 2 frontends, 1 API gateway, 15 shared libraries/configs)
 - **Authentication Model:** Delegated to Clerk (`CustomJwtSessionClaims` via verified JWTs)
 - **Inter-Service Mesh:** Asynchronous Kafka event bus; direct HTTP between microservices is blocked
 - **Ingress Perimeter:** Centralized Fastify 5 reverse proxy (`api-gateway`) with strict identity header stripping and constant-time downstream secret verification
@@ -51,13 +51,17 @@ VULNERABILITY HIERARCHY
 ├── [HIGH] SEC-08: recommendation-service unverified JWT and dev ownership/admin bypass [RESOLVED]
 ├── [HIGH] SEC-09: Internal secret alone granted admin to proxied users (seller/vendor/shipping) [RESOLVED]
 ├── [HIGH] SEC-10: Gateway trusted arbitrary X-Forwarded-For (`trustProxy: true`) [RESOLVED]
+├── [HIGH] SEC-15: Commission-service admin routes vulnerable to privilege escalation via transport secret [RESOLVED & VERIFIED]
 ├── [MED]  SEC-03: Production Boot Validation for INTERNAL_SERVICE_SECRET      [RESOLVED & VERIFIED]
 ├── [MED]  SEC-11: Wildcard CORS with credentials in five Fastify services [RESOLVED]
 ├── [MED]  SEC-12: Clerk secret key used as HMAC fallback (shipping/return) [RESOLVED]
 ├── [MED]  SEC-13: Production-usable placeholder values in K8s Secret templates [RESOLVED]
+├── [MED]  SEC-16: Timing attack and secret length leakage in commission and payout secret verification [RESOLVED & VERIFIED]
+├── [MED]  SEC-17: Missing fail-closed production startup check for INTERNAL_SERVICE_SECRET in commission/payout [RESOLVED & VERIFIED]
 ├── [LOW]  SEC-04: Network Perimeter Isolation of Microservice Ports [RESOLVED & VERIFIED]
 ├── [LOW]  SEC-05: Route-Specific Rate Limiting on Merchant Onboarding [RESOLVED & VERIFIED]
-└── [LOW]  SEC-14: Residual transitive dependency advisories (zod v3, nested fastify/postcss) [TRACKED]
+├── [LOW]  SEC-14: Residual transitive dependency advisories (zod v3, nested fastify/postcss) [TRACKED]
+└── [LOW]  SEC-18: Missing strict CORS origin allowlists and defensive HTTP security headers in commission/payout [RESOLVED & VERIFIED]
 ```
 
 ---
@@ -157,6 +161,54 @@ VULNERABILITY HIERARCHY
   While the API Gateway applies a global sliding-window rate limit, sensitive write endpoints such as merchant onboarding (`POST /api/v1/sellers` and `POST /api/v1/vendors`) previously fell through to default thresholds (100 requests per minute), exposing the platform to automated account creation and resource exhaustion abuse.
 - **Defensive Remediation Implemented:**
   Introduced dedicated `ONBOARDING` rate limiting policy (10 requests/minute per client identity/IP) in [`RATE_LIMIT_POLICIES`](file:///Users/taha/projects/microservices-ecommerce/apps/api-gateway/src/gateway/policies.ts) matching `/sellers`, `/vendors`, and `/onboarding` routes.
+
+---
+
+### SEC-15 [HIGH]: Commission Service Admin Privilege Escalation via Transport Secret [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-287 (Improper Authentication), CWE-269 (Improper Privilege Management)
+- **Affected File:** [`apps/commission-service/src/middleware/auth.middleware.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/commission-service/src/middleware/auth.middleware.ts)
+- **Detailed Mechanics:**
+  `requireAdmin` permitted any caller with `role !== "admin"` to bypass authorization if `x-internal-secret` was present. Because the API Gateway signs all proxied user requests with `x-internal-secret`, any non-admin customer or seller could invoke administrative endpoints (`/api/v1/admin/commissions/plans`, `/rules`, `/reports`) to modify platform commission rates and inspect aggregate revenue data.
+- **Defensive Remediation Implemented:**
+  Decoupled gateway transport authenticity from user authorization. Proxied requests carrying identity headers (`x-user-role` or `x-user-id`) must strictly have `x-user-role === "admin"`. The internal secret alone never elevates non-admin users. Machine-to-machine access is only permitted when no user context is asserted.
+
+---
+
+### SEC-16 [MED]: Timing Attack & Secret Length Leakage in Secret Verification [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-208 (Observable Timing Discrepancy), CWE-385 (Covert Timing Channel)
+- **Affected Files:** [`apps/commission-service/src/middleware/auth.middleware.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/commission-service/src/middleware/auth.middleware.ts), [`apps/payout-service/src/guards/auth.guard.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/payout-service/src/guards/auth.guard.ts)
+- **Detailed Mechanics:**
+  Internal secret comparisons performed early length checks (`secretBuf.length !== expectedBuf.length`) or standard string equality before constant-time checks, leaking secret lengths and token bytes via timing side-channels.
+- **Defensive Remediation Implemented:**
+  Standardized on `safeTimingCompare(a, b)` which pre-hashes both buffers with SHA-256 before invoking `crypto.timingSafeEqual`, guaranteeing uniform 32-byte constant-time comparisons without length leakage.
+
+---
+
+### SEC-17 [MED]: Missing Fail-Closed Production Startup Validation for INTERNAL_SERVICE_SECRET [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-1188 (Insecure Default Initialization of Resource)
+- **Affected Files:** [`apps/commission-service/src/config/env.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/commission-service/src/config/env.ts), [`apps/payout-service/src/config/env.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/payout-service/src/config/env.ts)
+- **Detailed Mechanics:**
+  `commission-service` and `payout-service` environment configurations did not enforce `validateInternalServiceSecret` during Zod parsing, permitting production boots with default development placeholder secrets (`dev-shared-internal-secret-larekmart`).
+- **Defensive Remediation Implemented:**
+  Added `.superRefine` hooks invoking `validateInternalServiceSecret(data.INTERNAL_SERVICE_SECRET, data.NODE_ENV, serviceName)`, hard-failing process boot if placeholders or weak secrets are detected in production.
+
+---
+
+### SEC-18 [LOW]: Missing Strict CORS Allowlist & Defensive HTTP Security Headers [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-942 (Permissive Cross-Domain Policy), CWE-693 (Protection Mechanism Failure)
+- **Affected Files:** [`apps/commission-service/src/app.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/commission-service/src/app.ts), [`apps/payout-service/src/main.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/payout-service/src/main.ts)
+- **Detailed Mechanics:**
+  `commission-service` and `payout-service` lacked centralized origin resolution via `resolveCorsOrigins` and did not emit standard browser defensive headers.
+- **Defensive Remediation Implemented:**
+  Integrated `resolveCorsOrigins` callback validation and attached `onSend` hooks emitting `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Strict-Transport-Security`.
 
 ---
 
@@ -264,3 +316,7 @@ The media processing architecture in [`apps/media-service`](file:///Users/taha/p
 - [x] Production bootstrap enforces non-default `INTERNAL_SERVICE_SECRET` (Remediation: SEC-03).
 - [x] Network perimeter isolation of microservice ports (Remediation: SEC-04).
 - [x] Route-specific rate limiting on merchant onboarding (Remediation: SEC-05).
+- [x] Commission service admin routes decouple transport secret from user authorization (Remediation: SEC-15).
+- [x] Constant-time SHA-256 pre-hashed verification for internal secrets in commission and payout services (Remediation: SEC-16).
+- [x] Production startup validates non-placeholder `INTERNAL_SERVICE_SECRET` in commission and payout services (Remediation: SEC-17).
+- [x] Strict CORS origin allowlists and defensive HTTP security headers in commission and payout services (Remediation: SEC-18).
