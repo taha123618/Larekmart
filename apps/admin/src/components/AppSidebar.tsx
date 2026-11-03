@@ -31,6 +31,8 @@ import {
   Building2,
   Store,
   ShieldAlert,
+  Percent,
+  Banknote,
 } from "lucide-react";
 import {
   Sidebar,
@@ -296,6 +298,22 @@ const AppSidebar = () => {
                   <Link href="/sellers">
                     <Store />
                     Sellers & Stores
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/commissions">
+                    <Percent />
+                    Commissions & Fees
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/payouts">
+                    <Banknote />
+                    Payouts & Batches
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

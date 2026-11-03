@@ -1,8 +1,9 @@
 import type { FastifyInstance } from "fastify";
+import { desc } from "drizzle-orm";
 import { commissionService } from "../services/commission.service.js";
 import { requireAdmin } from "../middleware/auth.middleware.js";
 import { db } from "../db/connection.js";
-import { commissionPlans, commissionRules } from "../db/schema.js";
+import { commissionPlans, commissionRules, commissionRuleVersions } from "../db/schema.js";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
@@ -43,6 +44,22 @@ export async function adminCommissionRoutes(fastify: FastifyInstance) {
   fastify.get("/plans", async (_request, reply) => {
     const plans = await db.select().from(commissionPlans);
     return reply.status(200).send(plans);
+  });
+
+  /**
+   * GET /api/v1/admin/commissions/rules
+   */
+  fastify.get("/rules", async (_request, reply) => {
+    const rules = await db.select().from(commissionRules);
+    return reply.status(200).send(rules);
+  });
+
+  /**
+   * GET /api/v1/admin/commissions/rule-versions
+   */
+  fastify.get("/rule-versions", async (_request, reply) => {
+    const versions = await db.select().from(commissionRuleVersions).orderBy(desc(commissionRuleVersions.createdAt)).limit(50);
+    return reply.status(200).send(versions);
   });
 
   /**

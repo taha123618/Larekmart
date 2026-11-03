@@ -19,6 +19,8 @@ import {
   ChevronLeft,
   XCircle,
   Coins,
+  FileSpreadsheet,
+  Download,
 } from "lucide-react";
 import { getMyVendor, type ClientVendor } from "@/services/vendor.service";
 import {
@@ -27,6 +29,13 @@ import {
   fetchPayoutRequests,
   requestVendorPayout,
 } from "@/services/settlement.service";
+import {
+  fetchSellerBalance,
+  fetchSellerPayouts,
+  fetchSellerStatements,
+  type ClientSellerPayoutItem,
+  type ClientSellerMonthlyStatement,
+} from "@/services/payout.service";
 import type {
   VendorBalance,
   VendorEscrowTransaction,
@@ -44,10 +53,12 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
   const [balance, setBalance] = useState<VendorBalance | null>(null);
   const [escrows, setEscrows] = useState<VendorEscrowTransaction[]>([]);
   const [payouts, setPayouts] = useState<VendorPayoutRequest[]>([]);
+  const [authoritativePayouts, setAuthoritativePayouts] = useState<ClientSellerPayoutItem[]>([]);
+  const [statements, setStatements] = useState<ClientSellerMonthlyStatement[]>([]);
 
   // Filter & Pagination
   const [escrowFilter, setEscrowFilter] = useState<EscrowStatus | "ALL">("ALL");
-  const [activeTab, setActiveTab] = useState<"escrow" | "payouts">("escrow");
+  const [activeTab, setActiveTab] = useState<"escrow" | "payouts" | "statements">("escrow");
 
   // Payout Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,7 +79,8 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
       }
       setVendor(myVendor);
 
-      const [balanceData, escrowRes, payoutRes] = await Promise.all([
+      const [ledgerBalanceRes, vendorBalanceRes, escrowRes, payoutRes, authPayoutRes, stmtRes] = await Promise.all([
+        fetchSellerBalance(token).catch(() => null),
         fetchVendorBalance(myVendor.id, token).catch(() => null),
         fetchEscrowTransactions(
           myVendor.id,
@@ -81,11 +93,31 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
         fetchPayoutRequests(myVendor.id, { limit: 20 }, token).catch(() => ({
           requests: [],
         })),
+        fetchSellerPayouts(token).catch(() => ({ sellerId: myVendor.id, payouts: [] })),
+        fetchSellerStatements(token).catch(() => ({ sellerId: myVendor.id, statements: [] })),
       ]);
 
-      setBalance(balanceData);
+      // Prioritize authoritative double-entry ledger balance from payout-service
+      if (ledgerBalanceRes) {
+        setBalance({
+          vendorId: myVendor.id,
+          currency: ledgerBalanceRes.currency || "PKR",
+          availableBalance: Number(ledgerBalanceRes.availableBalance || 0),
+          escrowBalance: Number(ledgerBalanceRes.pendingSettlement || vendorBalanceRes?.escrowBalance || 0),
+          disputeFrozenBalance: Number(ledgerBalanceRes.reserveHold || vendorBalanceRes?.disputeFrozenBalance || 0),
+          lifetimePaid: Number(ledgerBalanceRes.lifetimePayouts || vendorBalanceRes?.lifetimePaid || 0),
+          lifetimeEarnings: Number(vendorBalanceRes?.lifetimeEarnings || 0),
+          updatedAt: new Date().toISOString(),
+          lastPayoutAt: ledgerBalanceRes.lastPayoutAt || vendorBalanceRes?.lastPayoutAt || null,
+        });
+      } else {
+        setBalance(vendorBalanceRes);
+      }
+
       setEscrows(escrowRes.transactions);
       setPayouts(payoutRes.requests);
+      setAuthoritativePayouts(authPayoutRes.payouts || []);
+      setStatements(stmtRes.statements || []);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to load settlement data";
@@ -446,7 +478,18 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
           }`}
         >
           <Coins className="w-4 h-4" />
-          Payout Requests & Batches ({payouts.length})
+          Disbursements & Batches ({authoritativePayouts.length + payouts.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("statements")}
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
+            activeTab === "statements"
+              ? "border-indigo-500 text-indigo-400"
+              : "border-transparent text-zinc-400 hover:text-zinc-200"
+          }`}
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          Monthly Statements ({statements.length})
         </button>
       </div>
 
@@ -587,7 +630,7 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
-                  {payouts.length === 0 ? (
+                  {payouts.length === 0 && authoritativePayouts.length === 0 ? (
                     <tr>
                       <td
                         colSpan={6}
@@ -598,43 +641,153 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
                       </td>
                     </tr>
                   ) : (
-                    payouts.map((req) => (
+                    <>
+                      {/* Authoritative Double-Entry Ledger Disbursements from payout-service */}
+                      {authoritativePayouts.map((authP) => (
+                        <tr
+                          key={authP.id}
+                          className="hover:bg-zinc-800/40 transition-colors bg-indigo-950/10"
+                        >
+                          <td className="py-3.5 px-4 text-zinc-400">
+                            {new Date(authP.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-white text-base">
+                            {authP.currency} {Number(authP.amount).toLocaleString()}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="font-medium text-indigo-300">
+                              Automated Clearing {authP.batchId ? `(#${authP.batchId.slice(-6)})` : ""}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-zinc-400">
+                            <span className="text-zinc-400 font-mono text-xs">
+                              Verified Bank Account
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 font-mono text-xs text-zinc-400">
+                            {authP.providerReference || authP.id}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {renderPayoutBadge(authP.status as PayoutStatus)}
+                          </td>
+                        </tr>
+                      ))}
+
+                      {/* Manual Payout Requests from settlement.service */}
+                      {payouts.map((req) => (
+                        <tr
+                          key={req.id}
+                          className="hover:bg-zinc-800/40 transition-colors"
+                        >
+                          <td className="py-3.5 px-4 text-zinc-400">
+                            {new Date(req.requestedAt).toLocaleDateString()}
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-white text-base">
+                            {req.currency} {req.amount.toLocaleString()}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="font-medium text-zinc-300">
+                              {req.paymentMethod.replace("_", " ")}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-zinc-400">
+                            {req.bankName ? (
+                              <div>
+                                <div className="font-semibold text-zinc-200">
+                                  {req.bankName}
+                                </div>
+                                <div className="text-[11px] font-mono text-zinc-400">
+                                  {req.accountNumberOrIban}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-zinc-500">
+                                Verified Profile Account
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono text-xs text-zinc-400">
+                            {req.transactionReference || "Pending Execution"}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {renderPayoutBadge(req.status)}
+                          </td>
+                        </tr>
+                      ))}
+                    </>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: Monthly Statements */}
+      {activeTab === "statements" && (
+        <div className="space-y-4">
+          <p className="text-xs text-zinc-400">
+            Authoritative monthly accounting statements generated from append-only double-entry ledger transactions.
+          </p>
+
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead className="bg-zinc-950/60 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th className="py-3.5 px-4">Statement Period</th>
+                    <th className="py-3.5 px-4">Opening Balance</th>
+                    <th className="py-3.5 px-4">Gross Credits</th>
+                    <th className="py-3.5 px-4">Platform Commissions</th>
+                    <th className="py-3.5 px-4">Payouts Disbursed</th>
+                    <th className="py-3.5 px-4">Closing Balance</th>
+                    <th className="py-3.5 px-4 text-right">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+                  {statements.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="py-12 text-center text-zinc-500 text-sm"
+                      >
+                        No monthly financial statements generated yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    statements.map((stmt) => (
                       <tr
-                        key={req.id}
+                        key={stmt.id}
                         className="hover:bg-zinc-800/40 transition-colors"
                       >
-                        <td className="py-3.5 px-4 text-zinc-400">
-                          {new Date(req.requestedAt).toLocaleDateString()}
+                        <td className="py-3.5 px-4 font-semibold text-white">
+                          {stmt.period}
                         </td>
-                        <td className="py-3.5 px-4 font-bold text-white text-base">
-                          {req.currency} {req.amount.toLocaleString()}
+                        <td className="py-3.5 px-4 text-zinc-400 font-mono">
+                          PKR {stmt.openingBalance.toLocaleString()}
                         </td>
-                        <td className="py-3.5 px-4">
-                          <span className="font-medium text-zinc-300">
-                            {req.paymentMethod.replace("_", " ")}
-                          </span>
+                        <td className="py-3.5 px-4 text-emerald-400 font-semibold font-mono">
+                          +PKR {stmt.netCredits.toLocaleString()}
                         </td>
-                        <td className="py-3.5 px-4 text-zinc-400">
-                          {req.bankName ? (
-                            <div>
-                              <div className="font-semibold text-zinc-200">
-                                {req.bankName}
-                              </div>
-                              <div className="text-[11px] font-mono text-zinc-400">
-                                {req.accountNumberOrIban}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-zinc-500">
-                              Verified Profile Account
-                            </span>
-                          )}
+                        <td className="py-3.5 px-4 text-rose-400 font-mono">
+                          -PKR {stmt.commissionsWithheld.toLocaleString()}
                         </td>
-                        <td className="py-3.5 px-4 font-mono text-xs text-zinc-400">
-                          {req.transactionReference || "Pending Execution"}
+                        <td className="py-3.5 px-4 text-indigo-400 font-mono">
+                          -PKR {stmt.payoutsTransferred.toLocaleString()}
                         </td>
-                        <td className="py-3.5 px-4">
-                          {renderPayoutBadge(req.status)}
+                        <td className="py-3.5 px-4 text-white font-bold font-mono">
+                          PKR {stmt.closingBalance.toLocaleString()}
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() =>
+                              toast.info(`Downloading official statement for period ${stmt.period}`)
+                            }
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-200 transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            PDF
+                          </button>
                         </td>
                       </tr>
                     ))
