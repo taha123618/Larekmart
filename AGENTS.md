@@ -101,8 +101,8 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `pricing-service`         | `apps/pricing-service`        | Fastify 5               | 8019 | Authoritative merchandise pricing, multi-currency conversion, tiered rules, promotional quote composition & immutable snapshots       |
 | `vendor-service`          | `apps/vendor-service`         | NestJS 10 (Fastify)     | 8020 | Legal business entities, merchant onboarding, KYB verification, documents & lifecycle state management                                |
 | `seller-service`          | `apps/seller-service`         | Fastify 5               | 8021 | Marketplace storefront configuration, staff & permissions, operational settings, performance snapshots & seller events                |
-| `commission-service`      | `apps/commission-service`      | Fastify 5               | 8022 | Marketplace commission plans, rule versioning, percentage/fixed fees, min/max limits & settlement quotes                              |
-| `payout-service`          | `apps/payout-service`          | NestJS 11 (Fastify)     | 8023 | Seller payouts, double-entry ledger, settlement batches, reserve holds & provider reconciliation                                      |
+| `commission-service`      | `apps/commission-service`     | Fastify 5               | 8022 | Marketplace commission plans, rule versioning, percentage/fixed fees, min/max limits & settlement quotes                              |
+| `payout-service`          | `apps/payout-service`         | NestJS 11 (Fastify)     | 8023 | Seller payouts, double-entry ledger, settlement batches, reserve holds & provider reconciliation                                      |
 | `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                                                                                 |
 | `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                                                                         |
 | `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                                                                           |
@@ -249,7 +249,7 @@ pnpm --filter review-service db:migrate      # Stage 3: Reviews (after product-d
 pnpm --filter wishlist-service db:migrate    # Stage 3: Wishlists (after product-db)
 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
-docker compose up -d --build                 # start entire microservices stack (23 services + backing DBs)
+docker compose up -d --build                 # start entire microservices stack (25 services + backing DBs)
 docker compose down                          # stop all containers preserving volumes
 docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui mysql # backing infra only
 # See docs/DOCKER.md for complete operations manual

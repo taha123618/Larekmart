@@ -57,6 +57,8 @@ jobs:
       PRICING_DATABASE_URL: ${{ secrets.STAGING_PRICING_DATABASE_URL }}
       VENDOR_DATABASE_URL: ${{ secrets.STAGING_VENDOR_DATABASE_URL }}
       SELLER_DATABASE_URL: ${{ secrets.STAGING_SELLER_DATABASE_URL }}
+      COMMISSION_DATABASE_URL: ${{ secrets.STAGING_COMMISSION_DATABASE_URL }}
+      PAYOUT_DATABASE_URL: ${{ secrets.STAGING_PAYOUT_DATABASE_URL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -129,6 +131,14 @@ jobs:
         if: env.SELLER_DATABASE_URL != ''
         run: pnpm --filter seller-service db:deploy
 
+      - name: Run Drizzle Migration Deploy - Stage 3 (Commission Service)
+        if: env.COMMISSION_DATABASE_URL != ''
+        run: pnpm --filter commission-service db:deploy
+
+      - name: Run Drizzle Migration Deploy - Stage 3 (Payout Service)
+        if: env.PAYOUT_DATABASE_URL != ''
+        run: pnpm --filter payout-service db:deploy
+
       - name: Run Drizzle Migration Deploy - Stage 3 (Review Service)
         if: env.REVIEW_DATABASE_URL != ''
         run: pnpm --filter review-service db:deploy
@@ -200,12 +210,14 @@ jobs:
               larekmart/pricing-service=ghcr.io/${{ github.repository_owner }}/larekmart/pricing-service:staging-${SHA_SHORT} \
               larekmart/vendor-service=ghcr.io/${{ github.repository_owner }}/larekmart/vendor-service:staging-${SHA_SHORT} \
               larekmart/seller-service=ghcr.io/${{ github.repository_owner }}/larekmart/seller-service:staging-${SHA_SHORT} \
+              larekmart/commission-service=ghcr.io/${{ github.repository_owner }}/larekmart/commission-service:staging-${SHA_SHORT} \
+              larekmart/payout-service=ghcr.io/${{ github.repository_owner }}/larekmart/payout-service:staging-${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:staging-${SHA_SHORT}
 
             echo "Applying Staging manifests to namespace larekmart-staging..."
             kubectl apply -k .
 
-            echo "Tracking rollout status across all 25 microservice workloads..."
+            echo "Tracking rollout status across all 27 microservice workloads..."
             DEPLOYMENTS=(
               staging-client
               staging-admin
@@ -231,6 +243,8 @@ jobs:
               staging-pricing-service
               staging-vendor-service
               staging-seller-service
+              staging-commission-service
+              staging-payout-service
               staging-email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do

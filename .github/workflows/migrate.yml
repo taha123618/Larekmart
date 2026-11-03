@@ -41,6 +41,8 @@ jobs:
       PRICING_DATABASE_URL: ${{ secrets.PRICING_DATABASE_URL }}
       VENDOR_DATABASE_URL: ${{ secrets.VENDOR_DATABASE_URL }}
       SELLER_DATABASE_URL: ${{ secrets.SELLER_DATABASE_URL }}
+      COMMISSION_DATABASE_URL: ${{ secrets.COMMISSION_DATABASE_URL }}
+      PAYOUT_DATABASE_URL: ${{ secrets.PAYOUT_DATABASE_URL }}
 
     steps:
       - name: Checkout Code
@@ -154,6 +156,18 @@ jobs:
         env:
           DATABASE_URL: ${{ env.SELLER_DATABASE_URL }}
 
+      - name: Run commission-service (PostgreSQL Drizzle) migrations (Stage 3)
+        if: github.event.inputs.action == 'deploy' && env.COMMISSION_DATABASE_URL != ''
+        run: pnpm --filter commission-service db:deploy
+        env:
+          DATABASE_URL: ${{ env.COMMISSION_DATABASE_URL }}
+
+      - name: Run payout-service (PostgreSQL Drizzle) migrations (Stage 3)
+        if: github.event.inputs.action == 'deploy' && env.PAYOUT_DATABASE_URL != ''
+        run: pnpm --filter payout-service db:deploy
+        env:
+          DATABASE_URL: ${{ env.PAYOUT_DATABASE_URL }}
+
       - name: Run review-service (Drizzle) migrations (Stage 3)
         if: github.event.inputs.action == 'deploy' && env.REVIEW_DATABASE_URL != ''
         run: pnpm --filter review-service db:deploy
@@ -165,4 +179,3 @@ jobs:
         run: pnpm --filter wishlist-service db:deploy
         env:
           DATABASE_URL: ${{ env.WISHLIST_DATABASE_URL }}
-

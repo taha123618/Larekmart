@@ -64,3 +64,5 @@ data:
   PRICING_SERVICE_URL: "http://pricing-service.larekmart.svc.cluster.local:8019"
   VENDOR_SERVICE_URL: "http://vendor-service.larekmart.svc.cluster.local:8020"
   SELLER_SERVICE_URL: "http://seller-service.larekmart.svc.cluster.local:8021"
+  COMMISSION_SERVICE_URL: "http://commission-service.larekmart.svc.cluster.local:8022"
+  PAYOUT_SERVICE_URL: "http://payout-service.larekmart.svc.cluster.local:8023"

@@ -253,6 +253,22 @@ scrape_configs:
           service: seller-service
           runtime: nodejs
 
+  - job_name: commission-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["commission-service:8022"]
+        labels:
+          service: commission-service
+          runtime: nodejs
+
+  - job_name: payout-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["payout-service:8023"]
+        labels:
+          service: payout-service
+          runtime: nestjs
+
   - job_name: api-gateway
     metrics_path: /metrics
     static_configs:

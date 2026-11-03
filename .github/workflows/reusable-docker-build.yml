@@ -133,6 +133,12 @@ jobs:
           - service: seller-service
             context: .
             dockerfile: apps/seller-service/Dockerfile
+          - service: commission-service
+            context: .
+            dockerfile: apps/commission-service/Dockerfile
+          - service: payout-service
+            context: .
+            dockerfile: apps/payout-service/Dockerfile
           - service: email-service
             context: .
             dockerfile: apps/email-service/Dockerfile

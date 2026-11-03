@@ -34,12 +34,12 @@ infrastructure/
 │   │   ├── configmaps/         # common-config.yaml
 │   │   ├── secrets/            # secret-templates.yaml, secret-store.yaml, external-secrets.yaml (ESO)
 │   │   ├── frontends/          # client.yaml, admin.yaml
-│   │   ├── services/           # 22 backend service Deployments + ClusterIP Services (including promotion-service, tax-service, return-service, pricing-service, vendor-service, and seller-service)
+│   │   ├── services/           # 24 backend service Deployments + ClusterIP Services (including promotion-service, tax-service, return-service, pricing-service, vendor-service, seller-service, commission-service, and payout-service)
 │   │   ├── workers/            # email-service.yaml (headless Kafka consumer)
 │   │   ├── autoscaling/        # hpa.yaml (resource HPA) + keda-scaledobjects.yaml (Kafka lag autoscaling)
 │   │   ├── pdb/                # pod-disruption-budgets.yaml
 │   │   ├── network-policies/   # Zero-trust isolation rules
-│   │   ├── ingress.yaml        # NGINX Ingress with TLS, CORS, WebSocket (routes all 22 backend services + 2 frontends)
+│   │   ├── ingress.yaml        # NGINX Ingress with TLS, CORS, WebSocket (routes all 24 backend services + 2 frontends)
 │   │   └── kustomization.yaml
 │   ├── ingress-controller/     # ingress-nginx-values.yaml (Tuned Helm values for staging & prod)
 │   └── overlays/

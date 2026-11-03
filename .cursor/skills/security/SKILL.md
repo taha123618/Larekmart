@@ -57,9 +57,17 @@ This document specifies the mandatory cybersecurity standards and implementation
     ```
   - In `cart-service`, operations must strictly bind to the authenticated `userId` from the verified session or an unguessable guest session UUID.
   - In `seller-service`, operations on `/api/v1/sellers/:sellerId` strictly verify that the caller is the seller primary user, an authorized staff member with required granular permissions, or an admin.
+  - In `payout-service`, seller endpoints (`/api/v1/sellers/me/balance`, `/api/v1/sellers/me/payouts`, `/api/v1/sellers/me/statements`) strictly scope disbursements and ledger balances to the caller's verified `sellerId`.
   - In `product-service` (SEC-02), marketplace products carry an indexed `sellerId` column. On creation (`POST /products`), `sellerId` is stamped with `req.userId`. On update (`PUT /products/:id`) and deletion (`DELETE /products/:id`), ownership is strictly enforced: `product.sellerId === req.userId` (or admin). Non-owner sellers are rejected with `403 Forbidden`.
   - In query lookups across user-facing endpoints (orders, carts, wishlists, reviews, returns, profiles), queries must scope by `userId` (SEC-01) rather than accepting unverified user identifiers from query parameters.
-  - Administrative endpoints (e.g. `GET /admin/stats`, `GET /admin/recent` in `cart-service`, `GET /api/v1/admin/sellers` in `seller-service`) must be gated with `requireAdmin`.
+  - Administrative endpoints (e.g. `GET /admin/stats`, `GET /admin/recent` in `cart-service`, `GET /api/v1/admin/sellers` in `seller-service`, `GET /api/v1/admin/commissions/reports` in `commission-service`, `GET /api/v1/admin/payouts` in `payout-service`) must be gated with `requireAdmin`.
+
+### Double-Entry Accounting & Financial Security (`payout-service` & `commission-service`)
+
+- **Append-Only Double-Entry Journal**: Balances are calculated dynamically from `ledger_entries` (`SUM(credits) - SUM(debits)`). A mutable column is never treated as the authoritative financial source of truth.
+- **Zero-Sum Ledger Balance Invariant**: Every posted financial transaction strictly enforces `SUM(debit) == SUM(credit)` zero-sum across accounts within serializable database transactions.
+- **Provider Authoritative Confirmation**: Payout records remain in `PROCESSING` until confirmed via provider callback or reconciliation batch.
+- **Rule Version Auditing**: `commission-service` stamps immutable `commission_rule_versions` so subsequent commission adjustments never retroactively corrupt settled order payouts.
 
 ---
 

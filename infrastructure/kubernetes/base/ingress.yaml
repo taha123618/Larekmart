@@ -271,6 +271,27 @@ spec:
                 name: vendor-service
                 port:
                   number: 8020
+          - path: /api/v1/sellers/me/payouts
+            pathType: Prefix
+            backend:
+              service:
+                name: payout-service
+                port:
+                  number: 8023
+          - path: /api/v1/sellers/me/balance
+            pathType: Prefix
+            backend:
+              service:
+                name: payout-service
+                port:
+                  number: 8023
+          - path: /api/v1/sellers/me/statements
+            pathType: Prefix
+            backend:
+              service:
+                name: payout-service
+                port:
+                  number: 8023
           - path: /api/v1/sellers
             pathType: Prefix
             backend:
@@ -285,3 +306,45 @@ spec:
                 name: seller-service
                 port:
                   number: 8021
+          - path: /api/v1/commissions
+            pathType: Prefix
+            backend:
+              service:
+                name: commission-service
+                port:
+                  number: 8022
+          - path: /api/v1/internal/commissions
+            pathType: Prefix
+            backend:
+              service:
+                name: commission-service
+                port:
+                  number: 8022
+          - path: /api/v1/admin/commissions
+            pathType: Prefix
+            backend:
+              service:
+                name: commission-service
+                port:
+                  number: 8022
+          - path: /api/v1/payouts
+            pathType: Prefix
+            backend:
+              service:
+                name: payout-service
+                port:
+                  number: 8023
+          - path: /api/v1/internal/payouts
+            pathType: Prefix
+            backend:
+              service:
+                name: payout-service
+                port:
+                  number: 8023
+          - path: /api/v1/admin/payouts
+            pathType: Prefix
+            backend:
+              service:
+                name: payout-service
+                port:
+                  number: 8023

@@ -171,15 +171,15 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `seller.updated`                                 | seller-service             | notification-service, analytic-service                                                                        | `SellerUpdatedEvent` (`sellerId`, `updatedFields`, `updatedAt`)                                                                                                                                                                                                                     |
 | `seller.suspended`                               | seller-service             | notification-service, email-service, analytic-service                                                         | `SellerSuspendedEvent` (`sellerId`, `vendorId`, `reason`, `suspendedAt`)                                                                                                                                                                                                            |
 | `seller.storefront.updated`                      | seller-service             | notification-service, analytic-service                                                                        | `SellerStorefrontUpdatedEvent` (`sellerId`, `storeId`, `storeName`, `slug`, `vacationMode`, `status`, `updatedAt`)                                                                                                                                                                  |
-| `commission.calculated`                          | commission-service         | pricing-service, order-service, analytic-service                                                               | `CommissionCalculatedEvent` (`orderId`, `calculationId`, `totalCommission`, `currency`, `timestamp`)                                                                                                                                                                                |
-| `commission.accrued`                             | commission-service         | payout-service, analytic-service, notification-service                                                         | `CommissionAccruedEvent` (`orderId`, `calculationId`, `totalCommission`, `currency`, `itemsCount`, `timestamp`)                                                                                                                                                                     |
+| `commission.calculated`                          | commission-service         | pricing-service, order-service, analytic-service                                                              | `CommissionCalculatedEvent` (`orderId`, `calculationId`, `totalCommission`, `currency`, `timestamp`)                                                                                                                                                                                |
+| `commission.accrued`                             | commission-service         | payout-service, analytic-service, notification-service                                                        | `CommissionAccruedEvent` (`orderId`, `calculationId`, `totalCommission`, `currency`, `itemsCount`, `timestamp`)                                                                                                                                                                     |
 | `commission.adjusted`                            | commission-service         | payout-service, analytic-service                                                                              | `CommissionAdjustedEvent` (`orderId`, `returnId`, `originalCalculationId`, `adjustedCommission`, `refundAmount`, `timestamp`)                                                                                                                                                       |
-| `commission.reversed`                            | commission-service         | payout-service, analytic-service                                                                              | `CommissionReversedEvent` (`orderId`, `calculationId`, `reason`, `timestamp`)                                                                                                                                                                                                        |
-| `payout.scheduled`                               | payout-service             | notification-service, analytic-service                                                                        | `PayoutScheduledEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `batchId`, `amount`, `netAmount`, `currency`, `timestamp`)                                                                                                                                                  |
+| `commission.reversed`                            | commission-service         | payout-service, analytic-service                                                                              | `CommissionReversedEvent` (`orderId`, `calculationId`, `reason`, `timestamp`)                                                                                                                                                                                                       |
+| `payout.scheduled`                               | payout-service             | notification-service, analytic-service                                                                        | `PayoutScheduledEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `batchId`, `amount`, `netAmount`, `currency`, `timestamp`)                                                                                                                                                   |
 | `payout.processing`                              | payout-service             | analytic-service                                                                                              | `PayoutProcessingEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `provider`, `amount`, `currency`, `timestamp`)                                                                                                                                                              |
-| `payout.completed`                               | payout-service             | notification-service, email-service, analytic-service                                                         | `PayoutCompletedEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `providerReference`, `amount`, `currency`, `settledAt`, `timestamp`)                                                                                                                                        |
-| `payout.failed`                                  | payout-service             | notification-service, email-service, analytic-service                                                         | `PayoutFailedEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `failureReason`, `amount`, `currency`, `timestamp`)                                                                                                                                                            |
-| `payout.reconciled`                              | payout-service             | analytic-service                                                                                              | `PayoutReconciledEventPayload` (`batchId`, `totalPayouts`, `totalSettledAmount`, `currency`, `reconciledCount`, `failedCount`, `timestamp`)                                                                                                                                          |
+| `payout.completed`                               | payout-service             | notification-service, email-service, analytic-service                                                         | `PayoutCompletedEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `providerReference`, `amount`, `currency`, `settledAt`, `timestamp`)                                                                                                                                         |
+| `payout.failed`                                  | payout-service             | notification-service, email-service, analytic-service                                                         | `PayoutFailedEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `failureReason`, `amount`, `currency`, `timestamp`)                                                                                                                                                             |
+| `payout.reconciled`                              | payout-service             | analytic-service                                                                                              | `PayoutReconciledEventPayload` (`batchId`, `totalPayouts`, `totalSettledAmount`, `currency`, `reconciledCount`, `failedCount`, `timestamp`)                                                                                                                                         |
 
 ### `product.created`
 
@@ -1020,8 +1020,8 @@ Emitted when marketplace commission is calculated for an order or quote preview.
     "totalCommission": 125.5,
     "currency": "PKR",
     "itemsCount": 2,
-    "timestamp": "2026-11-04T02:00:00.000Z"
-  }
+    "timestamp": "2026-11-04T02:00:00.000Z",
+  },
 }
 ```
 
@@ -1040,8 +1040,8 @@ Emitted when an order payment is successfully captured, formally establishing pl
     "totalCommission": 125.5,
     "currency": "PKR",
     "itemsCount": 2,
-    "timestamp": "2026-11-04T02:00:00.000Z"
-  }
+    "timestamp": "2026-11-04T02:00:00.000Z",
+  },
 }
 ```
 
@@ -1060,8 +1060,8 @@ Emitted when customer returns or partial refunds require adjusting previous comm
     "originalCalculationId": "calc_019a2b3c4d5e",
     "adjustedCommission": -62.75,
     "refundAmount": 1000.0,
-    "timestamp": "2026-11-04T02:05:00.000Z"
-  }
+    "timestamp": "2026-11-04T02:05:00.000Z",
+  },
 }
 ```
 
@@ -1078,13 +1078,120 @@ Emitted when full order cancellation, chargeback, or fraud investigation forces 
     "orderId": "ord_019a2b3c4d5e",
     "calculationId": "calc_019a2b3c4d5e",
     "reason": "order_cancelled",
-    "timestamp": "2026-11-04T02:06:00.000Z"
-  }
+    "timestamp": "2026-11-04T02:06:00.000Z",
+  },
 }
 ```
 
 - **Producer:** `apps/commission-service/src/services/commission.service.ts`
 - **Consumers:** `payout-service`, `analytic-service`.
+
+#### `payout.scheduled`
+
+Emitted when an automated or manual settlement batch schedules a seller payout.
+
+```jsonc
+{
+  "value": {
+    "payoutId": "pay_019a2b3c4d5e",
+    "payoutNumber": "PO-202611-0001",
+    "sellerId": "seller_019a2b3c4d5e",
+    "batchId": "batch_019a2b3c4d5e",
+    "amount": 250000,
+    "netAmount": 249500,
+    "currency": "PKR",
+    "timestamp": "2026-11-04T02:10:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/payout-service/src/payouts/payouts.service.ts`
+- **Consumers:** `notification-service`, `analytic-service`.
+
+#### `payout.processing`
+
+Emitted when the payout provider adapter submits the transaction for processing.
+
+```jsonc
+{
+  "value": {
+    "payoutId": "pay_019a2b3c4d5e",
+    "payoutNumber": "PO-202611-0001",
+    "sellerId": "seller_019a2b3c4d5e",
+    "provider": "STRIPE_CONNECT",
+    "amount": 250000,
+    "currency": "PKR",
+    "timestamp": "2026-11-04T02:11:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/payout-service/src/payouts/payouts.service.ts`
+- **Consumers:** `analytic-service`.
+
+#### `payout.completed`
+
+Emitted when the payout provider confirms funds have settled successfully to the seller account.
+
+```jsonc
+{
+  "value": {
+    "payoutId": "pay_019a2b3c4d5e",
+    "payoutNumber": "PO-202611-0001",
+    "sellerId": "seller_019a2b3c4d5e",
+    "providerReference": "tr_1abc123xyz",
+    "amount": 249500,
+    "currency": "PKR",
+    "settledAt": "2026-11-04T02:15:00.000Z",
+    "timestamp": "2026-11-04T02:15:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/payout-service/src/payouts/payouts.service.ts`
+- **Consumers:** `notification-service`, `email-service`, `analytic-service`.
+
+#### `payout.failed`
+
+Emitted when a payout transaction is declined or fails provider validation.
+
+```jsonc
+{
+  "value": {
+    "payoutId": "pay_019a2b3c4d5e",
+    "payoutNumber": "PO-202611-0001",
+    "sellerId": "seller_019a2b3c4d5e",
+    "failureReason": "invalid_routing_number",
+    "amount": 250000,
+    "currency": "PKR",
+    "timestamp": "2026-11-04T02:12:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/payout-service/src/payouts/payouts.service.ts`
+- **Consumers:** `notification-service`, `email-service`, `analytic-service`.
+
+#### `payout.reconciled`
+
+Emitted when settlement statements and provider callback batches have been audited and matched.
+
+```jsonc
+{
+  "value": {
+    "batchId": "batch_019a2b3c4d5e",
+    "totalPayouts": 42,
+    "totalSettledAmount": 10500000,
+    "currency": "PKR",
+    "reconciledCount": 41,
+    "failedCount": 1,
+    "timestamp": "2026-11-04T02:30:00.000Z",
+  },
+}
+```
+
+- **Producer:** `apps/payout-service/src/payouts/payouts.service.ts`
+- **Consumers:** `analytic-service`.
 
 ## Dead-Letter Queue (DLQ) & Poison-Pill Isolation
 

@@ -372,7 +372,9 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 │   ├── return-service/        # Koa 2 + MySQL (return_db :3307) + Drizzle + Redis return requests, eligibility, inspection & refund coordination (:8018)
 │   ├── pricing-service/       # Fastify 5 + PostgreSQL + Drizzle + Redis authoritative merchandise pricing, multi-currency conversion, tiered rules & quotes (:8019)
 │   ├── vendor-service/        # NestJS 11 (Fastify 5) + PostgreSQL + Prisma + Redis vendor onboarding, KYB verification & documents (:8020)
-│   └── seller-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis storefront configuration, staff, policies & performance (:8021)
+│   ├── seller-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis storefront configuration, staff, policies & performance (:8021)
+│   ├── commission-service/    # Fastify 5 + PostgreSQL + Drizzle + Kafka + Decimal.js marketplace commission plans, rules & calculations (:8022)
+│   └── payout-service/        # NestJS 11 (Fastify 5) + PostgreSQL + Drizzle + Kafka + Decimal.js seller payouts, double-entry ledger & settlements (:8023)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -429,6 +431,8 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | **`pricing-service`** | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk, Decimal.js | `8019` | Authoritative merchandise pricing, seller price lists (B2B & B2C), multi-currency conversion, tiered volume rules, promotional discount composition, immutable quote snapshots, audit history, and zero-trust perimeter authorization (`requireAdminOrInternal`). |
 | **`vendor-service`** | NestJS 11 (Fastify 5), Prisma, PostgreSQL, Redis, Kafka, Clerk, Zod | `8020` | Marketplace vendor registration, legal entities, KYB verification workflows, verification documents, authorized representatives, lifecycle states, and zero-trust `ManageAdminGuard`. |
 | **`seller-service`** | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk, Zod | `8021` | Marketplace storefront configuration, custom slugs & branding, seller staff & permissions, marketplace operational settings, policies, performance snapshots & seller events. |
+| **`commission-service`** | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Decimal.js, Zod | `8022` | Marketplace commission plans, rule versioning, percentage & fixed fees, min/max limits, order item fee calculations, and settlement quote breakdowns. |
+| **`payout-service`** | NestJS 11 (Fastify 5), Drizzle, PostgreSQL, Redis, Kafka, Decimal.js, Zod | `8023` | Seller payouts, balanced append-only double-entry ledger, settlement batches, maturity holds, reserve reserves & payout provider reconciliation. |
 
 ---
 
@@ -490,7 +494,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 # Option A: Full Docker Compose Environment (Recommended)
 # ==============================================================================
 # Spins up backing databases (Postgres with pgvector, MongoDB replica set, isolated MySQL instances for tax_db & return_db, Redis,
-# 3-broker Kafka KRaft cluster, OpenSearch), Kafka UI, all 23 backend services, and both Next.js frontends:
+# 3-broker Kafka KRaft cluster, OpenSearch), Kafka UI, all 25 backend services, and both Next.js frontends:
 docker compose up -d --build
 
 # View logs:
@@ -522,6 +526,8 @@ pnpm --filter tax-service db:migrate
 pnpm --filter return-service db:migrate
 pnpm --filter pricing-service db:migrate
 pnpm --filter seller-service db:migrate
+pnpm --filter commission-service db:migrate
+pnpm --filter payout-service db:migrate
 pnpm --filter @repo/vendor-db db:generate
 pnpm --filter @repo/vendor-db db:migrate
 

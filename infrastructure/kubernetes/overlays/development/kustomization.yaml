@@ -95,5 +95,9 @@ images:
     newTag: dev
   - name: larekmart/seller-service
     newTag: dev
+  - name: larekmart/commission-service
+    newTag: dev
+  - name: larekmart/payout-service
+    newTag: dev
   - name: larekmart/email-service
     newTag: dev

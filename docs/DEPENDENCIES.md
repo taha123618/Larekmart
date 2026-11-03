@@ -120,6 +120,20 @@ apps/seller-service ────────┬─▶ drizzle-orm + pg ─▶ Po
                            ├─▶ @repo/monitoring
                            └─▶ @repo/types
 
+apps/commission-service ────┬─▶ drizzle-orm + pg ─▶ PostgreSQL (larekmart_commission_db)
+                           ├─▶ @repo/kafka
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           ├─▶ @repo/monitoring
+                           ├─▶ decimal.js
+                           └─▶ @repo/types
+
+apps/payout-service ────────┬─▶ drizzle-orm + pg ─▶ PostgreSQL (larekmart_payout_db)
+                           ├─▶ @repo/kafka
+                           ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                           ├─▶ @repo/monitoring
+                           ├─▶ decimal.js
+                           └─▶ @repo/types
+
 apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                            ├─▶ @repo/monitoring

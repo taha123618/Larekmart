@@ -31,6 +31,8 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `pricing-service`: Ten suites covering decimal financial precision, volume tiered pricing, multi-currency conversion, negative price prevention, and quote snapshot persistence (`pnpm --filter pricing-service test`).
    - `vendor-service`: Legal entity registration, KYB document verification, member access, status transitions, and lifecycle event emission (`pnpm --filter vendor-service test`).
    - `seller-service`: Marketplace storefront profiles, multi-staff permissions, operational settings, metrics snapshots, and Fastify endpoints (`pnpm --filter seller-service test`).
+   - `commission-service`: Tiered rate evaluation, Decimal.js financial precision, rule versioning, order fee calculation, and quote snapshots (`pnpm --filter commission-service test`).
+   - `payout-service`: Append-only balanced double-entry ledger invariant tests, settlement batches, provider reconciliation, and seller balance queries (`pnpm --filter payout-service test`).
    - `email-service`: Email template interpolation for user signups, order receipts with tax breakdown, KYB notifications, and storefront lifecycle alerts (`pnpm --filter email-service test`).
    - `notification-service`: Native Go test suite for workers, templates, dispatchers, WebSocket lifecycle/origin checks, and RS256 JWT verification including forged-token rejection (`go test ./...`).
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).

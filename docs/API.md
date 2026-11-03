@@ -21,6 +21,8 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 | `promotion-service`      | `8016` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Campaigns, coupons, discount eligibility, budgets & checkout reservations |
 | `vendor-service`         | `8020` | NestJS 10 (Fastify)    | `shouldBeUser` / `shouldBeAdmin`   | Legal business entities, KYB, documents & verifications                   |
 | `seller-service`         | `8021` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Marketplace storefronts, staff, delegations & governance                  |
+| `commission-service`     | `8022` | Fastify 5              | `requireInternalSecret` / Admin    | Marketplace commission plans, rules, line item calculations & quotes      |
+| `payout-service`         | `8023` | NestJS 11 (Fastify)    | `shouldBeUser` / Admin / Internal  | Seller payouts, append-only double-entry ledger & settlement batches      |
 | `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                                              |
 
 ---
@@ -1208,3 +1210,90 @@ All requests route through `api-gateway` on port `8080`.
 - **Body**: `AdminUpdateSellerStatusSchema` (`status`: `"ACTIVE"` | `"SUSPENDED"` | `"PENDING"` | `"TERMINATED"`, `reason?`)
 - **Response**: `{ success: true, seller: SellerWithStore }`
 - **Side Effect**: Emits `seller.activated` or `seller.suspended` Kafka event
+
+---
+
+## 23. Commission Service (`:8022`)
+
+### `POST /api/v1/internal/commissions/quote`
+
+- **Auth**: Zero-Trust Internal Secret (`x-internal-secret`)
+- **Body**: `CommissionQuoteRequestSchema` (`orderId`, `currency`, `items: [{ itemId, sellerId, categoryId?, productId?, amount, quantity }]`)
+- **Response**: `{ quoteId: string, orderId: string, currency: string, totalGross: number, totalCommission: number, netSellerAmount: number, lines: CommissionLineQuote[] }`
+- **Side Effect**: Evaluates versioned tiered rules and publishes `commission.calculated` Kafka event.
+
+### `GET /api/v1/internal/commissions/orders/:orderId`
+
+- **Auth**: Zero-Trust Internal Secret (`x-internal-secret`)
+- **Response**: `{ calculations: CommissionCalculationRecord[] }`
+
+### `GET /api/v1/admin/commissions/plans`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ plans: CommissionPlanWithRules[] }`
+
+### `POST /api/v1/admin/commissions/plans`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `CreateCommissionPlanSchema` (`name`, `description?`, `isDefault?`, `rules: [...]`)
+- **Response**: `{ plan: CommissionPlanWithRules }`
+
+### `PATCH /api/v1/admin/commissions/rules/:ruleId`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `UpdateCommissionRuleSchema` (`percentageFee?`, `fixedFee?`, `minCommission?`, `maxCommission?`, `isActive?`)
+- **Response**: `{ rule: CommissionRule, newVersion: number }`
+- **Side Effect**: Creates an immutable `commission_rule_versions` record for auditability.
+
+### `GET /api/v1/admin/commissions/reports`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `startDate?`, `endDate?`, `sellerId?`
+- **Response**: `{ totalGross: number, totalCommission: number, netPayable: number, count: number }`
+
+---
+
+## 24. Payout Service (`:8023`)
+
+### `GET /api/v1/sellers/me/payouts`
+
+- **Auth**: User / Seller (`shouldBeUser`, verified `sellerId`)
+- **Query Params**: `page?`, `limit?`, `status?`
+- **Response**: `{ payouts: PayoutRecord[], total: number }`
+
+### `GET /api/v1/sellers/me/balance`
+
+- **Auth**: User / Seller (`shouldBeUser`, verified `sellerId`)
+- **Response**: `{ sellerId: string, availableBalance: number, pendingBalance: number, escrowBalance: number, reserveBalance: number, lifetimePaid: number, currency: string }`
+- **Guarantee**: Authoritatively computed from balanced append-only double-entry ledger entries.
+
+### `GET /api/v1/sellers/me/statements`
+
+- **Auth**: User / Seller (`shouldBeUser`, verified `sellerId`)
+- **Query Params**: `year?`, `month?`
+- **Response**: `{ statements: SellerStatement[] }`
+
+### `POST /api/v1/internal/payouts/schedule`
+
+- **Auth**: Zero-Trust Internal Secret (`x-internal-secret`)
+- **Body**: `SchedulePayoutBatchSchema` (`cutoffDate`, `currency`)
+- **Response**: `{ batchId: string, payoutsScheduled: number, totalAmount: number }`
+- **Side Effect**: Creates batch, generates ledger debit entries, and emits `payout.scheduled` Kafka events.
+
+### `POST /api/v1/internal/payouts/reconcile`
+
+- **Auth**: Zero-Trust Internal Secret (`x-internal-secret`)
+- **Body**: `ReconcilePayoutRequestSchema` (`batchId?`, `payoutId?`, `providerTransactionId`, `providerStatus`, `reconciledAt`)
+- **Response**: `{ success: true, status: string }`
+- **Side Effect**: Emits `payout.reconciled` and `payout.completed` or `payout.failed` Kafka events.
+
+### `GET /api/v1/admin/payouts`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `page?`, `limit?`, `status?`, `sellerId?`
+- **Response**: `{ payouts: PayoutRecord[], total: number, page: number, totalPages: number }`
+
+### `POST /api/v1/admin/payouts/:payoutId/retry`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ success: true, payout: PayoutRecord }`

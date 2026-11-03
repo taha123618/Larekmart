@@ -65,7 +65,7 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
   - Implemented across every downstream microservice, with Go services using `crypto/subtle.ConstantTimeCompare`.
   - Prevents timing side-channel attacks against `INTERNAL_SERVICE_SECRET`.
 - **Secret Is Transport Authentication, Not User Authority**:
-  - A valid internal secret proves the request came through the gateway; it must never grant admin rights to a proxied user. `seller-service`, `vendor-service`, `shipping-service`, and `analytic-service` require an admin/super-admin role for user requests and only allow pure M2M (secret with no user identity) where explicitly designed.
+  - A valid internal secret proves the request came through the gateway; it must never grant admin rights to a proxied user. `commission-service`, `payout-service`, `seller-service`, `vendor-service`, `shipping-service`, and `analytic-service` require an admin/super-admin role for user requests and only allow pure M2M (secret with no user identity) where explicitly designed.
 - **Production Secret Validation**:
   - `validateInternalServiceSecret` from `@repo/types` fails startup in production when the secret is missing, shorter than 16 characters, or matches a placeholder (`dev-shared-*`, `change-me`, `replace-me`, `example`, `dummy`, `__required`).
   - `validateClerkSecretKey` fails startup in production when `CLERK_SECRET_KEY` is missing, not prefixed with `sk_`, or matches a known mock/placeholder value.
@@ -79,7 +79,12 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
   - `order-service` verifies that the accessed order belongs to the requester: `order.userId === request.userId || request.userRole === "admin"`.
   - `user-service` scopes customer operations to `/me` or verified `request.userId`.
   - `cart-service` binds operations to verified `userId` or unguessable cryptographic guest tokens (`x-guest-token`).
+  - `payout-service` verifies seller ownership via `sellerId` associated with `authUserId`, preventing cross-seller balance extraction.
   - Line-item price verification: COD and Stripe order totals are recomputed server-side from authoritative catalog prices (`getServerProductPricesPaisa`), rejecting client-declared price discrepancies with `409 Conflict`.
+- **Double-Entry Financial Ledger Invariants (`payout-service`)**:
+  - Balanced append-only double-entry ledger (`ledger_entries`) within ACID transactions ensures `SUM(debit) == SUM(credit)` zero-sum invariant for every financial movement.
+  - Authoritative balance computation aggregates immutable ledger entries, eliminating phantom balance drift from mutable columns.
+  - Payout retries and provider callbacks enforce idempotency keys and cryptographic reconciliation.
 
 ---
 
@@ -88,6 +93,7 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
 - **Parameterized Queries Everywhere**:
   - Zero raw SQL concatenations or unescaped template literals across the codebase.
   - Prisma queries in `@repo/product-db`, `@repo/inventory-db`, `@repo/catalog-db`, `@repo/shipping-db`, and `@repo/user-db` use typed client methods. Zero occurrences of `$queryRawUnsafe`.
+  - Drizzle ORM queries in `commission-service`, `payout-service`, `seller-service`, `pricing-service`, `promotion-service`, `media-service`, `review-service`, and `wishlist-service` use prepared statements with strict parameter binding.
   - Health check queries strictly use tagged template literals (`prisma.$queryRaw\`SELECT 1\``).
   - PostgreSQL queries in `apps/analytic-service` strictly parameterize inputs (`$1`, `$2`, etc.).
 - **NoSQL / Mongoose Security**:

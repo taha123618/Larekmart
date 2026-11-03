@@ -29,6 +29,8 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 | **`pricing-service`**        | Node.js Test Runner / `tsx` | Ten suites via `tests/pricing-service.test.ts`: decimal arithmetic precision, volume tiered pricing, currency conversion, negative price prevention, quote snapshot persistence, Fastify endpoints, and event emission                                                                                           |
 | **`vendor-service`**         | Node.js Test Runner / `tsx` | Legal entity registration, KYB document verification, member access, status transitions, and lifecycle event emission (`tests/vendor-service.test.ts`)                                                                                                                                                           |
 | **`seller-service`**         | Node.js Test Runner / `tsx` | Marketplace storefront profiles, multi-staff permissions, operational settings, metrics snapshots, and Fastify endpoints (`tests/seller-service.test.ts`)                                                                                                                                                        |
+| **`commission-service`**     | Node.js Test Runner / `tsx` | Tiered rate evaluation, Decimal.js financial precision, rule versioning, order fee calculation, quote snapshots, and event emission (`tests/commission-service.test.ts`)                                                                                                                                         |
+| **`payout-service`**         | Node.js Test Runner / `tsx` | Append-only balanced double-entry ledger invariant tests (`SUM(debit) == SUM(credit)`), settlement batches, provider reconciliation, and seller balance queries (`tests/payout-service.test.ts`)                                                                                                                 |
 | **`analytic-service`**       | Go Test Tool (`go test`)    | Config validation (production secret fail-closed), constant-time gateway auth, RS256/expiry token verification, lock-free atomic KPI store, bounded-channel micro-batching, and REST handlers (`cmd/...`, `internal/...`)                                                                                        |
 | **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle/origin checks, RS256/expiry token verification, forged-token rejection, recovery (`internal/*`)                                                                                                                                               |
 | **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                  |
@@ -62,11 +64,13 @@ pnpm --filter return-service test
 pnpm --filter pricing-service test
 pnpm --filter vendor-service test
 pnpm --filter seller-service test
+pnpm --filter commission-service test
+pnpm --filter payout-service test
 pnpm --filter analytic-service test
 pnpm --filter notification-service test
 pnpm --filter recommendation-service test
 
-# 3. Static type-check across all 39 workspaces
+# 3. Static type-check across all workspaces
 pnpm check-types
 
 # 4. Monorepo code style and formatting checks

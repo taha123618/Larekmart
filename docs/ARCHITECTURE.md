@@ -122,7 +122,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 **`analytic-service` (Go 1.22 / Chi, :8004)** — high-throughput metrics and event analytics.
 
 - Routes: `/analytics/public`, `/analytics/summary`, `/analytics/merchants`, `/analytics/operations`, `/analytics/commerce`, `/analytics/daily-chart`, `/analytics/events`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
-- Consumes 60+ platform Kafka event streams across all 23 microservices via `segmentio/kafka-go` with dedicated reader goroutines.
+- Consumes 70+ platform Kafka event streams across all 25 microservices via `segmentio/kafka-go` with dedicated reader goroutines.
 - Decoupled Go Pipeline: Ingestion pushes messages into a 10,000-capacity buffered channel, preventing Kafka consumer heartbeat starvation (`session.timeout.ms`) and consumer group rebalances during flash-sale traffic spikes.
 - Binary COPY Batching (`pgx.CopyFrom`): Worker pool micro-batches events (1,000 events / 500ms window) directly into monthly partitioned PostgreSQL tables (`analytics_events` `PARTITION BY RANGE (created_at)`) with Block Range Indexes (BRIN), bypassing query parser/tokenization overhead and reducing DB transactions by >99.8%.
 - Lock-Free Atomic State: In-memory atomic counters (`sync/atomic` with CAS bit casting for float64 revenue and tax) deliver sub-millisecond responses for `/analytics/summary` and `/analytics/merchants`.
@@ -267,6 +267,22 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Marketplace Multi-Tenancy: Bridges verified legal vendors with one or more customer-facing storefronts, enforcing role-based permissions (owner, manager, staff) and Super Admin delegation of `manage_sellers` authority.
 - Events: Publishes `seller.created`, `seller.updated`, `seller.suspended`, `seller.reactivated`, `seller.staff_added`, `seller.staff_removed`, `seller.metrics_updated`. Consumes `vendor.verified`, `vendor.suspended`, `order.created`, `order.delivered`, `review.created`.
 
+**`commission-service` (Fastify 5, :8022)** — marketplace commission plans, rule versioning, percentage/fixed fee calculation, min/max limits, and order settlement quotes.
+
+- Routes: `POST /api/v1/internal/commissions/quote`, `GET /api/v1/internal/commissions/orders/:orderId`, `GET /api/v1/admin/commissions/plans`, `POST /api/v1/admin/commissions/plans`, `PATCH /api/v1/admin/commissions/rules/:ruleId`, `GET /api/v1/admin/commissions/reports`, `/health`, `/ready`, `/metrics`.
+- Persistence: PostgreSQL via Drizzle ORM targeting `larekmart_commission_db` (`commission_plans`, `commission_rules`, `commission_rule_versions`, `commission_calculations`, `commission_line_items`, `commission_adjustments`).
+- Caching: Redis (`commission:v1:*` namespace) through `@repo/redis` for active plans, rule lookups, and rate limiting.
+- Calculations: Precision arithmetic using Decimal.js to eliminate floating-point drift on multi-line order quotes and percentage tier valuations.
+- Events: Publishes `commission.calculated`, `commission.accrued`, `commission.adjusted`, `commission.reversed`. Consumes `order.created`, `order.cancelled`, `payment.successful`, `return.inspected`, `seller.created`.
+
+**`payout-service` (NestJS 11 on Fastify, :8023)** — seller payouts, balanced double-entry ledger, settlement batches, reserve holds, bank integrations, and reconciliation.
+
+- Routes: `GET /api/v1/sellers/me/payouts`, `GET /api/v1/sellers/me/balance`, `GET /api/v1/sellers/me/statements`, `POST /api/v1/internal/payouts/schedule`, `POST /api/v1/internal/payouts/reconcile`, `GET /api/v1/admin/payouts`, `POST /api/v1/admin/payouts/:payoutId/retry`, `/health`, `/ready`, `/metrics`.
+- Persistence: PostgreSQL via Drizzle ORM targeting `larekmart_payout_db` (`payout_accounts`, `payouts`, `payout_batches`, `settlements`, `ledger_accounts`, `ledger_entries`, `payout_adjustments`, `payout_provider_events`).
+- Caching: Redis (`payout:v1:*` namespace) through `@repo/redis` for seller balances, statement cache, and distributed idempotency locks.
+- Accounting Invariant: Balanced append-only double-entry ledger (`SUM(debit) == SUM(credit)` per transaction) guaranteeing immutable financial audit trails and zero phantom balance drift.
+- Events: Publishes `payout.scheduled`, `payout.processing`, `payout.completed`, `payout.failed`, `payout.reconciled`. Consumes `commission.accrued`, `order.delivered`, `payment.successful`, `return.refunded`, `seller.suspended`, `seller.activated`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                                                                    |
@@ -286,6 +302,8 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | pricing-service                  | Drizzle (`pg`)                | `price_lists`, `product_prices`, `variant_prices`, `price_rules`, `price_history`, `price_quotes`, `currency_rates`                                                               |
 | PostgreSQL | vendor-service                   | `@repo/vendor-db` (Prisma)    | `vendors`, `vendor_business_profiles`, `vendor_documents`, `vendor_verifications`, `vendor_members`, `vendor_status_history`                                                      |
 | PostgreSQL | seller-service                   | Drizzle (`pg`)                | `sellers`, `seller_stores`, `seller_staff`, `seller_settings`, `seller_policies`, `seller_status_history`, `seller_performance_snapshots`, `system_settings`, `admin_delegations` |
+| PostgreSQL | commission-service               | Drizzle (`pg`)                | `commission_plans`, `commission_rules`, `commission_rule_versions`, `commission_calculations`, `commission_line_items`, `commission_adjustments`                                  |
+| PostgreSQL | payout-service                   | Drizzle (`pg`)                | `payout_accounts`, `payouts`, `payout_batches`, `settlements`, `ledger_accounts`, `ledger_entries`, `payout_adjustments`, `payout_provider_events`                                |
 | MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`                                            |
 | MySQL      | return-service                   | Drizzle (`mysql2`)            | `returns`, `return_items`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_outbox`                                |
 | S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                                                            |
@@ -306,6 +324,8 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | pricing-service                  | `@repo/redis` (ioredis)       | `pricing:v1:*` (exchange rate cache, active quote cache, rate-limiting)                                                                                                           |
 | Redis      | vendor-service                   | `@repo/redis` (ioredis)       | `vendor:v1:*` (vendor profile cache, verification status cache, rate limits)                                                                                                      |
 | Redis      | seller-service                   | `@repo/redis` (ioredis)       | `seller:v1:*` (storefront profile cache, staff permission cache, rate limits), `marketplace:system_settings` (governance cache)                                                   |
+| Redis      | commission-service               | `@repo/redis` (ioredis)       | `commission:v1:*` (rule version cache, active plan cache, rate limits)                                                                                                            |
+| Redis      | payout-service                   | `@repo/redis` (ioredis)       | `payout:v1:*` (seller balance cache, idempotency lock, statement cache, rate limits)                                                                                              |
 | OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                                                             |
 | MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                                                           |
 | MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                                                          |

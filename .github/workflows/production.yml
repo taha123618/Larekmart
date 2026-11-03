@@ -61,6 +61,8 @@ jobs:
       PRICING_DATABASE_URL: ${{ secrets.PROD_PRICING_DATABASE_URL }}
       VENDOR_DATABASE_URL: ${{ secrets.PROD_VENDOR_DATABASE_URL }}
       SELLER_DATABASE_URL: ${{ secrets.PROD_SELLER_DATABASE_URL }}
+      COMMISSION_DATABASE_URL: ${{ secrets.PROD_COMMISSION_DATABASE_URL }}
+      PAYOUT_DATABASE_URL: ${{ secrets.PROD_PAYOUT_DATABASE_URL }}
 
     steps:
       - name: Checkout Code
@@ -134,6 +136,14 @@ jobs:
         if: env.SELLER_DATABASE_URL != ''
         run: pnpm --filter seller-service db:deploy
 
+      - name: Execute Migrations - Stage 3 (Commission Service)
+        if: env.COMMISSION_DATABASE_URL != ''
+        run: pnpm --filter commission-service db:deploy
+
+      - name: Execute Migrations - Stage 3 (Payout Service)
+        if: env.PAYOUT_DATABASE_URL != ''
+        run: pnpm --filter payout-service db:deploy
+
       - name: Execute Migrations - Stage 3 (Review Service)
         if: env.REVIEW_DATABASE_URL != ''
         run: pnpm --filter review-service db:deploy
@@ -205,12 +215,14 @@ jobs:
               larekmart/pricing-service=ghcr.io/${{ github.repository_owner }}/larekmart/pricing-service:${SHA_SHORT} \
               larekmart/vendor-service=ghcr.io/${{ github.repository_owner }}/larekmart/vendor-service:${SHA_SHORT} \
               larekmart/seller-service=ghcr.io/${{ github.repository_owner }}/larekmart/seller-service:${SHA_SHORT} \
+              larekmart/commission-service=ghcr.io/${{ github.repository_owner }}/larekmart/commission-service:${SHA_SHORT} \
+              larekmart/payout-service=ghcr.io/${{ github.repository_owner }}/larekmart/payout-service:${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:${SHA_SHORT}
 
             echo "Applying Production manifests to namespace larekmart..."
             kubectl apply -k .
 
-            echo "Tracking zero-downtime rolling updates across all 25 workloads..."
+            echo "Tracking zero-downtime rolling updates across all 27 workloads..."
             DEPLOYMENTS=(
               client
               admin
@@ -236,6 +248,8 @@ jobs:
               pricing-service
               vendor-service
               seller-service
+              commission-service
+              payout-service
               email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do

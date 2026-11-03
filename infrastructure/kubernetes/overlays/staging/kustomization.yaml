@@ -72,5 +72,9 @@ images:
     newTag: staging
   - name: larekmart/seller-service
     newTag: staging
+  - name: larekmart/commission-service
+    newTag: staging
+  - name: larekmart/payout-service
+    newTag: staging
   - name: larekmart/email-service
     newTag: staging
