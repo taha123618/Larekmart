@@ -33,6 +33,10 @@ export const RATE_LIMIT_POLICIES: Record<string, RateLimitPolicy> = {
     limit: 60,
     windowSeconds: 60,
   },
+  ONBOARDING: {
+    limit: 10,
+    windowSeconds: 60,
+  },
   DEFAULT: {
     limit: 100,
     windowSeconds: 60,
@@ -59,6 +63,13 @@ export function getRateLimitForRoute(prefix: string): RateLimitPolicy {
   }
   if (prefix.includes("/admin")) {
     return RATE_LIMIT_POLICIES.ADMIN!;
+  }
+  if (
+    prefix.includes("/sellers") ||
+    prefix.includes("/vendors") ||
+    prefix.includes("/onboarding")
+  ) {
+    return RATE_LIMIT_POLICIES.ONBOARDING!;
   }
   if (prefix.includes("/catalog") || prefix.includes("/products")) {
     return RATE_LIMIT_POLICIES.PUBLIC_READ!;
