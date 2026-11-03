@@ -1,13 +1,35 @@
-name: Security Scanning
+name: Security Review
+
+permissions:
+  pull-requests: write # Needed for leaving PR comments
+  contents: read
+  security-events: write
 
 on:
+  pull_request:
   schedule:
     - cron: "0 3 * * 1" # Weekly — Monday 03:00 UTC
   workflow_dispatch:
 
 jobs:
+  security:
+    name: Claude Code Security Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+
+      - uses: anthropics/claude-code-security-review@main
+        with:
+          comment-pr: true
+          claude-api-key: ${{ secrets.CLAUDE_API_KEY }}
+
   dependency-audit:
     name: Dependency Audit (pnpm)
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,6 +45,7 @@ jobs:
 
   snyk-scan:
     name: Snyk Code & Dependency Scan
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -39,6 +62,7 @@ jobs:
 
   trivy-fs-scan:
     name: Trivy Filesystem Scan
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -59,6 +83,7 @@ jobs:
 
   docker-scout-scan:
     name: Docker Scout Image Security & Hardening Audit
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
