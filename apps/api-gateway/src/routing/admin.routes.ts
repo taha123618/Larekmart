@@ -179,4 +179,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/disputes",
     requireAdmin: true,
   },
+
+  // 14. Commission Service Admin Management
+  {
+    prefix: "/api/v1/admin/commissions",
+    target: services.commission.url,
+    serviceName: services.commission.name,
+    timeoutMs: services.commission.timeoutMs,
+    rewritePrefix: "/api/v1/admin/commissions",
+    requireAdmin: true,
+  },
 ];

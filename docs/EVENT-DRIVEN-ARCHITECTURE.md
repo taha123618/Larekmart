@@ -171,6 +171,10 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `seller.updated`                                 | seller-service             | notification-service, analytic-service                                                                        | `SellerUpdatedEvent` (`sellerId`, `updatedFields`, `updatedAt`)                                                                                                                                                                                                                     |
 | `seller.suspended`                               | seller-service             | notification-service, email-service, analytic-service                                                         | `SellerSuspendedEvent` (`sellerId`, `vendorId`, `reason`, `suspendedAt`)                                                                                                                                                                                                            |
 | `seller.storefront.updated`                      | seller-service             | notification-service, analytic-service                                                                        | `SellerStorefrontUpdatedEvent` (`sellerId`, `storeId`, `storeName`, `slug`, `vacationMode`, `status`, `updatedAt`)                                                                                                                                                                  |
+| `commission.calculated`                          | commission-service         | pricing-service, order-service, analytic-service                                                               | `CommissionCalculatedEvent` (`orderId`, `calculationId`, `totalCommission`, `currency`, `timestamp`)                                                                                                                                                                                |
+| `commission.accrued`                             | commission-service         | payout-service, analytic-service, notification-service                                                         | `CommissionAccruedEvent` (`orderId`, `calculationId`, `totalCommission`, `currency`, `itemsCount`, `timestamp`)                                                                                                                                                                     |
+| `commission.adjusted`                            | commission-service         | payout-service, analytic-service                                                                              | `CommissionAdjustedEvent` (`orderId`, `returnId`, `originalCalculationId`, `adjustedCommission`, `refundAmount`, `timestamp`)                                                                                                                                                       |
+| `commission.reversed`                            | commission-service         | payout-service, analytic-service                                                                              | `CommissionReversedEvent` (`orderId`, `calculationId`, `reason`, `timestamp`)                                                                                                                                                                                                        |
 
 ### `product.created`
 
@@ -998,6 +1002,84 @@ Emitted when a seller modifies store branding, tagline, or toggles vacation mode
 
 - **Producer:** `apps/seller-service/src/routes/seller.routes.ts`
 - **Consumers:** `notification-service`, `analytic-service`.
+
+#### `commission.calculated`
+
+Emitted when marketplace commission is calculated for an order or quote preview.
+
+```jsonc
+{
+  "value": {
+    "orderId": "ord_019a2b3c4d5e",
+    "calculationId": "calc_019a2b3c4d5e",
+    "totalCommission": 125.5,
+    "currency": "PKR",
+    "itemsCount": 2,
+    "timestamp": "2026-11-04T02:00:00.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/commission-service/src/services/commission.service.ts`
+- **Consumers:** `pricing-service`, `order-service`, `analytic-service`.
+
+#### `commission.accrued`
+
+Emitted when an order payment is successfully captured, formally establishing platform commission obligations for seller payout settlement.
+
+```jsonc
+{
+  "value": {
+    "orderId": "ord_019a2b3c4d5e",
+    "calculationId": "calc_019a2b3c4d5e",
+    "totalCommission": 125.5,
+    "currency": "PKR",
+    "itemsCount": 2,
+    "timestamp": "2026-11-04T02:00:00.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/commission-service/src/services/commission.service.ts`
+- **Consumers:** `payout-service`, `analytic-service`, `notification-service`.
+
+#### `commission.adjusted`
+
+Emitted when customer returns or partial refunds require adjusting previous commission accruals.
+
+```jsonc
+{
+  "value": {
+    "orderId": "ord_019a2b3c4d5e",
+    "returnId": "ret_019a2b3c4d5e",
+    "originalCalculationId": "calc_019a2b3c4d5e",
+    "adjustedCommission": -62.75,
+    "refundAmount": 1000.0,
+    "timestamp": "2026-11-04T02:05:00.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/commission-service/src/services/commission.service.ts`
+- **Consumers:** `payout-service`, `analytic-service`.
+
+#### `commission.reversed`
+
+Emitted when full order cancellation, chargeback, or fraud investigation forces a 100% reversal of commission claims.
+
+```jsonc
+{
+  "value": {
+    "orderId": "ord_019a2b3c4d5e",
+    "calculationId": "calc_019a2b3c4d5e",
+    "reason": "order_cancelled",
+    "timestamp": "2026-11-04T02:06:00.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/commission-service/src/services/commission.service.ts`
+- **Consumers:** `payout-service`, `analytic-service`.
 
 ## Dead-Letter Queue (DLQ) & Poison-Pill Isolation
 

@@ -117,6 +117,11 @@ export const services = {
     url: env.SELLER_SERVICE_URL,
     timeoutMs: 10000,
   },
+  commission: {
+    name: "commission-service",
+    url: env.COMMISSION_SERVICE_URL,
+    timeoutMs: 10000,
+  },
 } as const satisfies Record<string, ServiceTarget>;
 
 export const downstreamServices = services;

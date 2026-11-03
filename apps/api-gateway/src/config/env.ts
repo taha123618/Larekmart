@@ -65,6 +65,7 @@ const envSchema = z
     PRICING_SERVICE_URL: z.string().default("http://localhost:8019"),
     VENDOR_SERVICE_URL: z.string().default("http://localhost:8020"),
     SELLER_SERVICE_URL: z.string().default("http://localhost:8021"),
+    COMMISSION_SERVICE_URL: z.string().default("http://localhost:8022"),
   })
   .superRefine((data, ctx) => {
     try {
