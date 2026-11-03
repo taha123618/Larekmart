@@ -14,6 +14,11 @@ import {
   fetchSystemSettings,
 } from "@/services/seller.service";
 import { fetchCurrentUser } from "@/services/user.service";
+import {
+  fetchMarketplaceTrustMetrics,
+  trackCustomerInteraction,
+  type MarketplaceTrustMetrics,
+} from "@/services/analytics.service";
 import type { OrganizationType, UserDetailResponse } from "@repo/types";
 import {
   Store,
@@ -51,6 +56,19 @@ export default function BecomeASellerPage() {
     null,
   );
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [trustMetrics, setTrustMetrics] =
+    useState<MarketplaceTrustMetrics | null>(null);
+
+  useEffect(() => {
+    fetchMarketplaceTrustMetrics()
+      .then(setTrustMetrics)
+      .catch(() => null);
+
+    trackCustomerInteraction({
+      eventType: "VIEW",
+      metadata: { page: "become-a-seller" },
+    });
+  }, []);
 
   useEffect(() => {
     fetchSystemSettings()
@@ -267,27 +285,35 @@ export default function BecomeASellerPage() {
           {/* Quick Metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto mt-12 text-left">
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-              <div className="text-2xl font-black text-indigo-400">0%</div>
+              <div className="text-2xl font-black text-indigo-400">
+                {trustMetrics ? `${trustMetrics.activeSellersCount}+` : "50+"}
+              </div>
               <div className="text-xs text-neutral-300 mt-0.5">
-                Listing fees to start
+                Active Storefronts
               </div>
             </div>
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-              <div className="text-2xl font-black text-purple-400">2M+</div>
+              <div className="text-2xl font-black text-purple-400">
+                {trustMetrics ? `${trustMetrics.verifiedVendorsCount}+` : "45+"}
+              </div>
               <div className="text-xs text-neutral-300 mt-0.5">
-                Active shoppers
+                Verified KYB Merchants
               </div>
             </div>
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-              <div className="text-2xl font-black text-pink-400">Daily</div>
+              <div className="text-2xl font-black text-pink-400">
+                {trustMetrics
+                  ? `${trustMetrics.deliverySuccessRate}%`
+                  : "99.8%"}
+              </div>
               <div className="text-xs text-neutral-300 mt-0.5">
-                Automated payouts
+                Delivery Success Rate
               </div>
             </div>
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-              <div className="text-2xl font-black text-emerald-400">24/7</div>
+              <div className="text-2xl font-black text-emerald-400">0%</div>
               <div className="text-xs text-neutral-300 mt-0.5">
-                Seller protection
+                Listing Fees to Start
               </div>
             </div>
           </div>

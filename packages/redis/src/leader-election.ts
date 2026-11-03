@@ -40,9 +40,19 @@ export interface LeaderElectionOptions {
    */
   retryDelayMs?: number;
   /**
+   * Optional custom fencing token key in Redis (default: `${lockKey}:fencing_token`).
+   */
+  fencingTokenKey?: string;
+  /**
+   * Maximum allowed clock drift or event-loop stall in milliseconds before the leader
+   * considers its lease invalid and self-fences to prevent split-brain execution.
+   * Defaults to Math.floor(leaseTtlMs * 0.6) (e.g. 6,000ms for 10s lease).
+   */
+  maxClockDriftMs?: number;
+  /**
    * Optional callback invoked immediately when this replica is elected cluster leader.
    */
-  onPromoted?: () => void | Promise<void>;
+  onPromoted?: (fencingToken?: number) => void | Promise<void>;
   /**
    * Optional callback invoked immediately when this replica loses leadership or steps down.
    */
@@ -56,6 +66,33 @@ export interface LeaderElectionOptions {
 export interface LeaderInfo {
   isLeader: boolean;
   leaderId: string | null;
+  fencingToken: number;
+  isLeadershipValid: boolean;
+  lastHeartbeatAgeMs: number;
+}
+
+/**
+ * Thrown when a leader attempts to execute or verify operations after its heartbeat
+ * has drifted or its lease has been invalidated, protecting backend state from split-brain writes.
+ */
+export class LeaderFencingError extends Error {
+  public readonly candidateId: string;
+  public readonly lastHeartbeatAgeMs: number;
+  public readonly maxAllowedDriftMs: number;
+
+  constructor(
+    message: string,
+    candidateId: string,
+    lastHeartbeatAgeMs: number,
+    maxAllowedDriftMs: number,
+  ) {
+    super(message);
+    this.name = "LeaderFencingError";
+    this.candidateId = candidateId;
+    this.lastHeartbeatAgeMs = lastHeartbeatAgeMs;
+    this.maxAllowedDriftMs = maxAllowedDriftMs;
+    Object.setPrototypeOf(this, LeaderFencingError.prototype);
+  }
 }
 
 /**
@@ -76,14 +113,19 @@ export class DistributedLeaderElector extends EventEmitter {
   readonly leaseTtlMs: number;
   readonly heartbeatIntervalMs: number;
   readonly retryDelayMs: number;
+  readonly fencingTokenKey: string;
+  readonly maxClockDriftMs: number;
 
-  private onPromotedCallback?: () => void | Promise<void>;
+  private onPromotedCallback?: (fencingToken?: number) => void | Promise<void>;
   private onDemotedCallback?: () => void | Promise<void>;
   private onErrorCallback?: (error: Error) => void;
 
   private _isLeader = false;
+  private _fencingToken = 0;
+  private _lastHeartbeatSuccess = 0;
   private _running = false;
   private timer: NodeJS.Timeout | null = null;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
   private inFlightTick = false;
 
   constructor(options: LeaderElectionOptions) {
@@ -108,6 +150,10 @@ export class DistributedLeaderElector extends EventEmitter {
       options.heartbeatIntervalMs ??
       Math.max(1000, Math.floor(this.leaseTtlMs / 3));
     this.retryDelayMs = options.retryDelayMs ?? 2_000;
+    this.fencingTokenKey =
+      options.fencingTokenKey ?? `${this.lockKey}:fencing_token`;
+    this.maxClockDriftMs =
+      options.maxClockDriftMs ?? Math.floor(this.leaseTtlMs * 0.6);
 
     this.onPromotedCallback = options.onPromoted;
     this.onDemotedCallback = options.onDemoted;
@@ -119,6 +165,63 @@ export class DistributedLeaderElector extends EventEmitter {
    */
   get isCurrentLeader(): boolean {
     return this._isLeader;
+  }
+
+  /**
+   * Monotonically increasing fencing counter assigned upon election.
+   * Prevents stale leaders from executing writes after losing their lease.
+   */
+  get fencingToken(): number {
+    return this._fencingToken;
+  }
+
+  /**
+   * Elapsed time in milliseconds since the last confirmed successful Redis heartbeat renewal.
+   */
+  get lastHeartbeatAgeMs(): number {
+    return this._lastHeartbeatSuccess > 0
+      ? Date.now() - this._lastHeartbeatSuccess
+      : Infinity;
+  }
+
+  /**
+   * Verifies that this node is leader AND that its heartbeat has not drifted
+   * beyond the maxClockDriftMs safety margin.
+   */
+  get isLeadershipValid(): boolean {
+    if (!this._isLeader || this._fencingToken <= 0) {
+      return false;
+    }
+    return this.lastHeartbeatAgeMs <= this.maxClockDriftMs;
+  }
+
+  /**
+   * Defensive assertion: guarantees this node is valid leader and within heartbeat drift bounds.
+   * Returns the current monotonically increasing fencing token.
+   * Throws LeaderFencingError if lease has expired or drifted.
+   */
+  assertLeadershipValid(): number {
+    if (!this._isLeader || this._fencingToken <= 0) {
+      throw new LeaderFencingError(
+        `Node ${this.candidateId} is not the active cluster leader`,
+        this.candidateId,
+        this.lastHeartbeatAgeMs,
+        this.maxClockDriftMs,
+      );
+    }
+    const age = this.lastHeartbeatAgeMs;
+    if (age > this.maxClockDriftMs) {
+      void this.handleDemotion(
+        `Heartbeat drift exceeded safety margin (${age}ms > ${this.maxClockDriftMs}ms)`,
+      );
+      throw new LeaderFencingError(
+        `Heartbeat drift exceeded safety margin (${age}ms > ${this.maxClockDriftMs}ms). Self-fenced to prevent split-brain.`,
+        this.candidateId,
+        age,
+        this.maxClockDriftMs,
+      );
+    }
+    return this._fencingToken;
   }
 
   /**
@@ -146,6 +249,7 @@ export class DistributedLeaderElector extends EventEmitter {
    */
   async stop(): Promise<void> {
     this._running = false;
+    this.stopHeartbeatLoop();
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
@@ -165,6 +269,7 @@ export class DistributedLeaderElector extends EventEmitter {
       return;
     }
 
+    this.stopHeartbeatLoop();
     try {
       await this.releaseLease();
     } catch (err) {
@@ -184,6 +289,7 @@ export class DistributedLeaderElector extends EventEmitter {
         await this.handleDemotion("Manual renewal failed");
         return false;
       }
+      this._lastHeartbeatSuccess = Date.now();
       return true;
     }
 
@@ -222,13 +328,17 @@ export class DistributedLeaderElector extends EventEmitter {
   }
 
   /**
-   * Returns complete leader information (whether this node is leader and the active leader ID).
+   * Returns complete leader information (including fencing token and heartbeat drift safety).
    */
   async getLeaderInfo(): Promise<LeaderInfo> {
     const leaderId = await this.getCurrentLeaderId();
+    const isLeader = this._isLeader && leaderId === this.candidateId;
     return {
-      isLeader: this._isLeader && leaderId === this.candidateId,
+      isLeader,
       leaderId,
+      fencingToken: isLeader ? this._fencingToken : 0,
+      isLeadershipValid: isLeader && this.isLeadershipValid,
+      lastHeartbeatAgeMs: this.lastHeartbeatAgeMs,
     };
   }
 
@@ -245,15 +355,12 @@ export class DistributedLeaderElector extends EventEmitter {
 
     try {
       if (this._isLeader) {
-        // LEADER MODE: Send heartbeat to renew existing lease
-        const renewed = await this.renewLease();
-        if (renewed) {
-          nextDelay = this.heartbeatIntervalMs;
-        } else {
-          // Lease lost or expired in Redis
-          await this.handleDemotion("Lease renewal rejected or expired");
-          // Add jitter to follower retry delay
+        // LEADER MODE: Check for event-loop stall / heartbeat drift
+        if (!this.isLeadershipValid) {
+          await this.handleDemotion("Heartbeat drift exceeded safety margin");
           nextDelay = this.calculateFollowerDelay();
+        } else {
+          nextDelay = this.heartbeatIntervalMs;
         }
       } else {
         // FOLLOWER / STANDBY MODE: Attempt to acquire leadership
@@ -348,16 +455,81 @@ export class DistributedLeaderElector extends EventEmitter {
     return false;
   }
 
+  /**
+   * Atomically increments the cluster-wide fencing counter in Redis upon winning leadership.
+   */
+  private async incrementFencingToken(): Promise<number> {
+    try {
+      if (this.client && typeof this.client.incr === "function") {
+        return await this.client.incr(this.fencingTokenKey);
+      }
+      if (this.redlockClients && this.redlockClients.length > 0) {
+        const primary = this.redlockClients[0]!;
+        if (typeof primary.incr === "function") {
+          return await primary.incr(this.fencingTokenKey);
+        }
+      }
+    } catch (err) {
+      this.handleError(err instanceof Error ? err : new Error(String(err)));
+    }
+    return Date.now();
+  }
+
+  /**
+   * Starts a decoupled, high-priority asynchronous background heartbeat loop.
+   * Runs independently of any application processing or sweeper loops.
+   */
+  private startHeartbeatLoop(): void {
+    this.stopHeartbeatLoop();
+    this.heartbeatTimer = setInterval(async () => {
+      if (!this._running || !this._isLeader) {
+        this.stopHeartbeatLoop();
+        return;
+      }
+      try {
+        const renewed = await this.renewLease();
+        if (renewed) {
+          this._lastHeartbeatSuccess = Date.now();
+        } else {
+          this.stopHeartbeatLoop();
+          await this.handleDemotion("Lease renewal rejected by Redis cluster");
+        }
+      } catch (err) {
+        this.handleError(err instanceof Error ? err : new Error(String(err)));
+        this.stopHeartbeatLoop();
+        await this.handleDemotion("Lease renewal network failure");
+      }
+    }, this.heartbeatIntervalMs);
+
+    if (typeof this.heartbeatTimer.unref === "function") {
+      this.heartbeatTimer.unref();
+    }
+  }
+
+  private stopHeartbeatLoop(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
   private async handlePromotion(): Promise<void> {
     if (this._isLeader) {
       return;
     }
     this._isLeader = true;
-    this.emit("promoted", this.candidateId);
+    this._lastHeartbeatSuccess = Date.now();
+    try {
+      this._fencingToken = await this.incrementFencingToken();
+    } catch {
+      this._fencingToken = Date.now();
+    }
+    this.startHeartbeatLoop();
+    this.emit("promoted", this.candidateId, this._fencingToken);
 
     if (this.onPromotedCallback) {
       try {
-        await this.onPromotedCallback();
+        await this.onPromotedCallback(this._fencingToken);
       } catch (err) {
         this.handleError(err instanceof Error ? err : new Error(String(err)));
       }
@@ -368,8 +540,15 @@ export class DistributedLeaderElector extends EventEmitter {
     if (!this._isLeader) {
       return;
     }
+    this.stopHeartbeatLoop();
+    const lastToken = this._fencingToken;
     this._isLeader = false;
-    this.emit("demoted", { candidateId: this.candidateId, reason });
+    this._fencingToken = 0;
+    this.emit("demoted", {
+      candidateId: this.candidateId,
+      reason,
+      lastFencingToken: lastToken,
+    });
 
     if (this.onDemotedCallback) {
       try {

@@ -1,6 +1,8 @@
 import Koa from "koa";
 import bodyParser from "koa-bodyparser";
 import cors from "@koa/cors";
+import { GATEWAY_HEADERS } from "@repo/types";
+import { prisma } from "@repo/shipping-db";
 import { healthRouter } from "./routes/health.routes.js";
 import { shippingRouter } from "./routes/shipping.routes.js";
 import { shipmentRouter } from "./routes/shipment.routes.js";
@@ -51,6 +53,26 @@ export function createServer(): Koa {
     ctx.set("X-XSS-Protection", "1; mode=block");
     ctx.set("Referrer-Policy", "strict-origin-when-cross-origin");
     await next();
+  });
+
+  // 3.5. WAL LSN emission: successful mutations are stamped with the PostgreSQL
+  // WAL high-water mark so the API Gateway can cache a per-session LSN for
+  // Read-Your-Writes replica lag detection downstream. WAL is monotonic, so the
+  // position read here (after the handler committed) always covers the mutation.
+  const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+  app.use(async (ctx, next) => {
+    await next();
+    if (!MUTATION_METHODS.has(ctx.method)) return;
+    if (ctx.status < 200 || ctx.status >= 300) return;
+    try {
+      const rows = await prisma.$queryRaw<
+        Array<{ lsn: string | null }>
+      >`SELECT pg_current_wal_lsn()::text AS lsn`;
+      const lsn = rows[0]?.lsn;
+      if (lsn) ctx.set(GATEWAY_HEADERS.DB_LSN, lsn);
+    } catch {
+      // Graceful degradation: the 500ms time-based RYW lease still applies
+    }
   });
 
   // 4. CORS and Body Parsing

@@ -32,7 +32,6 @@ import {
 } from "../src/utils/order.js";
 import { sweepPendingOutboxEvents } from "../src/outbox/outbox-relay.js";
 
-
 import { redis } from "../src/utils/redis.js";
 
 const MONGO_URI =
@@ -84,7 +83,9 @@ async function runChaosSagaResilienceTests() {
 
   try {
     // ── Scenario 1: Transient MySQL Tax Service Cut / Calculation Failure ─────
-    console.log("1. Testing MySQL Tax Service Network Cut (handleTaxFailed rollback)...");
+    console.log(
+      "1. Testing MySQL Tax Service Network Cut (handleTaxFailed rollback)...",
+    );
     const taxCutSession = `cs_chaos_tax_${Date.now()}`;
     const taxCutReservation = `res_chaos_tax_${Date.now()}`;
 
@@ -95,7 +96,11 @@ async function runChaosSagaResilienceTests() {
       reservationId: taxCutReservation,
     });
 
-    assert.equal(order1.status, "pending_confirmation", "Order must initialize in pending_confirmation");
+    assert.equal(
+      order1.status,
+      "pending_confirmation",
+      "Order must initialize in pending_confirmation",
+    );
 
     // Simulate MySQL network cut: Tax calculation fails after timeout
     capturedDispatches.length = 0;
@@ -106,7 +111,6 @@ async function runChaosSagaResilienceTests() {
       error: "MYSQL_CONN_TIMEOUT_INJECTED",
       failedAt: new Date().toISOString(),
     });
-
 
     const compensatedOrder = await Order.findById(order1._id);
     assert.equal(
@@ -137,10 +141,14 @@ async function runChaosSagaResilienceTests() {
       "Compensation must dispatch payment.refund.requested to return customer payment",
     );
 
-    console.log("  ✓ MySQL tax service failure cleanly rolled back with zero orphan state");
+    console.log(
+      "  ✓ MySQL tax service failure cleanly rolled back with zero orphan state",
+    );
 
     // ── Scenario 2: Kafka Broker Failure During Compensation Dispatch ──────────
-    console.log("\n2. Testing Kafka Broker Pod Kill during compensation publishing...");
+    console.log(
+      "\n2. Testing Kafka Broker Pod Kill during compensation publishing...",
+    );
     const brokerDropSession = `cs_chaos_broker_${Date.now()}`;
     const chaosOutboxTopic = "chaos.inventory.release";
 
@@ -149,21 +157,37 @@ async function runChaosSagaResilienceTests() {
       throw new Error("Kafka broker disconnected (Synthetic Chaos Injected)");
     }) as any;
 
-    const outboxEvent = await createOutboxEvent(
-      chaosOutboxTopic,
-      { reservationId: "res_chaos_broker_01", reason: "SAGA_COMPENSATION" },
-    );
+    const outboxEvent = await createOutboxEvent(chaosOutboxTopic, {
+      reservationId: "res_chaos_broker_01",
+      reason: "SAGA_COMPENSATION",
+    });
 
     // Sweeper attempts to process outbox during broker drop
     const workerId = `chaos-worker-${Date.now()}`;
     const publishedDuringDrop = await sweepPendingOutboxEvents(10, workerId);
-    assert.equal(publishedDuringDrop, 0, "No event should be published while broker is down");
+    assert.equal(
+      publishedDuringDrop,
+      0,
+      "No event should be published while broker is down",
+    );
 
     const failedRecord = await OutboxEvent.findById(outboxEvent._id);
-    assert.equal(failedRecord?.status, "PENDING", "Failed event remains in PENDING for retry");
-    assert.ok(failedRecord?.lastError?.includes("Synthetic Chaos"), "lastError records failure");
-    assert.ok(failedRecord!.lockedUntil && failedRecord!.lockedUntil > new Date(), "Backoff scheduled");
-    console.log("  ✓ Outbox event durably held in DB; zero message loss during broker drop");
+    assert.equal(
+      failedRecord?.status,
+      "PENDING",
+      "Failed event remains in PENDING for retry",
+    );
+    assert.ok(
+      failedRecord?.lastError?.includes("Synthetic Chaos"),
+      "lastError records failure",
+    );
+    assert.ok(
+      failedRecord!.lockedUntil && failedRecord!.lockedUntil > new Date(),
+      "Backoff scheduled",
+    );
+    console.log(
+      "  ✓ Outbox event durably held in DB; zero message loss during broker drop",
+    );
 
     // Restore Kafka broker connection
     producer.send = (async (topic: string, message: any) => {
@@ -171,15 +195,26 @@ async function runChaosSagaResilienceTests() {
     }) as any;
 
     // Reset lockedUntil to simulate backoff elapsing
-    await OutboxEvent.updateOne({ _id: outboxEvent._id }, { $set: { lockedUntil: new Date(Date.now() - 1000) } });
+    await OutboxEvent.updateOne(
+      { _id: outboxEvent._id },
+      { $set: { lockedUntil: new Date(Date.now() - 1000) } },
+    );
     const publishedAfterRecovery = await sweepPendingOutboxEvents(10, workerId);
-    assert.equal(publishedAfterRecovery, 1, "Event must be cleanly published upon broker recovery");
+    assert.equal(
+      publishedAfterRecovery,
+      1,
+      "Event must be cleanly published upon broker recovery",
+    );
 
     const publishedRecord = await OutboxEvent.findById(outboxEvent._id);
     assert.equal(publishedRecord?.status, "PUBLISHED");
-    assert.ok(publishedRecord?.publishedAt !== null, "publishedAt timestamp recorded");
-    console.log("  ✓ Broker recovery resulted in successful delayed compensation delivery");
-
+    assert.ok(
+      publishedRecord?.publishedAt !== null,
+      "publishedAt timestamp recorded",
+    );
+    console.log(
+      "  ✓ Broker recovery resulted in successful delayed compensation delivery",
+    );
 
     // ── Scenario 3: Dual-ACK Confirmation Timeout Sweeper Under Latency ─────────
     console.log("\n3. Testing Dual-ACK confirmation timeout sweeper...");
@@ -200,8 +235,14 @@ async function runChaosSagaResilienceTests() {
     );
 
     capturedDispatches.length = 0;
-    const sweptCount = await processPendingConfirmationTimeouts(60_000, `sweeper-${Date.now()}`);
-    assert.ok(sweptCount >= 1, "Timeout sweeper must detect stuck pending_confirmation orders");
+    const sweptCount = await processPendingConfirmationTimeouts(
+      60_000,
+      `sweeper-${Date.now()}`,
+    );
+    assert.ok(
+      sweptCount >= 1,
+      "Timeout sweeper must detect stuck pending_confirmation orders",
+    );
 
     const cleanedOrder = await Order.findById(timedOutOrder._id);
     assert.equal(
@@ -220,21 +261,44 @@ async function runChaosSagaResilienceTests() {
       "Sweeper must emit payment.refund.requested for timed-out saga",
     );
 
-    console.log("  ✓ Orphan pending_confirmation order detected and rolled back cleanly");
+    console.log(
+      "  ✓ Orphan pending_confirmation order detected and rolled back cleanly",
+    );
 
     // ── Scenario 4: Sweeper Cluster Lock Isolation Under Replicas ──────────────
-    console.log("\n4. Testing Sweeper Cluster Lock Isolation across Pod Alpha and Pod Beta...");
+    console.log(
+      "\n4. Testing Sweeper Cluster Lock Isolation across Pod Alpha and Pod Beta...",
+    );
     const leaderKey = "order:saga:timeout:sweeper:leader";
-    const lockAcquired = await redis.client.set(leaderKey, "pod-alpha-holding-lock", "PX", 10_000, "NX");
-    assert.equal(lockAcquired, "OK", "Pod Alpha successfully acquired sweeper cluster lease");
+    const lockAcquired = await redis.client.set(
+      leaderKey,
+      "pod-alpha-holding-lock",
+      "PX",
+      10_000,
+      "NX",
+    );
+    assert.equal(
+      lockAcquired,
+      "OK",
+      "Pod Alpha successfully acquired sweeper cluster lease",
+    );
 
     // Pod Beta attempts to sweep while Pod Alpha holds the lock
-    const betaProcessed = await processPendingConfirmationTimeouts(60_000, "pod-beta-follower");
-    assert.equal(betaProcessed, 0, "Pod Beta must skip sweep execution while Alpha holds cluster lock");
+    const betaProcessed = await processPendingConfirmationTimeouts(
+      60_000,
+      "pod-beta-follower",
+    );
+    assert.equal(
+      betaProcessed,
+      0,
+      "Pod Beta must skip sweep execution while Alpha holds cluster lock",
+    );
 
     // Release Pod Alpha's lease
     await redis.client.del(leaderKey);
-    console.log("  ✓ Competing pod rejected by cluster lease; zero duplicate sweep execution");
+    console.log(
+      "  ✓ Competing pod rejected by cluster lease; zero duplicate sweep execution",
+    );
 
     // Cleanup test data
     await Order.deleteMany({

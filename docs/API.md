@@ -10,7 +10,7 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 | `order-service`          | `8001` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Order Management & Analytics                                              |
 | `payment-service`        | `8002` | Hono 4                 | `shouldBeUser` / Webhook Signature | Stripe Checkout & Webhooks                                                |
 | `auth-service`           | `8003` | Express 5              | `shouldBeAdmin`                    | Admin User Management Proxy                                               |
-| `analytic-service`       | `8004` | Express 5              | `shouldBeAdmin`                    | Analytics & KPI Aggregations                                              |
+| `analytic-service`       | `8004` | Go 1.22 / Chi          | `shouldBeAdmin` / Internal Secret  | Analytics & KPI Aggregations                                              |
 | `notification-service`   | `8005` | Go / Chi               | User token / public probes         | Notifications, WebSockets & delivery                                      |
 | `search-service`         | `8006` | Fastify 5              | Public search / `shouldBeAdmin`    | Product search, indexing & autocomplete                                   |
 | `inventory-service`      | `8007` | Hono 4                 | `shouldBeUser` / `shouldBeAdmin`   | Stock, reservations & warehouse inventory                                 |
@@ -46,15 +46,25 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ### `POST /products`
 
-- **Auth**: Admin (`shouldBeAdmin`)
+- **Auth**: Seller or Admin (`shouldBeSellerOrAdmin`)
 - **Body**: `ProductFormSchema`
-- **Side Effect**: Emits `product.created` Kafka event
+- **Side Effect**: Emits `product.created` Kafka event, assigns creator `sellerId: req.userId`, and emits `x-db-lsn` response header
+- **Response**: `ProductType`
 
 ### `PUT /products/:id`
 
-- **Auth**: Admin (`shouldBeAdmin`)
+- **Auth**: Seller Owner or Admin (`shouldBeSellerOrAdmin`)
 - **Body**: Partial `ProductFormSchema`
+- **Ownership**: Strictly verifies `product.sellerId === req.userId` for sellers; non-owners receive `403 Forbidden`
+- **Side Effect**: Emits `x-db-lsn` response header
 - **Response**: Updated `ProductType`
+
+### `DELETE /products/:id`
+
+- **Auth**: Seller Owner or Admin (`shouldBeSellerOrAdmin`)
+- **Ownership**: Strictly verifies `product.sellerId === req.userId` for sellers; non-owners receive `403 Forbidden`
+- **Side Effect**: Emits `product.deleted` Kafka event and `x-db-lsn` response header
+- **Response**: `{ message: "Product deleted" }`
 
 ### `POST /products/backfill-search`
 
@@ -209,32 +219,57 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ## 5. Analytic Service (`:8004`)
 
+### `GET /analytics/public`
+
+- **Auth**: Public (Unauthenticated / Public Storefront)
+- **Response**: `PublicTrustMetricsType` (`activeSellersCount`, `verifiedKybVendorsCount`, `listedProductsCount`, `deliveredShipmentsCount`, `deliverySuccessRate`)
+
 ### `GET /analytics/summary`
 
-- **Auth**: Admin (`shouldBeAdmin`)
-- **Response**: `AnalyticsSummaryType` (gross revenue, order counts, signups, products created/deleted)
+- **Auth**: Admin (`shouldBeAdmin` / `X-Internal-Secret`)
+- **Response**: `AnalyticsSummaryType` (gross revenue, processed orders, signups, products created/deleted, shipments delivered, delivery success rate, returns completed, discounts applied)
+
+### `GET /analytics/merchants`
+
+- **Auth**: Admin (`shouldBeAdmin` / `X-Internal-Secret`)
+- **Response**: `AnalyticsMerchantsType` (total merchants, active merchants, pending verifications, total merchant revenue)
+
+### `GET /analytics/operations`
+
+- **Auth**: Admin (`shouldBeAdmin` / `X-Internal-Secret`)
+- **Response**: `OperationsAnalyticsMetricsType` (dispatched shipments, delivered shipments, delivery success rate, return requests, returns completed, active disputes, dispute resolution rate, average fulfillment hours)
+
+### `GET /analytics/commerce`
+
+- **Auth**: Admin (`shouldBeAdmin` / `X-Internal-Secret`)
+- **Response**: `CommerceAnalyticsMetricsType` (total tax collected, promotional discounts applied, coupon redemptions count, vendor escrows locked/released, vendor payouts processed, AOV in paisa)
 
 ### `GET /analytics/daily-chart`
 
-- **Auth**: Admin (`shouldBeAdmin`)
+- **Auth**: Admin (`shouldBeAdmin` / `X-Internal-Secret`)
 - **Query Params**: `days` (number, default: 30)
-- **Response**: `AnalyticsDailyChartType[]`
+- **Response**: `AnalyticsDailyChartType[]` (Redis cached 60s)
 
 ### `GET /analytics/events`
 
-- **Auth**: Admin (`shouldBeAdmin`)
+- **Auth**: Admin (`shouldBeAdmin` / `X-Internal-Secret`)
 - **Query Params**: `limit` (number, default: 20)
-- **Response**: `AnalyticsEventType[]`
+- **Response**: `AnalyticsEventType[]` (Redis cached 15s)
 
 ### `GET /health`
 
 - **Auth**: Public
-- **Response**: Multi-dependency health report (Memory + PostgreSQL pool query)
+- **Response**: Multi-dependency health report (Service uptime, PostgreSQL pool status, Redis status)
+
+### `GET /health/live` & `GET /health/ready`
+
+- **Auth**: Public
+- **Response**: Kubernetes liveness and readiness probe status
 
 ### `GET /metrics`
 
 - **Auth**: Public / Scraper
-- **Response**: Prometheus text exposition format
+- **Response**: Prometheus text exposition format (counters, latencies, queue depths, batch metrics)
 
 ---
 

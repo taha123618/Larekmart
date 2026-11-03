@@ -8,5 +8,6 @@ resources:
   - order-mongo-partition.yaml
   - kafka-broker-kill.yaml
   - inventory-pg-loss.yaml
+  - catalog-replica-replication-lag.yaml
   - flash-sale-chaos-workflow.yaml
-
+  - flash-sale-mixed-traffic.yaml

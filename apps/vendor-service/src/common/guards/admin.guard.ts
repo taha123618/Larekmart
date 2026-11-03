@@ -42,13 +42,15 @@ export class AdminGuard implements CanActivate {
 
     const role = request.headers["x-user-role"] as string | undefined;
     const isSuper = request.headers["x-user-is-super-admin"] === "true";
+    const userId = request.headers["x-user-id"] as string | undefined;
 
-    if (
-      role === "admin" ||
-      role === "super_admin" ||
-      isSuper ||
-      (isInternal && !role)
-    ) {
+    // A pure machine-to-machine call carries no user identity. A proxied user
+    // request must prove an admin role; the gateway transport secret alone is
+    // never an admin privilege escalation.
+    if (role === "admin" || role === "super_admin" || isSuper) {
+      return true;
+    }
+    if (isInternal && !role && !userId) {
       return true;
     }
 

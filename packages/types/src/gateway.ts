@@ -14,6 +14,15 @@ export const GATEWAY_HEADERS = {
   GUEST_TOKEN: "x-guest-token",
   FORWARDED_FOR: "x-forwarded-for",
   IDEMPOTENCY_KEY: "idempotency-key",
+  FORCE_PRIMARY: "x-force-primary",
+  READ_YOUR_WRITES: "x-read-your-writes",
+  CLIENT_SESSION_ID: "x-session-id",
+  /**
+   * PostgreSQL WAL LSN high-water mark echoed by write services on successful
+   * mutations. The API Gateway caches it per client session for LSN-aware
+   * Read-Your-Writes replica lag detection. Must never be trusted from client input.
+   */
+  DB_LSN: "x-db-lsn",
 } as const;
 
 export type GatewayHeaderKey =
@@ -29,9 +38,33 @@ export const INSECURE_INTERNAL_SECRET_PLACEHOLDERS = [
   "dev-internal-secret-change-in-production",
   "dev_gateway_secret_change_in_production",
   "internal_secret_key_abc",
+  "change_me_production_internal_service_secret",
   "secret",
   "change-me",
 ] as const;
+
+/**
+ * Placeholder Clerk secret keys that must never authenticate production traffic.
+ * A deployment that forgets to configure CLERK_SECRET_KEY must fail closed instead
+ * of accepting a well-known value (which would also make hand-rolled HS256 JWT
+ * verification forgeable).
+ */
+export const INSECURE_CLERK_SECRET_PLACEHOLDERS = [
+  "sk_test_placeholder",
+  "sk_test_placeholder_key",
+  "sk_test_mock_clerk_secret_key",
+  "sk_test_123456789012345678901234567890",
+  "sk_test_fake_secret_key_for_testing_12345",
+] as const;
+
+export function isInsecureClerkSecretKey(secret?: string | null): boolean {
+  if (!secret || secret.trim().length === 0) return true;
+  const value = secret.trim();
+  return (
+    INSECURE_CLERK_SECRET_PLACEHOLDERS.includes(value as any) ||
+    /placeholder|change[_-]?me|for_testing|mock_clerk|fake_secret/i.test(value)
+  );
+}
 
 /**
  * Validates that an internal service secret satisfies production fail-closed security invariants:
@@ -50,6 +83,9 @@ export function validateInternalServiceSecret(
     if (
       !secret ||
       INSECURE_INTERNAL_SECRET_PLACEHOLDERS.includes(secret as any) ||
+      /placeholder|change[_-]?me|replace[_-]?me|__required|example|dummy/i.test(
+        secret,
+      ) ||
       secret.trim().length < 16
     ) {
       throw new Error(
@@ -57,6 +93,51 @@ export function validateInternalServiceSecret(
       );
     }
   }
+}
+
+/**
+ * Validates the Clerk secret key in production. A known placeholder is treated
+ * exactly like a missing key: startup fails instead of silently accepting
+ * attacker-forgeable credentials.
+ */
+export function validateClerkSecretKey(
+  secret?: string | null,
+  nodeEnv: string = process.env.NODE_ENV || "development",
+  serviceName: string = "service",
+): void {
+  if (nodeEnv !== "production") return;
+
+  if (
+    !secret ||
+    isInsecureClerkSecretKey(secret) ||
+    !secret.startsWith("sk_")
+  ) {
+    throw new Error(
+      `[${serviceName}] FATAL: In production, CLERK_SECRET_KEY must be configured with a real Clerk secret key. Placeholder, mock, or missing values are rejected.`,
+    );
+  }
+}
+
+/**
+ * Default browser origins permitted by first-party services in local
+ * development. Production deployments must set CORS_ORIGIN/ALLOWED_ORIGINS.
+ */
+export const DEFAULT_CORS_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:3002",
+  "http://localhost:3003",
+] as const;
+
+/**
+ * Resolves a comma-separated origin allowlist, falling back to local frontend
+ * origins. Never returns "*" — credentialed CORS must use an explicit allowlist.
+ */
+export function resolveCorsOrigins(raw?: string | null): string[] {
+  const parsed = (raw ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0 && origin !== "*");
+  return parsed.length > 0 ? parsed : [...DEFAULT_CORS_ORIGINS];
 }
 
 /**

@@ -22,7 +22,7 @@
     "@aws-sdk/client-s3": "^3.750.0",
     "@aws-sdk/s3-request-presigner": "^3.750.0",
     "@hono/clerk-auth": "^3.0.3",
-    "@hono/node-server": "^1.19.0",
+    "@hono/node-server": "^2.1.5",
     "@repo/kafka": "workspace:*",
     "@repo/monitoring": "workspace:*",
     "@repo/redis": "workspace:*",
@@ -31,7 +31,7 @@
     "hono": "^4.9.6",
     "pg": "^8.16.0",
     "sharp": "^0.35.5",
-    "zod": "^4.1.9"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

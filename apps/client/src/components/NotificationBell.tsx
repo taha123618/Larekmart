@@ -7,7 +7,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type { NotificationType } from "@repo/types";
 import { useWebSocket, type WebSocketMessage } from "@/hooks/useWebSocket";
-import { getApiGatewayUrl, getNotificationWsUrl } from "@/services/gateway.service";
+import {
+  getApiGatewayUrl,
+  getNotificationWsUrl,
+} from "@/services/gateway.service";
 
 interface NotificationResponse {
   notifications: NotificationType[];

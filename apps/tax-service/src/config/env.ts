@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   DEFAULT_INTERNAL_SECRET,
+  validateClerkSecretKey,
   validateInternalServiceSecret,
 } from "@repo/types";
 
@@ -54,6 +55,20 @@ const envSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["INTERNAL_SERVICE_SECRET"],
+        message: err.message,
+      });
+    }
+
+    try {
+      validateClerkSecretKey(
+        data.CLERK_SECRET_KEY,
+        data.NODE_ENV,
+        "tax-service",
+      );
+    } catch (err: any) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["CLERK_SECRET_KEY"],
         message: err.message,
       });
     }

@@ -1,10 +1,27 @@
 import type { FastifyError, FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
+import { GATEWAY_HEADERS } from "@repo/types";
+import { getSessionLSN, isReadYourWritesActive } from "@repo/redis";
 import { logger } from "../observability/metrics.js";
+import { redis } from "../utils/redis.js";
+import {
+  databaseContext,
+  isReplicaLagging,
+  replicaWal,
+} from "../utils/database-context.js";
+
+declare module "fastify" {
+  interface FastifyRequest {
+    forcePrimary?: boolean;
+  }
+}
 
 export async function configureFastifyPlugins(
   fastify: FastifyInstance,
 ): Promise<void> {
+  // Decorate Fastify request with default forcePrimary flag
+  fastify.decorateRequest("forcePrimary", false);
+
   // CORS with allowed origins
   const allowedOrigins = [
     process.env.CLIENT_URL || "http://localhost:3002",
@@ -19,14 +36,87 @@ export async function configureFastifyPlugins(
       return cb(null, false);
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      GATEWAY_HEADERS.FORCE_PRIMARY,
+      GATEWAY_HEADERS.READ_YOUR_WRITES,
+      GATEWAY_HEADERS.USER_ID,
+      GATEWAY_HEADERS.CLIENT_SESSION_ID,
+      GATEWAY_HEADERS.GUEST_TOKEN,
+      "x-force-primary",
+      "x-read-your-writes",
+      "x-user-id",
+      "x-session-id",
+      "x-guest-token",
+    ],
   });
 
-  // Defensive HTTP Security Headers
+  // Read-Your-Writes consistency hook: inspect gateway header, active Redis
+  // time-lease, and the session's cached WAL LSN high-water mark.
+  fastify.addHook("onRequest", async (request) => {
+    const forcePrimaryHeader =
+      request.headers[GATEWAY_HEADERS.FORCE_PRIMARY] === "true" ||
+      request.headers["x-force-primary"] === "true";
+
+    let forcePrimary = forcePrimaryHeader;
+
+    const rywClientId =
+      (request.headers[GATEWAY_HEADERS.USER_ID] as string) ||
+      (request.headers[GATEWAY_HEADERS.CLIENT_SESSION_ID] as string) ||
+      (request.headers[GATEWAY_HEADERS.GUEST_TOKEN] as string) ||
+      (request.headers["x-user-id"] as string) ||
+      (request.headers["x-session-id"] as string) ||
+      (request.headers["x-guest-token"] as string) ||
+      request.ip;
+
+    if (!forcePrimary && rywClientId) {
+      try {
+        forcePrimary = await isReadYourWritesActive(redis.client, rywClientId);
+      } catch {
+        // Graceful non-blocking degradation
+      }
+
+      // LSN-aware replica lag guard: the 500ms time lease can expire while a
+      // heavily loaded replica is still behind the write service's WAL position
+      // (11.11 batch writes, vendor catalog sync). If the session recorded a
+      // mutation LSN, only serve from the replica once it has replayed past
+      // that point; otherwise force the primary connection.
+      if (!forcePrimary) {
+        try {
+          const sessionLsn = await getSessionLSN(redis.client, rywClientId);
+          if (sessionLsn) {
+            const replicaLsn = await replicaWal.getLsn();
+            if (isReplicaLagging(sessionLsn, replicaLsn)) {
+              forcePrimary = true;
+            }
+          }
+        } catch {
+          // Graceful non-blocking degradation: fall back to time-lease routing
+        }
+      }
+    }
+
+    request.forcePrimary = forcePrimary;
+  });
+
+  // Pre-handler hook to establish ambient database context for synchronous and async execution
+  fastify.addHook("preHandler", (request, _reply, done) => {
+    databaseContext.enterWith({
+      forcePrimary: Boolean(request.forcePrimary),
+    });
+    done();
+  });
+
+  // Defensive HTTP Security Headers and consistency plane telemetry
   fastify.addHook("onSend", async (request, reply) => {
     reply.header("X-Content-Type-Options", "nosniff");
     reply.header("X-Frame-Options", "DENY");
     reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+
+    if (request.forcePrimary) {
+      reply.header("X-Consistency-Plane", "primary-master");
+    }
   });
 
   // Global Error Handler

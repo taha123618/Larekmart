@@ -15,9 +15,11 @@ Prisma client and schema for the product catalog (PostgreSQL). It is consumed at
 ## Schema and generation
 
 - The source of truth is `packages/product-db/prisma/schema.prisma`.
+- Key models: `Product` (contains `sellerId String?` indexed with `@@index([sellerId])` for multi-vendor isolation and ownership enforcement) and `Category`.
 - Regenerate the client with `pnpm --filter @repo/product-db db:generate`.
 - Migrations: `pnpm --filter @repo/product-db db:migrate` (dev) and
   `pnpm --filter @repo/product-db db:deploy` (production).
+  Latest migration: `20261103190000_add_seller_id_to_product`.
 
 ## Immutable rule
 

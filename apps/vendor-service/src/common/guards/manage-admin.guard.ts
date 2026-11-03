@@ -24,12 +24,17 @@ export class ManageAdminGuard implements CanActivate {
     }
 
     const role = request.headers["x-user-role"] as string | undefined;
+    const userId = request.headers["x-user-id"] as string | undefined;
     const isSuper =
       role === "super_admin" ||
       request.headers["x-user-is-super-admin"] === "true";
     const canManage = request.headers["x-user-can-manage-sellers"] === "true";
 
-    if (isSuper || canManage || (isInternal && !role)) {
+    if (isSuper || canManage) {
+      return true;
+    }
+    // Pure machine-to-machine only; a proxied user request must carry a role.
+    if (isInternal && !role && !userId) {
       return true;
     }
 

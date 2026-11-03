@@ -75,9 +75,10 @@ All service Dockerfiles use Turbo Prune multi-stage builds:
 3. `deps` — installs production-only workspace dependencies
 4. `runner` — minimal production image with `tsx` + `src/` source (ESM monorepo)
 
-### ⚠️ Non-Root Security
+### ⚠️ Non-Root Security & Port Isolation (SEC-04)
 
 All containers use UID 1000 (nodejs / appuser). Never run as root.
+In `docker-compose.yml`, infrastructure ports exposed to the host system bind strictly to the loopback interface (`127.0.0.1:5432:5432`, `127.0.0.1:6379:6379`, `127.0.0.1:27017:27017`) rather than `0.0.0.0` to eliminate unauthorized local network access to development databases.
 
 ### Container-Internal Service Discovery
 
@@ -107,6 +108,14 @@ env_file:
 // packages/kafka/src/client.ts already reads process.env.KAFKA_BROKERS
 // Set this env var to "kafka:9092" inside any Docker service/container
 ```
+
+### Dynamic Runtime Configuration for Next.js Frontends
+
+Next.js frontends (`client` and `admin`) eliminate compile-time baking of gateway URLs:
+
+- `client`: `CLIENT_API_GATEWAY_URL` and `CLIENT_WS_URL`
+- `admin`: `ADMIN_API_GATEWAY_URL` and `ADMIN_WS_URL`
+  These environment variables are read at runtime by the `/api/config` route handler and hydrated into client state via `<RuntimeConfigProvider>`, enabling the same built container images to run across development, staging, and production environments.
 
 ### Docker Hardened Images (DHI) & Docker Scout Workflow
 
@@ -382,7 +391,38 @@ docker exec larekmart-mongo mongorestore --uri="mongodb://root:example@localhost
 
 ---
 
-## 13. Troubleshooting
+## 13. Chaos Engineering & Mixed-Traffic Drills
+
+Chaos assets live in `infrastructure/chaos/` and are rendered with Kustomize:
+
+```bash
+kubectl kustomize infrastructure/chaos/            # render/validate only
+kubectl apply -k infrastructure/chaos/             # apply to a non-prod cluster
+kubectl get workflows.chaos-mesh.org -n larekmart  # watch a drill
+```
+
+Key scenarios:
+
+| Manifest                               | What it injects                                                                    |
+| -------------------------------------- | ---------------------------------------------------------------------------------- |
+| `flash-sale-mixed-traffic.yaml`        | **Parallel** order-plane latency + catalog replica replication lag during checkout |
+| `catalog-replica-replication-lag.yaml` | Read-plane lag only, to exercise LSN-aware primary fallback                        |
+| `checkout-saga-failure.yaml`           | Checkout Saga rollback across order/payment/inventory                              |
+
+`flash-sale-mixed-traffic.yaml` is a serial `Workflow`: a `Parallel` branch degrades
+`order-service ↔ mongo` and `catalog-service → postgres-replica` at the same time, then a
+60s `Suspend` observes recovery. Expected invariants:
+
+- Checkout fast-sheds with HTTP `503` + `Retry-After: 15` once the bulkhead/adaptive limit
+  clamps — it must not create duplicate or partially-paid orders.
+- Storefront reads fail over to the primary through the `x-db-lsn` guard; no stale-product
+  regressions after the lease expires.
+- Kafka consumers recover without DLQ spikes once latency clears.
+
+Always validate with `kubectl kustomize` before applying, and never run destructive chaos
+against production without an explicit window and rollback plan.
+
+## 14. Troubleshooting
 
 ### Container not starting
 

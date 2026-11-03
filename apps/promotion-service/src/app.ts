@@ -8,6 +8,7 @@ import {
   createHttpMonitor,
   createMemoryCheck,
 } from "@repo/monitoring";
+import { GATEWAY_HEADERS } from "@repo/types";
 import { pool } from "./db/connection.js";
 import { redis } from "./utils/redis.js";
 import { promotionRoutes } from "./routes/promotion.routes.js";
@@ -82,6 +83,26 @@ app.use("*", async (c, next) => {
   c.res.headers.set("X-Content-Type-Options", "nosniff");
   c.res.headers.set("X-Frame-Options", "DENY");
   c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+});
+
+// 2.5. WAL LSN emission: successful mutations are stamped with the PostgreSQL
+// WAL high-water mark so the API Gateway can cache a per-session LSN for
+// Read-Your-Writes replica lag detection downstream. WAL is monotonic, so the
+// position read here (after the handler committed) always covers the mutation.
+const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+app.use("*", async (c, next) => {
+  await next();
+  if (!MUTATION_METHODS.has(c.req.method)) return;
+  if (c.res.status < 200 || c.res.status >= 300) return;
+  try {
+    const { rows } = await pool.query<{ lsn: string | null }>(
+      "SELECT pg_current_wal_lsn()::text AS lsn",
+    );
+    const lsn = rows[0]?.lsn;
+    if (lsn) c.res.headers.set(GATEWAY_HEADERS.DB_LSN, lsn);
+  } catch {
+    // Graceful degradation: the 500ms time-based RYW lease still applies
+  }
 });
 
 // 3. Clerk Auth Middleware

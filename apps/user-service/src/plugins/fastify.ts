@@ -1,10 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import { clerkPlugin, getAuth } from "@clerk/fastify";
+import { GATEWAY_HEADERS } from "@repo/types";
+import { prisma } from "@repo/user-db";
 import { globalErrorHandler } from "../middleware/error-handler.js";
 import { logger, metrics, userMetrics } from "../observability/metrics.js";
 import { createHttpMonitor } from "@repo/monitoring";
 import { config } from "../config/env.js";
+
+const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export async function configureFastifyPlugins(
   fastify: FastifyInstance,
@@ -25,12 +29,34 @@ export async function configureFastifyPlugins(
     credentials: true,
   });
 
-  // 2. Defensive HTTP Security Headers
-  fastify.addHook("onSend", async (_request, reply) => {
+  // 2. Defensive HTTP Security Headers + WAL LSN emission
+  fastify.addHook("onSend", async (request, reply, payload) => {
     reply.header("X-Content-Type-Options", "nosniff");
     reply.header("X-Frame-Options", "DENY");
     reply.header("X-XSS-Protection", "1; mode=block");
     reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+
+    // Stamp successful mutations with the PostgreSQL WAL high-water mark so the
+    // API Gateway can cache a per-session LSN for Read-Your-Writes replica lag
+    // detection downstream. WAL is monotonic, so reading it here (after the
+    // handler committed) always covers the mutation that was executed.
+    if (
+      MUTATION_METHODS.has(request.method) &&
+      reply.statusCode >= 200 &&
+      reply.statusCode < 300
+    ) {
+      try {
+        const rows = await prisma.$queryRaw<
+          Array<{ lsn: string | null }>
+        >`SELECT pg_current_wal_lsn()::text AS lsn`;
+        const lsn = rows[0]?.lsn;
+        if (lsn) reply.header(GATEWAY_HEADERS.DB_LSN, lsn);
+      } catch {
+        // Graceful degradation: the 500ms time-based RYW lease still applies
+      }
+    }
+
+    return payload;
   });
 
   // 3. Clerk Authentication plugin

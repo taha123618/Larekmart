@@ -41,13 +41,28 @@ export function getUserRole(request: FastifyRequest): string | null {
   return null;
 }
 
+/**
+ * True only for a pure machine-to-machine call: a valid gateway secret with no
+ * user identity attached. A proxied user request (x-user-id present) must never
+ * inherit admin privileges merely because the gateway also signed it.
+ */
+export function isMachineToMachine(request: FastifyRequest): boolean {
+  return (
+    isInternalService(request) &&
+    !request.headers["x-user-id"] &&
+    !request.headers["x-user-role"] &&
+    !request.headers["x-user-is-super-admin"] &&
+    !request.headers["x-user-can-manage-sellers"]
+  );
+}
+
 export function isSuperAdmin(request: FastifyRequest): boolean {
   if (!isTrustedContext(request)) return false;
   const role = getUserRole(request);
   const isSuper = request.headers["x-user-is-super-admin"] === "true";
-  return (
-    role === "super_admin" || isSuper || (isInternalService(request) && !role)
-  );
+  // The internal transport secret is not a user role and never grants
+  // super-admin/seller-staff authority on its own.
+  return role === "super_admin" || isSuper;
 }
 
 export function isSeller(request: FastifyRequest): boolean {
@@ -164,7 +179,7 @@ export async function requireSellerStaffOrAdmin(
   if (
     role === "admin" ||
     role === "super_admin" ||
-    (isInternalService(request) && !role)
+    isMachineToMachine(request)
   ) {
     return;
   }

@@ -10,7 +10,11 @@ Prisma schema and client for the PostgreSQL catalog database used by `product-se
 ## Schema (`prisma/schema.prisma`)
 
 - `Category`: `id`, `name`, `slug`, `image`, relation to `Product[]`.
-- `Product`: `id`, `name`, `description`, `category` (relation), `price`, `colors` (`String[]`), `sizes` (`String[]`), `images` (`Json` color-to-image mapping), `createdAt`, `updatedAt`.
+- `Product`: `id`, `name`, `description`, `category` (relation), `price`, `colors` (`String[]`), `sizes` (`String[]`), `images` (`Json` color-to-image mapping), `sellerId` (`String?`, indexed via `@@index([sellerId])` for merchant catalog queries and ownership verification), `createdAt`, `updatedAt`.
+
+## Migrations
+
+- `20261103190000_add_seller_id_to_product`: Adds `sellerId TEXT` column and `Product_sellerId_idx` index on `Product(sellerId)`.
 
 ## Database Commands
 

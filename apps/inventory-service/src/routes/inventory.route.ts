@@ -2,6 +2,7 @@ import {
   InventoryItemStatus,
   InventoryMovementType,
   adjustInventory,
+  prisma,
   confirmInventoryReservation,
   createInventoryItem,
   expireInventoryReservation,
@@ -16,6 +17,7 @@ import {
   restockInventory,
 } from "@repo/inventory-db";
 import {
+  GATEWAY_HEADERS,
   InventoryAdjustmentSchema,
   InventoryItemsQuerySchema,
   InventoryListQuerySchema,
@@ -43,6 +45,34 @@ import { producer } from "../utils/kafka.js";
 import { redisStockGatekeeper } from "../gatekeeper/redis-stock-gatekeeper.js";
 
 const inventoryRoute = new Hono<{ Variables: AuthVariables }>();
+
+const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+/**
+ * Reads the primary PostgreSQL WAL high-water mark. Emitted on successful
+ * mutations as `x-db-lsn`, which the API Gateway caches per client session so
+ * LSN-aware readers can detect a lagging read-replica and fail over to primary.
+ */
+async function currentWalLsn(): Promise<string | null> {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ lsn: string | null }>>`
+      SELECT pg_current_wal_lsn()::text AS lsn
+    `;
+    return rows[0]?.lsn ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Attach the WAL LSN high-water mark to every successful mutation response.
+inventoryRoute.use("*", async (c, next) => {
+  await next();
+  if (!MUTATION_METHODS.has(c.req.method)) return;
+  const status = c.res.status;
+  if (status < 200 || status >= 300) return;
+  const lsn = await currentWalLsn();
+  if (lsn) c.res.headers.set(GATEWAY_HEADERS.DB_LSN, lsn);
+});
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Inventory operation failed";
@@ -442,7 +472,10 @@ inventoryRoute.post("/reservations", shouldBeUser, async (c) => {
         userId: c.get("userId"),
       });
       // Finalize Redis claim upon successful DB commit
-      await redisStockGatekeeper.finalizeClaim(parsed.data.referenceId, itemKey);
+      await redisStockGatekeeper.finalizeClaim(
+        parsed.data.referenceId,
+        itemKey,
+      );
     } catch (dbError) {
       // Rollback claimed Redis stock counter immediately
       await redisStockGatekeeper.rollbackClaim({

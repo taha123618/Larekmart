@@ -34,10 +34,10 @@ apps/auth-service ────┬─▶ @repo/kafka
 apps/email-service ───┬─▶ @repo/kafka
                       └─▶ @repo/types
 
-apps/analytic-service ┬─▶ @repo/kafka
-                      ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
-                      ├─▶ @repo/types
-                      └─▶ pg
+apps/analytic-service (Go) ┬─▶ Kafka (segmentio/kafka-go)
+                           ├─▶ PostgreSQL (jackc/pgx/v5 - pgxpool)
+                           ├─▶ Redis (redis/go-redis/v9)
+                           └─▶ Prometheus (prometheus/client_golang)
 
 apps/notification-service (Go) ┬─▶ Kafka (segmentio/kafka-go)
                                ├─▶ PostgreSQL (pgxpool)
@@ -140,7 +140,7 @@ all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 | `@repo/types`             | contract     | `@repo/product-db`, `@repo/order-db`, `zod`                         | API/domain types, Zod schemas, constants                                                                                                                                                                                                                                                                                                                                                                |
 | `@repo/product-db`        | persistence  | `@prisma/client`                                                    | `prisma` client + generated Prisma types                                                                                                                                                                                                                                                                                                                                                                |
 | `@repo/inventory-db`      | persistence  | `@prisma/client`                                                    | `prisma` client, inventory/reservation/ledger models, and transactional stock operations                                                                                                                                                                                                                                                                                                                |
-| `@repo/order-db`          | persistence  | `mongoose`                                                          | `Order` (hashed sharding on `{ userId: "hashed" }` + scatter-gather mitigation indexes), `OutboxEvent` (transactional outbox with 7-day TTL), `createOutboxEvent`, `OrderStatus`, `OrderSchemaType`, `connectOrderDB` |
+| `@repo/order-db`          | persistence  | `mongoose`                                                          | `Order` (hashed sharding on `{ userId: "hashed" }` + scatter-gather mitigation indexes), `OutboxEvent` (transactional outbox with 7-day TTL), `createOutboxEvent`, `OrderStatus`, `OrderSchemaType`, `connectOrderDB`                                                                                                                                                                                   |
 | `@repo/cart-db`           | persistence  | `mongoose`                                                          | `Cart`, `ProcessedEvent`, `ICart`, `ICartItem`, `ICartCoupon`, `ICartAdjustment`, `ICartPricing`, `ICartPricingSnapshot`, `CartStatus`, `connectCartDB`                                                                                                                                                                                                                                                 |
 | `@repo/catalog-db`        | persistence  | `@prisma/client`                                                    | Prisma catalog schema with dual client exports (`readPrisma` for read-replicas & `prisma` for primary writes) for catalog read projections                                                                                                                                                                                                                                                              |
 | `@repo/shipping-db`       | persistence  | `@prisma/client`                                                    | Prisma shipping schema, shipments, methods, carrier tracking events and packages                                                                                                                                                                                                                                                                                                                        |

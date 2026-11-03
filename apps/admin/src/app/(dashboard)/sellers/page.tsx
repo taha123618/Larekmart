@@ -11,6 +11,7 @@ import {
   fetchSystemSettings,
   type AdminSellerListItem,
 } from "@/services/seller.service";
+import { fetchMerchantAnalytics } from "@/services/analytics.service";
 import type { SellerStatus } from "@repo/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ import {
   TrendingUp,
   Clock,
   Users,
+  Activity,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -109,6 +111,15 @@ export default function SellersAdminPage() {
     queryFn: () => fetchSystemSettings().catch(() => null),
   });
 
+  // 4. Query real-time merchant analytics from Go analytic-service (:8004)
+  const { data: merchantAnalytics, refetch: refetchAnalytics } = useQuery({
+    queryKey: ["admin-merchant-analytics"],
+    queryFn: async () => {
+      const token = await getToken();
+      return fetchMerchantAnalytics(token || undefined);
+    },
+  });
+
   const isSellerEnabled = systemSettings?.isSellerEnabled ?? true;
   const isSellerRegistrationOpen =
     systemSettings?.isSellerRegistrationOpen ?? true;
@@ -160,15 +171,18 @@ export default function SellersAdminPage() {
     );
   });
 
-  // Counts
-  const totalSellers = allSellers.length;
-  const activeCount = allSellers.filter((s) => s.status === "ACTIVE").length;
+  // Counts backed by real-time Go analytic-service (:8004)
+  const totalSellers =
+    merchantAnalytics?.totalSellersCreated ?? allSellers.length;
+  const activeCount =
+    merchantAnalytics?.totalSellersActive ??
+    allSellers.filter((s) => s.status === "ACTIVE").length;
   const onboardingCount = allSellers.filter(
     (s) => s.status === "ONBOARDING",
   ).length;
-  const suspendedCount = allSellers.filter(
-    (s) => s.status === "SUSPENDED",
-  ).length;
+  const suspendedCount =
+    merchantAnalytics?.totalSellersSuspended ??
+    allSellers.filter((s) => s.status === "SUSPENDED").length;
 
   const getSellerStatusBadge = (status: SellerStatus | string) => {
     switch (status) {
@@ -242,7 +256,14 @@ export default function SellersAdminPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetchSellers()}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchSellers();
+              refetchAnalytics();
+            }}
+          >
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
@@ -335,8 +356,9 @@ export default function SellersAdminPage() {
             <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               {totalSellers}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
-              Merchant storefront accounts
+            <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
+              <Activity className="h-3 w-3 text-emerald-500 inline" />
+              Live Analytics Sync
             </p>
           </CardContent>
         </Card>

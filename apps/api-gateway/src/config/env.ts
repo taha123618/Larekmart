@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   DEFAULT_INTERNAL_SECRET,
+  validateClerkSecretKey,
   validateInternalServiceSecret,
 } from "@repo/types";
 
@@ -13,6 +14,11 @@ const envSchema = z
       .default("development"),
     PORT: z.coerce.number().default(8080),
     HOST: z.string().default("0.0.0.0"),
+
+    // Number of trusted reverse-proxy hops (or "false"/"true"). Defaults to
+    // false so a directly exposed gateway cannot be fooled by a spoofed
+    // X-Forwarded-For header. Set to 1 when running behind a trusted ingress.
+    TRUST_PROXY: z.string().default("false"),
 
     // CORS
     CORS_ORIGIN: z
@@ -71,6 +77,20 @@ const envSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["INTERNAL_SERVICE_SECRET"],
+        message: err.message,
+      });
+    }
+
+    try {
+      validateClerkSecretKey(
+        data.CLERK_SECRET_KEY,
+        data.NODE_ENV,
+        "api-gateway",
+      );
+    } catch (err: any) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["CLERK_SECRET_KEY"],
         message: err.message,
       });
     }

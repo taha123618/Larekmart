@@ -6,7 +6,7 @@ import productRouter from "./routes/product.route.js";
 import categoryRouter from "./routes/category.route.js";
 import { consumer, producer } from "./utils/kafka.js";
 import { prisma, disconnectPrisma } from "@repo/product-db";
-import { validateInternalServiceSecret } from "@repo/types";
+import { GATEWAY_HEADERS, validateInternalServiceSecret } from "@repo/types";
 import {
   createHealthRegistry,
   createHttpMonitor,
@@ -57,6 +57,42 @@ health.register(
 );
 
 const app = express();
+
+const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+// WAL LSN emission middleware: wraps res.json on mutating requests so that any
+// successful mutation response is stamped with the PostgreSQL WAL high-water
+// mark. The API Gateway caches this per client session for LSN-aware
+// Read-Your-Writes replica lag detection downstream. WAL is monotonic, so the
+// position read here (after the handler committed via res.json) always
+// covers the mutation that was executed.
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (!MUTATION_METHODS.has(req.method)) {
+    next();
+    return;
+  }
+  const originalJson = res.json.bind(res) as (body: unknown) => Response;
+  res.json = (body: unknown) => {
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      prisma.$queryRaw<
+        Array<{ lsn: string | null }>
+      >`SELECT pg_current_wal_lsn()::text AS lsn`
+        .then((rows) => {
+          const lsn = rows[0]?.lsn;
+          if (lsn) res.setHeader(GATEWAY_HEADERS.DB_LSN, lsn);
+        })
+        .catch(() => {
+          // Graceful degradation: the 500ms time-based RYW lease still applies
+        })
+        .finally(() => {
+          originalJson(body);
+        });
+      return res;
+    }
+    return originalJson(body);
+  };
+  next();
+});
 const allowedOrigins = [
   process.env.CLIENT_URL || "http://localhost:3002",
   process.env.ADMIN_URL || "http://localhost:3003",

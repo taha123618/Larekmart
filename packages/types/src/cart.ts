@@ -1,7 +1,8 @@
 import type { Product } from "@repo/product-db";
 import z from "zod";
 
-export type CartItemType = Product & {
+export type CartItemType = Omit<Product, "sellerId"> & {
+  sellerId?: string | null;
   quantity: number;
   selectedSize: string;
   selectedColor: string;

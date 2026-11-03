@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   DEFAULT_INTERNAL_SECRET,
+  validateClerkSecretKey,
   validateInternalServiceSecret,
 } from "@repo/types";
 
@@ -196,6 +197,11 @@ if (envConfig.NODE_ENV === "production" && envConfig.MEDIA_DEV_AUTH_BYPASS) {
 try {
   validateInternalServiceSecret(
     envConfig.INTERNAL_SERVICE_SECRET,
+    envConfig.NODE_ENV,
+    "media-service",
+  );
+  validateClerkSecretKey(
+    envConfig.CLERK_SECRET_KEY,
     envConfig.NODE_ENV,
     "media-service",
   );

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import { redis } from "../utils/redis.js";
@@ -38,7 +39,10 @@ export async function registerRateLimitMiddleware(
     if (!category) return;
 
     const isDegraded = isDownstreamDegraded();
-    const maxConcurrent = InFlightBulkhead.getMaxConcurrent(category, isDegraded);
+    const maxConcurrent = InFlightBulkhead.getMaxConcurrent(
+      category,
+      isDegraded,
+    );
 
     if (!inFlightBulkhead.acquire(category, maxConcurrent)) {
       gatewayBulkheadShedHitsTotal.inc({ category });
@@ -78,16 +82,23 @@ export async function registerRateLimitMiddleware(
     timeWindow: "1 minute",
     redis: redis.client as any,
     keyGenerator: (req) => {
-      // Prioritize authenticated user ID, fall back to IP address
+      // Never trust client-supplied identity headers here: x-user-id is stripped
+      // by the proxy later, but the rate limiter runs first and an attacker
+      // could rotate it to bypass limits. Prefer the verified auth identity,
+      // then a stable hash of the bearer token, then the trusted proxy IP.
+      const authUserId = (req as { authUserId?: string }).authUserId;
+      if (authUserId) {
+        return `user:${authUserId}`;
+      }
       const authHeader = req.headers.authorization;
-      const userHeader = req.headers["x-user-id"];
-      if (typeof userHeader === "string") {
-        return `user:${userHeader}`;
+      if (typeof authHeader === "string" && authHeader.length > 0) {
+        const tokenHash = createHash("sha256")
+          .update(authHeader)
+          .digest("hex")
+          .slice(0, 32);
+        return `token:${tokenHash}`;
       }
-      if (typeof authHeader === "string") {
-        return `token:${authHeader.slice(-16)}`;
-      }
-      return req.ip;
+      return `ip:${req.ip}`;
     },
     errorResponseBuilder: (req, context) => {
       gatewayRateLimitHitsTotal.inc({
@@ -103,4 +114,3 @@ export async function registerRateLimitMiddleware(
     },
   });
 }
-

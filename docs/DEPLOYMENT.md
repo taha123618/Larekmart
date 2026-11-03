@@ -202,14 +202,16 @@ Before signing off on any production release:
 - [ ] `pnpm format:check` and `pnpm lint` pass cleanly.
 - [ ] `pnpm check-types` completes without errors across all 42 monorepo packages.
 - [ ] All 27 workspace test suites pass (`pnpm test`).
-- [ ] Go notification service tests pass with `-race` flag (`go test -race ./...`).
+- [ ] Go analytic + notification tests pass (`go test ./...`, notification also with `-race`).
 - [ ] Python recommendation service passes `uv run pytest tests/ -q` (34/34 passing).
 - [ ] All container images successfully built and scanned by Trivy without CRITICAL CVEs.
 - [ ] Kubernetes manifests validate with `kubectl kustomize infrastructure/kubernetes/overlays/production`.
-- [ ] Declarative Chaos Mesh manifests validate with `kubectl kustomize infrastructure/chaos/`.
+- [ ] Declarative Chaos Mesh manifests validate with `kubectl kustomize infrastructure/chaos/`, and the mixed-traffic drill has a scheduled/recorded run.
+- [ ] Production env sets `NODE_ENV=production` and `APP_ENV=production`; `INTERNAL_SERVICE_SECRET` is a real random value (no placeholder); `CLERK_SECRET_KEY` is a real key; `CLERK_JWT_KEY` is configured where direct Bearer tokens are accepted.
+- [ ] `TRUST_PROXY` matches the deployment topology (`1` behind the ingress, `false` when directly exposed).
+- [ ] All `*_DEV_AUTH_BYPASS` flags are absent or `false`.
 - [ ] Horizontal Pod Autoscalers (HPA v2) active for `api-gateway` (3-30 pods), `order-service` (3-25 pods), and `inventory-service` (3-30 pods).
 - [ ] Pod Disruption Budgets (PDBs) verified across core services (`minAvailable: 1-2`).
 - [ ] Production environment approval granted by authorized reviewer.
 - [ ] Zero-downtime rolling update completed across all 26 Kubernetes workloads.
 - [ ] Production health check endpoints return HTTP 200.
-

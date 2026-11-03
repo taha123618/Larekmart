@@ -30,6 +30,6 @@
     "@repo/redis": "workspace:*",
     "date-fns": "^4.1.0",
     "fastify": "^5.5.0",
-    "zod": "^4.1.9"
+    "zod": "^4.6.7"
   }
 }

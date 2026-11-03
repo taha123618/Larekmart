@@ -157,6 +157,42 @@ services:
     networks:
       - larekmart-network
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: larekmart-clickhouse
+    deploy: *search-deploy
+    restart: unless-stopped
+    ports:
+      - "${CLICKHOUSE_HTTP_BIND_IP:-127.0.0.1}:8123:8123"
+      - "${CLICKHOUSE_TCP_BIND_IP:-127.0.0.1}:9000:9000"
+    environment:
+      CLICKHOUSE_DB: analytics_db
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse123}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./docker/clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
   mysql:
     build:
       context: ./docker/mysql
@@ -631,8 +667,8 @@ services:
 
   analytic-service:
     build:
-      context: .
-      dockerfile: apps/analytic-service/Dockerfile
+      context: ./apps/analytic-service
+      dockerfile: Dockerfile
     container_name: larekmart-analytic-service
     deploy: *microservice-deploy
     restart: unless-stopped
@@ -641,7 +677,22 @@ services:
     ports:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8004:8004"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_ANALYTICS_USER:-postgres}:${POSTGRES_ANALYTICS_PASSWORD:-password123}@postgres-analytics:5432/analytics_db
+      - "DATABASE_URL=postgresql://${POSTGRES_ANALYTICS_USER:-postgres}:${POSTGRES_ANALYTICS_PASSWORD:-password123}@postgres-analytics:5432/analytics_db?sslmode=disable"
+      - "REDIS_URL=redis://redis:6379"
+      - "REDIS_KEY_PREFIX=analytics:v1:"
+      - "KAFKA_BROKERS=kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092"
+      - "KAFKA_GROUP_ID=analytic-service-group"
+      - "ANALYTICS_BATCH_SIZE=1000"
+      - "ANALYTICS_FLUSH_INTERVAL_MS=500"
+      - "ANALYTICS_QUEUE_CAPACITY=10000"
+      - "ANALYTICS_WORKER_COUNT=4"
+      - "APP_ENV=production"
+      - "PORT=8004"
+      - "CLIENT_URL=${CLIENT_URL:-http://localhost:3002}"
+      - "ADMIN_URL=${ADMIN_URL:-http://localhost:3003}"
+      - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
+      - "CLICKHOUSE_URL=http://${CLICKHOUSE_USER:-default}:${CLICKHOUSE_PASSWORD:-clickhouse123}@clickhouse:8123/analytics_db"
+      - "CLICKHOUSE_ENABLED=true"
     env_file:
       - ./apps/analytic-service/.env
     healthcheck:
@@ -657,9 +708,15 @@ services:
     depends_on:
       postgres-analytics:
         condition: service_healthy
+      clickhouse:
+        condition: service_healthy
       redis:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
         condition: service_healthy
     networks:
       - larekmart-network
@@ -840,6 +897,13 @@ services:
       - "8010"
     ports:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8010:8010"
+    environment:
+      - "DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres:5432/catalog_db?schema=public"
+      - "DATABASE_READ_REPLICA_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/catalog_db?schema=public"
+      - "REDIS_URL=redis://redis:6379"
+      - "REDIS_KEY_PREFIX=catalog:v1:"
+      - "KAFKA_BROKERS=kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092"
+      - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
     env_file:
       - ./apps/catalog-service/.env
     healthcheck:
@@ -1297,6 +1361,30 @@ services:
       - "${API_GATEWAY_BIND_IP:-127.0.0.1}:${API_GATEWAY_PORT:-8090}:8090"
     env_file:
       - ./apps/api-gateway/.env
+    environment:
+      - "ANALYTIC_SERVICE_URL=http://analytic-service:8004"
+      - "PRODUCT_SERVICE_URL=http://product-service:8000"
+      - "ORDER_SERVICE_URL=http://order-service:8001"
+      - "PAYMENT_SERVICE_URL=http://payment-service:8002"
+      - "AUTH_SERVICE_URL=http://auth-service:8003"
+      - "NOTIFICATION_SERVICE_URL=http://notification-service:8005"
+      - "SEARCH_SERVICE_URL=http://search-service:8006"
+      - "INVENTORY_SERVICE_URL=http://inventory-service:8007"
+      - "RECOMMENDATION_SERVICE_URL=http://recommendation-service:8008"
+      - "CART_SERVICE_URL=http://cart-service:8009"
+      - "CATALOG_SERVICE_URL=http://catalog-service:8010"
+      - "SHIPPING_SERVICE_URL=http://shipping-service:8011"
+      - "USER_SERVICE_URL=http://user-service:8012"
+      - "MEDIA_SERVICE_URL=http://media-service:8013"
+      - "REVIEW_SERVICE_URL=http://review-service:8014"
+      - "WISHLIST_SERVICE_URL=http://wishlist-service:8015"
+      - "PROMOTION_SERVICE_URL=http://promotion-service:8016"
+      - "TAX_SERVICE_URL=http://tax-service:8017"
+      - "RETURN_SERVICE_URL=http://return-service:8018"
+      - "PRICING_SERVICE_URL=http://pricing-service:8019"
+      - "VENDOR_SERVICE_URL=http://vendor-service:8020"
+      - "SELLER_SERVICE_URL=http://seller-service:8021"
+      - "REDIS_URL=redis://redis:6379"
     healthcheck:
       test:
         [
@@ -1352,7 +1440,7 @@ services:
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL}
+        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL:-}
     container_name: larekmart-client
     deploy: *heavy-deploy
     restart: unless-stopped
@@ -1360,6 +1448,9 @@ services:
       - "${CLIENT_BIND_IP:-127.0.0.1}:${CLIENT_PORT:-3002}:3002"
     env_file:
       - ./apps/client/.env
+    environment:
+      CLIENT_API_GATEWAY_URL: ${CLIENT_API_GATEWAY_URL:-http://api-gateway:8080}
+      CLIENT_WS_URL: ${CLIENT_WS_URL:-ws://api-gateway:8080/ws}
     healthcheck:
       test:
         [
@@ -1392,7 +1483,7 @@ services:
       dockerfile: apps/admin/Dockerfile
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
-        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL}
+        NEXT_PUBLIC_API_GATEWAY_URL: ${NEXT_PUBLIC_API_GATEWAY_URL:-}
     container_name: larekmart-admin
     deploy: *heavy-deploy
     restart: unless-stopped
@@ -1400,6 +1491,9 @@ services:
       - "${ADMIN_BIND_IP:-127.0.0.1}:${ADMIN_PORT:-3003}:3003"
     env_file:
       - ./apps/admin/.env
+    environment:
+      ADMIN_API_GATEWAY_URL: ${ADMIN_API_GATEWAY_URL:-http://api-gateway:8080}
+      ADMIN_WS_URL: ${ADMIN_WS_URL:-ws://api-gateway:8080/ws}
     healthcheck:
       test:
         [
@@ -1434,6 +1528,8 @@ volumes:
     name: larekmart_postgres_data
   postgres_analytics_data:
     name: larekmart_postgres_analytics_data
+  clickhouse_data:
+    name: larekmart_clickhouse_data
   mongo_data:
     name: larekmart_mongo_data
   redis_data:

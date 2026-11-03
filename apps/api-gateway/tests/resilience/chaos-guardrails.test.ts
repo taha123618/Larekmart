@@ -8,13 +8,21 @@
 
 import assert from "node:assert/strict";
 import Fastify from "fastify";
-import { InFlightBulkhead, inFlightBulkhead } from "../../src/resilience/in-flight-bulkhead.js";
+import {
+  InFlightBulkhead,
+  inFlightBulkhead,
+} from "../../src/resilience/in-flight-bulkhead.js";
 import { getAdaptiveRateLimitForRoute } from "../../src/gateway/policies.js";
 import { CircuitBreaker } from "../../src/resilience/circuit-breaker.js";
-import { registerRateLimitMiddleware, isDownstreamDegraded } from "../../src/middleware/rate-limit.js";
+import {
+  registerRateLimitMiddleware,
+  isDownstreamDegraded,
+} from "../../src/middleware/rate-limit.js";
 
 export async function runChaosGuardrailsTests() {
-  console.log("▶ [RESILIENCE] Running Chaos Guardrails & Adaptive Rate-Limiting tests...");
+  console.log(
+    "▶ [RESILIENCE] Running Chaos Guardrails & Adaptive Rate-Limiting tests...",
+  );
 
   // ── 1. In-Flight Bulkhead Slot Acquisition & Concurrency Caps ───────────────
   {
@@ -34,7 +42,11 @@ export async function runChaosGuardrailsTests() {
 
     // 6th concurrent request must be shed
     const sixth = bulkhead.acquire(category, 5);
-    assert.equal(sixth, false, "6th request under degraded conditions must be shed");
+    assert.equal(
+      sixth,
+      false,
+      "6th request under degraded conditions must be shed",
+    );
 
     // Release one slot
     bulkhead.release(category);
@@ -43,43 +55,83 @@ export async function runChaosGuardrailsTests() {
     // Now another slot can be acquired
     const retry = bulkhead.acquire(category, 5);
     assert.equal(retry, true, "Should acquire slot after release");
-    console.log("  ✓ InFlightBulkhead concurrency limits and shedding verified");
+    console.log(
+      "  ✓ InFlightBulkhead concurrency limits and shedding verified",
+    );
   }
 
   // ── 2. Adaptive Policy Clamping Under Downstream Chaos ──────────────────────
   {
     // Normal healthy condition
-    const healthyPolicy = getAdaptiveRateLimitForRoute("/api/v1/checkout", false);
-    assert.equal(healthyPolicy.limit, 30, "Normal checkout rate limit should be 30 req/min");
+    const healthyPolicy = getAdaptiveRateLimitForRoute(
+      "/api/v1/checkout",
+      false,
+    );
+    assert.equal(
+      healthyPolicy.limit,
+      30,
+      "Normal checkout rate limit should be 30 req/min",
+    );
     assert.equal(healthyPolicy.degraded, undefined);
 
     // Degraded / Chaos condition
-    const degradedPolicy = getAdaptiveRateLimitForRoute("/api/v1/checkout", true);
-    assert.equal(degradedPolicy.limit, 5, "Degraded checkout rate limit should clamp to 5 req/min");
+    const degradedPolicy = getAdaptiveRateLimitForRoute(
+      "/api/v1/checkout",
+      true,
+    );
+    assert.equal(
+      degradedPolicy.limit,
+      5,
+      "Degraded checkout rate limit should clamp to 5 req/min",
+    );
     assert.equal(degradedPolicy.degraded, true);
 
     // Non-transactional routes must not be throttled by checkout chaos
-    const catalogPolicy = getAdaptiveRateLimitForRoute("/api/v1/catalog/products", true);
-    assert.equal(catalogPolicy.limit, 300, "Catalog reads should remain at 300 req/min");
+    const catalogPolicy = getAdaptiveRateLimitForRoute(
+      "/api/v1/catalog/products",
+      true,
+    );
+    assert.equal(
+      catalogPolicy.limit,
+      300,
+      "Catalog reads should remain at 300 req/min",
+    );
     console.log("  ✓ Adaptive policy route discrimination verified");
   }
 
   // ── 3. Circuit Breaker Degradation Detection ─────────────────────────────────
   {
     const mockCb = new CircuitBreaker();
-    const services = ["order-service", "tax-service", "inventory-service", "payment-service"];
+    const services = [
+      "order-service",
+      "tax-service",
+      "inventory-service",
+      "payment-service",
+    ];
 
     // Initially all closed
-    assert.equal(isDownstreamDegraded(services, mockCb), false, "All closed should be healthy");
+    assert.equal(
+      isDownstreamDegraded(services, mockCb),
+      false,
+      "All closed should be healthy",
+    );
 
     // Simulate MySQL chaos on tax-service causing circuit breaker to trip
     mockCb.feedUpstreamRetryAfter("tax-service", 30);
     assert.equal(mockCb.getState("tax-service"), "OPEN");
-    assert.equal(isDownstreamDegraded(services, mockCb), true, "Open tax-service trips degradation flag");
+    assert.equal(
+      isDownstreamDegraded(services, mockCb),
+      true,
+      "Open tax-service trips degradation flag",
+    );
 
     // Reset tax-service
     mockCb.reset("tax-service");
-    assert.equal(isDownstreamDegraded(services, mockCb), false, "Reset returns to healthy");
+    assert.equal(
+      isDownstreamDegraded(services, mockCb),
+      false,
+      "Reset returns to healthy",
+    );
     console.log("  ✓ Circuit breaker degradation detector verified");
   }
 
@@ -110,7 +162,11 @@ export async function runChaosGuardrailsTests() {
     });
 
     assert.equal(response.statusCode, 503, "Shed request must return HTTP 503");
-    assert.equal(response.headers["retry-after"], "15", "Shed request must include Retry-After header");
+    assert.equal(
+      response.headers["retry-after"],
+      "15",
+      "Shed request must include Retry-After header",
+    );
     const body = JSON.parse(response.body);
     assert.equal(body.error, "Service Unavailable");
     assert.equal(body.retryAfter, 15);
@@ -118,9 +174,12 @@ export async function runChaosGuardrailsTests() {
     // Cleanup bulkhead
     inFlightBulkhead.reset();
     await app.close();
-    console.log("  ✓ Fastify in-flight bulkhead 503 shedding and Retry-After header verified");
+    console.log(
+      "  ✓ Fastify in-flight bulkhead 503 shedding and Retry-After header verified",
+    );
   }
 
-  console.log("  ✓ All Chaos Resilience & Adaptive Rate-Limiting tests passed cleanly!");
+  console.log(
+    "  ✓ All Chaos Resilience & Adaptive Rate-Limiting tests passed cleanly!",
+  );
 }
-

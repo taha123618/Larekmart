@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { validateInternalServiceSecret } from "@repo/types";
+import {
+  validateClerkSecretKey,
+  validateInternalServiceSecret,
+} from "@repo/types";
 
 const envSchema = z
   .object({
@@ -33,6 +36,20 @@ const envSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["INTERNAL_SERVICE_SECRET"],
+        message: err.message,
+      });
+    }
+
+    try {
+      validateClerkSecretKey(
+        data.CLERK_SECRET_KEY,
+        data.NODE_ENV,
+        "seller-service",
+      );
+    } catch (err: any) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["CLERK_SECRET_KEY"],
         message: err.message,
       });
     }

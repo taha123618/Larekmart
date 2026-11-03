@@ -26,7 +26,9 @@ export async function getProductsHandler(
       });
     }
 
-    const result = await catalogService.getProducts(parsed.data);
+    const result = await catalogService.getProducts(parsed.data, {
+      forcePrimary: request.forcePrimary,
+    });
     const duration = (Date.now() - startTime) / 1000;
     httpMetrics.requestDuration.observe(
       { method: "GET", path: "/products" },
@@ -56,7 +58,9 @@ export async function getProductByIdHandler(
 ) {
   try {
     const { id } = request.params;
-    const product = await catalogService.getProductById(id);
+    const product = await catalogService.getProductById(id, {
+      forcePrimary: request.forcePrimary,
+    });
     if (!product) {
       return reply.status(404).send({ message: "Product not found" });
     }
@@ -74,10 +78,14 @@ export async function getCategoriesHandler(
   try {
     const query = request.query as { tree?: string };
     if (query.tree === "true" || query.tree === "1") {
-      const tree = await categoryService.getCategoryTree();
+      const tree = await categoryService.getCategoryTree({
+        forcePrimary: request.forcePrimary,
+      });
       return reply.status(200).send(tree);
     }
-    const categories = await categoryService.getAllCategories();
+    const categories = await categoryService.getAllCategories({
+      forcePrimary: request.forcePrimary,
+    });
     return reply.status(200).send(categories);
   } catch (error) {
     logger.error("Failed to get categories", { error: String(error) });
@@ -91,7 +99,9 @@ export async function getCategoryByIdHandler(
 ) {
   try {
     const { id } = request.params;
-    const category = await categoryService.getCategoryByIdOrSlug(id);
+    const category = await categoryService.getCategoryByIdOrSlug(id, {
+      forcePrimary: request.forcePrimary,
+    });
     if (!category) {
       return reply.status(404).send({ message: "Category not found" });
     }
@@ -120,6 +130,7 @@ export async function getCategoryProductsHandler(
       page,
       limit,
       sort,
+      { forcePrimary: request.forcePrimary },
     );
     return reply.status(200).send(result);
   } catch (error) {
@@ -129,11 +140,13 @@ export async function getCategoryProductsHandler(
 }
 
 export async function getBrandsHandler(
-  _request: FastifyRequest,
+  request: FastifyRequest,
   reply: FastifyReply,
 ) {
   try {
-    const brands = await brandService.getAllBrands();
+    const brands = await brandService.getAllBrands({
+      forcePrimary: request.forcePrimary,
+    });
     return reply.status(200).send(brands);
   } catch (error) {
     logger.error("Failed to get brands", { error: String(error) });
@@ -147,7 +160,9 @@ export async function getBrandByIdHandler(
 ) {
   try {
     const { id } = request.params;
-    const brand = await brandService.getBrandByIdOrSlug(id);
+    const brand = await brandService.getBrandByIdOrSlug(id, {
+      forcePrimary: request.forcePrimary,
+    });
     if (!brand) {
       return reply.status(404).send({ message: "Brand not found" });
     }
@@ -171,7 +186,9 @@ export async function getBrandProductsHandler(
     const limit = request.query.limit ? parseInt(request.query.limit, 10) : 24;
     const sort = request.query.sort || "newest";
 
-    const result = await brandService.getBrandProducts(id, page, limit, sort);
+    const result = await brandService.getBrandProducts(id, page, limit, sort, {
+      forcePrimary: request.forcePrimary,
+    });
     return reply.status(200).send(result);
   } catch (error) {
     logger.error("Failed to get brand products", { error: String(error) });
@@ -180,11 +197,13 @@ export async function getBrandProductsHandler(
 }
 
 export async function getCollectionsHandler(
-  _request: FastifyRequest,
+  request: FastifyRequest,
   reply: FastifyReply,
 ) {
   try {
-    const collections = await collectionService.getAllCollections();
+    const collections = await collectionService.getAllCollections({
+      forcePrimary: request.forcePrimary,
+    });
     return reply.status(200).send(collections);
   } catch (error) {
     logger.error("Failed to get collections", { error: String(error) });
@@ -198,7 +217,9 @@ export async function getCollectionByIdHandler(
 ) {
   try {
     const { id } = request.params;
-    const collection = await collectionService.getCollectionBySlugOrId(id);
+    const collection = await collectionService.getCollectionBySlugOrId(id, {
+      forcePrimary: request.forcePrimary,
+    });
     if (!collection) {
       return reply.status(404).send({ message: "Collection not found" });
     }
@@ -216,7 +237,9 @@ export async function getFeaturedProductsHandler(
   try {
     const query = request.query as { limit?: string };
     const limit = query.limit ? parseInt(query.limit, 10) : 12;
-    const products = await catalogService.getFeaturedProducts(limit);
+    const products = await catalogService.getFeaturedProducts(limit, {
+      forcePrimary: request.forcePrimary,
+    });
     return reply.status(200).send(products);
   } catch (error) {
     logger.error("Failed to get featured products", { error: String(error) });
@@ -231,7 +254,9 @@ export async function getNewArrivalsHandler(
   try {
     const query = request.query as { limit?: string };
     const limit = query.limit ? parseInt(query.limit, 10) : 12;
-    const products = await catalogService.getNewArrivals(limit);
+    const products = await catalogService.getNewArrivals(limit, {
+      forcePrimary: request.forcePrimary,
+    });
     return reply.status(200).send(products);
   } catch (error) {
     logger.error("Failed to get new arrivals", { error: String(error) });
@@ -246,7 +271,9 @@ export async function getBestSellersHandler(
   try {
     const query = request.query as { limit?: string };
     const limit = query.limit ? parseInt(query.limit, 10) : 12;
-    const products = await catalogService.getBestSellers(limit);
+    const products = await catalogService.getBestSellers(limit, {
+      forcePrimary: request.forcePrimary,
+    });
     return reply.status(200).send(products);
   } catch (error) {
     logger.error("Failed to get best sellers", { error: String(error) });
@@ -255,11 +282,13 @@ export async function getBestSellersHandler(
 }
 
 export async function getStorefrontOverviewHandler(
-  _request: FastifyRequest,
+  request: FastifyRequest,
   reply: FastifyReply,
 ) {
   try {
-    const overview = await merchandisingService.getStorefrontOverview();
+    const overview = await merchandisingService.getStorefrontOverview({
+      forcePrimary: request.forcePrimary,
+    });
     return reply.status(200).send(overview);
   } catch (error) {
     logger.error("Failed to get storefront overview", { error: String(error) });

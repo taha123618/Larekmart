@@ -4,6 +4,7 @@ import { AnalyticsEventType, OrderType, ProductsType } from "@repo/types";
 import { auth } from "@clerk/nextjs/server";
 import MediaImage from "./MediaImage";
 import { getApiGatewayUrl } from "@/services/gateway.service";
+import { fetchAnalyticsEvents } from "@/services/analytics.service";
 
 const CardList = async ({ title }: { title: string }) => {
   let products: ProductsType = [];
@@ -54,16 +55,7 @@ const CardList = async ({ title }: { title: string }) => {
     }
   } else {
     // Attempt to fetch from analytic-service first, fallback to order-service
-    try {
-      const analyticUrl = getApiGatewayUrl();
-      events = await fetch(`${analyticUrl}/api/v1/analytics/events?limit=5`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }).then((res) => (res.ok ? res.json() : []));
-    } catch {
-      events = [];
-    }
+    events = await fetchAnalyticsEvents(5, token);
 
     if (events.length === 0) {
       try {

@@ -61,17 +61,14 @@ export default function AddInventoryItemSheet({
     mutationFn: async (data: z.infer<typeof CreateItemSchema>) => {
       const token = await getToken();
       const inventoryUrl = getApiGatewayUrl();
-      const res = await fetch(
-        `${inventoryUrl}/api/v1/inventory/items`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(data),
+      const res = await fetch(`${inventoryUrl}/api/v1/inventory/items`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify(data),
+      });
 
       if (!res.ok) {
         const error = await res

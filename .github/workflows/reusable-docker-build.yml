@@ -80,8 +80,8 @@ jobs:
             context: .
             dockerfile: apps/auth-service/Dockerfile
           - service: analytic-service
-            context: .
-            dockerfile: apps/analytic-service/Dockerfile
+            context: ./apps/analytic-service
+            dockerfile: ./apps/analytic-service/Dockerfile
           - service: notification-service
             context: ./apps/notification-service
             dockerfile: ./apps/notification-service/Dockerfile

@@ -1,10 +1,11 @@
-import { readPrisma as prisma } from "@repo/catalog-db";
 import type { CatalogBrandType } from "@repo/types";
 import { mapBrand } from "../utils/mappers.js";
+import { getDatabaseClient } from "../utils/database-context.js";
 
 export class BrandRepository {
-  async findAllBrands(): Promise<CatalogBrandType[]> {
-    const brands = await prisma.catalogBrand.findMany({
+  async findAllBrands(forcePrimary?: boolean): Promise<CatalogBrandType[]> {
+    const db = getDatabaseClient(forcePrimary);
+    const brands = await db.catalogBrand.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
     });
@@ -13,8 +14,10 @@ export class BrandRepository {
 
   async findBrandByIdOrSlug(
     idOrSlug: string,
+    forcePrimary?: boolean,
   ): Promise<CatalogBrandType | null> {
-    const brand = await prisma.catalogBrand.findFirst({
+    const db = getDatabaseClient(forcePrimary);
+    const brand = await db.catalogBrand.findFirst({
       where: {
         OR: [{ id: idOrSlug }, { slug: idOrSlug }],
         isActive: true,

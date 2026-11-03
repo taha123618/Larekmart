@@ -111,8 +111,10 @@ React 19 and Next.js 16 enforce strict hydration equality between server HTML an
   handlers, or browser APIs. Do not make a whole page client just to fetch data.
 - **Fetch service data server-side with `auth().getToken()`** (`@clerk/nextjs/server`).
   Client components that must call services use `useAuth().getToken()`.
-- **Service URLs via env.** Always resolve API routes using `getApiGatewayUrl()` from `@/services/gateway.service` (backed by `NEXT_PUBLIC_API_GATEWAY_URL`). Never hardcode
-  `localhost:8000` and friends.
+- **Dynamic Service URLs & Runtime Config.** Always resolve API routes using `getApiGatewayUrl()` from `@/services/gateway.service`.
+  The storefront uses dynamic runtime configuration: `src/app/api/config/route.ts` serves `CLIENT_API_GATEWAY_URL` or `NEXT_PUBLIC_API_GATEWAY_URL`
+  at runtime, hydrated via `<RuntimeConfigProvider>` in `src/app/layout.tsx`. If no gateway URL is set, `getApiGatewayUrl()` defaults to `""`
+  (relative path), allowing requests to route through local Next.js `rewrites()` in development or reverse proxies (Traefik/Ingress) in production without rebuilds. Never hardcode `localhost:8000` and friends.
 - **Cart is client state only.** Keep it in Zustand + localStorage. Do not introduce server
   state for the cart unless the product/service behavior actually requires it.
 - **Forms:** `react-hook-form` + Zod. Prefer schemas from `@repo/types` if they already

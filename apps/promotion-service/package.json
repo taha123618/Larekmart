@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@hono/clerk-auth": "^3.0.3",
-    "@hono/node-server": "^1.19.0",
+    "@hono/node-server": "^2.1.5",
     "@repo/kafka": "workspace:*",
     "@repo/monitoring": "workspace:*",
     "@repo/redis": "workspace:*",

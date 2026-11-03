@@ -23,7 +23,9 @@ Authoritative order lifecycle authority, Multi-DB Checkout Saga orchestrator, tr
 ## 2. High-Concurrency Distributed Patterns
 
 ### Multi-DB Dual-ACK Checkout Saga
+
 When a customer payment completes, three distinct database engines achieve eventual consistency without blocking 2PC locks:
+
 1. `order-service` consumes `payment.successful`, persists the order in `pending_confirmation`, and emits `order.created`.
 2. `order-service` awaits **Dual-ACK**:
    - `inventory.stock.sold` (emitted by `inventory-service` from PostgreSQL)
@@ -36,6 +38,7 @@ When a customer payment completes, three distinct database engines achieve event
    - Transitions order status to `cancelled`
 
 ### Transactional Outbox Relay with Distributed Leader Election
+
 - State-mutating transactions write domain events to MongoDB's `OutboxEvent` collection inside the same ACID transaction session as the `Order` mutation.
 - **Distributed Leader Election (`DistributedLeaderElector`)**:
   - Horizontal scaling of `order-service` replicas (e.g. 3–25 pods via HPA) could lead to concurrent outbox sweeps and duplicate Kafka dispatches.
@@ -47,6 +50,7 @@ When a customer payment completes, three distinct database engines achieve event
   - Published events are automatically pruned after 7 days via MongoDB TTL index on `publishedAt`.
 
 ### Distributed Idempotency Key Engine
+
 - State-mutating routes (`POST /orders/cod`) enforce the `Idempotency-Key` header.
 - Atomic Redis leases prevent duplicate mutations; concurrent requests receive `409 Conflict`.
 - Successful responses `{ statusCode, body }` are cached for 24 hours, transparently replaying responses with `Idempotent-Replayed: true` upon retries without re-executing database writes.
@@ -67,12 +71,14 @@ When a customer payment completes, three distinct database engines achieve event
 ## 4. Kafka Event Integrations
 
 ### Consumes
+
 - `payment.successful`: Begins Multi-DB checkout saga in `pending_confirmation`.
 - `inventory.stock.sold`: First ACK in the Dual-ACK saga.
 - `tax.calculation.completed`: Second ACK in the Dual-ACK saga.
 - `tax.calculation.failed` / `inventory.reservation.failed`: Triggers saga rollback and automated refund.
 
 ### Emits (via Transactional Outbox)
+
 - `order.created`: Consumed by `email-service` for customer receipts and `recommendation-service`.
 - `order.confirmed`: Emitted after Dual-ACK confirmation.
 - `order.cancelled`: Emitted upon saga compensation or customer cancellation.

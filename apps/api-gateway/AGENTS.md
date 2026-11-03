@@ -11,7 +11,9 @@ It handles cross-cutting concerns:
 - Request correlation (`x-request-id`) and untrusted client header stripping (`x-user-id`, `x-user-role`, `x-user-is-super-admin`, `x-user-is-seller`, `x-user-can-manage-sellers`, `x-internal-secret`)
 - Clerk JWT authentication and session claim extraction (`@clerk/fastify`)
 - Internal trusted header injection (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-is-super-admin`, `x-user-can-manage-sellers`) executed strictly _after_ stripping untrusted headers
-- Distributed rate limiting with Redis fallback (`@fastify/rate-limit`) and dynamic adaptive rate-limiting clamping under downstream circuit breaker degradation
+- Distributed rate limiting with Redis fallback (`@fastify/rate-limit`), including ONBOARDING tier (10 req/min for `/sellers` and `/vendors`), and dynamic adaptive rate-limiting clamping under downstream circuit breaker degradation
+- Dynamic WAL LSN capture (`x-db-lsn`) caching into Redis via `markReadYourWritesWithLSN` for edge replica lag detection in read-heavy projections
+- Robust perimeter trust proxy resolution using `FastifyServerOptions["trustProxy"]`
 - In-flight concurrency bulkheads (`InFlightBulkhead`, 50 healthy / 5 degraded max concurrent requests) shedding saturated traffic with HTTP 503 + `Retry-After: 15`
 - In-flight request coalescing (`SingleFlightGroup`) protecting against Thundering Herd and Cache Stampedes on high-velocity read/aggregation endpoints
 - Unified error formatting, circuit breakers, and upstream timeout handling

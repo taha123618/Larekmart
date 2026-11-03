@@ -1,16 +1,26 @@
 import { catalogService } from "./catalog.service.js";
 import { collectionService } from "./collection.service.js";
 import { categoryService } from "./category.service.js";
+import { databaseContext } from "../utils/database-context.js";
+
+export interface MerchandisingQueryOptions {
+  forcePrimary?: boolean;
+}
 
 export class MerchandisingService {
-  async getStorefrontOverview() {
+  async getStorefrontOverview(options?: MerchandisingQueryOptions) {
+    const forcePrimary =
+      options?.forcePrimary ??
+      databaseContext.getStore()?.forcePrimary ??
+      false;
+
     const [featured, newArrivals, bestSellers, collections, categories] =
       await Promise.all([
-        catalogService.getFeaturedProducts(8),
-        catalogService.getNewArrivals(8),
-        catalogService.getBestSellers(8),
-        collectionService.getAllCollections(),
-        categoryService.getCategoryTree(),
+        catalogService.getFeaturedProducts(8, { forcePrimary }),
+        catalogService.getNewArrivals(8, { forcePrimary }),
+        catalogService.getBestSellers(8, { forcePrimary }),
+        collectionService.getAllCollections({ forcePrimary }),
+        categoryService.getCategoryTree({ forcePrimary }),
       ]);
 
     return {

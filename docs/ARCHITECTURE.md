@@ -67,15 +67,20 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
   `recommendation-service` with graceful partial degradation.
 - **Security**: Strips client-supplied internal headers before routing; enforces role gates
   (public, authenticated, admin, seller) and verifies Super Admin status and `manage_sellers` administrative delegations.
+  Rate-limit keys derive from the verified `authUserId`, a SHA-256 hash of the bearer token, or the
+  trusted client IP — never from a client-supplied identity header. `TRUST_PROXY` defaults to
+  `false` and must be set to the real hop count (`1` behind the ingress) so `X-Forwarded-For`
+  cannot be spoofed to bypass limits.
 
 ### Services
 
 **`product-service` (Express 5, :8000)** — the catalog.
 
 - Routes: `/products` (GET list, GET one, GET `/search` OpenSearch-backed, POST create,
-  PUT/DELETE admin, POST `/backfill-search` admin), `/categories` (GET public, mutations
+  PUT/DELETE seller owner or admin, POST `/backfill-search` admin), `/categories` (GET public, mutations
   admin), `/health`, `/test`.
-- Persistence: Prisma → PostgreSQL (`Product`, `Category`).
+- Persistence: Prisma → PostgreSQL (`Product`, `Category`). Products contain an indexed `sellerId` column enforcing multi-vendor ownership (`403 Forbidden` for non-owners) and catalog scoping (SEC-02).
+- WAL Synchronization: Emits `x-db-lsn` response header (`pg_current_wal_lsn()`) on state mutations to support edge Read-Your-Writes LSN tracking.
 - Publishes `product.created` and `product.deleted` for Stripe sync.
 - Reads the shared OpenSearch product index through `@repo/opensearch` for `GET /products/search`;
   index writes stay owned by search-service.
@@ -114,15 +119,15 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 
 - Consumes `user.created` and `order.created`; sends mail via nodemailer (Gmail OAuth2).
 
-**`analytic-service` (Express 5, :8004)** — metrics and event analytics.
+**`analytic-service` (Go 1.22 / Chi, :8004)** — high-throughput metrics and event analytics.
 
-- Routes: `/analytics/summary`, `/analytics/daily-chart`, `/analytics/events`, `/health`.
-- Consumes all domain Kafka event streams.
-- High-Velocity Telemetry Ring Buffer: Implements an in-memory ring buffer (500-event capacity / 1,000ms flush window in `src/services/event-batcher.ts`), executing multi-row parameterized bulk inserts (`INSERT INTO ... VALUES (...), (...)...`) that reduce PostgreSQL write operations by **99.8%** during flash sales, with graceful shutdown flush ensuring 0 event loss.
+- Routes: `/analytics/public`, `/analytics/summary`, `/analytics/merchants`, `/analytics/operations`, `/analytics/commerce`, `/analytics/daily-chart`, `/analytics/events`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
+- Consumes 60+ platform Kafka event streams across all 23 microservices via `segmentio/kafka-go` with dedicated reader goroutines.
+- Decoupled Go Pipeline: Ingestion pushes messages into a 10,000-capacity buffered channel, preventing Kafka consumer heartbeat starvation (`session.timeout.ms`) and consumer group rebalances during flash-sale traffic spikes.
+- Binary COPY Batching (`pgx.CopyFrom`): Worker pool micro-batches events (1,000 events / 500ms window) directly into monthly partitioned PostgreSQL tables (`analytics_events` `PARTITION BY RANGE (created_at)`) with Block Range Indexes (BRIN), bypassing query parser/tokenization overhead and reducing DB transactions by >99.8%.
+- Lock-Free Atomic State: In-memory atomic counters (`sync/atomic` with CAS bit casting for float64 revenue and tax) deliver sub-millisecond responses for `/analytics/summary` and `/analytics/merchants`.
 - Isolated Database: Runs on dedicated PostgreSQL instance (`larekmart-postgres-analytics` on port 5433), eliminating telemetry lock contention on core commerce databases.
-- Caching: Redis (`analytics:v1:*` namespace) through `@repo/redis` — TTL-bounded read-through cache for
-  `/analytics/daily-chart` and `/analytics/events`. Entries expire rather than being invalidated per event,
-  because events arrive faster than a write-through invalidation would repopulate them.
+- Caching: Redis (`analytics:v1:*` namespace) via `go-redis/v9` — TTL-bounded read-through cache for `/analytics/daily-chart` and `/analytics/events` with transparent fallback to PostgreSQL.
 
 **`notification-service` (Go 1.22 / Chi, :8005)** — unified notification orchestration.
 
@@ -272,7 +277,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | shipping-service                 | `@repo/shipping-db` (Prisma)  | `shipments`, `shipment_items`, `shipment_packages`, `shipping_methods`, `tracking_events`, `shipping_labels`                                                                      |
 | PostgreSQL | user-service                     | `@repo/user-db` (Prisma)      | `users`, `user_profiles`, `user_addresses`, `user_preferences`, `user_settings`, `processed_events`                                                                               |
 | PostgreSQL | recommendation-service           | SQLAlchemy async (`asyncpg`)  | `user_interactions`, `product_embeddings`, `user_embeddings`, `recommendation_models`, `processed_events`, `recommendation_analytics`                                             |
-| PostgreSQL | analytic-service                 | `pg.Pool`                     | `analytics_events`, `analytics_daily_summary`                                                                                                                                     |
+| PostgreSQL | analytic-service                 | `pgxpool.Pool` (Go)           | `analytics_events` (partitioned), `analytics_daily_summary`                                                                                                                       |
 | PostgreSQL | notification-service             | `pgxpool.Pool` (Go)           | `notifications`, `notification_deliveries`, `notification_preferences`, `notification_templates`, `user_devices`, `notification_events`                                           |
 | PostgreSQL | media-service                    | Drizzle (`pg`)                | `media`, `media_variants`, `media_uploads`, `media_processing_jobs`, `processed_events`                                                                                           |
 | PostgreSQL | review-service                   | Drizzle (`pg`)                | `reviews`, `review_media`, `review_votes`, `review_reports`, `review_moderation_actions`, `seller_responses`, `product_rating_summaries`                                          |
@@ -290,7 +295,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | catalog-service                  | `@repo/redis` (ioredis)       | `catalog:v1:*` (storefront product & collection cache)                                                                                                                            |
 | Redis      | shipping-service                 | `@repo/redis` (ioredis)       | `shipping:v1:*` (shipping rate cache, tracking cache, webhook idempotency)                                                                                                        |
 | Redis      | user-service                     | `@repo/redis` (ioredis)       | `user:v1:*` (profile, address, preference, settings read-through cache)                                                                                                           |
-| Redis      | analytic-service                 | `@repo/redis` (ioredis)       | `analytics:v1:*` (dashboard read-through cache)                                                                                                                                   |
+| Redis      | analytic-service                 | `go-redis` (Go)               | `analytics:v1:*` (dashboard read-through cache)                                                                                                                                   |
 | Redis      | order-service                    | `@repo/redis` (ioredis)       | `order:v1:*` (6-month order-chart read-through cache)                                                                                                                             |
 | Redis      | cart-service                     | `@repo/redis` (ioredis)       | `cart:v1:*` (active cart cache, sorted-set expiration queue)                                                                                                                      |
 | Redis      | review-service                   | `@repo/redis` (ioredis)       | `review:*` (product rating summary cache, anti-abuse vote/report limits)                                                                                                          |
@@ -441,6 +446,13 @@ buyer (Browse Seller Store) ── GET /api/v1/sellers/slug/:slug ──▶ sell
 
 - **Auth:** Clerk everywhere. Backends guard with `shouldBeUser`/`shouldBeAdmin`;
   authorization is enforced server-side, with the admin middleware as UX defense.
+  Gateway-proxied requests carry verified claims under `x-internal-secret`; the internal
+  secret authenticates the transport, never grants admin to a proxied user. Direct Bearer
+  tokens are verified as Clerk RS256 JWTs against `CLERK_JWT_KEY` with `exp`/`nbf` checks
+  (an explicit `CLERK_JWT_HMAC_KEY` fixture is test-only). The Clerk secret key is never
+  used as an HMAC key. Local identity bypasses require explicit
+  `ANALYTIC_DEV_AUTH_BYPASS` / `NOTIFICATION_DEV_AUTH_BYPASS` /
+  `RECOMMENDATION_DEV_AUTH_BYPASS` flags and are disabled in production.
 - **Configuration:** environment variables per workspace; `.env.example` is the contract.
 - **Observability:** structured logging, health checks, metrics, and telemetry across all workspaces powered by `@repo/monitoring`.
 - **Search infrastructure:** all OpenSearch SDK usage, index mappings, query DSL builders,
@@ -468,11 +480,13 @@ buyer (Browse Seller Store) ── GET /api/v1/sellers/slug/:slug ──▶ sell
 - **Event Resilience & Dead-Letter Queue (DLQ):** `@repo/kafka` incorporates intelligent poison-pill isolation. Malformed payloads or deterministic schema violations (`SyntaxError`, `ZodError`) fast-fail immediately to `<topic>.dlq` on attempt 1 without retry loops. Transient errors (database lock contention, connection failovers) retry with exponential backoff (1s, 2s, 4s) before routing to DLQ with comprehensive metadata headers (`x-original-topic`, `x-error-message`, `x-is-poison-pill`, `x-attempt-count`). Offsets commit cleanly, preventing consumer partition stalls.
 - **Transactional Outbox Pattern:** Services performing dual writes (e.g. `order-service` saving an order in MongoDB and publishing `order.created` to Kafka) persist the event to an `OutboxEvent` collection within the same ACID transaction. An optimistic fast-path publishes immediately, while a background sweeper running every 5 seconds reclaims unpublished events via atomic lease locks (`lockedUntil`), guaranteeing at-least-once event delivery across network outages or process crashes.
 - **Distributed Leader Election & Sweeper Cluster Isolation:** Background outbox sweepers (`order-service`), cart reapers (`cart-service`), reservation expirations (`inventory-service`), and saga timeouts acquire single-active cluster ownership via `DistributedLeaderElector` or `withClusterLock` over `@repo/redis`. Continuous heartbeats (3s interval, 10s lease TTL) ensure hot standby replicas take over within 2,000ms upon leader termination, completely eliminating duplicate Kafka message dispatches across horizontally scaled Kubernetes pods.
-- **Hyperscale Data Architecture & Sharding Rules:** To prevent storage I/O and RAM bottlenecks, read-heavy storefront projections (`catalog-service`) route read queries to PostgreSQL read-replicas (`readPrisma` via PgBouncer port 6432) while Kafka projection writes persist to primary (`prisma`). High-volume MongoDB collections (`order-service`) enforce horizontal hashed sharding (`{ userId: "hashed" }`) with compound scatter-gather mitigation indexes for seller and saga queries. Redis cluster keys enforce `{tenant_id:warehouse_id}` multi-tenant hash tags for CRC16 slot pinning.
-- **Chaos Engineering & In-Flight Concurrency Bulkheads:** Multi-database checkout Saga resilience is verified continuously via CNCF Chaos Mesh manifests (`infrastructure/chaos/`). The API Gateway enforces in-flight concurrency bulkheads (clamping concurrent checkout requests from 50 to 5) and adaptive rate-limiting (clamping from 30 to 5 req/min) during downstream degradation, fast-shedding with HTTP 503 and `Retry-After: 15` to protect database pools.
+- **Hyperscale Data Architecture & Sharding Rules:** To prevent storage I/O and RAM bottlenecks, read-heavy storefront projections (`catalog-service`) route read queries to PostgreSQL read-replicas (`readPrisma` via PgBouncer port 6432) while Kafka projection writes persist to primary (`prisma`). To eliminate replication lag anomalies (<50ms WAL latency), an atomic 500ms Read-Your-Writes lease is set in Redis (`markReadYourWrites`) upon mutations, forcing edge requests from mutating clients to query `prisma` directly and bypass stale Redis caches. PostgreSQL-backed writers additionally return `x-db-lsn` (`pg_current_wal_lsn()`), which the gateway caches per client session; `catalog-service` compares that LSN with the replica's `pg_last_wal_replay_lsn()` and falls back to the primary while the replica lags. High-volume MongoDB collections (`order-service`) enforce horizontal hashed sharding (`{ userId: "hashed" }`) with compound scatter-gather mitigation indexes for seller and saga queries. Redis cluster keys enforce `{tenant_id:warehouse_id}` multi-tenant hash tags for CRC16 slot pinning.
+- **Chaos Engineering & In-Flight Concurrency Bulkheads:** Multi-database checkout Saga resilience is verified continuously via CNCF Chaos Mesh manifests (`infrastructure/chaos/`). The API Gateway enforces in-flight concurrency bulkheads (clamping concurrent checkout requests from 50 to 5) and adaptive rate-limiting (clamping from 30 to 5 req/min) during downstream degradation, fast-shedding with HTTP 503 and `Retry-After: 15` to protect database pools. The **mixed-traffic drill** (`infrastructure/chaos/flash-sale-mixed-traffic.yaml`) runs order-plane latency and catalog replica lag in a `Parallel` branch during flash-sale checkout, then a 60s `Suspend` observes recovery; success requires both checkout fast-shed and LSN-guarded storefront reads with no stale-product regressions.
 - **CORS:** each service allow-lists the specific frontend origins it serves
 
-  (`client` :3002, `admin` :3003).
+  (`client` :3002, `admin` :3003) via `resolveCorsOrigins`/explicit callbacks. Wildcards are
+  rejected when credentials are enabled.
+
 - **Error shape:** `{ message }` JSON with correct status codes; a global error handler
   exists in the Express services.
 

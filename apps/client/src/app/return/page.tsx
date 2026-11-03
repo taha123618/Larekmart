@@ -77,8 +77,9 @@ export default async function ReturnPage({
     const res = await fetch(
       `${paymentServiceUrl}/api/v1/sessions/${session_id}`,
       {
-      cache: "no-store",
-    });
+        cache: "no-store",
+      },
+    );
     if (res.ok) {
       const data = await res.json();
       status = data.status || "complete";

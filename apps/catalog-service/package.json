@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx --env-file=.env --watch src/index.ts",
-    "test": "tsx tests/catalog-service.test.ts",
+    "test": "tsx tests/catalog-service.test.ts && tsx tests/catalog-lsn-fallback.test.ts && tsx tests/catalog-lag-chaos-e2e.test.ts",
     "build": "tsc",
     "start": "tsx --env-file-if-exists=.env src/index.ts",
     "check-types": "tsc --noEmit"

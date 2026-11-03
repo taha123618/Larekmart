@@ -468,7 +468,7 @@ kubectl get pods,svc,hpa,ingress -n larekmart-dev
 
 ### Chaos Engineering Simulations (Chaos Mesh)
 
-See `infrastructure/chaos/README.md` for failure simulation manifests (tax MySQL latency, MongoDB network partitions, Kafka broker termination, and serial flash-sale workflow).
+See `infrastructure/chaos/README.md` for failure simulation manifests (tax MySQL latency, MongoDB network partitions, Kafka broker termination, the serial flash-sale workflow, and the parallel mixed-traffic order/read routing drill).
 
 ---
 
@@ -508,7 +508,7 @@ Every single container image used in the Larekmart platform is cataloged below, 
 | **order-service**          | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **payment-service**        | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **auth-service**           | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
-| **analytic-service**       | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
+| **analytic-service**       | Go Microservice        | `golang:1.22-alpine`               | `dhi/golang:1.22`        | `appuser` (1000)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **search-service**         | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **inventory-service**      | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **cart-service**           | Node Microservice      | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |

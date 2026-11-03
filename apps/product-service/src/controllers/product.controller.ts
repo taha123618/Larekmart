@@ -24,8 +24,15 @@ export const createProduct = async (req: Request, res: Response) => {
   }
 
   const { categorySlug, ...rest } = parsed.data;
+  // SEC-02 Seller Attribution: Assign sellerId from authenticated identity unless admin explicitly delegates
+  const sellerId =
+    req.userRole === "admin"
+      ? (req.body.sellerId as string | undefined) || req.userId
+      : req.userId;
+
   const data: Prisma.ProductCreateInput = {
     ...rest,
+    sellerId,
     category: {
       connect: { slug: categorySlug },
     },
@@ -63,6 +70,29 @@ export const updateProduct = async (req: Request, res: Response) => {
     return res.status(400).json({ message: "Invalid product ID format" });
   }
 
+  // SEC-02 Seller Attribution Verification:
+  // Non-admin sellers can only modify their own products.
+  const existingProduct = await prisma.product.findUnique({
+    where: { id: productId },
+  });
+
+  if (!existingProduct) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+
+  const isAdmin = req.userRole === "admin";
+  const isOwner =
+    Boolean(req.userId) &&
+    Boolean(existingProduct.sellerId) &&
+    existingProduct.sellerId === req.userId;
+
+  if (!isAdmin && !isOwner) {
+    return res.status(403).json({
+      message:
+        "Access forbidden: you do not have permission to modify this product",
+    });
+  }
+
   const data: Prisma.ProductUpdateInput = req.body;
 
   const { result: updatedProduct } = await measureAsync(
@@ -92,6 +122,29 @@ export const deleteProduct = async (req: Request, res: Response) => {
   const productId = Number(id);
   if (!Number.isInteger(productId) || productId <= 0) {
     return res.status(400).json({ message: "Invalid product ID format" });
+  }
+
+  // SEC-02 Seller Attribution Verification:
+  // Non-admin sellers can only delete their own products.
+  const existingProduct = await prisma.product.findUnique({
+    where: { id: productId },
+  });
+
+  if (!existingProduct) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+
+  const isAdmin = req.userRole === "admin";
+  const isOwner =
+    Boolean(req.userId) &&
+    Boolean(existingProduct.sellerId) &&
+    existingProduct.sellerId === req.userId;
+
+  if (!isAdmin && !isOwner) {
+    return res.status(403).json({
+      message:
+        "Access forbidden: you do not have permission to delete this product",
+    });
   }
 
   const { result: deletedProduct } = await measureAsync(

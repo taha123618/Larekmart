@@ -7,6 +7,7 @@ import type {
 } from "fastify";
 import cors from "@fastify/cors";
 import { clerkPlugin } from "@clerk/fastify";
+import { resolveCorsOrigins } from "@repo/types";
 import { env } from "./config/env.js";
 import { healthRoutes } from "./routes/health.routes.js";
 import { taxRoutes } from "./routes/tax.routes.js";
@@ -19,8 +20,17 @@ export async function buildServer(): Promise<FastifyInstance> {
   });
 
   // 1. CORS Configuration
+  const allowedOrigins = resolveCorsOrigins(
+    process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGINS,
+  );
   await app.register(cors, {
-    origin: "*",
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        cb(null, true);
+        return;
+      }
+      cb(new Error("CORS origin not allowed"), false);
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",

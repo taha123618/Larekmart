@@ -19,13 +19,13 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `order-service` (:8001) — orders, MongoDB via Mongoose.
   - `payment-service` (:8002) — Stripe; stateless.
   - `auth-service` (:8003) — Clerk user management; stateless.
-  - `analytic-service` (:8004) — KPI counters, PostgreSQL audit logs & metrics REST API.
+  - `analytic-service` (:8004) — Go 1.22 (Chi), multithreaded Kafka ingestion (60+ topics), binary COPY batching (pgx.CopyFrom), atomic lock-free KPI counters, and REST metrics API.
   - `notification-service` (:8005) — Go (Chi), multi-channel notifications (Email, SMS, Push, In-App), PostgreSQL, Redis, WebSockets.
   - `search-service` (:8006) — Fastify, full-text product search, autocomplete, facets; OpenSearch + Redis cache.
   - `inventory-service` (:8007) — Hono, PostgreSQL stock authority, atomic reservations, warehouse inventory, and Kafka events.
   - `recommendation-service` (:8008) — Python 3.12+ (FastAPI), collaborative & content filtering, pgvector embeddings, trending algorithms, Celery worker.
   - `cart-service` (:8009) — Express 5, authoritative MongoDB carts, guest-to-user merge, pricing estimates, TTL expiration reaper.
-  - `catalog-service` (:8010) — Fastify 5, read-optimized product discovery (categories, brands, collections) over a Prisma catalog read model.
+  - `catalog-service` (:8010) — Fastify 5, read-optimized product discovery (categories, brands, collections) over a Prisma catalog read model; storefront reads use `readPrisma` on the PostgreSQL replica (`:6432`) while writes use the primary, with LSN-aware Read-Your-Writes fallback.
   - `shipping-service` (:8011) — Koa, shipment lifecycle, carrier adapters (TCS/Leopards/DHL/FedEx), tracking, labels; PostgreSQL.
   - `user-service` (:8012) — Fastify 5, customer profiles, addresses, preferences; PostgreSQL via `@repo/user-db`.
   - `media-service` (:8013) — Hono 4, S3/MinIO object storage behind an `ObjectStorage` interface, Drizzle/PostgreSQL metadata, Redis-cached resolve, Sharp processing + cleanup workers.
@@ -75,11 +75,12 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Shared types, Zod schemas, Kafka payload types             | `packages/types`                                       |
 | Telemetry, structured logging, health checks               | `packages/monitoring`                                  |
 | OpenSearch client, mappings, query builders                | `packages/opensearch`                                  |
+| Redis facade, key namespaces, slot tagging, locks, leases  | `packages/redis`                                       |
 | Product/category DB schema                                 | `packages/product-db`                                  |
 | Inventory DB schema and transactions                       | `packages/inventory-db`                                |
 | Order persistence schema                                   | `packages/order-db`                                    |
 | Cart persistence schema (Mongoose)                         | `packages/cart-db`                                     |
-| Catalog read-model schema                                  | `packages/catalog-db`                                  |
+| Catalog read-model schema and read-replica routing         | `packages/catalog-db`                                  |
 | Shipping schema, tracking events, labels                   | `packages/shipping-db`                                 |
 | User profiles, addresses, preferences schema               | `packages/user-db`                                     |
 | Vendor business entity, KYB & member schema                | `packages/vendor-db`                                   |
@@ -110,6 +111,9 @@ consistency). E.g. a product change in Postgres is mirrored to Stripe via
 7. **Jurisdiction-Aware Tax Calculation & Auditable Snapshots:** client cart/checkout queries `POST /api/v1/tax/quote` for real-time estimated sales tax/VAT → on order placement, client calls `POST /api/v1/tax/calculate` or `order-service` consumes `order.created` → `tax-service` persists immutable calculation snapshots with line rates and rule versions (`tax.calculation.completed`) → on item returns, `POST /api/v1/tax/returns/quote` calculates exact proportional tax adjustments.
 8. **Return & Refund SAGA Lifecycle:** customer requests return via client (`POST /api/v1/returns/orders/:orderId`) with evidence media → `return-service` verifies return window & item policy → emits `return.requested` → admin/seller approves (`POST /api/v1/admin/returns/:id/approve`) → emits `return.approved` & `return.shipment.requested` → `shipping-service` generates reverse logistics label → warehouse inspects items (`POST /api/v1/admin/returns/:id/inspect`) → emits `return.inspection.completed` (restocking in `inventory-service`) & `return.refund.requested` → `payment-service` executes Stripe refund → emits `payment.refund.succeeded` → `return-service` marks return `COMPLETED`, emits `return.completed` → `order-service` marks order `refunded`, `analytic-service` tracks return metrics, and `email-service` delivers refund confirmation receipt.
 9. **Merchant Onboarding, KYB Verification & Storefront Lifecycle:** merchant registers legal business profile (`POST /api/v1/vendors`) and uploads KYB documents via presigned media URLs → requests verification (`vendor.verification.requested`) → compliance admin reviews and approves (`POST /api/v1/admin/vendors/:id/verify`) → `vendor-service` emits `vendor.verified` → `user-service` consumes event and promotes user profile `isSeller: true` → merchant creates customer storefront (`POST /api/v1/sellers`) → `seller-service` emits `seller.created` → storefront goes live with custom slug and policies (`/stores/[slug]`) → `api-gateway` injects `x-user-is-seller: true` into authenticated requests, enabling seller portal actions and multi-vendor product listings.
+10. **Read-Your-Writes Consistency & LSN-Aware Replica Fallback:** When a client mutates state (`POST`, `PUT`, `PATCH`, `DELETE`), API Gateway registers an atomic 500ms Read-Your-Writes lease in Redis (`markReadYourWrites`) and injects `x-force-primary: true`. PostgreSQL-backed writers additionally return `x-db-lsn` (`pg_current_wal_lsn()`); the gateway caches it per client session (`markReadYourWritesWithLSN`). `catalog-service` detects the lease via `databaseContext`, bypasses stale Redis read caches, and compares the session LSN with the replica's `pg_last_wal_replay_lsn()`: while the replica lags, reads fail over to `prisma` (primary) instead of `readPrisma`. MongoDB-backed services (`order`, `cart`) rely on the 500ms time lease only.
+11. **Distributed Outbox Sweeper Fencing & Heartbeat Isolation:** Horizontally scaled `order-service` pods elect an active outbox sweeper via `DistributedLeaderElector` over `@repo/redis` using decoupled asynchronous heartbeat renewal loops with monotonically increasing fencing tokens (`fencingToken`) to prevent heartbeat drift and duplicate Kafka dispatches.
+12. **Mixed-Traffic Resilience Drill:** `infrastructure/chaos/flash-sale-mixed-traffic.yaml` runs a serial workflow whose `Parallel` branch applies order-plane latency (`order-service ↔ mongo`) **and** read-plane replica lag (`catalog-service → postgres-replica`) during flash-sale checkout, then a 60s `Suspend` observes recovery. Expected invariants: checkout fast-sheds with HTTP 503 + `Retry-After` (bulkhead/adaptive limits) rather than corrupting orders, and storefront reads fail over to the primary via the LSN guard with no stale-product regressions.
 
 ## Before changing anything
 

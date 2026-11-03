@@ -13,14 +13,14 @@
 
 ## 2. Bounded Contexts & Data Ownership
 
-| Bounded Context        | Owning Microservice     | Storage Engine   | Access Layer                | Data Lifecycle                                |
-| :--------------------- | :---------------------- | :--------------- | :-------------------------- | :-------------------------------------------- |
-| **Catalog & Products** | `apps/product-service`  | PostgreSQL       | `@repo/product-db` (Prisma) | CRUD with transactional ACID guarantees       |
-| **Orders & Sales**     | `apps/order-service`    | MongoDB          | `@repo/order-db` (Mongoose) | Append-mostly with high write throughput      |
-| **Checkout & Billing** | `apps/payment-service`  | Stripe Vault     | `stripe` Node SDK           | Tokenized sessions with PCI-DSS compliance    |
-| **User Identity**      | `apps/auth-service`     | Clerk Identity   | `@clerk/express` SDK        | Managed user store with JWT session claims    |
-| **Transactional Mail** | `apps/email-service`    | Ephemeral        | Nodemailer / OAuth2         | In-memory message consumption                 |
-| **Platform Analytics** | `apps/analytic-service` | PostgreSQL / Mem | `pg.Pool`                   | Immutable event log + daily rollup aggregates |
+| Bounded Context        | Owning Microservice     | Storage Engine   | Access Layer                | Data Lifecycle                                                  |
+| :--------------------- | :---------------------- | :--------------- | :-------------------------- | :-------------------------------------------------------------- |
+| **Catalog & Products** | `apps/product-service`  | PostgreSQL       | `@repo/product-db` (Prisma) | CRUD with transactional ACID guarantees                         |
+| **Orders & Sales**     | `apps/order-service`    | MongoDB          | `@repo/order-db` (Mongoose) | Append-mostly with high write throughput                        |
+| **Checkout & Billing** | `apps/payment-service`  | Stripe Vault     | `stripe` Node SDK           | Tokenized sessions with PCI-DSS compliance                      |
+| **User Identity**      | `apps/auth-service`     | Clerk Identity   | `@clerk/express` SDK        | Managed user store with JWT session claims                      |
+| **Transactional Mail** | `apps/email-service`    | Ephemeral        | Nodemailer / OAuth2         | In-memory message consumption                                   |
+| **Platform Analytics** | `apps/analytic-service` | PostgreSQL / Mem | `pgxpool` (`jackc/pgx/v5`)  | Partitioned binary COPY audit logs + atomic in-memory KPI store |
 
 ---
 
@@ -69,14 +69,12 @@ To sustain high read-to-write ratios during flash sales without saturating the p
      [PostgreSQL Read Replica (Hot Standby)] ◀───(WAL Stream)─── [PostgreSQL Primary Writer]
 ```
 
-### Read-Write Client Separation (`@repo/catalog-db`)
+### Read-Write Client Separation & Read-Your-Writes Consistency (`@repo/catalog-db`)
 
-- **`readPrisma`**: Connected to `DATABASE_READ_REPLICA_URL` (or PgBouncer `catalog_db_replica` pool on port 6432). Used exclusively by storefront browsing repositories:
-  - `catalog.repository.ts` (`findById`, `findMany`, search, filters, pagination)
-  - `category.repository.ts` (category trees and slugs)
-  - `brand.repository.ts` (brand catalogs)
-  - `collection.repository.ts` (curated storefront collections)
+- **`readPrisma`**: Connected to `DATABASE_READ_REPLICA_URL` (or PgBouncer `catalog_db_replica` pool on port 6432). Used by default for high-volume storefront browsing queries (`catalog.repository`, `category.repository`, `brand.repository`, `collection.repository`) to offload primary writers.
 - **`prisma`**: Connected to `DATABASE_URL` (primary writer pool `catalog_db`). Used exclusively by asynchronous Kafka projection consumers (`product-projector.ts`, `category-projector.ts`, `collection-projector.ts`) to persist updates from the write plane.
+- **`getCatalogDb(forcePrimary?: boolean)`**: Dynamically selects between `prisma` and `readPrisma`. When a mutating request arrives, API gateway registers a 500ms Read-Your-Writes lease in Redis (`markReadYourWrites`) and injects `x-force-primary: true`. Downstream, `catalog-service` detects the lease via `databaseContext`, bypasses stale Redis read caches, and queries `prisma` directly until replication log lag catches up.
+- **LSN-Aware Replica Lag Fallback**: Under heavy write storms (11.11 batch updates, vendor catalog sync), replication lag can drift past the 500ms lease window. PostgreSQL-backed write services therefore stamp `x-db-lsn` (`GATEWAY_HEADERS.DB_LSN`, from `pg_current_wal_lsn()`) onto every successful mutation response; the API Gateway caches the high-water mark per client session in Redis (`markReadYourWritesWithLSN`, 30s TTL). On each read, `catalog-service` compares the session LSN against the replica's current replay position (`pg_last_wal_replay_lsn()` via `readPrisma`) and forces the primary connection (`isReplicaLagging`) whenever the replica has not replayed past the session's mutation — failing safe when the replay position is null or unparseable. MongoDB-backed services (order, cart) have no WAL LSN and rely on the 500ms time lease only.
 - **Fail-Open Fallback**: If `DATABASE_READ_REPLICA_URL` is unset, `readPrisma` seamlessly falls back to the primary `prisma` instance with zero configuration changes.
 
 ---

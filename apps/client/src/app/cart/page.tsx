@@ -36,6 +36,7 @@ import { getTaxQuote } from "@/services/tax.service";
 import { fetchPriceQuote } from "@/services/pricing.service";
 import { useCurrencyStore } from "@/stores/currencyStore";
 import type { TaxCalculationResponse, PriceQuote } from "@repo/types";
+import { trackCustomerInteraction } from "@/services/analytics.service";
 
 const defaultSteps = [
   {
@@ -207,6 +208,14 @@ const CartContent = () => {
   }, [activePromotions]);
 
   const activeStep = parseInt(searchParams.get("step") || "1");
+
+  useEffect(() => {
+    trackCustomerInteraction({
+      userId: userId ?? undefined,
+      eventType: activeStep > 1 ? "CHECKOUT_START" : "VIEW",
+      metadata: { page: "cart", step: activeStep, itemCount: cart.length },
+    });
+  }, [activeStep, userId, cart.length]);
 
   // TanStack React Query + Axios hooks
   const { data: serverCartQueryData, isLoading: isCartLoading } =

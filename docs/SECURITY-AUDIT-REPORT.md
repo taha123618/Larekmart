@@ -44,11 +44,20 @@ A comprehensive architectural and source-code security audit was conducted acros
 
 ```
 VULNERABILITY HIERARCHY
+├── [CRIT] SEC-06: analytic-service accepted forged JWTs and defaulted to a known admin secret [RESOLVED]
 ├── [HIGH] SEC-01: IDOR & Unscoped Query in Order Service (GET /seller-orders) [RESOLVED & VERIFIED]
-├── [HIGH] SEC-02: Missing Seller Attribution & Cross-Seller Product Mutation
+├── [HIGH] SEC-02: Missing Seller Attribution & Cross-Seller Product Mutation [RESOLVED & VERIFIED]
+├── [HIGH] SEC-07: notification-service dev identity/WebSocket-origin bypass + Clerk-secret HMAC [RESOLVED]
+├── [HIGH] SEC-08: recommendation-service unverified JWT and dev ownership/admin bypass [RESOLVED]
+├── [HIGH] SEC-09: Internal secret alone granted admin to proxied users (seller/vendor/shipping) [RESOLVED]
+├── [HIGH] SEC-10: Gateway trusted arbitrary X-Forwarded-For (`trustProxy: true`) [RESOLVED]
 ├── [MED]  SEC-03: Production Boot Validation for INTERNAL_SERVICE_SECRET      [RESOLVED & VERIFIED]
-├── [LOW]  SEC-04: Network Perimeter Isolation of Microservice Ports
-└── [LOW]  SEC-05: Route-Specific Rate Limiting on Merchant Onboarding
+├── [MED]  SEC-11: Wildcard CORS with credentials in five Fastify services [RESOLVED]
+├── [MED]  SEC-12: Clerk secret key used as HMAC fallback (shipping/return) [RESOLVED]
+├── [MED]  SEC-13: Production-usable placeholder values in K8s Secret templates [RESOLVED]
+├── [LOW]  SEC-04: Network Perimeter Isolation of Microservice Ports [RESOLVED & VERIFIED]
+├── [LOW]  SEC-05: Route-Specific Rate Limiting on Merchant Onboarding [RESOLVED & VERIFIED]
+└── [LOW]  SEC-14: Residual transitive dependency advisories (zod v3, nested fastify/postcss) [TRACKED]
 ```
 
 ---
@@ -93,8 +102,9 @@ VULNERABILITY HIERARCHY
 
 ---
 
-### SEC-02 [HIGH]: Missing Seller Attribution & Cross-Seller Product Mutation
+### SEC-02 [HIGH]: Missing Seller Attribution & Cross-Seller Product Mutation [RESOLVED & VERIFIED]
 
+- **Status:** **RESOLVED & VERIFIED**
 - **Vulnerability Identifiers:** CWE-285 (Improper Authorization)
 - **Affected Files:**
   - Route: [`apps/product-service/src/routes/product.route.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/product-service/src/routes/product.route.ts#L22-L23)
@@ -102,10 +112,11 @@ VULNERABILITY HIERARCHY
   - Schema: [`packages/product-db/prisma/schema.prisma`](file:///Users/taha/projects/microservices-ecommerce/packages/product-db/prisma/schema.prisma#L11-L24)
 - **Detailed Mechanics:**
   `router.put("/:id", shouldBeSellerOrAdmin, updateProduct)` and `router.delete("/:id", shouldBeSellerOrAdmin, deleteProduct)` allow any authenticated user with `role === "seller"` to invoke update and delete operations.
-  However, the `Product` model in `packages/product-db` does not track a `sellerId` or `vendorId`. Consequently, any seller on the marketplace can modify or delete products created by competing sellers by specifying their numeric `id`.
-- **Defensive Remediation:**
-  1. Evolve `packages/product-db/prisma/schema.prisma` to include an attributable `sellerId String?` column.
-  2. In `updateProduct` and `deleteProduct`, verify that `product.sellerId === req.userId` unless `req.userRole === "admin"`.
+  Previously, the `Product` model in `packages/product-db` did not track a `sellerId` or `vendorId`. Consequently, any seller on the marketplace could modify or delete products created by competing sellers by specifying their numeric `id`.
+- **Defensive Remediation Implemented:**
+  1. Evolved `packages/product-db/prisma/schema.prisma` to include an attributable `sellerId String?` column with `@@index([sellerId])` and generated Prisma client.
+  2. In `createProduct`, automatically attributed `sellerId = req.userId` for seller requests (or explicit delegation if caller is admin).
+  3. In `updateProduct` and `deleteProduct`, enforced that non-admin callers can only modify or delete products where `product.sellerId === req.userId`, returning `403 Forbidden` for other sellers' or unowned products.
 
 ---
 
@@ -125,24 +136,27 @@ VULNERABILITY HIERARCHY
 
 ---
 
-### SEC-04 [LOW]: Network Perimeter Isolation of Microservice Ports
+### SEC-04 [LOW]: Network Perimeter Isolation of Microservice Ports [RESOLVED & VERIFIED]
 
+- **Status:** **RESOLVED & VERIFIED**
 - **Vulnerability Identifiers:** CWE-668 (Exposure of Resource to Wrong Sphere)
+- **Affected File:** [`docker-compose.yml`](file:///Users/taha/projects/microservices-ecommerce/docker-compose.yml)
 - **Detailed Mechanics:**
   Downstream microservices (e.g. `order-service:8001`, `seller-service:8021`) rely on the API Gateway to strip spoofed client headers. If microservice ports are exposed directly to the public internet (rather than strictly to internal Docker bridge or Kubernetes SDN networks), an attacker could bypass the Gateway's rate limiting and header-stripping defenses.
-- **Defensive Remediation:**
-  Ensure Docker Compose and Kubernetes manifests bind backend service ports to `127.0.0.1` or internal service networks, exposing only ports `8080` (API Gateway), `3002` (Client Storefront), and `3003` (Admin Dashboard) to external ingress routers.
+- **Defensive Remediation Implemented:**
+  Configured all downstream microservice port definitions in `docker-compose.yml` to bind strictly to `${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}` loopback, isolating internal communication from external interfaces while exposing only the edge ingress routers (`api-gateway:8080`, storefront, admin).
 
 ---
 
-### SEC-05 [LOW]: Dedicated Route-Level Rate Limiting on Onboarding
+### SEC-05 [LOW]: Dedicated Route-Level Rate Limiting on Onboarding [RESOLVED & VERIFIED]
 
+- **Status:** **RESOLVED & VERIFIED**
 - **Vulnerability Identifiers:** CWE-799 (Improper Control of Generation of Frequent Requests)
-- **Affected File:** [`apps/api-gateway/src/middleware/rate-limit.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/api-gateway/src/middleware/rate-limit.ts)
+- **Affected File:** [`apps/api-gateway/src/gateway/policies.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/api-gateway/src/gateway/policies.ts)
 - **Detailed Mechanics:**
-  While the API Gateway applies a global sliding-window rate limit, sensitive write endpoints such as merchant onboarding (`POST /api/v1/sellers` and `POST /api/v1/vendors`) should have stricter dedicated thresholds (e.g., 5 requests per minute per IP) to prevent automated account creation abuse.
-- **Defensive Remediation:**
-  Register dedicated route-scoped rate limiters in `api-gateway` for `/api/v1/sellers` and `/api/v1/vendors`.
+  While the API Gateway applies a global sliding-window rate limit, sensitive write endpoints such as merchant onboarding (`POST /api/v1/sellers` and `POST /api/v1/vendors`) previously fell through to default thresholds (100 requests per minute), exposing the platform to automated account creation and resource exhaustion abuse.
+- **Defensive Remediation Implemented:**
+  Introduced dedicated `ONBOARDING` rate limiting policy (10 requests/minute per client identity/IP) in [`RATE_LIMIT_POLICIES`](file:///Users/taha/projects/microservices-ecommerce/apps/api-gateway/src/gateway/policies.ts) matching `/sellers`, `/vendors`, and `/onboarding` routes.
 
 ---
 
@@ -245,6 +259,8 @@ The media processing architecture in [`apps/media-service`](file:///Users/taha/p
 - [x] File uploads enforce size limits, deterministic keys, and magic-byte checks.
 - [x] CORS policies enforce strict origin allowlists without wildcard reflection.
 - [x] Kafka consumer loops isolate message handler exceptions to prevent crashes.
-- [ ] Order service scopes `GET /seller-orders` strictly to `request.userId` (Remediation: SEC-01).
-- [ ] Product service validates seller attribution on `PUT/DELETE /products/:id` (Remediation: SEC-02).
-- [ ] Production bootstrap enforces non-default `INTERNAL_SERVICE_SECRET` (Remediation: SEC-03).
+- [x] Order service scopes `GET /seller-orders` strictly to `request.userId` (Remediation: SEC-01).
+- [x] Product service validates seller attribution on `PUT/DELETE /products/:id` (Remediation: SEC-02).
+- [x] Production bootstrap enforces non-default `INTERNAL_SERVICE_SECRET` (Remediation: SEC-03).
+- [x] Network perimeter isolation of microservice ports (Remediation: SEC-04).
+- [x] Route-specific rate limiting on merchant onboarding (Remediation: SEC-05).

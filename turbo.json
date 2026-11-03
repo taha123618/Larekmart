@@ -8,7 +8,12 @@
     "STRIPE_SECRET_KEY",
     "INTERNAL_API_GATEWAY_URL",
     "API_GATEWAY_URL",
-    "INTERNAL_WS_URL"
+    "INTERNAL_WS_URL",
+    "CLIENT_API_GATEWAY_URL",
+    "CLIENT_WS_URL",
+    "ADMIN_API_GATEWAY_URL",
+    "ADMIN_WS_URL",
+    "NOTIFICATION_WS_URL"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",
@@ -17,7 +22,12 @@
     "STRIPE_SECRET_KEY",
     "INTERNAL_API_GATEWAY_URL",
     "API_GATEWAY_URL",
-    "INTERNAL_WS_URL"
+    "INTERNAL_WS_URL",
+    "CLIENT_API_GATEWAY_URL",
+    "CLIENT_WS_URL",
+    "ADMIN_API_GATEWAY_URL",
+    "ADMIN_WS_URL",
+    "NOTIFICATION_WS_URL"
   ],
   "tasks": {
     "build": {
@@ -32,7 +42,12 @@
         "STRIPE_SECRET_KEY",
         "INTERNAL_API_GATEWAY_URL",
         "API_GATEWAY_URL",
-        "INTERNAL_WS_URL"
+        "INTERNAL_WS_URL",
+        "CLIENT_API_GATEWAY_URL",
+        "CLIENT_WS_URL",
+        "ADMIN_API_GATEWAY_URL",
+        "ADMIN_WS_URL",
+        "NOTIFICATION_WS_URL"
       ]
     },
     "lint": {

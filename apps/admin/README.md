@@ -30,11 +30,21 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 
 # Centralized API Gateway (Authoritative Single Entry Point for all services)
+# Note: In production or containerized environments, these can also be configured
+# dynamically at runtime via ADMIN_API_GATEWAY_URL and ADMIN_WS_URL.
 NEXT_PUBLIC_API_GATEWAY_URL=http://localhost:8090
 NEXT_PUBLIC_CLIENT_URL=http://localhost:3002
 NEXT_PUBLIC_NOTIFICATION_WS_URL=ws://localhost:8090/ws
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
 ```
+
+## Dynamic Runtime Configuration & Build-Lockout Elimination
+
+The admin dashboard avoids compile-time environment variable lockouts for API gateway URLs:
+
+1. **`/api/config` Endpoint**: Dynamically serves runtime endpoints (`ADMIN_API_GATEWAY_URL`, `ADMIN_WS_URL`, `NEXT_PUBLIC_API_GATEWAY_URL`) at request time.
+2. **`RuntimeConfigProvider`**: Root layout provider in `src/app/layout.tsx` that hydrates runtime endpoints into client state.
+3. **Dynamic Relative Routing & Next.js Rewrites**: In production behind a reverse proxy (Traefik/Ingress), routes default to relative paths (`""` -> `/api/v1/*`). In local development, `next.config.ts` rewrites `/api/v1/:path*` directly to the API Gateway.
 
 ## Development Commands
 

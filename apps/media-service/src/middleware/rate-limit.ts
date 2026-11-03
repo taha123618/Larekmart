@@ -20,8 +20,11 @@ export interface RateLimitRule {
  */
 export function createRateLimiter(rule: RateLimitRule): MiddlewareHandler {
   return async (c: Context, next: () => Promise<void>) => {
-    const identity =
-      c.get("userId") ?? c.req.header("x-forwarded-for") ?? "anonymous";
+    // Never derive identity from a client-supplied forwarding header: an
+    // attacker could rotate x-forwarded-for to get a fresh bucket per request.
+    // Authenticated callers are keyed by verified userId; everyone else shares
+    // a single anonymous bucket.
+    const identity = c.get("userId") ?? "anonymous";
     const key = redis.keys.namespace("ratelimit", rule.name, identity);
 
     try {

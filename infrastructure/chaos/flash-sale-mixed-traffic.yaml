@@ -1,0 +1,93 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: flash-sale-mixed-traffic
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: larekmart
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: chaos-engineering
+    larekmart.io/traffic-profile: flash-sale-mixed
+  annotations:
+    larekmart.io/description: >-
+      Flash-sale checkout storm that degrades the ORDER write/read plane
+      (order-service <-> sharded MongoDB) and the CATALOG read plane
+      (catalog-service -> PostgreSQL standby) concurrently, so both routing
+      decisions are exercised under the same burst of buyer traffic.
+spec:
+  entry: flash-sale-mixed-traffic
+  templates:
+    # Both planes are injected at the same time: every checkout writes to the
+    # hashed MongoDB order shards while the same buyer immediately reads the
+    # catalog, whose replica is lagging the checkout WAL high-water mark.
+    - name: flash-sale-mixed-traffic
+      templateType: Serial
+      children:
+        - mixed-traffic-planes
+        - recovery-observation-window
+
+    - name: mixed-traffic-planes
+      templateType: Parallel
+      children:
+        - order-routing-mongo-latency
+        - read-routing-replica-lag
+
+    # Order plane: checkout commits and buyer order-history reads traverse the
+    # { userId: "hashed" } shard key under degraded inter-shard latency.
+    - name: order-routing-mongo-latency
+      templateType: NetworkChaos
+      deadline: 4m
+      networkChaos:
+        action: delay
+        mode: all
+        selector:
+          namespaces:
+            - larekmart
+          labelSelectors:
+            app.kubernetes.io/name: order-service
+        delay:
+          latency: "900ms"
+          jitter: "250ms"
+          correlation: "60"
+        direction: both
+        target:
+          selector:
+            namespaces:
+              - larekmart
+            labelSelectors:
+              app.kubernetes.io/name: mongo
+          mode: all
+
+    # Read plane: the standby's replay position falls behind the checkout LSN,
+    # forcing mutating sessions onto the primary while bystanders stay on the
+    # replica (per-session failover, not a global flip).
+    - name: read-routing-replica-lag
+      templateType: NetworkChaos
+      deadline: 4m
+      networkChaos:
+        action: delay
+        mode: all
+        selector:
+          namespaces:
+            - larekmart
+          labelSelectors:
+            app.kubernetes.io/name: catalog-service
+        delay:
+          latency: "1500ms"
+          jitter: "600ms"
+          correlation: "60"
+        direction: to
+        target:
+          selector:
+            namespaces:
+              - larekmart
+            labelSelectors:
+              app.kubernetes.io/name: postgres-replica
+          mode: all
+
+    # Chaos lifts, but both planes stay observable for one more minute so the
+    # replica can replay past the last checkout LSN and order shard queues can
+    # drain before the drill is declared recovered.
+    - name: recovery-observation-window
+      templateType: Suspend
+      deadline: 60s

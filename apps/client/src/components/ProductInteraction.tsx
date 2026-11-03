@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "@clerk/nextjs";
 import { sendInteraction } from "@/services/recommendation.service";
+import { trackCustomerInteraction } from "@/services/analytics.service";
 import {
   fetchProductPrice,
   type ProductPricingDetails,
@@ -99,12 +100,19 @@ const ProductInteraction = ({
 
     fetchStock();
 
-    // Record VIEW interaction for AI recommendations
+    // Record VIEW interaction for AI recommendations and customer analytics
     sendInteraction({
       userId: effectiveUserId,
       productId: Number(product.id),
       eventType: "VIEW",
       metadata: { categorySlug: product.categorySlug },
+    });
+
+    trackCustomerInteraction({
+      userId: effectiveUserId,
+      productId: Number(product.id),
+      categorySlug: product.categorySlug,
+      eventType: "VIEW",
     });
 
     return () => {
@@ -126,7 +134,7 @@ const ProductInteraction = ({
           setPricingDetails(data);
         }
       })
-      .catch(() => { });
+      .catch(() => {});
     return () => {
       isMounted = false;
     };
@@ -196,7 +204,7 @@ const ProductInteraction = ({
       selectedSize,
     });
 
-    // Record ADD_TO_CART interaction for personalized recommendations
+    // Record ADD_TO_CART interaction for personalized recommendations and customer analytics
     sendInteraction({
       userId: effectiveUserId,
       productId: Number(product.id),
@@ -206,6 +214,19 @@ const ProductInteraction = ({
         color: selectedColor,
         quantity,
         categorySlug: product.categorySlug,
+        effectivePrice: effectiveUnitPrice,
+      },
+    });
+
+    trackCustomerInteraction({
+      userId: effectiveUserId,
+      productId: Number(product.id),
+      categorySlug: product.categorySlug,
+      eventType: "ADD_TO_CART",
+      metadata: {
+        size: selectedSize,
+        color: selectedColor,
+        quantity,
         effectivePrice: effectiveUnitPrice,
       },
     });
@@ -247,18 +268,20 @@ const ProductInteraction = ({
         <div className="flex items-center gap-2">
           {product.sizes.map((size) => (
             <div
-              className={`cursor-pointer border p-[2px] rounded-xl transition-all duration-200 ${selectedSize === size
+              className={`cursor-pointer border p-[2px] rounded-xl transition-all duration-200 ${
+                selectedSize === size
                   ? "border-indigo-600 ring-2 ring-indigo-500/40 ring-offset-1 ring-offset-white dark:ring-offset-slate-900"
                   : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
-                }`}
+              }`}
               key={size}
               onClick={() => handleTypeChange("size", size)}
             >
               <div
-                className={`w-8 h-8 text-xs font-bold rounded-lg text-center flex items-center justify-center transition ${selectedSize === size
+                className={`w-8 h-8 text-xs font-bold rounded-lg text-center flex items-center justify-center transition ${
+                  selectedSize === size
                     ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-xs"
                     : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-                  }`}
+                }`}
               >
                 {size.toUpperCase()}
               </div>
@@ -278,10 +301,11 @@ const ProductInteraction = ({
         <div className="flex items-center gap-2.5">
           {product.colors.map((color) => (
             <div
-              className={`cursor-pointer border p-[2px] rounded-full transition-all duration-200 ${selectedColor === color
+              className={`cursor-pointer border p-[2px] rounded-full transition-all duration-200 ${
+                selectedColor === color
                   ? "border-indigo-600 ring-2 ring-indigo-500/50 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 scale-110"
                   : "border-transparent hover:border-slate-300 dark:hover:border-slate-600 opacity-80 hover:opacity-100"
-                }`}
+              }`}
               key={color}
               onClick={() => handleTypeChange("color", color)}
             >
@@ -360,10 +384,11 @@ const ProductInteraction = ({
               {pricingDetails.rules.map((rule) => (
                 <span
                   key={rule.id}
-                  className={`text-[10px] px-2 py-0.5 rounded-full border transition ${quantity >= rule.minQuantity
+                  className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
+                    quantity >= rule.minQuantity
                       ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-semibold"
                       : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
-                    }`}
+                  }`}
                 >
                   Buy {rule.minQuantity}+{": "}
                   {rule.discountType === "percentage"
@@ -381,10 +406,11 @@ const ProductInteraction = ({
         <button
           onClick={handleAddToCart}
           disabled={isOutOfStock}
-          className={`flex-1 px-5 py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 active:scale-[0.98] ${isOutOfStock
+          className={`flex-1 px-5 py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 active:scale-[0.98] ${
+            isOutOfStock
               ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
               : "bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white cursor-pointer shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/25"
-            }`}
+          }`}
         >
           <Plus className="w-4 h-4" />
           {isOutOfStock ? "Out of Stock" : "Add to Cart"}
@@ -396,10 +422,11 @@ const ProductInteraction = ({
             openCartDrawer();
           }}
           disabled={isOutOfStock}
-          className={`flex-1 px-5 py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 active:scale-[0.98] ${isOutOfStock
+          className={`flex-1 px-5 py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 active:scale-[0.98] ${
+            isOutOfStock
               ? "border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
               : "bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white cursor-pointer shadow-md hover:shadow-lg border border-slate-700/50"
-            }`}
+          }`}
         >
           <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
           {isOutOfStock ? "Unavailable" : "Buy Now"}
@@ -412,10 +439,11 @@ const ProductInteraction = ({
             if (added) toast.success("Saved to wishlist!");
             else toast.info("Removed from wishlist");
           }}
-          className={`p-3.5 rounded-xl border transition-all duration-200 flex items-center justify-center cursor-pointer active:scale-95 ${isFavorited
+          className={`p-3.5 rounded-xl border transition-all duration-200 flex items-center justify-center cursor-pointer active:scale-95 ${
+            isFavorited
               ? "bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 shadow-xs"
               : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:border-rose-200 dark:hover:border-rose-800"
-            }`}
+          }`}
           title={isFavorited ? "Saved to Wishlist" : "Save to Wishlist"}
           aria-label="Toggle Wishlist"
         >

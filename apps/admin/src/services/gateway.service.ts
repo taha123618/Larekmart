@@ -2,6 +2,7 @@
  * gateway.service.ts
  *
  * Admin client service for communicating with the centralized API Gateway (port 8080).
+ * Provides unified endpoint resolution, telemetry, and error handling for the admin dashboard.
  */
 
 import type { GatewayHealthResponse } from "@repo/types";
@@ -9,30 +10,42 @@ import type { GatewayHealthResponse } from "@repo/types";
 /**
  * Returns the API Gateway base URL.
  * - Browser: Defaults to relative root ("") so requests (/api/v1/...) route through
- *   the Traefik reverse-proxy dynamically. If NEXT_PUBLIC_API_GATEWAY_URL is provided,
- *   it is sanitized: if accessing from a remote domain but the URL contains localhost,
- *   the localhost override is safely discarded to prevent client build-lock breaks.
+ *   the Traefik reverse-proxy dynamically. Prioritizes window.__RUNTIME_CONFIG__?.apiGatewayUrl
+ *   if set at runtime. If NEXT_PUBLIC_API_GATEWAY_URL is provided, it is sanitized:
+ *   any origin mismatch with the current browser location is discarded to eliminate
+ *   hardcoded compile-time build lockouts on staging and Kubernetes environments.
  * - Server (Node SSR): Uses INTERNAL_API_GATEWAY_URL or API_GATEWAY_URL, falling back
  *   to direct localhost:8080 (or NEXT_PUBLIC_API_GATEWAY_URL) for absolute URL fetches.
  */
 export const getApiGatewayUrl = (): string => {
   if (typeof window !== "undefined") {
+    // 1. Runtime configuration provider wrapper (injected dynamically via SSR or /api/config)
+    const runtimeUrl = window.__RUNTIME_CONFIG__?.apiGatewayUrl;
+    if (runtimeUrl && runtimeUrl.trim() !== "") {
+      return runtimeUrl.trim().replace(/\/+$/, "");
+    }
+
+    // 2. Validate compile-time NEXT_PUBLIC_API_GATEWAY_URL:
+    // Only accept if it is an explicit relative path or matches the current browser origin.
+    // Discard any hardcoded mismatch to prevent breaking deployments across Kubernetes/cloud environments.
     const publicUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
     if (publicUrl && publicUrl.trim() !== "") {
-      const isLocalhostHost =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1" ||
-        window.location.hostname === "0.0.0.0";
-      const isLocalhostUrl =
-        publicUrl.includes("localhost") || publicUrl.includes("127.0.0.1");
-
-      // Discard localhost baked values if client is accessing from a remote domain
-      if (!isLocalhostHost && isLocalhostUrl) {
-        return "";
+      const trimmed = publicUrl.trim();
+      if (trimmed.startsWith("/")) {
+        return trimmed.replace(/\/+$/, "");
       }
-      return publicUrl.replace(/\/+$/, "");
+      try {
+        const parsed = new URL(trimmed);
+        if (parsed.origin === window.location.origin) {
+          return trimmed.replace(/\/+$/, "");
+        }
+      } catch {
+        // Discard malformed URL
+      }
     }
-    // Relative request prefix for same-origin proxying behind Traefik/edge
+
+    // 3. Dynamic relative location mapping path by default ("")
+    // Browser routes all requests seamlessly to the current origin via Traefik edge reverse proxy
     return "";
   }
 
@@ -51,43 +64,55 @@ export const getApiGatewayUrl = (): string => {
  */
 export const getServiceUrl = (serviceEnvValue?: string): string => {
   if (serviceEnvValue && serviceEnvValue.trim() !== "") {
+    const trimmed = serviceEnvValue.trim();
     if (typeof window !== "undefined") {
-      const isLocalhostHost =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1" ||
-        window.location.hostname === "0.0.0.0";
-      const isLocalhostUrl =
-        serviceEnvValue.includes("localhost") ||
-        serviceEnvValue.includes("127.0.0.1");
-
-      if (!isLocalhostHost && isLocalhostUrl) {
-        return getApiGatewayUrl();
+      if (trimmed.startsWith("/")) {
+        return trimmed.replace(/\/+$/, "");
       }
+      try {
+        const parsed = new URL(trimmed);
+        if (parsed.origin === window.location.origin) {
+          return trimmed.replace(/\/+$/, "");
+        }
+      } catch {
+        // Discard malformed URL — fall through to gateway
+      }
+      return getApiGatewayUrl();
     }
-    return serviceEnvValue.replace(/\/+$/, "");
+    return trimmed.replace(/\/+$/, "");
   }
   return getApiGatewayUrl();
 };
 
 /**
- * Resolves the WebSocket URL for notification feeds.
+ * Resolves the WebSocket URL for admin notification feeds.
  * Dynamically infers ws:// or wss:// from the current window location in browser,
  * avoiding hardcoded localhost overrides on staging/production environments.
  */
 export const getNotificationWsUrl = (): string => {
-  const wsEnv = process.env.NEXT_PUBLIC_NOTIFICATION_WS_URL;
   if (typeof window !== "undefined") {
-    const isLocalhostHost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.hostname === "0.0.0.0";
-    const isLocalhostUrl = wsEnv
-      ? wsEnv.includes("localhost") || wsEnv.includes("127.0.0.1")
-      : false;
-
-    if (wsEnv && wsEnv.trim() !== "" && (isLocalhostHost || !isLocalhostUrl)) {
-      return wsEnv;
+    // 1. Runtime configuration provider wrapper
+    const runtimeWs = window.__RUNTIME_CONFIG__?.wsUrl;
+    if (runtimeWs && runtimeWs.trim() !== "") {
+      return runtimeWs.trim();
     }
+
+    // 2. Compile-time env var — only use if origin-compatible
+    const wsEnv = process.env.NEXT_PUBLIC_NOTIFICATION_WS_URL;
+    if (wsEnv && wsEnv.trim() !== "") {
+      try {
+        const parsed = new URL(wsEnv.trim());
+        const originHost = `${window.location.hostname}:${window.location.port}`;
+        const envHost = `${parsed.hostname}:${parsed.port}`;
+        if (originHost === envHost) {
+          return wsEnv.trim();
+        }
+      } catch {
+        // Discard malformed WS URL
+      }
+    }
+
+    // 3. Dynamically infer ws:// or wss:// from browser origin
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     return `${protocol}//${window.location.host}/ws`;
   }
@@ -116,6 +141,35 @@ export const buildSafeUrl = (endpoint: string, baseOverride?: string): URL => {
         ).replace(/\/+$/, "");
   return new URL(endpoint, base);
 };
+
+/**
+ * Runtime configuration interface populated from /api/config server-side endpoint.
+ */
+export interface RuntimeConfigData {
+  apiGatewayUrl?: string;
+  wsUrl?: string;
+  environment?: string;
+}
+
+/**
+ * Fetches runtime configuration from the Next.js /api/config endpoint.
+ * Sets window.__RUNTIME_CONFIG__ to update client-side routing dynamically without rebuilds.
+ */
+export async function fetchRuntimeConfig(): Promise<RuntimeConfigData | null> {
+  if (typeof window === "undefined") return null;
+  try {
+    const res = await fetch("/api/config", {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    const config = (await res.json()) as RuntimeConfigData;
+    window.__RUNTIME_CONFIG__ = config;
+    return config;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Checks API Gateway health status from admin app.

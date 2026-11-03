@@ -32,6 +32,9 @@ and uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-for
 - **Data fetching in server components:** `auth()` from `@clerk/nextjs/server` for session
   info; fetch service data with `Authorization: Bearer <token>` via unified API Gateway
   (`getApiGatewayUrl()` / `NEXT_PUBLIC_API_GATEWAY_URL`).
+- **Dynamic Service URLs & Runtime Config:** The dashboard uses runtime configuration via `/api/config`
+  and `<RuntimeConfigProvider>` in `src/app/layout.tsx`. If no gateway URL is set, `getApiGatewayUrl()`
+  falls back to relative path (`""`), matching Next.js `rewrites()` locally and Traefik reverse proxying in production.
 - **Interactive screens:** TanStack Query (`useQuery`/`useMutation`) for mutations and
   polling-heavy screens. Forms use `react-hook-form` + Zod.
 - **Tables:** TanStack Table with per-section column definitions.

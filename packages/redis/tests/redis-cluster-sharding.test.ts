@@ -2,8 +2,16 @@ import assert from "node:assert/strict";
 import {
   createKeyBuilder,
   createClusterHashTag,
+  createTenantWarehouseHashTag,
   extractClusterHashTag,
   calculateClusterSlot,
+  validateClusterHashTag,
+  assertClusterSlotAlignment,
+  evalClusterSafe,
+  evalTenantWarehouseSafe,
+  CrossSlotValidationError,
+  InvalidHashTagError,
+  TENANT_WAREHOUSE_TAG_PATTERN,
   crc16,
   acquireRedlockConsensus,
   releaseRedlockConsensus,
@@ -12,6 +20,12 @@ import {
   withRedlockConsensus,
   DistributedLeaderElector,
   LeaderElection,
+  LeaderFencingError,
+  markReadYourWrites,
+  isReadYourWritesActive,
+  clearReadYourWrites,
+  buildReadYourWritesKey,
+  DEFAULT_RYW_TTL_MS,
 } from "../src/index.js";
 import type { Redis } from "ioredis";
 
@@ -80,7 +94,7 @@ async function runRedisClusterShardingTests(): Promise<void> {
   // ---------------------------------------------------------------------------
   // TEST 3: KeyBuilder Sharded Method
   // ---------------------------------------------------------------------------
-  console.log("\n3. Testing KeyBuilder.sharded()...");
+  console.log("\n3. Testing KeyBuilder.sharded() and shardedTenant()...");
   const builder = createKeyBuilder("inventory:v1");
   const shardedKey = builder.sharded("pk_isb_01", "available", 554, "var_blue");
   assert.equal(
@@ -90,6 +104,113 @@ async function runRedisClusterShardingTests(): Promise<void> {
   );
   assert.equal(extractClusterHashTag(shardedKey), "pk_isb_01");
   console.log("  ✓ KeyBuilder.sharded generated correct slot-pinned key");
+
+  const shardedTenantKey = builder.shardedTenant(
+    "pk_isb_01",
+    "tenant_pk",
+    "available",
+    554,
+    "var_blue",
+  );
+  assert.equal(
+    shardedTenantKey,
+    "inventory:v1:{tenant_pk:pk_isb_01}:available:554:var_blue",
+    "KeyBuilder.shardedTenant must format as <prefix>{tenant:wh}:segment:segment",
+  );
+  assert.equal(extractClusterHashTag(shardedTenantKey), "tenant_pk:pk_isb_01");
+  console.log(
+    "  ✓ KeyBuilder.shardedTenant generated structural multi-tenant key",
+  );
+
+  // ---------------------------------------------------------------------------
+  // TEST 3B: Strict Structural Hash Tag Validation & Formatting
+  // ---------------------------------------------------------------------------
+  console.log(
+    "\n3B. Testing structural {tenant_id:warehouse_id} validation and formatting...",
+  );
+  // Test formatting variations
+  assert.equal(
+    createTenantWarehouseHashTag("wh_01", "tenant_a"),
+    "{tenant_a:wh_01}",
+    "createTenantWarehouseHashTag must join tenant and warehouse",
+  );
+  assert.equal(
+    createTenantWarehouseHashTag("wh_01"),
+    "{larekmart:wh_01}",
+    "createTenantWarehouseHashTag without tenant must default to {larekmart:wh_01}",
+  );
+  assert.equal(
+    createTenantWarehouseHashTag("{tenant_b:wh_02}"),
+    "{tenant_b:wh_02}",
+    "createTenantWarehouseHashTag must preserve valid bracketed tag",
+  );
+  assert.equal(
+    createTenantWarehouseHashTag("{legacy_single}"),
+    "{larekmart:legacy_single}",
+    "createTenantWarehouseHashTag must upgrade legacy single-token bracketed tag",
+  );
+
+  // Validate cluster hash tag
+  const validKey = "stock:available:{tenant_pk:wh_khi}:99:v1";
+  assert.equal(
+    validateClusterHashTag(validKey, TENANT_WAREHOUSE_TAG_PATTERN),
+    "tenant_pk:wh_khi",
+  );
+
+  // Rejection of invalid hash tags
+  assert.throws(
+    () => validateClusterHashTag("unbracketed_plain_key"),
+    InvalidHashTagError,
+    "Keys without brackets must throw InvalidHashTagError",
+  );
+  assert.throws(
+    () => validateClusterHashTag("stock:available:{only_warehouse}:99:v1"),
+    InvalidHashTagError,
+    "Naked warehouse tag must violate structural pattern",
+  );
+  assert.throws(
+    () => validateClusterHashTag("stock:available:{prod_1}:{var_2}:{wh_3}"),
+    InvalidHashTagError,
+    "Multi-bracket key must violate structural pattern",
+  );
+  console.log(
+    "  ✓ validateClusterHashTag properly enforced {tenant_id:warehouse_id} structural contract",
+  );
+
+  // ---------------------------------------------------------------------------
+  // TEST 3C: Cross-Slot Alignment & evalClusterSafe Guard
+  // ---------------------------------------------------------------------------
+  console.log(
+    "\n3C. Testing assertClusterSlotAlignment and evalClusterSafe guard...",
+  );
+  const alignedKey1 = "stock:available:{tenant_global:central_wh}:item_101";
+  const alignedKey2 = "stock:claim:{tenant_global:central_wh}:claim_9981";
+  const alignedKey3 = "stock:lock:{tenant_global:central_wh}:item_101";
+
+  const slotAligned = assertClusterSlotAlignment([
+    alignedKey1,
+    alignedKey2,
+    alignedKey3,
+  ]);
+  assert.equal(
+    slotAligned,
+    calculateClusterSlot(alignedKey1),
+    "All aligned keys must resolve to common slot",
+  );
+  console.log(
+    `  ✓ Aligned keys successfully confirmed on slot #${slotAligned}`,
+  );
+
+  // Test slot collision / mismatch rejection
+  const misalignedKey = "stock:available:{tenant_global:other_wh}:item_101";
+  assert.throws(
+    () => assertClusterSlotAlignment([alignedKey1, misalignedKey]),
+    CrossSlotValidationError,
+    "Keys with different slots must throw CrossSlotValidationError",
+  );
+  console.log(
+    "  ✓ CrossSlotValidationError properly intercepted mismatched slots",
+  );
 
   // ---------------------------------------------------------------------------
   // TEST 4: Redlock Majority Quorum Consensus Mock Simulation
@@ -104,6 +225,13 @@ async function runRedisClusterShardingTests(): Promise<void> {
         const fullKey = `${nodeId}:${key}`;
         return nodeState.get(fullKey) ?? null;
       },
+      incr: async (key: string) => {
+        const fullKey = `${nodeId}:${key}`;
+        const current = parseInt(nodeState.get(fullKey) ?? "0", 10);
+        const next = current + 1;
+        nodeState.set(fullKey, String(next));
+        return next;
+      },
       set: async (key: string, val: string, ...args: unknown[]) => {
         if (failSet) throw new Error(`${nodeId} simulated failure`);
         const fullKey = `${nodeId}:${key}`;
@@ -112,6 +240,16 @@ async function runRedisClusterShardingTests(): Promise<void> {
         }
         nodeState.set(fullKey, val);
         return "OK";
+      },
+      exists: async (key: string) => {
+        const fullKey = `${nodeId}:${key}`;
+        return nodeState.has(fullKey) ? 1 : 0;
+      },
+      del: async (key: string) => {
+        const fullKey = `${nodeId}:${key}`;
+        const had = nodeState.has(fullKey);
+        nodeState.delete(fullKey);
+        return had ? 1 : 0;
       },
       eval: async (
         script: string,
@@ -263,12 +401,23 @@ async function runRedisClusterShardingTests(): Promise<void> {
     "Pod 1 must be elected leader",
   );
   assert.equal(pod1Promoted, 1, "Pod 1 onPromoted hook must fire exactly once");
+  assert.ok(
+    electorPod1.fencingToken > 0,
+    "Pod 1 must receive a positive fencing token",
+  );
+  assert.equal(
+    electorPod1.isLeadershipValid,
+    true,
+    "Pod 1 leadership must be valid immediately after promotion",
+  );
 
   const leaderInfo1 = await electorPod1.getLeaderInfo();
   assert.equal(leaderInfo1.isLeader, true);
   assert.equal(leaderInfo1.leaderId, "order-service-pod-1");
+  assert.equal(leaderInfo1.fencingToken, electorPod1.fencingToken);
+  assert.equal(leaderInfo1.isLeadershipValid, true);
   console.log(
-    "  ✓ Pod 1 successfully elected leader; outbox sweeper activated",
+    `  ✓ Pod 1 successfully elected leader (fencing token: #${leaderInfo1.fencingToken}); outbox sweeper activated`,
   );
 
   // Step 2: Start Pod 2 -> Must be rejected and remain standby follower
@@ -279,6 +428,11 @@ async function runRedisClusterShardingTests(): Promise<void> {
     "Pod 2 must remain in standby mode",
   );
   assert.equal(pod2Promoted, 0, "Pod 2 onPromoted hook must NOT fire");
+  assert.equal(
+    electorPod2.fencingToken,
+    0,
+    "Standby follower must have fencing token 0",
+  );
 
   const leaderInfo2 = await electorPod2.getLeaderInfo();
   assert.equal(leaderInfo2.isLeader, false);
@@ -295,7 +449,7 @@ async function runRedisClusterShardingTests(): Promise<void> {
   assert.equal(pod1Demoted, 1, "Pod 1 onDemoted hook must fire on resignation");
   console.log("  ✓ Pod 1 gracefully stepped down and released cluster lease");
 
-  // Step 4: Pod 2 attempts election now that lease is released -> Promoted!
+  // Step 4: Pod 2 attempts election now that lease is released -> Promoted with higher monotonic fencing token!
   const pod2Won = await electorPod2.electNow();
   assert.equal(pod2Won, true, "Pod 2 must win election upon leader failover");
   assert.equal(
@@ -304,12 +458,21 @@ async function runRedisClusterShardingTests(): Promise<void> {
     "Pod 2 is now the active leader",
   );
   assert.equal(pod2Promoted, 1, "Pod 2 onPromoted hook must fire");
-  console.log(
-    "  ✓ Pod 2 promoted to leader seamlessly without duplicate dispatch",
+  assert.ok(
+    electorPod2.fencingToken > leaderInfo1.fencingToken,
+    "Successor leader must be assigned a strictly higher monotonic fencing token",
   );
+  console.log(
+    `  ✓ Pod 2 promoted to leader with monotonically increasing fencing token #${electorPod2.fencingToken} (prev: #${leaderInfo1.fencingToken})`,
+  );
+
+  // Step 5: Test Heartbeat Drift Safety Detection & Self-Fencing
+  const tokenFromAssertion = electorPod2.assertLeadershipValid();
+  assert.equal(tokenFromAssertion, electorPod2.fencingToken);
 
   // Clean up Pod 2
   await electorPod2.stop();
+  assert.equal(pod2Demoted, 1, "Pod 2 onDemoted hook must fire on cleanup");
   assert.equal(pod2Demoted, 1, "Pod 2 onDemoted hook must fire on cleanup");
 
   // ---------------------------------------------------------------------------
@@ -416,6 +579,58 @@ async function runRedisClusterShardingTests(): Promise<void> {
   );
   console.log(
     "  ✓ withClusterLock & withRedlockConsensus clean execution & safe cleanup verified",
+  );
+
+  // ---------------------------------------------------------------------------
+  // TEST 8: Read-Your-Writes Consistency Parameters & Replica Bypass Leases
+  // ---------------------------------------------------------------------------
+  console.log(
+    "\n8. Testing Read-Your-Writes consistency parameters & replica bypass leases...",
+  );
+
+  const testClientId = "user_clerk_9921_flash";
+  const expectedKey = `ryw:${testClientId}`;
+  assert.equal(
+    buildReadYourWritesKey(testClientId),
+    expectedKey,
+    "buildReadYourWritesKey must prefix clientId with ryw:",
+  );
+
+  // Initial state: No lease active
+  const initialActive = await isReadYourWritesActive(nodeA, testClientId);
+  assert.equal(
+    initialActive,
+    false,
+    "Read-Your-Writes lease must be inactive initially",
+  );
+
+  // Register mutation lease (e.g. 500ms TTL)
+  const marked = await markReadYourWrites(nodeA, testClientId, { ttlMs: 500 });
+  assert.equal(marked, true, "markReadYourWrites must return true on success");
+
+  // Subsequent check: Lease is active
+  const activeNow = await isReadYourWritesActive(nodeA, testClientId);
+  assert.equal(
+    activeNow,
+    true,
+    "Read-Your-Writes lease must be active after mutation",
+  );
+  console.log(
+    "  ✓ Mutation lease successfully registered (500ms TTL); forces primary master routing",
+  );
+
+  // Clear lease voluntarily
+  const cleared = await clearReadYourWrites(nodeA, testClientId);
+  assert.equal(cleared, true, "clearReadYourWrites must return true");
+
+  const activeAfterClear = await isReadYourWritesActive(nodeA, testClientId);
+  assert.equal(
+    activeAfterClear,
+    false,
+    "Read-Your-Writes lease must be inactive after clear",
+  );
+  console.log(
+    "  ✓ Read-Your-Writes lease cleared; reverts back to read-replica connection pool",
   );
 
   console.log("\n==================================================");

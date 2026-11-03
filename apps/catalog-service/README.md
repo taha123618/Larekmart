@@ -6,13 +6,13 @@ Read-optimized product discovery, merchandising, and storefront browsing microse
 
 `catalog-service` owns the CQRS **read models** for the storefront. It consumes `product.*`, `category.*`, and `inventory.*` Kafka events from upstream services and denormalizes them into fast, pre-computed product card read models stored in PostgreSQL. All storefront browsing queries go through this service (backed by Redis caching) rather than hitting `product-service` directly.
 
-| Property  | Value                                                                             |
-| --------- | --------------------------------------------------------------------------------- |
-| Port      | `8010`                                                                            |
-| Runtime   | Fastify 5 + TypeScript                                                            |
-| Database  | PostgreSQL (`@repo/catalog-db`, `readPrisma` for read-replicas, `prisma` for writes)|
-| Cache     | Redis (`catalog:v1:` prefix via `@repo/redis`)                                    |
-| Messaging | Kafka (`@repo/kafka`)                                                             |
+| Property  | Value                                                                                |
+| --------- | ------------------------------------------------------------------------------------ |
+| Port      | `8010`                                                                               |
+| Runtime   | Fastify 5 + TypeScript                                                               |
+| Database  | PostgreSQL (`@repo/catalog-db`, `readPrisma` for read-replicas, `prisma` for writes) |
+| Cache     | Redis (`catalog:v1:` prefix via `@repo/redis`)                                       |
+| Messaging | Kafka (`@repo/kafka`)                                                                |
 
 ## Architecture Boundary
 
@@ -63,19 +63,19 @@ All routes are prefixed with `/api/v1/catalog`.
 
 ## Environment Variables
 
-| Variable                    | Default                  | Description                  |
-| --------------------------- | ------------------------ | ---------------------------- |
-| `PORT`                      | `8010`                   | HTTP port                    |
-| `HOST`                      | `0.0.0.0`                | Bind address                 |
-| `NODE_ENV`                  | `development`            | Environment                  |
-| `DATABASE_URL`              | —                        | PostgreSQL primary write connection string |
+| Variable                    | Default                  | Description                                                                                      |
+| --------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `PORT`                      | `8010`                   | HTTP port                                                                                        |
+| `HOST`                      | `0.0.0.0`                | Bind address                                                                                     |
+| `NODE_ENV`                  | `development`            | Environment                                                                                      |
+| `DATABASE_URL`              | —                        | PostgreSQL primary write connection string                                                       |
 | `DATABASE_READ_REPLICA_URL` | —                        | PostgreSQL read-replica connection string (or PgBouncer port 6432; falls back to `DATABASE_URL`) |
-| `REDIS_URL`                 | `redis://localhost:6379` | Redis connection string      |
-| `REDIS_KEY_PREFIX`          | `catalog:v1:`            | Redis key namespace          |
-| `KAFKA_BROKERS`             | `localhost:9092`         | Kafka broker addresses       |
-| `KAFKA_CLIENT_ID`           | `catalog-service`        | Kafka client identifier      |
-| `KAFKA_GROUP_ID`            | `catalog-service-group`  | Kafka consumer group         |
-| `CATALOG_CACHE_TTL_SECONDS` | `3600`                   | Default cache TTL (1 hour)   |
+| `REDIS_URL`                 | `redis://localhost:6379` | Redis connection string                                                                          |
+| `REDIS_KEY_PREFIX`          | `catalog:v1:`            | Redis key namespace                                                                              |
+| `KAFKA_BROKERS`             | `localhost:9092`         | Kafka broker addresses                                                                           |
+| `KAFKA_CLIENT_ID`           | `catalog-service`        | Kafka client identifier                                                                          |
+| `KAFKA_GROUP_ID`            | `catalog-service-group`  | Kafka consumer group                                                                             |
+| `CATALOG_CACHE_TTL_SECONDS` | `3600`                   | Default cache TTL (1 hour)                                                                       |
 
 ## Development
 
@@ -91,7 +91,23 @@ pnpm --filter catalog-service dev
 
 # Type check
 pnpm --filter catalog-service check-types
+
+# Run SQA test suite (unit + integration + consistency plane)
+pnpm --filter catalog-service test
 ```
+
+## Read-Your-Writes (RYW) Consistency Plane
+
+Storefront queries by default route to PostgreSQL read-replicas (`readPrisma` via PgBouncer port 6432) to prevent read contention on primary database writers.
+
+When a client executes a state mutation (such as checkout, cart adjustments, or reviews), the API Gateway automatically sets an atomic 500ms Read-Your-Writes lease in Redis (`markReadYourWrites`) and forwards `x-force-primary: true`.
+
+Within `catalog-service`:
+
+1. The Fastify hook in `src/plugins/fastify.ts` checks `x-force-primary` and validates `isReadYourWritesActive` in Redis.
+2. If active, `request.forcePrimary = true` and `databaseContext` sets `forcePrimary: true`.
+3. Domain services bypass stale Redis read caches and query `prisma` (primary master writer) directly via `getDatabaseClient(true)`.
+4. The service responds with header `X-Consistency-Plane: primary-master`, eliminating replication lag anomalies (<50ms WAL latency).
 
 ## Project Structure
 

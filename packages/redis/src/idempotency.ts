@@ -102,10 +102,12 @@ export async function acquireIdempotencyLock(
     // 4. In-progress state detected: verify if the lock is dangling or stale
     // (e.g. if the processing service crashed mid-flight without committing or releasing)
     const pttl = await client.pttl(key);
-    const elapsedMs = parsed.createdAt ? Date.now() - parsed.createdAt : lockTtlMs;
+    const elapsedMs = parsed.createdAt
+      ? Date.now() - parsed.createdAt
+      : lockTtlMs;
     const isStale =
       pttl === -1 || // Key has no expiration set -> dangling un-expiring lock
-      pttl <= 0 ||   // Key already expired
+      pttl <= 0 || // Key already expired
       elapsedMs >= lockTtlMs; // Wall-clock time exceeds strict lock lease
 
     if (isStale) {

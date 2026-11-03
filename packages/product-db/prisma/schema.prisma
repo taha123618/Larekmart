@@ -11,6 +11,7 @@ datasource db {
 
 model Product {
   id               Int      @id @default(autoincrement())
+  sellerId         String?
   name             String
   shortDescription String
   description      String
@@ -22,6 +23,8 @@ model Product {
   updatedAt        DateTime @updatedAt
   categorySlug     String
   category         Category @relation(fields: [categorySlug], references: [slug])
+
+  @@index([sellerId])
 }
 
 model Category {

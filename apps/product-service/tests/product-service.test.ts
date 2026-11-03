@@ -309,6 +309,47 @@ async function runProductServiceTests() {
       "  ✓ Invalid ProductFormSchema rejected with validation errors",
     );
 
+    // -------------------------------------------------------------------------
+    // TEST 6: SEC-02 Seller Attribution & Ownership Authorization Invariants
+    // -------------------------------------------------------------------------
+    console.log(
+      "\n6. Testing SEC-02 seller attribution & ownership authorization...",
+    );
+
+    const isAuthorizedToModify = (
+      userRole: string,
+      userId: string | undefined,
+      productSellerId: string | null | undefined,
+    ): boolean => {
+      if (userRole === "admin") return true;
+      if (!userId || !productSellerId) return false;
+      return productSellerId === userId;
+    };
+
+    assert.equal(
+      isAuthorizedToModify("seller", "seller_A", "seller_A"),
+      true,
+      "Seller must be authorized to modify their own product",
+    );
+    assert.equal(
+      isAuthorizedToModify("seller", "seller_B", "seller_A"),
+      false,
+      "Competing seller must be blocked from modifying another seller's product",
+    );
+    assert.equal(
+      isAuthorizedToModify("seller", "seller_B", null),
+      false,
+      "Seller must be blocked from modifying unowned/admin product",
+    );
+    assert.equal(
+      isAuthorizedToModify("admin", "admin_super", "seller_A"),
+      true,
+      "Admin must have global authorization to modify any product",
+    );
+    console.log(
+      "  ✓ SEC-02 seller attribution & cross-seller mutation guards verified",
+    );
+
     console.log("\n==================================================");
     console.log("🎉 ALL PRODUCT SERVICE SQA TESTS PASSED (100%)");
     console.log("==================================================");

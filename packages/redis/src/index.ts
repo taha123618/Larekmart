@@ -62,10 +62,24 @@ export {
   createKeyBuilder,
   crc16,
   createClusterHashTag,
+  createTenantWarehouseHashTag,
   extractClusterHashTag,
   calculateClusterSlot,
+  DEFAULT_TENANT_ID,
+  TENANT_WAREHOUSE_TAG_PATTERN,
 } from "./key-builder.js";
 export type { KeyBuilder } from "./key-builder.js";
+
+// Redis Cluster Cross-Slot & Hash Tag Validation Guardrails
+export {
+  CrossSlotValidationError,
+  InvalidHashTagError,
+  validateClusterHashTag,
+  assertClusterSlotAlignment,
+  evalClusterSafe,
+  evalTenantWarehouseSafe,
+} from "./cluster-validator.js";
+export type { ClusterSlotAlignmentOptions } from "./cluster-validator.js";
 
 // Idempotency engine
 export {
@@ -101,8 +115,28 @@ export type {
 } from "./cluster-lock.js";
 
 // Distributed leader election framework
-export { DistributedLeaderElector, LeaderElection } from "./leader-election.js";
+export {
+  DistributedLeaderElector,
+  LeaderElection,
+  LeaderFencingError,
+} from "./leader-election.js";
 export type { LeaderElectionOptions, LeaderInfo } from "./leader-election.js";
+
+// Read-Your-Writes consistency parameters (time-lease + LSN-aware variants)
+export {
+  DEFAULT_RYW_TTL_MS,
+  RYW_PREFIX,
+  buildReadYourWritesKey,
+  markReadYourWrites,
+  isReadYourWritesActive,
+  clearReadYourWrites,
+  RYW_LSN_PREFIX,
+  buildReadYourWritesLsnKey,
+  markReadYourWritesWithLSN,
+  getSessionLSN,
+  parseLSN,
+} from "./read-your-writes.js";
+export type { ReadYourWritesOptions } from "./read-your-writes.js";
 
 // Shared types
 export type {

@@ -118,11 +118,20 @@ export const shouldBeInternalOrAdmin = async (
   const internalSecret = request.headers?.[GATEWAY_HEADERS.INTERNAL_SECRET] as
     | string
     | undefined;
-  if (
+  const gatewayUserId = request.headers?.[GATEWAY_HEADERS.USER_ID] as
+    | string
+    | undefined;
+  const gatewayUserRole = request.headers?.[GATEWAY_HEADERS.USER_ROLE] as
+    | string
+    | undefined;
+
+  const isInternal =
     typeof internalSecret === "string" &&
-    config.internalServiceSecret &&
-    safeTimingCompare(internalSecret, config.internalServiceSecret)
-  ) {
+    Boolean(config.internalServiceSecret) &&
+    safeTimingCompare(internalSecret, config.internalServiceSecret);
+
+  // Pure machine-to-machine internal service call without user context
+  if (isInternal && !gatewayUserId && !gatewayUserRole) {
     return;
   }
 
