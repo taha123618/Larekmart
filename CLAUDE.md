@@ -22,6 +22,9 @@ the workspace map, the golden rules, commands, and the instruction hierarchy.
   follow [`docs/TESTING.md`](./docs/TESTING.md).
 - **Architecture & Engineering Plans:** Authoritative specifications, invariants, and verification reports live in [`docs/plans/`](./docs/plans/README.md). Consult them before modifying cross-service flows:
   - Hyperscale Flash-Sale Hardening: [`docs/plans/hyperscale-flash-sale-architecture-hardening.md`](./docs/plans/hyperscale-flash-sale-architecture-hardening.md)
+  - Distributed Order Saga & Stock Compensation: [`docs/plans/distributed-order-saga-and-stock-compensation.md`](./docs/plans/distributed-order-saga-and-stock-compensation.md)
+  - OpenSearch Real-Time Bulk Indexing: [`docs/plans/opensearch-real-time-bulk-indexing-pipeline.md`](./docs/plans/opensearch-real-time-bulk-indexing-pipeline.md)
+  - Multi-Pod WebSocket Desynchronization Hardening: [`docs/plans/notification-service-redis-pubsub-websocket-sync.md`](./docs/plans/notification-service-redis-pubsub-websocket-sync.md)
   - Security Audit & Remediation: [`docs/plans/security-audit-and-remediation-report.md`](./docs/plans/security-audit-and-remediation-report.md)
   - Commission & Payout Architecture: [`docs/plans/commission-and-payout-architecture-and-testing.md`](./docs/plans/commission-and-payout-architecture-and-testing.md)
 

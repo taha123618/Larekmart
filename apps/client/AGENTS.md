@@ -56,6 +56,11 @@ Postgres, Mongo, or Kafka directly.
 - `src/stores/` — Zustand stores (`cartStore.ts`, `wishlistStore.ts`, `uiStore.ts`).
 - `src/lib/utils.ts` — `cn(...)` utility helper (`clsx` + `tailwind-merge`).
 
+## Distributed Concurrency & Idempotency Invariants
+
+- **Idempotency-Key Headers**: All state-mutating client requests (`cartClient.addItem`, `cartClient.applyCoupon`, `cartClient.mergeCart`, `reservePromotion`, `submitProductReview`) pass an `Idempotency-Key` UUID header to prevent duplicate server actions on network retries and double clicks.
+- **Cart Merge 409 Auto-Recovery**: If a concurrent cart merge is in-flight during login (`HTTP 409 Conflict`), `cartClient.mergeCart` transparently recovers by fetching the authoritative active user cart instead of erroring out.
+
 ## Animation & Motion Architecture
 
 The client storefront uses a hybrid animation strategy optimized for React 19 and Next.js 16:

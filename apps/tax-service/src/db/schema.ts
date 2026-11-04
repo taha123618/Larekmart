@@ -6,25 +6,36 @@ import {
   int,
   timestamp,
   text,
+  index,
 } from "drizzle-orm/mysql-core";
 
 /**
  * 1. tax_jurisdictions
  * Countries, regions, municipalities, and jurisdiction identifiers
  */
-export const taxJurisdictions = mysqlTable("tax_jurisdictions", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  countryCode: varchar("country_code", { length: 3 }).notNull(),
-  regionCode: varchar("region_code", { length: 20 }),
-  municipality: varchar("municipality", { length: 100 }),
-  jurisdictionCode: varchar("jurisdiction_code", { length: 50 })
-    .notNull()
-    .unique(),
-  name: varchar("name", { length: 100 }).notNull(),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+export const taxJurisdictions = mysqlTable(
+  "tax_jurisdictions",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    countryCode: varchar("country_code", { length: 3 }).notNull(),
+    regionCode: varchar("region_code", { length: 20 }),
+    municipality: varchar("municipality", { length: 100 }),
+    jurisdictionCode: varchar("jurisdiction_code", { length: 50 })
+      .notNull()
+      .unique(),
+    name: varchar("name", { length: 100 }).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [
+    index("tax_jur_geo_idx").on(
+      table.countryCode,
+      table.regionCode,
+      table.isActive,
+    ),
+  ],
+);
 
 /**
  * 2. tax_categories
@@ -44,27 +55,37 @@ export const taxCategories = mysqlTable("tax_categories", {
  * 3. tax_rules
  * Tax rates, conditions, calculation methods, and effective dates
  */
-export const taxRules = mysqlTable("tax_rules", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  jurisdictionId: varchar("jurisdiction_id", { length: 36 })
-    .notNull()
-    .references(() => taxJurisdictions.id),
-  categoryId: varchar("category_id", { length: 36 })
-    .notNull()
-    .references(() => taxCategories.id),
-  rate: decimal("rate", { precision: 10, scale: 6 }).notNull(), // e.g. "0.082500"
-  isInclusive: boolean("is_inclusive").notNull().default(false),
-  priority: int("priority").notNull().default(1),
-  effectiveFrom: timestamp("effective_from").notNull(),
-  effectiveTo: timestamp("effective_to"),
-  version: varchar("version", { length: 50 }).notNull().default("2026-10"),
-  calculationMethod: varchar("calculation_method", { length: 20 })
-    .notNull()
-    .default("percentage"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+export const taxRules = mysqlTable(
+  "tax_rules",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    jurisdictionId: varchar("jurisdiction_id", { length: 36 })
+      .notNull()
+      .references(() => taxJurisdictions.id),
+    categoryId: varchar("category_id", { length: 36 })
+      .notNull()
+      .references(() => taxCategories.id),
+    rate: decimal("rate", { precision: 10, scale: 6 }).notNull(), // e.g. "0.082500"
+    isInclusive: boolean("is_inclusive").notNull().default(false),
+    priority: int("priority").notNull().default(1),
+    effectiveFrom: timestamp("effective_from").notNull(),
+    effectiveTo: timestamp("effective_to"),
+    version: varchar("version", { length: 50 }).notNull().default("2026-10"),
+    calculationMethod: varchar("calculation_method", { length: 20 })
+      .notNull()
+      .default("percentage"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [
+    index("tax_rules_lookup_idx").on(
+      table.jurisdictionId,
+      table.categoryId,
+      table.isActive,
+    ),
+  ],
+);
 
 /**
  * 4. tax_exemptions
@@ -91,21 +112,27 @@ export const taxExemptions = mysqlTable("tax_exemptions", {
  * 5. tax_calculations
  * Calculation reference, input snapshot, result, and rule/provider version
  */
-export const taxCalculations = mysqlTable("tax_calculations", {
-  id: varchar("id", { length: 64 }).primaryKey(), // e.g. tax_calc_123
-  referenceType: varchar("reference_type", { length: 20 })
-    .notNull()
-    .default("quote"), // quote, order, return, invoice
-  referenceId: varchar("reference_id", { length: 100 }),
-  currency: varchar("currency", { length: 3 }).notNull().default("USD"),
-  subtotal: decimal("subtotal", { precision: 12, scale: 4 }).notNull(),
-  taxTotal: decimal("tax_total", { precision: 12, scale: 4 }).notNull(),
-  total: decimal("total", { precision: 12, scale: 4 }).notNull(),
-  ruleVersion: varchar("rule_version", { length: 50 }).notNull(),
-  provider: varchar("provider", { length: 50 }).notNull().default("standard"),
-  inputSnapshot: text("input_snapshot").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const taxCalculations = mysqlTable(
+  "tax_calculations",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(), // e.g. tax_calc_123
+    referenceType: varchar("reference_type", { length: 20 })
+      .notNull()
+      .default("quote"), // quote, order, return, invoice
+    referenceId: varchar("reference_id", { length: 100 }),
+    currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+    subtotal: decimal("subtotal", { precision: 12, scale: 4 }).notNull(),
+    taxTotal: decimal("tax_total", { precision: 12, scale: 4 }).notNull(),
+    total: decimal("total", { precision: 12, scale: 4 }).notNull(),
+    ruleVersion: varchar("rule_version", { length: 50 }).notNull(),
+    provider: varchar("provider", { length: 50 }).notNull().default("standard"),
+    inputSnapshot: text("input_snapshot").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("tax_calc_ref_idx").on(table.referenceType, table.referenceId),
+  ],
+);
 
 /**
  * 6. tax_calculation_lines

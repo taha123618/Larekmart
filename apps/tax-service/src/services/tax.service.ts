@@ -16,14 +16,45 @@ import { redis } from "../utils/redis.js";
 import type { CalculationContext } from "./calculator.js";
 
 export class TaxService {
+  private inFlightQuotes = new Map<string, Promise<TaxCalculationResponse>>();
+
   /**
-   * Calculate estimated tax for cart or checkout without committing authoritative order record
+   * Calculate estimated tax for cart or checkout without committing authoritative order record.
+   * Shielded by SingleFlight promise coalescing for identical in-flight requests.
    */
   public async quoteTax(
     request: TaxQuoteRequest,
   ): Promise<TaxCalculationResponse> {
+    const dest = request.destinationAddress;
+    const linesKey = request.lines
+      .map(
+        (l) =>
+          `${l.productId || l.lineId}:${l.amount}:${l.categoryCode || "std"}`,
+      )
+      .sort()
+      .join("|");
+    const sig = `${dest.country}:${dest.region || ""}:${dest.city || ""}:${request.currency || "USD"}:${linesKey}:${request.customerId || ""}`;
+
+    const existing = this.inFlightQuotes.get(sig);
+    if (existing) {
+      return await existing;
+    }
+
     const calculationId = `tax_quote_${uuidv4().replace(/-/g, "").slice(0, 16)}`;
-    return this.executeTaxCalculation(request, calculationId, "quote");
+    const promise = (async () => {
+      try {
+        return await this.executeTaxCalculation(
+          request,
+          calculationId,
+          "quote",
+        );
+      } finally {
+        this.inFlightQuotes.delete(sig);
+      }
+    })();
+
+    this.inFlightQuotes.set(sig, promise);
+    return await promise;
   }
 
   /**
@@ -152,12 +183,8 @@ export class TaxService {
       categoryCodes.push("standard");
     }
 
-    const categories = await Promise.all(
-      categoryCodes.map((c) => taxCategoryRepository.findByCode(c)),
-    );
-    const validCategories = categories.filter(
-      (c): c is NonNullable<typeof c> => !!c,
-    );
+    const validCategories =
+      await taxCategoryRepository.findByCodes(categoryCodes);
 
     // 3. Check for exemptions (customer exemption or exemption certificate)
     const primaryJurisdictionId = matchingJurisdictions[0]?.id;

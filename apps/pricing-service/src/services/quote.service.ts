@@ -5,12 +5,12 @@ import {
   variantPrices,
   priceRules,
   priceQuotes,
-  currencyRates,
 } from "../db/schema.js";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { calculateQuote } from "../engine/calculator.js";
 import { convertCurrency } from "../engine/currency.js";
+import { pricingService } from "./pricing.service.js";
 import { pricingEventProducer } from "../kafka/producer.js";
 import type {
   PriceQuoteRequest,
@@ -64,35 +64,65 @@ export class QuoteService {
       throw new Error("No active price list available for quote generation");
     }
 
-    // 2. Fetch exchange rates for currency conversion if needed
-    const ratesMap = new Map<string, number>();
-    const allRates = await db
+    // 2. Fetch all active rules for this price list in a single batch query
+    const allRules = await db
       .select()
-      .from(currencyRates)
+      .from(priceRules)
       .where(
         and(
-          eq(currencyRates.targetCurrency, targetCurrency),
-          eq(currencyRates.isActive, true),
+          eq(priceRules.priceListId, priceList.id),
+          eq(priceRules.isActive, true),
         ),
       );
-    for (const r of allRates) {
-      ratesMap.set(r.baseCurrency.toUpperCase(), Number(r.exchangeRate));
+
+    // 3. Batch fetch all productPrices for requested items
+    const productIds = Array.from(
+      new Set(request.items.map((i) => i.productId)),
+    );
+    const priceRecords =
+      productIds.length > 0
+        ? await db
+            .select()
+            .from(productPrices)
+            .where(
+              and(
+                inArray(productPrices.productId, productIds),
+                eq(productPrices.priceListId, priceList.id),
+                eq(productPrices.isActive, true),
+              ),
+            )
+        : [];
+
+    const priceRecordMap = new Map<string, (typeof priceRecords)[0]>();
+    for (const p of priceRecords) {
+      priceRecordMap.set(p.productId, p);
     }
 
-    // 3. Prepare items with base/variant prices and rules
+    // 4. Batch fetch variant overrides for found products if applicable
+    const variantMap = new Map<string, number>();
+    const foundPriceIds = priceRecords.map((p) => p.id);
+    const hasVariants = request.items.some((i) => i.variantId);
+
+    if (foundPriceIds.length > 0 && hasVariants) {
+      const variantRecords = await db
+        .select()
+        .from(variantPrices)
+        .where(
+          and(
+            inArray(variantPrices.productPriceId, foundPriceIds),
+            eq(variantPrices.isActive, true),
+          ),
+        );
+      for (const v of variantRecords) {
+        variantMap.set(`${v.productPriceId}:${v.variantId}`, Number(v.price));
+      }
+    }
+
+    // 5. Prepare calculation items with base/variant prices and filtered rules
     const calculationItems = [];
 
     for (const item of request.items) {
-      const [priceRecord] = await db
-        .select()
-        .from(productPrices)
-        .where(
-          and(
-            eq(productPrices.productId, item.productId),
-            eq(productPrices.priceListId, priceList.id),
-            eq(productPrices.isActive, true),
-          ),
-        );
+      const priceRecord = priceRecordMap.get(item.productId);
 
       if (!priceRecord) {
         throw new Error(
@@ -102,27 +132,22 @@ export class QuoteService {
 
       let unitBase = Number(priceRecord.basePrice);
 
-      // Check variant price override
+      // Check variant price override from pre-fetched map
       if (item.variantId) {
-        const [variantRecord] = await db
-          .select()
-          .from(variantPrices)
-          .where(
-            and(
-              eq(variantPrices.productPriceId, priceRecord.id),
-              eq(variantPrices.variantId, item.variantId),
-              eq(variantPrices.isActive, true),
-            ),
-          );
-
-        if (variantRecord) {
-          unitBase = Number(variantRecord.price);
+        const variantPrice = variantMap.get(
+          `${priceRecord.id}:${item.variantId}`,
+        );
+        if (variantPrice !== undefined) {
+          unitBase = variantPrice;
         }
       }
 
-      // Convert currency if needed
+      // Convert currency using cached exchange rates
       if (priceRecord.currency.toUpperCase() !== targetCurrency) {
-        const rate = ratesMap.get(priceRecord.currency.toUpperCase()) ?? 1.0;
+        const rate = await pricingService.getExchangeRate(
+          priceRecord.currency,
+          targetCurrency,
+        );
         unitBase = convertCurrency(
           unitBase,
           rate,
@@ -131,18 +156,7 @@ export class QuoteService {
         ).convertedAmount;
       }
 
-      // Fetch product rules
-      const rules = await db
-        .select()
-        .from(priceRules)
-        .where(
-          and(
-            eq(priceRules.priceListId, priceList.id),
-            eq(priceRules.isActive, true),
-          ),
-        );
-
-      const applicableRules: PriceRule[] = rules
+      const applicableRules: PriceRule[] = allRules
         .filter(
           (r) =>
             (!r.productId || r.productId === item.productId) &&

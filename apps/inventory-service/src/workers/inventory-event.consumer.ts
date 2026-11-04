@@ -336,6 +336,14 @@ export async function startInventoryEventConsumer(): Promise<void> {
             await invalidateInventoryCache();
             const seenOrderCancelledProds = new Set<string>();
             for (const item of released) {
+              await redisStockGatekeeper.incrementStockCounter(
+                {
+                  productId: item.inventoryItem.productId,
+                  variantId: item.inventoryItem.variantId,
+                  warehouseId: item.inventoryItem.warehouseId,
+                },
+                item.quantity,
+              );
               const k = `${item.inventoryItem.productId}:${item.inventoryItem.variantId ?? ""}`;
               if (!seenOrderCancelledProds.has(k)) {
                 seenOrderCancelledProds.add(k);
@@ -352,6 +360,66 @@ export async function startInventoryEventConsumer(): Promise<void> {
         } catch (error) {
           logger.error(
             "Error processing order.cancelled message in inventory-service",
+            error,
+          );
+        }
+      },
+    },
+    {
+      topicName: "payment.failed",
+      topicHandler: async (message) => {
+        try {
+          const payload = message.value as {
+            sessionId?: string;
+            paymentIntentId?: string;
+            referenceId?: string;
+            reservationId?: string;
+            reason?: string;
+          };
+          if (!payload) return;
+
+          const refId =
+            payload.reservationId ||
+            payload.sessionId ||
+            payload.referenceId ||
+            payload.paymentIntentId;
+          if (!refId) return;
+
+          logger.info(`Processing payment.failed compensation for: ${refId}`);
+          const released = await releaseReservationsByReference(
+            refId,
+            undefined,
+            payload.reason || "Payment failed compensation",
+          );
+
+          if (released.length > 0) {
+            await invalidateInventoryCache();
+            const seenProds = new Set<string>();
+            for (const item of released) {
+              await redisStockGatekeeper.incrementStockCounter(
+                {
+                  productId: item.inventoryItem.productId,
+                  variantId: item.inventoryItem.variantId,
+                  warehouseId: item.inventoryItem.warehouseId,
+                },
+                item.quantity,
+              );
+              const k = `${item.inventoryItem.productId}:${item.inventoryItem.variantId ?? ""}`;
+              if (!seenProds.has(k)) {
+                seenProds.add(k);
+                await invalidateInventoryCache(
+                  item.inventoryItem.productId,
+                  item.inventoryItem.variantId,
+                );
+              }
+            }
+            logger.info(
+              `Released ${released.length} reservation(s) following payment.failed for: ${refId}`,
+            );
+          }
+        } catch (error) {
+          logger.error(
+            "Error processing payment.failed message in inventory-service",
             error,
           );
         }

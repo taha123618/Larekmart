@@ -7,6 +7,7 @@ import {
 import { taxService } from "../services/tax.service.js";
 import { jurisdictionRepository } from "../repositories/jurisdiction.repository.js";
 import { taxCategoryRepository } from "../repositories/tax-category.repository.js";
+import { executeWithIdempotency } from "../middleware/idempotency.middleware.js";
 
 export class TaxController {
   /**
@@ -25,16 +26,10 @@ export class TaxController {
       return;
     }
 
-    try {
+    await executeWithIdempotency(request, reply, async () => {
       const result = await taxService.quoteTax(parseResult.data);
-      reply.status(200).send(result);
-    } catch (err) {
-      request.log.error(err, "Tax quote failed");
-      reply.status(500).send({
-        message:
-          err instanceof Error ? err.message : "Failed to calculate tax quote",
-      });
-    }
+      return { statusCode: 200, data: result };
+    });
   }
 
   /**
@@ -53,18 +48,10 @@ export class TaxController {
       return;
     }
 
-    try {
+    await executeWithIdempotency(request, reply, async () => {
       const result = await taxService.calculateTax(parseResult.data);
-      reply.status(200).send(result);
-    } catch (err) {
-      request.log.error(err, "Tax calculation failed");
-      reply.status(500).send({
-        message:
-          err instanceof Error
-            ? err.message
-            : "Failed to process tax calculation",
-      });
-    }
+      return { statusCode: 200, data: result };
+    });
   }
 
   /**
@@ -116,18 +103,10 @@ export class TaxController {
       return;
     }
 
-    try {
+    await executeWithIdempotency(request, reply, async () => {
       const result = await taxService.quoteReturnTax(parseResult.data);
-      reply.status(200).send(result);
-    } catch (err) {
-      request.log.error(err, "Tax return quote failed");
-      reply.status(500).send({
-        message:
-          err instanceof Error
-            ? err.message
-            : "Failed to quote tax return adjustment",
-      });
-    }
+      return { statusCode: 200, data: result };
+    });
   }
 
   /**

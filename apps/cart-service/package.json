@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx --env-file=.env --watch src/index.ts",
     "build": "tsc",
-    "test": "tsx tests/pricing.test.ts",
+    "test": "tsx tests/pricing.test.ts && tsx tests/concurrency.test.ts",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {

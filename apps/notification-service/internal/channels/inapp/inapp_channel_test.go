@@ -12,7 +12,7 @@ import (
 
 func TestInAppChannel_Send(t *testing.T) {
 	logger := observability.NewLogger("test", "test", "debug", "console")
-	hub := websocket.NewHub(logger, nil)
+	hub := websocket.NewHub(logger, nil, nil)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

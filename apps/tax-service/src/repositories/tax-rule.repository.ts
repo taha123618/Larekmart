@@ -1,5 +1,6 @@
 import { eq, and, inArray, lte, or, gte, isNull } from "drizzle-orm";
 import { getDb } from "../db/connection.js";
+import { redis } from "../utils/redis.js";
 import {
   taxRules,
   taxJurisdictions,
@@ -148,6 +149,19 @@ export class TaxRuleRepository {
       return [];
     }
 
+    const sortedJur = jurisdictionIds.slice().sort().join(",");
+    const sortedCat = categoryIds.slice().sort().join(",");
+    const cacheKey = `tax:v1:rules:${sortedJur}:${sortedCat}`;
+
+    try {
+      const cached = await redis.client.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch {
+      // Redis failover
+    }
+
     try {
       const db = getDb();
       const rows = await db
@@ -184,7 +198,7 @@ export class TaxRuleRepository {
           ),
         );
 
-      return rows.map((row) => {
+      const matched: MatchedTaxRule[] = rows.map((row) => {
         let jurisdictionType:
           | "country"
           | "region"
@@ -208,12 +222,26 @@ export class TaxRuleRepository {
           version: row.version,
         };
       });
+
+      try {
+        await redis.client.set(cacheKey, JSON.stringify(matched), "EX", 3600);
+      } catch {
+        // Redis failover
+      }
+
+      return matched;
     } catch {
       // In-memory fallback matching
-      return DEFAULT_MATCHED_RULES.filter((r) => {
+      const matched = DEFAULT_MATCHED_RULES.filter((r) => {
         // Match standard category or requested category
         return true;
       });
+      try {
+        await redis.client.set(cacheKey, JSON.stringify(matched), "EX", 3600);
+      } catch {
+        // Redis failover
+      }
+      return matched;
     }
   }
 }

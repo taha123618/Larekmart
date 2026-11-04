@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { pricingService } from "../services/pricing.service.js";
 import { quoteService } from "../services/quote.service.js";
+import { executeWithIdempotency } from "../middleware/idempotency.middleware.js";
 import {
   PriceQuoteRequestSchema,
   BulkPriceQuoteRequestSchema,
@@ -46,15 +47,10 @@ export const pricesRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    try {
+    return executeWithIdempotency(request, reply, async () => {
       const quote = await quoteService.generateQuote(parsed.data);
-      return reply.status(200).send(quote);
-    } catch (err) {
-      return reply.status(400).send({
-        message:
-          err instanceof Error ? err.message : "Failed to generate price quote",
-      });
-    }
+      return { statusCode: 200, data: quote };
+    });
   });
 
   /**
@@ -70,15 +66,10 @@ export const pricesRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    try {
+    return executeWithIdempotency(request, reply, async () => {
       const quotes = await quoteService.generateBulkQuotes(parsed.data);
-      return reply.status(200).send({ quotes });
-    } catch (err) {
-      return reply.status(400).send({
-        message:
-          err instanceof Error ? err.message : "Failed to generate bulk quotes",
-      });
-    }
+      return { statusCode: 200, data: { quotes } };
+    });
   });
 
   /**

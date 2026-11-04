@@ -41,7 +41,7 @@ Node.js Services (auth, order, payment, product)
 - **Multi-Channel Orchestration**: Unified lifecycle management for Email, SMS (Twilio API), Push, and In-App notifications.
 - **Provider-Agnostic Channel Abstraction**: Clean `Channel` interface with pluggable providers (Twilio, FCM, APNS, Mock).
 - **Email Service Synergy**: Coordinates email notifications and delegates heavy email transport to `email-service` via Kafka (`email.dispatch`).
-- **Real-Time WebSocket Streaming**: Instant in-app notification delivery to connected storefronts (`apps/client`) and dashboards (`apps/admin`).
+- **Real-Time WebSocket Streaming & Redis Pub/Sub Backplane**: Instant in-app notification delivery to connected storefronts (`apps/client`) and dashboards (`apps/admin`) with cross-pod Redis Pub/Sub synchronization (`notifications:ws:broadcast`) to prevent dropped messages across scaled replicas (see [docs/plans/notification-service-redis-pubsub-websocket-sync.md](../../docs/plans/notification-service-redis-pubsub-websocket-sync.md)).
 - **User Preference Enforcement**: Granular per-user and per-notification-type channel enablement controls.
 - **Deduplication & Idempotency**: Fast-path Redis deduplication (`SETNX` with TTL) + durable PostgreSQL event tracking preventing duplicate notifications on Kafka replays.
 - **Resilient Worker Pool**: Native goroutine worker pools per channel with configurable concurrency, exponential backoff retries, and dead-letter classification.

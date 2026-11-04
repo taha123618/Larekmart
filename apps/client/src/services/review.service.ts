@@ -85,14 +85,21 @@ export async function fetchProductRatingSummary(
 
 /**
  * Submit a customer product review. Strictly requires customer authentication token.
+ * Passes Idempotency-Key to prevent duplicate review submissions on rapid clicks.
  */
 export async function submitProductReview(
   productId: string,
   payload: CreateReviewInput,
   token?: string | null,
+  idempotencyKey?: string,
 ): Promise<Review> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "Idempotency-Key":
+      idempotencyKey ||
+      (typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `review_sub_${Date.now()}`),
   };
 
   if (token) {

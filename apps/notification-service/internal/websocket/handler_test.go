@@ -15,7 +15,7 @@ import (
 
 func TestServeWS_Unauthorized(t *testing.T) {
 	logger := observability.NewLogger("test", "test", "debug", "pretty")
-	hub := NewHub(logger, nil)
+	hub := NewHub(logger, nil, nil)
 	handler := ServeWS(hub, logger)
 
 	req := httptest.NewRequest(http.MethodGet, "/ws", nil)
@@ -33,7 +33,7 @@ func TestServeWS_UpgradeAndConnect(t *testing.T) {
 	defer os.Unsetenv("NOTIFICATION_DEV_AUTH_BYPASS")
 
 	logger := observability.NewLogger("test", "test", "debug", "pretty")
-	hub := NewHub(logger, nil)
+	hub := NewHub(logger, nil, nil)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go hub.Run(ctx)

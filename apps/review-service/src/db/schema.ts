@@ -73,6 +73,12 @@ export const reviews = pgTable(
     index("reviews_status_idx").on(table.status),
     index("reviews_rating_idx").on(table.rating),
     index("reviews_created_at_idx").on(table.createdAt),
+    index("reviews_product_status_idx").on(table.productId, table.status),
+    index("reviews_prod_status_created_idx").on(
+      table.productId,
+      table.status,
+      table.createdAt,
+    ),
   ],
 );
 

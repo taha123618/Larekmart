@@ -77,6 +77,11 @@ export const productPrices = pgTable(
     ),
     index("product_prices_product_id_idx").on(table.productId),
     index("product_prices_price_list_idx").on(table.priceListId),
+    index("product_prices_list_product_active_idx").on(
+      table.priceListId,
+      table.productId,
+      table.isActive,
+    ),
   ],
 );
 
@@ -147,6 +152,7 @@ export const priceRules = pgTable(
     index("price_rules_product_idx").on(table.productId),
     index("price_rules_price_list_idx").on(table.priceListId),
     index("price_rules_rule_type_idx").on(table.ruleType),
+    index("price_rules_list_active_idx").on(table.priceListId, table.isActive),
   ],
 );
 

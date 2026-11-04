@@ -1,5 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { getDb } from "../db/connection.js";
+import { redis } from "../utils/redis.js";
 import {
   taxJurisdictions,
   type TaxJurisdiction,
@@ -180,6 +181,16 @@ export class JurisdictionRepository {
     region?: string,
     municipality?: string,
   ): Promise<TaxJurisdiction[]> {
+    const cacheKey = `tax:v1:jurisdictions:${country.toUpperCase()}:${region?.toUpperCase() || "any"}:${municipality?.toLowerCase() || "any"}`;
+    try {
+      const cached = await redis.client.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch {
+      // Redis failover
+    }
+
     let all: TaxJurisdiction[] = [];
 
     try {
@@ -199,7 +210,7 @@ export class JurisdictionRepository {
       );
     }
 
-    return all.filter((j) => {
+    const matched = all.filter((j) => {
       if (!j.regionCode && !j.municipality) return true;
       if (
         region &&
@@ -221,6 +232,14 @@ export class JurisdictionRepository {
       }
       return false;
     });
+
+    try {
+      await redis.client.set(cacheKey, JSON.stringify(matched), "EX", 3600);
+    } catch {
+      // Redis failover
+    }
+
+    return matched;
   }
 }
 

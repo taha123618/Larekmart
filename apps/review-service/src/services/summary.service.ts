@@ -4,6 +4,8 @@ import { publishRatingSummaryUpdated } from "../publishers/review.publisher.js";
 import type { ProductRatingSummary } from "@repo/types";
 
 export class SummaryService {
+  private inFlightSummaries = new Map<string, Promise<ProductRatingSummary>>();
+
   async getProductRatingSummary(
     productId: string,
   ): Promise<ProductRatingSummary> {
@@ -12,9 +14,24 @@ export class SummaryService {
       return cached;
     }
 
-    const summary = await summaryRepository.getSummary(productId);
-    await reviewCache.setSummary(productId, summary);
-    return summary;
+    // SingleFlight coalescing: coalesce concurrent requests for the same productId
+    const inFlight = this.inFlightSummaries.get(productId);
+    if (inFlight) {
+      return await inFlight;
+    }
+
+    const promise = (async () => {
+      try {
+        const summary = await summaryRepository.getSummary(productId);
+        await reviewCache.setSummary(productId, summary);
+        return summary;
+      } finally {
+        this.inFlightSummaries.delete(productId);
+      }
+    })();
+
+    this.inFlightSummaries.set(productId, promise);
+    return await promise;
   }
 
   async recalculateAndPublish(

@@ -63,6 +63,22 @@ Node.js (TypeScript strict) + Fastify 5 tax calculation microservice: jurisdicti
   - `GET /health` — liveness probe.
   - `GET /ready` — readiness probe (MySQL + Redis connectivity).
 
+## Invariants & Distributed Guarantees
+
+- **Multi-Tier Jurisdiction & Rule Caching**:
+  - Matched jurisdictions cache in Redis under `tax:v1:jurisdictions:{country}:{region}:{municipality}` (1h TTL).
+  - Matched tax rules cache in Redis under `tax:v1:rules:{jurisdictionIds}:{categoryIds}` (1h TTL).
+  - Cache invalidation: `handleTaxRulesUpdatedEvent` evicts `tax:v1:rules:*` keys across Redis cluster.
+- **Thundering-Herd Protection (`SingleFlight`)**: High-velocity tax quote requests (`POST /api/v1/tax/quote`) coalesce in-flight executions for identical address and line-item signatures (`inFlightQuotes`), shielding MySQL from connection pool exhaustion.
+- **Batch Category Resolution**: `taxCategoryRepository.findByCodes(codes)` resolves all requested categories in a single database query via `inArray`, eliminating N+1 sequential queries.
+- **Distributed Idempotency Engine**: Authoritative calculations (`POST /api/v1/tax/calculate`, `/quote`, `/returns/quote`) enforce atomic `Idempotency-Key` leases via `@repo/redis` (`executeWithIdempotency`):
+  - Returns 409 Conflict if mutation is currently in-flight.
+  - Replays cached calculation responses with `Idempotent-Replayed: true` and identical body.
+- **Database Composite Indexing**:
+  - `tax_jur_geo_idx` on `tax_jurisdictions(country_code, region_code, is_active)`.
+  - `tax_rules_lookup_idx` on `tax_rules(jurisdiction_id, category_id, is_active)`.
+  - `tax_calc_ref_idx` on `tax_calculations(reference_type, reference_id)`.
+
 ## Testing & Quality
 
 - Test runner: `tests/tax-service.test.ts` via standalone `tsx`.

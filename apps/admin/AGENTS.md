@@ -43,6 +43,7 @@ and uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-for
   of the app. Icons from `lucide-react`. Toasts via `react-toastify`.
 - **Styling:** Tailwind v4 + CSS variables in `src/app/globals.css`. Prefer existing palette
   classes over raw hex.
+- **Distributed Idempotency:** State-mutating admin actions (coupon generation, review moderation, promotion activations, and payout dispatches) should supply `Idempotency-Key` headers to guarantee single-execution semantics across network retries.
 
 ## Auth model
 

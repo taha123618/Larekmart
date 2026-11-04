@@ -4,6 +4,7 @@ import {
   resolveCartIdentity,
   requireAdmin,
 } from "../middleware/auth.middleware.js";
+import { idempotencyMiddleware } from "../middleware/idempotency.middleware.js";
 
 const router: Router = Router();
 
@@ -21,7 +22,7 @@ router.get("/admin/recent", requireAdmin, (req, res, next) =>
   cartController.getRecentCarts(req, res, next),
 );
 
-router.post("/items", (req, res, next) =>
+router.post("/items", idempotencyMiddleware, (req, res, next) =>
   cartController.addItem(req, res, next),
 );
 router.patch("/items/:item_id", (req, res, next) =>
@@ -31,11 +32,11 @@ router.delete("/items/:item_id", (req, res, next) =>
   cartController.removeItem(req, res, next),
 );
 
-router.post("/merge", (req, res, next) =>
+router.post("/merge", idempotencyMiddleware, (req, res, next) =>
   cartController.mergeCart(req, res, next),
 );
 
-router.post("/coupons", (req, res, next) =>
+router.post("/coupons", idempotencyMiddleware, (req, res, next) =>
   cartController.applyCoupon(req, res, next),
 );
 router.delete("/coupons/:code", (req, res, next) =>

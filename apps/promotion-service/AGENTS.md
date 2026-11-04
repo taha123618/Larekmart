@@ -25,7 +25,11 @@ Node.js (TypeScript strict) + Hono 4 promotion engine microservice: centralized 
   - `promotion-evaluator.ts`: Target matching (PRODUCT, CATEGORY, SELLER, ORDER inclusions/exclusions), customer segment verification, minOrderAmount enforcement, discount computation (PERCENTAGE, FIXED_AMOUNT, FREE_SHIPPING), and priority/stacking rule resolution.
   - `promotion.service.ts`: Active promotions with Redis caching, coupon validation, cart quotes, ACID reservations, order commits, and administrative flows.
 - `src/events/` — Kafka producers (`producers/promotion.producer.ts`) and consumers (`consumers/order-events.consumer.ts`).
-- `src/middleware/` — Clerk JWT validation and gateway header propagation (`shouldBeUser`, `shouldBeAdmin`, `optionalUserOrGuest`).
+- `src/middleware/` — Clerk JWT validation and gateway header propagation (`shouldBeUser`, `shouldBeAdmin`, `optionalUserOrGuest`), plus `idempotencyMiddleware` using `@repo/redis` atomic leases for `POST /reservations` and `POST /commit`.
+- Concurrency & Flash-Sale Invariants:
+  - `ReservationRepository.createReservation` locks the promotion rule row via `FOR UPDATE` within the transaction and calculates `totalUsage = lockedRule.usageCount + activeUnexpiredReservations` against `globalLimit` to eliminate flash-sale overselling.
+  - Per-customer usage limits (`maxPerCustomer`) account for both historical redemptions and active unexpired reservations.
+  - State-mutating routes support the `Idempotency-Key` header with in-flight conflict rejection (409) and transparent replay caching (201/200).
 - `src/observability/` — Prometheus metrics and structured Pino logger via `@repo/monitoring`.
 - `src/workers/` — `reservation-expiry.worker.ts`: periodically releases abandoned reservations whose TTL expired.
 

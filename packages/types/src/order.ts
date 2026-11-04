@@ -172,3 +172,14 @@ export interface OrderCancelledPayload {
   reason: string;
   cancelledAt: string;
 }
+
+export interface PaymentFailedPayload {
+  sessionId?: string | null;
+  paymentIntentId?: string | null;
+  referenceId?: string | null;
+  cartId?: string | null;
+  reservationId?: string | null;
+  userId?: string | null;
+  reason: string;
+  timestamp: string;
+}

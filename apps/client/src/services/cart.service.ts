@@ -40,7 +40,10 @@ export const clearGuestToken = (): void => {
   }
 };
 
-export const createCartApiClient = (authToken?: string): AxiosInstance => {
+export const createCartApiClient = (
+  authToken?: string,
+  idempotencyKey?: string,
+): AxiosInstance => {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "x-guest-token": getOrCreateGuestToken(),
@@ -48,6 +51,10 @@ export const createCartApiClient = (authToken?: string): AxiosInstance => {
 
   if (authToken) {
     headers["Authorization"] = `Bearer ${authToken}`;
+  }
+
+  if (idempotencyKey) {
+    headers["Idempotency-Key"] = idempotencyKey;
   }
 
   return axios.create({
@@ -100,14 +107,20 @@ export const cartClient = {
   },
 
   /**
-   * Add item to authoritative cart via Axios
+   * Add item to authoritative cart via Axios with idempotency protection
    */
   async addItem(
     input: AddToCartInputType,
     authToken?: string,
+    idempotencyKey?: string,
   ): Promise<CartResponseType | null> {
     try {
-      const client = createCartApiClient(authToken);
+      const key =
+        idempotencyKey ||
+        (typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : undefined);
+      const client = createCartApiClient(authToken, key);
       const response = await client.post<CartResponseType>("/items", input);
       return response.data;
     } catch (err) {
@@ -166,14 +179,20 @@ export const cartClient = {
   },
 
   /**
-   * Apply promotional coupon via Axios
+   * Apply promotional coupon via Axios with idempotency protection
    */
   async applyCoupon(
     code: string,
     authToken?: string,
+    idempotencyKey?: string,
   ): Promise<CartResponseType> {
     try {
-      const client = createCartApiClient(authToken);
+      const key =
+        idempotencyKey ||
+        (typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : undefined);
+      const client = createCartApiClient(authToken, key);
       const response = await client.post<CartResponseType>("/coupons", {
         code,
       });
@@ -221,18 +240,32 @@ export const cartClient = {
 
   /**
    * Merge anonymous guest cart into authenticated user cart via Axios
+   * Protected with distributed locking and 409 conflict auto-recovery.
    */
   async mergeCart(
     guestToken: string,
     authToken: string,
+    idempotencyKey?: string,
   ): Promise<CartResponseType | null> {
     try {
-      const client = createCartApiClient(authToken);
+      const key =
+        idempotencyKey ||
+        (typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : undefined);
+      const client = createCartApiClient(authToken, key);
       const response = await client.post<CartResponseType>("/merge", {
         guestToken,
       });
       return response.data;
     } catch (err) {
+      if (err instanceof AxiosError && err.response?.status === 409) {
+        // 409 Conflict: Merge already completed or currently in-flight; recover by fetching active cart
+        console.warn(
+          "[CartService] Cart merge conflict (in-flight or already merged); recovering active user cart",
+        );
+        return await this.getCart(authToken);
+      }
       console.warn("Cart service Axios error on mergeCart:", err);
       return null;
     }

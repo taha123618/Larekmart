@@ -20,8 +20,9 @@ A dedicated search and indexing microservice for Larekmart built with Node.js, F
 - `src/middleware/` — Rate limiting (`rate-limit.ts`), Clerk admin auth (`auth.ts`), and global error handling (`error-handler.ts`).
 - `src/observability/` — Metrics registry (`metrics.ts`) and OpenTelemetry tracing (`tracing.ts`).
 
-## Reindexing, Aliasing & Drift Reconciliation
+## Reindexing, Aliasing & Real-Time Bulk Indexing
 
+- **Real-Time Kafka Micro-Batching (`subscribeBatch`)**: Event consumers in `src/consumers/product-events.consumer.ts` subscribe in chunks of up to 100 events using Kafka `subscribeBatch`. Document operations are validated, grouped into `BulkOperationItem[]`, and executed via OpenSearch `_bulk` in `indexingService.bulkExecuteOperations` in a single network roundtrip with atomic batch cache invalidation. See [docs/plans/opensearch-real-time-bulk-indexing-pipeline.md](../../docs/plans/opensearch-real-time-bulk-indexing-pipeline.md).
 - Reindexing executes asynchronously (`POST /api/v1/index/reindex?async=true`) to avoid gateway proxy timeouts.
 - `DriftReconciler` (`src/services/drift-reconciler.ts`) intercepts live mutations during reindexing, dual-writes to the pending target index, buffers any transient errors, and drains them before the alias cutover to guarantee zero lost mutations.
 - Parity verification gate (`verifyIndexParity`) compares document count deltas and tests search query sanity before allowing the alias swap.

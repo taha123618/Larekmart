@@ -118,8 +118,8 @@ func main() {
 	// 8. Template Engine
 	templateEngine := templates.NewEngine()
 
-	// 9. WebSocket Hub for in-app real-time notifications
-	wsHub := websocket.NewHub(logger, metrics)
+	// 9. WebSocket Hub for in-app real-time notifications with Redis Pub/Sub backplane
+	wsHub := websocket.NewHub(logger, metrics, redisClient)
 	wsCtx, wsCancel := context.WithCancel(ctx)
 	defer wsCancel()
 	go wsHub.Run(wsCtx)
@@ -197,7 +197,7 @@ func main() {
 	r.Use(middleware.OTelTracing(cfg.OTELServiceName))
 
 	// Public Health & Observability Endpoints
-	r.Get("/health", handlers.HealthHandler(dbPool, redisClient))
+	r.Get("/health", handlers.HealthHandler(dbPool, redisClient, wsHub))
 	r.Get("/ready", handlers.ReadyHandler(dbPool))
 	r.Handle("/metrics", promhttp.Handler())
 

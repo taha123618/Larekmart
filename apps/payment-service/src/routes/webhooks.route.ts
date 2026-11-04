@@ -86,6 +86,52 @@ webhookRoute.post("/stripe", async (c) => {
         break;
       }
 
+      case "checkout.session.expired": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await producer.send(
+          "payment.failed",
+          {
+            value: {
+              sessionId: session.id,
+              referenceId: session.id,
+              cartId: session.metadata?.cartId || null,
+              reservationId: session.metadata?.reservationId || null,
+              userId: session.client_reference_id || null,
+              reason: "checkout_session_expired",
+              timestamp: new Date().toISOString(),
+            },
+          },
+          { key: session.id },
+        );
+        logger.info(
+          `Dispatched payment.failed event for expired checkout session: ${session.id}`,
+        );
+        break;
+      }
+
+      case "payment_intent.payment_failed": {
+        const intent = event.data.object as Stripe.PaymentIntent;
+        await producer.send(
+          "payment.failed",
+          {
+            value: {
+              paymentIntentId: intent.id,
+              referenceId: intent.id,
+              reservationId: intent.metadata?.reservationId || null,
+              userId: intent.metadata?.userId || null,
+              reason:
+                intent.last_payment_error?.message || "payment_intent_failed",
+              timestamp: new Date().toISOString(),
+            },
+          },
+          { key: intent.id },
+        );
+        logger.info(
+          `Dispatched payment.failed event for failed payment_intent: ${intent.id}`,
+        );
+        break;
+      }
+
       case "charge.dispute.created": {
         const dispute = event.data.object as Stripe.Dispute;
         const chargeId =

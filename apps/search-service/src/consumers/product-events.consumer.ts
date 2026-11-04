@@ -1,4 +1,4 @@
-import { indexingService } from "../services/indexing.service.js";
+import { indexingService, type BulkOperationItem } from "../services/indexing.service.js";
 import { config } from "../config/config.js";
 import { logger, searchMetrics } from "../observability/metrics.js";
 import { ProductEventPayloadSchema } from "../schemas/indexing.schema.js";
@@ -54,13 +54,318 @@ export function transformProductEventToDocument(
 export async function registerProductEventSubscriptions(
   consumer: any,
 ): Promise<void> {
+  const batchSize = 100;
+
+  // 1. If consumer supports high-throughput batch consumption, use subscribeBatch
+  if (typeof consumer?.subscribeBatch === "function") {
+    const batchTopics = [
+      {
+        topicName: config.kafka.topics.productCreated,
+        batchSize,
+        topicHandler: async (items: any[]) => {
+          const ops: BulkOperationItem[] = [];
+          for (const item of items) {
+            const payload = item.value || item;
+            try {
+              const validated = ProductEventPayloadSchema.parse(payload);
+              const doc = transformProductEventToDocument(validated);
+              ops.push({ action: "index", id: doc.id, doc });
+            } catch (error: any) {
+              logger.warn("Skipping invalid product.created payload in batch", {
+                error: error.message,
+              });
+            }
+          }
+          if (ops.length > 0) {
+            await indexingService.bulkExecuteOperations(ops);
+            searchMetrics.kafkaEventsProcessedTotal.inc(
+              { topic: config.kafka.topics.productCreated, status: "success" },
+              ops.length,
+            );
+          }
+        },
+      },
+      {
+        topicName: config.kafka.topics.productUpdated,
+        batchSize,
+        topicHandler: async (items: any[]) => {
+          const ops: BulkOperationItem[] = [];
+          for (const item of items) {
+            const payload = item.value || item;
+            try {
+              const validated = ProductEventPayloadSchema.parse(payload);
+              const doc = transformProductEventToDocument(validated);
+              ops.push({ action: "index", id: doc.id, doc });
+            } catch (error: any) {
+              logger.warn("Skipping invalid product.updated payload in batch", {
+                error: error.message,
+              });
+            }
+          }
+          if (ops.length > 0) {
+            await indexingService.bulkExecuteOperations(ops);
+            searchMetrics.kafkaEventsProcessedTotal.inc(
+              { topic: config.kafka.topics.productUpdated, status: "success" },
+              ops.length,
+            );
+          }
+        },
+      },
+      {
+        topicName: config.kafka.topics.productDeleted,
+        batchSize,
+        topicHandler: async (items: any[]) => {
+          const ops: BulkOperationItem[] = [];
+          for (const item of items) {
+            const payload = item.value || item;
+            const productId =
+              typeof payload === "object" ? payload.id : payload;
+            if (productId !== undefined && productId !== null) {
+              ops.push({ action: "delete", id: productId });
+            }
+          }
+          if (ops.length > 0) {
+            await indexingService.bulkExecuteOperations(ops);
+            searchMetrics.kafkaEventsProcessedTotal.inc(
+              { topic: config.kafka.topics.productDeleted, status: "success" },
+              ops.length,
+            );
+          }
+        },
+      },
+      {
+        topicName: config.kafka.topics.pricingPriceUpdated,
+        batchSize,
+        topicHandler: async (items: any[]) => {
+          const ops: BulkOperationItem[] = [];
+          for (const item of items) {
+            const payload = item.value || item;
+            const productId = payload.productId || payload.id;
+            const newPrice =
+              payload.newPrice ?? payload.basePrice ?? payload.price;
+            if (
+              productId !== undefined &&
+              typeof newPrice === "number" &&
+              !isNaN(newPrice)
+            ) {
+              ops.push({
+                action: "update",
+                id: productId,
+                doc: {
+                  price: newPrice,
+                  compareAtPrice: payload.compareAtPrice,
+                },
+              });
+            }
+          }
+          if (ops.length > 0) {
+            await indexingService.bulkExecuteOperations(ops);
+            searchMetrics.kafkaEventsProcessedTotal.inc(
+              {
+                topic: config.kafka.topics.pricingPriceUpdated,
+                status: "success",
+              },
+              ops.length,
+            );
+          }
+        },
+      },
+      {
+        topicName: config.kafka.topics.priceUpdated,
+        batchSize,
+        topicHandler: async (items: any[]) => {
+          const ops: BulkOperationItem[] = [];
+          for (const item of items) {
+            const payload = item.value || item;
+            const productId = payload.productId || payload.id;
+            const newPrice =
+              payload.newPrice ?? payload.basePrice ?? payload.price;
+            if (
+              productId !== undefined &&
+              typeof newPrice === "number" &&
+              !isNaN(newPrice)
+            ) {
+              ops.push({
+                action: "update",
+                id: productId,
+                doc: {
+                  price: newPrice,
+                  compareAtPrice: payload.compareAtPrice,
+                },
+              });
+            }
+          }
+          if (ops.length > 0) {
+            await indexingService.bulkExecuteOperations(ops);
+            searchMetrics.kafkaEventsProcessedTotal.inc(
+              { topic: config.kafka.topics.priceUpdated, status: "success" },
+              ops.length,
+            );
+          }
+        },
+      },
+      {
+        topicName: config.kafka.topics.ratingSummaryUpdated,
+        batchSize,
+        topicHandler: async (items: any[]) => {
+          const ops: BulkOperationItem[] = [];
+          for (const item of items) {
+            const payload = item.value || item;
+            const productId = payload.productId || payload.data?.productId;
+            const rating = payload.averageRating ?? payload.data?.averageRating;
+            const reviewCount =
+              payload.reviewCount ?? payload.data?.reviewCount;
+            if (productId !== undefined && productId !== null) {
+              ops.push({
+                action: "update",
+                id: productId,
+                doc: {
+                  rating:
+                    typeof rating === "number" ? rating : Number(rating) || 0,
+                  reviewCount:
+                    typeof reviewCount === "number"
+                      ? reviewCount
+                      : Number(reviewCount) || 0,
+                },
+              });
+            }
+          }
+          if (ops.length > 0) {
+            await indexingService.bulkExecuteOperations(ops);
+            searchMetrics.kafkaEventsProcessedTotal.inc(
+              {
+                topic: config.kafka.topics.ratingSummaryUpdated,
+                status: "success",
+              },
+              ops.length,
+            );
+          }
+        },
+      },
+      {
+        topicName: config.kafka.topics.inventoryStockSold,
+        batchSize,
+        topicHandler: async (items: any[]) => {
+          const ops: BulkOperationItem[] = [];
+          for (const item of items) {
+            const payload = item.value || item;
+            const productId = payload.productId || payload.id;
+            const available =
+              payload.availableQuantity ?? payload.available ?? payload.quantity;
+            if (productId !== undefined && productId !== null) {
+              const inStock = available !== undefined ? available > 0 : true;
+              ops.push({
+                action: "update",
+                id: productId,
+                doc: {
+                  inStock,
+                  ...(available !== undefined ? { stockQuantity: available } : {}),
+                },
+              });
+            }
+          }
+          if (ops.length > 0) {
+            await indexingService.bulkExecuteOperations(ops);
+            searchMetrics.kafkaEventsProcessedTotal.inc(
+              {
+                topic: config.kafka.topics.inventoryStockSold,
+                status: "success",
+              },
+              ops.length,
+            );
+          }
+        },
+      },
+      {
+        topicName: config.kafka.topics.inventoryLowStock,
+        batchSize,
+        topicHandler: async (items: any[]) => {
+          const ops: BulkOperationItem[] = [];
+          for (const item of items) {
+            const payload = item.value || item;
+            const productId = payload.productId || payload.id;
+            const available =
+              payload.availableQuantity ?? payload.available ?? payload.quantity;
+            if (productId !== undefined && productId !== null) {
+              const inStock = available !== undefined ? available > 0 : true;
+              ops.push({
+                action: "update",
+                id: productId,
+                doc: {
+                  inStock,
+                  ...(available !== undefined ? { stockQuantity: available } : {}),
+                },
+              });
+            }
+          }
+          if (ops.length > 0) {
+            await indexingService.bulkExecuteOperations(ops);
+            searchMetrics.kafkaEventsProcessedTotal.inc(
+              {
+                topic: config.kafka.topics.inventoryLowStock,
+                status: "success",
+              },
+              ops.length,
+            );
+          }
+        },
+      },
+      {
+        topicName: config.kafka.topics.inventoryAdjusted,
+        batchSize,
+        topicHandler: async (items: any[]) => {
+          const ops: BulkOperationItem[] = [];
+          for (const item of items) {
+            const payload = item.value || item;
+            const productId = payload.productId || payload.id;
+            const available =
+              payload.availableQuantity ?? payload.available ?? payload.quantity;
+            if (productId !== undefined && productId !== null) {
+              const inStock = available !== undefined ? available > 0 : true;
+              ops.push({
+                action: "update",
+                id: productId,
+                doc: {
+                  inStock,
+                  ...(available !== undefined ? { stockQuantity: available } : {}),
+                },
+              });
+            }
+          }
+          if (ops.length > 0) {
+            await indexingService.bulkExecuteOperations(ops);
+            searchMetrics.kafkaEventsProcessedTotal.inc(
+              {
+                topic: config.kafka.topics.inventoryAdjusted,
+                status: "success",
+              },
+              ops.length,
+            );
+          }
+        },
+      },
+    ];
+
+    try {
+      await consumer.subscribeBatch(batchTopics);
+      logger.info(
+        "Subscribed to product event topics using Kafka subscribeBatch (batchSize: 100)",
+      );
+      return;
+    } catch (error) {
+      logger.warn(
+        "Kafka subscribeBatch failed; falling back to single-message subscription",
+        { error },
+      );
+    }
+  }
+
+  // 2. Fallback to standard single-message subscribe
   const topics = [
     {
       topicName: config.kafka.topics.productCreated,
       topicHandler: async (message: any) => {
         const payload = message.value || message;
-        logger.info("Received product.created event", { payload });
-
         try {
           const validated = ProductEventPayloadSchema.parse(payload);
           const doc = transformProductEventToDocument(validated);
@@ -85,8 +390,6 @@ export async function registerProductEventSubscriptions(
       topicName: config.kafka.topics.productUpdated,
       topicHandler: async (message: any) => {
         const payload = message.value || message;
-        logger.info("Received product.updated event", { payload });
-
         try {
           const validated = ProductEventPayloadSchema.parse(payload);
           const doc = transformProductEventToDocument(validated);
@@ -111,8 +414,6 @@ export async function registerProductEventSubscriptions(
       topicName: config.kafka.topics.pricingPriceUpdated,
       topicHandler: async (message: any) => {
         const payload = message.value || message;
-        logger.info("Received pricing.price.updated event", { payload });
-
         try {
           const productId = payload.productId || payload.id;
           const newPrice =
@@ -148,8 +449,6 @@ export async function registerProductEventSubscriptions(
       topicName: config.kafka.topics.productDeleted,
       topicHandler: async (message: any) => {
         const payload = message.value || message;
-        logger.info("Received product.deleted event", { payload });
-
         try {
           const productId = typeof payload === "object" ? payload.id : payload;
           if (productId !== undefined && productId !== null) {
@@ -175,10 +474,6 @@ export async function registerProductEventSubscriptions(
       topicName: config.kafka.topics.ratingSummaryUpdated,
       topicHandler: async (message: any) => {
         const payload = message.value || message;
-        logger.info("Received product.rating-summary.updated event", {
-          payload,
-        });
-
         try {
           const productId = payload.productId || payload.data?.productId;
           const rating = payload.averageRating ?? payload.data?.averageRating;
@@ -196,9 +491,6 @@ export async function registerProductEventSubscriptions(
               topic: config.kafka.topics.ratingSummaryUpdated,
               status: "success",
             });
-            logger.info(
-              `Successfully updated OpenSearch product [${productId}] ratings: ${rating} (${reviewCount} reviews)`,
-            );
           }
         } catch (error: any) {
           searchMetrics.kafkaEventsProcessedTotal.inc({
@@ -219,8 +511,6 @@ export async function registerProductEventSubscriptions(
       topicName: config.kafka.topics.priceUpdated,
       topicHandler: async (message: any) => {
         const payload = message.value || message;
-        logger.info("Received price.updated event", { payload });
-
         try {
           const productId = payload.productId || payload.id;
           const newPrice =
@@ -256,8 +546,6 @@ export async function registerProductEventSubscriptions(
       topicName: config.kafka.topics.inventoryStockSold,
       topicHandler: async (message: any) => {
         const payload = message.value || message;
-        logger.info("Received inventory.stock.sold event", { payload });
-
         try {
           const productId = payload.productId || payload.id;
           const available =
@@ -290,8 +578,6 @@ export async function registerProductEventSubscriptions(
       topicName: config.kafka.topics.inventoryLowStock,
       topicHandler: async (message: any) => {
         const payload = message.value || message;
-        logger.info("Received inventory.low_stock event", { payload });
-
         try {
           const productId = payload.productId || payload.id;
           const available =
@@ -324,8 +610,6 @@ export async function registerProductEventSubscriptions(
       topicName: config.kafka.topics.inventoryAdjusted,
       topicHandler: async (message: any) => {
         const payload = message.value || message;
-        logger.info("Received inventory.adjusted event", { payload });
-
         try {
           const productId = payload.productId || payload.id;
           const available =

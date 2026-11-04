@@ -97,10 +97,20 @@ export class WebhookService {
     carrier: string,
     input: CarrierWebhookInput,
   ): Promise<{ status: string; message: string }> {
-    const eventId =
-      input.eventId ?? `${carrier}_${input.trackingNumber}_${Date.now()}`;
+    // 1. Generate deterministic eventId if not explicitly provided by carrier
+    const rawCarrier = carrier.toLowerCase().trim();
+    const rawTracking = input.trackingNumber.trim().toUpperCase();
+    const rawStatus = input.status.trim().toLowerCase();
+    const rawTimestamp = input.timestamp?.trim() ?? "";
 
-    // 1. Idempotency Check in Redis & DB
+    const eventId =
+      input.eventId?.trim() ||
+      crypto
+        .createHash("sha256")
+        .update(`${rawCarrier}:${rawTracking}:${rawStatus}:${rawTimestamp}`)
+        .digest("hex");
+
+    // 2. Idempotency Check in Redis & DB
     const alreadyProcessed = await ShippingCache.isWebhookProcessed(
       carrier,
       eventId,
@@ -123,59 +133,76 @@ export class WebhookService {
       };
     }
 
-    // 2. Find shipment by tracking number
-    const shipment = await ShipmentRepository.findByTrackingNumber(
-      input.trackingNumber,
+    // 3. Acquire atomic in-flight lease to prevent concurrent race conditions
+    const leaseAcquired = await ShippingCache.acquireWebhookLease(
+      carrier,
+      eventId,
+      15000,
     );
-    if (!shipment) {
-      // Record webhook as ignored/unmatched
+    if (!leaseAcquired) {
+      return {
+        status: "ignored",
+        message: "Concurrent webhook event currently in-flight",
+      };
+    }
+
+    try {
+      // 4. Find shipment by tracking number
+      const shipment = await ShipmentRepository.findByTrackingNumber(
+        input.trackingNumber,
+      );
+      if (!shipment) {
+        // Record webhook as ignored/unmatched
+        await prisma.shippingWebhook.create({
+          data: {
+            carrier,
+            externalEventId: eventId,
+            signature: input.signature ?? null,
+            payload: input.rawPayload as object,
+            status: "ignored",
+            errorMessage: `No shipment found matching tracking number '${input.trackingNumber}'`,
+          },
+        });
+        return {
+          status: "ignored",
+          message: `No shipment found matching tracking number '${input.trackingNumber}'`,
+        };
+      }
+
+      // 5. Map status and record tracking event
+      const domainStatus = this.mapCarrierStatusToDomain(input.status);
+
+      await TrackingService.recordTrackingEvent({
+        shipmentId: shipment.id,
+        status: domainStatus,
+        description:
+          input.description ?? `Carrier status update: ${input.status}`,
+        location: input.location ?? null,
+        occurredAt: input.timestamp ? new Date(input.timestamp) : new Date(),
+        source: "carrier_webhook",
+        metadata: input.rawPayload,
+      });
+
+      // 6. Record successful webhook processing
       await prisma.shippingWebhook.create({
         data: {
           carrier,
           externalEventId: eventId,
           signature: input.signature ?? null,
           payload: input.rawPayload as object,
-          status: "ignored",
-          errorMessage: `No shipment found matching tracking number '${input.trackingNumber}'`,
+          status: "processed",
+          processedAt: new Date(),
         },
       });
+
+      await ShippingCache.markWebhookProcessed(carrier, eventId);
+
       return {
-        status: "ignored",
-        message: `No shipment found matching tracking number '${input.trackingNumber}'`,
-      };
-    }
-
-    // 3. Map status and record tracking event
-    const domainStatus = this.mapCarrierStatusToDomain(input.status);
-
-    await TrackingService.recordTrackingEvent({
-      shipmentId: shipment.id,
-      status: domainStatus,
-      description:
-        input.description ?? `Carrier status update: ${input.status}`,
-      location: input.location ?? null,
-      occurredAt: input.timestamp ? new Date(input.timestamp) : new Date(),
-      source: "carrier_webhook",
-      metadata: input.rawPayload,
-    });
-
-    // 4. Record successful webhook processing
-    await prisma.shippingWebhook.create({
-      data: {
-        carrier,
-        externalEventId: eventId,
-        signature: input.signature ?? null,
-        payload: input.rawPayload as object,
         status: "processed",
-        processedAt: new Date(),
-      },
-    });
-
-    await ShippingCache.markWebhookProcessed(carrier, eventId);
-
-    return {
-      status: "processed",
-      message: `Webhook successfully recorded for tracking number ${input.trackingNumber}`,
-    };
+        message: `Webhook successfully recorded for tracking number ${input.trackingNumber}`,
+      };
+    } finally {
+      await ShippingCache.releaseWebhookLease(carrier, eventId);
+    }
   }
 }

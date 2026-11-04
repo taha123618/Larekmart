@@ -138,8 +138,40 @@ export class ReservationRepository {
         }
       }
 
-      // 2. Check per-customer limit
-      const maxPerCustomer = promo.rules?.maxPerCustomer ?? 1;
+      // 2. Lock promotion rules to get up-to-date committed usageCount and globalLimit
+      const [lockedRule] = await tx
+        .select()
+        .from(promotionRules)
+        .where(eq(promotionRules.promotionId, promo.id))
+        .for("update");
+
+      const effectiveRules = lockedRule ?? promo.rules;
+
+      // 3. Check global promotion limit including active unexpired reservations
+      const globalLimit = effectiveRules?.globalLimit;
+      if (globalLimit != null) {
+        const [activeReservationsCount] = await tx
+          .select({ count: sql<number>`count(*)::int` })
+          .from(promotionReservations)
+          .where(
+            and(
+              eq(promotionReservations.promotionId, promo.id),
+              eq(promotionReservations.status, "RESERVED"),
+              sql`${promotionReservations.expiresAt} > NOW()`,
+            ),
+          );
+
+        const totalActiveAndCommitted =
+          (effectiveRules?.usageCount ?? 0) +
+          (activeReservationsCount?.count ?? 0);
+
+        if (totalActiveAndCommitted >= globalLimit) {
+          throw new Error("Promotion global usage limit reached");
+        }
+      }
+
+      // 4. Check per-customer limit
+      const maxPerCustomer = effectiveRules?.maxPerCustomer ?? 1;
       const currentCustomerUses = await this.getCustomerUsageCount(
         promo.id,
         input.userId,
@@ -151,14 +183,7 @@ export class ReservationRepository {
         );
       }
 
-      // 3. Check global promotion limit
-      const globalLimit = promo.rules?.globalLimit;
-      const usageCount = promo.rules?.usageCount ?? 0;
-      if (globalLimit != null && usageCount >= globalLimit) {
-        throw new Error("Promotion global usage limit reached");
-      }
-
-      // 4. Check coupon limit if coupon provided
+      // 5. Check coupon limit if coupon provided
       if (
         coupon &&
         coupon.maxRedemptions != null &&

@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { cartService } from "../services/cart.service.js";
 import { cartItemService } from "../services/cart-item.service.js";
-import { mergeService } from "../services/merge.service.js";
+import { mergeService, CartMergeConflictError } from "../services/merge.service.js";
 import {
   AddToCartSchema,
   UpdateCartItemSchema,
@@ -126,6 +126,10 @@ export class CartController {
       );
       res.status(200).json(merged);
     } catch (error) {
+      if (error instanceof CartMergeConflictError) {
+        res.status(409).json({ message: error.message });
+        return;
+      }
       next(error);
     }
   }

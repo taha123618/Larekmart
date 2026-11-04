@@ -29,7 +29,17 @@ type HealthResponse struct {
 	Summary       map[string]int         `json:"summary"`
 }
 
-func HealthHandler(db *pgxpool.Pool, rdb *redis.Client) http.HandlerFunc {
+// WSHubChecker exposes WebSocket Redis Pub/Sub connectivity status for health probes.
+type WSHubChecker interface {
+	IsRedisPubSubConnected() bool
+}
+
+func HealthHandler(db *pgxpool.Pool, rdb *redis.Client, hub ...WSHubChecker) http.HandlerFunc {
+	var wsChecker WSHubChecker
+	if len(hub) > 0 {
+		wsChecker = hub[0]
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 		defer cancel()
@@ -87,6 +97,25 @@ func HealthHandler(db *pgxpool.Pool, rdb *redis.Client) http.HandlerFunc {
 				healthyCount++
 			}
 			checks["redis"] = redisRes
+		}
+
+		// 3. WebSocket Redis Pub/Sub Backplane Check
+		if wsChecker != nil && rdb != nil {
+			wsStatus := "healthy"
+			wsMsg := "WebSocket Redis Pub/Sub backplane connected"
+			if !wsChecker.IsRedisPubSubConnected() {
+				wsStatus = "degraded"
+				wsMsg = "WebSocket Redis Pub/Sub backplane disconnected (operating local-only)"
+				if overallStatus == "healthy" {
+					overallStatus = "degraded"
+				}
+			}
+			checks["websocket_pubsub"] = CheckResult{
+				Status:    wsStatus,
+				LatencyMS: 0,
+				Message:   wsMsg,
+				Timestamp: time.Now().UTC().Format(time.RFC3339),
+			}
 		}
 
 		response := HealthResponse{

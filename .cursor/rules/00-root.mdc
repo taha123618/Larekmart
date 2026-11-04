@@ -41,5 +41,12 @@ mirror for Cursor; when they disagree, `AGENTS.md` wins.
 - **Hyperscale Flash-Sale Hardening:** Asynchronous Redis <1ms claim + HTTP 202 Accepted + Kafka
   SKU-keyed micro-batching into PostgreSQL (`batchReserveInventory`), dynamic bulkhead thresholds
   at the gateway, and PgBouncer :6432 connection multiplexing. See `docs/plans/hyperscale-flash-sale-architecture-hardening.md`.
+- **Distributed Order Saga & Stock Compensation:** Eager stock release on Stripe session expiration (`payment.failed`)
+  and full Redis Stock Gatekeeper restoration on `order.cancelled`, eliminating phantom stock depletion. See `docs/plans/distributed-order-saga-and-stock-compensation.md`.
+- **OpenSearch Real-Time Bulk Indexing:** Kafka `subscribeBatch` (100 docs per batch) with OpenSearch `_bulk`
+  API in `search-service`, cutting 99% HTTP overhead and Redis cache invalidation churn. See `docs/plans/opensearch-real-time-bulk-indexing-pipeline.md`.
+- **Multi-Pod WebSocket Synchronization:** Go `notification-service` bridges real-time WebSocket clients across
+  scaled pods using a shared Redis Pub/Sub channel (`notifications:ws:broadcast`) with local userMap filtering,
+  loop suppression, and fail-open resilience. See `docs/plans/notification-service-redis-pubsub-websocket-sync.md`.
 - **Plans & Architecture Index:** Always consult authoritative plans in `docs/plans/` before designing
   complex features (Hyperscale, Security Audit, Commission & Payout, Outbox, Idempotency).

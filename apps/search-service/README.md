@@ -13,7 +13,7 @@ It decouples search and complex query loads from the transactional `product-serv
 - **Dynamic Sorting**: Relevance (`_score`), price (`price_asc`, `price_desc`), newest (`createdAt`), customer rating, popularity, and discount percentage.
 - **Autocomplete & Search Suggestions**: Sub-50ms prefix and edge-ngram suggestion search (`/api/v1/search/suggestions?q=...`).
 - **Two-Tier Redis Caching**: Normalized query hash caching with logical namespace invalidation (`search:v1:<version>:<hash>`), built on `@repo/redis`.
-- **Real-Time Event Synchronization**: Consumes `product.created`, `product.updated`, and `product.deleted` from Kafka with idempotent processing.
+- **Real-Time Micro-Batching Event Synchronization**: Consumes `product.*`, `pricing.*`, and `inventory.*` events via Kafka `subscribeBatch` (100 docs/batch) and flushes into OpenSearch using the `_bulk` API, eliminating 99% of HTTP roundtrips and Redis cache churn (see [docs/plans/opensearch-real-time-bulk-indexing-pipeline.md](../../docs/plans/opensearch-real-time-bulk-indexing-pipeline.md)).
 - **Zero-Downtime Reindexing**: Alias-based index switching mechanism (`products-v*` -> `products`) via `/api/v1/index/reindex`.
 - **Observability**: OpenTelemetry tracing hooks, Prometheus `/metrics` endpoint, and `@repo/monitoring` structured JSON logging.
 - **Resilient Health & Readiness**: Separate `/health` (liveness) and `/ready` (dependency checks for OpenSearch and Redis) endpoints.

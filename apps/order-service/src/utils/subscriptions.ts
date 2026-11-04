@@ -3,6 +3,7 @@ import {
   createOrder,
   confirmOrder,
   cancelOutOfStockOrder,
+  handlePaymentFailed,
   markOrderRefunded,
   handleTaxCompleted,
   handleTaxFailed,
@@ -43,6 +44,13 @@ export const runKafkaSubscriptions = async () => {
       topicHandler: async (message) => {
         const payload = message.value;
         if (payload) await cancelOutOfStockOrder(payload);
+      },
+    },
+    {
+      topicName: "payment.failed",
+      topicHandler: async (message) => {
+        const payload = message.value;
+        if (payload) await handlePaymentFailed(payload);
       },
     },
     {

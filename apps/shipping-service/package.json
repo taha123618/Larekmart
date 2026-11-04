@@ -8,7 +8,7 @@
     "dev": "tsx --env-file=.env --watch src/index.ts",
     "build": "tsc",
     "start": "tsx --env-file-if-exists=.env src/index.ts",
-    "test": "tsx tests/security.test.ts",
+    "test": "tsx tests/security.test.ts && tsx tests/webhook-idempotency.test.ts",
     "test:security": "tsx tests/security.test.ts",
     "test:smoke": "tsx --env-file=.env tests/smoke.test.ts",
     "check-types": "tsc --noEmit"

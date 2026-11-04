@@ -21,7 +21,38 @@ export class ShippingCache {
     carrier: string,
     eventId: string,
   ): string {
-    return `webhook:idemp:${carrier}:${eventId}`;
+    return `webhook:idemp:${carrier.toLowerCase()}:${eventId}`;
+  }
+
+  private static webhookLeaseKey(carrier: string, eventId: string): string {
+    return `webhook:lease:${carrier.toLowerCase()}:${eventId}`;
+  }
+
+  static async acquireWebhookLease(
+    carrier: string,
+    eventId: string,
+    ttlMs: number = 15000,
+  ): Promise<boolean> {
+    const key = this.webhookLeaseKey(carrier, eventId);
+    try {
+      const res = await redis.client.set(key, "in_flight", "PX", ttlMs, "NX");
+      return res === "OK";
+    } catch {
+      // Degrade gracefully if Redis is unavailable
+      return true;
+    }
+  }
+
+  static async releaseWebhookLease(
+    carrier: string,
+    eventId: string,
+  ): Promise<void> {
+    const key = this.webhookLeaseKey(carrier, eventId);
+    try {
+      await redis.client.del(key);
+    } catch {
+      // ignore
+    }
   }
 
   static async getCachedRates(

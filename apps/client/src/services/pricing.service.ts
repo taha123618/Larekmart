@@ -15,12 +15,18 @@ const API_BASE = getApiGatewayUrl();
 
 const BASE = `${API_BASE}/api/v1/prices`;
 
-function getHeaders(authToken?: string): Record<string, string> {
+function getHeaders(
+  authToken?: string,
+  idempotencyKey?: string,
+): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
   if (authToken) {
     headers["Authorization"] = `Bearer ${authToken}`;
+  }
+  if (idempotencyKey) {
+    headers["Idempotency-Key"] = idempotencyKey;
   }
   return headers;
 }
@@ -84,10 +90,11 @@ export async function fetchProductPrice(
 export async function fetchPriceQuote(
   input: PriceQuoteRequest,
   authToken?: string,
+  idempotencyKey?: string,
 ): Promise<PriceQuote> {
   const res = await fetch(`${BASE}/quote`, {
     method: "POST",
-    headers: getHeaders(authToken),
+    headers: getHeaders(authToken, idempotencyKey),
     body: JSON.stringify(input),
     cache: "no-store",
   });
@@ -109,10 +116,11 @@ export async function fetchPriceQuote(
 export async function fetchBulkPriceQuote(
   input: BulkPriceQuoteRequest,
   authToken?: string,
+  idempotencyKey?: string,
 ): Promise<PriceQuote[]> {
   const res = await fetch(`${BASE}/bulk-quote`, {
     method: "POST",
-    headers: getHeaders(authToken),
+    headers: getHeaders(authToken, idempotencyKey),
     body: JSON.stringify(input),
     cache: "no-store",
   });

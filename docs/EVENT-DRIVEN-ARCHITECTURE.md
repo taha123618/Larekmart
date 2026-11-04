@@ -66,6 +66,7 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `order.confirmed`                                | order-service              | cart-service, shipping-service, notification-service, analytic-service                                        | `OrderConfirmedPayload` (`{ orderId, userId, email, amount, paymentSessionId, reservationId, products, confirmedAt }`)                                                                                                                                                              |
 | `order.cancelled`                                | order-service              | shipping-service, promotion-service, notification-service, analytic-service, tax-service, inventory-service   | `OrderCancelledPayload` (`{ orderId, userId, reason, cancelledAt }`)                                                                                                                                                                                                                |
 | `payment.successful`                             | payment-service            | order-service, analytic-service, notification-service, inventory-service, recommendation-service              | `{ sessionId, referenceId, reservationId, userId, email, amount, status, products: { name, quantity, price }[] }`                                                                                                                                                                   |
+| `payment.failed`                                 | payment-service            | inventory-service, order-service, analytic-service                                                             | `PaymentFailedPayload` (`{ sessionId?, paymentIntentId?, referenceId?, cartId?, reservationId?, userId?, reason, timestamp }`)                                                                                                                                                       |
 | `payment.refund.requested`                       | order-service              | payment-service                                                                                               | `PaymentRefundRequestedPayload` (`{ orderId, paymentSessionId, amount, reason, userId, requestedAt }`)                                                                                                                                                                              |
 | `payment.refund.completed`                       | payment-service            | order-service                                                                                                 | `PaymentRefundCompletedPayload` (`{ orderId, refundId, paymentSessionId, amount, status, completedAt }`)                                                                                                                                                                            |
 | `notification.dispatch`                          | any backend service        | notification-service                                                                                          | `{ userId, type, title, body, email, phone, metadata }`                                                                                                                                                                                                                             |
@@ -1244,6 +1245,30 @@ await consumer.consume(topics, handlers, {
   dlqTopicSuffix: ".dlq", // Default: ".dlq"
 });
 ```
+
+## Ephemeral Real-Time Event Backplane (Redis Pub/Sub)
+
+For high-velocity, ephemeral UI streaming (such as in-app WebSocket pushes where durable Kafka storage is redundant overhead), microservices utilize dedicated Redis Pub/Sub channels alongside Kafka.
+
+### `notifications:ws:broadcast`
+
+- **Purpose**: Synchronizes in-app real-time WebSocket notifications across scaled `notification-service` pods.
+- **Publisher**: `notification-service` (any pod consuming a domain event or API dispatch).
+- **Subscribers**: All `notification-service` peer pods.
+- **Payload Envelope**:
+  ```json
+  {
+    "event_id": "c1f7a40b-0442-45e0-8a1f-827bb423bc2e",
+    "user_id": "user_2s6...",
+    "origin_instance_id": "hub_d95e...",
+    "payload": {
+      "type": "notification",
+      "notification": { ... }
+    },
+    "created_at": 1730718500000
+  }
+  ```
+- **Guarantees**: Instant local delivery, peer forwarding, loop suppression via `origin_instance_id`, non-blocking publication with 2s timeout, and fail-open local fallback. Reference: [docs/plans/notification-service-redis-pubsub-websocket-sync.md](plans/notification-service-redis-pubsub-websocket-sync.md).
 
 ## Adding or changing an event
 

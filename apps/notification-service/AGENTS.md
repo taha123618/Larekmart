@@ -13,7 +13,11 @@ It operates on **port 8005** with a lightweight Chi HTTP server, Go-native worke
 - **Event-driven integration**: Consumes domain events (`user.created`, `order.created`, `payment.successful`, `review.reported`, `review.approved`, `notification.dispatch`) from Apache Kafka.
 - **Provider-agnostic channels**: Implements common `Channel` interface in `internal/channels/`. Business logic never hardcodes third-party provider dependencies.
 - **Email synergy**: Orchestrates email notifications and delegates delivery execution to `email-service` / Kafka topic `email.dispatch`.
-- **In-App WebSockets**: Exposes `GET /ws` for authenticated real-time notification streaming to storefront and admin frontends.
+- **In-App WebSockets & Multi-Pod Redis Pub/Sub Backplane**:
+  - Exposes `GET /ws` for authenticated real-time notification streaming to storefront and admin frontends.
+  - Multi-replica synchronization operates across a shared Redis Pub/Sub channel (`notifications:ws:broadcast`). Local clients receive notifications instantly; peer pods receive the broadcast envelope (`origin_instance_id != localInstanceID`), filter by local `userMap[userID]`, and push to their clients.
+  - Fail-open resilience: Redis connection drops do not disrupt local WebSocket delivery or worker pools (goroutine publisher with 2s timeout). Exposes Prometheus Pub/Sub metrics and `/health` degradation probe.
+  - Architectural blueprint: [docs/plans/notification-service-redis-pubsub-websocket-sync.md](../../docs/plans/notification-service-redis-pubsub-websocket-sync.md).
 - **Persistence & Idempotency**: Manages delivery tracking, preferences, and templates in PostgreSQL. Uses Redis for fast atomic event deduplication (`SETNX` with TTL).
 
 ## Public HTTP Endpoints

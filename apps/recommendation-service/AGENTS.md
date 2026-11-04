@@ -46,6 +46,7 @@ A high-performance hybrid recommendation platform for Larekmart built with Pytho
 1. **Single Source of Truth**: The catalog is owned by `product-service` (Postgres) and orders are owned by `order-service` (MongoDB). This service only stores interaction telemetry and pgvector embeddings. Never create redundant `products` or `users` tables.
 2. **Kafka Asynchronous Integration**: Catalog updates and purchase completions are ingested exclusively via Kafka topics (`product.created`, `product.updated`, `product.deleted`, `payment.successful`, `order.created`). Never make HTTP calls from backend services into `recommendation-service`.
 3. **Graceful Fallbacks**: If a user has no interaction history (cold start) or Redis/Celery is degraded, recommendations gracefully cascade: `Personalized ➔ Category-Based ➔ Similar Products ➔ Trending ➔ Popular`.
+4. **Vector Search Optimization**: Product and user vector embeddings are indexed via HNSW (`CREATE INDEX ... USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)`) via migration `003_add_vector_hnsw_indexes.py` to ensure sub-millisecond nearest neighbor queries and eliminate $O(N)$ sequential table scans under high catalogue cardinality.
 
 ## Local Commands
 

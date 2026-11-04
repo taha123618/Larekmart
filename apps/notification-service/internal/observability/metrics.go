@@ -11,8 +11,12 @@ type Metrics struct {
 	NotificationsCreated  *prometheus.CounterVec
 	DeliveriesTotal       *prometheus.CounterVec
 	DeliveryDuration      *prometheus.HistogramVec
-	ActiveWSConnections   prometheus.Gauge
-	WorkerQueueDepth      *prometheus.GaugeVec
+	ActiveWSConnections         prometheus.Gauge
+	WSRedisPubSubPublishedTotal prometheus.Counter
+	WSRedisPubSubReceivedTotal  prometheus.Counter
+	WSRedisPubSubErrorsTotal    prometheus.Counter
+	WSRedisPubSubConnected      prometheus.Gauge
+	WorkerQueueDepth            *prometheus.GaugeVec
 	DeduplicationHits     prometheus.Counter
 	IdempotencyDuplicates prometheus.Counter
 }
@@ -58,6 +62,34 @@ func NewMetrics(namespace string) *Metrics {
 				Namespace: namespace,
 				Name:      "active_websocket_connections",
 				Help:      "Current active in-app WebSocket client connections",
+			},
+		),
+		WSRedisPubSubPublishedTotal: promauto.NewCounter(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "ws_redis_pubsub_messages_published_total",
+				Help:      "Total WebSocket broadcast messages published to Redis Pub/Sub",
+			},
+		),
+		WSRedisPubSubReceivedTotal: promauto.NewCounter(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "ws_redis_pubsub_messages_received_total",
+				Help:      "Total WebSocket broadcast messages received from Redis Pub/Sub",
+			},
+		),
+		WSRedisPubSubErrorsTotal: promauto.NewCounter(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "ws_redis_pubsub_errors_total",
+				Help:      "Total Redis Pub/Sub publish or subscription errors",
+			},
+		),
+		WSRedisPubSubConnected: promauto.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "ws_redis_pubsub_connected",
+				Help:      "Redis Pub/Sub WebSocket backplane connection status (1 = connected, 0 = disconnected)",
 			},
 		),
 		WorkerQueueDepth: promauto.NewGaugeVec(

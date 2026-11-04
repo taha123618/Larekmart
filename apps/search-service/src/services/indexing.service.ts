@@ -11,6 +11,12 @@ import { getOpenSearchClient } from "../opensearch/client.js";
 import { driftReconciler } from "./drift-reconciler.js";
 import type { SearchProductDocument } from "@repo/types";
 
+export interface BulkOperationItem {
+  action: "index" | "update" | "delete";
+  id: string | number;
+  doc?: any;
+}
+
 export class IndexingService {
   async indexOrUpdateProduct(
     product: SearchProductDocument,
@@ -151,6 +157,99 @@ export class IndexingService {
       });
       logger.error(`Failed to delete product [${docId}]`, {
         error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * High-throughput micro-batch execution using OpenSearch _bulk API.
+   * Flushes up to N indexing/update/delete operations in a single HTTP roundtrip
+   * and triggers a single search cache invalidation for the whole batch.
+   */
+  async bulkExecuteOperations(
+    operations: BulkOperationItem[],
+    indexName: string = config.opensearch.aliasName,
+  ): Promise<{ successful: number; failed: number }> {
+    if (operations.length === 0) {
+      return { successful: 0, failed: 0 };
+    }
+
+    const client = getOpenSearchClient();
+    const body: any[] = [];
+
+    for (const op of operations) {
+      const docId = String(op.id);
+      if (op.action === "index") {
+        body.push({ index: { _index: indexName, _id: docId } });
+        body.push(op.doc);
+        await driftReconciler.recordUpsert(op.doc as SearchProductDocument);
+      } else if (op.action === "update") {
+        body.push({ update: { _index: indexName, _id: docId } });
+        body.push({ doc: op.doc, doc_as_upsert: true });
+        await driftReconciler.recordPartialUpdate(docId, op.doc);
+      } else if (op.action === "delete") {
+        body.push({ delete: { _index: indexName, _id: docId } });
+        await driftReconciler.recordDelete(docId);
+      }
+    }
+
+    try {
+      searchMetrics.opensearchRequestsTotal.inc({
+        operation: "bulk_ops",
+        status: "start",
+      });
+
+      const response = await client.bulk({ body, refresh: false });
+      let successful = 0;
+      let failed = 0;
+
+      const items = response.body?.items || (response as any).items;
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          const actionKey = Object.keys(item)[0] as string;
+          const status = item[actionKey]?.status;
+          if (typeof status === "number" && status >= 200 && status < 300) {
+            successful++;
+          } else {
+            failed++;
+          }
+        }
+      } else {
+        successful = operations.length;
+      }
+
+      searchMetrics.indexingDocumentsTotal.inc(
+        { operation: "bulk", status: "success" },
+        successful,
+      );
+      if (failed > 0) {
+        searchMetrics.indexingDocumentsTotal.inc(
+          { operation: "bulk", status: "error" },
+          failed,
+        );
+      }
+      searchMetrics.opensearchRequestsTotal.inc({
+        operation: "bulk_ops",
+        status: "success",
+      });
+
+      // Single cache invalidation for the entire micro-batch
+      await invalidateSearchCacheNamespace();
+
+      logger.info(
+        `Bulk executed ${operations.length} operations on [${indexName}]: ${successful} succeeded, ${failed} failed`,
+      );
+
+      return { successful, failed };
+    } catch (error: any) {
+      searchMetrics.opensearchRequestsTotal.inc({
+        operation: "bulk_ops",
+        status: "error",
+      });
+      logger.error("Failed to execute bulk operations on OpenSearch", {
+        error: error.message,
+        operationCount: operations.length,
       });
       throw error;
     }

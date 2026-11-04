@@ -114,16 +114,21 @@ func (c *Client) WritePump() {
 	}
 }
 
+// SendRaw sends raw bytes to the client send buffer.
+func (c *Client) SendRaw(data []byte) {
+	select {
+	case c.send <- data:
+	default:
+		c.logger.Warn(context.Background(), "WebSocket client send buffer full; dropping message", map[string]interface{}{
+			"user_id": c.userID,
+		})
+	}
+}
+
 // SendJSON sends a JSON-serializable message to the client.
 func (c *Client) SendJSON(v interface{}) {
 	data, err := json.Marshal(v)
 	if err == nil {
-		select {
-		case c.send <- data:
-		default:
-			c.logger.Warn(context.Background(), "WebSocket client send buffer full; dropping message", map[string]interface{}{
-				"user_id": c.userID,
-			})
-		}
+		c.SendRaw(data)
 	}
 }

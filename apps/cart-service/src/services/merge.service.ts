@@ -8,6 +8,12 @@ import { invalidateCartCache } from "../cache/cart-cache.js";
 import { logger } from "../observability/metrics.js";
 import type { CartResponseType } from "@repo/types";
 import { Cart } from "@repo/cart-db";
+import { withClusterLock } from "@repo/redis";
+import { redis } from "../utils/redis.js";
+
+import { CartMergeConflictError } from "../errors.js";
+
+export { CartMergeConflictError };
 
 const MAX_ITEM_QUANTITY = 10;
 
@@ -202,9 +208,9 @@ export class MergeService {
   }
 
   /**
-   * Merges an anonymous guest cart into an authenticated user's cart
+   * Internal execution of cart merge with transaction or non-transactional fallback.
    */
-  async mergeCarts(
+  private async runMergeTransactionOrFallback(
     userId: string,
     guestToken: string,
   ): Promise<CartResponseType> {
@@ -258,6 +264,43 @@ export class MergeService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Merges an anonymous guest cart into an authenticated user's cart
+   * Protected with distributed locking to prevent concurrent merge race conditions.
+   */
+  async mergeCarts(
+    userId: string,
+    guestToken: string,
+  ): Promise<CartResponseType> {
+    const lockKey = redis.keys.simple(`lock:merge:${userId}`);
+    const workerId = `merge:${userId}:${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    const isRedisAvailable =
+      redis.client.status === "ready" || redis.client.status === "connect";
+
+    if (isRedisAvailable) {
+      const result = await withClusterLock(
+        redis.client,
+        lockKey,
+        workerId,
+        () => this.runMergeTransactionOrFallback(userId, guestToken),
+        { ttlMs: 5000 },
+      );
+
+      if (result === null) {
+        logger.warn(
+          "Cart merge conflict detected; operation currently in-flight",
+          { userId, guestToken },
+        );
+        throw new CartMergeConflictError();
+      }
+
+      return result;
+    }
+
+    return await this.runMergeTransactionOrFallback(userId, guestToken);
   }
 }
 

@@ -50,3 +50,23 @@ def test_top_k_similar() -> None:
     assert len(top) == 2
     # 102 should be first because [0.9, 0.1] has highest dot product with [1.0, 0.0]
     assert top[0][0] == 102
+
+
+def test_hnsw_migration_definition() -> None:
+    """Verify that Alembic migration 003 properly defines HNSW vector indexes."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "migration_003",
+        "migrations/versions/003_add_vector_hnsw_indexes.py",
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.revision == "003_add_vector_hnsw_indexes"
+    assert module.down_revision == "002_add_name_category"
+    assert callable(module.upgrade)
+    assert callable(module.downgrade)
+

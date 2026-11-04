@@ -5,6 +5,7 @@ import {
   optionalUserOrGuest,
   type AuthVariables,
 } from "../middleware/auth.middleware.js";
+import { idempotencyMiddleware } from "../middleware/idempotency.middleware.js";
 import {
   CreatePromotionSchema,
   UpdatePromotionSchema,
@@ -103,6 +104,7 @@ promotionRoutes.post("/promotions/quote", optionalUserOrGuest, async (c) => {
 promotionRoutes.post(
   "/promotions/reservations",
   optionalUserOrGuest,
+  idempotencyMiddleware,
   async (c) => {
     const body = await c.req.json().catch(() => ({}));
     const parseResult = CreateReservationSchema.safeParse(body);
@@ -136,7 +138,10 @@ promotionRoutes.post(
  * POST /api/v1/promotions/reservations/:id/commit
  * Commit an existing reservation upon successful order placement.
  */
-promotionRoutes.post("/promotions/reservations/:id/commit", async (c) => {
+promotionRoutes.post(
+  "/promotions/reservations/:id/commit",
+  idempotencyMiddleware,
+  async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json().catch(() => ({}));
   const parseResult = CommitReservationSchema.safeParse(body);

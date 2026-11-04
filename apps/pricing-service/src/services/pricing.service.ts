@@ -21,6 +21,7 @@ import type {
 
 export class PricingService {
   private readonly FX_CACHE_KEY = "pricing:fx_rates:usd";
+  private inFlightProductPrices = new Map<string, Promise<any>>();
   private readonly DEFAULT_RATES: Record<string, number> = {
     USD: 1.0,
     EUR: 0.92,
@@ -93,11 +94,97 @@ export class PricingService {
     return 1.0;
   }
   /**
-   * Retrieves active product price, variant prices, and rules with currency conversion
+   * Invalidates Redis cache for product pricing (called on price/rule/currency changes)
+   */
+  public async invalidateProductPricing(productId?: string) {
+    try {
+      if (productId) {
+        const keys = await redis.client.keys(
+          `*pricing:product:*:${productId}:*`,
+        );
+        if (keys.length > 0) {
+          await redis.client.del(...keys);
+        }
+      } else {
+        const keys = await redis.client.keys(`*pricing:product:*`);
+        if (keys.length > 0) {
+          await redis.client.del(...keys);
+        }
+      }
+    } catch {
+      // Redis failover
+    }
+  }
+
+  /**
+   * Retrieves active product price, variant prices, and rules with currency conversion,
+   * shielded by Redis caching and SingleFlight in-flight promise coalescing.
    */
   public async getProductPrice(
     productId: string,
     targetCurrency = "USD",
+    priceListCode?: string | null,
+  ) {
+    const normCurrency = targetCurrency.toUpperCase();
+    const cacheKey = `pricing:product:${priceListCode || "default"}:${productId}:${normCurrency}`;
+
+    // 1. Check Redis cache
+    try {
+      const cached = await redis.client.get(cacheKey);
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data.rules && Array.isArray(data.rules)) {
+          for (const r of data.rules) {
+            if (r.validFrom) r.validFrom = new Date(r.validFrom);
+            if (r.validTo) r.validTo = new Date(r.validTo);
+            if (r.createdAt) r.createdAt = new Date(r.createdAt);
+            if (r.updatedAt) r.updatedAt = new Date(r.updatedAt);
+          }
+        }
+        return data;
+      }
+    } catch {
+      // Redis failover
+    }
+
+    // 2. SingleFlight promise coalescing
+    const existing = this.inFlightProductPrices.get(cacheKey);
+    if (existing) {
+      return await existing;
+    }
+
+    const promise = (async () => {
+      try {
+        const result = await this.fetchProductPriceFromDb(
+          productId,
+          normCurrency,
+          priceListCode,
+        );
+        if (result) {
+          try {
+            await redis.client.setex(
+              cacheKey,
+              env.PRICING_CACHE_TTL_SECONDS || 300,
+              JSON.stringify(result),
+            );
+          } catch {}
+        }
+        return result;
+      } finally {
+        this.inFlightProductPrices.delete(cacheKey);
+      }
+    })();
+
+    this.inFlightProductPrices.set(cacheKey, promise);
+    return await promise;
+  }
+
+  /**
+   * Internal database fetch for product pricing details
+   */
+  private async fetchProductPriceFromDb(
+    productId: string,
+    targetCurrency: string,
     priceListCode?: string | null,
   ) {
     // 1. Resolve price list: code if provided, otherwise default B2C list
@@ -361,6 +448,7 @@ export class PricingService {
         timestamp: new Date().toISOString(),
       });
 
+      await this.invalidateProductPricing(data.productId);
       return updated;
     }
 
@@ -396,6 +484,7 @@ export class PricingService {
       timestamp: new Date().toISOString(),
     });
 
+    await this.invalidateProductPricing(data.productId);
     return created;
   }
 
@@ -480,6 +569,7 @@ export class PricingService {
       });
     }
 
+    await this.invalidateProductPricing(existing.productId);
     return updated;
   }
 
@@ -588,6 +678,7 @@ export class PricingService {
       })
       .returning();
 
+    await this.invalidateProductPricing(data.productId);
     return created;
   }
 
@@ -714,6 +805,7 @@ export class PricingService {
         .where(eq(currencyRates.id, existing.id))
         .returning();
 
+      await this.invalidateProductPricing();
       return updated;
     }
 
@@ -728,6 +820,7 @@ export class PricingService {
       })
       .returning();
 
+    await this.invalidateProductPricing();
     return created;
   }
 
@@ -759,6 +852,8 @@ export class PricingService {
         JSON.stringify(freshRates),
       );
     } catch {}
+
+    await this.invalidateProductPricing();
 
     return {
       success: true,

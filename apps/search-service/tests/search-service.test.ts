@@ -8,6 +8,7 @@ import {
 import { env } from "../src/config/env.js";
 import { GATEWAY_HEADERS, ReindexRequestSchema } from "@repo/types";
 import { runReindexDriftReconciliationTests } from "./unit/reindex-drift-reconciliation.test.js";
+import { runBulkIndexingConsumerTests } from "./unit/bulk-indexing-consumer.test.js";
 
 interface MockFastifyReply {
   statusCode: number;
@@ -207,6 +208,11 @@ async function runSearchServiceTests(): Promise<void> {
   // TEST 6: Zero-Downtime Blue/Green Aliasing & Drift Reconciliation
   // ---------------------------------------------------------------------------
   await runReindexDriftReconciliationTests();
+
+  // ---------------------------------------------------------------------------
+  // TEST 7: OpenSearch Real-Time Bulk Indexing & Micro-Batching
+  // ---------------------------------------------------------------------------
+  await runBulkIndexingConsumerTests();
 
   console.log("\n==================================================");
   console.log("🎉 ALL SEARCH SERVICE SQA TESTS PASSED (100%)");

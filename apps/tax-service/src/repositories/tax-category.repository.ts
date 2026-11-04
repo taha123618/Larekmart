@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../db/connection.js";
 import {
   taxCategories,
@@ -106,6 +106,22 @@ export class TaxCategoryRepository {
       return rows[0];
     } catch {
       return this.inMemoryCategories.get(normalized);
+    }
+  }
+
+  public async findByCodes(codes: string[]): Promise<TaxCategory[]> {
+    if (codes.length === 0) return [];
+    const normalized = Array.from(new Set(codes.map((c) => c.toLowerCase())));
+    try {
+      const db = getDb();
+      return await db
+        .select()
+        .from(taxCategories)
+        .where(inArray(taxCategories.code, normalized));
+    } catch {
+      return normalized
+        .map((c) => this.inMemoryCategories.get(c))
+        .filter((c): c is TaxCategory => !!c);
     }
   }
 

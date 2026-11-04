@@ -561,6 +561,62 @@ export const cancelOutOfStockOrder = async (failedPayload: any) => {
 };
 
 /**
+ * 5b. Saga Compensation Phase: Handle payment failure from Stripe session expiration or card decline
+ */
+export const handlePaymentFailed = async (failedPayload: any) => {
+  const { sessionId, paymentIntentId, referenceId, reservationId, reason } =
+    failedPayload;
+  const ref = reservationId || sessionId || referenceId || paymentIntentId;
+  logger.warn(
+    `Processing payment.failed saga compensation for ref: ${ref} (${reason})`,
+  );
+
+  try {
+    const query = reservationId
+      ? { reservationId, status: "pending_confirmation" }
+      : { paymentSessionId: ref, status: "pending_confirmation" };
+
+    const order = await Order.findOne(query);
+    if (!order) {
+      logger.info(
+        `No pending_confirmation order found matching payment.failed ref: ${ref}`,
+      );
+      return;
+    }
+
+    order.status = "failed";
+    (order as any).sagaHistory.push({
+      state: "failed",
+      trigger: "payment.failed",
+      error: reason || "Payment authorization failed or session expired",
+      timestamp: new Date(),
+    });
+
+    await order.save();
+    logger.warn(
+      `Order ${order._id} transitioned to failed due to payment.failed event. Emitting order.cancelled...`,
+    );
+
+    // Emit order.cancelled to compensate downstream inventory & tax
+    const cancelledPayload: OrderCancelledPayload = {
+      orderId: order._id.toString(),
+      userId: order.userId,
+      reason: reason || "Payment failed or expired",
+      cancelledAt: new Date().toISOString(),
+    };
+    await dispatchViaOutbox(
+      "order.cancelled",
+      cancelledPayload as unknown as Record<string, unknown>,
+    );
+  } catch (err) {
+    logger.error(
+      "Error executing payment.failed saga compensation in order-service:",
+      err,
+    );
+  }
+};
+
+/**
  * 6. Saga Terminal Phase: Mark order as refunded once Stripe refund succeeds
  */
 export const markOrderRefunded = async (refundPayload: any) => {

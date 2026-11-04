@@ -105,14 +105,23 @@ export async function validateCouponCode(
 
 /**
  * Reserve a promotion and hold budget during checkout.
+ * Enforces distributed idempotency to prevent duplicate budget reservations on retry.
  */
 export async function reservePromotion(
   input: CreateReservationInput,
   authToken?: string,
+  idempotencyKey?: string,
 ): Promise<PromotionReservation> {
+  const headers = getHeaders(authToken);
+  headers["Idempotency-Key"] =
+    idempotencyKey ||
+    (typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `promo_res_${Date.now()}`);
+
   const res = await fetch(`${BASE}/reservations`, {
     method: "POST",
-    headers: getHeaders(authToken),
+    headers,
     body: JSON.stringify(input),
     cache: "no-store",
   });

@@ -21,11 +21,20 @@ tiered/bulk volume discounts, B2B/B2C price lists, price history audit logs, and
   - `calculator.ts`: High-precision financial arithmetic with Decimal.js, volume tier evaluations, promotional quote composition, and negative price prevention.
   - `currency.ts`: Multi-currency conversion using Decimal.js with zero floating-point drift.
 - `src/services/` —
-  - `pricing.service.ts`: Product base and variant price lookup, currency exchange rates, price list creation, updates, and audit history.
-  - `quote.service.ts`: Authoritative price quote generation for cart and checkout, persistence of immutable snapshots, and event publication.
+  - `pricing.service.ts`: Product base and variant price lookup, Redis caching with SingleFlight promise coalescing, dynamic FX rates, price list creation, updates, and audit history.
+  - `quote.service.ts`: Authoritative price quote generation for cart and checkout, batch query optimization (single rule fetch and inArray lookups), persistence of immutable snapshots, and event publication.
 - `src/kafka/` — Producers (`producer.ts`) and consumers (`consumer.ts`).
-- `src/middleware/` — Clerk JWT validation and gateway header propagation (`requireAdminOrInternal`, `requireInternal`, `isInternalService`).
+- `src/middleware/` —
+  - Clerk JWT validation and gateway header propagation (`requireAdminOrInternal`, `requireInternal`, `isInternalService`).
+  - Distributed idempotency middleware (`idempotency.middleware.ts`, `executeWithIdempotency`) with Redis atomic lease locking (`SET NX PX`), 409 Conflict, and `Idempotent-Replayed: true` caching.
 - `src/routes/` — Public/customer endpoints (`prices.routes.ts`) and admin endpoints (`admin.routes.ts`).
+
+## Invariants & Distributed Guarantees
+
+- **Thundering-Herd Shielding (`SingleFlight`)**: High-velocity product price lookups (`GET /api/v1/prices/products/:productId`) cache in Redis (`pricing:product:{priceListCode}:{productId}:{currency}`, 300s TTL) and coalesce in-flight promises via `inFlightProductPrices`, shielding PostgreSQL during flash-sale storms.
+- **Cache Invalidation**: Price mutations (`upsertProductPrice`, `patchProductPrice`, `createPriceRule`, `upsertCurrencyRate`, `refreshCurrencyRates`) trigger targeted Redis key evictions (`invalidateProductPricing`).
+- **Batch Quote Composition**: `quoteService.generateQuote` executes a constant 3 batch queries (`priceRules`, `productPrices` via `inArray`, `variantPrices` via `inArray`) regardless of item count, eliminating $3N$ N+1 query loops.
+- **Distributed Idempotency**: State-mutating quote endpoints (`POST /quote`, `POST /bulk-quote`) accept `Idempotency-Key` headers via `executeWithIdempotency` with transparent replay (`Idempotent-Replayed: true`) and in-flight conflict rejection (409 Conflict).
 
 ## Routes & Endpoints
 

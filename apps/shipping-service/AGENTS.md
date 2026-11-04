@@ -13,6 +13,7 @@ Instructions for agents editing `apps/shipping-service`.
 - Carrier logic belongs in `src/providers/`, implementing `ShippingProvider`. Never place carrier-specific SDK calls directly in controllers.
 - Use PostgreSQL via `@repo/shipping-db` as the source of truth.
 - Use Redis via `@repo/redis` solely for caching and webhook idempotency.
+- Carrier Webhook Invariants: Missing `eventId` fields must use deterministic cryptographic SHA-256 fingerprinting (`carrier:trackingNumber:status:timestamp`). Processing must acquire an atomic in-flight Redis lease (`SET NX PX`, 15s TTL) via `ShippingCache.acquireWebhookLease` and commit with 24-hour retention to prevent duplicate tracking events during carrier retry bursts.
 - Use Kafka via `@repo/kafka` for asynchronous cross-service events. Always use `{ value: payload }` envelope.
 - Standard error responses must be JSON: `{ message: string }`.
 - Authentication via `requireAdminOrInternal`: requires valid `x-internal-secret` (verified with `safeTimingCompare`) or cryptographically verified Clerk Bearer token with `role === "admin"`. If forwarded by gateway on behalf of a user (`x-user-role`), non-admin users are rejected with 403. In production, missing signing keys must fail-closed (401).

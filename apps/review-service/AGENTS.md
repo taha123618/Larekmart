@@ -27,7 +27,8 @@ helpful votes, and seller responses. Port 8014.
 - `src/services/` — Business logic:
   - `review.service.ts`: Enforces purchase verification, 1 review per product per customer, status transitions, and Kafka notifications.
   - `moderation.service.ts`: Hybrid moderation (auto-approves clean reviews from verified buyers; queues flagged reviews).
-  - `summary.service.ts`: Aggregates 1-5 star distributions, calculates Bayesian/arithmetic averages, updates database summaries, caches in Redis, and publishes rating-summary events.
+  - `summary.service.ts`: Aggregates 1-5 star distributions, calculates Bayesian/arithmetic averages, updates database summaries, caches in Redis, and publishes rating-summary events. Protected with SingleFlight promise coalescing (`inFlightSummaries`) on cache-miss reads to shield the database from product detail page thundering herds.
+- Database Indexing Invariants: `reviews` table maintains composite indexes `reviews_product_status_idx` on `(productId, status)` and `reviews_prod_status_created_idx` on `(productId, status, createdAt)` for index-only scans on approved rating calculations and chronological storefront listings.
 - `src/cache/` — Typed Redis cache client for rating summaries and fast invalidation.
 - `src/consumers/` — Kafka consumers listening to `order.delivered` / `shipment.delivered` to record purchase eligibility, and cascade cleanups for deleted products/users.
 - `src/publishers/` — Kafka producer publishing strongly-typed events to `@repo/kafka`.

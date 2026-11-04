@@ -399,6 +399,9 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
 Before designing or modifying cross-service flows, consult the authoritative plans:
 
 - **[Hyperscale Flash-Sale Hardening](docs/plans/hyperscale-flash-sale-architecture-hardening.md)**: 4-pillar 50,000+ RPS resolution (Redis 202 fast-claim, Kafka micro-batching, dynamic bulkhead, PgBouncer :6432).
+- **[Distributed Order Saga & Stock Compensation](docs/plans/distributed-order-saga-and-stock-compensation.md)**: Eager stock compensation on Stripe session expiration and payment failure; eliminates phantom Redis stock depletion on cancellations.
+- **[OpenSearch Real-Time Bulk Indexing & Micro-Batching](docs/plans/opensearch-real-time-bulk-indexing-pipeline.md)**: Kafka `subscribeBatch` + OpenSearch `_bulk` API processing up to 100 docs per chunk with single cache invalidations.
+- **[Multi-Pod WebSocket Desynchronization Hardening](docs/plans/notification-service-redis-pubsub-websocket-sync.md)**: Cross-pod Redis Pub/Sub WebSocket backplane (`notifications:ws:broadcast`) with local userMap filtering, loop suppression, and fail-open resilience.
 - **[Comprehensive Security Audit & Remediation](docs/plans/security-audit-and-remediation-report.md)**: Zero-trust perimeter standards, constant-time SHA-256 pre-hashing, and transport secret decoupling.
 - **[Commission & Payout Services Architecture](docs/plans/commission-and-payout-architecture-and-testing.md)**: Double-entry ledger, Decimal.js financial precision, and 4-tier commission precedence.
 - **[Daraz-Scale Production Readiness](docs/plans/daraz-scale-production-readiness.md)**: Multi-DB dual-ACK Saga, PgBouncer pooling, ring-buffer analytics.

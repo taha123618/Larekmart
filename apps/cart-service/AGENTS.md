@@ -35,6 +35,11 @@ Express 5 microservice on port `:8009` owning server-side cart persistence, anon
 - **Emits**: `cart.created`, `cart.item_added`, `cart.item_updated`, `cart.item_removed`, `cart.merged`, `cart.coupon_added`, `cart.coupon_removed`, `cart.expired`, `cart.cleared`
 - **Consumes**: `product.updated`, `product.deleted`, `inventory.adjusted`
 
+## Concurrency & Idempotency Invariants
+
+- **Distributed Merge Lock**: `POST /api/v1/cart/merge` acquires a Redis distributed lock via `withClusterLock` (`cart:lock:merge:{userId}`, TTL: 5,000ms). Concurrent requests for the same user fail fast with HTTP 409 Conflict (`CartMergeConflictError`).
+- **Mutation Idempotency**: State-mutating endpoints (`POST /api/v1/cart/items`, `POST /api/v1/cart/merge`, `POST /api/v1/cart/coupons`) enforce distributed idempotency via `idempotencyMiddleware` when the `Idempotency-Key` header is provided (`acquireIdempotencyLock` / `commitIdempotencyResponse`).
+
 ## Verification
 
 ```bash
