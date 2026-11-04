@@ -38,7 +38,13 @@ This document specifies the mandatory cybersecurity standards and implementation
   - **Never use `CLERK_SECRET_KEY` as an HMAC key.** Clerk session tokens are RS256, not HS256, signed with that secret. Symmetric verification is only permitted through an explicit `CLERK_JWT_HMAC_KEY` fixture for tests/local harnesses — never a production default.
   - **Go services**: `analytic-service` and `notification-service` must use the shared `verifyClerkToken` pattern (RS256 + `exp`/`nbf`), reject non-RS256 `alg`, and fail closed when `CLERK_JWT_KEY` is absent. Identity from `X-User-ID`/`?user_id=` is local-dev only and requires an explicit `*_DEV_AUTH_BYPASS=true` flag.
   - **Python services**: `recommendation-service` must not decode unverified JWTs or HMAC with the Clerk secret. Identity arrives via verified gateway headers; local `X-User-ID` bypass requires `RECOMMENDATION_DEV_AUTH_BYPASS=true` and a non-production `APP_ENV`.
-  - Production deployments must fail startup if `INTERNAL_SERVICE_SECRET` equals the development placeholder. `validateInternalServiceSecret` rejects placeholder/change-me/example/dummy values.
+  - **Production Deployment Integrity & Remediation (SEC-15 – SEC-18)**:
+  - Refer to [docs/plans/security-audit-and-remediation-report.md](../../../docs/plans/security-audit-and-remediation-report.md) for the complete audit remediation specifications.
+  - **SEC-15 (Admin Privilege Decoupling)**: Microservice endpoints verifying `x-internal-secret` must never elevate a regular proxied user (`x-user-role !== "admin"`) to admin status. Gateway transport secrets authenticate the hop, not the user.
+  - **SEC-16 (Pre-hashed Constant-Time Comparison)**: Always pre-hash incoming secret strings with SHA-256 before `crypto.timingSafeEqual(Buffer.from(sha256(expected)), Buffer.from(sha256(incoming)))` to prevent early length-mismatch leakage and buffer allocation errors.
+  - **SEC-17 (Fail-Closed Startup Environment Guards)**: Services fail startup in production if `INTERNAL_SERVICE_SECRET` or `CLERK_JWT_KEY` are using placeholder/development values.
+  - **SEC-18 (CORS & Strict Defensive Headers)**: CORS dynamically reflects verified allowlisted origins from `CORS_ORIGIN`, `CLIENT_URL`, and `ADMIN_URL` via `resolveCorsOrigins`. Wildcards (`*`) with credentials are strictly forbidden.
+- Production deployments must fail startup if `INTERNAL_SERVICE_SECRET` equals the development placeholder. `validateInternalServiceSecret` rejects placeholder/change-me/example/dummy values.
   - **Gateway rate limiting**: key on verified `authUserId`, then a SHA-256 hash of the bearer token, then the trusted client IP. Never trust a client-supplied `x-user-id`/`X-Forwarded-For` directly. Set `TRUST_PROXY` to the real hop count (`false` when directly exposed, `1` behind a trusted ingress).
 
 ---

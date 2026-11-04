@@ -289,6 +289,30 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
   pass an entity partition key (`options: { key: orderId || sessionId }`) to enforce strict FIFO
   causal ordering per order, while catalog broadcast updates use entropy-salted keys. Saga compensation
   refunds must pass `{ idempotencyKey: 'saga-refund-${orderId}' }` to prevent duplicate customer refunds.
+- **Asynchronous Fast-Claim Inventory Engine & SKU-Keyed Micro-Batching.** During high-velocity flash sales,
+  `POST /api/v1/inventory/reservations` evaluates Redis Lua script `precheckAndClaim` in <1ms and returns
+  `HTTP 202 Accepted` immediately, avoiding PostgreSQL row-lock serialization. The reservation is dispatched
+  to Kafka topic `inventory.reservation.requested` keyed by `${productId}:${variantId}`, where a dedicated worker
+  consumes in micro-batches (up to 50 items) via `subscribeBatch()` and updates stock in a single atomic SQL
+  statement (`decrement: totalGroupQuantity`) with graceful fallback to individual decrements for tight inventory
+  and compensation rollback (`ROLLBACK_LUA`) on failure. See `docs/plans/hyperscale-flash-sale-architecture-hardening.md`.
+- **High-Throughput Dual-Mode Kafka Consumer (`subscribeBatch`).** For bulk ingestion and coalesced database
+  persistence, consumers use `subscribeBatch()` in `@repo/kafka`. It chunk-processes messages in batches,
+  triggers auto-heartbeats every 2,000ms to eliminate rebalance storms during long database transactions,
+  and routes individual poison-pill items directly to `<topic>.dlq` without stalling the batch.
+- **Dynamic Adaptive In-Flight Concurrency Bulkheads.** In `apps/api-gateway`, concurrency bulkhead limits are
+  environment-driven (`BULKHEAD_MAX_CHECKOUT_CONCURRENT`, `BULKHEAD_MAX_PAYMENT_CONCURRENT`, `BULKHEAD_MAX_GENERAL_CONCURRENT`).
+  The gateway automatically clamps limits by 10x during degraded or tripped circuit breaker states and relaxes back
+  to full throughput upon recovery.
+- **Zero-Trust Admin Transport Decoupling & Timing Defenses.** Gateway transport secrets (`x-internal-secret`)
+  must never grant administrative privileges to proxied user requests (`x-user-role !== "admin"`). All internal
+  secret and webhook signature comparisons must enforce constant-time SHA-256 pre-hashing (`safeTimingCompare`)
+  to prevent secret length leakage and covert timing channels. Production startup must fail closed if secrets are
+  missing or insecure placeholders. See `docs/plans/security-audit-and-remediation-report.md`.
+- **Financial Precision & Balanced Double-Entry Ledger Invariants.** Financial engines (`commission-service`, `payout-service`)
+  must never use floating-point numbers; all monetary calculations enforce `Decimal.js`. Seller balances are derived
+  dynamically from an append-only double-entry journal (`ledger_entries`) with zero-sum multi-leg transaction invariants
+  ($\sum \text{Debit} == \sum \text{Credit}$). See `docs/plans/commission-and-payout-architecture-and-testing.md`.
 
 - **Match existing conventions** before introducing new libraries. Check whether the
   dependency already exists in the workspace you are editing.
@@ -369,6 +393,19 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
 - **Error handling** at boundaries: services return `{ message }` JSON with correct
   status codes; async Kafka handlers catch and log so a bad message cannot kill the
   consumer loop.
+
+## 8. Authoritative Architecture & Engineering Plans (`docs/plans/`)
+
+Before designing or modifying cross-service flows, consult the authoritative plans:
+
+- **[Hyperscale Flash-Sale Hardening](docs/plans/hyperscale-flash-sale-architecture-hardening.md)**: 4-pillar 50,000+ RPS resolution (Redis 202 fast-claim, Kafka micro-batching, dynamic bulkhead, PgBouncer :6432).
+- **[Comprehensive Security Audit & Remediation](docs/plans/security-audit-and-remediation-report.md)**: Zero-trust perimeter standards, constant-time SHA-256 pre-hashing, and transport secret decoupling.
+- **[Commission & Payout Services Architecture](docs/plans/commission-and-payout-architecture-and-testing.md)**: Double-entry ledger, Decimal.js financial precision, and 4-tier commission precedence.
+- **[Daraz-Scale Production Readiness](docs/plans/daraz-scale-production-readiness.md)**: Multi-DB dual-ACK Saga, PgBouncer pooling, ring-buffer analytics.
+- **[Transactional Outbox Pattern](docs/plans/transactional-outbox-order-service.md)**: Dual-write atomicity and recovery sweepers.
+- **[Chaos Engineering & Rate Limiting](docs/plans/chaos-engineering-and-rate-limiting-guardrails.md)**: Chaos Mesh CRDs and parallel mixed-traffic resilience.
+- **[Distributed Mutation Idempotency](docs/plans/distributed-mutation-idempotency-key.md)**: IETF `Idempotency-Key` and Redis lease locking.
+- Full directory index: [`docs/plans/README.md`](docs/plans/README.md).
 
 ## 9. Definition of done
 

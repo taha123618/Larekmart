@@ -13,8 +13,11 @@ See `packages/kafka/AGENTS.md` and `docs/EVENT-DRIVEN-ARCHITECTURE.md`.
   (`*-group`, or service name for `email-service`).
 - **Envelope convention:** publish `{ value: <payload> }`; handlers receive the parsed
   message and read `message.value`.
-- Subscriptions are declared as `[{ topicName, topicHandler }]` — a topic appears once,
-  and its handler must be idempotent-friendly and error-safe.
+- Subscriptions are declared as `[{ topicName, topicHandler }]` (single-message) or via
+  `subscribeBatch([{ topicName, batchSize, topicHandler }])` (high-throughput micro-batches) —
+  a topic appears once, and its handler must be idempotent-friendly and error-safe.
+- `subscribeBatch()` chunk-processes messages with automatic 2,000ms heartbeats to eliminate rebalance storms,
+  and routes individual poison pills to `<topic>.dlq` without stalling the batch.
 - `fromBeginning: true` is the current behavior; be aware replays re-deliver old
   messages to new consumer groups.
 - **Topic naming:** `<entity>.<past-tense-event>` (`product.created`, `payment.successful`, `user.created`, `order.created`).

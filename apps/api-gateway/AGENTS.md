@@ -14,7 +14,7 @@ It handles cross-cutting concerns:
 - Distributed rate limiting with Redis fallback (`@fastify/rate-limit`), including ONBOARDING tier (10 req/min for `/sellers` and `/vendors`), and dynamic adaptive rate-limiting clamping under downstream circuit breaker degradation
 - Dynamic WAL LSN capture (`x-db-lsn`) caching into Redis via `markReadYourWritesWithLSN` for edge replica lag detection in read-heavy projections
 - Robust perimeter trust proxy resolution using `FastifyServerOptions["trustProxy"]`
-- In-flight concurrency bulkheads (`InFlightBulkhead`, 50 healthy / 5 degraded max concurrent requests) shedding saturated traffic with HTTP 503 + `Retry-After: 15`
+- Dynamic in-flight concurrency bulkheads (`InFlightBulkhead`, configurable via `GATEWAY_BULKHEAD_MAX_CONCURRENT` [default 100], `GATEWAY_BULKHEAD_DEGRADED_CONCURRENT` [default 10], `GATEWAY_BULKHEAD_QUEUE_TIMEOUT_MS` [default 2000ms]) shedding saturated traffic with HTTP 503 + `Retry-After: 15` and 10x degradation clamping when downstream circuit breakers trip (architectural blueprint: [docs/plans/hyperscale-flash-sale-architecture-hardening.md](../../docs/plans/hyperscale-flash-sale-architecture-hardening.md))
 - In-flight request coalescing (`SingleFlightGroup`) protecting against Thundering Herd and Cache Stampedes on high-velocity read/aggregation endpoints
 - Unified error formatting, circuit breakers, and upstream timeout handling
 - Prometheus telemetry & structured JSON logging (`@repo/monitoring`)

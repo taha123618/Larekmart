@@ -9,6 +9,7 @@ It provides marketplace commission rates, tier rules, versioning, line-item fee 
 
 ## Architecture & Responsibilities
 
+- **Authoritative Plan & Testing Blueprint**: [docs/plans/commission-and-payout-architecture-and-testing.md](../../docs/plans/commission-and-payout-architecture-and-testing.md).
 - **Commission Plans & Rules**: Configures category, seller, product, and global marketplace commission tiers.
 - **Hierarchical Precedence**: Resolves fees with precedence: `PRODUCT` > `SELLER` > `CATEGORY` > `GLOBAL`.
 - **High-Precision Arithmetic**: Uses `Decimal.js` to eliminate binary floating-point roundoff errors.

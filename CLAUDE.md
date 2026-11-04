@@ -20,6 +20,10 @@ the workspace map, the golden rules, commands, and the instruction hierarchy.
 - **Verification:** Run `pnpm check-types` across workspaces, plus `pnpm build` (Next apps,
   payment-service) and `pnpm lint` (admin, client) where they apply. When adding tests,
   follow [`docs/TESTING.md`](./docs/TESTING.md).
+- **Architecture & Engineering Plans:** Authoritative specifications, invariants, and verification reports live in [`docs/plans/`](./docs/plans/README.md). Consult them before modifying cross-service flows:
+  - Hyperscale Flash-Sale Hardening: [`docs/plans/hyperscale-flash-sale-architecture-hardening.md`](./docs/plans/hyperscale-flash-sale-architecture-hardening.md)
+  - Security Audit & Remediation: [`docs/plans/security-audit-and-remediation-report.md`](./docs/plans/security-audit-and-remediation-report.md)
+  - Commission & Payout Architecture: [`docs/plans/commission-and-payout-architecture-and-testing.md`](./docs/plans/commission-and-payout-architecture-and-testing.md)
 
 ---
 

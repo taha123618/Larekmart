@@ -32,6 +32,8 @@ This skill defines the mandatory 8-stage vertical execution playbook for any fea
 - Enforce **Transactional Outbox** (`OutboxEvent`) for all mutations that produce asynchronous domain events to eliminate dual-write hazards.
 - Implement **Distributed Idempotency** (`Idempotency-Key` + Redis atomic lease) for high-impact mutations (`POST /orders`, `/refunds`, etc.).
 - Expose `GET /health` and `GET /ready` probes.
+- For high-concurrency inventory reservation paths, apply the **Asynchronous Fast-Claim Pattern** (Redis Lua fast-claim `<1ms` + `202 Accepted` response + Kafka micro-batch persistence worker via `batchReserveInventory()`). Refer to [docs/plans/hyperscale-flash-sale-architecture-hardening.md](../../../docs/plans/hyperscale-flash-sale-architecture-hardening.md).
+- For commission and financial ledgers, enforce **Decimal.js Precision** and **Append-Only Zero-Sum Journal Invariants** (`SUM(debits) == SUM(credits)`). Refer to [docs/plans/commission-and-payout-architecture-and-testing.md](../../../docs/plans/commission-and-payout-architecture-and-testing.md).
 
 ### Stage 3: API Gateway Reverse Proxy & Resilience (`apps/api-gateway`)
 
@@ -44,6 +46,7 @@ This skill defines the mandatory 8-stage vertical execution playbook for any fea
 
 - Producers must use the `{ value: payload }` envelope and produce via transactional outbox.
 - Consumers must read `message.value` and route unparseable/invalid payloads to `<topic>.dlq`.
+- High-velocity event processors should use `kafkaConsumer.subscribeBatch()` to ingest events in transactional batches with SKU/partition micro-batching.
 - Document event schemas in `docs/EVENT-DRIVEN-ARCHITECTURE.md`.
 
 ### Stage 5: Customer Storefront Implementation (`apps/client`)
@@ -68,6 +71,8 @@ This skill defines the mandatory 8-stage vertical execution playbook for any fea
 
 - **Zero-Trust Identity**: Derive user identity exclusively from verified Clerk tokens; reject client-supplied IDs.
 - **IDOR Protection**: Explicitly verify resource ownership before reading or mutating records.
-- **Constant-Time Verification**: Microservice internal endpoints must verify `x-internal-secret` in constant time.
+- **Constant-Time Verification**: Microservice internal endpoints must verify `x-internal-secret` in constant time with SHA-256 pre-hashing (SEC-16).
+- **Admin Privilege Decoupling**: Gateway transport secret verification must never automatically elevate proxied regular users to admin status (SEC-15).
 - **Input Sanitization**: Validate media URLs against trusted S3/MinIO hosts and sanitize freeform text.
+- **Reference**: Follow guidelines in [docs/plans/security-audit-and-remediation-report.md](../../../docs/plans/security-audit-and-remediation-report.md).
 - **Verification Gates**: Pass `pnpm check-types`, `pnpm test`, and `pnpm build`.

@@ -14,7 +14,10 @@ Consumers: all backend services. Do not import app code into this package.
 - `createKafkaClient(serviceName, brokers?)` — creates a KafkaJS client with `clientId` set and
   explicit broker addresses (or falls back to environment / default local brokers).
 - `createProducer(client)` — wraps `kafkajs` producer usage.
-- `createConsumer(client, config)` — wraps consumer setup.
+- `createConsumer(client, config)` — wraps consumer setup with single-message and batch-processing support.
+  - `consumer.subscribe(topics, options?)` — subscribes to topics with single-message `eachMessage` handlers.
+  - `consumer.subscribeBatch(topics, batchOptions?, retryOptions?)` — wraps `eachBatch` with high-throughput micro-batching, configurable `resolveOffset` / `commitOffsetsIfNecessary`, heartbeat management, and DLQ routing for batch failures.
+  - Architectural blueprint: [docs/plans/hyperscale-flash-sale-architecture-hardening.md](../../docs/plans/hyperscale-flash-sale-architecture-hardening.md).
 
 Current helper surface is intentionally small. Expose helpers, not raw clients.
 

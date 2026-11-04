@@ -29,14 +29,16 @@ all inventory state is persisted through `@repo/inventory-db` in PostgreSQL.
 
 ## Concurrency, Redis Gatekeeper, and Events
 
-- **Flash-Sale Redis Stock Gatekeeper (`src/gatekeeper/redis-stock-gatekeeper.ts`)**:
-  - High-velocity checkout traffic is pre-checked via an atomic Redis Lua script (`RESERVE_LUA`) before reaching PostgreSQL.
+- **Flash-Sale Redis Stock Gatekeeper & Asynchronous Fast-Claim (`src/gatekeeper/redis-stock-gatekeeper.ts` & `src/workers/reservation-batch.worker.ts`)**:
+  - High-velocity checkout traffic is pre-checked and fast-claimed via an atomic Redis Lua script (`RESERVE_LUA`) in <1ms without synchronously blocking on PostgreSQL row locks.
   - Insufficient stock requests are fast-rejected in <1ms without touching the database, protecting PostgreSQL connection pools from row-lock starvation.
-  - Winning requests claim stock in Redis, acquire a temporary claim token (`stock:claim:{referenceId}` with 60s TTL), and proceed to PostgreSQL to persist the formal reservation and movement ledger.
-  - If PostgreSQL transaction fails, the Redis counter is immediately rolled back (`ROLLBACK_LUA`) to prevent stock leakage.
+  - **Asynchronous Fast-Path (202 Accepted)**: On high-throughput reservation endpoints (`POST /api/v1/inventory/reserve`), after securing the atomic Redis claim, the endpoint immediately dispatches an `inventory.reservation.requested` Kafka event and returns `202 Accepted` with `{ status: "PENDING", claimToken }`.
+  - **SKU-Keyed Micro-Batch Worker (`ReservationBatchWorker`)**: Ingests `inventory.reservation.requested` events in batches via `kafkaConsumer.subscribeBatch()`, groups reservation requests by SKU / warehouse, sorts items to eliminate deadlock cycles, and commits persistent ledger entries in batched transactions using `@repo/inventory-db`'s `batchReserveInventory()`.
+  - If PostgreSQL transaction fails or expires, the Redis counter is immediately rolled back (`ROLLBACK_LUA`) to prevent stock leakage.
   - Cold cache misses are lazily populated from PostgreSQL using a 2-second distributed mutex (`stock:lock:...`) to prevent thundering herds.
   - Released or expired reservations atomically increment the Redis stock counter (`INCREMENT_LUA`).
   - **Cluster Hash-Tagging Invariant**: All multi-key operations and Lua evaluations MUST pin dependent keys to the same CRC16 slot using `{tenant_id:warehouse_id}` brackets. Assert slot alignment via `assertClusterSlotAlignment` before evaluating Lua logic to prevent fatal `CROSSSLOT` failures on clustered deployments.
+  - Architectural blueprint: [docs/plans/hyperscale-flash-sale-architecture-hardening.md](../../docs/plans/hyperscale-flash-sale-architecture-hardening.md).
 - Use `@repo/inventory-db` operations; never read a quantity and then write an unconditional replacement.
 - Reservations use a conditional atomic update requiring sufficient available stock.
 - Publish `inventory.*` Kafka events only after the database transaction commits. Event publication is observable but does not make Redis or Kafka authoritative.

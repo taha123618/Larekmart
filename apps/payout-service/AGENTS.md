@@ -2,6 +2,7 @@
 
 ## 1. Overview
 The **Payout Service** (`apps/payout-service`) is a NestJS 11 + Fastify microservice running on port **8023**. It is responsible for seller payout schedules, settlement batches, double-entry balanced ledger management, dispute reserve holds, and external payout provider (bank ACH / Stripe Connect) reconciliation.
+Authoritative Plan & Testing Blueprint: [docs/plans/commission-and-payout-architecture-and-testing.md](../../docs/plans/commission-and-payout-architecture-and-testing.md).
 
 ## 2. Invariants & Financial Invariants
 1. **Append-Only Double-Entry Journal**: Balances are calculated dynamically from `ledger_entries` (`SUM(credits) - SUM(debits)`). A mutable column is never treated as the authoritative financial source of truth.

@@ -38,3 +38,8 @@ mirror for Cursor; when they disagree, `AGENTS.md` wins.
   manifests in `infrastructure/chaos/` (including `flash-sale-mixed-traffic.yaml`, which runs
   order-plane latency and catalog replica lag in parallel during checkout). Keep the manifests,
   README, and docs/plans in sync.
+- **Hyperscale Flash-Sale Hardening:** Asynchronous Redis <1ms claim + HTTP 202 Accepted + Kafka
+  SKU-keyed micro-batching into PostgreSQL (`batchReserveInventory`), dynamic bulkhead thresholds
+  at the gateway, and PgBouncer :6432 connection multiplexing. See `docs/plans/hyperscale-flash-sale-architecture-hardening.md`.
+- **Plans & Architecture Index:** Always consult authoritative plans in `docs/plans/` before designing
+  complex features (Hyperscale, Security Audit, Commission & Payout, Outbox, Idempotency).

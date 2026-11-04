@@ -7,6 +7,11 @@ description: Security guidance and vulnerability review for codebases, APIs, ser
 
 Find vulnerabilities that violate a real trust boundary, then give owners the source evidence, safe reproduction, priority, and smallest effective fix. This is a defensive, source-first workflow. A candidate without a concrete affected principal, resource, or security outcome is not a confirmed finding.
 
+## Larekmart Production Security Audit Context
+
+For historical context and documented remediation standards across the 28 microservices and gateway boundaries of Larekmart, refer to:
+- [`docs/plans/security-audit-and-remediation-report.md`](../../../docs/plans/security-audit-and-remediation-report.md) — Remediation details for SEC-01 through SEC-18 including Constant-Time Pre-Hashing, Admin Privilege Decoupling, RS256 Verification, and Strict Origin Resolvers.
+
 ## Operating modes
 
 This skill is guidance by default. Loading it does not authorize the complete audit workflow or file creation.

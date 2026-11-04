@@ -7,7 +7,7 @@ globs: apps/*-service/**
 
 Per-service detail: `apps/<service>/AGENTS.md`. Shared rules:
 
-- **Frameworks are fixed:** product-service & auth-service = Express 5; order-service, search-service, catalog-service, user-service, review-service, wishlist-service, tax-service, pricing-service & seller-service = Fastify 5; payment-service, inventory-service & promotion-service = Hono; vendor-service = NestJS 10 (Fastify); email-service = headless Kafka worker. Do not introduce a different framework.
+- **Frameworks are fixed:** product-service & auth-service = Express 5; order-service, search-service, catalog-service, user-service, review-service, wishlist-service, tax-service, pricing-service, seller-service & commission-service = Fastify 5; payment-service, inventory-service & promotion-service = Hono; vendor-service = NestJS 10 (Fastify); payout-service = NestJS 11 (Fastify); email-service = headless Kafka worker. Do not introduce a different framework.
 - **ESM:** `"type": "module"`. Local imports follow existing convention (explicit `.js` extensions).
 - **Auth middleware first.** Use `shouldBeUser` / `shouldBeAdmin`; return `401` when
   unauthenticated and `403` when not an admin. Never leave a mutating route unguarded.
