@@ -32,8 +32,8 @@ WORKDIR /app
 
 # Core runtime environment configurations
 ENV NODE_ENV=${NODE_ENV:-production} \
-    PORT=${PORT:-8009} \
-    MONGO_URI=${MONGO_URI:-mongodb://root:example@mongo:27017/cart_db?authSource=admin}
+    PORT=${PORT:-8001} \
+    MONGO_URL=${MONGO_URL:-mongodb://root:example@mongo:27017/order_db?authSource=admin}
 
 # Security: Run as unprivileged system user
 RUN (getent group nodejs || addgroup -g 1001 -S nodejs 2>/dev/null || addgroup --system --gid 1001 nodejs) && \

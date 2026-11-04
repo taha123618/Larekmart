@@ -1518,8 +1518,8 @@ services:
     env_file:
       - ./apps/client/.env
     environment:
-      CLIENT_API_GATEWAY_URL: ${CLIENT_API_GATEWAY_URL:-http://api-gateway:8080}
-      CLIENT_WS_URL: ${CLIENT_WS_URL:-ws://api-gateway:8080/ws}
+      CLIENT_API_GATEWAY_URL: ${CLIENT_API_GATEWAY_URL:-http://api-gateway:8090}
+      CLIENT_WS_URL: ${CLIENT_WS_URL:-ws://api-gateway:8090/ws}
     healthcheck:
       test:
         [
@@ -1561,8 +1561,8 @@ services:
     env_file:
       - ./apps/admin/.env
     environment:
-      ADMIN_API_GATEWAY_URL: ${ADMIN_API_GATEWAY_URL:-http://api-gateway:8080}
-      ADMIN_WS_URL: ${ADMIN_WS_URL:-ws://api-gateway:8080/ws}
+      ADMIN_API_GATEWAY_URL: ${ADMIN_API_GATEWAY_URL:-http://api-gateway:8090}
+      ADMIN_WS_URL: ${ADMIN_WS_URL:-ws://api-gateway:8090/ws}
     healthcheck:
       test:
         [

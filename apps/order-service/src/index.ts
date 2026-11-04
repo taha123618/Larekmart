@@ -214,12 +214,13 @@ const start = async () => {
     await runKafkaSubscriptions();
     startPendingConfirmationTimeoutSweeper();
     startOutboxSweeper();
+    const port = Number(process.env.PORT) || 8001;
     await fastify.listen({
-      port: 8001,
+      port,
       host: process.env.HOST || "0.0.0.0",
     });
     logger.info(
-      "Order service is running on port 8001 (Saga timeout & Outbox sweepers active)",
+      `Order service is running on port ${port} (Saga timeout & Outbox sweepers active)`,
     );
 
     const shutdown = async (signal: string) => {

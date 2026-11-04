@@ -47,6 +47,8 @@ patches:
       name: larekmart-ingress
 
 images:
+  - name: larekmart/api-gateway
+    newTag: dev
   - name: larekmart/client
     newTag: dev
   - name: larekmart/admin
