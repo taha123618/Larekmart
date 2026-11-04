@@ -127,6 +127,11 @@ export const services = {
     url: env.PAYOUT_SERVICE_URL,
     timeoutMs: 10000,
   },
+  fraud: {
+    name: "fraud-service",
+    url: env.FRAUD_SERVICE_URL,
+    timeoutMs: 10000,
+  },
 } as const satisfies Record<string, ServiceTarget>;
 
 export const downstreamServices = services;

@@ -101,5 +101,7 @@ images:
     newTag: dev
   - name: larekmart/payout-service
     newTag: dev
+  - name: larekmart/fraud-service
+    newTag: dev
   - name: larekmart/email-service
     newTag: dev

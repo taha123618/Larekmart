@@ -782,4 +782,30 @@ export class SettlementsService {
       return updated;
     });
   }
+
+  /**
+   * Freezes all held escrows matching orderId or vendorId when fraud risk is detected.
+   */
+  async freezeEscrowByOrderOrVendor(
+    orderId?: string,
+    vendorId?: string,
+    reason?: string,
+  ) {
+    const where: any = { status: "HELD" };
+    if (orderId) where.orderId = orderId;
+    if (vendorId) where.vendorId = vendorId;
+    if (!orderId && !vendorId) return [];
+
+    const items = await this.prisma.vendorEscrowLedger.findMany({ where });
+    const frozen = [];
+    for (const item of items) {
+      try {
+        const res = await this.freezeEscrow(item.id, reason || "FRAUD_RISK_DETECTED");
+        frozen.push(res);
+      } catch (err) {
+        this.logger.warn(`Could not freeze escrow ${item.id}: ${err}`);
+      }
+    }
+    return frozen;
+  }
 }

@@ -9,19 +9,21 @@ Security architecture, authentication standards, perimeter protection, and data 
 - **Centralized Identity**: Authentication is delegated to **Clerk** across all frontends and downstream services.
 - **Session Claims**: User roles are held in `sessionClaims.metadata.role` (`"user" | "admin"`), defined as `CustomJwtSessionClaims` in `@repo/types`.
 - **Backend Route Guards**:
-  - Express (`product-service`, `auth-service`, `cart-service`, `analytic-service`): `shouldBeUser` / `shouldBeAdmin` middleware.
-  - Fastify (`order-service`, `catalog-service`, `search-service`, `user-service`): `preHandler: shouldBeUser | shouldBeAdmin`.
-  - Hono (`payment-service`, `inventory-service`, `media-service`): middleware checking Clerk session claims or trusted gateway headers.
-  - Koa (`shipping-service`): `requireAdminOrInternal` middleware.
+  - Express (`product-service`, `auth-service`, `cart-service`): `shouldBeUser` / `shouldBeAdmin` middleware.
+  - Fastify (`order-service`, `catalog-service`, `search-service`, `user-service`, `pricing-service`, `tax-service`, `seller-service`, `commission-service`, `review-service`, `wishlist-service`): `preHandler: shouldBeUser | shouldBeAdmin`.
+  - Hono (`payment-service`, `inventory-service`, `media-service`, `promotion-service`): middleware checking Clerk session claims or trusted gateway headers.
+  - Koa (`shipping-service`, `return-service`): `requireAdminOrInternal` middleware.
+  - NestJS Fastify (`vendor-service`, `payout-service`): `AdminOrInternalGuard` and `SellerGuard`.
+  - FastAPI / Python (`recommendation-service`, `fraud-service`): dependency injection with `verify_admin_or_internal` and `safe_timing_compare`.
 - **Admin UI Gating**: `apps/admin/src/middleware.ts` routes non-admins to `/unauthorized`. Frontend gating provides defense-in-depth; all mutating operations are strictly re-authorized on backend microservices.
 - **Admin Self-Promotion Bootstrap**:
   - `POST /api/claim-admin` in `apps/admin` is fail-closed: disabled by default unless `ALLOW_ADMIN_CLAIM === "true"` and `ADMIN_REGISTRATION_SECRET` is set.
   - Requires valid Clerk authentication and timing-safe comparison on the `x-admin-claim-secret` header.
 - **Direct Bearer Token Verification**:
-  - Services that accept direct Clerk tokens (`shipping-service`, `return-service`, `notification-service` WebSockets) verify the **RS256** signature against `CLERK_JWT_KEY` (PEM public key/certificate) and enforce `exp`/`nbf`.
-  - The Clerk secret key is **never** used as an HMAC key. Symmetric verification is limited to an explicit `CLERK_JWT_HMAC_KEY` test fixture.
-  - `analytic-service` and `notification-service` use the shared Go RS256 verifier; `recommendation-service` no longer decodes unverified JWTs and relies on gateway headers.
-  - Local identity bypasses (`X-User-ID`, `?user_id=`, `X-Dev-Role`) require explicit `ANALYTIC_DEV_AUTH_BYPASS` / `NOTIFICATION_DEV_AUTH_BYPASS` / `RECOMMENDATION_DEV_AUTH_BYPASS` flags and are off in production.
+  - Services that accept direct Clerk tokens (`shipping-service`, `return-service`, `notification-service` WebSockets, `fraud-service`) verify cryptographic signatures against `CLERK_JWT_KEY` (RS256 PEM public key/certificate) or test fixture `CLERK_JWT_HMAC_KEY` (HS256) and enforce `exp`/`nbf`. Tokens with missing, malformed, or forged signatures fail closed with `401 Unauthorized`.
+  - The Clerk secret key is **never** used as an HMAC key. Symmetric verification is strictly limited to an explicit `CLERK_JWT_HMAC_KEY` test fixture.
+  - `analytic-service` and `notification-service` use the shared Go RS256 verifier; `recommendation-service` and `fraud-service` reject unverified JWTs and enforce signature validation / gateway headers.
+  - Local identity bypasses (`X-User-ID`, `?user_id=`, `X-Dev-Role`, `x-dev-admin-override`) require explicit `ANALYTIC_DEV_AUTH_BYPASS` / `NOTIFICATION_DEV_AUTH_BYPASS` / `RECOMMENDATION_DEV_AUTH_BYPASS` / `FRAUD_DEV_AUTH_BYPASS` flags and are strictly disabled in production.
 - **Super Admin Governance & Delegated Administration**:
   - **Super Admin Authority**: Global kill-switch operations (`isSellerEnabled` in `system_settings`) and granting/revoking delegations require full Super Admin authority (`sessionClaims.metadata.role === "admin"`).
   - **Delegated Manage Admin**: Operational marketplace administration (e.g., managing seller storefronts, staff, and policies) can be delegated via `admin_delegations` records in `seller-service` with specific scopes (e.g. `manage_sellers`).
@@ -34,8 +36,8 @@ Security architecture, authentication standards, perimeter protection, and data 
 The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) serves as the primary ingress perimeter:
 
 - **Client Header Stripping**:
-  - Client-supplied internal headers (`x-user-id`, `x-user-role`, `x-internal-secret`, `x-user-is-seller`, `x-user-can-manage-sellers`) are unconditionally stripped on all incoming requests before routing downstream.
-  - Mitigates user impersonation, seller privilege spoofing, and privilege escalation attacks.
+  - Client-supplied internal headers (`x-user-id`, `x-user-role`, `x-seller-id`, `x-internal-secret`, `x-user-is-seller`, `x-user-can-manage-sellers`, `x-dev-admin-override`, `x-dev-role`, `x-force-primary`, `x-read-your-writes`, `x-db-lsn`) are unconditionally stripped on all incoming requests both in initial middleware (`onRequest`) and before proxy forwarding (`rewriteRequestHeaders`).
+  - Mitigates user impersonation, seller privilege spoofing, replication header manipulation, and privilege escalation attacks.
 - **Trusted Identity Propagation**:
   - The Gateway verifies Clerk session tokens at the perimeter and injects verified `GATEWAY_HEADERS.USER_ID` and `GATEWAY_HEADERS.USER_ROLE` downstream, signed with `GATEWAY_HEADERS.INTERNAL_SECRET`.
   - Propagates verified seller context downstream via `x-user-is-seller` and delegated management capability via `x-user-can-manage-sellers`.
@@ -65,21 +67,22 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
   - Implemented across every downstream microservice, with Go services using `crypto/subtle.ConstantTimeCompare`.
   - Prevents timing side-channel attacks against `INTERNAL_SERVICE_SECRET`.
 - **Secret Is Transport Authentication, Not User Authority**:
-  - A valid internal secret proves the request came through the gateway; it must never grant admin rights to a proxied user. `commission-service`, `payout-service`, `seller-service`, `vendor-service`, `shipping-service`, and `analytic-service` require an admin/super-admin role for user requests and only allow pure M2M (secret with no user identity) where explicitly designed.
+  - A valid internal secret proves the request came through the gateway; it must never grant admin rights to a proxied user. `commission-service`, `payout-service`, `fraud-service`, `seller-service`, `vendor-service`, `shipping-service`, and `analytic-service` require an admin/super-admin role for user requests and only allow pure M2M (secret with no user identity) where explicitly designed.
 - **Production Secret Validation**:
   - `validateInternalServiceSecret` from `@repo/types` fails startup in production when the secret is missing, shorter than 16 characters, or matches a placeholder (`dev-shared-*`, `change-me`, `replace-me`, `example`, `dummy`, `__required`).
   - `validateClerkSecretKey` fails startup in production when `CLERK_SECRET_KEY` is missing, not prefixed with `sk_`, or matches a known mock/placeholder value.
   - Go `analytic-service` panics at startup in production if `INTERNAL_SERVICE_SECRET` is weak/placeholder.
+  - Python microservices (`recommendation-service`, `fraud-service`) enforce Pydantic fail-closed validation on startup (`app_env == "production"`), raising fatal `ValueError` if `INTERNAL_SERVICE_SECRET` is missing, shorter than 16 characters, or matches default/placeholder patterns.
 
 ---
 
-## 4. Broken Object-Level Authorization (IDOR Prevention)
+## 4. Broken Object-Level Authorization (IDOR Prevention) & BFLA
 
-- **Strict Resource Ownership**:
+- **Strict Resource Ownership & Function-Level Authorization**:
   - `order-service` verifies that the accessed order belongs to the requester: `order.userId === request.userId || request.userRole === "admin"`.
   - `user-service` scopes customer operations to `/me` or verified `request.userId`.
   - `cart-service` binds operations to verified `userId` or unguessable cryptographic guest tokens (`x-guest-token`).
-  - `payout-service` verifies seller ownership via `sellerId` associated with `authUserId`, preventing cross-seller balance extraction.
+  - **Seller Payout BFLA Hardening**: Seller payout routes (`GET /api/v1/sellers/me/payouts`, `/balance`, `/statements`) in the API Gateway mandate `requireSeller: true`. `payout-service` `SellerGuard` strictly requires `x-user-is-seller === "true"` or role `"seller" | "admin"`, rejecting ordinary customer tokens with `403 Forbidden` and preventing horizontal/vertical balance extraction across tenant boundaries.
   - Line-item price verification: COD and Stripe order totals are recomputed server-side from authoritative catalog prices (`getServerProductPricesPaisa`), rejecting client-declared price discrepancies with `409 Conflict`.
 - **Double-Entry Financial Ledger Invariants (`payout-service`)**:
   - Balanced append-only double-entry ledger (`ledger_entries`) within ACID transactions ensures `SUM(debit) == SUM(credit)` zero-sum invariant for every financial movement.
@@ -167,4 +170,4 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
 
 ## 11. Comprehensive Security Audit Report
 
-For an in-depth, code-level vulnerability analysis, IDOR inspection, and defense-in-depth verification across all 25 microservices and frontends, consult the dedicated [Comprehensive Security Audit Report](SECURITY-AUDIT-REPORT.md).
+For an in-depth, code-level vulnerability analysis, IDOR inspection, and defense-in-depth verification across all 26 microservices and frontends, consult the dedicated [Comprehensive Security Audit Report](SECURITY-AUDIT-REPORT.md).

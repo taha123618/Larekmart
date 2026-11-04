@@ -1,6 +1,7 @@
 import Router from "@koa/router";
 import { customerReturnController } from "../controllers/customer-return.controller.js";
 import { shouldBeUser } from "../middleware/auth.middleware.js";
+import { idempotencyMiddleware } from "../middleware/idempotency.middleware.js";
 
 const router = new Router({ prefix: "/api/returns" });
 
@@ -13,6 +14,7 @@ router.use(shouldBeUser);
  */
 router.post(
   "/orders/:orderId",
+  idempotencyMiddleware({ prefix: "return:idemp:cust:" }),
   customerReturnController.createReturn.bind(customerReturnController),
 );
 

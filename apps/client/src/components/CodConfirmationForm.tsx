@@ -6,6 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import { ShippingFormInputs, CartItemType } from "@repo/types";
 import useCartStore from "@/stores/cartStore";
 import { getApiGatewayUrl } from "@/services/gateway.service";
+import { getClientRiskContext } from "@/services/fraud.service";
 import {
   Truck,
   CheckCircle2,
@@ -52,6 +53,7 @@ export default function CodConfirmationForm({
       }
 
       const orderServiceUrl = getApiGatewayUrl();
+      const riskContext = getClientRiskContext();
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -60,6 +62,7 @@ export default function CodConfirmationForm({
           typeof crypto !== "undefined" && crypto.randomUUID
             ? crypto.randomUUID()
             : `req-${Date.now()}`,
+        "x-device-fingerprint": riskContext.deviceFingerprint,
       };
       if (userId) {
         headers["x-user-id"] = userId;
@@ -70,6 +73,7 @@ export default function CodConfirmationForm({
         headers,
         body: JSON.stringify({
           email: shippingForm.email,
+          deviceFingerprint: riskContext.deviceFingerprint,
           couponCode: serverCart?.coupons?.[0]?.code || undefined,
           amount: Math.round(grandTotal * 100), // in paisa — verified against
           // the server-recomputed total (catalog prices + components below).

@@ -1,6 +1,6 @@
 # Comprehensive Security Audit & Remediation Report
 
-**Target Environment:** 25 Backend Microservices, 2 Next.js Frontends (`apps/client`, `apps/admin`), Centralized API Gateway (`apps/api-gateway`), Apache Kafka Event Mesh, PostgreSQL, MongoDB, Redis, and OpenSearch.  
+**Target Environment:** 26 Backend Microservices, 2 Next.js Frontends (`apps/client`, `apps/admin`), Centralized API Gateway (`apps/api-gateway`), Apache Kafka Event Mesh, PostgreSQL, MongoDB, Redis, and OpenSearch.  
 **Audit Standard:** OWASP Top 10 API Security Risks, Zero-Trust Perimeter Standards, Cryptographic Timing Defenses.  
 **Auditor:** Antigravity AI Cybersecurity Specialist Agent.
 
@@ -8,9 +8,9 @@
 
 ## 1. Executive Summary & Audit Scope
 
-A deep security audit of the Larekmart monorepo was executed following the `/security` and `/security-audit` directives. Special focus was directed toward newly integrated microservices (`commission-service`, `payout-service`, `seller-service`), perimeter authentication, privilege escalation vectors, cryptographic timing side channels, and object-level authorization (IDOR).
+A deep security audit of the Larekmart monorepo was executed following the `/security` and `/security-audit` directives. Special focus was directed toward newly integrated microservices (`commission-service`, `payout-service`, `seller-service`, `fraud-service`), perimeter authentication, privilege escalation vectors, cryptographic timing side channels, object-level authorization (IDOR), and broken function-level authorization (BFLA).
 
-Four security findings (**SEC-15** through **SEC-18**) were discovered, classified, defensively remediated, and verified with unit and integration tests.
+Nine security findings (**SEC-15** through **SEC-18** and **SEC-23** through **SEC-27**) were analyzed, classified, defensively remediated, and verified with unit and integration test suites.
 
 ### Vulnerability Summary Table
 
@@ -20,6 +20,11 @@ Four security findings (**SEC-15** through **SEC-18**) were discovered, classifi
 | **SEC-16** | **MEDIUM** | CWE-208 / CWE-385 | Secret Length Leakage & Timing Discrepancy in `commission-service` and `payout-service` | **RESOLVED & VERIFIED** |
 | **SEC-17** | **MEDIUM** | CWE-1188          | Missing Fail-Closed Production Startup Validation for `INTERNAL_SERVICE_SECRET`         | **RESOLVED & VERIFIED** |
 | **SEC-18** |  **LOW**   | CWE-942 / CWE-693 | Missing Strict CORS Origin Validation & Browser Defensive Security Headers              | **RESOLVED & VERIFIED** |
+| **SEC-23** |  **HIGH**  | CWE-347 / CWE-287 | Unverified Direct JWT Signature & Role Escalation in `fraud-service`                    | **RESOLVED & VERIFIED** |
+| **SEC-24** | **MEDIUM** | CWE-1188          | Missing Fail-Closed Production Boot Validation for `INTERNAL_SERVICE_SECRET` in fraud   | **RESOLVED & VERIFIED** |
+| **SEC-25** |  **HIGH**  | CWE-285 / CWE-862 | Broken Function Level Authorization (BFLA) on Seller Payouts in Gateway & Payout Svc   | **RESOLVED & VERIFIED** |
+| **SEC-26** | **MEDIUM** | CWE-284 / CWE-200 | Incomplete Perimeter Header Stripping in API Gateway                                    | **RESOLVED & VERIFIED** |
+| **SEC-27** |  **LOW**   | CWE-489           | Unrestricted Dev Identity Bypass Flag in `fraud-service`                                | **RESOLVED & VERIFIED** |
 
 ---
 
@@ -132,15 +137,81 @@ Four security findings (**SEC-15** through **SEC-18**) were discovered, classifi
 
 ---
 
+### SEC-23 [HIGH]: Unverified Direct JWT Signature in Fraud Service
+
+- **Affected File:** [`apps/fraud-service/app/core/security.py`](file:///Users/taha/projects/microservices-ecommerce/apps/fraud-service/app/core/security.py)
+- **Vulnerability Identifiers:** CWE-347 (Improper Verification of Cryptographic Signature), CWE-287 (Improper Authentication)
+- **Attack Vector & Mechanics:**
+  `get_current_actor` previously parsed direct Bearer tokens by base64-decoding the JSON payload without cryptographically verifying the signature against a shared secret or public key. An attacker could forge an arbitrary JWT with `metadata.role: "admin"` and an arbitrary signature (e.g., `mock_sig`), completely bypassing admin authorization on `/api/v1/admin/fraud/*`.
+- **Defensive Remediation:**
+  Replaced unverified payload decoding with constant-time HMAC-SHA256 signature verification (`safe_timing_compare`). Tokens with missing, malformed, or forged signatures fail closed with `401 Unauthorized`. Additionally decoupled transport authenticity from user authorization: when user identity is present, `x-user-role` must be `"admin"`, returning `403 Forbidden` for non-admin user requests.
+
+---
+
+### SEC-24 [MEDIUM]: Missing Fail-Closed Production Startup Validation for INTERNAL_SERVICE_SECRET in Fraud Service
+
+- **Affected File:** [`apps/fraud-service/app/core/config.py`](file:///Users/taha/projects/microservices-ecommerce/apps/fraud-service/app/core/config.py)
+- **Vulnerability Identifiers:** CWE-1188 (Insecure Default Initialization of Resource)
+- **Attack Vector & Mechanics:**
+  `fraud-service` defaulted `INTERNAL_SERVICE_SECRET` to `dev-shared-internal-secret-larekmart` without verifying secret strength or preventing placeholder values when running in production (`APP_ENV=production`). A production deployment with missing environment variables would boot using a publicly known shared secret, allowing malicious actors to bypass perimeter authorization.
+- **Defensive Remediation:**
+  Added a Pydantic `@model_validator(mode="after")` on `Settings`. In production (`app_env == "production"`), the service validates that `INTERNAL_SERVICE_SECRET` is non-empty, at least 16 characters long, and does not match any placeholder patterns (`dev-shared-*`, `change-me`, `replace-me`, `example`, `dummy`, `__required`), raising a fatal validation exception on boot.
+
+---
+
+### SEC-25 [HIGH]: Broken Function Level Authorization (BFLA) on Seller Payout Endpoints
+
+- **Affected Files:**
+  - [`apps/api-gateway/src/routing/authenticated.routes.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/api-gateway/src/routing/authenticated.routes.ts)
+  - [`apps/payout-service/src/guards/auth.guard.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/payout-service/src/guards/auth.guard.ts)
+- **Vulnerability Identifiers:** CWE-285 (Improper Authorization), CWE-862 (Missing Authorization)
+- **Attack Vector & Mechanics:**
+  Seller payout routes (`GET /api/v1/sellers/me/payouts`, `/balance`, `/statements`) in `authenticated.routes.ts` were registered with `requireAuth: true` instead of `requireSeller: true`. Furthermore, `SellerGuard` in `payout-service` only checked `Boolean(userId)`, without verifying whether the caller was a verified merchant (`x-user-is-seller: "true"` or role `"seller" | "admin"`). Ordinary customer accounts could execute seller balance queries and retrieve merchant ledger details.
+- **Defensive Remediation:**
+  1. Updated the route definitions in `apps/api-gateway/src/routing/authenticated.routes.ts` to `requireSeller: true`, requiring verified seller identity at the perimeter.
+  2. Hardened `SellerGuard` in `apps/payout-service/src/guards/auth.guard.ts` to strictly verify that `x-user-is-seller === "true"` or role is `"seller" | "admin"`, failing closed with `403 Forbidden` for standard customer sessions.
+
+---
+
+### SEC-26 [MEDIUM]: Incomplete Perimeter Header Stripping in API Gateway
+
+- **Affected Files:**
+  - [`apps/api-gateway/src/middleware/request-id.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/api-gateway/src/middleware/request-id.ts)
+  - [`apps/api-gateway/src/gateway/proxy.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/api-gateway/src/gateway/proxy.ts)
+- **Vulnerability Identifiers:** CWE-284 (Improper Access Control), CWE-200 (Information Exposure)
+- **Attack Vector & Mechanics:**
+  While the API gateway stripped core identity headers (`x-user-id`, `x-user-role`, `x-internal-secret`), it did not include newer internal coordination headers (`x-seller-id`, `x-dev-admin-override`, `x-dev-role`, `x-force-primary`, `x-read-your-writes`, `x-db-lsn`) in `FORBIDDEN_CLIENT_HEADERS`. External clients could send spoofed `x-seller-id` or attempt dev override injection.
+- **Defensive Remediation:**
+  Added `x-seller-id`, `x-dev-admin-override`, `x-dev-role`, `x-force-primary`, `x-read-your-writes`, and `x-db-lsn` to `FORBIDDEN_CLIENT_HEADERS` in `apps/api-gateway/src/middleware/request-id.ts` and explicitly stripped them in `rewriteRequestHeaders` in `apps/api-gateway/src/gateway/proxy.ts`.
+
+---
+
+### SEC-27 [LOW]: Unrestricted Dev Identity Bypass Flag in Fraud Service
+
+- **Affected File:** [`apps/fraud-service/app/core/security.py`](file:///Users/taha/projects/microservices-ecommerce/apps/fraud-service/app/core/security.py)
+- **Vulnerability Identifiers:** CWE-489 (Active Debug Code)
+- **Attack Vector & Mechanics:**
+  `x-dev-admin-override` was permitted unconditionally whenever `APP_ENV == "development"`, even if the developer did not intend to allow header-based bypass.
+- **Defensive Remediation:**
+  Gated dev overrides behind an explicit `FRAUD_DEV_AUTH_BYPASS=true` boolean flag in addition to requiring `app_env != "production"`. In production, dev bypass is permanently inactive.
+
+---
+
 ## 3. Verification & Automated Test Results
 
-1. **`apps/commission-service`**:
+1. **`apps/fraud-service`**:
+   - `uv run pytest tests/ -v` -> **36/36 tests passed (100% pass rate)**
+   - Verified rejection of forged tokens (`test_admin_auth_direct_bearer_forged_signature_rejected`), expired tokens, weak secrets in production (`test_production_startup_validation_rejects_weak_secret`), and gateway admin role decoupling.
+2. **`apps/payout-service`**:
+   - `pnpm --filter payout-service test` -> **35/35 assertions passed (100% pass)**
+   - Verified non-seller rejection test (`rejects non-seller customer sessions with 403 Forbidden`).
+3. **`apps/commission-service`**:
    - `pnpm --filter commission-service test` -> **28/28 assertions passed (100% pass)**
    - `pnpm --filter commission-service check-types` -> **0 TypeScript errors**
-2. **`apps/payout-service`**:
-   - `pnpm --filter payout-service test` -> **34/34 assertions passed (100% pass)**
-   - `pnpm --filter payout-service check-types` -> **0 TypeScript errors**
-3. **Monorepo Audit Matrix**:
-   - 0 raw SQL injections across all 25 microservices.
+4. **`apps/api-gateway`**:
+   - `pnpm --filter api-gateway test` -> **100% route registry and security tests passed**
+5. **Monorepo Audit Matrix**:
+   - `pnpm check-types` -> **42/42 packages clean (0 errors)** across all workspaces.
+   - 0 raw SQL injections across all 26 microservices.
    - 0 insecure CORS wildcards with credentials.
-   - All 25 microservices enforce constant-time cryptographic verification (`safeTimingCompare`).
+   - All 26 microservices enforce constant-time cryptographic verification (`safeTimingCompare`).

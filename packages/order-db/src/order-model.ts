@@ -11,6 +11,8 @@ export const OrderStatus = [
   "delivered",
   "cancelled_out_of_stock",
   "cancelled_tax_mismatch",
+  "cancelled",
+  "fraud_blocked",
   "refund_pending",
   "refunded",
 ] as const;

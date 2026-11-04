@@ -36,6 +36,7 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `email-service`: Email template interpolation for user signups, order receipts with tax breakdown, KYB notifications, and storefront lifecycle alerts (`pnpm --filter email-service test`).
    - `notification-service`: Native Go test suite for workers, templates, dispatchers, WebSocket lifecycle/origin checks, and RS256 JWT verification including forged-token rejection (`go test ./...`).
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
+   - `fraud-service`: Python test suite with 20 tests covering multi-workflow risk scoring, velocity burst tracking, scikit-learn anomaly scoring, analyst adjudication, and Kafka consumer streaming (`cd apps/fraud-service && uv run alembic upgrade head && uv run pytest tests/ -v`).
 
 2. **Strict TypeScript Compilation**:
    ```bash

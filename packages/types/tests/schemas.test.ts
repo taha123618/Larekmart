@@ -14,6 +14,11 @@ import {
   validateInternalServiceSecret,
   AdminUpdateUserStatusSchema,
   UserDetailResponseSchema,
+  AssessRiskRequestSchema,
+  AssessRiskResponseSchema,
+  ReviewFraudCaseSchema,
+  FraudRuleSchema,
+  FRAUD_TOPICS,
 } from "../src/index.js";
 
 async function runSchemaTests() {
@@ -546,6 +551,53 @@ async function runSchemaTests() {
   console.log(
     "✓ User isSeller contracts, default values, and admin status schemas verified",
   );
+
+  // 15. Fraud & Risk Scoring Contracts
+  console.log("15. Testing Fraud & Risk Scoring Domain Contracts...");
+  const validRiskReq = {
+    workflow: "ORDER",
+    entityId: "ord_test_contract_01",
+    entityType: "ORDER",
+    userId: "usr_buyer_999",
+    amount: 12500,
+    currency: "PKR",
+    ipAddress: "192.168.1.1",
+    deviceFingerprint: "dfp_abc_xyz",
+    metadata: { source: "web_checkout" },
+  };
+  const parsedRiskReq = AssessRiskRequestSchema.safeParse(validRiskReq);
+  assert.equal(parsedRiskReq.success, true, "Valid risk assessment request must parse");
+
+  // Invalid workflow must fail
+  const invalidRiskReq = {
+    ...validRiskReq,
+    workflow: "UNKNOWN_WORKFLOW",
+  };
+  assert.equal(
+    AssessRiskRequestSchema.safeParse(invalidRiskReq).success,
+    false,
+    "Invalid workflow enum must fail validation",
+  );
+
+  // ReviewFraudCaseSchema
+  const validReview = {
+    decision: "APPROVE",
+    notes: "Verified identity via phone.",
+    analystId: "analyst_1",
+  };
+  assert.equal(
+    ReviewFraudCaseSchema.safeParse(validReview).success,
+    true,
+    "Valid fraud case review must parse",
+  );
+
+  // Kafka Topic Invariants
+  assert.equal(FRAUD_TOPICS.ASSESSMENT_COMPLETED, "fraud.assessment.completed");
+  assert.equal(FRAUD_TOPICS.RISK_DETECTED, "fraud.risk.detected");
+  assert.equal(FRAUD_TOPICS.CASE_CREATED, "fraud.case.created");
+  assert.equal(FRAUD_TOPICS.CASE_RESOLVED, "fraud.case.resolved");
+
+  console.log("✓ Fraud & Risk Scoring domain contracts and Kafka topics verified");
 
   console.log("\n=======================================================");
   console.log(" All Domain Schema SQA Test Cases Passed Successfully! ");

@@ -1,7 +1,7 @@
 # Comprehensive Security Audit Report
 
 **Target Codebase:** Larekmart Monorepo Microservices E-Commerce Platform  
-**Target Environment:** 25 Backend Microservices, 2 Next.js Frontends (`apps/client`, `apps/admin`), Centralized API Gateway (`apps/api-gateway`), Apache Kafka Event Mesh, PostgreSQL, MongoDB, Redis, and OpenSearch.  
+**Target Environment:** 26 Backend Microservices, 2 Next.js Frontends (`apps/client`, `apps/admin`), Centralized API Gateway (`apps/api-gateway`), Apache Kafka Event Mesh, PostgreSQL, MongoDB, Redis, and OpenSearch.  
 **Audit Date:** November 2026  
 **Auditor:** Antigravity AI Security Analysis Agent
 
@@ -13,7 +13,7 @@ A comprehensive architectural and source-code security audit was conducted acros
 
 ### Key Metrics & Security Posture
 
-- **Total Workspaces Analyzed:** 43 (25 backend microservices, 2 frontends, 1 API gateway, 15 shared libraries/configs)
+- **Total Workspaces Analyzed:** 44 (26 backend microservices, 2 frontends, 1 API gateway, 15 shared libraries/configs)
 - **Authentication Model:** Delegated to Clerk (`CustomJwtSessionClaims` via verified JWTs)
 - **Inter-Service Mesh:** Asynchronous Kafka event bus; direct HTTP between microservices is blocked
 - **Ingress Perimeter:** Centralized Fastify 5 reverse proxy (`api-gateway`) with strict identity header stripping and constant-time downstream secret verification
@@ -65,7 +65,12 @@ VULNERABILITY HIERARCHY
 ├── [LOW]  SEC-18: Missing strict CORS origin allowlists and defensive HTTP security headers in commission/payout [RESOLVED & VERIFIED]
 ├── [CRIT] SEC-19: Unconditional Admin Escalation & Stubbed Token Verification in analytic-service [RESOLVED & VERIFIED]
 ├── [HIGH] SEC-20: Insecure Clerk Verification & Dev Identity Bypass in notification-service [RESOLVED & VERIFIED]
-└── [HIGH] SEC-21: Insecure Clerk Verification & Dev Identity Bypass in recommendation-service [RESOLVED & VERIFIED]
+├── [HIGH] SEC-21: Insecure Clerk Verification & Dev Identity Bypass in recommendation-service [RESOLVED & VERIFIED]
+├── [HIGH] SEC-23: Unverified JWT Signature in fraud-service [RESOLVED & VERIFIED]
+├── [HIGH] SEC-25: Broken Function Level Authorization (BFLA) on Seller Payout Endpoints [RESOLVED & VERIFIED]
+├── [MED]  SEC-24: Missing Fail-Closed Production Startup Validation for INTERNAL_SERVICE_SECRET in fraud-service [RESOLVED & VERIFIED]
+├── [MED]  SEC-26: Incomplete Perimeter Header Stripping in API Gateway [RESOLVED & VERIFIED]
+└── [LOW]  SEC-27: Unrestricted Dev Identity Bypass Flag in fraud-service [RESOLVED & VERIFIED]
 ```
 
 ---
@@ -267,6 +272,73 @@ VULNERABILITY HIERARCHY
 
 ---
 
+### SEC-23 [HIGH]: Unverified JWT Signature in Fraud Service (`apps/fraud-service/app/core/security.py`) [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-347 (Improper Verification of Cryptographic Signature), CWE-287 (Improper Authentication)
+- **Affected File:** [`apps/fraud-service/app/core/security.py`](file:///Users/taha/projects/microservices-ecommerce/apps/fraud-service/app/core/security.py)
+- **Automated Test Coverage:** [`apps/fraud-service/tests/test_api.py`](file:///Users/taha/projects/microservices-ecommerce/apps/fraud-service/tests/test_api.py)
+- **Detailed Mechanics:**
+  `get_current_actor` parsed direct Bearer tokens by splitting `.` and base64-decoding the JSON payload without cryptographically verifying the signature against `CLERK_JWT_KEY` or a shared secret. Any attacker could forge an arbitrary JWT with `metadata.role: "admin"` and an arbitrary signature (e.g., `mock_sig`), completely bypassing admin authorization on `/api/v1/admin/fraud/*`.
+- **Defensive Remediation Implemented:**
+  Replaced unverified payload decoding with cryptographic signature verification. Configured `CLERK_JWT_HMAC_KEY` (HS256) support for test fixtures and constant-time HMAC-SHA256 signature verification (`safe_timing_compare`). Tokens with missing, malformed, or forged signatures immediately fail closed with `401 Unauthorized`. Additionally decoupled transport authenticity from user authorization: when user identity is present, `x-user-role` must be `"admin"`, returning `403 Forbidden` for non-admin user requests.
+
+---
+
+### SEC-24 [MED]: Missing Fail-Closed Production Startup Validation for INTERNAL_SERVICE_SECRET in Fraud Service [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-1188 (Insecure Default Initialization of Resource)
+- **Affected File:** [`apps/fraud-service/app/core/config.py`](file:///Users/taha/projects/microservices-ecommerce/apps/fraud-service/app/core/config.py)
+- **Detailed Mechanics:**
+  `fraud-service` defaulted `INTERNAL_SERVICE_SECRET` to `dev-shared-internal-secret-larekmart` without verifying secret strength or preventing placeholder values when running in production (`APP_ENV=production`). A production deployment with missing environment variables would boot using a publicly known shared secret, allowing malicious actors to bypass perimeter authorization.
+- **Defensive Remediation Implemented:**
+  Added a Pydantic `@model_validator(mode="after")` `validate_production_secrets` on `Settings`. In production (`app_env == "production"`), the service validates that `INTERNAL_SERVICE_SECRET` is non-empty, at least 16 characters long, and does not match any placeholder patterns (`dev-shared-*`, `change-me`, `replace-me`, `example`, `dummy`, `__required`), raising a fatal validation exception on boot.
+
+---
+
+### SEC-25 [HIGH]: Broken Function Level Authorization (BFLA) on Seller Payout Endpoints [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-285 (Improper Authorization), CWE-862 (Missing Authorization)
+- **Affected Files:**
+  - [`apps/api-gateway/src/routing/authenticated.routes.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/api-gateway/src/routing/authenticated.routes.ts)
+  - [`apps/payout-service/src/guards/auth.guard.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/payout-service/src/guards/auth.guard.ts)
+- **Automated Test Coverage:** [`apps/payout-service/tests/payout-service.test.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/payout-service/tests/payout-service.test.ts)
+- **Detailed Mechanics:**
+  Seller payout routes (`GET /api/v1/sellers/me/payouts`, `/balance`, `/statements`) in `authenticated.routes.ts` were registered with `requireAuth: true` instead of `requireSeller: true`. Furthermore, `SellerGuard` in `payout-service` only checked `Boolean(userId)`, without verifying whether the caller was a verified merchant (`x-user-is-seller: "true"` or role `"seller" | "admin"`). Ordinary customer accounts could execute seller balance queries and retrieve merchant ledger details.
+- **Defensive Remediation Implemented:**
+  1. Updated the route definitions in `apps/api-gateway/src/routing/authenticated.routes.ts` to `requireSeller: true`, requiring verified seller identity at the perimeter.
+  2. Hardened `SellerGuard` in `apps/payout-service/src/guards/auth.guard.ts` to strictly verify that `x-user-is-seller === "true"` or role is `"seller" | "admin"`, failing closed with `403 Forbidden` for standard customer sessions.
+
+---
+
+### SEC-26 [MED]: Incomplete Perimeter Header Stripping in API Gateway [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-284 (Improper Access Control), CWE-200 (Information Exposure)
+- **Affected Files:**
+  - [`apps/api-gateway/src/middleware/request-id.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/api-gateway/src/middleware/request-id.ts)
+  - [`apps/api-gateway/src/gateway/proxy.ts`](file:///Users/taha/projects/microservices-ecommerce/apps/api-gateway/src/gateway/proxy.ts)
+- **Detailed Mechanics:**
+  While the API gateway stripped core identity headers (`x-user-id`, `x-user-role`, `x-internal-secret`), it did not include newer internal coordination headers (`x-seller-id`, `x-dev-admin-override`, `x-dev-role`, `x-force-primary`, `x-read-your-writes`, `x-db-lsn`) in `FORBIDDEN_CLIENT_HEADERS`. External clients could send spoofed `x-seller-id` or attempt dev override injection.
+- **Defensive Remediation Implemented:**
+  Added `x-seller-id`, `x-dev-admin-override`, `x-dev-role`, `x-force-primary`, `x-read-your-writes`, and `x-db-lsn` to `FORBIDDEN_CLIENT_HEADERS` in `apps/api-gateway/src/middleware/request-id.ts` and explicitly stripped them in `rewriteRequestHeaders` in `apps/api-gateway/src/gateway/proxy.ts`.
+
+---
+
+### SEC-27 [LOW]: Unrestricted Dev Identity Bypass Flag in Fraud Service [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-489 (Active Debug Code)
+- **Affected File:** [`apps/fraud-service/app/core/security.py`](file:///Users/taha/projects/microservices-ecommerce/apps/fraud-service/app/core/security.py)
+- **Detailed Mechanics:**
+  `x-dev-admin-override` was permitted unconditionally whenever `APP_ENV == "development"`, even if the developer did not intend to allow header-based bypass.
+- **Defensive Remediation Implemented:**
+  Gated dev overrides behind an explicit `FRAUD_DEV_AUTH_BYPASS=true` boolean flag in addition to requiring `app_env != "production"`. In production, dev bypass is permanently inactive.
+
+---
+
 ## 4. In-Depth Architectural Audits
 
 ### 4.1 Ingress & Header Sanitization Pipeline
@@ -284,6 +356,12 @@ VULNERABILITY HIERARCHY
 │    - delete rewritten[GATEWAY_HEADERS.INTERNAL_SECRET]│
 │    - delete rewritten["x-user-is-seller"]             │
 │    - delete rewritten["x-user-can-manage-sellers"]    │
+│    - delete rewritten["x-seller-id"]                  │
+│    - delete rewritten["x-dev-admin-override"]         │
+│    - delete rewritten["x-dev-role"]                   │
+│    - delete rewritten["x-force-primary"]              │
+│    - delete rewritten["x-read-your-writes"]           │
+│    - delete rewritten["x-db-lsn"]                     │
 │                                                        │
 │ 2. Verify Clerk JWT Session Claims                    │
 │                                                        │
@@ -379,3 +457,8 @@ The media processing architecture in [`apps/media-service`](file:///Users/taha/p
 - [x] Enforces RS256 token verification and dev bypass gating in notification-service (Remediation: SEC-20).
 - [x] Pre-hashes secrets and enforces dev auth bypass flag in recommendation-service (Remediation: SEC-21).
 - [x] Production startup validates non-placeholder `INTERNAL_SERVICE_SECRET` across Go and Python microservices (Remediation: SEC-22).
+- [x] Enforces cryptographic signature verification on direct Bearer tokens in fraud-service (Remediation: SEC-23).
+- [x] Production startup validates non-placeholder `INTERNAL_SERVICE_SECRET` in fraud-service (Remediation: SEC-24).
+- [x] Hardens seller payout endpoints with requireSeller and strict role/is-seller guards against BFLA (Remediation: SEC-25).
+- [x] Expands perimeter forbidden client headers to strip x-seller-id, x-dev-admin-override, and replication headers (Remediation: SEC-26).
+- [x] Gates dev identity bypass behind explicit `FRAUD_DEV_AUTH_BYPASS` flag in fraud-service (Remediation: SEC-27).

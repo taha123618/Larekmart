@@ -4,7 +4,6 @@
 
 import type {
   SellerBalanceResponse,
-  PayoutRecord,
   PayoutExecutionStatus,
 } from "@repo/types";
 import { getApiGatewayUrl } from "./gateway.service";

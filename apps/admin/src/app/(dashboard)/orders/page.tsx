@@ -1,10 +1,18 @@
 import { auth } from "@clerk/nextjs/server";
+import Link from "next/link";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import { OrderType } from "@repo/types";
 import { getApiGatewayUrl } from "@/services/gateway.service";
 import { fetchAnalyticsSummary } from "@/services/analytics.service";
-import { DollarSign, ShoppingBag, Activity, CheckCircle2 } from "lucide-react";
+import { fetchAdminFraudCases } from "@/services/fraud.service";
+import {
+  DollarSign,
+  ShoppingBag,
+  Activity,
+  CheckCircle2,
+  ShieldAlert,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -31,9 +39,10 @@ const OrdersPage = async () => {
   const { getToken } = await auth();
   const token = await getToken();
 
-  const [data, analytics] = await Promise.all([
+  const [data, analytics, fraudCases] = await Promise.all([
     getData(),
     fetchAnalyticsSummary(token),
+    fetchAdminFraudCases({ status: "OPEN", limit: 20 }, token).catch(() => []),
   ]);
 
   const totalRevenue = analytics?.totalRevenue ?? 0;
@@ -45,7 +54,7 @@ const OrdersPage = async () => {
         <div>
           <h1 className="font-semibold text-lg">Orders & Payments Registry</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Synchronized with order-service (:8001) and analytic-service (:8004)
+            Synchronized with order-service (:8001), analytic-service (:8004), and fraud-service (:8024)
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
@@ -54,7 +63,7 @@ const OrdersPage = async () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-border/40">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -110,6 +119,29 @@ const OrdersPage = async () => {
               {analytics?.lastEventTime
                 ? new Date(analytics.lastEventTime).toLocaleTimeString()
                 : "Recent"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/40">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Fraud & Risk Cases
+            </CardTitle>
+            <ShieldAlert className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+              {fraudCases.length} Open
+            </div>
+            <p className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
+              <span>Risk audits active</span>
+              <Link
+                href="/fraud"
+                className="text-primary hover:underline font-medium text-xs ml-1"
+              >
+                Review &rarr;
+              </Link>
             </p>
           </CardContent>
         </Card>

@@ -8,7 +8,7 @@ and the relevant scoped `AGENTS.md`.
 ## 1. What this is
 
 **Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . It is a
-**pnpm + Turborepo monorepo** with two Next.js frontends, 25 backend services, and
+**pnpm + Turborepo monorepo** with two Next.js frontends, 26 backend services, and
 shared internal packages. Cross-service communication is **asynchronous via Kafka**;
 there are no service-to-service HTTP calls.
 
@@ -33,7 +33,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`, `apps/api-gateway/AGENTS.md`
-   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`, `payout-service`
+   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`, `payout-service`, `fraud-service`
    - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `vendor-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.
@@ -192,6 +192,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `seller-service`          | `apps/seller-service`         | Fastify 5               | 8021 | Marketplace storefront configuration, staff & permissions, operational settings, performance snapshots & seller events                |
 | `commission-service`      | `apps/commission-service`     | Fastify 5               | 8022 | Marketplace commission plans, rule versioning, percentage/fixed fees, min/max limits & settlement quotes                              |
 | `payout-service`          | `apps/payout-service`         | NestJS 11 (Fastify)     | 8023 | Seller payouts, double-entry ledger, settlement batches, reserve holds & provider reconciliation                                      |
+| `fraud-service`           | `apps/fraud-service`          | Python 3.12+ (FastAPI)  | 8024 | Real-time risk assessment, velocity abuse, scikit-learn anomaly scoring, promotion abuse & fraud case management                       |
 | `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                                                                                 |
 | `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                                                                         |
 | `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                                                                           |
@@ -313,6 +314,10 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
   must never use floating-point numbers; all monetary calculations enforce `Decimal.js`. Seller balances are derived
   dynamically from an append-only double-entry journal (`ledger_entries`) with zero-sum multi-leg transaction invariants
   ($\sum \text{Debit} == \sum \text{Credit}$). See `docs/plans/commission-and-payout-architecture-and-testing.md`.
+- **Enterprise Fraud, Abuse Prevention & Risk Invariants.** Risk assessments (`fraud-service`) must evaluate multi-workflow risks
+  (`PAYMENT`, `ORDER`, `ACCOUNT`, `PROMOTION`, `PAYOUT`, `SELLER`) using deterministic rule logic paired with scikit-learn anomaly
+  scoring. Sliding window velocity checks must run over Redis atomic commands, and high-risk alerts (`fraud.risk.detected`)
+  must safely trigger order quarantine, escrow freezes, and payout holds downstream. See `docs/plans/fraud-detection-engine-and-risk-scoring-architecture.md`.
 
 - **Match existing conventions** before introducing new libraries. Check whether the
   dependency already exists in the workspace you are editing.
@@ -360,9 +365,10 @@ pnpm --filter commission-service db:migrate  # Stage 3: Marketplace commissions 
 pnpm --filter payout-service db:migrate      # Stage 3: Seller payouts & ledger (after commission-service)
 pnpm --filter review-service db:migrate      # Stage 3: Reviews (after product-db)
 pnpm --filter wishlist-service db:migrate    # Stage 3: Wishlists (after product-db)
+(cd apps/fraud-service && uv run alembic upgrade head) # Stage 3: Fraud detection & risk rules
 
 # Docker Ecosystem (Full Orchestration & Infrastructure)
-docker compose up -d --build                 # start entire microservices stack (25 services + backing DBs)
+docker compose up -d --build                 # start entire microservices stack (26 services + backing DBs)
 docker compose down                          # stop all containers preserving volumes
 docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-ui mysql # backing infra only
 # See docs/DOCKER.md for complete operations manual
@@ -383,7 +389,7 @@ docker compose up -d postgres mongo mongo-express redis kafka opensearch kafka-u
   `order-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`, and `payout-service` use standalone tsx-run test files under
   `tests/` (follow the file's internal runner convention, e.g.
   `product-service/tests/product-service.test.ts`); `notification-service` and `analytic-service` use `go test ./...`;
-  `recommendation-service` uses pytest via `uv`. There is **no Vitest/Jest anywhere** —
+  `recommendation-service` and `fraud-service` use pytest via `uv`. There is **no Vitest/Jest anywhere** —
   do not introduce a new runner when extending an existing suite. When adding tests,
   follow `docs/TESTING.md`. Note: `tsc` configs typecheck `src/` only — test files are
   not covered by `pnpm check-types`, so keep test code strict-clean by hand (no `any`,

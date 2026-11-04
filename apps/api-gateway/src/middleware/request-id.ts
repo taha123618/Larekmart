@@ -9,6 +9,12 @@ const FORBIDDEN_CLIENT_HEADERS = [
   "x-user-is-super-admin",
   "x-user-is-seller",
   "x-user-can-manage-sellers",
+  "x-seller-id",
+  "x-dev-admin-override",
+  "x-dev-role",
+  "x-force-primary",
+  "x-read-your-writes",
+  "x-db-lsn",
 ] as const;
 
 export function registerRequestIdMiddleware(fastify: FastifyInstance): void {

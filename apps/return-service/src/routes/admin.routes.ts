@@ -1,6 +1,7 @@
 import Router from "@koa/router";
 import { adminReturnController } from "../controllers/admin-return.controller.js";
 import { shouldBeAdmin } from "../middleware/auth.middleware.js";
+import { idempotencyMiddleware } from "../middleware/idempotency.middleware.js";
 
 const router = new Router({ prefix: "/api/admin/returns" });
 
@@ -46,6 +47,7 @@ router.post(
  */
 router.post(
   "/:returnId/inspect",
+  idempotencyMiddleware({ prefix: "return:idemp:admin:inspect:" }),
   adminReturnController.recordInspection.bind(adminReturnController),
 );
 
@@ -55,6 +57,7 @@ router.post(
  */
 router.post(
   "/:returnId/refund/retry",
+  idempotencyMiddleware({ prefix: "return:idemp:admin:retry:" }),
   adminReturnController.retryRefund.bind(adminReturnController),
 );
 

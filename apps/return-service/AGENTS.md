@@ -24,6 +24,9 @@ Client / Admin  ──► API Gateway (x-user-id, x-user-role)
      Drizzle ORM                  Consumes: order.delivered
                                              payment.refund.succeeded/failed
                                              shipping.label.created
+                                             fraud.risk.detected
+                                             fraud.case.created
+                                             fraud.case.resolved
                                   Publishes: return.requested
                                              return.approved
                                              return.rejected
@@ -97,6 +100,12 @@ Import `ReturnStateMachine.assertTransition()` before every status change. Termi
 ### Transactional Outbox Pattern
 
 All Kafka event publishing goes through the `return_outbox` table (written in the same DB transaction as the state change). The `outbox.worker.ts` polls for `PENDING` rows and publishes them to Kafka, then marks them `PUBLISHED` or `FAILED`. **Never call `producer.send()` directly from service or controller code.**
+
+### Distributed Idempotency & Concurrency Locking
+
+- **Mutation Idempotency**: State-mutating routes (`POST /api/returns/orders/:orderId`, `POST /api/admin/returns/:returnId/inspect`, `POST /api/admin/returns/:returnId/refund/retry`) enforce distributed idempotency via `idempotencyMiddleware` when `Idempotency-Key` is provided. Uses atomic Redis leases (`acquireIdempotencyLock` / `commitIdempotencyResponse`) to reject in-flight collisions with HTTP 409 and replay cached responses with `Idempotent-Replayed: true`.
+- **Inspection Concurrency Lock**: Warehouse inspections (`POST /api/admin/returns/:returnId/inspect`) acquire a Redis cluster lock via `withClusterLock(redis.client, redis.keys.simple(\`lock:inspection:${returnId}\`), ...)`. Duplicate or concurrent inspection attempts on the same return fail-fast with HTTP 409 Conflict.
+- **Deterministic Refund Idempotency**: Refund requests enforce deterministic idempotency keys (`refund-${returnId}` for inspections, and versioned `refund-${returnId}-retry-${attempt}` for admin retries). This strictly preserves the MySQL `UNIQUE` constraint on `return_refunds.idempotency_key` and prevents duplicate refund dispatching to `payment-service` and Stripe.
 
 ### Proration Logic
 

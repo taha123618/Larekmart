@@ -217,6 +217,7 @@ jobs:
               larekmart/seller-service=ghcr.io/${{ github.repository_owner }}/larekmart/seller-service:${SHA_SHORT} \
               larekmart/commission-service=ghcr.io/${{ github.repository_owner }}/larekmart/commission-service:${SHA_SHORT} \
               larekmart/payout-service=ghcr.io/${{ github.repository_owner }}/larekmart/payout-service:${SHA_SHORT} \
+              larekmart/fraud-service=ghcr.io/${{ github.repository_owner }}/larekmart/fraud-service:${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:${SHA_SHORT}
 
             echo "Applying Production manifests to namespace larekmart..."
@@ -250,6 +251,7 @@ jobs:
               seller-service
               commission-service
               payout-service
+              fraud-service
               email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do

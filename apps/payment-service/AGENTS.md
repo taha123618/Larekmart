@@ -43,6 +43,7 @@ Stripe product sync driven by Kafka. It emits `payment.successful` after verifyi
   fetches them.
 - Pre-checkout lease and vendor gates: validate `expiresAt` before creating sessions.
 - Idempotency support: respects `Idempotency-Key` or `x-idempotency-key` request headers, passing `{ idempotencyKey }` to `stripe.checkout.sessions.create` to prevent duplicate Stripe session charges upon client network retries.
+- Risk Context Ingestion: Session creation extracts client IP, User-Agent, and `deviceFingerprint` into Stripe session metadata, providing telemetry for downstream `fraud-service` risk evaluation.
 - Webhook signature verification must use
   `stripe.webhooks.constructEvent(body, sig, webhookSecret)` with raw request text, not
   parsed JSON.

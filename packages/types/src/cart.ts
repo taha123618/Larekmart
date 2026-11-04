@@ -208,6 +208,7 @@ export const CreateCheckoutSessionSchema = z.object({
   expiresAt: z.union([z.string(), z.number()]).optional(),
   currency: z.string().length(3).default("USD"),
   exchangeRate: z.number().positive().optional(),
+  deviceFingerprint: z.string().optional(),
 });
 export type CreateCheckoutSessionInputType = z.infer<
   typeof CreateCheckoutSessionSchema

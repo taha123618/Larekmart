@@ -23,6 +23,7 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 | `seller-service`         | `8021` | Fastify 5              | `shouldBeUser` / `shouldBeAdmin`   | Marketplace storefronts, staff, delegations & governance                  |
 | `commission-service`     | `8022` | Fastify 5              | `requireInternalSecret` / Admin    | Marketplace commission plans, rules, line item calculations & quotes      |
 | `payout-service`         | `8023` | NestJS 11 (Fastify)    | `shouldBeUser` / Admin / Internal  | Seller payouts, append-only double-entry ledger & settlement batches      |
+| `fraud-service`          | `8024` | Python 3.12+ / FastAPI | `requireInternalSecret` / Admin    | Real-time risk assessment, velocity abuse, ML anomaly scoring & cases     |
 | `email-service`          | —      | Node.js Worker         | None (Kafka only)                  | Transactional Email Dispatch                                              |
 
 ---
@@ -1297,3 +1298,55 @@ All requests route through `api-gateway` on port `8080`.
 
 - **Auth**: Admin (`shouldBeAdmin`)
 - **Response**: `{ success: true, payout: PayoutRecord }`
+
+---
+
+## 26. Fraud Service (`:8024`)
+
+### `POST /api/v1/internal/fraud/assess`
+
+- **Auth**: Zero-Trust Internal Secret (`x-internal-secret`)
+- **Body**: `AssessRiskRequestSchema` (`workflow`, `entityType`, `entityId`, `userId?`, `sellerId?`, `amount?`, `currency?`, `ipAddress?`, `userAgent?`, `deviceFingerprint?`, `metadata?`)
+- **Response**: `AssessRiskResponseSchema` (`assessmentId`, `workflow`, `entityId`, `riskScore`, `decision`, `triggeredRules`, `signals`, `caseId?`, `failModeUsed`, `latencyMs`, `createdAt`)
+- **Side Effect**: Emits `fraud.assessment.completed`, and if risk threshold breached, emits `fraud.risk.detected` and `fraud.case.created`.
+
+### `GET /api/v1/internal/fraud/assessments/:id`
+
+- **Auth**: Zero-Trust Internal Secret (`x-internal-secret`)
+- **Response**: Full `RiskAssessmentRecord` with linked signals and evaluation logs.
+
+### `GET /api/v1/admin/fraud/cases`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `status?`, `priority?`, `workflow?`, `limit?`, `offset?`
+- **Response**: `{ cases: FraudCaseRecord[], total: number }`
+
+### `POST /api/v1/admin/fraud/cases/:id/review`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `ReviewFraudCaseSchema` (`decision`: `APPROVE` | `BLOCK` | `DISMISS`, `notes`, `analystId`)
+- **Response**: `{ success: true, case: FraudCaseRecord }`
+- **Side Effect**: Emits `fraud.case.resolved` Kafka event.
+
+### `GET /api/v1/admin/fraud/rules`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `workflow?`, `isActive?`
+- **Response**: `{ rules: FraudRuleRecord[], total: number }`
+
+### `POST /api/v1/admin/fraud/rules`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `CreateFraudRuleSchema` (`ruleCode`, `name`, `description?`, `workflow`, `scoreDelta`, `action`, `conditions`, `failMode`)
+- **Response**: `{ success: true, rule: FraudRuleRecord }`
+
+### `PATCH /api/v1/admin/fraud/rules/:id/toggle`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `{ isActive: boolean }`
+- **Response**: `{ success: true, rule: FraudRuleRecord }`
+
+### `GET /api/v1/admin/fraud/metrics`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: Aggregated fraud KPIs (`totalAssessments`, `totalCases`, `openCases`, `blockRate`, `reviewRate`, `averageLatencyMs`).

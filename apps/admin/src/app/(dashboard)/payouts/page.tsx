@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import {
   fetchAdminPayouts,
   retryAdminPayout,
-  type AdminPayoutListResponse,
 } from "@/services/payout.service";
 import {
   Card,
@@ -33,7 +33,6 @@ import {
   RefreshCw,
   ShieldAlert,
   XCircle,
-  Building2,
   DollarSign,
   AlertTriangle,
 } from "lucide-react";
@@ -300,8 +299,21 @@ export default function AdminPayoutsPage(): React.JSX.Element {
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {payout.providerReference || "—"}
                     </TableCell>
-                    <TableCell className="text-xs text-rose-500 max-w-xs truncate">
-                      {payout.failureReason || "—"}
+                    <TableCell className="text-xs max-w-xs">
+                      {payout.failureReason === "FRAUD_OR_DISPUTE_HOLD" ? (
+                        <Link
+                          href="/fraud"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border border-amber-500/20 transition-colors"
+                          title="View fraud investigation cases"
+                        >
+                          <ShieldAlert className="w-3 h-3 text-amber-500" />
+                          FRAUD/DISPUTE HOLD &rarr;
+                        </Link>
+                      ) : (
+                        <span className="text-rose-500 truncate block">
+                          {payout.failureReason || "—"}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {payout.createdAt

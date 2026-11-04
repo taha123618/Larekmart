@@ -62,11 +62,11 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `category.updated`                               | product-service            | catalog-service                                                                                               | `CategoryEventPayload` (`{ id, name, slug }`)                                                                                                                                                                                                                                       |
 | `category.deleted`                               | product-service            | catalog-service                                                                                               | `number` (the category id)                                                                                                                                                                                                                                                          |
 | `user.created`                                   | auth-service               | email-service, analytic-service, notification-service                                                         | `{ username: string, email: string }`                                                                                                                                                                                                                                               |
-| `order.created`                                  | order-service              | email-service, analytic-service, notification-service, recommendation-service, promotion-service, tax-service | `{ orderId: string, userId: string, email: string, amount: number, status: "pending_confirmation" \| "confirmed" \| "success" \| "failed", products: { name: string, quantity: number, price: number }[], reservationId?: string, couponCode?: string, taxCalculationId?: string }` |
+| `order.created`                                  | order-service              | email-service, analytic-service, notification-service, recommendation-service, promotion-service, tax-service, fraud-service | `{ orderId: string, userId: string, email: string, amount: number, status: "pending_confirmation" \| "confirmed" \| "success" \| "failed", products: { name: string, quantity: number, price: number }[], reservationId?: string, couponCode?: string, taxCalculationId?: string }` |
 | `order.confirmed`                                | order-service              | cart-service, shipping-service, notification-service, analytic-service                                        | `OrderConfirmedPayload` (`{ orderId, userId, email, amount, paymentSessionId, reservationId, products, confirmedAt }`)                                                                                                                                                              |
 | `order.cancelled`                                | order-service              | shipping-service, promotion-service, notification-service, analytic-service, tax-service, inventory-service   | `OrderCancelledPayload` (`{ orderId, userId, reason, cancelledAt }`)                                                                                                                                                                                                                |
-| `payment.successful`                             | payment-service            | order-service, analytic-service, notification-service, inventory-service, recommendation-service              | `{ sessionId, referenceId, reservationId, userId, email, amount, status, products: { name, quantity, price }[] }`                                                                                                                                                                   |
-| `payment.failed`                                 | payment-service            | inventory-service, order-service, analytic-service                                                             | `PaymentFailedPayload` (`{ sessionId?, paymentIntentId?, referenceId?, cartId?, reservationId?, userId?, reason, timestamp }`)                                                                                                                                                       |
+| `payment.successful`                             | payment-service            | order-service, analytic-service, notification-service, inventory-service, recommendation-service, fraud-service | `{ sessionId, referenceId, reservationId, userId, email, amount, status, products: { name, quantity, price }[] }`                                                                                                                                                                   |
+| `payment.failed`                                 | payment-service            | inventory-service, order-service, analytic-service, fraud-service                                              | `PaymentFailedPayload` (`{ sessionId?, paymentIntentId?, referenceId?, cartId?, reservationId?, userId?, reason, timestamp }`)                                                                                                                                                       |
 | `payment.refund.requested`                       | order-service              | payment-service                                                                                               | `PaymentRefundRequestedPayload` (`{ orderId, paymentSessionId, amount, reason, userId, requestedAt }`)                                                                                                                                                                              |
 | `payment.refund.completed`                       | payment-service            | order-service                                                                                                 | `PaymentRefundCompletedPayload` (`{ orderId, refundId, paymentSessionId, amount, status, completedAt }`)                                                                                                                                                                            |
 | `notification.dispatch`                          | any backend service        | notification-service                                                                                          | `{ userId, type, title, body, email, phone, metadata }`                                                                                                                                                                                                                             |
@@ -137,15 +137,15 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `promotion.activated`                            | promotion-service          | analytic-service, notification-service (deal alerts)                                                          | `PromotionActivatedEventPayload` (`promotionId`, `name`, `type`)                                                                                                                                                                                                                    |
 | `promotion.deactivated`                          | promotion-service          | analytic-service                                                                                              | `PromotionDeactivatedEventPayload` (`promotionId`, `name`, `reason`)                                                                                                                                                                                                                |
 | `promotion.budget_exhausted`                     | promotion-service          | analytic-service, notification-service (admin alert)                                                          | `PromotionBudgetExhaustedEventPayload` (`promotionId`, `budgetLimit`, `totalSpent`, `currency`)                                                                                                                                                                                     |
-| `promotion.reserved`                             | promotion-service          | order-service, analytic-service                                                                               | `PromotionReservedEventPayload` (`reservationId`, `promotionId`, `orderId`, `userId`, `couponCode`, `discountAmount`, `expiresAt`)                                                                                                                                                  |
-| `promotion.redeemed`                             | promotion-service          | order-service, analytic-service, email-service                                                                | `PromotionRedeemedEventPayload` (`redemptionId`, `promotionId`, `orderId`, `userId`, `couponCode`, `discountAmount`)                                                                                                                                                                |
+| `promotion.reserved`                             | promotion-service          | order-service, analytic-service, fraud-service                                                                | `PromotionReservedEventPayload` (`reservationId`, `promotionId`, `orderId`, `userId`, `couponCode`, `discountAmount`, `expiresAt`)                                                                                                                                                  |
+| `promotion.redeemed`                             | promotion-service          | order-service, analytic-service, email-service, fraud-service                                                 | `PromotionRedeemedEventPayload` (`redemptionId`, `promotionId`, `orderId`, `userId`, `couponCode`, `discountAmount`)                                                                                                                                                                |
 | `promotion.released`                             | promotion-service          | order-service, analytic-service                                                                               | `PromotionReleasedEventPayload` (`reservationId`, `promotionId`, `orderId`, `reason`)                                                                                                                                                                                               |
 | `tax.calculation.completed`                      | tax-service                | analytic-service, order-service, notification-service                                                         | `TaxCalculationCompletedEventPayload` (`calculationId`, `referenceId`, `referenceType`, `currency`, `subtotal`, `taxTotal`, `total`, `ruleVersion`)                                                                                                                                 |
 | `tax.calculation.failed`                         | tax-service                | order-service, analytic-service                                                                               | `TaxCalculationFailedEventPayload` (`referenceId`, `referenceType`, `error`, `failedAt`, `calculationId?`)                                                                                                                                                                          |
 | `tax.calculation.voided`                         | order-service, tax-service | tax-service, analytic-service                                                                                 | `TaxCalculationVoidedEventPayload` (`calculationId`, `referenceId`, `referenceType`, `reason`, `voidedAt`)                                                                                                                                                                          |
 | `tax.rules.updated`                              | tax-service                | tax-service (cache eviction), analytic-service                                                                | `TaxRulesUpdatedEventPayload` (`version`, `ruleIds`, `timestamp`)                                                                                                                                                                                                                   |
 | `tax.calculation.adjusted`                       | tax-service                | analytic-service, email-service, order-service                                                                | `TaxCalculationAdjustedEventPayload` (`returnCalculationId`, `originalCalculationId`, `referenceId`, `taxRefundTotal`, `adjustedAt`)                                                                                                                                                |
-| `return.requested`                               | return-service             | order-service, notification-service, analytic-service                                                         | `ReturnRequestedEventPayload` (`returnId`, `orderId`, `customerId`, `sellerId`, `totalRefund`, `currency`, `itemsCount`)                                                                                                                                                            |
+| `return.requested`                               | return-service             | order-service, notification-service, analytic-service, fraud-service                                          | `ReturnRequestedEventPayload` (`returnId`, `orderId`, `customerId`, `sellerId`, `totalRefund`, `currency`, `itemsCount`)                                                                                                                                                            |
 | `return.approved`                                | return-service             | shipping-service, notification-service, email-service                                                         | `ReturnApprovedEventPayload` (`returnId`, `orderId`, `customerId`, `approvedAt`, `autoApproved`)                                                                                                                                                                                    |
 | `return.rejected`                                | return-service             | notification-service, email-service                                                                           | `ReturnRejectedEventPayload` (`returnId`, `orderId`, `customerId`, `rejectedAt`, `reason`)                                                                                                                                                                                          |
 | `return.cancelled`                               | return-service             | notification-service, analytic-service                                                                        | `ReturnCancelledEventPayload` (`returnId`, `orderId`, `customerId`, `cancelledAt`)                                                                                                                                                                                                  |
@@ -177,11 +177,15 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `commission.accrued`                             | commission-service         | payout-service, analytic-service, notification-service                                                        | `CommissionAccruedEvent` (`orderId`, `calculationId`, `totalCommission`, `currency`, `itemsCount`, `timestamp`)                                                                                                                                                                     |
 | `commission.adjusted`                            | commission-service         | payout-service, analytic-service                                                                              | `CommissionAdjustedEvent` (`orderId`, `returnId`, `originalCalculationId`, `adjustedCommission`, `refundAmount`, `timestamp`)                                                                                                                                                       |
 | `commission.reversed`                            | commission-service         | payout-service, analytic-service                                                                              | `CommissionReversedEvent` (`orderId`, `calculationId`, `reason`, `timestamp`)                                                                                                                                                                                                       |
-| `payout.scheduled`                               | payout-service             | notification-service, analytic-service                                                                        | `PayoutScheduledEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `batchId`, `amount`, `netAmount`, `currency`, `timestamp`)                                                                                                                                                   |
+| `payout.scheduled`                               | payout-service             | notification-service, analytic-service, fraud-service                                                         | `PayoutScheduledEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `batchId`, `amount`, `netAmount`, `currency`, `timestamp`)                                                                                                                                                   |
 | `payout.processing`                              | payout-service             | analytic-service                                                                                              | `PayoutProcessingEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `provider`, `amount`, `currency`, `timestamp`)                                                                                                                                                              |
 | `payout.completed`                               | payout-service             | notification-service, email-service, analytic-service                                                         | `PayoutCompletedEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `providerReference`, `amount`, `currency`, `settledAt`, `timestamp`)                                                                                                                                         |
 | `payout.failed`                                  | payout-service             | notification-service, email-service, analytic-service                                                         | `PayoutFailedEventPayload` (`payoutId`, `payoutNumber`, `sellerId`, `failureReason`, `amount`, `currency`, `timestamp`)                                                                                                                                                             |
 | `payout.reconciled`                              | payout-service             | analytic-service                                                                                              | `PayoutReconciledEventPayload` (`batchId`, `totalPayouts`, `totalSettledAmount`, `currency`, `reconciledCount`, `failedCount`, `timestamp`)                                                                                                                                         |
+| `fraud.assessment.completed`                     | fraud-service              | analytic-service                                                                                              | `FraudAssessmentCompletedEvent` (`assessmentId`, `workflow`, `entityId`, `riskScore`, `decision`, `triggeredRules`, `failModeUsed`, `timestamp`)                                                                                                                                     |
+| `fraud.risk.detected`                            | fraud-service              | order-service, payout-service, vendor-service, return-service, notification-service, analytic-service          | `FraudRiskDetectedEvent` (`assessmentId`, `workflow`, `entityId`, `riskScore`, `decision`, `triggeredRules`, `timestamp`)                                                                                                                                                            |
+| `fraud.case.created`                             | fraud-service              | order-service, payout-service, vendor-service, return-service, notification-service, analytic-service          | `FraudCaseCreatedEvent` (`caseId`, `assessmentId`, `workflow`, `entityId`, `priority`, `riskScore`, `timestamp`)                                                                                                                                                                      |
+| `fraud.case.resolved`                            | fraud-service              | order-service, payout-service, vendor-service, return-service, notification-service, analytic-service          | `FraudCaseResolvedEvent` (`caseId`, `analystId`, `decision`, `notes`, `timestamp`)                                                                                                                                                                                                   |
 
 ### `product.created`
 
@@ -1194,6 +1198,95 @@ Emitted when settlement statements and provider callback batches have been audit
 
 - **Producer:** `apps/payout-service/src/payouts/payouts.service.ts`
 - **Consumers:** `analytic-service`.
+
+### Fraud events
+
+#### `fraud.assessment.completed`
+
+Emitted immediately when a synchronous risk assessment evaluates rules, models, and signals, returning a score and decision.
+
+```jsonc
+{
+  "value": {
+    "assessmentId": "550e8400-e29b-41d4-a716-446655440000",
+    "workflow": "ORDER",
+    "entityId": "order_6728a01f92e...",
+    "userId": "user_2smV4...",
+    "sellerId": "seller_abc123",
+    "riskScore": 75,
+    "decision": "REVIEW",
+    "triggeredRules": ["VELOCITY_BURST", "GEO_IP_MISMATCH"],
+    "failModeUsed": false,
+    "timestamp": "2026-11-04T12:00:00.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/fraud-service/app/services/fraud_service.py`
+- **Consumers:** `analytic-service`.
+
+#### `fraud.risk.detected`
+
+Emitted when a transaction or entity triggers high-risk rules (`decision == "REVIEW"` or `"BLOCK"`). Downstream services consume this event to quarantine pending orders, freeze vendor escrow balances, place payouts on administrative hold, or flag return shipments for manual inspection.
+
+```jsonc
+{
+  "value": {
+    "assessmentId": "550e8400-e29b-41d4-a716-446655440000",
+    "workflow": "PAYMENT",
+    "entityId": "cs_test_a1b2c3d4",
+    "userId": "user_2smV4...",
+    "sellerId": "seller_abc123",
+    "riskScore": 90,
+    "decision": "BLOCK",
+    "triggeredRules": ["CARD_TESTING_BURST", "KNOWN_FRAUD_FINGERPRINT"],
+    "timestamp": "2026-11-04T12:00:01.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/fraud-service/app/services/fraud_service.py`
+- **Consumers:** `order-service` (saga quarantine & cancellation), `payout-service` (payout holds), `vendor-service` (escrow holds), `return-service` (inspection routing), `notification-service`, `analytic-service`.
+
+#### `fraud.case.created`
+
+Emitted when a suspicious transaction is routed into the analyst investigation queue for manual verification.
+
+```jsonc
+{
+  "value": {
+    "caseId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "assessmentId": "550e8400-e29b-41d4-a716-446655440000",
+    "workflow": "PAYOUT",
+    "entityId": "payout_019b8c7d6e",
+    "priority": "HIGH",
+    "riskScore": 78,
+    "timestamp": "2026-11-04T12:00:02.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/fraud-service/app/services/fraud_service.py`
+- **Consumers:** `order-service`, `payout-service`, `vendor-service`, `return-service`, `notification-service`, `analytic-service`.
+
+#### `fraud.case.resolved`
+
+Emitted when a fraud analyst or automated review completes case adjudication (`APPROVE`, `BLOCK`, or `DISMISS`), lifting or finalizing downstream security holds.
+
+```jsonc
+{
+  "value": {
+    "caseId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "analystId": "user_admin_987",
+    "decision": "APPROVE",
+    "notes": "Verified customer phone confirmation and identity documents.",
+    "timestamp": "2026-11-04T12:30:00.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/fraud-service/app/services/fraud_service.py`
+- **Consumers:** `order-service`, `payout-service`, `vendor-service`, `return-service`, `notification-service`, `analytic-service`.
 
 ## Dead-Letter Queue (DLQ) & Poison-Pill Isolation
 

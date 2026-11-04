@@ -53,9 +53,13 @@ authorized representative access, and lifecycle state management (DRAFT, PENDING
 
 ## Kafka Events
 
-- `vendor.registered`
-- `vendor.verification.requested`
-- `vendor.verified`
-- `vendor.rejected`
-- `vendor.suspended`
-- `vendor.reactivated`
+- Published:
+  - `vendor.registered`
+  - `vendor.verification.requested`
+  - `vendor.verified`
+  - `vendor.rejected`
+  - `vendor.suspended`
+  - `vendor.reactivated`
+- Consumed:
+  - `fraud.risk.detected` & `fraud.case.created` — triggers `freezeEscrowByOrderOrVendor` to lock vendor escrow funds during fraud investigations.
+  - `fraud.case.resolved` — unfreezes escrow if dismissed or approved by analysts.

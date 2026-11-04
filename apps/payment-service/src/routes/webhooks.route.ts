@@ -68,6 +68,7 @@ webhookRoute.post("/stripe", async (c) => {
                 : 0,
               userId: session.client_reference_id,
               email: session.customer_details?.email,
+              deviceFingerprint: session.metadata?.deviceFingerprint || null,
               amount,
               status: session.payment_status === "paid" ? "success" : "failed",
               products: lineItems.data.map((item) => ({
@@ -97,6 +98,7 @@ webhookRoute.post("/stripe", async (c) => {
               cartId: session.metadata?.cartId || null,
               reservationId: session.metadata?.reservationId || null,
               userId: session.client_reference_id || null,
+              deviceFingerprint: session.metadata?.deviceFingerprint || null,
               reason: "checkout_session_expired",
               timestamp: new Date().toISOString(),
             },

@@ -1,0 +1,12 @@
+{
+  "name": "fraud-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "uv run uvicorn app.main:app --host 0.0.0.0 --port 8024 --reload",
+    "test": "uv run pytest tests/",
+    "check-types": "uv run pytest tests/ -q"
+  }
+}
+

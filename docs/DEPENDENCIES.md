@@ -134,6 +134,12 @@ apps/payout-service ────────┬─▶ drizzle-orm + pg ─▶ Po
                            ├─▶ decimal.js
                            └─▶ @repo/types
 
+apps/fraud-service (Python) ┬─▶ SQLAlchemy async + asyncpg ─▶ PostgreSQL (larekmart_fraud_db)
+                           ├─▶ aiokafka ─▶ Kafka
+                           ├─▶ redis.asyncio ─▶ Redis
+                           ├─▶ scikit-learn + numpy + pandas
+                           └─▶ @repo/types (JSON contracts alignment)
+
 apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                            ├─▶ @repo/monitoring

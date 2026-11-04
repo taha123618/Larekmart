@@ -139,6 +139,9 @@ jobs:
           - service: payout-service
             context: .
             dockerfile: apps/payout-service/Dockerfile
+          - service: fraud-service
+            context: .
+            dockerfile: apps/fraud-service/Dockerfile
           - service: email-service
             context: .
             dockerfile: apps/email-service/Dockerfile

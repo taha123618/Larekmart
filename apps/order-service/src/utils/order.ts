@@ -223,6 +223,7 @@ export const createOrder = async (orderPayload: any) => {
       taxCalculationId: savedOrder.taxCalculationId || null,
       taxAmount: savedOrder.taxAmount ?? 0,
       email: savedOrder.email,
+      deviceFingerprint: orderPayload.deviceFingerprint || null,
       amount: savedOrder.amount,
       status: savedOrder.status,
       products: savedOrder.products,
@@ -703,4 +704,91 @@ export const startPendingConfirmationTimeoutSweeper = (
   }, intervalMs);
   timer.unref();
   return timer;
+};
+
+/**
+ * 6. Saga Fraud Quarantine: Handle fraud.risk.detected with BLOCK decision or critical score
+ */
+export const handleFraudDetected = async (fraudPayload: any) => {
+  const { entityId, workflow, decision, riskScore, triggeredRules, reason } =
+    fraudPayload || {};
+
+  if (workflow !== "ORDER_CHECKOUT" && workflow !== "ORDER") {
+    return;
+  }
+  if (
+    decision !== "BLOCK" &&
+    (typeof riskScore === "number" ? riskScore < 80 : true)
+  ) {
+    return;
+  }
+
+  logger.warn(
+    `Received critical fraud alert for order ${entityId}: riskScore=${riskScore}, decision=${decision}. Quarantining order...`,
+  );
+
+  try {
+    const order = await Order.findById(entityId);
+    if (!order) return;
+
+    if (order.status === "cancelled" || order.status === "fraud_blocked") {
+      return;
+    }
+
+    order.status = "fraud_blocked";
+    (order as any).sagaHistory.push({
+      state: "fraud_blocked",
+      trigger: "fraud.risk.detected",
+      error: `Fraud risk detected (score=${riskScore}): ${triggeredRules?.join(", ") || reason || "High risk"}`,
+      timestamp: new Date(),
+    });
+
+    await order.save();
+    logger.warn(`Order ${order._id} quarantined and marked fraud_blocked.`);
+
+    // If prepaid, emit refund request
+    if ((order as any).paymentSessionId && !order.isCod) {
+      const refundPayload: PaymentRefundRequestedPayload = {
+        orderId: order._id.toString(),
+        paymentSessionId: (order as any).paymentSessionId,
+        amount: order.amount,
+        reason: "Order quarantined due to critical fraud detection",
+        userId: order.userId,
+        requestedAt: new Date().toISOString(),
+      };
+      await dispatchViaOutbox(
+        "payment.refund.requested",
+        refundPayload as unknown as Record<string, unknown>,
+      );
+    }
+
+    // Release inventory reservation if present
+    if ((order as any).reservationId) {
+      const invCancelPayload: InventoryReservationCancelledPayload = {
+        orderId: order._id.toString(),
+        reservationId: (order as any).reservationId,
+        referenceId: (order as any).paymentSessionId,
+        reason: "Order cancelled due to critical fraud detection",
+        cancelledAt: new Date().toISOString(),
+      };
+      await dispatchViaOutbox(
+        "inventory.reservation.cancelled",
+        invCancelPayload as unknown as Record<string, unknown>,
+      );
+    }
+
+    // Emit order.cancelled
+    const cancelledPayload: OrderCancelledPayload = {
+      orderId: order._id.toString(),
+      userId: order.userId,
+      reason: "Order blocked by fraud detection engine",
+      cancelledAt: new Date().toISOString(),
+    };
+    await dispatchViaOutbox(
+      "order.cancelled",
+      cancelledPayload as unknown as Record<string, unknown>,
+    );
+  } catch (err) {
+    logger.error("Error executing Saga fraud quarantine:", err);
+  }
 };

@@ -35,8 +35,11 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
     expiresAt,
     currency = "USD",
     exchangeRate = 1.0,
+    deviceFingerprint,
   } = parsed.data;
   const userId = c.get("userId");
+  const clientDeviceFp =
+    deviceFingerprint || c.req.header("x-device-fingerprint") || "";
 
   // Pre-checkout atomic lease verification
   if (expiresAt) {
@@ -151,6 +154,7 @@ sessionRoute.post("/create-checkout-session", shouldBeUser, async (c) => {
               taxAmount: taxAmount !== undefined ? String(taxAmount) : "",
               currency: targetCurrency.toUpperCase(),
               exchangeRate: String(rate),
+              deviceFingerprint: clientDeviceFp,
             },
             return_url: returnUrl,
           },

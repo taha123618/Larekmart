@@ -34,6 +34,7 @@ This skill defines the mandatory 8-stage vertical execution playbook for any fea
 - Expose `GET /health` and `GET /ready` probes.
 - For high-concurrency inventory reservation paths, apply the **Asynchronous Fast-Claim Pattern** (Redis Lua fast-claim `<1ms` + `202 Accepted` response + Kafka micro-batch persistence worker via `batchReserveInventory()`). Refer to [docs/plans/hyperscale-flash-sale-architecture-hardening.md](../../../docs/plans/hyperscale-flash-sale-architecture-hardening.md).
 - For commission and financial ledgers, enforce **Decimal.js Precision** and **Append-Only Zero-Sum Journal Invariants** (`SUM(debits) == SUM(credits)`). Refer to [docs/plans/commission-and-payout-architecture-and-testing.md](../../../docs/plans/commission-and-payout-architecture-and-testing.md).
+- For fraud and risk detection, enforce **Real-Time Heuristic Rules & Stream Scoring** (Redis sliding-window velocity tracker `ZSET`, scikit-learn anomaly scoring, explainable rules, and automated case creation with analyst review workflows). Refer to [docs/plans/fraud-detection-engine-and-risk-scoring-architecture.md](../../../docs/plans/fraud-detection-engine-and-risk-scoring-architecture.md).
 
 ### Stage 3: API Gateway Reverse Proxy & Resilience (`apps/api-gateway`)
 

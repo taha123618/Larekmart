@@ -56,8 +56,20 @@ export async function runRouteRegistryTests() {
     registeredServices.has("media-service"),
     "media-service should be registered",
   );
+  assert.ok(
+    registeredServices.has("payout-service"),
+    "payout-service should be registered",
+  );
+  assert.ok(
+    registeredServices.has("fraud-service"),
+    "fraud-service should be registered",
+  );
 
   // Test 2: findRouteForPath returns the correct route
+  const fraudRoute = findRouteForPath("/api/v1/admin/fraud");
+  assert.ok(fraudRoute, "Route for /api/v1/admin/fraud must exist");
+  assert.equal(fraudRoute.serviceName, "fraud-service");
+  assert.equal(fraudRoute.target, services.fraud.url);
   const productRoute = findRouteForPath("/api/v1/products");
   assert.ok(productRoute, "Route for /api/v1/products must exist");
   assert.equal(productRoute.serviceName, "product-service");

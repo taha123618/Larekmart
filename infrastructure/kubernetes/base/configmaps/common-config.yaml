@@ -66,3 +66,4 @@ data:
   SELLER_SERVICE_URL: "http://seller-service.larekmart.svc.cluster.local:8021"
   COMMISSION_SERVICE_URL: "http://commission-service.larekmart.svc.cluster.local:8022"
   PAYOUT_SERVICE_URL: "http://payout-service.larekmart.svc.cluster.local:8023"
+  FRAUD_SERVICE_URL: "http://fraud-service.larekmart.svc.cluster.local:8024"
