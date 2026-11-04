@@ -18,16 +18,21 @@ Monorepo-wide coding standards for Larekmart.
 ## Backend Service Standards
 
 1. **Framework & Runtime Discipline**:
-   - `apps/product-service` & `apps/auth-service`: Express 5 (Node.js ESM)
-   - `apps/order-service`: Fastify 5 (Node.js ESM)
-   - `apps/payment-service`: Hono (Node.js ESM)
+   - `apps/order-service`, `apps/catalog-service`, `apps/search-service`, `apps/user-service`, `apps/review-service`, `apps/wishlist-service`, `apps/tax-service`, `apps/pricing-service`, `apps/seller-service`, `apps/commission-service`: Fastify 5 (Node.js ESM)
+   - `apps/vendor-service` (NestJS 10), `apps/payout-service` (NestJS 11): NestJS on Fastify (Node.js ESM)
+   - `apps/payment-service`, `apps/inventory-service`, `apps/media-service`, `apps/promotion-service`: Hono 4 (Node.js ESM)
+   - `apps/shipping-service`, `apps/return-service`: Koa (Node.js ESM)
+   - `apps/product-service`, `apps/auth-service`, `apps/cart-service`: Express 5 (Node.js ESM)
+   - `apps/analytic-service`, `apps/notification-service`: Go 1.22+ (Chi, pgxpool, go-redis, Gorilla WebSocket, segmentio/kafka-go)
+   - `apps/recommendation-service`: Python 3.12+ (FastAPI, SQLAlchemy, pgvector, Celery)
    - `apps/email-service`: Headless Node.js worker
-   - `apps/notification-service`: Go 1.22+ (Chi, pgxpool, go-redis, Gorilla WebSocket, segmentio/kafka-go)
-   - `apps/analytic-service`: Go 1.22+ (Chi, pgxpool, go-redis, segmentio/kafka-go)
-2. **Error Responses**: HTTP endpoints return `{ message: string }` JSON with appropriate HTTP status codes (`400`, `401`, `403`, `404`, `500`).
-3. **Auth Guards**: Apply `shouldBeUser` or `shouldBeAdmin` to protected routes. Derive `userId` from the verified session claims, never from client request bodies.
-4. **Kafka Resiliency**: Wrap consumer handlers in structured error handling (try/catch or Go recover) to prevent unhandled message exceptions from terminating the consumer loop. Always use the `{ value: payload }` envelope.
-5. **Health Checks**: HTTP services expose `GET /health` returning structured health JSON with dependency statuses (Postgres, Redis, MongoDB). HTTP services also expose `GET /ready` for deployment readiness probes.
+2. **Financial Precision & Double-Entry Invariants (`Decimal.js`)**:
+   - All financial and commission computations in `commission-service` and `payout-service` MUST strictly use `Decimal.js` with explicit rounding modes (`Decimal.ROUND_HALF_UP`) and integers/precise decimal types to completely eliminate IEEE 754 floating-point drift.
+   - Payout ledger postings (`ledger_entries`) are strictly append-only and must be balanced zero-sum transactions (`SUM(debit) == SUM(credit)`). Current balances must always be dynamically evaluated (`SUM(credit) - SUM(debit)`).
+3. **Error Responses**: HTTP endpoints return `{ message: string }` JSON with appropriate HTTP status codes (`400`, `401`, `403`, `404`, `500`).
+4. **Auth Guards**: Apply `shouldBeUser`, `shouldBeAdmin`, `shouldBeSellerOrAdmin`, or `requireSellerStaffOrAdmin` to protected routes. Derive `userId` from the verified session claims, never from client request bodies.
+5. **Kafka Resiliency**: Wrap consumer handlers in structured error handling (try/catch or Go recover) to prevent unhandled message exceptions from terminating the consumer loop. Always use the `{ value: payload }` envelope.
+6. **Health Checks**: HTTP services expose `GET /health` returning structured health JSON with dependency statuses (Postgres, Redis, MongoDB). HTTP services also expose `GET /ready` for deployment readiness probes.
 
 ## Frontend Standards
 

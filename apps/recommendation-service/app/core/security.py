@@ -43,14 +43,26 @@ def setup_security(app: FastAPI) -> None:
     app.add_middleware(SecurityHeadersMiddleware)
 
 
+import time
+
+
+def safe_timing_compare(a: str, b: str) -> bool:
+    """Compares two strings in constant time using SHA-256 pre-hashing."""
+    if not a or not b:
+        return False
+    hash_a = hashlib.sha256(a.encode("utf-8")).digest()
+    hash_b = hashlib.sha256(b.encode("utf-8")).digest()
+    return hmac.compare_digest(hash_a, hash_b)
+
+
 def get_current_actor(request: Request) -> dict[str, Any] | None:
     """Resolves authenticated actor from internal secret or Clerk session."""
     settings = get_settings()
-    internal_secret = os.getenv("INTERNAL_SERVICE_SECRET")
+    internal_secret = os.getenv("INTERNAL_SERVICE_SECRET") or settings.INTERNAL_SERVICE_SECRET
     provided_secret = request.headers.get("x-internal-secret")
     is_internal = False
     if internal_secret and provided_secret:
-        if hmac.compare_digest(provided_secret, internal_secret):
+        if safe_timing_compare(provided_secret, internal_secret):
             is_internal = True
 
     if is_internal:
@@ -64,29 +76,41 @@ def get_current_actor(request: Request) -> dict[str, Any] | None:
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header[7:].strip()
         parts = token.split(".")
-        if len(parts) >= 2:
-            clerk_secret = os.getenv("CLERK_SECRET_KEY")
-            if clerk_secret and len(parts) == 3:
+        if len(parts) == 3:
+            # Clerk tokens are RS256; symmetric validation is permitted ONLY
+            # via explicit test fixture key CLERK_JWT_HMAC_KEY — never CLERK_SECRET_KEY.
+            hmac_key = os.getenv("CLERK_JWT_HMAC_KEY")
+            if hmac_key:
                 expected_sig = hmac.new(
-                    clerk_secret.encode("utf-8"),
+                    hmac_key.encode("utf-8"),
                     f"{parts[0]}.{parts[1]}".encode("utf-8"),
                     hashlib.sha256,
                 ).digest()
                 try:
                     padding = "=" * (-len(parts[2]) % 4)
                     provided_sig = base64.urlsafe_b64decode(parts[2] + padding)
-                    if not hmac.compare_digest(provided_sig, expected_sig):
+                    if not hmac.compare_digest(
+                        hashlib.sha256(provided_sig).digest(),
+                        hashlib.sha256(expected_sig).digest(),
+                    ):
                         return None
                 except Exception:
                     return None
-            elif settings.app_env == "production":
-                # In production, tokens cannot be accepted without cryptographic verification
+            else:
+                # Direct Bearer tokens without verified signing key cannot be trusted
                 return None
 
             try:
                 padding = "=" * (-len(parts[1]) % 4)
                 payload_json = base64.urlsafe_b64decode(parts[1] + padding).decode("utf-8")
                 claims = json.loads(payload_json)
+
+                now = time.time()
+                if "exp" in claims and isinstance(claims["exp"], (int, float)) and now > claims["exp"]:
+                    return None
+                if "nbf" in claims and isinstance(claims["nbf"], (int, float)) and now < claims["nbf"]:
+                    return None
+
                 role = (
                     claims.get("metadata", {}).get("role")
                     if isinstance(claims.get("metadata"), dict)
@@ -97,8 +121,9 @@ def get_current_actor(request: Request) -> dict[str, Any] | None:
             except Exception:
                 return None
 
-    # Dev/test bypass with x-user-id header permitted only in non-production environments
-    if settings.app_env != "production":
+    # Dev/test bypass with x-user-id header permitted only with explicit bypass flag in non-production
+    is_non_prod = settings.app_env != "production"
+    if is_non_prod and os.getenv("RECOMMENDATION_DEV_AUTH_BYPASS") == "true":
         x_user_id = request.headers.get("x-user-id")
         if x_user_id:
             role = request.headers.get("x-user-role", "user")
@@ -111,10 +136,19 @@ def require_admin_or_internal(request: Request) -> dict[str, Any]:
     """Dependency enforcing admin role or internal service secret."""
     settings = get_settings()
     actor = get_current_actor(request)
-    if actor and (actor.get("role") == "admin" or actor.get("isInternal")):
-        return actor
+    if actor:
+        # Machine-to-machine internal service call carries no user identity
+        if actor.get("isInternal") and actor.get("userId") == "internal":
+            return actor
+        # Proxied user request must prove admin role
+        if actor.get("role") == "admin":
+            return actor
 
-    if settings.app_env != "production" and not os.getenv("INTERNAL_SERVICE_SECRET"):
+    if (
+        settings.app_env != "production"
+        and os.getenv("RECOMMENDATION_DEV_AUTH_BYPASS") == "true"
+        and not os.getenv("INTERNAL_SERVICE_SECRET")
+    ):
         return {"userId": "dev_admin", "role": "admin", "isInternal": True}
 
     raise HTTPException(

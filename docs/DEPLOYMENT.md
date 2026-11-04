@@ -19,7 +19,7 @@ This runbook outlines standard operating procedures (SOP) for deploying, managin
 
 Before deploying application workloads, ensure stateful backing services are provisioned and accessible:
 
-- **PostgreSQL**: 16+ (multi-database setup for `product_db`, `inventory_db`, `catalog_db`, `shipping_db`, `user_db`, `media_db`).
+- **PostgreSQL**: 16+ (multi-database setup for `product_db`, `inventory_db`, `catalog_db`, `shipping_db`, `user_db`, `media_db`, `larekmart_vendor_db`, `larekmart_seller_db`, `larekmart_commission_db`, `larekmart_payout_db`).
 - **MongoDB**: 7.0+ ReplicaSet (`order_db`, `cart_db`).
 - **Apache Kafka / Redpanda**: 3.7+ (with standard topics configured: `order-events`, `inventory-events`, `payment-events`, `product-events`, etc.).
 - **Redis**: 7.2+ Cluster or Sentinel for caching, rate limiting, and session state.
@@ -87,9 +87,12 @@ pnpm --filter @repo/inventory-db db:deploy
 pnpm --filter @repo/catalog-db db:deploy
 pnpm --filter @repo/shipping-db db:deploy
 pnpm --filter @repo/user-db db:deploy
+pnpm --filter @repo/vendor-db db:deploy
 
-# Drizzle deployment for media-service
+# Drizzle deployments for microservices
 pnpm --filter media-service db:migrate
+pnpm --filter commission-service db:deploy
+pnpm --filter payout-service db:deploy
 ```
 
 ### 3.2 Manual / Emergency Migration Execution
@@ -109,13 +112,13 @@ Use the GitHub Actions manual workflow `.github/workflows/migrate.yml`:
 Staging deployments occur automatically upon push to the `staging` branch:
 
 1. **Code Validation**: Fast-fail gates run lint, format, typecheck, unit tests, Go race checks, Python pytest, and build validation.
-2. **Container Build**: Multi-architecture container builds for `base-node` and 18 microservices, pushed to GHCR with tags `staging` and `staging-${SHA_SHORT}`.
+2. **Container Build**: Multi-architecture container builds for `base-node` and 25 microservices, pushed to GHCR with tags `staging` and `staging-${SHA_SHORT}`.
 3. **Trivy Vulnerability Scan**: All images scanned for CRITICAL and HIGH CVEs.
 4. **Database Migration**: Safe Prisma and Drizzle deployments applied to staging database instances.
 5. **Kubernetes Rollout**: Kustomize overlay `infrastructure/kubernetes/overlays/staging` applied to namespace `larekmart-staging`.
 6. **Synthetic Traffic Verification**: Executes `scripts/verify-staging-traffic.sh https://staging.larekmart.com`. Tests:
    - Frontends (client, admin)
-   - API Gateway routing to all 14 backend domain services
+   - API Gateway routing to all 25 backend domain services
    - WebSocket upgrade endpoints
    - CORS and security headers
 7. **Rollback**: If any deployment or synthetic health check fails, GitHub Actions triggers `kubectl rollout undo` on all staging deployments automatically.

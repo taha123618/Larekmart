@@ -39,6 +39,34 @@ This document specifies the exact behavioral logic, state machine transitions, e
                        (stripe.products.create)                                      (Catalog Growth Metrics)
 ```
 
+### 2.3 Marketplace Commission & Settlement Payout Lifecycle State Machine
+
+```
+   [Order Placed] ──▶ [commission-service (Rule Version Snapshot)] ──▶ [commission.calculated emitted]
+                                                                              │
+                                                                              ▼
+   [Payment Confirmed] ──────────────────────────────────────────────▶ [commission.accrued emitted]
+                                                                              │
+                                                                              ▼
+                                                                     [payout-service]
+                                                              (Record Merchant Escrow Credit &
+                                                               Platform Commission in Ledger)
+                                                                              │
+                                                                              ▼
+   [Order Delivered] ────────────────────────────────────────────────▶ [Maturity Hold Timer Starts]
+                                                                              │
+                                                                              ▼ (Maturity Elapsed)
+                                                                      [Funds Marked AVAILABLE]
+                                                                              │
+                                                                              ▼ (Scheduled Batch)
+                                                                      [payout.scheduled emitted]
+                                                                      (ACH/Stripe Transfer Initiated)
+                                                                              │
+                                                                              ▼ (Provider Webhook)
+                                                                 [payout.completed / payout.failed]
+                                                                 (Ledger Reconciled & Balance Updated)
+```
+
 ---
 
 ## 3. Microservice Functional Specifications
@@ -130,3 +158,44 @@ This document specifies the exact behavioral logic, state machine transitions, e
 - **`GET /analytics/summary`**: Requires `shouldBeAdmin`. Returns live platform KPIs (`totalRevenue`, `totalOrders`, `totalSignups`, `totalProductsCreated`).
 - **`GET /analytics/daily-chart`**: Requires `shouldBeAdmin`. Returns daily series (`total_revenue`, `total_orders`).
 - **`GET /analytics/events`**: Requires `shouldBeAdmin`. Returns recent event audit log stream.
+
+---
+
+### 3.7 Marketplace Commission Service (`apps/commission-service`)
+
+#### FR-COM-01: Commission Plans & Rule Management
+
+- **`GET /api/v1/admin/commissions/plans`**: Requires `shouldBeAdmin`. Lists all marketplace commission plans with attached rules and active status.
+- **`POST /api/v1/admin/commissions/plans`**: Requires `shouldBeAdmin`. Validates and persists new plan with name, description, and status.
+- **`PATCH /api/v1/admin/commissions/rules/:ruleId`**: Requires `shouldBeAdmin`. Modifies rule percentage, fixed fee, or min/max caps. Automatically increments `rule_version` and saves an immutable snapshot in `commission_rule_versions`.
+
+#### FR-COM-02: Real-Time Quote & Order Calculation Engine
+
+- **`POST /api/v1/internal/commissions/quote`**: Requires `x-internal-secret`. Accepts line items with `productId`, `sellerId`, `categoryId`, and `unitPrice`. Resolves rules by precedence (`PRODUCT` > `SELLER` > `CATEGORY` > `GLOBAL`), evaluates Decimal.js calculations, and emits `commission.calculated`.
+- **`GET /api/v1/internal/commissions/orders/:orderId`**: Requires `x-internal-secret`. Fetches stored commission calculation breakdown and line items for a specific order.
+
+#### FR-COM-03: Commission Reporting & Adjustments
+
+- **`GET /api/v1/admin/commissions/reports`**: Requires `shouldBeAdmin`. Aggregates commission accrued, refunded, and net earnings across date ranges and seller IDs.
+
+---
+
+### 3.8 Seller Payout & Double-Entry Ledger Service (`apps/payout-service`)
+
+#### FR-PAY-01: Double-Entry Balanced Ledger Management
+
+- **`GET /api/v1/sellers/me/balance`**: Requires `shouldBeUser`. Computes live seller balance from `ledger_entries` (`SUM(credit) - SUM(debit)`) scoped to the verified caller's `sellerId`.
+- **`GET /api/v1/sellers/me/statements`**: Requires `shouldBeUser`. Generates paginated ledger statements and accounting transactions.
+
+#### FR-PAY-02: Automated Batch Scheduling & Disbursements
+
+- **`POST /api/v1/internal/payouts/schedule`**: Requires `x-internal-secret`. Aggregates mature balances exceeding minimum payout thresholds, posts balanced journal debit entries to the escrow account, and emits `payout.scheduled`.
+
+#### FR-PAY-03: Provider Webhook Reconciliation
+
+- **`POST /api/v1/internal/payouts/reconcile`**: Requires `x-internal-secret`. Receives bank ACH or Stripe Connect settlement confirmations, transitions payout state from `PROCESSING` to `PAID` or `FAILED`, and emits `payout.completed` or `payout.failed`.
+
+#### FR-PAY-04: Admin Payout Control & Retries
+
+- **`GET /api/v1/admin/payouts`**: Requires `shouldBeAdmin`. Returns paginated list of all system payouts with status filters.
+- **`POST /api/v1/admin/payouts/:payoutId/retry`**: Requires `shouldBeAdmin`. Resets failed payout to `PENDING` and re-queues disbursement.

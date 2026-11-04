@@ -32,20 +32,13 @@ already established in the repository.
 
 ## Backend
 
-- **Framework per service is fixed:** Express (product, auth), Fastify (order), Hono
-  (payment), headless worker (email). Don't add a second framework.
-- **Structure:** mirror the existing folders — `src/routes`, `src/controllers` (Express),
-  `src/middleware`, `src/utils`. Fastify defines routes as a plugin function; Hono mounts
-  route modules with `app.route(...)`.
-- **Route guards:** apply `shouldBeUser`/`shouldBeAdmin` per route or via a router prefix.
-  Mutating routes must be guarded (an existing unguarded `POST /products` is a known
-  gap — don't copy it).
-- **Persistence:** only through `@repo/product-db` (Prisma) or `@repo/order-db`
-  (Mongoose). No ad-hoc clients, no cross-service DB access.
-- **Events:** publish via `@repo/kafka` with the `{ value }` envelope; handlers read
-  `message.value` and are wrapped so a bad message doesn't kill the loop.
-- **Errors:** return `{ message }` JSON with the correct status; Express services have a
-  global error handler. Don't leak internals in production responses.
+- **Framework per service is fixed:** Fastify (order, catalog, search, user, review, wishlist, tax, pricing, seller, commission), NestJS on Fastify (vendor, payout), Hono (payment, inventory, media, promotion), Koa (shipping, return), Express (product, auth, cart), Go Chi (analytic, notification), FastAPI (recommendation), and headless worker (email).
+- **Structure:** mirror the existing folders — `src/routes`, `src/controllers`, `src/services`, `src/middleware`, `src/utils`. Fastify defines routes as a plugin function; Hono mounts route modules with `app.route(...)`.
+- **Route guards:** apply `shouldBeUser`/`shouldBeAdmin`/`shouldBeSellerOrAdmin` per route or via a router prefix. Mutating routes must be guarded.
+- **Persistence:** through designated database packages (`@repo/product-db`, `@repo/order-db`, `@repo/cart-db`, `@repo/inventory-db`, `@repo/vendor-db`, `@repo/shipping-db`, `@repo/user-db`) or service-level Drizzle ORM schemas. No ad-hoc clients, no cross-service direct DB access.
+- **Financial Precision:** All monetary and commission calculations strictly use `Decimal.js` (`ROUND_HALF_UP`), and double-entry ledger postings strictly enforce zero-sum balance invariants (`SUM(debit) == SUM(credit)`).
+- **Events:** publish via `@repo/kafka` with the `{ value }` envelope; handlers read `message.value` and are wrapped so a bad message doesn't kill the loop.
+- **Errors:** return `{ message }` JSON with the correct status. Don't leak internals in production responses.
 - **Health:** every HTTP service exposes `GET /health` returning `{ status, uptime, timestamp }`.
 
 ## Frontend

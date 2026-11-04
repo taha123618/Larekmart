@@ -57,6 +57,22 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
 2. Use Mongo Express UI at `http://localhost:8081` (`mongoexpressuser` / `mongoexpresspass`) to visually inspect collections.
 3. Check `connectOrderDB()` or `connectCartDB()` service logs for connection or authentication errors.
 
+### PostgreSQL (commission-service & payout-service)
+
+1. Verify PostgreSQL is listening on port `5432`:
+   `DATABASE_URL="postgresql://postgres:postgres@localhost:5432/larekmart_commission_db"` (commission-service)
+   `DATABASE_URL="postgresql://postgres:postgres@localhost:5432/larekmart_payout_db"` (payout-service)
+2. Verify Drizzle migrations are applied:
+   ```bash
+   pnpm --filter commission-service db:migrate
+   pnpm --filter payout-service db:migrate
+   ```
+3. Verify test connectivity:
+   ```bash
+   pnpm --filter commission-service test
+   pnpm --filter payout-service test
+   ```
+
 ### MySQL (tax-service & return-service)
 
 1. Verify MySQL is running on port `3306`:
@@ -219,3 +235,32 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
    - When a customer mutates state, API Gateway automatically registers a 500ms lease in Redis (`markReadYourWrites`) and sets `x-force-primary: true`.
    - Downstream `catalog-service` inspects `isReadYourWritesActive` and routes queries to `prisma` (primary master writer), bypassing `readPrisma` and stale Redis read caches.
    - Verify response header: Requests served via primary write-plane include `X-Consistency-Plane: primary-master`.
+
+## 13. Commission Engine & Balanced Double-Entry Ledger Diagnostics
+
+### Issue: Double-Entry Ledger Imbalance in `payout-service`
+
+1. **Verify Transaction Zero-Sum Invariant**:
+   - Every journal transaction must satisfy: `SUM(debit_amount) == SUM(credit_amount)`.
+   - Run verification query:
+     ```sql
+     SELECT transaction_id, SUM(debit) AS total_debit, SUM(credit) AS total_credit
+     FROM ledger_entries
+     GROUP BY transaction_id
+     HAVING SUM(debit) != SUM(credit);
+     ```
+   - If unbalanced transactions exist, inspect the posting service payload or settlement batch generator. Never alter posted entries; issue an offsetting journal adjustment.
+
+### Issue: Commission Rule Resolution Drift in `commission-service`
+
+1. **Check Rule Precedence Hierarchy**:
+   - Precedence order: `PRODUCT` > `SELLER` > `CATEGORY` > `GLOBAL`.
+   - Verify `effectiveFrom` and `effectiveTo` timestamps on the active rule.
+   - Verify that quotes use the pinned `commission_rule_versions` snapshot rather than floating rule state.
+
+### Issue: Payout Maturity Hold Not Clearing
+
+1. **Check Delivery Maturity Timestamp**:
+   - Escrow funds are held in `ESCROW_HOLD` until order delivery (`order.delivered`) plus the escrow holding window (e.g. 7 or 14 days).
+   - Verify `delivered_at` timestamp in order event and confirm `scheduled_release_at <= NOW()`.
+   - Verify the payout batch sweeper acquired its distributed lock via Redis before evaluating mature settlements.

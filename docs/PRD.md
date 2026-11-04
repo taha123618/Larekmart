@@ -23,6 +23,12 @@
 │ 1. Clerk Admin In│────▶│ 2. KPI Dashboard │────▶│ 3. Catalog Manage│────▶│ 4. Track Orders  │
 │  Role Verification     │  Live Revenue/Ord│     │  Add/Edit/Upload │     │  Live Audit Logs │
 └──────────────────┘     └──────────────────┘     └──────────────────┘     └──────────────────┘
+
+                                 Merchant / Seller Journey
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│ 1. KYB Onboarding│────▶│ 2. Setup Store   │────▶│ 3. View Earnings │────▶│ 4. Receive Payout│
+│  Vendor Approval │     │  List Products   │     │  Escrow Maturity │     │  Bank/Stripe ACH │
+└──────────────────┘     └──────────────────┘     └──────────────────┘     └──────────────────┘
 ```
 
 ---
@@ -78,6 +84,47 @@
 #### PRD-ADM-04: Order & Transaction History
 
 - **Capabilities**: Searchable order ledger with customer email, line items, status badge (`success | failed`), and timestamps.
+
+---
+
+### 3.3 Marketplace Commission Management (`apps/commission-service`)
+
+#### PRD-COM-01: Tiered Commission Plans & Rules
+
+- **Description**: Administrators can configure flexible marketplace commission plans with tiered percentage and fixed fees, minimum floor caps, and maximum ceiling caps.
+- **Hierarchical Precedence**: Fee resolution strictly honors precedence: `PRODUCT` > `SELLER` > `CATEGORY` > `GLOBAL`.
+- **High-Precision Calculations**: Computations execute with `Decimal.js` to eliminate binary floating-point drift.
+
+#### PRD-COM-02: Rule Versioning & Snapshot Immutability
+
+- **Description**: Every modification to a commission rule creates an immutable `commission_rule_versions` record.
+- **Audit Trail**: Calculation snapshots pin the exact rule version utilized during order checkout, preventing subsequent rule adjustments from retroactively modifying historic settlements.
+
+#### PRD-COM-03: Real-Time Order Settlement Quotes
+
+- **Description**: Exposes real-time quote calculation (`POST /api/v1/internal/commissions/quote`) generating comprehensive line-item fee breakdowns during cart estimation and checkout confirmation.
+
+---
+
+### 3.4 Seller Payout & Double-Entry Ledger (`apps/payout-service`)
+
+#### PRD-PAY-01: Balanced Double-Entry Financial Ledger
+
+- **Description**: Authoritative financial journal (`ledger_entries`) recording all seller balance credits, commission deductions, dispute holds, and disbursements.
+- **Zero-Sum Transaction Invariant**: Every transaction strictly satisfies `SUM(debit) == SUM(credit)`. Available balances are dynamically queried (`SUM(credit) - SUM(debit)`).
+
+#### PRD-PAY-02: Escrow Maturity & Holding Periods
+
+- **Description**: Funds from delivered orders are placed on escrow hold until return windows elapse, after which funds transition automatically to `AVAILABLE_PAYOUT`.
+- **Dispute Reserve Holds**: Provides administrative ability to freeze disputed balances to safeguard marketplace integrity.
+
+#### PRD-PAY-03: Settlement Batches & Disbursement Scheduling
+
+- **Description**: Scheduled batch execution (`POST /api/v1/internal/payouts/schedule`) aggregating mature balances and dispatching disbursements to seller bank accounts or Stripe Connect accounts.
+
+#### PRD-PAY-04: Provider Reconciliation & Financial Statements
+
+- **Description**: Ingests external bank/Stripe webhook events to confirm or fail transfers, generating downloadable monthly seller reconciliation statements.
 
 ---
 

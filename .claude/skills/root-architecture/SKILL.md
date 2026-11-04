@@ -14,7 +14,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   `client` (storefront, :3002) and `admin` (dashboard, :3003).
 - **One API Gateway**:
   - `api-gateway` (:8080 / :8090) — Fastify 5 single public entrypoint reverse proxy, request correlation, Clerk session authentication, Redis rate limiting, circuit breaker, home aggregation (`/api/v1/home`), client header stripping, and internal secret injection.
-- **Twenty-two HTTP backend services & one headless worker** own business logic and each owns its data:
+- **Twenty-four HTTP backend services & one headless worker (25 backend microservices in total)** own business logic and each owns its data:
   - `product-service` (:8000) — catalog, PostgreSQL via Prisma.
   - `order-service` (:8001) — orders, MongoDB via Mongoose.
   - `payment-service` (:8002) — Stripe; stateless.

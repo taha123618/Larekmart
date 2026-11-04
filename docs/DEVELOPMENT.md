@@ -91,15 +91,23 @@ pnpm dev
 | user-service           | `INTERNAL_SERVICE_SECRET`, `ALLOWED_ORIGINS`, `REDIS_URL`, `KAFKA_BROKERS`                                                                                                                                            | optional    | internal auth, CORS, cache, and events                                                                                           |
 | recommendation-service | `DATABASE_URL` (pgvector), `REDIS_URL`, `KAFKA_BOOTSTRAP_SERVERS`                                                                                                                                                     | yes         | recommendation API, cache, and event stream                                                                                      |
 | recommendation-service | `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `RECOMMENDATION_CACHE_TTL`, `DEFAULT_RECOMMENDATION_LIMIT`, `CORS_ORIGINS`                                                                                              | optional    | Celery worker broker/results and tuning                                                                                          |
+| promotion-service      | `PORT`, `DATABASE_URL`, `REDIS_URL`, `REDIS_KEY_PREFIX`, `KAFKA_BROKERS`, `KAFKA_GROUP_ID`                                                                                                                            | yes         | promotions engine, campaigns, coupons, and checkout reservations                                                                 |
+| tax-service            | `PORT`, `DATABASE_URL`, `REDIS_URL`, `REDIS_KEY_PREFIX`, `KAFKA_BROKERS`, `KAFKA_GROUP_ID`                                                                                                                            | yes         | jurisdiction-aware tax calculations, rules, quotes, and audit history                                                            |
+| return-service         | `PORT`, `DATABASE_URL`, `REDIS_URL`, `REDIS_KEY_PREFIX`, `KAFKA_BROKERS`, `KAFKA_GROUP_ID`, `CLERK_JWT_KEY`                                                                                                           | yes         | return requests, inspection items, refund SAGA, and tracking                                                                     |
+| pricing-service        | `PORT`, `DATABASE_URL`, `REDIS_URL`, `REDIS_KEY_PREFIX`, `KAFKA_BROKERS`, `KAFKA_GROUP_ID`                                                                                                                            | yes         | authoritative merchandise pricing, B2B price lists, tiered volume rules, quotes                                                  |
+| vendor-service         | `PORT`, `DATABASE_URL`, `REDIS_URL`, `REDIS_KEY_PREFIX`, `KAFKA_BROKERS`, `KAFKA_GROUP_ID`                                                                                                                            | yes         | merchant onboarding, legal entities, KYB documents & verification                                                                |
+| seller-service         | `PORT`, `DATABASE_URL`, `REDIS_URL`, `REDIS_KEY_PREFIX`, `KAFKA_BROKERS`, `KAFKA_GROUP_ID`                                                                                                                            | yes         | marketplace storefronts, seller staff, permissions, policies, performance                                                        |
+| commission-service     | `PORT`, `DATABASE_URL`, `REDIS_URL`, `REDIS_KEY_PREFIX`, `KAFKA_BROKERS`, `KAFKA_GROUP_ID`, `INTERNAL_SERVICE_SECRET`                                                                                                 | yes         | marketplace commission plans, versioned rules, order item fee calculations                                                       |
+| payout-service         | `PORT`, `DATABASE_URL`, `REDIS_URL`, `REDIS_KEY_PREFIX`, `KAFKA_BROKERS`, `KAFKA_GROUP_ID`, `INTERNAL_SERVICE_SECRET`                                                                                                 | yes         | seller payouts, double-entry ledger, settlement batches, provider reconciliation                                                 |
 
 Default local connection strings used by the examples (match the databases the
 Postgres container provisions via `POSTGRES_MULTIPLE_DATABASES`):
 
 - PostgreSQL: one database per owning service on `localhost:5432` — `product_db`,
-  `inventory_db` (`larekmart_inventory_db` in inventory-service's example), `catalog_db`,
-  `shipping_db` (`larekmart_shipping_db` in shipping-service's example), `analytics_db`,
-  `larekmart_notification_db`, `recommendation_db`, `user_db`, and `media_db`. Each
-  service's `DATABASE_URL` lives in its own `apps/<service>/.env`.
+  `inventory_db` (`larekmart_inventory_db`), `catalog_db`, `shipping_db` (`larekmart_shipping_db`),
+  `analytics_db`, `larekmart_notification_db`, `recommendation_db`, `user_db`, `media_db`,
+  `pricing_db`, `vendor_db`, `seller_db`, `larekmart_commission_db`, and `larekmart_payout_db`.
+  Each service's `DATABASE_URL` lives in its own `apps/<service>/.env`.
 - MongoDB: `mongodb://root:example@localhost:27017/order_db?authSource=admin` (order-service) and
   `mongodb://root:example@localhost:27017/ecommerce?authSource=admin` (cart-service)
 - Kafka: `localhost:9094,localhost:9095,localhost:9096` (hardcoded in `@repo/kafka`)
@@ -127,6 +135,15 @@ Postgres container provisions via `POSTGRES_MULTIPLE_DATABASES`):
 | media-service (Hono)             | 8013               |
 | review-service (Fastify)         | 8014               |
 | wishlist-service (Fastify)       | 8015               |
+| promotion-service (Hono)         | 8016               |
+| tax-service (Fastify)            | 8017               |
+| return-service (Koa)             | 8018               |
+| pricing-service (Fastify)        | 8019               |
+| vendor-service (NestJS)          | 8020               |
+| seller-service (Fastify)         | 8021               |
+| commission-service (Fastify)     | 8022               |
+| payout-service (NestJS)          | 8023               |
+| API Gateway (Fastify)            | 8080 / 8090        |
 | Kafka UI                         | 8080               |
 | Mongo Express                    | 8081               |
 | Kafka brokers                    | 9094 / 9095 / 9096 |

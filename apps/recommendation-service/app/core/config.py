@@ -1,6 +1,6 @@
 from functools import lru_cache
 from typing import Literal
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -79,12 +79,31 @@ class Settings(BaseSettings):
     TRENDING_HALF_LIFE_HOURS: float = 12.0
 
     # Security
+    INTERNAL_SERVICE_SECRET: str = "dev-shared-internal-secret-larekmart"
     ALLOWED_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:3002",
         "http://localhost:3003",
     ]
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> "Settings":
+        if self.APP_ENV == "production":
+            secret = (self.INTERNAL_SERVICE_SECRET or "").strip()
+            lower = secret.lower()
+            if (
+                len(secret) < 16
+                or lower == "dev-shared-internal-secret-larekmart"
+                or "placeholder" in lower
+                or "change-me" in lower
+                or "example" in lower
+                or "dummy" in lower
+            ):
+                raise ValueError(
+                    "[recommendation-service] Production requires a high-entropy INTERNAL_SERVICE_SECRET (min 16 chars). Refusing to boot with placeholder."
+                )
+        return self
 
     @property
     def app_name(self) -> str:

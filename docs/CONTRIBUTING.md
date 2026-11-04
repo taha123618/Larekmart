@@ -31,11 +31,9 @@ pnpm --filter product-service dev
 
 Before opening a pull request or submitting code changes:
 
-- [ ] **Type Check**: `pnpm check-types` passes across all 31 workspaces.
+- [ ] **Type Check**: `pnpm check-types` passes across all workspaces (43 packages).
 - [ ] **Tests**: `pnpm test` passes for every workspace with a test suite that your
-      change touches (8 suites exist: `@repo/types`, `user-service`, `order-service`,
-      `cart-service`, `shipping-service`, `media-service`, `notification-service`,
-      `recommendation-service`).
+      change touches (test suites exist across all microservices and packages, including `commission-service`, `payout-service`, `@repo/types`, etc.).
 - [ ] **Linting**: `pnpm lint` passes for `apps/admin` and `apps/client`.
 - [ ] **Formatting**: `pnpm format` has been executed.
 - [ ] **No Committed Secrets**: No `.env` files or API keys staged.

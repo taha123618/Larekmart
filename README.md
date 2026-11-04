@@ -270,7 +270,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 
 ### ⚡ Daraz-Scale High-Concurrency Architecture & Resilience Engineering
 
-To sustain **tens of thousands of concurrent users** and prevent cascading system failures during 11.11 shopping festivals and high-velocity flash sales (5,000+ req/sec on hot items), Larekmart incorporates fourteen enterprise distributed systems patterns:
+To sustain **tens of thousands of concurrent users** and prevent cascading system failures during 11.11 shopping festivals and high-velocity flash sales (5,000+ req/sec on hot items), Larekmart incorporates fifteen enterprise distributed systems patterns:
 
 1. **Distributed Multi-DB Checkout Saga (Dual-ACK & Automated Refunds)**:
    - When a payment completes, three physically distinct database engines must achieve consistency without 2PC locking: `order-db` (MongoDB), `inventory-db` (PostgreSQL), and `tax_db` (MySQL).
@@ -337,6 +337,11 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - Upgraded `vendor-service` to **NestJS 11 on Fastify 5**, eliminating four high-severity middleware bypass advisories (`GHSA-r4wm-x892-vjmx`, `GHSA-wf42-42fg-fg84`, `GHSA-6v32-fjc9-9qf6`, `GHSA-9c5c-9qcx-q35q`).
     - Upgraded Hono services (`inventory-service`, `media-service`, `payment-service`, `promotion-service`) to `@hono/node-server: "^2.1.5"` to remediate request smuggling (`GHSA-rmxm-3fg6-px4f`).
     - Upgraded contract schemas to Zod `^4.6.7` and pinned patched overrides for `fast-uri: "^4.2.3"`, `postcss: "^8.5.32"`, `body-parser: "^2.4.0"`, and `@fastify/middie: "^9.3.6"`.
+15. **Marketplace Commission Engine & Append-Only Double-Entry Ledger (`commission-service`, `payout-service`)**:
+    - **Hierarchical Precedence & Version Auditing**: `commission-service` evaluates marketplace fees through a strict 4-tier precedence hierarchy (`Product -> Seller -> Category -> Global Platform Fallback`). Fees support fixed, percentage, and hybrid tiers with boundary clamping (`minFee <= fee <= maxFee <= itemPrice`). Rules are immutable and versioned (`commission_rule_versions`) to guarantee historical audit integrity.
+    - **Balanced Double-Entry Financial Journal**: `payout-service` eliminates mutable balance anomalies by deriving seller balances strictly from append-only ledger entries (`SUM(credits) - SUM(debits)`). Every posted settlement transaction satisfies the fundamental zero-sum invariant (`SUM(debit) == SUM(credit)`) within serializable PostgreSQL transactions.
+    - **Settlement Batches & Maturity Lifecycles**: Supports configurable settlement schedules (daily, weekly, bi-weekly, monthly) with dispute/fraud holds, automated maturity unlocks upon order delivery (`order.delivered`), reserve deductions, and automated compensation reversals (`commission.adjusted`, `commission.reversed`) upon customer returns.
+    - **Zero Floating-Point Drift**: All financial arithmetic in both services uses `Decimal.js` fixed-point decimal arithmetic, preventing binary IEEE-754 floating-point inaccuracies across multi-currency conversions and sub-cent commission splits.
 
 For in-depth architectural specifications and diagrams, see [`docs/plans/README.md`](docs/plans/README.md).
 

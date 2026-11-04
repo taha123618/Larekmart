@@ -53,9 +53,7 @@ export const PayoutAdjustmentActionEnum = z.enum([
   "MANUAL_FEE",
   "MANUAL_CREDIT",
 ]);
-export type PayoutAdjustmentAction = z.infer<
-  typeof PayoutAdjustmentActionEnum
->;
+export type PayoutAdjustmentAction = z.infer<typeof PayoutAdjustmentActionEnum>;
 
 // ============================================================================
 // Payout Account Schemas
@@ -201,7 +199,9 @@ export const PayoutReconcileRequestSchema = z.object({
     }),
   ),
 });
-export type PayoutReconcileRequest = z.infer<typeof PayoutReconcileRequestSchema>;
+export type PayoutReconcileRequest = z.infer<
+  typeof PayoutReconcileRequestSchema
+>;
 
 // ============================================================================
 // Kafka Topics & Event Payloads

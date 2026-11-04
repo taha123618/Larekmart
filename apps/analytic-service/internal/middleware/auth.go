@@ -2,13 +2,19 @@ package middleware
 
 import (
 	"context"
+	"crypto"
 	"crypto/hmac"
+	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/subtle"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 type contextKey string
@@ -17,6 +23,17 @@ const (
 	UserIDKey   contextKey = "userId"
 	UserRoleKey contextKey = "userRole"
 )
+
+// SafeTimingCompare compares two strings in constant time using SHA-256 pre-hashing
+// to eliminate timing and secret-length side-channels.
+func SafeTimingCompare(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	hashA := sha256.Sum256([]byte(a))
+	hashB := sha256.Sum256([]byte(b))
+	return subtle.ConstantTimeCompare(hashA[:], hashB[:]) == 1
+}
 
 // RequireAdmin verifies that the caller has administrative privileges.
 // Supports both API Gateway trusted header injection (with constant-time secret check)
@@ -36,11 +53,22 @@ func RequireAdmin(secret ...string) func(http.Handler) http.Handler {
 
 			// Path A: Authenticated by API Gateway with validated transport secret
 			if providedSecret != "" {
-				if subtle.ConstantTimeCompare([]byte(providedSecret), []byte(internalSecret)) == 1 {
+				if SafeTimingCompare(providedSecret, internalSecret) {
 					role := strings.ToLower(r.Header.Get("X-User-Role"))
+					uid := r.Header.Get("X-User-ID")
+
+					// Machine-to-machine internal service call: no user identity asserted
+					if role == "" && uid == "" {
+						ctx := context.WithValue(r.Context(), UserRoleKey, "admin")
+						ctx = context.WithValue(ctx, UserIDKey, "internal-service")
+						next.ServeHTTP(w, r.WithContext(ctx))
+						return
+					}
+
+					// Proxied user request: strictly require admin role
 					if role == "admin" || role == "super_admin" {
 						ctx := context.WithValue(r.Context(), UserRoleKey, role)
-						if uid := r.Header.Get("X-User-ID"); uid != "" {
+						if uid != "" {
 							ctx = context.WithValue(ctx, UserIDKey, uid)
 						}
 						next.ServeHTTP(w, r.WithContext(ctx))
@@ -69,8 +97,9 @@ func RequireAdmin(secret ...string) func(http.Handler) http.Handler {
 				}
 			}
 
-			// Path C: Non-production development bypass (if explicit dev header provided)
-			if os.Getenv("APP_ENV") != "production" && os.Getenv("NODE_ENV") != "production" {
+			// Path C: Non-production development bypass (requires explicit ANALYTIC_DEV_AUTH_BYPASS=true)
+			isNonProd := os.Getenv("APP_ENV") != "production" && os.Getenv("NODE_ENV") != "production"
+			if isNonProd && os.Getenv("ANALYTIC_DEV_AUTH_BYPASS") == "true" {
 				if r.Header.Get("X-Dev-Role") == "admin" {
 					ctx := context.WithValue(r.Context(), UserRoleKey, "admin")
 					next.ServeHTTP(w, r.WithContext(ctx))
@@ -91,7 +120,7 @@ func RequireUser() func(http.Handler) http.Handler {
 			providedSecret := r.Header.Get("X-Internal-Secret")
 
 			if internalSecret != "" && providedSecret != "" {
-				if subtle.ConstantTimeCompare([]byte(providedSecret), []byte(internalSecret)) == 1 {
+				if SafeTimingCompare(providedSecret, internalSecret) {
 					uid := r.Header.Get("X-User-ID")
 					if uid != "" {
 						ctx := context.WithValue(r.Context(), UserIDKey, uid)
@@ -111,6 +140,16 @@ func RequireUser() func(http.Handler) http.Handler {
 				}
 			}
 
+			// Non-production development bypass requires explicit flag
+			isNonProd := os.Getenv("APP_ENV") != "production" && os.Getenv("NODE_ENV") != "production"
+			if isNonProd && os.Getenv("ANALYTIC_DEV_AUTH_BYPASS") == "true" {
+				if uid := r.Header.Get("X-User-ID"); uid != "" {
+					ctx := context.WithValue(r.Context(), UserIDKey, uid)
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+			}
+
 			writeJSONError(w, http.StatusUnauthorized, "You are not logged in!")
 		})
 	}
@@ -123,23 +162,118 @@ type tokenClaims struct {
 
 func verifyClerkToken(token string) (*tokenClaims, bool) {
 	parts := strings.Split(token, ".")
-	if len(parts) < 2 {
+	if len(parts) != 3 {
 		return nil, false
 	}
 
-	secretKey := os.Getenv("CLERK_SECRET_KEY")
-	if secretKey != "" && len(parts) == 3 {
-		mac := hmac.New(sha256.New, []byte(secretKey))
-		mac.Write([]byte(parts[0] + "." + parts[1]))
-		expectedSig := mac.Sum(nil)
-		// Basic constant-time sanity validation if signed with symmetric secret
-		_ = expectedSig
+	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return nil, false
 	}
 
-	// In real token parsing, decode payload JSON
+	var header struct {
+		Alg string `json:"alg"`
+	}
+	if err := json.Unmarshal(headerBytes, &header); err != nil {
+		return nil, false
+	}
+
+	sigBytes, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return nil, false
+	}
+
+	signedData := parts[0] + "." + parts[1]
+
+	verified := false
+
+	switch header.Alg {
+	case "RS256":
+		jwtKey := os.Getenv("CLERK_JWT_KEY")
+		if jwtKey == "" {
+			return nil, false
+		}
+		block, _ := pem.Decode([]byte(jwtKey))
+		if block == nil {
+			return nil, false
+		}
+		pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+		if err != nil {
+			return nil, false
+		}
+		rsaPub, ok := pubKey.(*rsa.PublicKey)
+		if !ok {
+			return nil, false
+		}
+		hashed := sha256.Sum256([]byte(signedData))
+		err = rsa.VerifyPKCS1v15(rsaPub, crypto.SHA256, hashed[:], sigBytes)
+		if err == nil {
+			verified = true
+		}
+
+	case "HS256":
+		// Only permitted via explicit test fixture key — never CLERK_SECRET_KEY
+		hmacKey := os.Getenv("CLERK_JWT_HMAC_KEY")
+		if hmacKey == "" {
+			return nil, false
+		}
+		mac := hmac.New(sha256.New, []byte(hmacKey))
+		mac.Write([]byte(signedData))
+		expectedSig := mac.Sum(nil)
+		if subtle.ConstantTimeCompare(sigBytes, expectedSig) == 1 {
+			verified = true
+		}
+
+	default:
+		return nil, false
+	}
+
+	if !verified {
+		return nil, false
+	}
+
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, false
+	}
+
+	var payload struct {
+		Sub      string `json:"sub"`
+		UserID   string `json:"user_id"`
+		Exp      int64  `json:"exp"`
+		Nbf      int64  `json:"nbf"`
+		Role     string `json:"role"`
+		Metadata struct {
+			Role string `json:"role"`
+		} `json:"metadata"`
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return nil, false
+	}
+
+	now := time.Now().Unix()
+	if payload.Exp > 0 && now > payload.Exp {
+		return nil, false
+	}
+	if payload.Nbf > 0 && now < payload.Nbf {
+		return nil, false
+	}
+
+	uid := payload.Sub
+	if uid == "" {
+		uid = payload.UserID
+	}
+	role := payload.Metadata.Role
+	if role == "" {
+		role = payload.Role
+	}
+	if role == "" {
+		role = "user"
+	}
+
 	return &tokenClaims{
-		UserID: "user_clerk_direct",
-		Role:   "admin",
+		UserID: uid,
+		Role:   role,
 	}, true
 }
 

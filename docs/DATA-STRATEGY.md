@@ -13,14 +13,16 @@
 
 ## 2. Bounded Contexts & Data Ownership
 
-| Bounded Context        | Owning Microservice     | Storage Engine   | Access Layer                | Data Lifecycle                                                  |
-| :--------------------- | :---------------------- | :--------------- | :-------------------------- | :-------------------------------------------------------------- |
-| **Catalog & Products** | `apps/product-service`  | PostgreSQL       | `@repo/product-db` (Prisma) | CRUD with transactional ACID guarantees                         |
-| **Orders & Sales**     | `apps/order-service`    | MongoDB          | `@repo/order-db` (Mongoose) | Append-mostly with high write throughput                        |
-| **Checkout & Billing** | `apps/payment-service`  | Stripe Vault     | `stripe` Node SDK           | Tokenized sessions with PCI-DSS compliance                      |
-| **User Identity**      | `apps/auth-service`     | Clerk Identity   | `@clerk/express` SDK        | Managed user store with JWT session claims                      |
-| **Transactional Mail** | `apps/email-service`    | Ephemeral        | Nodemailer / OAuth2         | In-memory message consumption                                   |
-| **Platform Analytics** | `apps/analytic-service` | PostgreSQL / Mem | `pgxpool` (`jackc/pgx/v5`)  | Partitioned binary COPY audit logs + atomic in-memory KPI store |
+| Bounded Context                 | Owning Microservice       | Storage Engine                         | Access Layer                       | Data Lifecycle                                                  |
+| :------------------------------ | :------------------------ | :------------------------------------- | :--------------------------------- | :-------------------------------------------------------------- |
+| **Catalog & Products**          | `apps/product-service`    | PostgreSQL                             | `@repo/product-db` (Prisma)        | CRUD with transactional ACID guarantees                         |
+| **Orders & Sales**              | `apps/order-service`      | MongoDB                                | `@repo/order-db` (Mongoose)        | Append-mostly with high write throughput                        |
+| **Checkout & Billing**          | `apps/payment-service`    | Stripe Vault                           | `stripe` Node SDK                  | Tokenized sessions with PCI-DSS compliance                      |
+| **User Identity**               | `apps/auth-service`       | Clerk Identity                         | `@clerk/express` SDK               | Managed user store with JWT session claims                      |
+| **Transactional Mail**          | `apps/email-service`      | Ephemeral                              | Nodemailer / OAuth2                | In-memory message consumption                                   |
+| **Platform Analytics**          | `apps/analytic-service`   | PostgreSQL / Mem                       | `pgxpool` (`jackc/pgx/v5`)         | Partitioned binary COPY audit logs + atomic in-memory KPI store |
+| **Marketplace Commissions**     | `apps/commission-service` | PostgreSQL (`larekmart_commission_db`) | Drizzle ORM (`drizzle-orm` + `pg`) | Dynamic commission plans, rule version snapshots, and quotes    |
+| **Seller Settlements & Ledger** | `apps/payout-service`     | PostgreSQL (`larekmart_payout_db`)     | Drizzle ORM (`drizzle-orm` + `pg`) | Append-only balanced double-entry ledger & disbursement batches |
 
 ---
 
@@ -140,3 +142,25 @@ Background maintenance routines (outbox sweepers, saga timeout workers, cart rea
 - **Leader Lease Heartbeats**: Active leader renews its lease every 3,000ms (10,000ms TTL).
 - **Standby Follower Replicas**: Standby containers remain in hot standby mode with zero database cursor overhead and zero duplicate Kafka dispatches.
 - **Automated Failover**: Standby replicas detect vacancy within 2,000ms upon leader termination and promote themselves seamlessly.
+
+---
+
+## 8. Financial Precision, Double-Entry Invariants & Audit Trail Strategy
+
+### 1. Zero Floating-Point Rounding Drift (`Decimal.js`)
+
+All monetary representations, fee percentages, and ledger balance computations strictly prohibit native IEEE 754 floating-point operations. Calculations are performed using `Decimal.js` with deterministic rounding (`ROUND_HALF_UP`) and persisted to PostgreSQL as high-precision `NUMERIC(14, 2)` or `NUMERIC(7, 4)` columns.
+
+### 2. Append-Only Double-Entry General Ledger
+
+In `payout-service`, seller balances are never maintained as a single mutable scalar column. Instead, every financial event generates balanced pairs of immutable `ledger_entries`:
+
+$$\sum \text{Debits} = \sum \text{Credits} \quad (\Delta = 0)$$
+
+The authoritative available balance is computed at query time:
+
+$$\text{Available Balance} = \sum \text{Credits} - \sum \text{Debits}$$
+
+### 3. Immutable Commission Rule Version Snapshots
+
+In `commission-service`, when commission rules are modified, existing versions are never updated in-place. An immutable entry in `commission_rule_versions` preserves historical parameters (`rate_percentage`, `fixed_fee`, `min_fee`, `max_fee`), and order line-item calculation quotes pin the specific version snapshot. This guarantees retroactive adjustments or audit disputes never corrupt historical settlements.

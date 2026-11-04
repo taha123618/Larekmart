@@ -62,7 +62,7 @@ This skill defines the mandatory 8-stage vertical execution playbook for any fea
 
 - Add standalone tsx test suites under `apps/<service>/tests/` or `packages/<pkg>/tests/`.
 - Verify happy path, validation rejections, duplicate request handling, and error scenarios.
-- Run `pnpm test` (verify all 26+ suites pass).
+- Run `pnpm test` (verify all 28+ suites pass).
 
 ### Stage 8: Security & Zero-Trust Hardening
 
