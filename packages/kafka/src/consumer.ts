@@ -38,6 +38,23 @@ export interface ConsumerRetryOptions {
   dlqTopicSuffix?: string;
 }
 
+export interface KafkaBatchItem<T = unknown> {
+  topic: string;
+  partition: number;
+  offset: string;
+  key?: Buffer | string | null;
+  value: T;
+  rawPayload: string;
+  timestamp: string;
+  headers: Record<string, string | undefined>;
+}
+
+export interface KafkaBatchConsumerConfig<T = unknown> {
+  topicName: string;
+  batchSize?: number;
+  topicHandler: (batch: KafkaBatchItem<T>[]) => Promise<void>;
+}
+
 /**
  * Identifies deterministic poison pills (e.g. malformed JSON or schema validation failures)
  * that should bypass retry loops and route immediately to the DLQ.
@@ -302,6 +319,178 @@ export const createConsumer = (
     }
   };
 
+  const subscribeBatch = async (topics: KafkaBatchConsumerConfig[]) => {
+    try {
+      await retry(
+        () =>
+          consumer.subscribe({
+            topics: topics.map((topic) => topic.topicName),
+            fromBeginning: true,
+          }),
+        "subscribeBatch",
+      );
+
+      await consumer.run({
+        eachBatchAutoResolve: false,
+        eachBatch: async ({
+          batch,
+          resolveOffset,
+          heartbeat,
+          commitOffsetsIfNecessary,
+          isRunning,
+          isStale,
+        }) => {
+          const topicConfig = topics.find((t) => t.topicName === batch.topic);
+          if (!topicConfig) return;
+
+          const batchChunkLimit = topicConfig.batchSize || 100;
+          const validItems: KafkaBatchItem[] = [];
+
+          for (const message of batch.messages) {
+            if (!isRunning() || isStale()) break;
+
+            const rawValue = message.value?.toString();
+            if (!rawValue) {
+              resolveOffset(message.offset);
+              continue;
+            }
+
+            // Step 1: Poison-Pill syntax parsing check
+            let parsed: unknown;
+            try {
+              parsed = JSON.parse(rawValue);
+            } catch (parseError) {
+              captureError(parseError, {
+                serviceName: `kafka-consumer:${groupId}`,
+                logger,
+                context: `consumer.batch_poison_pill:${batch.topic}:partition-${batch.partition}`,
+              });
+
+              await dispatchToDlq({
+                topic: batch.topic,
+                partition: batch.partition,
+                offset: message.offset,
+                key: message.key,
+                rawPayload: rawValue,
+                error: parseError,
+                attemptCount: 1,
+                isPoisonPill: true,
+              });
+
+              resolveOffset(message.offset);
+              continue;
+            }
+
+            const headersRecord: Record<string, string | undefined> = {};
+            if (message.headers) {
+              for (const [k, v] of Object.entries(message.headers)) {
+                headersRecord[k] = v?.toString();
+              }
+            }
+
+            validItems.push({
+              topic: batch.topic,
+              partition: batch.partition,
+              offset: message.offset,
+              key: message.key,
+              value: parsed,
+              rawPayload: rawValue,
+              timestamp: message.timestamp,
+              headers: headersRecord,
+            });
+          }
+
+          if (validItems.length === 0) {
+            await commitOffsetsIfNecessary();
+            return;
+          }
+
+          // Process in configured chunks
+          for (let i = 0; i < validItems.length; i += batchChunkLimit) {
+            if (!isRunning() || isStale()) break;
+
+            const chunk = validItems.slice(i, i + batchChunkLimit);
+            await heartbeat();
+
+            let attempt = 1;
+            let lastError: unknown;
+
+            while (attempt <= maxRetries) {
+              try {
+                await measureAsync(
+                  `kafka.handle_batch.${batch.topic}`,
+                  async () => {
+                    await topicConfig.topicHandler(chunk);
+                  },
+                );
+                lastError = undefined;
+                break;
+              } catch (handlerError) {
+                lastError = handlerError;
+                if (isPoisonPill(handlerError)) {
+                  logger.warn(
+                    `Detected deterministic poison pill in batch handler for [${batch.topic}], routing chunk to DLQ`,
+                    { error: String(handlerError) },
+                  );
+                  break;
+                }
+
+                if (attempt < maxRetries) {
+                  const delay = Math.min(
+                    initialRetryDelayMs * backoffMultiplier ** (attempt - 1),
+                    30_000,
+                  );
+                  logger.warn(
+                    `Batch handler for [${batch.topic}] failed (attempt ${attempt}/${maxRetries}); retrying in ${delay}ms`,
+                    { error: String(handlerError), batchSize: chunk.length },
+                  );
+                  await sleep(delay);
+                  await heartbeat();
+                }
+                attempt++;
+              }
+            }
+
+            if (lastError && attempt > maxRetries) {
+              captureError(lastError, {
+                serviceName: `kafka-consumer:${groupId}`,
+                logger,
+                context: `consumer.batch_terminal_failure:${batch.topic}:partition-${batch.partition}`,
+              });
+
+              for (const item of chunk) {
+                await dispatchToDlq({
+                  topic: item.topic,
+                  partition: item.partition,
+                  offset: item.offset,
+                  key: item.key,
+                  rawPayload: item.rawPayload,
+                  error: lastError,
+                  attemptCount: maxRetries,
+                  isPoisonPill: isPoisonPill(lastError),
+                });
+              }
+            }
+
+            for (const item of chunk) {
+              resolveOffset(item.offset);
+            }
+            await heartbeat();
+          }
+
+          await commitOffsetsIfNecessary();
+        },
+      });
+    } catch (error) {
+      captureError(error, {
+        serviceName: `kafka-consumer:${groupId}`,
+        logger,
+        context: "consumer.subscribeBatch",
+      });
+      throw error;
+    }
+  };
+
   const disconnect = async () => {
     try {
       if (dlqProducer) {
@@ -320,5 +509,5 @@ export const createConsumer = (
     }
   };
 
-  return { connect, subscribe, disconnect };
+  return { connect, subscribe, subscribeBatch, disconnect };
 };

@@ -29,6 +29,24 @@ export class InFlightBulkhead {
     return this.activeCounts.get(category) ?? 0;
   }
 
+  public getAllActive(): Record<string, number> {
+    const result: Record<string, number> = {};
+    for (const [key, value] of this.activeCounts.entries()) {
+      result[key] = value;
+    }
+    return result;
+  }
+
+  public getCapacity(
+    category: string,
+    isDegraded: boolean,
+  ): { active: number; limit: number; utilization: number } {
+    const active = this.getActive(category);
+    const limit = InFlightBulkhead.getMaxConcurrent(category, isDegraded);
+    const utilization = limit > 0 ? active / limit : 0;
+    return { active, limit, utilization };
+  }
+
   public reset(): void {
     this.activeCounts.clear();
   }
@@ -48,12 +66,27 @@ export class InFlightBulkhead {
     isDegraded: boolean,
   ): number {
     if (category === "checkout") {
-      return isDegraded ? 5 : 50;
+      const defaultLimit =
+        Number(process.env.BULKHEAD_MAX_CHECKOUT_CONCURRENT) || 50;
+      const degradedLimit =
+        Number(process.env.BULKHEAD_DEGRADED_CHECKOUT_CONCURRENT) ||
+        Math.max(1, Math.floor(defaultLimit / 10));
+      return isDegraded ? degradedLimit : defaultLimit;
     }
     if (category === "payments") {
-      return isDegraded ? 5 : 30;
+      const defaultLimit =
+        Number(process.env.BULKHEAD_MAX_PAYMENT_CONCURRENT) || 30;
+      const degradedLimit =
+        Number(process.env.BULKHEAD_DEGRADED_PAYMENT_CONCURRENT) ||
+        Math.max(1, Math.floor(defaultLimit / 10));
+      return isDegraded ? degradedLimit : defaultLimit;
     }
-    return isDegraded ? 10 : 100;
+    const defaultLimit =
+      Number(process.env.BULKHEAD_MAX_GENERAL_CONCURRENT) || 100;
+    const degradedLimit =
+      Number(process.env.BULKHEAD_DEGRADED_GENERAL_CONCURRENT) ||
+      Math.max(1, Math.floor(defaultLimit / 10));
+    return isDegraded ? degradedLimit : defaultLimit;
   }
 }
 

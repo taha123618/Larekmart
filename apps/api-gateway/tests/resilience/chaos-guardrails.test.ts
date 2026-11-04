@@ -55,8 +55,24 @@ export async function runChaosGuardrailsTests() {
     // Now another slot can be acquired
     const retry = bulkhead.acquire(category, 5);
     assert.equal(retry, true, "Should acquire slot after release");
+
+    // Dynamic environment override testing
+    process.env.BULKHEAD_MAX_CHECKOUT_CONCURRENT = "500";
+    process.env.BULKHEAD_DEGRADED_CHECKOUT_CONCURRENT = "50";
+    assert.equal(InFlightBulkhead.getMaxConcurrent("checkout", false), 500);
+    assert.equal(InFlightBulkhead.getMaxConcurrent("checkout", true), 50);
+
+    const cap = bulkhead.getCapacity("checkout", false);
+    assert.equal(cap.active, 5);
+    assert.equal(cap.limit, 500);
+    assert.equal(cap.utilization, 5 / 500);
+    assert.deepEqual(bulkhead.getAllActive(), { checkout: 5 });
+
+    delete process.env.BULKHEAD_MAX_CHECKOUT_CONCURRENT;
+    delete process.env.BULKHEAD_DEGRADED_CHECKOUT_CONCURRENT;
+
     console.log(
-      "  ✓ InFlightBulkhead concurrency limits and shedding verified",
+      "  ✓ InFlightBulkhead concurrency limits, dynamic env overrides and telemetry verified",
     );
   }
 

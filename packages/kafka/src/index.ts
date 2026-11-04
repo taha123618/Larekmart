@@ -4,7 +4,12 @@ export {
   type KafkaProducer,
   type KafkaSendOptions,
 } from "./producer";
-export { createConsumer, type ConsumerRetryOptions } from "./consumer";
+export {
+  createConsumer,
+  type ConsumerRetryOptions,
+  type KafkaBatchItem,
+  type KafkaBatchConsumerConfig,
+} from "./consumer";
 export { initializeTopics, ALL_LAREKMART_TOPICS } from "./init-topics";
 export {
   createEventAttestation,

@@ -6,7 +6,7 @@
   "scripts": {
     "topics:init": "tsx src/init-topics.ts",
     "check-types": "tsc --noEmit",
-    "test": "tsx tests/consumer-dlq.test.ts"
+    "test": "tsx tests/consumer-dlq.test.ts && tsx tests/consumer-batch.test.ts"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

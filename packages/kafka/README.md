@@ -8,7 +8,9 @@ KafkaJS client wrapper, Dead-Letter Queue (DLQ) poison-pill isolation, exponenti
 
 - `createKafkaClient(serviceName, brokers?)`: Creates a KafkaJS instance configured with custom brokers or default `:9094`, `:9095`, `:9096`.
 - `createProducer(client)`: Helper wrapping producer connection and publishing with `{ value: payload }` envelope.
-- `createConsumer(client, config)`: Helper wrapping consumer coordination, partition subscriptions, poison-pill DLQ routing, and exponential retry backoff.
+- `createConsumer(client, config)`: Helper wrapping consumer coordination, partition subscriptions, poison-pill DLQ routing, exponential retry backoff, and batch processing.
+  - `consumer.subscribe(topics)`: Message-by-message consumption with DLQ routing.
+  - `consumer.subscribeBatch(topics)`: High-throughput batch consumption (`eachBatch`) with micro-batch chunking, automated `heartbeat()` calls, and per-item poison-pill isolation.
 - `classifyError(err)`: Classifies errors into poison-pills (`SyntaxError`, `ZodError`) or transient errors.
 
 ---

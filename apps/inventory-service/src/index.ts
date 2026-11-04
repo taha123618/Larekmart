@@ -13,10 +13,11 @@ import { prisma, disconnectPrisma } from "@repo/inventory-db";
 import { validateInternalServiceSecret } from "@repo/types";
 import inventoryRoute from "./routes/inventory.route.js";
 import { logger, metrics } from "./observability/metrics.js";
-import { consumer, producer } from "./utils/kafka.js";
+import { batchConsumer, consumer, producer } from "./utils/kafka.js";
 import { redis } from "./utils/redis.js";
 import { startReservationExpiryWorker } from "./workers/reservation-expiry.worker.js";
 import { startInventoryEventConsumer } from "./workers/inventory-event.consumer.js";
+import { startReservationBatchWorker } from "./workers/reservation-batch.worker.js";
 
 const port = Number.parseInt(process.env.PORT ?? "8007", 10);
 const health = createHealthRegistry("inventory-service", "1.0.0");
@@ -162,7 +163,9 @@ async function start(): Promise<void> {
     );
     await producer.connect();
     await consumer.connect();
+    await batchConsumer.connect();
     await startInventoryEventConsumer();
+    await startReservationBatchWorker();
     stopExpiryWorker = startReservationExpiryWorker();
 
     serve({ fetch: app.fetch, port }, () => {
@@ -183,6 +186,11 @@ async function shutdown(signal: string): Promise<void> {
     await consumer.disconnect();
   } catch (err) {
     logger.error("Error disconnecting Kafka consumer", err);
+  }
+  try {
+    await batchConsumer.disconnect();
+  } catch (err) {
+    logger.error("Error disconnecting Kafka batch consumer", err);
   }
   try {
     await producer.disconnect();

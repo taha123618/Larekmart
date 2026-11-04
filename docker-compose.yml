@@ -899,7 +899,7 @@ services:
     ports:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8010:8010"
     environment:
-      - "DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres:5432/catalog_db?schema=public"
+      - "DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/catalog_db?schema=public&pgbouncer=true&statement_cache_size=0"
       - "DATABASE_READ_REPLICA_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/catalog_db?schema=public&pgbouncer=true&statement_cache_size=0"
       - "REDIS_URL=redis://redis:6379"
       - "REDIS_KEY_PREFIX=catalog:v1:"

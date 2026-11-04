@@ -137,6 +137,18 @@ export interface StockAvailabilityCache {
   updatedAt: string;
 }
 
+export interface InventoryReservationRequestedPayload {
+  productId: number;
+  variantId: string;
+  warehouseId: string;
+  quantity: number;
+  referenceType: string;
+  referenceId: string;
+  userId: string;
+  expiresAt: string;
+  requestedAt: string;
+}
+
 export function buildStockCacheKey(
   productId: number | string,
   variantId?: string | null,

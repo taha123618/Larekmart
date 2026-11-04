@@ -12,3 +12,8 @@ export const consumer = createConsumer(
   kafkaClient,
   process.env.KAFKA_GROUP_ID ?? "inventory-service-group",
 );
+export const batchConsumer = createConsumer(
+  kafkaClient,
+  process.env.KAFKA_RESERVATION_BATCH_GROUP_ID ??
+    "inventory-reservation-batch-group",
+);

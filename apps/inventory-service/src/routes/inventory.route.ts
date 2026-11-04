@@ -26,6 +26,7 @@ import {
   InventoryProductParamsSchema,
   InventoryReservationSchema,
   InventoryRestockSchema,
+  type InventoryReservationRequestedPayload,
 } from "@repo/types";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
@@ -43,6 +44,11 @@ import {
 import { inventoryMetrics, logger } from "../observability/metrics.js";
 import { producer } from "../utils/kafka.js";
 import { redisStockGatekeeper } from "../gatekeeper/redis-stock-gatekeeper.js";
+import {
+  publish,
+  publishItemEvent,
+  itemPayload,
+} from "../events/inventory-publisher.js";
 
 const inventoryRoute = new Hono<{ Variables: AuthVariables }>();
 
@@ -83,67 +89,6 @@ function validationResponse(
   error: z.ZodError,
 ) {
   return c.json({ message: "Invalid request", issues: error.issues }, 400);
-}
-
-async function publish(
-  topic: string,
-  value: Record<string, unknown>,
-): Promise<void> {
-  try {
-    await producer.send(topic, { value });
-  } catch (error) {
-    logger.error(`Failed to publish ${topic}`, error);
-  }
-}
-
-function itemPayload(item: {
-  id: string;
-  productId: number;
-  variantId: string;
-  warehouseId: string;
-  quantity: number;
-  availableQuantity: number;
-  reservedQuantity: number;
-  soldQuantity: number;
-  status: InventoryItemStatus;
-}) {
-  return {
-    inventoryItemId: item.id,
-    productId: item.productId,
-    variantId: item.variantId,
-    warehouseId: item.warehouseId,
-    quantity: item.quantity,
-    availableQuantity: item.availableQuantity,
-    reservedQuantity: item.reservedQuantity,
-    soldQuantity: item.soldQuantity,
-    status: item.status,
-    occurredAt: new Date().toISOString(),
-  };
-}
-
-async function publishItemEvent(
-  topic: string,
-  item: Parameters<typeof itemPayload>[0],
-  extra: Record<string, unknown> = {},
-): Promise<void> {
-  const payload = { ...itemPayload(item), ...extra };
-  await publish(topic, payload);
-
-  if (
-    item.status === InventoryItemStatus.LOW_STOCK ||
-    item.status === InventoryItemStatus.OUT_OF_STOCK
-  ) {
-    inventoryMetrics.lowStockAlertsTotal.inc();
-    await publish("inventory.low_stock", payload);
-
-    // Send alert notification for operations monitoring
-    await publish("notification.dispatch", {
-      type: "ALERT",
-      title: `Low Stock Alert: Product ${item.productId}`,
-      body: `Variant ${item.variantId} in warehouse ${item.warehouseId} has reached status ${item.status} (${item.availableQuantity} available)`,
-      metadata: payload,
-    });
-  }
 }
 
 async function getAvailability(c: Context<{ Variables: AuthVariables }>) {
@@ -417,7 +362,8 @@ inventoryRoute.post("/adjustments", shouldBeAdmin, async (c) => {
 /**
  * POST /api/v1/inventory/reservations
  * Atomically reserve stock during checkout.
- * Enforces PostgreSQL row-level locking conditional decrement (availableQuantity >= quantity).
+ * Under high-throughput flash sale load (default), performs <1ms Redis gatekeeper claim,
+ * returns HTTP 202 Accepted immediately, and queues SKU-keyed micro-batch reservation to Kafka.
  */
 inventoryRoute.post("/reservations", shouldBeUser, async (c) => {
   const start = performance.now();
@@ -426,6 +372,10 @@ inventoryRoute.post("/reservations", shouldBeUser, async (c) => {
       await c.req.json<unknown>(),
     );
     if (!parsed.success) return validationResponse(c, parsed.error);
+
+    const isSync =
+      c.req.query("sync") === "true" ||
+      process.env.ASYNC_INVENTORY_RESERVATIONS === "false";
 
     const itemKey = {
       productId: parsed.data.productId,
@@ -464,42 +414,81 @@ inventoryRoute.post("/reservations", shouldBeUser, async (c) => {
       }
     }
 
-    // 2. Persist to PostgreSQL with compensation rollback on failure
-    let reservation;
-    try {
-      reservation = await reserveInventory({
-        ...parsed.data,
-        userId: c.get("userId"),
-      });
-      // Finalize Redis claim upon successful DB commit
-      await redisStockGatekeeper.finalizeClaim(
-        parsed.data.referenceId,
-        itemKey,
+    const userId = c.get("userId");
+
+    // 2A. Synchronous Mode (opt-in or test fallback)
+    if (isSync) {
+      let reservation;
+      try {
+        reservation = await reserveInventory({
+          ...parsed.data,
+          userId,
+        });
+        // Finalize Redis claim upon successful DB commit
+        await redisStockGatekeeper.finalizeClaim(
+          parsed.data.referenceId,
+          itemKey,
+        );
+      } catch (dbError) {
+        // Rollback claimed Redis stock counter immediately
+        await redisStockGatekeeper.rollbackClaim({
+          itemKey,
+          referenceId: parsed.data.referenceId,
+          quantity: parsed.data.quantity,
+        });
+        throw dbError;
+      }
+
+      inventoryMetrics.reservationsCreatedTotal.inc();
+      await invalidateInventoryCache(
+        reservation.inventoryItem.productId,
+        reservation.inventoryItem.variantId,
       );
-    } catch (dbError) {
-      // Rollback claimed Redis stock counter immediately
-      await redisStockGatekeeper.rollbackClaim({
-        itemKey,
-        referenceId: parsed.data.referenceId,
-        quantity: parsed.data.quantity,
+      await publishItemEvent("inventory.reserved", reservation.inventoryItem, {
+        reservationId: reservation.id,
+        quantity: reservation.quantity,
+        referenceType: reservation.referenceType,
+        referenceId: reservation.referenceId,
+        expiresAt: reservation.expiresAt.toISOString(),
       });
-      throw dbError;
+
+      return c.json({ data: reservation }, 201);
     }
 
-    inventoryMetrics.reservationsCreatedTotal.inc();
-    await invalidateInventoryCache(
-      reservation.inventoryItem.productId,
-      reservation.inventoryItem.variantId,
-    );
-    await publishItemEvent("inventory.reserved", reservation.inventoryItem, {
-      reservationId: reservation.id,
-      quantity: reservation.quantity,
-      referenceType: reservation.referenceType,
-      referenceId: reservation.referenceId,
-      expiresAt: reservation.expiresAt.toISOString(),
-    });
+    // 2B. Asynchronous Flash-Sale Fast-Path (HTTP 202 Accepted + Kafka micro-batching)
+    const reservationRequest: InventoryReservationRequestedPayload = {
+      productId: parsed.data.productId,
+      variantId: parsed.data.variantId,
+      warehouseId: parsed.data.warehouseId,
+      quantity: parsed.data.quantity,
+      referenceType: parsed.data.referenceType,
+      referenceId: parsed.data.referenceId,
+      userId,
+      expiresAt: parsed.data.expiresAt.toISOString(),
+      requestedAt: new Date().toISOString(),
+    };
 
-    return c.json({ data: reservation }, 201);
+    // Publish to Kafka keyed by `${productId}:${variantId}` to serialize all reservations for this SKU to a single partition
+    await publish(
+      "inventory.reservation.requested",
+      reservationRequest as unknown as Record<string, unknown>,
+      `${parsed.data.productId}:${parsed.data.variantId}`,
+    );
+
+    inventoryMetrics.reservationsCreatedTotal.inc();
+
+    return c.json(
+      {
+        status: "RESERVED",
+        referenceId: parsed.data.referenceId,
+        productId: parsed.data.productId,
+        variantId: parsed.data.variantId,
+        warehouseId: parsed.data.warehouseId,
+        quantity: parsed.data.quantity,
+        expiresAt: parsed.data.expiresAt.toISOString(),
+      },
+      202,
+    );
   } catch (error) {
     const message = errorMessage(error);
     if (message.includes("Insufficient inventory")) {

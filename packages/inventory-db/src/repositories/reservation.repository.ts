@@ -1,5 +1,6 @@
 export {
   reserveInventory,
+  batchReserveInventory,
   createReservation,
   confirmInventoryReservation,
   confirmReservationsByReference,
@@ -10,4 +11,7 @@ export {
   getActiveReservation,
   type ReserveInventoryInput,
   type InventoryReservationWithItem,
+  type BatchReservationSuccess,
+  type BatchReservationFailure,
+  type BatchReservationResult,
 } from "../inventory";

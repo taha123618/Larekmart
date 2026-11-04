@@ -42,31 +42,33 @@ derive the `userId` from verified Clerk claims.
 
 To strictly prevent race conditions, overselling, and database connection pool starvation during high-velocity flash sales (e.g. 5,000+ req/sec):
 
-### 1. Atomic Redis Pre-Check (Gatekeeper Fast-Path)
+### 1. Atomic Redis Pre-Check & Asynchronous Fast-Path (HTTP 202 Accepted)
 
 Incoming checkout reservations (`POST /api/v1/inventory/reservations`) first pass through an atomic Redis Lua script (`RESERVE_LUA` in `src/gatekeeper/redis-stock-gatekeeper.ts`):
 
 - **<1ms Fast Rejection**: If `availableQuantity < requestedQuantity`, the request is rejected immediately with HTTP 409 without touching PostgreSQL.
 - **Cluster-Safe Dual-Token Hash Tagging**: All Redis keys strictly enforce structural `{tenant_id:warehouse_id}` hash tag pinning (e.g. `stock:available:{tenant_pk:pk_khi_01}:prod:var` and `stock:claim:{tenant_pk:pk_khi_01}:referenceId`). This guarantees that multi-key Lua executions (`RESERVE_LUA`, `ROLLBACK_LUA`) always map to identical CRC16 slots, completely preventing fatal `CROSSSLOT` exceptions when transitioning to distributed multi-node Redis clusters.
-- **Atomic Claim**: If stock is available, Redis decrements the stock counter and registers a temporary claim token (`stock:claim:{tenant_id:warehouse_id}:referenceId`) with a 60-second TTL.
-- **Cold-Start Protection**: If the counter is missing in Redis, a 2-second distributed mutex (`stock:lock:{tenant_id:warehouse_id}:prod:var`) loads ground truth from PostgreSQL once and initializes the counter, protecting the DB from thundering herds.
+- **Atomic Claim & 202 Accepted**: If stock is available, Redis decrements the stock counter, registers a temporary claim token, and immediately responds with `HTTP 202 Accepted` (`{ status: "RESERVED", referenceId, expiresAt, ... }`).
+- **Asynchronous Kafka Micro-Batch Queue**: Publishes `inventory.reservation.requested` to Kafka keyed by `${productId}:${variantId}`, serializing all reservations for that SKU onto a single partition.
+- **Synchronous Fallback Mode**: Opt-in synchronous database persistence is available via `?sync=true` or `ASYNC_INVENTORY_RESERVATIONS=false` for tests or explicit sync workflows.
 
-### 2. PostgreSQL Authoritative Ledger & Compensation Rollback
+### 2. High-Throughput Reservation Batch Worker & PostgreSQL Coalescing
 
-Once the Redis claim is granted, the reservation is committed to PostgreSQL:
+A dedicated worker (`src/workers/reservation-batch.worker.ts`) consumes `inventory.reservation.requested` in micro-batches (up to 50 items) via `@repo/kafka` `subscribeBatch()`:
 
 ```sql
 UPDATE inventory_items
-SET available_quantity = available_quantity - $quantity,
-    reserved_quantity = reserved_quantity + $quantity,
+SET available_quantity = available_quantity - $batch_quantity,
+    reserved_quantity = reserved_quantity + $batch_quantity,
     version = version + 1
 WHERE product_id = $1 AND variant_id = $2 AND warehouse_id = $3
   AND status != 'INACTIVE'
-  AND available_quantity >= $quantity;
+  AND available_quantity >= $batch_quantity;
 ```
 
-- If the PostgreSQL transaction succeeds: The temporary claim token is finalized and deleted.
-- If the PostgreSQL transaction fails or times out: An atomic compensation rollback (`ROLLBACK_LUA`) immediately increments the Redis counter back by the claimed quantity, preventing phantom stock loss.
+- **50x Lock Reduction**: Coalesces up to 50 concurrent single-unit reservations into a single database update statement, eliminating row-level lock serialization on hot viral SKUs.
+- **Graceful Fallback**: If available stock is less than the total batch quantity, automatically falls back to item-by-item conditional decrements, allocating remaining stock fairly with zero oversell.
+- **Compensation Rollback**: If PostgreSQL persistence fails or is rejected, an atomic compensation rollback (`ROLLBACK_LUA`) restores the claimed Redis counter and emits `inventory.reservation.failed`.
 
 ### 3. Dual-Action Release & Expiry
 
@@ -98,11 +100,13 @@ Kafka events.
 
 ### Published Events
 
-The service publishes the following events using the `{ value: payload }` envelope after successful PostgreSQL transactions:
+The service publishes the following events using the `{ value: payload }` envelope:
 
+- `inventory.reservation.requested` (emitted on 202 Accepted fast-path claim)
 - `inventory.created`
 - `inventory.reserved`
 - `inventory.reservation.confirmed`
+- `inventory.reservation.failed` (emitted on reservation rejection or compensation failure)
 - `inventory.stock.sold`
 - `inventory.released`
 - `inventory.reservation.expired`
@@ -112,8 +116,9 @@ The service publishes the following events using the `{ value: payload }` envelo
 
 ### Consumed Events
 
-The service subscribes to cross-service events:
+The service subscribes to cross-service and asynchronous events:
 
+- `inventory.reservation.requested` — Consumed in micro-batches (up to 50 items) by the reservation batch worker using `@repo/kafka` `subscribeBatch()` to coalesce database row updates.
 - `payment.successful` — When a customer completes checkout in `payment-service` (via Stripe webhook), `inventory-service` consumes this event and confirms matching reservations in PostgreSQL, converting reserved stock to sold stock and publishing `inventory.stock.sold`.
 
 ## Local Development & Testing
