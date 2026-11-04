@@ -76,7 +76,7 @@ If a read-only command fails or the repository is in an unexpected state, report
 - Write simple, readable, well-typed code. Prefer clarity over cleverness.
 - Handle errors explicitly. Do not silently swallow them.
 - Add or update tests when behaviour changes, if the project has tests.
-- Write comments only where the reason is not obvious from the code. Explain *why*, not *what*.
+- Write comments only where the reason is not obvious from the code. Explain _why_, not _what_.
 - Do not leave debug statements, dead code, or unresolved placeholders behind.
 
 ## 8. Working Process

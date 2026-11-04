@@ -95,6 +95,10 @@ spec:
           port: 8020
         - protocol: TCP
           port: 8021
+        - protocol: TCP
+          port: 8022
+        - protocol: TCP
+          port: 8023
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -155,3 +159,7 @@ spec:
           port: 8020
         - protocol: TCP
           port: 8021
+        - protocol: TCP
+          port: 8022
+        - protocol: TCP
+          port: 8023

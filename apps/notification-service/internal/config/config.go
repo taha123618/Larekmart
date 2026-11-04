@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -9,8 +10,9 @@ import (
 
 // Config holds all configuration values for notification-service.
 type Config struct {
-	AppEnv   string
-	HTTPPort string
+	AppEnv                string
+	HTTPPort              string
+	InternalServiceSecret string
 
 	// Database (PostgreSQL)
 	DatabaseURL       string
@@ -66,9 +68,14 @@ type Config struct {
 
 // LoadFromEnv loads and validates configuration from environment variables.
 func LoadFromEnv() *Config {
+	appEnv := getEnv("APP_ENV", getEnv("NODE_ENV", "development"))
+	internalSecret := getEnv("INTERNAL_SERVICE_SECRET", "dev-shared-internal-secret-larekmart")
+	ValidateInternalServiceSecret(internalSecret, appEnv, "notification-service")
+
 	return &Config{
-		AppEnv:   getEnv("APP_ENV", "development"),
-		HTTPPort: getEnv("HTTP_PORT", "8005"),
+		AppEnv:                appEnv,
+		HTTPPort:              getEnv("HTTP_PORT", "8005"),
+		InternalServiceSecret: internalSecret,
 
 		DatabaseURL:       getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/notification_db?sslmode=disable"),
 		DBMaxOpenConns:    getEnvInt("DB_MAX_OPEN_CONNS", 25),
@@ -121,6 +128,25 @@ func LoadFromEnv() *Config {
 		OTELEnabled:              getEnvBool("OTEL_ENABLED", false),
 		LogLevel:                 getEnv("LOG_LEVEL", "debug"),
 		LogFormat:                getEnv("LOG_FORMAT", "json"),
+	}
+}
+
+func ValidateInternalServiceSecret(secret, envName, serviceName string) {
+	if envName != "production" {
+		return
+	}
+	trimmed := strings.TrimSpace(secret)
+	lower := strings.ToLower(trimmed)
+	if len(trimmed) < 16 ||
+		lower == "dev-shared-internal-secret-larekmart" ||
+		strings.Contains(lower, "placeholder") ||
+		strings.Contains(lower, "change-me") ||
+		strings.Contains(lower, "example") ||
+		strings.Contains(lower, "dummy") {
+		panic(fmt.Sprintf(
+			"[%s] FATAL: Production deployment requires a secure, high-entropy INTERNAL_SERVICE_SECRET (min 16 chars). Refusing to boot with placeholder.",
+			serviceName,
+		))
 	}
 }
 

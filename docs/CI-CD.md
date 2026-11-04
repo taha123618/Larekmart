@@ -10,9 +10,9 @@ Larekmart is a production-grade distributed microservices e-commerce platform bu
 
 - **2 Next.js Frontends**: Storefront (`apps/client`, Next.js 16) and Admin Dashboard (`apps/admin`, Next.js 15).
 - **1 Edge API Gateway**: Fastify 5 (`apps/api-gateway`).
-- **14 Polyglot Backend Microservices**: Node.js (Fastify, Express, Hono, Koa), Go 1.22 (Chi), and Python 3.12+ (FastAPI).
+- **24 Polyglot HTTP Backend Microservices**: Node.js (Fastify, Express, Hono, Koa, NestJS), Go 1.22 (Chi), and Python 3.12+ (FastAPI).
 - **1 Headless Worker**: Email Service (`apps/email-service`).
-- **Shared Internal Packages**: Contracts (`@repo/types`), Event Messaging (`@repo/kafka`), Observability (`@repo/monitoring`), Caching (`@repo/redis`), Search (`@repo/opensearch`), and 7 Database Packages (`product-db`, `inventory-db`, `order-db`, `cart-db`, `catalog-db`, `shipping-db`, `user-db`).
+- **Shared Internal Packages**: Contracts (`@repo/types`), Event Messaging (`@repo/kafka`), Observability (`@repo/monitoring`), Caching (`@repo/redis`), Search (`@repo/opensearch`), and 8 Database Packages (`product-db`, `inventory-db`, `order-db`, `cart-db`, `catalog-db`, `shipping-db`, `user-db`, `vendor-db`).
 - **Container Registry**: GitHub Container Registry (`ghcr.io/taha123618/larekmart/*`).
 - **Orchestration**: Kubernetes (Kustomize overlays for `development`, `staging`, `production`) and Docker Compose.
 
@@ -56,16 +56,16 @@ Larekmart is a production-grade distributed microservices e-commerce platform bu
 ┌─────────────────────────┐                       ┌─────────────────────────┐
 │ STAGE 4: Container Build│                       │ STAGE 4: Container Build│
 │ - Shared Base Node Build│                       │ - Shared Base Node Build│
-│ - 18 Services Matrix    │                       │ - 18 Services Matrix    │
+│ - 28 Apps/Svcs Matrix   │                       │ - 28 Apps/Svcs Matrix   │
 │ - GHCR Push (:SHA,:stag)│                       │ - GHCR Push (:SHA,:late)│
 │ - Trivy CVE Audit       │                       │ - Trivy CVE Audit       │
 └────────────┬────────────┘                       └────────────┬────────────┘
              │                                                 │
 ┌────────────┴────────────┐                       ┌────────────┴────────────┐
 │ STAGE 5: Staging Deploy │                       │ STAGE 5: Production Gate│
-│ - DB Migrations (5 DBs) │                       │ - GitHub Environment    │
+│ - DB Migrations (All)   │                       │ - GitHub Environment    │
 │ - Kustomize apply       │                       │   Manual Approval Gate  │
-│ - 5m Rollout Watch      │                       │ - DB Migrations (5 DBs) │
+│ - 5m Rollout Watch      │                       │ - DB Migrations (All)   │
 │ - Synthetic Smoke Tests │                       │ - Kustomize Rolling Upd │
 │ - Auto-Rollback on Fail │                       │ - Zero-Downtime Rollout │
 └─────────────────────────┘                       │ - Health Verification   │
@@ -83,13 +83,13 @@ Larekmart is a production-grade distributed microservices e-commerce platform bu
 - **Purpose**: Verifies that all cross-service integrations, shared library contracts, Kafka payloads, and database migrations work harmoniously in a realistic, production-like environment before reaching production.
 - **Automated Workflow**:
   1. **Fast-Fail Code Quality Gate**: Enforces ESLint, Prettier, Prisma client generation, and strict TypeScript compilation across all workspaces.
-  2. **Multi-Language Testing**: Executes Turborepo tests across all 9 workspaces with test suites, Go concurrency race checks (`-race`), and Python tests.
+  2. **Multi-Language Testing**: Executes Turborepo tests across all workspaces with test suites, Go concurrency race checks (`-race`), and Python tests.
   3. **Build Validation**: Builds Next.js frontends and compiled services to ensure zero bundle errors.
   4. **Base Node Image Build**: Builds and caches `docker/base-node/Dockerfile` to GHCR before compiling services.
-  5. **Container Build Matrix**: Builds and pushes all 18 Docker images tagged with the commit SHA and `staging`.
-  6. **Automated Migration Execution**: Automatically applies backward-compatible database migrations to staging databases via `db:deploy` and Drizzle migrations.
+  5. **Container Build Matrix**: Builds and pushes all Docker images tagged with the commit SHA and `staging`.
+  6. **Automated Migration Execution**: Automatically applies backward-compatible database migrations to staging databases via `db:deploy` and Drizzle migrations (including `commission-service` and `payout-service`).
   7. **Automated Deployment**: Applies `infrastructure/kubernetes/overlays/staging` via Kustomize with immutable commit SHA image tags.
-  8. **Post-Deployment Verification**: Executes `scripts/verify-staging-traffic.sh` against `https://staging.larekmart.com`, checking routes, headers, and all 14 service `/health` endpoints.
+  8. **Post-Deployment Verification**: Executes `scripts/verify-staging-traffic.sh` against `https://staging.larekmart.com`, checking routes, headers, and all 25 service `/health` endpoints.
   9. **Automatic Rollback**: If rollout status or smoke tests fail, automatically triggers `kubectl rollout undo` across all affected deployments.
 
 ### 2.2 `main` Branch (Production)

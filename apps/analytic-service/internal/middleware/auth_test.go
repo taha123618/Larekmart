@@ -51,4 +51,22 @@ func TestAuthMiddleware(t *testing.T) {
 	if rec3.Code != http.StatusOK {
 		t.Errorf("expected status 200 for valid admin, got %d", rec3.Code)
 	}
+
+	// 4. Forged Bearer token -> 401
+	req4 := httptest.NewRequest("GET", "/analytics/summary", nil)
+	req4.Header.Set("Authorization", "Bearer fake.token.here")
+	rec4 := httptest.NewRecorder()
+	adminMiddleware.ServeHTTP(rec4, req4)
+	if rec4.Code != http.StatusUnauthorized {
+		t.Errorf("expected status 401 for forged token, got %d", rec4.Code)
+	}
+
+	// 5. Machine-to-machine internal call with no user headers -> 200
+	req5 := httptest.NewRequest("GET", "/analytics/summary", nil)
+	req5.Header.Set("X-Internal-Secret", "test-secret-123")
+	rec5 := httptest.NewRecorder()
+	adminMiddleware.ServeHTTP(rec5, req5)
+	if rec5.Code != http.StatusOK {
+		t.Errorf("expected status 200 for machine-to-machine, got %d", rec5.Code)
+	}
 }

@@ -42,6 +42,11 @@ The system is architected as an enterprise-grade monorepo combining independent 
 - **Needs**: Clear service boundaries, strict shared contracts, decoupled asynchronous communication, automated type-checking and verification pipelines.
 - **Pain Points**: Monolithic deployment bottlenecks, tight coupling, conflicting data schemas.
 
+### 3.5 Marketplace Vendor & Storefront Seller
+
+- **Needs**: Transparent commission structures, real-time fee breakdowns, automated escrow maturity holds, predictable settlement cycles, and direct bank/Stripe Connect disbursements with audit statements.
+- **Pain Points**: Hidden deductions, disputed fees, delayed payouts, and lack of verifiable double-entry ledger audits.
+
 ---
 
 ## 4. Scope of the System
@@ -56,6 +61,9 @@ The system is architected as an enterprise-grade monorepo combining independent 
 - **Identity & Access Microservice (`apps/auth-service`)**: Clerk backend management proxy, admin role-based authorization.
 - **Transactional Notification Microservice (`apps/email-service`)**: Asynchronous welcome emails and order confirmation receipts.
 - **Analytics & Observability Microservice (`apps/analytic-service`)**: Real-time cross-service event stream aggregation, PostgreSQL audit log, KPI query API.
+- **Marketplace Commission Engine (`apps/commission-service`)**: Dynamic commission plans, hierarchical rule resolution, immutable rule version snapshots, and settlement fee quotes.
+- **Seller Settlement & Double-Entry Ledger (`apps/payout-service`)**: Balanced append-only double-entry financial ledger (`ledger_entries`), escrow maturity holds, automated batch disbursement scheduling, and external provider reconciliation.
+- **Marketplace Vendor & Seller Infrastructure (`apps/vendor-service`, `apps/seller-service`)**: Legal business entities, KYB verification, multi-staff permissions, custom storefront branding, and performance monitoring.
 
 ### 4.2 Out-of-Scope (Future Phases)
 
@@ -72,6 +80,7 @@ The system is architected as an enterprise-grade monorepo combining independent 
 3. **Single Identity Authority**: Authentication and authorization are governed strictly by Clerk with JWT session claim validation (`role: "admin"` for backoffice operations).
 4. **Payment Security**: Raw credit card details must never touch Larekmart infrastructure; Stripe custom checkout elements and signed webhooks must be utilized.
 5. **Event Delivery Guarantee**: Event consumers must be resilient and idempotent, capable of handling historical replays (`fromBeginning: true`).
+6. **Financial Precision & Double-Entry Invariants**: All marketplace commission calculations and seller disbursements must use high-precision decimal arithmetic (`Decimal.js`) with zero rounding drift, and double-entry ledger postings must strictly balance across debits and credits (`SUM(debit) == SUM(credit)`).
 
 ---
 

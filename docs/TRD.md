@@ -12,9 +12,16 @@ Larekmart is implemented as a **pnpm 9 + Turborepo 2 monorepo** with strict boun
                                          | HTTP / JWT Session Claims
                                          v
 +-----------------------------------------------------------------------------------+
-|                              Microservices Layer                                  |
-|  product-service (:8000)  order-service (:8001)  payment-service (:8002)          |
-|  auth-service (:8003)     analytic-service (:8004) email-service (Worker)         |
+|                              Microservices Layer (25 Services)                     |
+|  product-service (:8000)   order-service (:8001)     payment-service (:8002)       |
+|  auth-service (:8003)      analytic-service (:8004)  notification-service (:8005)  |
+|  search-service (:8006)    inventory-service (:8007) recommendation-service (:8008)|
+|  cart-service (:8009)      catalog-service (:8010)   shipping-service (:8011)      |
+|  user-service (:8012)      media-service (:8013)     review-service (:8014)        |
+|  wishlist-service (:8015)  promotion-service (:8016) tax-service (:8017)           |
+|  return-service (:8018)    pricing-service (:8019)   vendor-service (:8020)        |
+|  seller-service (:8021)    commission-service (:8022) payout-service (:8023)       |
+|  email-service (Worker)                                                           |
 +----------------------------------------+------------------------------------------+
                                          | Asynchronous Event Streams
                                          v
@@ -101,6 +108,15 @@ All packages inherit from [`@repo/typescript-config/base.json`](file:///Users/ta
 - **Route Guards**:
   - `shouldBeUser`: Verifies valid `userId`.
   - `shouldBeAdmin`: Validates `sessionClaims.metadata.role === "admin"`.
+  - `shouldBeSellerOrAdmin`: Validates active seller identity or admin role.
+
+### 3.4 Financial Precision & Balanced Double-Entry Accounting Standard (`Decimal.js`)
+
+- **Zero Floating-Point Drift**: All monetary, rate, and fee arithmetic across `commission-service` and `payout-service` strictly uses `Decimal.js` with `Decimal.ROUND_HALF_UP`.
+- **Append-Only Ledger**: Payout balances are computed dynamically from `ledger_entries` (`SUM(credits) - SUM(debits)`). Account state is never stored as a mutable balance scalar.
+- **Balanced Transaction Invariant**: Every journal entry batch strictly satisfies `SUM(debits) == SUM(credits)`.
+- **Versioned Rule Auditing**: Commission rules stamp immutable versions (`commission_rule_versions`) on calculation snapshots to guarantee settled payouts are never retroactively corrupted.
+- **Distributed Idempotency**: Financial disbursement batches and payout executions enforce unique idempotency keys via Redis atomic leases.
 
 ---
 

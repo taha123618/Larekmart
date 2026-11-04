@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -58,6 +59,10 @@ func Load() *Config {
 		workerCount = kafkaNumPartitions
 	}
 
+	appEnv := getEnv("APP_ENV", getEnv("NODE_ENV", "development"))
+	internalSecret := getEnv("INTERNAL_SERVICE_SECRET", "dev-shared-internal-secret-larekmart")
+	ValidateInternalServiceSecret(internalSecret, appEnv, "analytic-service")
+
 	return &Config{
 		Port:                  port,
 		DatabaseURL:           dbURL,
@@ -72,13 +77,32 @@ func Load() *Config {
 		KafkaNumPartitions:    kafkaNumPartitions,
 		ClientURL:             getEnv("CLIENT_URL", "http://localhost:3002"),
 		AdminURL:              getEnv("ADMIN_URL", "http://localhost:3003"),
-		InternalServiceSecret: getEnv("INTERNAL_SERVICE_SECRET", "dev-shared-internal-secret-larekmart"),
+		InternalServiceSecret: internalSecret,
 		ClerkSecretKey:        getEnv("CLERK_SECRET_KEY", ""),
-		AppEnv:                getEnv("APP_ENV", getEnv("NODE_ENV", "development")),
+		AppEnv:                appEnv,
 		BatchSize:             batchSize,
 		FlushInterval:         time.Duration(flushIntervalMs) * time.Millisecond,
 		QueueCapacity:         queueCapacity,
 		WorkerCount:           workerCount,
+	}
+}
+
+func ValidateInternalServiceSecret(secret, envName, serviceName string) {
+	if envName != "production" {
+		return
+	}
+	trimmed := strings.TrimSpace(secret)
+	lower := strings.ToLower(trimmed)
+	if len(trimmed) < 16 ||
+		lower == "dev-shared-internal-secret-larekmart" ||
+		strings.Contains(lower, "placeholder") ||
+		strings.Contains(lower, "change-me") ||
+		strings.Contains(lower, "example") ||
+		strings.Contains(lower, "dummy") {
+		panic(fmt.Sprintf(
+			"[%s] FATAL: Production deployment requires a secure, high-entropy INTERNAL_SERVICE_SECRET (min 16 chars). Refusing to boot with placeholder.",
+			serviceName,
+		))
 	}
 }
 

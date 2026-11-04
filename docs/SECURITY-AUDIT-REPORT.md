@@ -58,10 +58,14 @@ VULNERABILITY HIERARCHY
 ├── [MED]  SEC-13: Production-usable placeholder values in K8s Secret templates [RESOLVED]
 ├── [MED]  SEC-16: Timing attack and secret length leakage in commission and payout secret verification [RESOLVED & VERIFIED]
 ├── [MED]  SEC-17: Missing fail-closed production startup check for INTERNAL_SERVICE_SECRET in commission/payout [RESOLVED & VERIFIED]
+├── [MED]  SEC-22: Missing Fail-Closed Production Boot Validation in Go and Python Microservices [RESOLVED & VERIFIED]
 ├── [LOW]  SEC-04: Network Perimeter Isolation of Microservice Ports [RESOLVED & VERIFIED]
 ├── [LOW]  SEC-05: Route-Specific Rate Limiting on Merchant Onboarding [RESOLVED & VERIFIED]
 ├── [LOW]  SEC-14: Residual transitive dependency advisories (zod v3, nested fastify/postcss) [TRACKED]
-└── [LOW]  SEC-18: Missing strict CORS origin allowlists and defensive HTTP security headers in commission/payout [RESOLVED & VERIFIED]
+├── [LOW]  SEC-18: Missing strict CORS origin allowlists and defensive HTTP security headers in commission/payout [RESOLVED & VERIFIED]
+├── [CRIT] SEC-19: Unconditional Admin Escalation & Stubbed Token Verification in analytic-service [RESOLVED & VERIFIED]
+├── [HIGH] SEC-20: Insecure Clerk Verification & Dev Identity Bypass in notification-service [RESOLVED & VERIFIED]
+└── [HIGH] SEC-21: Insecure Clerk Verification & Dev Identity Bypass in recommendation-service [RESOLVED & VERIFIED]
 ```
 
 ---
@@ -212,6 +216,57 @@ VULNERABILITY HIERARCHY
 
 ---
 
+### SEC-19 [CRIT]: Unconditional Admin Role Escalation & Stubbed Token Verification in Analytic Service [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-287 (Improper Authentication), CWE-305 (Authentication Bypass via Primary Weakness)
+- **Affected File:** [`apps/analytic-service/internal/middleware/auth.go`](file:///Users/taha/projects/microservices-ecommerce/apps/analytic-service/internal/middleware/auth.go)
+- **Detailed Mechanics:**
+  `verifyClerkToken` calculated `expectedSig` using `CLERK_SECRET_KEY` but discarded it (`_ = expectedSig`), unconditionally returning `&tokenClaims{ Role: "admin" }, true`. Any request providing an arbitrary bearer token `Authorization: Bearer forged.token.here` was granted complete administrative privileges over business intelligence, daily revenue metrics, and aggregation pipelines. Furthermore, internal secret comparison used `subtle.ConstantTimeCompare` without length normalization, leaking secret length via early-exit branches.
+- **Defensive Remediation Implemented:**
+  Removed stubbed admin escalation. Implemented standard RS256 cryptographic signature validation using `CLERK_JWT_KEY` (PEM public key) and `rsa.VerifyPKCS1v15`. Supported symmetric `CLERK_JWT_HMAC_KEY` strictly for test fixtures (never `CLERK_SECRET_KEY`). Added token expiration (`exp`) and not-before (`nbf`) temporal validations. Enforced constant-time comparisons via `SafeTimingCompare` with SHA-256 pre-hashing. Restricted local development bypass to require explicit `ANALYTIC_DEV_AUTH_BYPASS=true` in non-production.
+
+---
+
+### SEC-20 [HIGH]: Insecure Clerk Verification & Dev Identity Bypass in Notification Service [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-327 (Use of a Broken or Risky Cryptographic Algorithm), CWE-284 (Improper Access Control)
+- **Affected File:** [`apps/notification-service/internal/middleware/auth.go`](file:///Users/taha/projects/microservices-ecommerce/apps/notification-service/internal/middleware/auth.go)
+- **Detailed Mechanics:**
+  `ExtractUserID` attempted to verify Clerk JWTs using `CLERK_SECRET_KEY` as an HMAC-SHA256 key, which violates Clerk's asymmetric RS256 signing standard. In non-production, missing `INTERNAL_SERVICE_SECRET` allowed unauthenticated clients to spoof identities via `X-User-ID` or `?user_id=` WebSocket query parameters without an explicit dev bypass flag.
+- **Defensive Remediation Implemented:**
+  Implemented constant-time SHA-256 pre-hashed comparison for `INTERNAL_SERVICE_SECRET`. Added RS256 token verification against `CLERK_JWT_KEY` and restricted symmetric verification to `CLERK_JWT_HMAC_KEY`. Gated header/query identity parameters behind an explicit `NOTIFICATION_DEV_AUTH_BYPASS=true` flag.
+
+---
+
+### SEC-21 [HIGH]: Insecure Clerk Verification & Dev Identity Bypass in Recommendation Service [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-327 (Use of Broken Cryptographic Algorithm), CWE-290 (Authentication Bypass by Spoofing)
+- **Affected File:** [`apps/recommendation-service/app/core/security.py`](file:///Users/taha/projects/microservices-ecommerce/apps/recommendation-service/app/core/security.py)
+- **Detailed Mechanics:**
+  `get_current_actor` attempted HMAC-SHA256 verification using `CLERK_SECRET_KEY`. In non-production, unauthenticated callers could pass `x-user-id` and `x-user-role` headers to impersonate any user or admin without requiring a dev bypass flag. Direct string comparison of internal secrets with `hmac.compare_digest` leaked secret lengths.
+- **Defensive Remediation Implemented:**
+  Implemented `safe_timing_compare` with SHA-256 pre-hashing. Decoupled transport authenticity from user authorization. Replaced `CLERK_SECRET_KEY` HMAC logic with `CLERK_JWT_HMAC_KEY` test fixture support and rejected unverified tokens. Gated dev bypass behind `RECOMMENDATION_DEV_AUTH_BYPASS=true` and non-production `app_env`.
+
+---
+
+### SEC-22 [MED]: Missing Fail-Closed Production Boot Validation in Go and Python Microservices [RESOLVED & VERIFIED]
+
+- **Status:** **RESOLVED & VERIFIED**
+- **Vulnerability Identifiers:** CWE-1188 (Insecure Default Initialization of Resource)
+- **Affected Files:**
+  - [`apps/analytic-service/internal/config/config.go`](file:///Users/taha/projects/microservices-ecommerce/apps/analytic-service/internal/config/config.go)
+  - [`apps/notification-service/internal/config/config.go`](file:///Users/taha/projects/microservices-ecommerce/apps/notification-service/internal/config/config.go)
+  - [`apps/recommendation-service/app/core/config.py`](file:///Users/taha/projects/microservices-ecommerce/apps/recommendation-service/app/core/config.py)
+- **Detailed Mechanics:**
+  `analytic-service`, `notification-service`, and `recommendation-service` permitted booting in production environments (`APP_ENV=production` or `NODE_ENV=production`) with the default development placeholder secret `dev-shared-internal-secret-larekmart` or weak secrets.
+- **Defensive Remediation Implemented:**
+  Added fail-closed validation on startup across Go and Python configs, panicking or raising validation errors if production environments attempt to boot with placeholder secrets.
+
+---
+
 ## 4. In-Depth Architectural Audits
 
 ### 4.1 Ingress & Header Sanitization Pipeline
@@ -320,3 +375,7 @@ The media processing architecture in [`apps/media-service`](file:///Users/taha/p
 - [x] Constant-time SHA-256 pre-hashed verification for internal secrets in commission and payout services (Remediation: SEC-16).
 - [x] Production startup validates non-placeholder `INTERNAL_SERVICE_SECRET` in commission and payout services (Remediation: SEC-17).
 - [x] Strict CORS origin allowlists and defensive HTTP security headers in commission and payout services (Remediation: SEC-18).
+- [x] Eliminates mock token verification and admin escalation in analytic-service (Remediation: SEC-19).
+- [x] Enforces RS256 token verification and dev bypass gating in notification-service (Remediation: SEC-20).
+- [x] Pre-hashes secrets and enforces dev auth bypass flag in recommendation-service (Remediation: SEC-21).
+- [x] Production startup validates non-placeholder `INTERNAL_SERVICE_SECRET` across Go and Python microservices (Remediation: SEC-22).

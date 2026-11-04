@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -28,6 +29,9 @@ func TestServeWS_Unauthorized(t *testing.T) {
 }
 
 func TestServeWS_UpgradeAndConnect(t *testing.T) {
+	os.Setenv("NOTIFICATION_DEV_AUTH_BYPASS", "true")
+	defer os.Unsetenv("NOTIFICATION_DEV_AUTH_BYPASS")
+
 	logger := observability.NewLogger("test", "test", "debug", "pretty")
 	hub := NewHub(logger, nil)
 	ctx, cancel := context.WithCancel(context.Background())
