@@ -98,3 +98,51 @@ class FraudCaseDTO(BaseModel):
     createdAt: str
     updatedAt: str
 
+
+class FraudDecisionDTO(BaseModel):
+    id: str
+    caseId: str
+    analystId: str
+    decision: AnalystDecision
+    notes: str
+    overridePrevious: bool
+    auditTrail: dict[str, Any] = Field(default_factory=dict)
+    createdAt: str
+
+
+class RiskModelVersionDTO(BaseModel):
+    id: str
+    modelName: str
+    algorithm: str
+    hyperparameters: dict[str, Any] = Field(default_factory=dict)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    isActive: bool = True
+    trainedAt: str
+
+
+class RetrainModelRequest(BaseModel):
+    modelName: str = Field(default="isolation_forest_v1", min_length=3, max_length=128)
+    nEstimators: int = Field(default=50, ge=10, le=500)
+    contamination: float = Field(default=0.05, ge=0.01, le=0.5)
+
+
+class RulePerformanceStat(BaseModel):
+    ruleCode: str
+    totalTriggers: int = 0
+    confirmedFraud: int = 0
+    falsePositives: int = 0
+    accuracyRate: float = 0.0
+
+
+class FraudPerformanceMetricsDTO(BaseModel):
+    totalAssessments: int = 0
+    totalCases: int = 0
+    totalResolvedCases: int = 0
+    confirmedFraudCases: int = 0
+    falsePositiveCases: int = 0
+    falsePositiveRate: float = 0.0
+    trueBlockRate: float = 0.0
+    averageLatencyMs: float = 0.0
+    rulePerformance: list[RulePerformanceStat] = Field(default_factory=list)
+
+

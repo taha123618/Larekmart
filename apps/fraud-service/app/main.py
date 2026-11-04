@@ -8,6 +8,7 @@ from app.api.internal import router as internal_router
 from app.core.config import get_settings
 from app.core.logging import get_logger, setup_logging
 from app.core.security import SecurityHeadersMiddleware
+from app.core.telemetry import setup_telemetry
 from app.kafka.consumer import start_kafka_consumer, stop_kafka_consumer
 from app.kafka.producer import stop_kafka_producer
 
@@ -58,6 +59,9 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(internal_router)
     app.include_router(admin_router)
+
+    # Distributed Tracing Instrumentation
+    setup_telemetry(app)
 
     return app
 

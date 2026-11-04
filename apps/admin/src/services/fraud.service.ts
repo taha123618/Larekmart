@@ -10,6 +10,8 @@ import type {
   AssessmentWorkflow,
   AnalystDecision,
   CreateFraudRule,
+  FraudDecision,
+  RiskModelVersion,
 } from "@repo/types";
 import { getApiGatewayUrl } from "./gateway.service";
 
@@ -164,4 +166,118 @@ export async function createAdminFraudRule(
 
   return res.json();
 }
+
+/**
+ * Fetch full chronological audit trail of analyst decisions for a specific fraud case
+ */
+export async function fetchAdminFraudCaseDecisions(
+  caseId: string,
+  authToken?: string | null,
+): Promise<FraudDecision[]> {
+  const res = await fetch(`${ADMIN_FRAUD_BASE}/cases/${caseId}/decisions`, {
+    headers: getHeaders(authToken),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || `Failed to fetch fraud case decisions (HTTP ${res.status})`,
+    );
+  }
+
+  return res.json();
+}
+
+export interface FraudPerformanceMetrics {
+  totalAssessments: number;
+  totalCases: number;
+  totalResolvedCases: number;
+  confirmedFraudCases: number;
+  falsePositiveCases: number;
+  falsePositiveRate: number;
+  trueBlockRate: number;
+  averageLatencyMs: number;
+  rulePerformance: Array<{
+    ruleCode: string;
+    totalTriggers: number;
+    confirmedFraud: number;
+    falsePositives: number;
+    accuracyRate: number;
+  }>;
+}
+
+/**
+ * Fetch performance metrics, accuracy rates, and false-positive tracking
+ */
+export async function fetchAdminFraudPerformance(
+  authToken?: string | null,
+): Promise<FraudPerformanceMetrics> {
+  const res = await fetch(`${ADMIN_FRAUD_BASE}/performance`, {
+    headers: getHeaders(authToken),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || `Failed to fetch fraud performance metrics (HTTP ${res.status})`,
+    );
+  }
+
+  return res.json();
+}
+
+/**
+ * Fetch list of trained anomaly detection models and versions
+ */
+export async function fetchAdminFraudModels(
+  authToken?: string | null,
+): Promise<RiskModelVersion[]> {
+  const res = await fetch(`${ADMIN_FRAUD_BASE}/models`, {
+    headers: getHeaders(authToken),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || `Failed to fetch fraud model versions (HTTP ${res.status})`,
+    );
+  }
+
+  return res.json();
+}
+
+/**
+ * Trigger live retraining of scikit-learn IsolationForest anomaly model
+ */
+export async function retrainAdminFraudModel(
+  payload: {
+    modelName?: string;
+    nEstimators?: number;
+    contamination?: number;
+  },
+  authToken?: string | null,
+): Promise<RiskModelVersion> {
+  const res = await fetch(`${ADMIN_FRAUD_BASE}/models/retrain`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify({
+      modelName: payload.modelName || "isolation_forest_v1",
+      nEstimators: payload.nEstimators ?? 50,
+      contamination: payload.contamination ?? 0.05,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || `Failed to retrain fraud model (HTTP ${res.status})`,
+    );
+  }
+
+  return res.json();
+}
+
 

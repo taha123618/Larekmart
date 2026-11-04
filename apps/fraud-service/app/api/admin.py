@@ -1,11 +1,14 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from app.core.security import verify_admin_role
 from app.schemas.fraud import (
     CreateFraudRuleRequest,
     FraudCaseDTO,
+    FraudDecisionDTO,
+    FraudPerformanceMetricsDTO,
     FraudRuleDTO,
+    RetrainModelRequest,
     ReviewFraudCaseRequest,
+    RiskModelVersionDTO,
 )
 from app.services.fraud_service import fraud_service
 
@@ -19,13 +22,24 @@ router = APIRouter(prefix="/api/v1/admin/fraud", tags=["Admin Fraud Management"]
     dependencies=[Depends(verify_admin_role)],
 )
 async def list_cases(
-    status: Optional[str] = Query(None, description="Filter by case status (OPEN, IN_REVIEW, RESOLVED_BLOCKED, RESOLVED_DISMISSED)"),
-    priority: Optional[str] = Query(None, description="Filter by priority (LOW, MEDIUM, HIGH, CRITICAL)"),
+    status: str | None = Query(None, description="Filter by case status (OPEN, IN_REVIEW, RESOLVED_BLOCKED, RESOLVED_DISMISSED)"),
+    priority: str | None = Query(None, description="Filter by priority (LOW, MEDIUM, HIGH, CRITICAL)"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
     """Lists fraud cases requiring investigation and human analyst review."""
     return await fraud_service.list_cases(status=status, priority=priority, limit=limit, offset=offset)
+
+
+@router.get(
+    "/cases/{case_id}/decisions",
+    response_model=list[FraudDecisionDTO],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_role)],
+)
+async def list_case_decisions(case_id: str):
+    """Retrieves full audit trail of analyst decisions and resolutions for a specific fraud case."""
+    return await fraud_service.list_case_decisions(case_id)
 
 
 @router.post(
@@ -45,7 +59,7 @@ async def review_case(case_id: str, request: ReviewFraudCaseRequest):
     dependencies=[Depends(verify_admin_role)],
 )
 async def list_rules(
-    workflow: Optional[str] = Query(None, description="Filter rules by workflow (PAYMENT, ORDER, ACCOUNT, PROMOTION, PAYOUT, SELLER)"),
+    workflow: str | None = Query(None, description="Filter rules by workflow (PAYMENT, ORDER, ACCOUNT, PROMOTION, PAYOUT, SELLER)"),
 ):
     """Lists configured fraud scoring and evaluation rules."""
     return await fraud_service.list_rules(workflow=workflow)
@@ -82,4 +96,38 @@ async def toggle_rule(rule_id: str, payload: dict):
 async def get_admin_metrics():
     """Returns aggregated fraud metrics for the executive dashboard."""
     return await fraud_service.get_admin_metrics()
+
+
+@router.get(
+    "/performance",
+    response_model=FraudPerformanceMetricsDTO,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_role)],
+)
+async def get_performance_metrics():
+    """Returns detailed model and rule performance metrics, false positive rates, and accuracy stats."""
+    return await fraud_service.get_performance_metrics()
+
+
+@router.get(
+    "/models",
+    response_model=list[RiskModelVersionDTO],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_role)],
+)
+async def list_models():
+    """Lists trained machine learning anomaly detection models and versions."""
+    return await fraud_service.list_model_versions()
+
+
+@router.post(
+    "/models/retrain",
+    response_model=RiskModelVersionDTO,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_role)],
+)
+async def retrain_model(request: RetrainModelRequest):
+    """Triggers scikit-learn IsolationForest model retraining and logs the model version."""
+    return await fraud_service.retrain_model(request)
+
 

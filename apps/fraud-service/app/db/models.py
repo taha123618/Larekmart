@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Boolean,
     Column,
@@ -11,6 +11,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, relationship
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 
 class Base(DeclarativeBase):
@@ -30,8 +34,8 @@ class FraudRule(Base):
     conditions = Column(JSONB, nullable=False, default=dict)
     fail_mode = Column(String(16), nullable=False, default="FAIL_CLOSED")  # FAIL_OPEN, FAIL_CLOSED
     is_active = Column(Boolean, nullable=False, default=True, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
 
 class RiskAssessment(Base):
@@ -49,7 +53,7 @@ class RiskAssessment(Base):
     fail_mode_used = Column(Boolean, default=False, nullable=False)
     assessment_metadata = Column(JSONB, nullable=False, default=dict)
     latency_ms = Column(Integer, default=0, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
 
     signals = relationship("RiskSignal", back_populates="assessment", cascade="all, delete-orphan")
     case = relationship("FraudCase", back_populates="assessment", uselist=False)
@@ -64,7 +68,7 @@ class RiskSignal(Base):
     signal_value = Column(String(256), nullable=False)
     score_delta = Column(Integer, nullable=False)
     signal_metadata = Column(JSONB, nullable=True, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     assessment = relationship("RiskAssessment", back_populates="signals")
 
@@ -79,8 +83,8 @@ class FraudCase(Base):
     status = Column(String(32), nullable=False, default="OPEN", index=True)  # OPEN, IN_REVIEW, RESOLVED_BLOCKED, RESOLVED_DISMISSED
     priority = Column(String(16), nullable=False, default="MEDIUM", index=True)  # LOW, MEDIUM, HIGH, CRITICAL
     assigned_to = Column(String(128), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
     assessment = relationship("RiskAssessment", back_populates="case")
     decisions = relationship("FraudDecision", back_populates="case", cascade="all, delete-orphan")
@@ -96,7 +100,7 @@ class FraudDecision(Base):
     notes = Column(Text, nullable=False)
     override_previous = Column(Boolean, default=False, nullable=False)
     audit_trail = Column(JSONB, nullable=False, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     case = relationship("FraudCase", back_populates="decisions")
 
@@ -110,5 +114,5 @@ class RiskModelVersion(Base):
     hyperparameters = Column(JSONB, nullable=False, default=dict)
     metrics = Column(JSONB, nullable=False, default=dict)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
-    trained_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    trained_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 

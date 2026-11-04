@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     # Risk Scoring Thresholds
     REVIEW_THRESHOLD: int = 40
     BLOCK_THRESHOLD: int = 75
+    EXTERNAL_RISK_PROVIDER_ENABLED: bool = True
+
+    # Observability & OpenTelemetry
+    OTEL_SERVICE_NAME: str = "fraud-service"
+    OTEL_TRACING_ENABLED: bool = True
 
     ALLOWED_ORIGINS: list[str] = [
         "http://localhost:3002",

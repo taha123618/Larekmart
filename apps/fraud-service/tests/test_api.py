@@ -281,3 +281,187 @@ async def test_bearer_token_admin_validation(async_client: AsyncClient, monkeypa
             APP_ENV="production",
             INTERNAL_SERVICE_SECRET="dev-shared-internal-secret-larekmart",
         )
+
+
+@pytest.mark.asyncio
+async def test_case_decisions_audit_trail(async_client: AsyncClient):
+    from app.core.config import get_settings
+    settings = get_settings()
+    admin_headers = {
+        "x-internal-secret": settings.INTERNAL_SERVICE_SECRET,
+        "x-user-role": "admin",
+        "x-user-id": "admin_investigator",
+    }
+
+    # 1. Trigger a high risk assessment to generate an open case
+    assess_payload = {
+        "workflow": "PAYMENT",
+        "entityId": "pay_decision_audit_01",
+        "entityType": "payment",
+        "amount": 999999.0,
+    }
+    assess_res = await async_client.post(
+        "/api/v1/internal/fraud/assess",
+        json=assess_payload,
+        headers={"x-internal-secret": settings.INTERNAL_SERVICE_SECRET},
+    )
+    assert assess_res.status_code == 200
+    case_id = assess_res.json()["caseId"]
+    assert case_id is not None
+
+    # 2. Review the case with BLOCK decision
+    review_payload = {
+        "decision": "BLOCK",
+        "notes": "Confirmed carding attack from malicious cluster",
+        "analystId": "analyst_security_pro",
+        "overridePrevious": False,
+    }
+    review_res = await async_client.post(
+        f"/api/v1/admin/fraud/cases/{case_id}/review",
+        json=review_payload,
+        headers=admin_headers,
+    )
+    assert review_res.status_code == 200
+    assert review_res.json()["status"] == "RESOLVED_BLOCKED"
+
+    # 3. Fetch case decisions audit trail
+    decisions_res = await async_client.get(
+        f"/api/v1/admin/fraud/cases/{case_id}/decisions",
+        headers=admin_headers,
+    )
+    assert decisions_res.status_code == 200
+    decisions = decisions_res.json()
+    assert isinstance(decisions, list)
+    assert len(decisions) >= 1
+    latest_decision = decisions[0]
+    assert latest_decision["caseId"] == case_id
+    assert latest_decision["analystId"] == "analyst_security_pro"
+    assert latest_decision["decision"] == "BLOCK"
+    assert "Confirmed carding attack" in latest_decision["notes"]
+
+
+@pytest.mark.asyncio
+async def test_admin_model_versions_and_retraining(async_client: AsyncClient):
+    from app.core.config import get_settings
+    settings = get_settings()
+    admin_headers = {
+        "x-internal-secret": settings.INTERNAL_SERVICE_SECRET,
+        "x-user-role": "admin",
+        "x-user-id": "ml_engineer_01",
+    }
+
+    # 1. Query existing model versions
+    models_res = await async_client.get("/api/v1/admin/fraud/models", headers=admin_headers)
+    assert models_res.status_code == 200
+    models = models_res.json()
+    assert isinstance(models, list)
+    assert len(models) >= 1
+    assert "isolation_forest" in models[0]["modelName"]
+    assert models[0]["algorithm"] == "IsolationForest"
+
+    # 2. Trigger retraining
+    retrain_payload = {
+        "modelName": "isolation_forest_v2_hardened",
+        "nEstimators": 75,
+        "contamination": 0.08,
+    }
+    retrain_res = await async_client.post(
+        "/api/v1/admin/fraud/models/retrain",
+        json=retrain_payload,
+        headers=admin_headers,
+    )
+    assert retrain_res.status_code == 200
+    new_model = retrain_res.json()
+    assert new_model["modelName"] == "isolation_forest_v2_hardened"
+    assert new_model["hyperparameters"]["n_estimators"] == 75
+    assert new_model["metrics"]["status"] == "TRAINED"
+
+    # 3. Verify newly retrained model is in the model versions list
+    models_after = await async_client.get("/api/v1/admin/fraud/models", headers=admin_headers)
+    assert models_after.status_code == 200
+    names = [m["modelName"] for m in models_after.json()]
+    assert "isolation_forest_v2_hardened" in names
+
+
+@pytest.mark.asyncio
+async def test_admin_performance_metrics_and_rules(async_client: AsyncClient):
+    from app.core.config import get_settings
+    settings = get_settings()
+    admin_headers = {
+        "x-internal-secret": settings.INTERNAL_SERVICE_SECRET,
+        "x-user-role": "admin",
+        "x-user-id": "risk_analytics_lead",
+    }
+
+    # Query performance analytics
+    perf_res = await async_client.get("/api/v1/admin/fraud/performance", headers=admin_headers)
+    assert perf_res.status_code == 200
+    data = perf_res.json()
+    assert "totalAssessments" in data
+    assert "totalCases" in data
+    assert "falsePositiveRate" in data
+    assert "trueBlockRate" in data
+    assert "rulePerformance" in data
+    assert isinstance(data["rulePerformance"], list)
+
+
+@pytest.mark.asyncio
+async def test_external_risk_provider_assessment(async_client: AsyncClient):
+    from app.core.config import get_settings
+    settings = get_settings()
+    internal_headers = {"x-internal-secret": settings.INTERNAL_SERVICE_SECRET}
+
+    # 1. Normal user with benign email and IP
+    benign_payload = {
+        "workflow": "ACCOUNT",
+        "entityId": "usr_trusted_01",
+        "entityType": "user",
+        "ipAddress": "192.168.1.50",
+        "metadata": {"email": "verified.user@gmail.com"},
+    }
+    benign_res = await async_client.post(
+        "/api/v1/internal/fraud/assess",
+        json=benign_payload,
+        headers=internal_headers,
+    )
+    assert benign_res.status_code == 200
+    assert benign_res.json()["decision"] == "ALLOW"
+
+    # 2. Suspicious user with disposable email domain (tempmail.com)
+    disposable_payload = {
+        "workflow": "ACCOUNT",
+        "entityId": "usr_disposable_01",
+        "entityType": "user",
+        "ipAddress": "192.168.1.50",
+        "metadata": {"email": "scammer123@tempmail.com"},
+    }
+    disp_res = await async_client.post(
+        "/api/v1/internal/fraud/assess",
+        json=disposable_payload,
+        headers=internal_headers,
+    )
+    assert disp_res.status_code == 200
+    disp_data = disp_res.json()
+    # Disposable email adds 40 score delta -> threshold 40 -> REVIEW
+    assert disp_data["riskScore"] >= 40
+    assert any("disposable_email" in s["name"] for s in disp_data["signals"])
+
+    # 3. Suspicious user with proxy IP (198.51.100.22)
+    proxy_payload = {
+        "workflow": "PAYMENT",
+        "entityId": "pay_proxy_01",
+        "entityType": "payment",
+        "ipAddress": "198.51.100.22",
+        "metadata": {"email": "legit@company.org"},
+    }
+    proxy_res = await async_client.post(
+        "/api/v1/internal/fraud/assess",
+        json=proxy_payload,
+        headers=internal_headers,
+    )
+    assert proxy_res.status_code == 200
+    proxy_data = proxy_res.json()
+    # Proxy IP adds 45 score delta -> threshold 40 -> REVIEW
+    assert proxy_data["riskScore"] >= 40
+    assert any("proxy_or_vpn" in s["name"] for s in proxy_data["signals"])
+
