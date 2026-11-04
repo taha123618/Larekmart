@@ -43,6 +43,7 @@ jobs:
       SELLER_DATABASE_URL: ${{ secrets.SELLER_DATABASE_URL }}
       COMMISSION_DATABASE_URL: ${{ secrets.COMMISSION_DATABASE_URL }}
       PAYOUT_DATABASE_URL: ${{ secrets.PAYOUT_DATABASE_URL }}
+      FRAUD_DATABASE_URL: ${{ secrets.FRAUD_DATABASE_URL }}
 
     steps:
       - name: Checkout Code
@@ -179,3 +180,16 @@ jobs:
         run: pnpm --filter wishlist-service db:deploy
         env:
           DATABASE_URL: ${{ env.WISHLIST_DATABASE_URL }}
+
+      - name: Setup uv for Python services
+        if: github.event.inputs.action == 'deploy' && env.FRAUD_DATABASE_URL != ''
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Run fraud-service (Alembic) migrations (Stage 3)
+        if: github.event.inputs.action == 'deploy' && env.FRAUD_DATABASE_URL != ''
+        run: |
+          cd apps/fraud-service
+          uv sync --frozen || uv sync
+          DATABASE_URL="${{ env.FRAUD_DATABASE_URL }}" uv run alembic upgrade head

@@ -41,7 +41,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 
 **`admin` (dashboard, :3003)** — Next.js App Router, shadcn/ui, Tailwind v4.
 
-- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), vendors (`/vendors` legal business entity and KYB verification approval dashboard), sellers (`/sellers` marketplace seller account and commission oversight), and cache
+- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), vendors (`/vendors` legal business entity and KYB verification approval dashboard), sellers (`/sellers` marketplace seller account and commission oversight), fraud (`/fraud` case investigation, rule configuration, risk metrics, and analyst adjudication), and cache
   performance (Redis hit/miss rates per service, scraped live from each service's `/metrics`).
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
@@ -122,7 +122,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 **`analytic-service` (Go 1.22 / Chi, :8004)** — high-throughput metrics and event analytics.
 
 - Routes: `/analytics/public`, `/analytics/summary`, `/analytics/merchants`, `/analytics/operations`, `/analytics/commerce`, `/analytics/daily-chart`, `/analytics/events`, `/health`, `/health/live`, `/health/ready`, `/metrics`.
-- Consumes 70+ platform Kafka event streams across all 25 microservices via `segmentio/kafka-go` with dedicated reader goroutines.
+- Consumes 70+ platform Kafka event streams across all 26 microservices via `segmentio/kafka-go` with dedicated reader goroutines.
 - Decoupled Go Pipeline: Ingestion pushes messages into a 10,000-capacity buffered channel, preventing Kafka consumer heartbeat starvation (`session.timeout.ms`) and consumer group rebalances during flash-sale traffic spikes.
 - Binary COPY Batching (`pgx.CopyFrom`): Worker pool micro-batches events (1,000 events / 500ms window) directly into monthly partitioned PostgreSQL tables (`analytics_events` `PARTITION BY RANGE (created_at)`) with Block Range Indexes (BRIN), bypassing query parser/tokenization overhead and reducing DB transactions by >99.8%.
 - Lock-Free Atomic State: In-memory atomic counters (`sync/atomic` with CAS bit casting for float64 revenue and tax) deliver sub-millisecond responses for `/analytics/summary` and `/analytics/merchants`.
@@ -283,6 +283,15 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Accounting Invariant: Balanced append-only double-entry ledger (`SUM(debit) == SUM(credit)` per transaction) guaranteeing immutable financial audit trails and zero phantom balance drift.
 - Events: Publishes `payout.scheduled`, `payout.processing`, `payout.completed`, `payout.failed`, `payout.reconciled`. Consumes `commission.accrued`, `order.delivered`, `payment.successful`, `return.refunded`, `seller.suspended`, `seller.activated`.
 
+**`fraud-service` (Python 3.12+ / FastAPI, :8024)** — real-time risk assessment, velocity abuse detection, scikit-learn anomaly scoring, promotion abuse, and fraud case management.
+
+- Routes: `POST /api/v1/internal/fraud/assess`, `GET /api/v1/internal/fraud/assessments/:id`, `GET /api/v1/admin/fraud/cases`, `POST /api/v1/admin/fraud/cases/:id/review`, `GET /api/v1/admin/fraud/rules`, `POST /api/v1/admin/fraud/rules`, `PATCH /api/v1/admin/fraud/rules/:id/toggle`, `GET /api/v1/admin/fraud/metrics`, `/health`, `/ready`, `/metrics`.
+- Persistence: PostgreSQL via SQLAlchemy async targeting `larekmart_fraud_db` (`fraud_rules`, `risk_assessments`, `risk_signals`, `fraud_cases`, `fraud_decisions`, `risk_model_versions`).
+- Caching & Velocity Tracking: Redis (`fraud:v1:*` namespace) for sliding window request counters, burst frequency detection, and active rule/model cache.
+- Multi-Workflow Protection: Synchronously assesses `PAYMENT`, `ORDER`, `ACCOUNT`, `PROMOTION`, `PAYOUT`, and `SELLER` workflows returning `ALLOW`, `REVIEW`, or `BLOCK` decisions with configurable `FAIL_OPEN` or `FAIL_CLOSED` guardrails.
+- Machine Learning & Heuristics: Blends explainable, deterministic rule evaluations with scikit-learn anomaly detection scores and risk signals.
+- Events: Publishes `fraud.assessment.completed`, `fraud.risk.detected`, `fraud.case.created`, `fraud.case.resolved`. Consumes `order.created`, `payment.successful`, `payment.failed`, `payout.scheduled`, `promotion.redeemed`, `promotion.reserved`, `return.created`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                                                                    |
@@ -304,6 +313,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | seller-service                   | Drizzle (`pg`)                | `sellers`, `seller_stores`, `seller_staff`, `seller_settings`, `seller_policies`, `seller_status_history`, `seller_performance_snapshots`, `system_settings`, `admin_delegations` |
 | PostgreSQL | commission-service               | Drizzle (`pg`)                | `commission_plans`, `commission_rules`, `commission_rule_versions`, `commission_calculations`, `commission_line_items`, `commission_adjustments`                                  |
 | PostgreSQL | payout-service                   | Drizzle (`pg`)                | `payout_accounts`, `payouts`, `payout_batches`, `settlements`, `ledger_accounts`, `ledger_entries`, `payout_adjustments`, `payout_provider_events`                                |
+| PostgreSQL | fraud-service                    | SQLAlchemy async (`asyncpg`)  | `fraud_rules`, `risk_assessments`, `risk_signals`, `fraud_cases`, `fraud_decisions`, `risk_model_versions`                                                                         |
 | MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`                                            |
 | MySQL      | return-service                   | Drizzle (`mysql2`)            | `returns`, `return_items`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_outbox`                                |
 | S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                                                            |
@@ -326,6 +336,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | seller-service                   | `@repo/redis` (ioredis)       | `seller:v1:*` (storefront profile cache, staff permission cache, rate limits), `marketplace:system_settings` (governance cache)                                                   |
 | Redis      | commission-service               | `@repo/redis` (ioredis)       | `commission:v1:*` (rule version cache, active plan cache, rate limits)                                                                                                            |
 | Redis      | payout-service                   | `@repo/redis` (ioredis)       | `payout:v1:*` (seller balance cache, idempotency lock, statement cache, rate limits)                                                                                              |
+| Redis      | fraud-service                    | `redis-py` async              | `fraud:v1:*` (sliding window velocity counters, rule cache, model version cache)                                                                                                  |
 | OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                                                             |
 | MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                                                           |
 | MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                                                          |
@@ -338,12 +349,12 @@ directly into their runtime.
 
 ### PostgreSQL Connection Pooling Layer (PgBouncer)
 
-To prevent PostgreSQL connection pool exhaustion across 17 relational microservices during high-concurrency flash sales (Daraz scale), connections are proxied through an upstream **PgBouncer** container running on port `6432` with `pool_mode = transaction`.
+To prevent PostgreSQL connection pool exhaustion across 18 relational microservices during high-concurrency flash sales (Daraz scale), connections are proxied through an upstream **PgBouncer** container running on port `6432` with `pool_mode = transaction`.
 
 PgBouncer enforces domain pool size guarantees so background or non-critical write traffic cannot exhaust database connections needed by core checkout services:
 
 - **Tier 1 — Core Commerce & Checkout (High Priority)**: `inventory_db` (pool 30), `pricing_db` (pool 25), `product_db` (pool 25), `catalog_db` (pool 25), `commission_db` (pool 15), `payout_db` (pool 15), `vendor_db` (pool 15), `seller_db` (pool 15), `shipping_db` (pool 15), `user_db` (pool 15), `promotion_db` (pool 15).
-- **Tier 2 — Search & Notifications**: `recommendation_db` (pool 10), `notification_db` (pool 10).
+- **Tier 2 — Search, Risk & Notifications**: `recommendation_db` (pool 10), `fraud_db` (pool 10), `notification_db` (pool 10).
 - **Tier 3 — Engagement & Secondary Services (Capped)**: `review_db` (pool 8), `media_db` (pool 8), `wishlist_db` (pool 8), `analytics_db` (pool 10).
 
 ## Key request flows

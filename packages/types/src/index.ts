@@ -25,3 +25,4 @@ export * from "./settlements";
 export * from "./disputes";
 export * from "./commission";
 export * from "./payout";
+export * from "./fraud";

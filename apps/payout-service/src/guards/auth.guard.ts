@@ -98,11 +98,22 @@ export class SellerGuard implements CanActivate {
       );
     }
 
-    const userId =
-      request.headers["x-user-id"] || request.headers["x-seller-id"];
+    const userId = request.headers["x-user-id"] as string | undefined;
+    const isSeller = request.headers["x-user-is-seller"] === "true";
+    const userRole = request.headers["x-user-role"] as string | undefined;
 
     if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
-      throw new UnauthorizedException("Authentication required");
+      throw new UnauthorizedException("Authentication required: Missing user identity");
+    }
+
+    // Zero-Trust: Non-seller customer roles strictly forbidden from merchant balance & payout extraction
+    if (userRole && userRole !== "seller" && userRole !== "admin" && !isSeller) {
+      throw new ForbiddenException("Seller or administrator role required");
+    }
+
+    // In production, caller must explicitly possess verified seller or admin authority
+    if (env.NODE_ENV === "production" && !isSeller && userRole !== "seller" && userRole !== "admin") {
+      throw new ForbiddenException("Seller authorization required");
     }
 
     request.sellerId = String(userId).trim();

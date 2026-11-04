@@ -11,6 +11,7 @@ Authoritative Plan & Testing Blueprint: [docs/plans/commission-and-payout-archit
 4. **Idempotency Enforcement**: All payout creation and batch runs enforce unique idempotency keys.
 5. **Universal PgBouncer Compatibility**: Database connection parameters enforce `statement_cache_size=0`.
 6. **Zero-Trust Perimeter**: `/api/v1/internal/*` routes require constant-time verification of `x-internal-secret`. Admin routes require `x-user-role === "admin"`.
+7. **Fraud Risk Holds**: High-risk seller or payout alerts (`fraud.risk.detected`, `fraud.case.created`) automatically place seller payouts on administrative hold (`holdPayouts = true`); analyst case resolution (`fraud.case.resolved`) with decision `APPROVE` or `DISMISS` safely releases holds (`holdPayouts = false`).
 
 ## 3. Database Tables
 - `payout_accounts`
@@ -22,7 +23,11 @@ Authoritative Plan & Testing Blueprint: [docs/plans/commission-and-payout-archit
 - `payout_adjustments`
 - `payout_provider_events`
 
-## 4. Key Commands
+## 4. Kafka Events & Integration
+- **Publishes**: `payout.scheduled`, `payout.processing`, `payout.completed`, `payout.failed`, `payout.reconciled`.
+- **Consumes**: `commission.accrued`, `order.delivered`, `payment.successful`, `return.refunded`, `seller.suspended`, `seller.activated`, `fraud.risk.detected`, `fraud.case.created`, `fraud.case.resolved`.
+
+## 5. Key Commands
 ```bash
 pnpm --filter payout-service check-types  # Static type check
 pnpm --filter payout-service test         # Run unit & security integration tests

@@ -266,7 +266,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 
 > **Zero Trust Perimeter & Event-Driven Core**: Cross-service communication is strictly asynchronous through Kafka events; backend services never make synchronous HTTP calls to one another. All public traffic enters through `api-gateway`, which enforces rate limits, validates Clerk sessions, scrubs spoofed headers, and injects verified identity claims signed with `x-internal-secret`. The gateway boots independently of downstream services, leveraging Opossum circuit breakers for graceful degradation (returning degraded stub payloads for non-critical reads such as reviews, wishlists, and recommendations during outages) while strictly failing closed with structured 503 responses on transactional endpoints. Downstream services verify transport authenticity in constant time and strictly decouple gateway transport secrets from administrative end-user privileges. For deep architectural specifications, see [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) (event schemas), [`SECURITY.md`](SECURITY.md) (perimeter & cryptographic standards), and [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md) (vulnerability analysis & remediation log).
 
-> **Deterministic Anti-Starvation Resource Boundaries**: All 43 service containers in `docker-compose.yml` (25 microservices, 3 Kafka KRaft brokers, OpenSearch, PostgreSQL, and MySQL) enforce granular CPU and RAM limits and reservations (`deploy.resources.limits` & `reservations`) using 6 standardized profiles, preventing host memory starvation and Linux OOM killer termination under peak marketplace loads.
+> **Deterministic Anti-Starvation Resource Boundaries**: All 44 service containers in `docker-compose.yml` (26 microservices, 3 Kafka KRaft brokers, OpenSearch, PostgreSQL, and MySQL) enforce granular CPU and RAM limits and reservations (`deploy.resources.limits` & `reservations`) using 6 standardized profiles, preventing host memory starvation and Linux OOM killer termination under peak marketplace loads.
 
 ### ⚡ Daraz-Scale High-Concurrency Architecture & Resilience Engineering
 
@@ -307,7 +307,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
    - Guaranteed pool quotas prevent non-critical background traffic from starving Tier-1 commerce databases (`product_db`, `inventory_db`, `catalog_db`, `pricing_db`).
    - Prisma packages configure `directUrl` for zero-overhead direct migrations on port 5432 while routing runtime traffic through PgBouncer.
 8. **Decoupled Telemetry Pipeline & Go Ingestion Engine (`analytic-service`)**:
-   - High-throughput **Go 1.22 (Chi)** microservice consuming 70+ platform Kafka event streams across all 25 microservices with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
+   - High-throughput **Go 1.22 (Chi)** microservice consuming 70+ platform Kafka event streams across all 26 microservices with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
    - Micro-batches events (1,000 events / 500ms window) directly into monthly partitioned PostgreSQL tables (`PARTITION BY RANGE (created_at)`) with BRIN indexing using native binary COPY protocol (`pgx.CopyFrom`), reducing database write overhead by over **99.8%** compared to single-row inserts.
    - Lock-free atomic counters (`sync/atomic` with CAS bit casting for float64 metrics) provide `<1ms` KPI snapshot queries, backed by Redis TTL read-through caching.
    - Graceful shutdown drains in-flight channels and flushes pending micro-batches on `SIGTERM`/`SIGINT` to guarantee zero event loss.
@@ -331,7 +331,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - API Gateway enforces **In-Flight Concurrency Bulkheads** (clamping concurrent checkout requests from 50 to 5) and adaptive rate limiting (clamping from 30 to 5 req/min) during downstream degradation, fast-rejecting with **HTTP 503** and `Retry-After: 15` to protect database pools.
 13. **Zero-Trust Perimeter Authorization & Transport Secret Decoupling**:
     - API Gateway unconditionally strips client-supplied identity and transport headers (`x-user-id`, `x-user-role`, `x-internal-secret`) before forwarding traffic downstream.
-    - All 25 microservices enforce constant-time cryptographic verification (`crypto.timingSafeEqual` with SHA-256 pre-hashing) on internal transport secrets, eliminating timing-oracle attack surfaces.
+    - All 26 microservices enforce constant-time cryptographic verification (`crypto.timingSafeEqual` with SHA-256 pre-hashing) on internal transport secrets, eliminating timing-oracle attack surfaces.
     - Downstream services strictly decouple gateway transport secrets from end-user authorization: proxied user requests require explicit `userRole === "admin"` claims; internal transport secrets alone never grant administrative access on behalf of an end user.
 14. **Enterprise Supply-Chain & Runtime Vulnerability Hardening**:
     - Upgraded `vendor-service` to **NestJS 11 on Fastify 5**, eliminating four high-severity middleware bypass advisories (`GHSA-r4wm-x892-vjmx`, `GHSA-wf42-42fg-fg84`, `GHSA-6v32-fjc9-9qf6`, `GHSA-9c5c-9qcx-q35q`).
@@ -342,6 +342,11 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - **Balanced Double-Entry Financial Journal**: `payout-service` eliminates mutable balance anomalies by deriving seller balances strictly from append-only ledger entries (`SUM(credits) - SUM(debits)`). Every posted settlement transaction satisfies the fundamental zero-sum invariant (`SUM(debit) == SUM(credit)`) within serializable PostgreSQL transactions.
     - **Settlement Batches & Maturity Lifecycles**: Supports configurable settlement schedules (daily, weekly, bi-weekly, monthly) with dispute/fraud holds, automated maturity unlocks upon order delivery (`order.delivered`), reserve deductions, and automated compensation reversals (`commission.adjusted`, `commission.reversed`) upon customer returns.
     - **Zero Floating-Point Drift**: All financial arithmetic in both services uses `Decimal.js` fixed-point decimal arithmetic, preventing binary IEEE-754 floating-point inaccuracies across multi-currency conversions and sub-cent commission splits.
+16. **Enterprise Real-Time Fraud & Abuse Prevention Engine (`fraud-service`)**:
+    - **Multi-Workflow Risk Assessment**: Evaluates incoming transaction payloads synchronously across 6 business workflows (`PAYMENT`, `ORDER`, `ACCOUNT`, `PROMOTION`, `PAYOUT`, `SELLER`) returning `ALLOW`, `REVIEW`, or `BLOCK` decisions within strict sub-50ms latency budgets.
+    - **Redis Sliding-Window Velocity Defense**: Tracks card testing bursts, coupon redemption spam, and rapid checkout velocities using atomic Redis sliding windows and IP/device fingerprint rate limiters.
+    - **Machine Learning & Heuristics Fusion**: Integrates configurable, explainable rules with scikit-learn anomaly scoring, computing structured risk scores (0-100) and discrete risk signals.
+    - **Analyst Investigation Case Management & Event Orchestration**: Provides `/admin/fraud/cases` workflow with automated case assignment, analyst decision overrides (`APPROVE`, `BLOCK`, `DISMISS`), and real-time Kafka event broadcasts (`fraud.risk.detected`, `fraud.case.created`, `fraud.case.resolved`) that trigger order quarantining, escrow freezes, and payout holds.
 
 For in-depth architectural specifications and diagrams, see [`docs/plans/README.md`](docs/plans/README.md).
 
@@ -379,7 +384,8 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 │   ├── vendor-service/        # NestJS 11 (Fastify 5) + PostgreSQL + Prisma + Redis vendor onboarding, KYB verification & documents (:8020)
 │   ├── seller-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis storefront configuration, staff, policies & performance (:8021)
 │   ├── commission-service/    # Fastify 5 + PostgreSQL + Drizzle + Kafka + Decimal.js marketplace commission plans, rules & calculations (:8022)
-│   └── payout-service/        # NestJS 11 (Fastify 5) + PostgreSQL + Drizzle + Kafka + Decimal.js seller payouts, double-entry ledger & settlements (:8023)
+│   ├── payout-service/        # NestJS 11 (Fastify 5) + PostgreSQL + Drizzle + Kafka + Decimal.js seller payouts, double-entry ledger & settlements (:8023)
+│   └── fraud-service/         # Python 3.12+ (FastAPI) + PostgreSQL + SQLAlchemy + Redis + Kafka + scikit-learn fraud engine (:8024)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -438,6 +444,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | **`seller-service`** | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Clerk, Zod | `8021` | Marketplace storefront configuration, custom slugs & branding, seller staff & permissions, marketplace operational settings, policies, performance snapshots & seller events. |
 | **`commission-service`** | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Decimal.js, Zod | `8022` | Marketplace commission plans, rule versioning, percentage & fixed fees, min/max limits, order item fee calculations, and settlement quote breakdowns. |
 | **`payout-service`** | NestJS 11 (Fastify 5), Drizzle, PostgreSQL, Redis, Kafka, Decimal.js, Zod | `8023` | Seller payouts, balanced append-only double-entry ledger, settlement batches, maturity holds, reserve reserves & payout provider reconciliation. |
+| **`fraud-service`** | Python 3.12+ (FastAPI), SQLAlchemy, PostgreSQL, Redis, Kafka, scikit-learn | `8024` | Real-time risk assessment, velocity abuse detection, scikit-learn anomaly scoring, promotion abuse, and fraud case management. |
 
 ---
 
@@ -499,7 +506,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 # Option A: Full Docker Compose Environment (Recommended)
 # ==============================================================================
 # Spins up backing databases (Postgres with pgvector, MongoDB replica set, isolated MySQL instances for tax_db & return_db, Redis,
-# 3-broker Kafka KRaft cluster, OpenSearch), Kafka UI, all 25 backend services, and both Next.js frontends:
+# 3-broker Kafka KRaft cluster, OpenSearch), Kafka UI, all 26 backend services, and both Next.js frontends:
 docker compose up -d --build
 
 # View logs:
@@ -535,6 +542,7 @@ pnpm --filter commission-service db:migrate
 pnpm --filter payout-service db:migrate
 pnpm --filter @repo/vendor-db db:generate
 pnpm --filter @repo/vendor-db db:migrate
+(cd apps/fraud-service && uv run alembic upgrade head)
 
 # 4. Start all workspaces concurrently in development mode
 pnpm dev

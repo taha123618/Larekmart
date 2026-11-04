@@ -11,9 +11,7 @@ import {
   createCommissionPlan,
   createCommissionRule,
   updateCommissionRule,
-  type AdminCommissionPlan,
   type AdminCommissionRule,
-  type AdminCommissionRuleVersion,
   type CreatePlanInput,
   type CreateRuleInput,
   type UpdateRuleInput,
@@ -51,11 +49,8 @@ import {
   Plus,
   RefreshCw,
   FileSpreadsheet,
-  CheckCircle2,
   Clock,
   Edit2,
-  ShieldAlert,
-  ArrowRight,
 } from "lucide-react";
 import { toast } from "react-toastify";
 

@@ -6,6 +6,7 @@ import { payoutAccounts } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import {
   COMMISSION_TOPICS,
+  FRAUD_TOPICS,
   type CommissionAccruedEvent,
   type CommissionAdjustedEvent,
   type CommissionReversedEvent,
@@ -102,6 +103,27 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
             }
           },
         },
+        {
+          topicName: FRAUD_TOPICS.RISK_DETECTED,
+          topicHandler: async (message) => {
+            const payload = unwrapPayload(message);
+            await this.handleFraudRiskAlert(payload);
+          },
+        },
+        {
+          topicName: FRAUD_TOPICS.CASE_CREATED,
+          topicHandler: async (message) => {
+            const payload = unwrapPayload(message);
+            await this.handleFraudRiskAlert(payload);
+          },
+        },
+        {
+          topicName: FRAUD_TOPICS.CASE_RESOLVED,
+          topicHandler: async (message) => {
+            const payload = unwrapPayload(message);
+            await this.handleFraudCaseResolved(payload);
+          },
+        },
       ]);
 
       this.logger.log("Payout consumer successfully subscribed to Kafka topics");
@@ -195,6 +217,40 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
         .where(eq(payoutAccounts.sellerId, sellerId));
     } catch (err) {
       this.logger.error(`Failed to release payout accounts hold for seller ${sellerId}: ${err}`);
+    }
+  }
+
+  public async handleFraudRiskAlert(payload: Record<string, unknown>): Promise<void> {
+    const workflow = String(payload.workflow || "");
+    const decision = String(payload.decision || "");
+    const priority = String(payload.priority || "");
+    const riskScore = typeof payload.riskScore === "number" ? payload.riskScore : 0;
+    const sellerId = String(
+      payload.sellerId || (workflow.includes("PAYOUT") ? payload.entityId : "") || "",
+    );
+
+    if (!sellerId) return;
+
+    if (decision === "BLOCK" || priority === "CRITICAL" || riskScore >= 75) {
+      this.logger.warn(
+        `Critical fraud risk detected for seller ${sellerId} (Workflow: ${workflow}, Score: ${riskScore}, Decision: ${decision}). Freezing disbursements...`,
+      );
+      await this.handleSellerSuspended(
+        sellerId,
+        `FRAUD_RISK_HOLD: Risk score ${riskScore} (${decision || priority})`,
+      );
+    }
+  }
+
+  public async handleFraudCaseResolved(payload: Record<string, unknown>): Promise<void> {
+    const decision = String(payload.decision || "");
+    const sellerId = String(payload.sellerId || payload.entityId || "");
+
+    if (sellerId && (decision === "ALLOW" || decision === "DISMISS")) {
+      this.logger.log(
+        `Fraud case for seller ${sellerId} resolved favorably (${decision}). Releasing disbursement hold...`,
+      );
+      await this.handleSellerActivated(sellerId);
     }
   }
 }

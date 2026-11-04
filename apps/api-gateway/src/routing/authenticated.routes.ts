@@ -174,7 +174,7 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     serviceName: services.payout.name,
     timeoutMs: services.payout.timeoutMs,
     rewritePrefix: "/api/v1/sellers/me/payouts",
-    requireAuth: true,
+    requireSeller: true,
   },
   {
     prefix: "/api/v1/sellers/me/balance",
@@ -182,7 +182,7 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     serviceName: services.payout.name,
     timeoutMs: services.payout.timeoutMs,
     rewritePrefix: "/api/v1/sellers/me/balance",
-    requireAuth: true,
+    requireSeller: true,
   },
   {
     prefix: "/api/v1/sellers/me/statements",
@@ -190,7 +190,7 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     serviceName: services.payout.name,
     timeoutMs: services.payout.timeoutMs,
     rewritePrefix: "/api/v1/sellers/me/statements",
-    requireAuth: true,
+    requireSeller: true,
   },
 
   // 14. Seller Service Merchant & Storefront Routes

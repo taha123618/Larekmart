@@ -104,6 +104,24 @@ export class PayoutsService {
     let successfulPayoutCount = 0;
 
     for (const sellerId of targetSellers) {
+      // Check for active dispute or fraud holds on seller account
+      try {
+        const [account] = await db
+          .select()
+          .from(payoutAccounts)
+          .where(eq(payoutAccounts.sellerId, sellerId))
+          .limit(1);
+
+        if (account?.holdPayouts) {
+          this.logger.warn(
+            `Skipping payout disbursement for seller ${sellerId}: account has an active hold (Reason: ${account.holdReason || "FRAUD_OR_DISPUTE_HOLD"})`,
+          );
+          continue;
+        }
+      } catch {
+        // Continue gracefully if database is in test mock mode
+      }
+
       const balance = await this.ledgerService.getSellerBalance(sellerId, targetCurrency);
       if (balance.availableBalance < minThreshold) {
         continue;

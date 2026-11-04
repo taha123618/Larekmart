@@ -247,6 +247,10 @@ export const orderRoute = async (fastify: FastifyInstance) => {
             taxCalculationId: body.taxCalculationId || null,
             taxAmount: body.taxTotal ?? 0,
             email: saved.email,
+            deviceFingerprint:
+              body.deviceFingerprint ||
+              (request.headers["x-device-fingerprint"] as string) ||
+              null,
             amount: saved.amount,
             status: saved.status,
             paymentMethod: "cod",

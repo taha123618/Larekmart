@@ -19,6 +19,24 @@ export async function errorMiddleware(ctx: Context, next: Next): Promise<void> {
 
     const message = err instanceof Error ? err.message : String(err);
 
+    const status = (err as any).status || (err as any).statusCode;
+    if (typeof status === "number" && status >= 400 && status < 600) {
+      ctx.status = status;
+      ctx.body = { message, statusCode: status };
+      return;
+    }
+
+    if (
+      message.includes("is currently in progress") ||
+      message.includes("already in progress") ||
+      message.includes("Inspection lock conflict") ||
+      message.includes("conflict")
+    ) {
+      ctx.status = 409;
+      ctx.body = { message, statusCode: 409 };
+      return;
+    }
+
     if (
       message.includes("Invalid return state transition") ||
       message.includes("not eligible") ||

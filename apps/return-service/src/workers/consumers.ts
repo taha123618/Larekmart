@@ -157,6 +157,49 @@ async function handleShippingLabelCreated(message: {
   );
 }
 
+// ─── Handler: fraud.risk.detected ───────────────────────────────────────────
+async function handleFraudRiskDetected(message: {
+  entityId?: string;
+  workflow?: string;
+  decision?: string;
+  riskScore?: number;
+  triggeredRules?: string[];
+}): Promise<void> {
+  if (message.workflow !== "RETURN_REQUEST" && message.workflow !== "RETURN") {
+    return;
+  }
+  if (!message.entityId) return;
+
+  const ret = await returnRepository.findById(message.entityId);
+  if (!ret) return;
+
+  console.warn(
+    `[return-service:consumer] Fraud risk detected for return ${message.entityId} (Score: ${message.riskScore}, Decision: ${message.decision}). Enforcing mandatory warehouse inspection...`,
+  );
+
+  if (
+    ret.status !== ReturnStatusEnum.REJECTED &&
+    ret.status !== ReturnStatusEnum.CANCELLED &&
+    ret.status !== ReturnStatusEnum.COMPLETED
+  ) {
+    const nextStatus =
+      ret.status === ReturnStatusEnum.REQUESTED
+        ? ReturnStatusEnum.PENDING_REVIEW
+        : ret.status === ReturnStatusEnum.RECEIVED
+          ? ReturnStatusEnum.INSPECTION
+          : ReturnStatusEnum.DISPUTED;
+
+    await returnRepository.updateStatus(
+      message.entityId,
+      ret.status,
+      nextStatus,
+      "SYSTEM_FRAUD",
+      "SYSTEM",
+      `Mandatory review flagged by fraud-service: Score ${message.riskScore} (${message.triggeredRules?.join(", ") || "Risk alert"})`,
+    );
+  }
+}
+
 // ─── Consumer registration ────────────────────────────────────────────────────
 export async function startConsumers(): Promise<() => Promise<void>> {
   const kafka = createKafkaClient(env.KAFKA_CLIENT_ID, env.KAFKA_BROKERS);
@@ -194,6 +237,14 @@ export async function startConsumers(): Promise<() => Promise<void>> {
       topicHandler: async (msg: unknown) => {
         await handleShippingLabelCreated(
           msg as Parameters<typeof handleShippingLabelCreated>[0],
+        );
+      },
+    },
+    {
+      topicName: "fraud.risk.detected",
+      topicHandler: async (msg: unknown) => {
+        await handleFraudRiskDetected(
+          msg as Parameters<typeof handleFraudRiskDetected>[0],
         );
       },
     },

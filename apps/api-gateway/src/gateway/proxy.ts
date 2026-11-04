@@ -274,6 +274,9 @@ export async function registerProxyRoutes(
           delete rewritten["x-user-can-manage-sellers"];
           delete rewritten["x-internal-secret"];
           delete rewritten["x-user-permissions"];
+          delete rewritten["x-seller-id"];
+          delete rewritten["x-dev-admin-override"];
+          delete rewritten["x-dev-role"];
           delete rewritten["x-force-primary"];
           delete rewritten["x-read-your-writes"];
           // x-db-lsn is an untrusted client header — only upstream service

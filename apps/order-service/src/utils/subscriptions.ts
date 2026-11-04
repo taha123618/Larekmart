@@ -7,6 +7,7 @@ import {
   markOrderRefunded,
   handleTaxCompleted,
   handleTaxFailed,
+  handleFraudDetected,
 } from "./order";
 
 export const runKafkaSubscriptions = async () => {
@@ -101,6 +102,20 @@ export const runKafkaSubscriptions = async () => {
             err,
           );
         }
+      },
+    },
+    {
+      topicName: "fraud.risk.detected",
+      topicHandler: async (message) => {
+        const payload = message.value;
+        if (payload) await handleFraudDetected(payload);
+      },
+    },
+    {
+      topicName: "fraud.case.created",
+      topicHandler: async (message) => {
+        const payload = message.value;
+        if (payload) await handleFraudDetected(payload);
       },
     },
   ]);

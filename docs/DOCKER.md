@@ -145,6 +145,7 @@ docker/
 | `seller-service`         | `8021`                            | `127.0.0.1:8021`                     | **Internal Only**   | Marketplace storefront configuration, staff permissions & operations          |
 | `commission-service`     | `8022`                            | `127.0.0.1:8022`                     | **Internal Only**   | Marketplace commission plans, rules, line item calculations & fee quotes      |
 | `payout-service`         | `8023`                            | `127.0.0.1:8023`                     | **Internal Only**   | Seller payouts, balanced append-only double-entry ledger & settlement batches |
+| `fraud-service`          | `8024`                            | `127.0.0.1:8024`                     | **Internal Only**   | Real-time risk assessment, velocity abuse detection & fraud case management   |
 | `mysql`                  | `3306`                            | `127.0.0.1:3306`                     | **Internal Only**   | MySQL 8.0 database engine for tax compliance, rules & return tracking         |
 | `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                            |
 | `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                                   |
@@ -343,6 +344,7 @@ pnpm --filter @repo/catalog-db db:deploy
 pnpm --filter seller-service db:deploy
 pnpm --filter commission-service db:deploy
 pnpm --filter payout-service db:deploy
+(cd apps/fraud-service && uv run alembic upgrade head)
 pnpm --filter review-service db:deploy
 pnpm --filter wishlist-service db:deploy
 ```
@@ -529,6 +531,7 @@ Every single container image used in the Larekmart platform is cataloged below, 
 | **seller-service**         | Node Microservice      | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **commission-service**     | Node Microservice      | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **payout-service**         | NestJS Microservice    | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
+| **fraud-service**          | Python Microservice    | `uv:python3.12-bookworm-slim`      | `dhi/python:3.12`        | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Rootless uv)   |
 | **email-service**          | Node Worker            | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **client**                 | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |
 | **admin**                  | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |

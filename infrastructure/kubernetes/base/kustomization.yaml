@@ -38,6 +38,7 @@ resources:
   - services/seller-service.yaml
   - services/commission-service.yaml
   - services/payout-service.yaml
+  - services/fraud-service.yaml
   - workers/email-service.yaml
   - autoscaling/hpa.yaml
   - autoscaling/keda-scaledobjects.yaml

@@ -6,7 +6,7 @@
 
 It handles cross-cutting concerns:
 
-- Reverse proxying to 25 backend microservices via `@fastify/http-proxy`
+- Reverse proxying to 26 backend microservices via `@fastify/http-proxy`
 - Centralized CORS and defensive security headers (`@fastify/cors`, `@fastify/helmet`)
 - Request correlation (`x-request-id`) and untrusted client header stripping (`x-user-id`, `x-user-role`, `x-user-is-super-admin`, `x-user-is-seller`, `x-user-can-manage-sellers`, `x-internal-secret`)
 - Clerk JWT authentication and session claim extraction (`@clerk/fastify`)
@@ -56,6 +56,7 @@ Port: **8090** (standalone / Docker; 8080 reserved for Kafka UI)
 | `/api/v1/admin/delegations` | `seller-service`         | 8021 | `""`              |
 | `/api/v1/commissions`       | `commission-service`     | 8022 | `""`              |
 | `/api/v1/payouts`           | `payout-service`         | 8023 | `""`              |
+| `/api/v1/admin/fraud`       | `fraud-service`          | 8024 | `/api/v1/admin/fraud` |
 
 ## 3. Running & Verifying
 

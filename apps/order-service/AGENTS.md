@@ -41,7 +41,7 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 - Outbox collection (`OutboxEvent`) records all lifecycle events inside atomic MongoDB transactions
   alongside `Order` document changes to guarantee zero event loss (Transactional Outbox pattern).
 - Do not create ad-hoc Mongo clients or bypass the shared model.
-- Order statuses: `pending_confirmation | confirmed | success | failed | cancelled` in the model.
+- Order statuses: `pending_confirmation | confirmed | success | failed | cancelled | fraud_blocked` in the model.
 
 ## Caching
 
@@ -64,7 +64,7 @@ It consumes `payment.successful` to create orders and publishes `order.created` 
 ## Events & Transactional Outbox
 
 - Consume Kafka through `@repo/kafka`.
-- Current subscriptions from this service: `payment.successful` → order creation.
+- Current subscriptions from this service: `payment.successful` → order creation; `fraud.risk.detected` and `fraud.case.created` → quarantines high-risk pending orders to `fraud_blocked` or aborts checkout sagas with automated compensation; `fraud.case.resolved` → unquarantines orders if cleared by analysts.
 - **Transactional Outbox Relay (`src/outbox/outbox-relay.ts`)**:
   - Always publish domain events via `dispatchViaOutbox(topic, payload, { session })`.
   - Fast path: If published outside an active transaction session, the event is immediately sent to Kafka and marked `PUBLISHED`.

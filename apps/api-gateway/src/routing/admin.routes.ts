@@ -199,4 +199,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/payouts",
     requireAdmin: true,
   },
+
+  // 16. Fraud Service Admin Investigation & Rules
+  {
+    prefix: "/api/v1/admin/fraud",
+    target: services.fraud.url,
+    serviceName: services.fraud.name,
+    timeoutMs: services.fraud.timeoutMs,
+    rewritePrefix: "/api/v1/admin/fraud",
+    requireAdmin: true,
+  },
 ];

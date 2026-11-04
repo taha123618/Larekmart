@@ -9,6 +9,7 @@ import CheckoutForm from "./CheckoutForm";
 import useCartStore from "@/stores/cartStore";
 import { useCurrencyStore } from "@/stores/currencyStore";
 import { getApiGatewayUrl } from "@/services/gateway.service";
+import { getClientRiskContext } from "@/services/fraud.service";
 import {
   AlertCircle,
   CreditCard,
@@ -41,6 +42,7 @@ const fetchClientSecret = async (
   exchangeRate?: number,
 ): Promise<string> => {
   const paymentServiceUrl = getApiGatewayUrl();
+  const riskContext = getClientRiskContext();
 
   const response = await fetch(
     `${paymentServiceUrl}/api/v1/sessions/create-checkout-session`,
@@ -57,10 +59,12 @@ const fetchClientSecret = async (
         expiresAt,
         currency: currency || "USD",
         exchangeRate: exchangeRate || 1.0,
+        deviceFingerprint: riskContext.deviceFingerprint,
       }),
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "x-device-fingerprint": riskContext.deviceFingerprint,
       },
     },
   );

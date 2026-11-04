@@ -80,6 +80,7 @@ This app talks HTTP to:
 - `seller-service` — marketplace storefront management, staff permissions, operational settings, policies, seller performance monitoring, and project-wide Super Admin governance (`/settings`, `isSellerEnabled` toggle).
 - `commission-service` — marketplace commission plan configuration, rule tier editing, and settlement fee reports (`/api/v1/admin/commissions/*`).
 - `payout-service` — seller payout dashboard, ledger inspection, settlement batch scheduling, retry failed disbursements, and payout statement reconciliation (`/api/v1/admin/payouts/*`).
+- `fraud-service` — fraud and risk control center (`/fraud`), anomaly score analysis, transaction velocity abuse investigation, human analyst case reviews (`/api/v1/admin/fraud/cases/*`), and configurable scoring rules (`/api/v1/admin/fraud/rules`).
 - every caching service — its `/metrics` endpoint, for the **Cache Performance** page
   (`/cache`). That page reads `cache_hits_total` / `cache_misses_total` / `cache_errors_total`
   from search-service, product-service, analytic-service, and order-service, and reports a

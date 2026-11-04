@@ -72,6 +72,20 @@ export class SettlementsConsumer implements OnModuleInit, OnModuleDestroy {
             if (payload) await this.handleReturnApproved(payload);
           },
         },
+        {
+          topicName: "fraud.risk.detected",
+          topicHandler: async (message: any) => {
+            const payload = message?.value as Record<string, any>;
+            if (payload) await this.handleFraudRisk(payload);
+          },
+        },
+        {
+          topicName: "fraud.case.created",
+          topicHandler: async (message: any) => {
+            const payload = message?.value as Record<string, any>;
+            if (payload) await this.handleFraudRisk(payload);
+          },
+        },
       ]);
 
       this.isConnected = true;
@@ -164,5 +178,27 @@ export class SettlementsConsumer implements OnModuleInit, OnModuleDestroy {
       String(orderId),
       payload.reason || "Customer return approved",
     );
+  }
+
+  private async handleFraudRisk(payload: Record<string, any>) {
+    const decision = String(payload.decision || "");
+    const priority = String(payload.priority || "");
+    const riskScore = typeof payload.riskScore === "number" ? payload.riskScore : 0;
+    const workflow = String(payload.workflow || "");
+
+    if (decision === "BLOCK" || priority === "CRITICAL" || riskScore >= 75) {
+      const orderId = workflow.includes("ORDER") ? String(payload.entityId) : undefined;
+      const vendorId = String(payload.sellerId || (workflow.includes("PAYOUT") ? payload.entityId : "") || "");
+
+      this.logger.warn(
+        `Critical fraud risk detected for order=${orderId}, vendor=${vendorId}. Freezing escrow funds...`,
+      );
+
+      await this.settlementsService.freezeEscrowByOrderOrVendor(
+        orderId,
+        vendorId || undefined,
+        `FRAUD_ALERT: score=${riskScore}`,
+      );
+    }
   }
 }

@@ -320,6 +320,16 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
 
   const currency = balance?.currency || "PKR";
   const canRequestPayout = Boolean(balance && balance.availableBalance >= 5000);
+  const hasSecurityHold = Boolean(
+    (balance && balance.disputeFrozenBalance > 0) ||
+      authoritativePayouts.some(
+        (p) =>
+          p.failureReason &&
+          (p.failureReason.includes("FRAUD") ||
+            p.failureReason.includes("HOLD") ||
+            p.failureReason.includes("DISPUTE")),
+      ),
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -367,6 +377,21 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
           </button>
         </div>
       </div>
+
+      {/* Security & Risk Hold Banner */}
+      {hasSecurityHold && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-amber-300">
+              Security & Settlement Verification Active
+            </h3>
+            <p className="text-xs text-amber-200/80 leading-relaxed">
+              One or more disbursements or settlement reserves are currently on hold for routine fraud or transaction dispute verification. Once security audits confirm compliance, funds are released automatically into your available balance.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

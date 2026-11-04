@@ -34,6 +34,8 @@ export function createApp(): Koa {
         "x-user-id",
         "x-user-role",
         "x-internal-secret",
+        "Idempotency-Key",
+        "idempotency-key",
       ],
       credentials: true,
     }),

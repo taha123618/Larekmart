@@ -560,6 +560,18 @@ async function runTests() {
   assert.ok(Array.isArray(statementsBody.statements));
   pass("Seller statements retrieved (200 OK)");
 
+  // 4.16 Security: Non-seller customer role strictly rejected from seller balance (403 Forbidden)
+  const nonSellerBalanceRes = await fastify.inject({
+    method: "GET",
+    url: "/api/v1/sellers/me/balance",
+    headers: {
+      "x-user-id": "regular_customer_01",
+      "x-user-role": "user",
+    },
+  });
+  assert.equal(nonSellerBalanceRes.statusCode, 403);
+  pass("Non-seller customer role strictly rejected from seller balance (403 Forbidden)");
+
   // ────────────────────────────────────────────────────────────
   // SUITE 5: Kafka Consumer Event Handlers
   // ────────────────────────────────────────────────────────────

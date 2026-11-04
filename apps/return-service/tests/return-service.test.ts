@@ -427,6 +427,7 @@ import {
 } from "../src/workers/outbox.worker.js";
 import { acquireClusterLock } from "@repo/redis";
 import { redis } from "../src/utils/redis.js";
+import { testConcurrencyAndSagaIdempotency } from "./concurrency-and-saga-idempotency.test.js";
 
 async function testOutboxClusterIsolation() {
   console.log("5. Transactional Outbox Cluster Isolation & Leader Lease ...");
@@ -485,6 +486,7 @@ async function run() {
     await testHealthAndMetrics();
     await testSecurityAndIdorEnforcement();
     await testOutboxClusterIsolation();
+    await testConcurrencyAndSagaIdempotency();
     console.log("==========================================");
     console.log(" All return-service tests passed! ✓");
     console.log("==========================================");
