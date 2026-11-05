@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import {
@@ -1006,6 +1007,12 @@ export default function SupportOperationsPage() {
                 >
                   <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
                   Escalate
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/chat?ticketId=${ticketDetail.id}`}>
+                    <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                    Live Chat
+                  </Link>
                 </Button>
                 {ticketDetail.status !== "RESOLVED" &&
                   ticketDetail.status !== "CLOSED" && (

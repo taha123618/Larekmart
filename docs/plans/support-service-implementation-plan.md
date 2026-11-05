@@ -147,12 +147,14 @@ flowchart TD
 ### Phase 6: Front-End User Interfaces
 
 #### A. Storefront Customer Portal (`apps/client`)
+
 - **Help Center Home (`/support`)**: Searchable knowledge base, FAQs, and ticket category picker.
 - **Ticket Submission Form (`/support/new`)**: Category selector, order linker dropdown, file attachment preview, and validation.
 - **My Support Tickets (`/account/support`)**: Real-time status cards, category badges, unread indicators, and resolution confirmations.
 - **Ticket Discussion Thread (`/account/support/:id`)**: Chronological chat stream, markdown message rendering, agent avatar badges, and self-service "Mark as Resolved" action.
 
 #### B. Administrative Operations Dashboard (`apps/admin`)
+
 - **Support Operations Center (`/support`)**: Real-time KPI summary (Total Tickets, Open Inquiries, Critical SLA Breaches, Average Resolution Time).
 - **Queue Management**: Tabbed views for Unassigned, Tier 1, Tier 2, Escalated, and Resolved queues.
 - **Ticket Detail & Triage View (`/support/:id`)**:
@@ -179,14 +181,13 @@ flowchart TD
 
 ## 5. Verification Checklist & Success Criteria
 
-| Criterion | Target Metric | Verification Method | Status |
-| :--- | :---: | :--- | :---: |
-| **Prisma Schema Parity** | 6 Tables | `prisma migrate status` | **PASSED** |
-| **Distributed Idempotency** | 100% Conflict Block | Double `POST /tickets` with same key | **PASSED** |
-| **Internal Note Privacy** | 0 Leakage | Customer GET `/tickets/:id` query test | **PASSED** |
-| **SLA Resolution Computation** | < 1ms | Unit test suite verification | **PASSED** |
-| **Kafka Event Delivery** | 4 Lifecycle Events | Kafka consumer verification | **PASSED** |
-| **API Gateway Security** | Fail-Closed | Gateway perimeter spoofing test | **PASSED** |
-| **UI Integration** | 100% Functional | Next.js client & admin builds | **PASSED** |
-| **Type Integrity** | 0 Type Errors | Monorepo `pnpm check-types` | **PASSED** |
-
+| Criterion                      |    Target Metric    | Verification Method                    |   Status   |
+| :----------------------------- | :-----------------: | :------------------------------------- | :--------: |
+| **Prisma Schema Parity**       |      6 Tables       | `prisma migrate status`                | **PASSED** |
+| **Distributed Idempotency**    | 100% Conflict Block | Double `POST /tickets` with same key   | **PASSED** |
+| **Internal Note Privacy**      |      0 Leakage      | Customer GET `/tickets/:id` query test | **PASSED** |
+| **SLA Resolution Computation** |        < 1ms        | Unit test suite verification           | **PASSED** |
+| **Kafka Event Delivery**       | 4 Lifecycle Events  | Kafka consumer verification            | **PASSED** |
+| **API Gateway Security**       |     Fail-Closed     | Gateway perimeter spoofing test        | **PASSED** |
+| **UI Integration**             |   100% Functional   | Next.js client & admin builds          | **PASSED** |
+| **Type Integrity**             |    0 Type Errors    | Monorepo `pnpm check-types`            | **PASSED** |

@@ -47,23 +47,23 @@ flowchart TD
 
 ### Stage Breakdown
 
-| Stage | Target Workspace | Tool | Database | Dependency Rationale |
-| :--- | :--- | :--- | :--- | :--- |
-| **Stage 1** | `@repo/product-db` | Prisma | `larekmart_product_db` | Master product catalog, categories, and base SKU specifications. |
-| **Stage 1** | `@repo/inventory-db` | Prisma | `larekmart_inventory_db` | Physical warehouse inventory and available stock allocations. |
-| **Stage 1** | `@repo/user-db` | Prisma | `larekmart_user_db` | Customer profiles, saved addresses, preferences, and settings. |
-| **Stage 1** | `@repo/vendor-db` | Prisma | `larekmart_vendor_db` | Legal business entities, merchant onboarding, and KYB verifications. |
-| **Stage 2** | `@repo/shipping-db` | Prisma | `larekmart_shipping_db` | Shipment lifecycle, parcels, carriers, and tracking events. |
-| **Stage 2** | `media-service` | Drizzle | `larekmart_media_db` | Uploaded images, documents, and media variants. |
-| **Stage 2** | `pricing-service` | Drizzle | `larekmart_pricing_db` | Authoritative pricing, currency exchange rates, and tiered price lists. |
-| **Stage 2** | `promotion-service` | Drizzle | `larekmart_promotion_db` | Marketing campaigns, coupon codes, and discount reservation locks. |
-| **Stage 2** | `tax-service` | Drizzle | `larekmart_tax_db` (MySQL) | Jurisdiction tax rules, rates, and exemption certificates. |
-| **Stage 2** | `return-service` | Drizzle | `larekmart_return_db` (MySQL) | Return requests, inspection checklists, and refund SAGA workflows. |
-| **Stage 2** | `@repo/support-db` | Prisma | `larekmart_support_db` | Support tickets, messages, SLA policies, and assignment history. |
-| **Stage 3** | `@repo/catalog-db` | Prisma | `larekmart_catalog_db` | High-velocity read projection store for customer storefront browsing. |
-| **Stage 3** | `seller-service` | Drizzle | `larekmart_seller_db` | Seller storefront configurations, staff permissions, and policies. |
-| **Stage 3** | `review-service` | Drizzle | `larekmart_review_db` | Product customer reviews, verified purchase ratings, and votes. |
-| **Stage 3** | `wishlist-service` | Drizzle | `larekmart_wishlist_db` | Customer wishlists, saved items, and price-drop alert tracking. |
+| Stage       | Target Workspace     | Tool    | Database                      | Dependency Rationale                                                    |
+| :---------- | :------------------- | :------ | :---------------------------- | :---------------------------------------------------------------------- |
+| **Stage 1** | `@repo/product-db`   | Prisma  | `larekmart_product_db`        | Master product catalog, categories, and base SKU specifications.        |
+| **Stage 1** | `@repo/inventory-db` | Prisma  | `larekmart_inventory_db`      | Physical warehouse inventory and available stock allocations.           |
+| **Stage 1** | `@repo/user-db`      | Prisma  | `larekmart_user_db`           | Customer profiles, saved addresses, preferences, and settings.          |
+| **Stage 1** | `@repo/vendor-db`    | Prisma  | `larekmart_vendor_db`         | Legal business entities, merchant onboarding, and KYB verifications.    |
+| **Stage 2** | `@repo/shipping-db`  | Prisma  | `larekmart_shipping_db`       | Shipment lifecycle, parcels, carriers, and tracking events.             |
+| **Stage 2** | `media-service`      | Drizzle | `larekmart_media_db`          | Uploaded images, documents, and media variants.                         |
+| **Stage 2** | `pricing-service`    | Drizzle | `larekmart_pricing_db`        | Authoritative pricing, currency exchange rates, and tiered price lists. |
+| **Stage 2** | `promotion-service`  | Drizzle | `larekmart_promotion_db`      | Marketing campaigns, coupon codes, and discount reservation locks.      |
+| **Stage 2** | `tax-service`        | Drizzle | `larekmart_tax_db` (MySQL)    | Jurisdiction tax rules, rates, and exemption certificates.              |
+| **Stage 2** | `return-service`     | Drizzle | `larekmart_return_db` (MySQL) | Return requests, inspection checklists, and refund SAGA workflows.      |
+| **Stage 2** | `@repo/support-db`   | Prisma  | `larekmart_support_db`        | Support tickets, messages, SLA policies, and assignment history.        |
+| **Stage 3** | `@repo/catalog-db`   | Prisma  | `larekmart_catalog_db`        | High-velocity read projection store for customer storefront browsing.   |
+| **Stage 3** | `seller-service`     | Drizzle | `larekmart_seller_db`         | Seller storefront configurations, staff permissions, and policies.      |
+| **Stage 3** | `review-service`     | Drizzle | `larekmart_review_db`         | Product customer reviews, verified purchase ratings, and votes.         |
+| **Stage 3** | `wishlist-service`   | Drizzle | `larekmart_wishlist_db`       | Customer wishlists, saved items, and price-drop alert tracking.         |
 
 ---
 
@@ -139,11 +139,11 @@ Automated audits across all local database engines confirm full operational heal
 
 ### Engine Summary
 
-| Engine | Port | Databases Verified | Table Count | Record Status |
-| :--- | :---: | :---: | :---: | :---: |
-| **PostgreSQL** | `5432` | 19 Databases | 108 Tables | **All Tables Migrated & Populated** |
-| **MySQL** | `3306` | 2 Databases (`tax`, `return`) | 17 Tables | **All Tables Migrated & Populated** |
-| **MongoDB** | `27017` | 2 Databases (`orders`, `carts`) | 4 Collections | **All Collections Migrated & Populated** |
+| Engine         |  Port   |       Databases Verified        |  Table Count  |              Record Status               |
+| :------------- | :-----: | :-----------------------------: | :-----------: | :--------------------------------------: |
+| **PostgreSQL** | `5432`  |          19 Databases           |  108 Tables   |   **All Tables Migrated & Populated**    |
+| **MySQL**      | `3306`  |  2 Databases (`tax`, `return`)  |   17 Tables   |   **All Tables Migrated & Populated**    |
+| **MongoDB**    | `27017` | 2 Databases (`orders`, `carts`) | 4 Collections | **All Collections Migrated & Populated** |
 
 ---
 
@@ -153,4 +153,3 @@ Automated audits across all local database engines confirm full operational heal
 2. **Bypass Connection Poolers on DDL**: Always execute migrations through `DIRECT_URL` (direct port 5432) rather than transaction-mode poolers (`pgbouncer=true` on port 6432) to avoid prepared-statement and transaction-isolation errors.
 3. **Idempotent Upsert Seeding**: All seed scripts must use `upsert` or `onConflictDoNothing()` to allow safe repeated runs in CI and local setups without primary-key duplication.
 4. **Git Safety Compliance**: Never commit generated Prisma client artifacts or live credentials to source control.
-

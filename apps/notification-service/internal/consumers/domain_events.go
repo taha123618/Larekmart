@@ -175,6 +175,10 @@ func (h *DomainEventHandler) dispatchDomainNotification(ctx context.Context, top
 		return h.handleSupportTicketUpdated(ctx, payload)
 	case "support.ticket.resolved":
 		return h.handleSupportTicketResolved(ctx, payload)
+	case "chat.message.created":
+		return h.handleChatMessageCreated(ctx, payload)
+	case "chat.conversation.created":
+		return h.handleChatConversationCreated(ctx, payload)
 	case "notification.dispatch":
 		return h.handleDirectDispatch(ctx, payload)
 	default:
@@ -733,6 +737,76 @@ func (h *DomainEventHandler) handleSupportTicketResolved(ctx context.Context, pa
 	return err
 }
 
+func (h *DomainEventHandler) handleChatMessageCreated(ctx context.Context, payload map[string]interface{}) error {
+	senderID, _ := payload["senderId"].(string)
+	senderRole, _ := payload["senderRole"].(string)
+	content, _ := payload["content"].(string)
+
+	var recipients []string
+	if rawRecipients, ok := payload["recipientUserIds"].([]interface{}); ok {
+		for _, r := range rawRecipients {
+			if str, ok := r.(string); ok && str != "" && str != senderID {
+				recipients = append(recipients, str)
+			}
+		}
+	}
+
+	snippet := content
+	if len(snippet) > 80 {
+		snippet = snippet[:80] + "..."
+	}
+
+	title := "New message received"
+	if senderRole != "" {
+		title = fmt.Sprintf("New message from %s", senderRole)
+	}
+	body := snippet
+
+	for _, recipientID := range recipients {
+		_, _ = h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+			UserID:   recipientID,
+			Type:     "chat_message_created",
+			Title:    title,
+			Body:     body,
+			Metadata: payload,
+			Priority: models.PriorityNormal,
+		})
+	}
+
+	return nil
+}
+
+func (h *DomainEventHandler) handleChatConversationCreated(ctx context.Context, payload map[string]interface{}) error {
+	creatorID, _ := payload["createdById"].(string)
+	convType, _ := payload["type"].(string)
+	convID, _ := payload["conversationId"].(string)
+
+	var participants []string
+	if rawParts, ok := payload["participantUserIds"].([]interface{}); ok {
+		for _, p := range rawParts {
+			if str, ok := p.(string); ok && str != "" && str != creatorID {
+				participants = append(participants, str)
+			}
+		}
+	}
+
+	title := "New conversation started"
+	body := fmt.Sprintf("A new %s chat session was created (%s)", convType, convID)
+
+	for _, participantID := range participants {
+		_, _ = h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+			UserID:   participantID,
+			Type:     "chat_conversation_created",
+			Title:    title,
+			Body:     body,
+			Metadata: payload,
+			Priority: models.PriorityNormal,
+		})
+	}
+
+	return nil
+}
+
 func extractOrComputeEventID(topic string, key, rawValue []byte, payload map[string]interface{}) string {
 	if id, ok := payload["eventId"].(string); ok && id != "" {
 		return id
@@ -771,6 +845,8 @@ func extractSourceService(topic string) string {
 		return "shipping-service"
 	case "support.ticket.created", "support.ticket.assigned", "support.ticket.updated", "support.ticket.resolved":
 		return "support-service"
+	case "chat.message.created", "chat.message.reported", "chat.conversation.created":
+		return "chat-service"
 	default:
 		return "unknown"
 	}

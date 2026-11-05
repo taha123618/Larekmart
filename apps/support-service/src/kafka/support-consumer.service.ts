@@ -74,6 +74,13 @@ export class SupportConsumerService implements OnModuleInit, OnModuleDestroy {
             await this.handleFraudCaseEscalated(payload);
           },
         },
+        {
+          topicName: "chat.message.reported",
+          topicHandler: async (message) => {
+            const payload = unwrapPayload(message);
+            await this.handleChatMessageReported(payload);
+          },
+        },
       ]);
 
       this.logger.log(
@@ -196,6 +203,38 @@ export class SupportConsumerService implements OnModuleInit, OnModuleDestroy {
     } catch (err) {
       this.logger.error(
         `Failed to auto-create ticket for fraud.case.escalated ${caseId}`,
+        err,
+      );
+    }
+  }
+
+  private async handleChatMessageReported(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const messageId = String(payload.messageId || "");
+    const conversationId = String(payload.conversationId || "");
+    const reportedByUserId = String(payload.reportedByUserId || "");
+    const reason = String(payload.reason || "Abusive behavior or harassment");
+    const details = String(payload.details || "");
+
+    if (!messageId && !conversationId) return;
+
+    this.logger.log(`Processing chat.message.reported event for message ${messageId}`);
+    try {
+      await this.ticketsService.createTicket(
+        {
+          subject: `Chat Abuse Report: Message #${messageId.slice(0, 8)}`,
+          description: `A participant reported abusive content in conversation #${conversationId}.\nReported By: ${reportedByUserId}\nReason: ${reason}\nDetails: ${details}\n\nPlease inspect the chat transcript and take moderation or disciplinary action if necessary.`,
+          categoryCode: "OTHER",
+          priority: "HIGH",
+          source: "SYSTEM",
+          customerId: reportedByUserId || undefined,
+        },
+        SYSTEM_ACTOR,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Failed to auto-create ticket for chat.message.reported ${messageId}`,
         err,
       );
     }

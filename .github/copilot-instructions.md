@@ -45,7 +45,7 @@ Next.js apps (`client` :3002, `admin` :3003), 25 backend services (`product-serv
 
 ### 3. Mandatory Feature Service Delivery Standard (The 6 Pillars)
 
-Whenever building, modifying, expanding, or integrating any feature service (e.g. `support-service`, `fraud-service`, `payout-service`, etc.), you must strictly follow all 6 pillars:
+Whenever building, modifying, expanding, or integrating any feature service (e.g. `chat-service`, `support-service`, `fraud-service`, `payout-service`, etc.), you must strictly follow all 6 pillars:
 
 1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**: Deliver full UI coverage across both applications: Customer Storefront (`apps/client`) and Admin Management Dashboard (`apps/admin`) with typed client services, responsive layouts, action dialogs, and design-system compliance.
 2. **Pillar 2 — Cross-Service & Gateway Integration (`apps/*` all services)**: Wire reverse proxying, rate-limiting, and circuit breakers in `api-gateway`; establish asynchronous Kafka event streams with transactional outbox and DLQ isolation; connect domain relationships without cross-service HTTP calls.

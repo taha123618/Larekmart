@@ -166,6 +166,11 @@ export const ALL_LAREKMART_TOPICS = [
   "support.ticket.assigned",
   "support.ticket.updated",
   "support.ticket.resolved",
+
+  // Real-Time Chat & Messaging Lifecycle
+  "chat.conversation.created",
+  "chat.message.created",
+  "chat.message.reported",
 ] as const;
 
 export async function initializeTopics(): Promise<void> {

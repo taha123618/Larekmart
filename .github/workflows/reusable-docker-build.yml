@@ -145,6 +145,9 @@ jobs:
           - service: support-service
             context: .
             dockerfile: apps/support-service/Dockerfile
+          - service: chat-service
+            context: .
+            dockerfile: apps/chat-service/Dockerfile
           - service: email-service
             context: .
             dockerfile: apps/email-service/Dockerfile

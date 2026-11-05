@@ -1428,3 +1428,79 @@ All requests route through `api-gateway` on port `8080`.
 
 - **Auth**: Admin (`shouldBeAdmin`)
 - **Response**: `{ success: true, data: SupportAnalytics }` (total tickets, status/priority breakdown, team breakdown, SLA breach rate, resolution duration, agent workloads).
+
+---
+
+## Chat Service (`apps/chat-service` :8026)
+
+### `POST /api/v1/chat/conversations`
+
+- **Auth**: User (`requireAuth`)
+- **Headers**: `Idempotency-Key` (recommended)
+- **Body**: `CreateConversationSchema` (`type`, `title?`, `sellerId?`, `orderId?`, `ticketId?`, `participantUserIds`, `initialMessage?`, `metadata?`)
+- **Response**: `201 Created` with `ChatConversation`
+- **Side Effect**: Emits `chat.conversation.created` Kafka event, notifies participants.
+
+### `GET /api/v1/chat/conversations`
+
+- **Auth**: User / Admin (`requireAuth`)
+- **Query Params**: `type?`, `status?`, `sellerId?`, `ticketId?`, `orderId?`, `search?`, `limit?`, `offset?`
+- **Response**: `200 OK` with `{ total: number, items: ChatConversation[] }`
+- **Security**: Regular users only see conversations where they are participants; admins with `isAdmin` flag can inspect system conversations.
+
+### `GET /api/v1/chat/conversations/:id`
+
+- **Auth**: User / Admin (`requireAuth`)
+- **Response**: `200 OK` with `ChatConversation` (including participants)
+- **Security**: Strict participant check (`HTTP 403 Forbidden` if user is not in thread).
+
+### `GET /api/v1/chat/conversations/:id/messages`
+
+- **Auth**: User / Admin (`requireAuth`)
+- **Query Params**: `limit?`, `beforeMessageId?`, `afterMessageId?`
+- **Response**: `200 OK` with `{ total: number, items: ChatMessage[] }`
+- **Security**: Enforces conversation membership.
+
+### `POST /api/v1/chat/conversations/:id/messages`
+
+- **Auth**: User / Admin (`requireAuth`)
+- **Headers**: `Idempotency-Key` (recommended)
+- **Body**: `SendMessageSchema` (`content`, `messageType?`, `replyToMessageId?`, `attachments?`, `metadata?`)
+- **Response**: `201 Created` with `ChatMessage`
+- **Side Effect**: Broadcasts to Socket.IO room `conv:{id}`, emits `chat.message.created` Kafka event.
+
+### `POST /api/v1/chat/conversations/:id/messages/read`
+
+- **Auth**: User (`requireAuth`)
+- **Body**: `MarkReadSchema` (`messageId?`)
+- **Response**: `200 OK` with `{ success: true, unreadCount: number }`
+- **Side Effect**: Updates participant `lastReadAt` and resets `unreadCount`.
+
+### `POST /api/v1/chat/messages/:messageId/report`
+
+- **Auth**: User (`requireAuth`)
+- **Body**: `ReportMessageSchema` (`reason`, `category`)
+- **Response**: `201 Created` with `{ success: true, reportId: string }`
+- **Side Effect**: Flags message in DB, emits `chat.message.reported` Kafka event.
+
+### `POST /api/v1/chat/users/:userId/block`
+
+- **Auth**: User / Admin (`requireAuth`)
+- **Body**: `BlockUserSchema` (`reason?`)
+- **Response**: `201 Created` with `{ success: true, blockId: string }`
+- **Side Effect**: Prevents future messages between the two parties.
+
+### Socket.IO Real-Time Gateway (`ws://localhost:8026`)
+
+- **Events Emitted by Client**:
+  - `conversation:join` (`{ conversationId }`)
+  - `conversation:leave` (`{ conversationId }`)
+  - `message:send` (`SocketSendMessagePayload`)
+  - `typing:start` (`{ conversationId }`)
+  - `typing:stop` (`{ conversationId }`)
+  - `presence:update` (`{ status }`)
+- **Events Broadcast by Server**:
+  - `message:created` (`ChatMessage`)
+  - `typing:indicator` (`{ conversationId, userId, isTyping }`)
+  - `message:read` (`SocketMessageReadPayload`)
+  - `presence:updated` (`SocketPresencePayload`)

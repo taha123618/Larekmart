@@ -33,6 +33,7 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 | **`payout-service`**         | Node.js Test Runner / `tsx` | Append-only balanced double-entry ledger invariant tests (`SUM(debit) == SUM(credit)`), settlement batches, provider reconciliation, and seller balance queries (`tests/payout-service.test.ts`)                                                                                                                 |
 | **`fraud-service`**          | Pytest (`pytest`) via `uv`  | Real-time multi-entity risk scoring, Redis sliding-window velocity tracker, explainable rules, scikit-learn anomaly detection, analyst case reviews, and Kafka event stream processing (20 tests via `tests/`)                                                                                                   |
 | **`support-service`**        | Node.js Test Runner / `tsx` | Fourteen suites via `tests/tickets.test.ts` & `tests/sla-and-escalation.test.ts`: ticket creation, categories, auth guards, internal note redaction, agent reply transitions, SLA deadlines, assignments, escalations, and resolution analytics                                                                  |
+| **`chat-service`**           | Node.js Test Runner / `tsx` | Unit & integration test suites via `tests/unit/chat.unit.test.ts` & `tests/integration/chat.integration.test.ts`: timing-safe comparison, schema validation, buyer-to-seller threads, support tickets, paginated message feeds, attachments, unread counts, read receipts, message reporting, user blocking, and idempotency key handling |
 | **`analytic-service`**       | Go Test Tool (`go test`)    | Config validation (production secret fail-closed), constant-time gateway auth, RS256/expiry token verification, lock-free atomic KPI store, bounded-channel micro-batching, and REST handlers (`cmd/...`, `internal/...`)                                                                                        |
 | **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle/origin checks, RS256/expiry token verification, forged-token rejection, recovery (`internal/*`)                                                                                                                                               |
 | **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                  |
@@ -70,6 +71,7 @@ pnpm --filter commission-service test
 pnpm --filter payout-service test
 pnpm --filter fraud-service test
 pnpm --filter support-service test
+pnpm --filter chat-service test
 pnpm --filter analytic-service test
 pnpm --filter notification-service test
 pnpm --filter recommendation-service test

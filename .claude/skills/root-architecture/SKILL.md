@@ -41,6 +41,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `payout-service` (:8023) — NestJS 11 (Fastify), seller payouts, balanced append-only double-entry ledger, settlement batches, maturity holds, reserve holds, and provider reconciliation; PostgreSQL (`larekmart_payout_db`) via Drizzle ORM + Redis cache + Decimal.js.
   - `fraud-service` (:8024) — Python 3.14 (FastAPI), real-time risk scoring (0-100), Redis sliding-window velocity tracker (`ZSET`), explainable heuristic rules engine, scikit-learn anomaly detection (IsolationForest), fraud investigation cases & analyst decisions, fail-open/fail-closed policies; PostgreSQL (`fraud_db`) + Redis cache.
   - `support-service` (:8025) — NestJS 11 (Fastify), omnichannel customer/seller support tickets, categorization, agent queues, SLA deadline tracking, escalations, resolution analytics, and Socket.IO; PostgreSQL (`larekmart_support_db`) via `@repo/support-db` + Redis cache.
+  - `chat-service` (:8026) — Fastify 5, real-time buyer-seller messaging, live customer-to-support communications, Socket.IO multi-pod cluster with Redis adapter, presence, read receipts, and moderation; PostgreSQL (`larekmart_chat_db`) via Drizzle ORM + Redis cache.
   - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).
@@ -79,6 +80,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Seller payouts, double-entry ledger & settlement batches    | `apps/payout-service`                                  |
 | Fraud assessment, risk scoring, analyst investigation cases | `apps/fraud-service`                                   |
 | Customer support tickets, SLA policies, escalations         | `apps/support-service`                                 |
+| Real-time buyer-seller messaging, live chat, Socket.IO      | `apps/chat-service`                                    |
 | Kafka client/producer/consumer helpers                      | `packages/kafka`                                       |
 | Shared types, Zod schemas, Kafka payload types              | `packages/types`                                       |
 | Telemetry, structured logging, health checks                | `packages/monitoring`                                  |

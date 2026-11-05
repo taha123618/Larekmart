@@ -219,6 +219,7 @@ jobs:
               larekmart/payout-service=ghcr.io/${{ github.repository_owner }}/larekmart/payout-service:staging-${SHA_SHORT} \
               larekmart/fraud-service=ghcr.io/${{ github.repository_owner }}/larekmart/fraud-service:staging-${SHA_SHORT} \
               larekmart/support-service=ghcr.io/${{ github.repository_owner }}/larekmart/support-service:staging-${SHA_SHORT} \
+              larekmart/chat-service=ghcr.io/${{ github.repository_owner }}/larekmart/chat-service:staging-${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:staging-${SHA_SHORT}
 
             echo "Applying Staging manifests to namespace larekmart-staging..."
@@ -254,6 +255,7 @@ jobs:
               staging-payout-service
               staging-fraud-service
               staging-support-service
+              staging-chat-service
               staging-email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do

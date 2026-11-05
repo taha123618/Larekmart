@@ -301,6 +301,14 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Real-Time Broadcasts: Socket.IO gateway emitting live queue changes, assignment notifications, and customer/agent messages.
 - Events: Publishes `support.ticket.created`, `support.ticket.assigned`, `support.ticket.updated`, `support.ticket.resolved`.
 
+**`chat-service` (Fastify 5 / TypeScript, :8026)** — real-time buyer-to-seller messaging, live customer-to-support communications, Socket.IO multi-pod cluster with Redis adapter, message read receipts, unread counts, and communications safety moderation.
+
+- Routes: `POST /api/v1/chat/conversations`, `GET /api/v1/chat/conversations`, `GET /api/v1/chat/conversations/:id`, `GET /api/v1/chat/conversations/:id/messages`, `POST /api/v1/chat/conversations/:id/messages`, `POST /api/v1/chat/conversations/:id/messages/read`, `POST /api/v1/chat/messages/:messageId/report`, `POST /api/v1/chat/users/:userId/block`, `/health`, `/metrics`.
+- Persistence: PostgreSQL via Drizzle ORM targeting `larekmart_chat_db` (`conversations`, `conversation_participants`, `messages`, `message_receipts`, `message_attachments`, `conversation_blocks`).
+- Caching & Ephemeral State: Redis (`chat:v1:*` namespace) through `ioredis` for Socket.IO Redis adapter, user presence, and distributed `Idempotency-Key` leases.
+- Real-Time Gateway: Socket.IO with `@socket.io/redis-adapter` for horizontal scale across instances.
+- Events: Publishes `chat.conversation.created`, `chat.message.created`, `chat.message.reported`. Consumes `support.ticket.created`, `support.ticket.resolved` for automated session binding.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                                                                    |
@@ -324,6 +332,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | payout-service                   | Drizzle (`pg`)                | `payout_accounts`, `payouts`, `payout_batches`, `settlements`, `ledger_accounts`, `ledger_entries`, `payout_adjustments`, `payout_provider_events`                                |
 | PostgreSQL | fraud-service                    | SQLAlchemy async (`asyncpg`)  | `fraud_rules`, `risk_assessments`, `risk_signals`, `fraud_cases`, `fraud_decisions`, `risk_model_versions`                                                                        |
 | PostgreSQL | support-service                  | `@repo/support-db` (Prisma)   | `tickets`, `ticket_messages`, `ticket_assignments`, `ticket_categories`, `ticket_sla_policies`, `ticket_history`                                                                  |
+| PostgreSQL | chat-service                     | Drizzle (`pg`)                | `conversations`, `conversation_participants`, `messages`, `message_receipts`, `message_attachments`, `conversation_blocks`                                                         |
 | MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`                                            |
 | MySQL      | return-service                   | Drizzle (`mysql2`)            | `returns`, `return_items`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_outbox`                                |
 | S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                                                            |
@@ -348,6 +357,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | payout-service                   | `@repo/redis` (ioredis)       | `payout:v1:*` (seller balance cache, idempotency lock, statement cache, rate limits)                                                                                              |
 | Redis      | fraud-service                    | `redis-py` async              | `fraud:v1:*` (sliding window velocity counters, rule cache, model version cache)                                                                                                  |
 | Redis      | support-service                  | `@repo/redis` (ioredis)       | `support:v1:*` (ticket active caches, category lookups, rate limits)                                                                                                              |
+| Redis      | chat-service                     | `ioredis`                     | `chat:v1:*` (Socket.IO adapter pub/sub, presence tracking, idempotency leases)                                                                                                    |
 | OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                                                             |
 | MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                                                           |
 | MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                                                          |

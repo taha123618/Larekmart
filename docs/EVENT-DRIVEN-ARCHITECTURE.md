@@ -189,7 +189,10 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `support.ticket.created`                         | support-service            | notification-service, email-service, analytic-service, chat-service                                                          | `SupportTicketCreatedEvent` (`ticketId`, `ticketNumber`, `subject`, `categoryCode`, `priority`, `status`, `source`, `customerId`, `orderId`, `timestamp`)                                                                                                                           |
 | `support.ticket.assigned`                        | support-service            | notification-service, analytic-service                                                                                       | `SupportTicketAssignedEvent` (`ticketId`, `ticketNumber`, `assignedBy`, `assignedTo`, `assignedTeam`, `timestamp`)                                                                                                                                                                  |
 | `support.ticket.updated`                         | support-service            | notification-service, analytic-service                                                                                       | `SupportTicketUpdatedEvent` (`ticketId`, `ticketNumber`, `previousStatus`, `newStatus`, `previousPriority`, `newPriority`, `updatedBy`, `timestamp`)                                                                                                                                |
-| `support.ticket.resolved`                        | support-service            | notification-service, email-service, analytic-service                                                                        | `SupportTicketResolvedEvent` (`ticketId`, `ticketNumber`, `resolvedBy`, `resolutionTimeMinutes`, `slaBreached`, `timestamp`)                                                                                                                                                        |
+| `support.ticket.resolved`                        | support-service            | notification-service, email-service, analytic-service                                                                        | `SupportTicketResolvedEvent` (`ticketId`, `ticketNumber`, `resolvedBy`, `resolutionTimeMinutes`, `slaBreached`, `timestamp`)                                                                                                                         |
+| `chat.conversation.created`                      | chat-service               | notification-service, support-service, analytic-service                                                                      | `ChatConversationCreatedEvent` (`conversationId`, `type`, `createdById`, `participantUserIds`, `sellerId`, `ticketId`, `orderId`, `createdAt`)                                                                                                       |
+| `chat.message.created`                           | chat-service               | notification-service, email-service, fraud-service, analytic-service                                                         | `ChatMessageCreatedEvent` (`messageId`, `conversationId`, `conversationType`, `senderId`, `senderRole`, `content`, `messageType`, `recipientUserIds`, `sellerId`, `ticketId`, `orderId`, `createdAt`)                                              |
+| `chat.message.reported`                          | chat-service               | fraud-service, support-service, analytic-service                                                                             | `ChatMessageReportedEvent` (`reportId`, `messageId`, `conversationId`, `reporterUserId`, `reportedUserId`, `reason`, `category`, `reportedAt`)                                                                                                       |
 
 ### `product.created`
 
@@ -1377,6 +1380,78 @@ Emitted when an agent or customer marks a ticket resolved, recording total resol
 
 - **Producer:** `apps/support-service/src/modules/tickets/tickets.service.ts`
 - **Consumers:** `notification-service`, `email-service`, `analytic-service`.
+
+### Chat events
+
+#### `chat.conversation.created`
+
+Emitted when a new buyer-to-seller or live support conversation thread is initiated.
+
+```jsonc
+{
+  "value": {
+    "conversationId": "011726e7-c477-4675-9a47-c34de0b2c73e",
+    "type": "DIRECT_BUYER_SELLER",
+    "createdById": "user_buyer_test_001",
+    "participantUserIds": ["user_buyer_test_001", "seller_merchant_001"],
+    "sellerId": "seller_merchant_001",
+    "ticketId": null,
+    "orderId": "order_ord_001",
+    "createdAt": "2026-11-05T03:00:00.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/chat-service/src/services/conversation.service.ts`
+- **Consumers:** `notification-service`, `support-service`, `analytic-service`.
+
+#### `chat.message.created`
+
+Emitted when a participant sends a message or attachment into a conversation thread.
+
+```jsonc
+{
+  "value": {
+    "messageId": "ab5f3066-d3c8-4fa6-a7b6-e5c9f86290ac",
+    "conversationId": "011726e7-c477-4675-9a47-c34de0b2c73e",
+    "conversationType": "DIRECT_BUYER_SELLER",
+    "senderId": "user_buyer_test_001",
+    "senderRole": "BUYER",
+    "content": "Hi, is this jacket available in XL?",
+    "messageType": "TEXT",
+    "recipientUserIds": ["seller_merchant_001"],
+    "sellerId": "seller_merchant_001",
+    "ticketId": null,
+    "orderId": "order_ord_001",
+    "createdAt": "2026-11-05T03:00:05.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/chat-service/src/services/message.service.ts`
+- **Consumers:** `notification-service`, `email-service`, `fraud-service`, `analytic-service`.
+
+#### `chat.message.reported`
+
+Emitted when an end user or staff member flags a message for abuse, scam, or terms violation.
+
+```jsonc
+{
+  "value": {
+    "reportId": "rep_f98c7634-11e2-411a-966a",
+    "messageId": "ab5f3066-d3c8-4fa6-a7b6-e5c9f86290ac",
+    "conversationId": "011726e7-c477-4675-9a47-c34de0b2c73e",
+    "reporterUserId": "seller_merchant_001",
+    "reportedUserId": "user_buyer_test_001",
+    "reason": "Off-platform payment solicitation",
+    "category": "SCAM_OR_FRAUD",
+    "reportedAt": "2026-11-05T03:05:00.000Z"
+  }
+}
+```
+
+- **Producer:** `apps/chat-service/src/services/message.service.ts`
+- **Consumers:** `fraud-service`, `support-service`, `analytic-service`.
 
 ## Dead-Letter Queue (DLQ) & Poison-Pill Isolation
 

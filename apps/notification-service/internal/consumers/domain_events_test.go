@@ -51,6 +51,9 @@ func TestExtractSourceService(t *testing.T) {
 		{"tracking.updated", "shipping-service"},
 		{"shipment.in_transit", "shipping-service"},
 		{"shipment.delivered", "shipping-service"},
+		{"chat.message.created", "chat-service"},
+		{"chat.message.reported", "chat-service"},
+		{"chat.conversation.created", "chat-service"},
 		{"custom.event", "unknown"},
 	}
 

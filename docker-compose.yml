@@ -1489,6 +1489,44 @@ services:
     networks:
       - larekmart-network
 
+  chat-service:
+    build:
+      context: .
+      dockerfile: apps/chat-service/Dockerfile
+    container_name: larekmart-chat-service
+    deploy: *microservice-deploy
+    restart: unless-stopped
+    expose:
+      - "8026"
+    ports:
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:${CHAT_SERVICE_PORT:-8026}:8026"
+    env_file:
+      - ./apps/chat-service/.env.example
+    environment:
+      - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/larekmart_chat_db"
+      - "REDIS_URL=redis://redis:6379"
+      - "KAFKA_BROKERS=kafka:9092,kafka-broker-2:9092,kafka-broker-3:9092"
+      - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8026/health || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
   # ============================================================================
   # API Gateway (Centralized API Gateway for the Application)
   # ============================================================================
@@ -1533,6 +1571,7 @@ services:
       - "PAYOUT_SERVICE_URL=http://payout-service:8023"
       - "FRAUD_SERVICE_URL=http://fraud-service:8024"
       - "SUPPORT_SERVICE_URL=http://support-service:8025"
+      - "CHAT_SERVICE_URL=http://chat-service:8026"
       - "REDIS_URL=redis://redis:6379"
     healthcheck:
       test:
