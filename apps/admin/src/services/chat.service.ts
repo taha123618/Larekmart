@@ -7,8 +7,6 @@ import type {
   Message,
   ConversationFilterInput,
   MessageFilterInput,
-  ReportMessageInput,
-  BlockUserInput,
 } from "@repo/types";
 import { getApiGatewayUrl } from "./gateway.service";
 
@@ -54,7 +52,8 @@ export async function fetchAdminConversations(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch admin conversations (${res.status})`,
+      errorData.message ||
+        `Failed to fetch admin conversations (${res.status})`,
     );
   }
 
@@ -111,7 +110,8 @@ export async function fetchAdminConversationMessages(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch conversation messages (${res.status})`,
+      errorData.message ||
+        `Failed to fetch conversation messages (${res.status})`,
     );
   }
 
@@ -126,14 +126,17 @@ export async function sendAdminMessage(
   content: string,
   authToken?: string | null,
 ): Promise<Message> {
-  const res = await fetch(`${CHAT_BASE}/conversations/${conversationId}/messages`, {
-    method: "POST",
-    headers: getHeaders(authToken),
-    body: JSON.stringify({
-      content,
-      messageType: "TEXT",
-    }),
-  });
+  const res = await fetch(
+    `${CHAT_BASE}/conversations/${conversationId}/messages`,
+    {
+      method: "POST",
+      headers: getHeaders(authToken),
+      body: JSON.stringify({
+        content,
+        messageType: "TEXT",
+      }),
+    },
+  );
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));

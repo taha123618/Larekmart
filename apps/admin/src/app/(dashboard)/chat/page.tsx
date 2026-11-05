@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  Suspense,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "react-toastify";
@@ -8,22 +14,19 @@ import {
   MessageSquare,
   Send,
   Search,
-  Filter,
   RefreshCw,
   Loader2,
   Paperclip,
-  CheckCheck,
-  ShieldAlert,
-  AlertTriangle,
-  User,
   Store,
   Headphones,
   Ban,
-  Clock,
-  ShieldCheck,
-  Eye,
 } from "lucide-react";
-import type { Conversation, Message, ConversationType } from "@repo/types";
+import type {
+  Conversation,
+  Message,
+  ConversationType,
+  ChatAttachment,
+} from "@repo/types";
 import {
   fetchAdminConversations,
   fetchAdminConversationMessages,
@@ -64,7 +67,8 @@ function AdminChatContent() {
     try {
       setLoading(true);
       const token = await getToken();
-      const typeParam = filterType !== "ALL" ? (filterType as ConversationType) : undefined;
+      const typeParam =
+        filterType !== "ALL" ? (filterType as ConversationType) : undefined;
       const res = await fetchAdminConversations(
         {
           type: typeParam,
@@ -79,12 +83,22 @@ function AdminChatContent() {
         let match: Conversation | undefined;
         if (ticketParam) {
           match = res.items.find(
-            (c) => (c.metadata as any)?.ticketId === ticketParam || c.id === ticketParam,
+            (c) =>
+              (c.metadata as Record<string, unknown> | null)?.ticketId ===
+                ticketParam || c.id === ticketParam,
           );
         } else if (orderParam) {
-          match = res.items.find((c) => (c.metadata as any)?.orderId === orderParam);
+          match = res.items.find(
+            (c) =>
+              (c.metadata as Record<string, unknown> | null)?.orderId ===
+              orderParam,
+          );
         } else if (sellerParam) {
-          match = res.items.find((c) => (c.metadata as any)?.sellerId === sellerParam);
+          match = res.items.find(
+            (c) =>
+              (c.metadata as Record<string, unknown> | null)?.sellerId ===
+              sellerParam,
+          );
         }
 
         if (match) {
@@ -93,21 +107,35 @@ function AdminChatContent() {
           setSelectedConv(res.items[0] || null);
         }
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load conversations");
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to load conversations",
+      );
     } finally {
       setLoading(false);
     }
-  }, [getToken, filterType, searchQuery, selectedConv, ticketParam, orderParam, sellerParam]);
+  }, [
+    getToken,
+    filterType,
+    searchQuery,
+    selectedConv,
+    ticketParam,
+    orderParam,
+    sellerParam,
+  ]);
 
   const loadMessages = useCallback(
     async (convId: string) => {
       try {
         setMessagesLoading(true);
         const token = await getToken();
-        const res = await fetchAdminConversationMessages(convId, { limit: 100 }, token);
+        const res = await fetchAdminConversationMessages(
+          convId,
+          { limit: 100 },
+          token,
+        );
         setMessages(res.items);
-      } catch (err: any) {
+      } catch {
         // error handling
       } finally {
         setMessagesLoading(false);
@@ -150,8 +178,10 @@ function AdminChatContent() {
       const newMsg = await sendAdminMessage(selectedConv.id, content, token);
       setMessages((prev) => [...prev, newMsg]);
       scrollToBottom();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to send staff response");
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to send staff response",
+      );
       setInputText(content);
     } finally {
       setSending(false);
@@ -159,14 +189,23 @@ function AdminChatContent() {
   };
 
   const handleBlockUser = async (targetUserId: string) => {
-    if (!confirm(`Are you sure you want to block user ${targetUserId} from platform messaging?`)) return;
+    if (
+      !confirm(
+        `Are you sure you want to block user ${targetUserId} from platform messaging?`,
+      )
+    )
+      return;
     setBlockingUser(true);
     try {
       const token = await getToken();
-      await blockAbusiveUser(targetUserId, "Staff administrator block for violation of terms", token);
+      await blockAbusiveUser(
+        targetUserId,
+        "Staff administrator block for violation of terms",
+        token,
+      );
       toast.success(`User ${targetUserId} blocked successfully`);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to block user");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to block user");
     } finally {
       setBlockingUser(false);
     }
@@ -176,9 +215,12 @@ function AdminChatContent() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Live Chat & Moderation</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Live Chat & Moderation
+          </h2>
           <p className="text-muted-foreground text-sm">
-            Monitor real-time buyer-seller conversations, assist customers in live support, and enforce communications safety.
+            Monitor real-time buyer-seller conversations, assist customers in
+            live support, and enforce communications safety.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -258,19 +300,29 @@ function AdminChatContent() {
                           : "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
                       }`}
                     >
-                      {isSupport ? <Headphones className="h-4 w-4" /> : <Store className="h-4 w-4" />}
+                      {isSupport ? (
+                        <Headphones className="h-4 w-4" />
+                      ) : (
+                        <Store className="h-4 w-4" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h4 className="text-xs font-semibold text-neutral-900 truncate dark:text-white">
-                          {conv.title || (isSupport ? "Customer Support Ticket" : "Buyer Inquiry")}
+                          {conv.title ||
+                            (isSupport
+                              ? "Customer Support Ticket"
+                              : "Buyer Inquiry")}
                         </h4>
                         <span className="text-[10px] text-neutral-400 shrink-0">
                           {conv.lastMessageAt
-                            ? new Date(conv.lastMessageAt).toLocaleDateString([], {
-                                month: "short",
-                                day: "numeric",
-                              })
+                            ? new Date(conv.lastMessageAt).toLocaleDateString(
+                                [],
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )
                             : ""}
                         </span>
                       </div>
@@ -314,7 +366,8 @@ function AdminChatContent() {
                     </span>
                   </h3>
                   <p className="text-xs text-neutral-400 mt-0.5">
-                    ID: {selectedConv.id} • Created: {new Date(selectedConv.createdAt).toLocaleString()}
+                    ID: {selectedConv.id} • Created:{" "}
+                    {new Date(selectedConv.createdAt).toLocaleString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -341,7 +394,9 @@ function AdminChatContent() {
                 ) : messages.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center text-center text-neutral-400">
                     <MessageSquare className="h-10 w-10 stroke-1 mb-2" />
-                    <p className="text-sm font-medium">No messages recorded in this conversation</p>
+                    <p className="text-sm font-medium">
+                      No messages recorded in this conversation
+                    </p>
                   </div>
                 ) : (
                   messages.map((msg) => {
@@ -362,13 +417,17 @@ function AdminChatContent() {
                             <span>
                               {msg.senderRole} ({msg.senderId.slice(0, 10)})
                             </span>
-                            <span>{new Date(msg.createdAt).toLocaleTimeString()}</span>
+                            <span>
+                              {new Date(msg.createdAt).toLocaleTimeString()}
+                            </span>
                           </div>
-                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                          <p className="whitespace-pre-wrap break-words">
+                            {msg.content}
+                          </p>
 
                           {msg.attachments && msg.attachments.length > 0 && (
                             <div className="mt-2 space-y-1">
-                              {msg.attachments.map((att: any) => (
+                              {msg.attachments.map((att: ChatAttachment) => (
                                 <a
                                   key={att.id || att.mediaFileId}
                                   href={att.fileUrl}
@@ -425,7 +484,8 @@ function AdminChatContent() {
                 Select a conversation
               </h3>
               <p className="text-xs text-neutral-500 mt-1 max-w-sm">
-                Choose a conversation from the left queue to review transcript history, moderate messages, or intervene as staff.
+                Choose a conversation from the left queue to review transcript
+                history, moderate messages, or intervene as staff.
               </p>
             </div>
           )}
