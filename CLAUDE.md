@@ -28,10 +28,11 @@ the workspace map, the golden rules, commands, and the instruction hierarchy.
   - Security Audit & Remediation: [`docs/plans/security-audit-and-remediation-report.md`](./docs/plans/security-audit-and-remediation-report.md)
   - Commission & Payout Architecture: [`docs/plans/commission-and-payout-architecture-and-testing.md`](./docs/plans/commission-and-payout-architecture-and-testing.md)
   - Support Service Implementation Plan: [`docs/plans/support-service-implementation-plan.md`](./docs/plans/support-service-implementation-plan.md)
+  - Chat Service Architecture & Implementation: [`docs/plans/chat-service-architecture.md`](./docs/plans/chat-service-architecture.md)
   - Database Migration & Seeding Orchestration: [`docs/plans/monorepo-database-orchestration-and-seeding-plan.md`](./docs/plans/monorepo-database-orchestration-and-seeding-plan.md)
 
 - **Mandatory Feature Service Delivery Standard (The 6 Pillars):**
-  Whenever building, modifying, expanding, or integrating any feature service in Larekmart (e.g. `support-service`, `fraud-service`, `payout-service`, etc.), all agents must strictly execute the 6 Pillars:
+  Whenever building, modifying, expanding, or integrating any feature service in Larekmart (e.g. `chat-service`, `support-service`, `fraud-service`, `payout-service`, etc.), all agents must strictly execute the 6 Pillars:
   1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**: Deliver full UI coverage on both the customer storefront and admin dashboard with typed client services, responsive layouts, action dialogs, and design-system compliance.
   2. **Pillar 2 — Cross-Service & Gateway Integration (`apps/*` all services)**: Wire reverse proxying, rate-limiting, and circuit breakers in `api-gateway`; establish asynchronous Kafka event streams with transactional outbox and DLQ isolation; connect domain relationships without cross-service HTTP calls.
   3. **Pillar 3 — Documentation, Skills, Manifests & Configuration Updates (`*.md`, skills, `*.yml`)**: Update architecture docs (`docs/API.md`, `docs/ARCHITECTURE.md`, `docs/EVENT-DRIVEN-ARCHITECTURE.md`), deployment manifests (`docker-compose.yml`, Kubernetes Kustomize, Prometheus, GitHub workflows), and agent skills across all mirror folders.

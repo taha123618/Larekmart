@@ -27,3 +27,4 @@ export * from "./commission";
 export * from "./payout";
 export * from "./fraud";
 export * from "./support";
+export * from "./chat";

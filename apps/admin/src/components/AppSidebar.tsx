@@ -34,6 +34,7 @@ import {
   Percent,
   Banknote,
   LifeBuoy,
+  MessageSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -461,6 +462,14 @@ const AppSidebar = () => {
                   <Link href="/support">
                     <LifeBuoy />
                     Support Tickets & SLA
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/chat">
+                    <MessageSquare />
+                    Live Chat & Moderation
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

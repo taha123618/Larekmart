@@ -112,6 +112,12 @@ export const MIGRATION_STAGES = [
         cwd: "packages/support-db",
         database: "larekmart_support_db (PostgreSQL)",
       },
+      {
+        name: "chat-service",
+        type: "drizzle",
+        cwd: "apps/chat-service",
+        database: "larekmart_chat_db (PostgreSQL)",
+      },
     ],
   },
   {

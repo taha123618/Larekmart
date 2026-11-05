@@ -230,4 +230,15 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/support/categories",
     requireAuth: true,
   },
+
+  // 17. Real-Time Chat & Messaging Service
+  {
+    prefix: "/api/v1/chat",
+    target: services.chat.url,
+    serviceName: services.chat.name,
+    timeoutMs: services.chat.timeoutMs,
+    rewritePrefix: "/api/v1/chat",
+    requireAuth: true,
+    websocket: true,
+  },
 ];

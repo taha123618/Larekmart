@@ -14,7 +14,9 @@ import {
   Heart,
   Tag,
   Coins,
+  MessageSquare,
 } from "lucide-react";
+import LiveChatDrawer from "./chat/LiveChatDrawer";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
@@ -61,6 +63,7 @@ const ProductInteraction = ({
   const [quantity, setQuantity] = useState(1);
   const [inventory, setInventory] = useState<number | null>(null);
   const [isLoadingInventory, setIsLoadingInventory] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const { addToCart } = useCartStore();
   const { openCartDrawer } = useUIStore();
@@ -452,6 +455,24 @@ const ProductInteraction = ({
           />
         </button>
       </div>
+
+      {/* Ask Seller a Question Live Chat Action */}
+      <button
+        type="button"
+        onClick={() => setIsChatOpen(true)}
+        className="w-full mt-1 px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-50/50 hover:bg-emerald-100/60 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-2 text-xs font-semibold transition cursor-pointer"
+      >
+        <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+        Ask Seller a Question
+      </button>
+
+      <LiveChatDrawer
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        initialType="DIRECT_BUYER_SELLER"
+        initialSellerId={product.sellerName ? `seller_${product.sellerName.toLowerCase().replace(/[^a-z0-9]/g, "_")}` : "seller_merchant_001"}
+        title={`Chat with ${product.sellerName || "Seller"}`}
+      />
     </div>
   );
 };

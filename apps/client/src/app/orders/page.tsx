@@ -15,6 +15,7 @@ import {
 import OrderReturnAction from "@/components/returns/OrderReturnAction";
 import OrderDisputeAction from "@/components/dispute/OrderDisputeAction";
 import OrderSupportAction from "@/components/support/OrderSupportAction";
+import OrderChatAction from "@/components/chat/OrderChatAction";
 import { getApiGatewayUrl } from "@/services/gateway.service";
 
 const fetchOrders = async () => {
@@ -196,6 +197,7 @@ const OrdersPage = async (): Promise<React.JSX.Element> => {
                 </div>
 
                 <div className="flex items-center gap-2.5 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-slate-800 flex-wrap">
+                  <OrderChatAction order={order} />
                   <OrderSupportAction order={order} />
                   <OrderReturnAction order={order} />
                   <OrderDisputeAction order={order} />

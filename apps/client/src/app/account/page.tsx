@@ -27,6 +27,8 @@ import {
   Package,
   Coins,
   ShieldAlert,
+  MessageSquare,
+  LifeBuoy,
 } from "lucide-react";
 import {
   fetchCurrentUser,
@@ -565,6 +567,22 @@ export default function AccountPage(): React.JSX.Element {
         >
           <RotateCcw className="w-4 h-4 text-emerald-500" />
           <span>Returns & Refunds</span>
+        </Link>
+
+        <Link
+          href="/account/chat"
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all font-semibold"
+        >
+          <MessageSquare className="w-4 h-4 text-emerald-500" />
+          <span>Live Chat & Messages</span>
+        </Link>
+
+        <Link
+          href="/support"
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all font-semibold"
+        >
+          <LifeBuoy className="w-4 h-4 text-blue-500" />
+          <span>Support Tickets</span>
         </Link>
 
         <Link

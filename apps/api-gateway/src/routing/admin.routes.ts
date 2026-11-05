@@ -219,4 +219,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/support",
     requireAdmin: true,
   },
+
+  // 18. Chat Service Admin Operations & Moderation
+  {
+    prefix: "/api/v1/admin/chat",
+    target: services.chat.url,
+    serviceName: services.chat.name,
+    timeoutMs: services.chat.timeoutMs,
+    rewritePrefix: "/api/v1/chat",
+    requireAdmin: true,
+  },
 ];

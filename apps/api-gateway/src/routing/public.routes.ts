@@ -204,4 +204,14 @@ export const publicRoutes: GatewayRouteConfig[] = [
     timeoutMs: services.analytic.timeoutMs,
     rewritePrefix: "/analytics/public",
   },
+
+  // 18. Chat Service Socket.IO Real-Time Gateway & Transport
+  {
+    prefix: "/socket.io",
+    target: services.chat.url,
+    serviceName: services.chat.name,
+    timeoutMs: services.chat.timeoutMs,
+    rewritePrefix: "/socket.io",
+    websocket: true,
+  },
 ];

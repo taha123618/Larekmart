@@ -18,7 +18,7 @@
 
 ---
 
-**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale (Amazon, AliExpress, and Daraz). It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-five backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, sellers, commissions, and payouts; MongoDB for orders and carts; MySQL 8.0 with dedicated, isolated instances for tax compliance on port 3306 and returns management on port 3307).
+**Larekmart** is a production-grade microservices e-commerce platform designed for multi-tenant marketplace scale (Amazon, AliExpress, and Daraz). It pairs a customer storefront and an admin management dashboard with a **centralized Fastify API Gateway** and **twenty-eight backend services** communicating **asynchronously over Apache Kafka** and persisting data via a **polyglot architecture** (PostgreSQL for products, inventory, catalog, shipping, users, media, analytics, notifications, reviews, wishlists, promotions, pricing, vendors, sellers, commissions, payouts, fraud, support, and chat; MongoDB for orders and carts; MySQL 8.0 with dedicated, isolated instances for tax compliance on port 3306 and returns management on port 3307).
 
 Engineered to endure massive high-concurrency shopping festivals (e.g., 11.11 flash sales with 5,000+ req/sec on hot items), the platform features a **Distributed Multi-DB Checkout Saga (Dual-ACK)**, **Transactional Outbox** event publishing with **Defensive Monotonic Fencing Tokens**, **Distributed Leader Election for Outbox Sweepers**, **API Gateway Thundering-Herd Protection (`SingleFlight`)**, **In-Flight Concurrency Bulkheads & Adaptive Rate Limiting**, **PostgreSQL Read-Replica Projections with 500ms Read-Your-Writes (RYW) Consistency Leases**, **MongoDB Orders Horizontal Sharding**, **High-Velocity Redis Stock Gatekeeper with Cluster Hash-Tag Slot Pinning (`{tenant_id:warehouse_id}`)**, **Zero-Trust Perimeter Identity Stripping & Constant-Time Secret Verification**, **Kafka Dead-Letter Queue (DLQ) Resilience**, **PgBouncer Transaction Pooling (Port 6432)**, **Declarative Chaos Mesh Engineering (Serial + Parallel Mixed-Traffic Order/Read Drills)**, and **Telemetry Ring Buffer Micro-Batching** (reducing DB write queries by 99.8%).
 
@@ -262,11 +262,47 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
         └───────────────────────────────────────────────────────────┘
 ```
 
+#### Real-Time Communications & Omnichannel Support Topology
+
+```text
+       ┌──────────────────────────────┐
+       │     apps/client (:3002)      │  Customer Storefront (LiveChatDrawer, /account/chat, Order actions)
+       │     apps/admin  (:3003)      │  Admin Moderation & Support Center (/chat, /support)
+       └──────────────┬───────────────┘
+                      │ HTTPS & WebSockets (WSS)
+                      ▼
+       ┌──────────────────────────────┐
+       │         api-gateway          │  Fastify 5 (:8080 / :8090)
+       │  • Strips untrusted headers  │  Reverse proxy & WebSocket pass-through
+       │  • Injects verified claims   │  Zero-trust cryptographic secret signing
+       └──────┬────────────────┬──────┘
+              │                │
+              │ /socket.io/*   │ /api/v1/support/*
+              │ /api/v1/chat/* │
+              ▼                ▼
+┌──────────────────────────┐  ┌──────────────────────────┐
+│       chat-service       │  │     support-service      │
+│ Fastify 5 + Socket.IO    │  │ NestJS 11 + Fastify 5    │
+│ Port: 8026               │  │ Port: 8025               │
+│ DB: larekmart_chat_db    │  │ DB: larekmart_support_db │
+│ (Drizzle ORM / Postgres) │  │ (Prisma / Postgres)      │
+└─────────────┬────────────┘  └─────────────┬────────────┘
+              │                             │
+              ├───────────┬─────────────────┤
+              │           │                 │
+              ▼           ▼                 ▼
+     ┌──────────────┐ ┌───────────────┐ ┌───────────────┐
+     │ Redis PubSub │ │ Apache Kafka  │ │ notification- │
+     │ chat:v1:*    │ │ (3 Brokers)   │ │ service       │
+     │ Socket Clust.│ │ chat.*        │ │ Go Chi :8005  │
+     └──────────────┘ └───────────────┘ └───────────────┘
+```
+
 > **Edge Ingress & Unified Gateway Routing**: Public internet traffic terminates TLS at **Traefik v3** (`docker-compose.traefik.yml`), which enforces strict router priorities (`priority=100` on API gateway vs `priority=50` on storefront) so Next.js catch-all routes never shadow API endpoints or WebSockets. Both frontends compile against a unified gateway variable (`NEXT_PUBLIC_API_GATEWAY_URL: http://localhost:8090`), treating individual microservice URLs as optional overrides to eliminate static build redeployments on routing changes.
 
 > **Zero Trust Perimeter & Event-Driven Core**: Cross-service communication is strictly asynchronous through Kafka events; backend services never make synchronous HTTP calls to one another. All public traffic enters through `api-gateway`, which enforces rate limits, validates Clerk sessions, scrubs spoofed headers, and injects verified identity claims signed with `x-internal-secret`. The gateway boots independently of downstream services, leveraging Opossum circuit breakers for graceful degradation (returning degraded stub payloads for non-critical reads such as reviews, wishlists, and recommendations during outages) while strictly failing closed with structured 503 responses on transactional endpoints. Downstream services verify transport authenticity in constant time and strictly decouple gateway transport secrets from administrative end-user privileges. For deep architectural specifications, see [`docs/EVENT-DRIVEN-ARCHITECTURE.md`](docs/EVENT-DRIVEN-ARCHITECTURE.md) (event schemas), [`SECURITY.md`](SECURITY.md) (perimeter & cryptographic standards), and [`docs/SECURITY-AUDIT-REPORT.md`](docs/SECURITY-AUDIT-REPORT.md) (vulnerability analysis & remediation log).
 
-> **Deterministic Anti-Starvation Resource Boundaries**: All 44 service containers in `docker-compose.yml` (26 microservices, 3 Kafka KRaft brokers, OpenSearch, PostgreSQL, and MySQL) enforce granular CPU and RAM limits and reservations (`deploy.resources.limits` & `reservations`) using 6 standardized profiles, preventing host memory starvation and Linux OOM killer termination under peak marketplace loads.
+> **Deterministic Anti-Starvation Resource Boundaries**: All 44 service containers in `docker-compose.yml` (28 microservices, 3 Kafka KRaft brokers, OpenSearch, PostgreSQL, and MySQL) enforce granular CPU and RAM limits and reservations (`deploy.resources.limits` & `reservations`) using 6 standardized profiles, preventing host memory starvation and Linux OOM killer termination under peak marketplace loads.
 
 ### ⚡ Daraz-Scale High-Concurrency Architecture & Resilience Engineering
 
@@ -307,7 +343,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
    - Guaranteed pool quotas prevent non-critical background traffic from starving Tier-1 commerce databases (`product_db`, `inventory_db`, `catalog_db`, `pricing_db`).
    - Prisma packages configure `directUrl` for zero-overhead direct migrations on port 5432 while routing runtime traffic through PgBouncer.
 8. **Decoupled Telemetry Pipeline & Go Ingestion Engine (`analytic-service`)**:
-   - High-throughput **Go 1.22 (Chi)** microservice consuming 70+ platform Kafka event streams across all 26 microservices with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
+   - High-throughput **Go 1.22 (Chi)** microservice consuming 80+ platform Kafka event streams across all 28 microservices with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
    - Micro-batches events (1,000 events / 500ms window) directly into monthly partitioned PostgreSQL tables (`PARTITION BY RANGE (created_at)`) with BRIN indexing using native binary COPY protocol (`pgx.CopyFrom`), reducing database write overhead by over **99.8%** compared to single-row inserts.
    - Lock-free atomic counters (`sync/atomic` with CAS bit casting for float64 metrics) provide `<1ms` KPI snapshot queries, backed by Redis TTL read-through caching.
    - Graceful shutdown drains in-flight channels and flushes pending micro-batches on `SIGTERM`/`SIGINT` to guarantee zero event loss.
@@ -331,7 +367,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - API Gateway enforces **In-Flight Concurrency Bulkheads** (clamping concurrent checkout requests from 50 to 5) and adaptive rate limiting (clamping from 30 to 5 req/min) during downstream degradation, fast-rejecting with **HTTP 503** and `Retry-After: 15` to protect database pools.
 13. **Zero-Trust Perimeter Authorization & Transport Secret Decoupling**:
     - API Gateway unconditionally strips client-supplied identity and transport headers (`x-user-id`, `x-user-role`, `x-internal-secret`) before forwarding traffic downstream.
-    - All 26 microservices enforce constant-time cryptographic verification (`crypto.timingSafeEqual` with SHA-256 pre-hashing) on internal transport secrets, eliminating timing-oracle attack surfaces.
+    - All 28 microservices enforce constant-time cryptographic verification (`crypto.timingSafeEqual` with SHA-256 pre-hashing) on internal transport secrets, eliminating timing-oracle attack surfaces.
     - Downstream services strictly decouple gateway transport secrets from end-user authorization: proxied user requests require explicit `userRole === "admin"` claims; internal transport secrets alone never grant administrative access on behalf of an end user.
 14. **Enterprise Supply-Chain & Runtime Vulnerability Hardening**:
     - Upgraded `vendor-service` to **NestJS 11 on Fastify 5**, eliminating four high-severity middleware bypass advisories (`GHSA-r4wm-x892-vjmx`, `GHSA-wf42-42fg-fg84`, `GHSA-6v32-fjc9-9qf6`, `GHSA-9c5c-9qcx-q35q`).
@@ -352,6 +388,11 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - **Automated SLA Policies & Escalations**: Dynamic first-response and resolution deadline calculation per category and priority tier (`TIER_1` to `ESCALATIONS`) with SLA breach warnings and automated priority escalations.
     - **Role-Based Message Isolation & Media Attachments**: Encrypted and redacted staff-only internal notes (`isInternalNote: true`) combined with public conversation threads and rich media/screenshot attachments.
     - **Live Agent Queues & Workload Analytics**: Agent queue assignment, resolution velocity tracking, and real-time WebSocket event streaming via Socket.IO.
+18. **Real-Time Buyer-to-Seller & Live Support Chat Engine (`chat-service`)**:
+    - **Bi-Directional Transport & WebSocket Clustering**: Fastify 5 + Socket.IO microservice running on port `8026` with `@socket.io/redis-adapter` over Redis Pub/Sub (`chat:v1:*`) for zero-loss horizontal multi-pod fanout. Isolated rooms (`conversation:{id}`) support live typing indicators, presence tracking, read receipts, and delivery acknowledgments without inter-pod memory leakage.
+    - **Relational Chat Persistence & Participant Isolation (Drizzle ORM + PostgreSQL)**: Durable PostgreSQL storage via Drizzle ORM (`larekmart_chat_db`) across 6 relational tables (`conversations`, `conversation_participants`, `messages`, `message_receipts`, `message_attachments`, `conversation_blocks`). Enforces strict tenant and participant isolation (403 Forbidden for non-participants; verified `ADMIN` oversight).
+    - **Asynchronous Event-Driven Pipeline (Apache Kafka)**: Publishes typed domain events (`chat.conversation.created`, `chat.message.created`, `chat.message.reported`) via `@repo/kafka`. Offline message notifications are consumed by `notification-service`; report abuse events trigger Redis sliding-window velocity checks in `fraud-service` and automatically generate high-priority arbitration tickets in `support-service`.
+    - **Communications Trust, Moderation & Zero-Trust Hardening**: Bi-directional participant blocking with instant messaging prohibition, message abuse reporting with category classification (`SPAM`, `HARASSMENT`, `SCAM_OR_FRAUD`), prevention of self-reporting and phantom solo rooms, and constant-time `safeTimingCompare` internal gateway secret verification. Staff intervention auto-registers administrators as active audit-trail participants.
 
 For in-depth architectural specifications and diagrams, see [`docs/plans/README.md`](docs/plans/README.md).
 
@@ -391,7 +432,8 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 │   ├── commission-service/    # Fastify 5 + PostgreSQL + Drizzle + Kafka + Decimal.js marketplace commission plans, rules & calculations (:8022)
 │   ├── payout-service/        # NestJS 11 (Fastify 5) + PostgreSQL + Drizzle + Kafka + Decimal.js seller payouts, double-entry ledger & settlements (:8023)
 │   ├── fraud-service/         # Python 3.12+ (FastAPI) + PostgreSQL + SQLAlchemy + Redis + Kafka + scikit-learn fraud engine (:8024)
-│   └── support-service/       # NestJS 11 (Fastify 5) + PostgreSQL + Prisma + Redis + Kafka + Socket.IO omnichannel support tickets & SLAs (:8025)
+│   ├── support-service/       # NestJS 11 (Fastify 5) + PostgreSQL + Prisma + Redis + Kafka + Socket.IO omnichannel support tickets & SLAs (:8025)
+│   └── chat-service/          # Fastify 5 + PostgreSQL + Drizzle + Redis + Kafka + Socket.IO real-time buyer-seller & support chat (:8026)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -453,6 +495,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | **`payout-service`** | NestJS 11 (Fastify 5), Drizzle, PostgreSQL, Redis, Kafka, Decimal.js, Zod | `8023` | Seller payouts, balanced append-only double-entry ledger, settlement batches, maturity holds, reserve reserves & payout provider reconciliation. |
 | **`fraud-service`** | Python 3.12+ (FastAPI), SQLAlchemy, PostgreSQL, Redis, Kafka, scikit-learn | `8024` | Real-time risk assessment, velocity abuse detection, scikit-learn anomaly scoring, promotion abuse, and fraud case management. |
 | **`support-service`** | NestJS 11 (Fastify 5), Prisma, PostgreSQL, Redis, Kafka, Socket.IO, Zod | `8025` | Omnichannel customer & seller support tickets, categories, SLA policies, escalations, agent queues, workload analytics & real-time Socket.IO. |
+| **`chat-service`** | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Socket.IO, Zod | `8026` | Real-time buyer-seller messaging, live customer support conversations, Socket.IO Redis adapter cluster, typing indicators, read receipts, unread counts & moderation. |
 
 ---
 
@@ -476,7 +519,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | **`@repo/vendor-db`** | PostgreSQL vendor-domain persistence via Prisma: legal entities, business profiles, KYB documents & history. | `vendor-service` |
 | **`@repo/support-db`** | PostgreSQL support-domain persistence via Prisma: tickets, messages, assignments, SLA policies & history. | `support-service` |
 | **`@repo/eslint-config`** | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`). | `admin`, `client` |
-| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`). | All 43 workspaces |
+| **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`). | All 47 workspaces |
 
 ---
 
@@ -487,8 +530,8 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 - **Frontend Frameworks**: Next.js 16 & 15 (App Router, Turbopack, React Server Components), React 19
 - **UI & Design System**: Tailwind CSS v4, shadcn/ui, Radix UI primitives, Lucide React, Recharts
 - **State Management & Forms**: Zustand (persisted), TanStack React Query v5, TanStack Table v8, React Hook Form + Zod
-- **Backend & Gateway Frameworks**: Fastify 5 (`@fastify/http-proxy`, `@fastify/helmet`, Opossum circuit breaker with graceful degradation for non-critical paths), NestJS 11 (Fastify 5), Express 5, Hono 4 (`@hono/node-server` 2.x), Koa, Go 1.22 (Chi), Python 3.12+ (FastAPI)
-- **Databases & Persistence**: PostgreSQL (via Prisma ORM, Drizzle ORM & pg), MongoDB (via Mongoose), MySQL 8.0 (physically isolated instances: `tax_db` on port 3306 and `return_db` on port 3307 via Drizzle ORM)
+- **Backend & Gateway Frameworks**: Fastify 5 (`@fastify/http-proxy`, `@fastify/helmet`, Opossum circuit breaker with graceful degradation for non-critical paths), NestJS 11 (Fastify 5), Express 5, Hono 4 (`@hono/node-server` 2.x), Koa, Go 1.22 (Chi), Python 3.12+ (FastAPI), Socket.IO (with `@socket.io/redis-adapter` for horizontal multi-pod WebSocket clustering)
+- **Databases & Persistence**: PostgreSQL (via Prisma ORM, Drizzle ORM & pg, including `larekmart_chat_db`), MongoDB (via Mongoose), MySQL 8.0 (physically isolated instances: `tax_db` on port 3306 and `return_db` on port 3307 via Drizzle ORM)
 - **Message Broker**: Apache Kafka (KafkaJS, 3-broker KRaft cluster with quorum voting, min ISR 2, and Kafka UI)
 - **Authentication**: Clerk (`@clerk/nextjs`, `@clerk/express`, `@clerk/fastify`, `@hono/clerk-auth`)
 - **Payments**: Stripe (Custom Checkout Element + Webhooks)
@@ -502,7 +545,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 - **Node.js**: ≥ 18
 - **pnpm**: 9.0.0 (`corepack enable && corepack prepare pnpm@9.0.0 --activate`)
 - **Docker**: For running the local Kafka cluster, databases, and Redis
-- **Redis**: Local or containerized on port `6379` (cache for product, order, search, and analytic services)
+- **Redis**: Local or containerized on port `6379` (cache for product, order, search, analytic, and support services, plus Redis Pub/Sub adapter for `chat-service` Socket.IO cluster)
 - **OpenSearch**: Local or containerized on port `9200` (search index owned by search-service)
 - **PostgreSQL**: Local or containerized on port `5432`
 - **MongoDB**: Local or containerized on port `27017`
@@ -515,7 +558,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 # Option A: Full Docker Compose Environment (Recommended)
 # ==============================================================================
 # Spins up backing databases (Postgres with pgvector, MongoDB replica set, isolated MySQL instances for tax_db & return_db, Redis,
-# 3-broker Kafka KRaft cluster, OpenSearch), Kafka UI, all 26 backend services, and both Next.js frontends:
+# 3-broker Kafka KRaft cluster, OpenSearch), Kafka UI, all 28 backend services, and both Next.js frontends:
 docker compose up -d --build
 
 # View logs:
@@ -553,6 +596,7 @@ pnpm --filter @repo/vendor-db db:generate
 pnpm --filter @repo/vendor-db db:migrate
 pnpm --filter @repo/support-db db:generate
 pnpm --filter @repo/support-db db:migrate
+pnpm --filter chat-service db:migrate
 (cd apps/fraud-service && uv run alembic upgrade head)
 
 # 4. Start all workspaces concurrently in development mode
@@ -566,8 +610,8 @@ pnpm dev
 | **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                        |
 | **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                 |
 | **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                            |
-| **Type Check**      | `pnpm check-types`                                          | Run strict TypeScript type checks across all 43 workspaces                          |
-| **Test Suites**     | `pnpm test`                                                 | Run unit and integration test suites across 29 workspaces (Node, Go, Python)        |
+| **Type Check**      | `pnpm check-types`                                          | Run strict TypeScript type checks across all 47 workspaces                          |
+| **Test Suites**     | `pnpm test`                                                 | Run unit and integration test suites across 31 workspaces (Node, Go, Python)        |
 | **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                      |
 | **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                         |
 | **Format Check**    | `pnpm format:check`                                         | Verify Prettier formatting compliance across the codebase                           |
@@ -736,6 +780,8 @@ Whenever developing, expanding, or integrating any feature service in Larekmart 
 | [`docs/comparisons/REVERSE-PROXY-INGRESS-COMPARISON.md`](docs/comparisons/REVERSE-PROXY-INGRESS-COMPARISON.md)             | Reverse proxy evaluation: Caddy vs. NGINX vs. Traefik                                                                                       |
 | [`docs/comparisons/OBSERVABILITY-STACK-COMPARISON.md`](docs/comparisons/OBSERVABILITY-STACK-COMPARISON.md)                 | Observability evaluation: Dozzle vs. Rootprint vs. CNCF Prometheus/Grafana/Loki                                                             |
 | [`docs/plans/README.md`](docs/plans/README.md)                                                                             | High-Concurrency Daraz-Scale Architecture Plans, Multi-DB Saga, Outbox, & DLQ Index                                                         |
+| [`docs/plans/chat-service-architecture.md`](docs/plans/chat-service-architecture.md)                                       | Real-Time Chat & Communications Engine: Socket.IO Redis adapter, Drizzle PostgreSQL schemas, and Kafka events                               |
+| [`docs/plans/chat-service-implementation-plan.md`](docs/plans/chat-service-implementation-plan.md)                         | 6-Pillar Implementation Plan: Fastify 5 setup, gateway routes, frontend chat drawers, tests, and security audit                             |
 | [`infrastructure/chaos/README.md`](infrastructure/chaos/README.md)                                                         | Chaos Engineering Playbook: Chaos Mesh CRDs, serial & parallel mixed-traffic order/read routing drills, and automated rollback verification |
 | [`infrastructure/kubernetes/README.md`](infrastructure/kubernetes/README.md)                                               | Kubernetes Cloud Mesh Operations: Declarative Kustomize overlays, HPAs, and Pod Disruption Budgets                                          |
 

@@ -285,6 +285,14 @@ scrape_configs:
           service: support-service
           runtime: nestjs
 
+  - job_name: chat-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["chat-service:8026"]
+        labels:
+          service: chat-service
+          runtime: fastify
+
   - job_name: api-gateway
     metrics_path: /metrics
     static_configs:

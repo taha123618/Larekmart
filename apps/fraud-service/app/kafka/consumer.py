@@ -33,6 +33,7 @@ async def start_kafka_consumer() -> None:
                 "promotion.redeemed",
                 "promotion.reserved",
                 "return.created",
+                "chat.message.reported",
                 bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS.split(","),
                 group_id=settings.KAFKA_CONSUMER_GROUP,
                 auto_offset_reset="latest",
@@ -195,6 +196,28 @@ async def start_kafka_consumer() -> None:
                                                 metadata={"returnVelocity": ret_count},
                                             )
                                             await fraud_service.assess_risk(assess_req)
+
+                                # 7. Chat Abuse & Harassment Reporting
+                                elif topic == "chat.message.reported":
+                                    reported_user_id = str(payload.get("reportedByUserId") or "")
+                                    message_id = str(payload.get("messageId") or "")
+                                    conv_id = str(payload.get("conversationId") or "")
+                                    if reported_user_id and message_id:
+                                        rep_count = await velocity_tracker.record_event(
+                                            f"chat_abuse:{reported_user_id}"
+                                        )
+                                        assess_req = AssessRiskRequest(
+                                            workflow="ACCOUNT",
+                                            entityId=message_id,
+                                            entityType="CHAT_MESSAGE",
+                                            userId=reported_user_id,
+                                            metadata={
+                                                "conversationId": conv_id,
+                                                "reason": payload.get("reason"),
+                                                "abuseVelocity": rep_count,
+                                            },
+                                        )
+                                        await fraud_service.assess_risk(assess_req)
 
                             except Exception as handler_err:
                                 logger.warn(

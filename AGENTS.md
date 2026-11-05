@@ -33,7 +33,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`, `apps/api-gateway/AGENTS.md`
-   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`, `payout-service`, `fraud-service`, `support-service`
+   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`, `payout-service`, `fraud-service`, `support-service`, `chat-service`
    - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `vendor-db`, `support-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.
@@ -137,7 +137,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 
 ### 4.1 Mandatory Feature Service Delivery Standard (The 6 Pillars)
 
-Whenever building, modifying, expanding, or integrating any feature service (e.g. `support-service`, `fraud-service`, `payout-service`, `commission-service`, etc.), agents MUST strictly execute all 6 pillars. No feature service work is complete if any pillar is skipped:
+Whenever building, modifying, expanding, or integrating any feature service (e.g. `chat-service`, `support-service`, `fraud-service`, `payout-service`, `commission-service`, etc.), agents MUST strictly execute all 6 pillars. No feature service work is complete if any pillar is skipped:
 
 1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**:
    - Deliver full UI coverage across both applications: Customer Storefront (`apps/client`) and Admin Management Dashboard (`apps/admin`).
@@ -233,6 +233,7 @@ Whenever building, modifying, expanding, or integrating any feature service (e.g
 | `payout-service`          | `apps/payout-service`         | NestJS 11 (Fastify)     | 8023 | Seller payouts, double-entry ledger, settlement batches, reserve holds & provider reconciliation                                      |
 | `fraud-service`           | `apps/fraud-service`          | Python 3.12+ (FastAPI)  | 8024 | Real-time risk assessment, velocity abuse, scikit-learn anomaly scoring, promotion abuse & fraud case management                      |
 | `support-service`         | `apps/support-service`        | NestJS 11 (Fastify)     | 8025 | Omnichannel support tickets, SLA policies, escalations, agent queues, workload analytics & real-time Socket.IO                        |
+| `chat-service`            | `apps/chat-service`           | Fastify 5               | 8026 | Real-time buyer-seller messaging, live customer support conversations, Socket.IO Redis adapter, presence, read receipts & moderation   |
 | `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                                                                                 |
 | `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                                                                         |
 | `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                                                                           |

@@ -147,6 +147,13 @@ apps/support-service (NestJS) ┬─▶ @repo/support-db ─▶ @prisma/client �
                              ├─▶ @repo/monitoring
                              └─▶ @repo/types
 
+apps/chat-service (Fastify) ─┬─▶ Drizzle ORM + pg ─▶ PostgreSQL (larekmart_chat_db)
+                             ├─▶ @repo/kafka ─▶ kafkajs ─▶ Kafka
+                             ├─▶ @socket.io/redis-adapter + ioredis ─▶ Redis
+                             ├─▶ socket.io ─▶ WebSockets
+                             ├─▶ @repo/monitoring
+                             └─▶ @repo/types
+
 apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                            ├─▶ @repo/monitoring

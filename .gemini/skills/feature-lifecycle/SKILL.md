@@ -5,7 +5,7 @@ description: 360° Feature Delivery Standard and vertical implementation playboo
 
 # 360° Feature Delivery Standard & Lifecycle Playbook
 
-This skill defines the **Mandatory 6-Pillar Feature Service Delivery Standard** for building, expanding, or integrating any feature service in Larekmart (exemplified by `support-service`, `fraud-service`, `payout-service`, `commission-service`, `return-service`, and `review-service`).
+This skill defines the **Mandatory 6-Pillar Feature Service Delivery Standard** for building, expanding, or integrating any feature service in Larekmart (exemplified by `chat-service`, `support-service`, `fraud-service`, `payout-service`, `commission-service`, `return-service`, and `review-service`).
 
 No feature service may be considered complete or merged if any of the 6 pillars is skipped.
 
