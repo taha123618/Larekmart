@@ -91,6 +91,10 @@ var SubscribedTopics = []string{
 	"dispute.created",
 	"dispute.opened",
 	"dispute.resolved",
+	"support.ticket.created",
+	"support.ticket.assigned",
+	"support.ticket.updated",
+	"support.ticket.resolved",
 }
 
 // KafkaConsumer coordinates continuous topic consumption without event-loop starvation.

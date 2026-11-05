@@ -277,6 +277,14 @@ scrape_configs:
           service: fraud-service
           runtime: python
 
+  - job_name: support-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["support-service:8025"]
+        labels:
+          service: support-service
+          runtime: nestjs
+
   - job_name: api-gateway
     metrics_path: /metrics
     static_configs:

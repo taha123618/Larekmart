@@ -115,7 +115,9 @@ export class LedgerService {
         });
       }
     } catch (err) {
-      this.logger.warn(`Could not persist transaction ${txnId} to DB (continuing in test mode): ${err}`);
+      this.logger.warn(
+        `Could not persist transaction ${txnId} to DB (continuing in test mode): ${err}`,
+      );
     }
 
     return { transactionId: txnId, entriesCount: legs.length };
@@ -130,9 +132,21 @@ export class LedgerService {
     currency: string = "PKR",
   ): Promise<SellerBalanceResponse> {
     try {
-      const escrowAccountId = await this.getOrCreateAccount(sellerId, "SELLER_ESCROW", currency);
-      const reserveAccountId = await this.getOrCreateAccount(sellerId, "DISPUTE_RESERVE", currency);
-      const clearingAccountId = await this.getOrCreateAccount(sellerId, "PAYOUT_CLEARING", currency);
+      const escrowAccountId = await this.getOrCreateAccount(
+        sellerId,
+        "SELLER_ESCROW",
+        currency,
+      );
+      const reserveAccountId = await this.getOrCreateAccount(
+        sellerId,
+        "DISPUTE_RESERVE",
+        currency,
+      );
+      const clearingAccountId = await this.getOrCreateAccount(
+        sellerId,
+        "PAYOUT_CLEARING",
+        currency,
+      );
 
       // Aggregates for Escrow (Seller's main earnings)
       const escrowRows = await db
@@ -179,7 +193,10 @@ export class LedgerService {
         if (r.entryType === "CREDIT") reserveCredits = new Decimal(r.total);
         if (r.entryType === "DEBIT") reserveDebits = new Decimal(r.total);
       }
-      const activeReserveHold = Decimal.max(0, reserveCredits.minus(reserveDebits));
+      const activeReserveHold = Decimal.max(
+        0,
+        reserveCredits.minus(reserveDebits),
+      );
 
       // Lifetime Payouts (Cleared disbursements)
       const clearingRows = await db
@@ -198,7 +215,10 @@ export class LedgerService {
       const lifetimeDisbursed = new Decimal(clearingRows[0]?.total || 0);
 
       const grossBalance = escrowCredits.minus(escrowDebits);
-      const availableBalance = Decimal.max(0, grossBalance.minus(activeReserveHold));
+      const availableBalance = Decimal.max(
+        0,
+        grossBalance.minus(activeReserveHold),
+      );
 
       return {
         sellerId,

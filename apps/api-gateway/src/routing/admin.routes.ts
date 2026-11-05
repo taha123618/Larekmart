@@ -209,4 +209,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/admin/fraud",
     requireAdmin: true,
   },
+
+  // 17. Support Service Admin Operations (Assignments, Escalations, Analytics, SLAs)
+  {
+    prefix: "/api/v1/admin/support",
+    target: services.support.url,
+    serviceName: services.support.name,
+    timeoutMs: services.support.timeoutMs,
+    rewritePrefix: "/api/v1/admin/support",
+    requireAdmin: true,
+  },
 ];

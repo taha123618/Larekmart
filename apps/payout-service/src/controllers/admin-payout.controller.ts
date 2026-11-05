@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Param, UseGuards, Inject } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  UseGuards,
+  Inject,
+} from "@nestjs/common";
 import { PayoutsService } from "../payouts/payouts.service.js";
 import { AdminGuard } from "../guards/auth.guard.js";
 

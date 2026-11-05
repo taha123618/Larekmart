@@ -53,12 +53,18 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
   const [balance, setBalance] = useState<VendorBalance | null>(null);
   const [escrows, setEscrows] = useState<VendorEscrowTransaction[]>([]);
   const [payouts, setPayouts] = useState<VendorPayoutRequest[]>([]);
-  const [authoritativePayouts, setAuthoritativePayouts] = useState<ClientSellerPayoutItem[]>([]);
-  const [statements, setStatements] = useState<ClientSellerMonthlyStatement[]>([]);
+  const [authoritativePayouts, setAuthoritativePayouts] = useState<
+    ClientSellerPayoutItem[]
+  >([]);
+  const [statements, setStatements] = useState<ClientSellerMonthlyStatement[]>(
+    [],
+  );
 
   // Filter & Pagination
   const [escrowFilter, setEscrowFilter] = useState<EscrowStatus | "ALL">("ALL");
-  const [activeTab, setActiveTab] = useState<"escrow" | "payouts" | "statements">("escrow");
+  const [activeTab, setActiveTab] = useState<
+    "escrow" | "payouts" | "statements"
+  >("escrow");
 
   // Payout Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -79,7 +85,14 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
       }
       setVendor(myVendor);
 
-      const [ledgerBalanceRes, vendorBalanceRes, escrowRes, payoutRes, authPayoutRes, stmtRes] = await Promise.all([
+      const [
+        ledgerBalanceRes,
+        vendorBalanceRes,
+        escrowRes,
+        payoutRes,
+        authPayoutRes,
+        stmtRes,
+      ] = await Promise.all([
         fetchSellerBalance(token).catch(() => null),
         fetchVendorBalance(myVendor.id, token).catch(() => null),
         fetchEscrowTransactions(
@@ -93,8 +106,14 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
         fetchPayoutRequests(myVendor.id, { limit: 20 }, token).catch(() => ({
           requests: [],
         })),
-        fetchSellerPayouts(token).catch(() => ({ sellerId: myVendor.id, payouts: [] })),
-        fetchSellerStatements(token).catch(() => ({ sellerId: myVendor.id, statements: [] })),
+        fetchSellerPayouts(token).catch(() => ({
+          sellerId: myVendor.id,
+          payouts: [],
+        })),
+        fetchSellerStatements(token).catch(() => ({
+          sellerId: myVendor.id,
+          statements: [],
+        })),
       ]);
 
       // Prioritize authoritative double-entry ledger balance from payout-service
@@ -103,12 +122,27 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
           vendorId: myVendor.id,
           currency: ledgerBalanceRes.currency || "PKR",
           availableBalance: Number(ledgerBalanceRes.availableBalance || 0),
-          escrowBalance: Number(ledgerBalanceRes.pendingSettlement || vendorBalanceRes?.escrowBalance || 0),
-          disputeFrozenBalance: Number(ledgerBalanceRes.reserveHold || vendorBalanceRes?.disputeFrozenBalance || 0),
-          lifetimePaid: Number(ledgerBalanceRes.lifetimePayouts || vendorBalanceRes?.lifetimePaid || 0),
+          escrowBalance: Number(
+            ledgerBalanceRes.pendingSettlement ||
+              vendorBalanceRes?.escrowBalance ||
+              0,
+          ),
+          disputeFrozenBalance: Number(
+            ledgerBalanceRes.reserveHold ||
+              vendorBalanceRes?.disputeFrozenBalance ||
+              0,
+          ),
+          lifetimePaid: Number(
+            ledgerBalanceRes.lifetimePayouts ||
+              vendorBalanceRes?.lifetimePaid ||
+              0,
+          ),
           lifetimeEarnings: Number(vendorBalanceRes?.lifetimeEarnings || 0),
           updatedAt: new Date().toISOString(),
-          lastPayoutAt: ledgerBalanceRes.lastPayoutAt || vendorBalanceRes?.lastPayoutAt || null,
+          lastPayoutAt:
+            ledgerBalanceRes.lastPayoutAt ||
+            vendorBalanceRes?.lastPayoutAt ||
+            null,
         });
       } else {
         setBalance(vendorBalanceRes);
@@ -387,7 +421,10 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
               Security & Settlement Verification Active
             </h3>
             <p className="text-xs text-amber-200/80 leading-relaxed">
-              One or more disbursements or settlement reserves are currently on hold for routine fraud or transaction dispute verification. Once security audits confirm compliance, funds are released automatically into your available balance.
+              One or more disbursements or settlement reserves are currently on
+              hold for routine fraud or transaction dispute verification. Once
+              security audits confirm compliance, funds are released
+              automatically into your available balance.
             </p>
           </div>
         </div>
@@ -503,7 +540,8 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
           }`}
         >
           <Coins className="w-4 h-4" />
-          Disbursements & Batches ({authoritativePayouts.length + payouts.length})
+          Disbursements & Batches (
+          {authoritativePayouts.length + payouts.length})
         </button>
         <button
           onClick={() => setActiveTab("statements")}
@@ -677,11 +715,15 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
                             {new Date(authP.createdAt).toLocaleDateString()}
                           </td>
                           <td className="py-3.5 px-4 font-bold text-white text-base">
-                            {authP.currency} {Number(authP.amount).toLocaleString()}
+                            {authP.currency}{" "}
+                            {Number(authP.amount).toLocaleString()}
                           </td>
                           <td className="py-3.5 px-4">
                             <span className="font-medium text-indigo-300">
-                              Automated Clearing {authP.batchId ? `(#${authP.batchId.slice(-6)})` : ""}
+                              Automated Clearing{" "}
+                              {authP.batchId
+                                ? `(#${authP.batchId.slice(-6)})`
+                                : ""}
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-zinc-400">
@@ -752,7 +794,8 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
       {activeTab === "statements" && (
         <div className="space-y-4">
           <p className="text-xs text-zinc-400">
-            Authoritative monthly accounting statements generated from append-only double-entry ledger transactions.
+            Authoritative monthly accounting statements generated from
+            append-only double-entry ledger transactions.
           </p>
 
           <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
@@ -806,7 +849,9 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
                         <td className="py-3.5 px-4 text-right">
                           <button
                             onClick={() =>
-                              toast.info(`Downloading official statement for period ${stmt.period}`)
+                              toast.info(
+                                `Downloading official statement for period ${stmt.period}`,
+                              )
                             }
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-200 transition-colors"
                           >

@@ -199,3 +199,29 @@ This document specifies the exact behavioral logic, state machine transitions, e
 
 - **`GET /api/v1/admin/payouts`**: Requires `shouldBeAdmin`. Returns paginated list of all system payouts with status filters.
 - **`POST /api/v1/admin/payouts/:payoutId/retry`**: Requires `shouldBeAdmin`. Resets failed payout to `PENDING` and re-queues disbursement.
+
+---
+
+### 3.9 Customer Support & SLA Resolution Service (`apps/support-service`)
+
+#### FR-SUP-01: Ticket Lifecycle & Self-Service
+
+- **`POST /api/v1/support/tickets`**: Requires `shouldBeUser`. Validates payload against `CreateTicketSchema`. Evaluates matching SLA policy rules to calculate `firstResponseDueAt` and `resolutionDueAt`. Publishes `support.ticket.created` Kafka event.
+- **`GET /api/v1/support/tickets`**: Requires `shouldBeUser`. Returns paginated tickets matching the authenticated customer's `userId`.
+- **`GET /api/v1/support/tickets/:id`**: Requires `shouldBeUser`. Verifies ticket ownership and returns full details, strictly redacting confidential internal staff notes (`isInternal: true`).
+- **`PATCH /api/v1/support/tickets/:id`**: Requires `shouldBeUser`. Allows customer to update status (e.g. resolve) or priority. Publishes `support.ticket.updated` or `support.ticket.resolved`.
+
+#### FR-SUP-02: Message Threads & Confidential Notes
+
+- **`POST /api/v1/support/tickets/:id/messages`**: Requires `shouldBeUser`. Validates against `CreateTicketMessageSchema` (enforcing `isInternal: false` for customer submissions). Publishes `support.ticket.updated`.
+- **`POST /api/v1/admin/support/tickets/:id/messages`**: Requires `shouldBeAdmin`. Allows agents to post either public replies or staff-only internal notes (`isInternal: true`).
+
+#### FR-SUP-03: Agent Assignment & Escalation
+
+- **`POST /api/v1/admin/support/tickets/:id/assign`**: Requires `shouldBeAdmin`. Assigns ticket to support agent, logs assignment audit record in `ticket_assignments`, and publishes `support.ticket.assigned`.
+- **`POST /api/v1/admin/support/tickets/:id/escalate`**: Requires `shouldBeAdmin`. Escalates ticket priority and recomputes SLA breach deadlines.
+
+#### FR-SUP-04: Support Operations & SLA Analytics
+
+- **`GET /api/v1/admin/support/tickets`**: Requires `shouldBeAdmin`. Returns all tickets across all customers/sellers with SLA breach flags and agent filter.
+- **`GET /api/v1/admin/support/analytics`**: Requires `shouldBeAdmin`. Aggregates ticket volume, status breakdown, SLA breach rate, and agent workload distribution.

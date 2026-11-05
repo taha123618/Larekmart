@@ -47,7 +47,8 @@ export async function fetchCommissionQuote(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to calculate commission quote (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to calculate commission quote (HTTP ${res.status})`,
     );
   }
 
@@ -61,15 +62,19 @@ export async function fetchOrderCommission(
   orderId: string,
   authToken?: string,
 ): Promise<{ calculation: CommissionCalculationType | null }> {
-  const res = await fetch(`${API_BASE}/api/v1/internal/commissions/orders/${orderId}`, {
-    headers: getHeaders(authToken),
-    cache: "no-store",
-  });
+  const res = await fetch(
+    `${API_BASE}/api/v1/internal/commissions/orders/${orderId}`,
+    {
+      headers: getHeaders(authToken),
+      cache: "no-store",
+    },
+  );
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch order commission (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch order commission (HTTP ${res.status})`,
     );
   }
 

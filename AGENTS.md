@@ -33,8 +33,8 @@ Workspace Skills (<workspace>/.agents/skills/*)
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
    - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`, `apps/api-gateway/AGENTS.md`
-   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`, `payout-service`, `fraud-service`
-   - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `vendor-db`, `typescript-config`
+   - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`, `payout-service`, `fraud-service`, `support-service`
+   - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `vendor-db`, `support-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
    Root skills live in `.agents/skills/`; workspace skills live in `<workspace>/.agents/skills/`.
 
@@ -115,7 +115,7 @@ If a read-only command fails or the repository is in an unexpected state, report
 - Write simple, readable, well-typed code. Prefer clarity over cleverness.
 - Handle errors explicitly. Do not silently swallow them.
 - Add or update tests when behaviour changes, if the project has tests.
-- Write comments only where the reason is not obvious from the code. Explain *why*, not *what*.
+- Write comments only where the reason is not obvious from the code. Explain _why_, not _what_.
 - Do not leave debug statements, dead code, or unresolved placeholders behind.
 
 ### 8. Working Process
@@ -192,7 +192,8 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `seller-service`          | `apps/seller-service`         | Fastify 5               | 8021 | Marketplace storefront configuration, staff & permissions, operational settings, performance snapshots & seller events                |
 | `commission-service`      | `apps/commission-service`     | Fastify 5               | 8022 | Marketplace commission plans, rule versioning, percentage/fixed fees, min/max limits & settlement quotes                              |
 | `payout-service`          | `apps/payout-service`         | NestJS 11 (Fastify)     | 8023 | Seller payouts, double-entry ledger, settlement batches, reserve holds & provider reconciliation                                      |
-| `fraud-service`           | `apps/fraud-service`          | Python 3.12+ (FastAPI)  | 8024 | Real-time risk assessment, velocity abuse, scikit-learn anomaly scoring, promotion abuse & fraud case management                       |
+| `fraud-service`           | `apps/fraud-service`          | Python 3.12+ (FastAPI)  | 8024 | Real-time risk assessment, velocity abuse, scikit-learn anomaly scoring, promotion abuse & fraud case management                      |
+| `support-service`         | `apps/support-service`        | NestJS 11 (Fastify)     | 8025 | Omnichannel support tickets, SLA policies, escalations, agent queues, workload analytics & real-time Socket.IO                        |
 | `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                                                                                 |
 | `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                                                                         |
 | `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                                                                           |
@@ -206,6 +207,7 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 | `@repo/shipping-db`       | `packages/shipping-db`        | Library                 | —    | Prisma shipping schema, shipments, packages, tracking events & labels (PostgreSQL)                                                    |
 | `@repo/user-db`           | `packages/user-db`            | Library                 | —    | Prisma user schema, profiles, addresses, preferences & settings (PostgreSQL)                                                          |
 | `@repo/vendor-db`         | `packages/vendor-db`          | Library                 | —    | Prisma vendor schema, business profiles, KYB documents & verification workflow (PostgreSQL)                                           |
+| `@repo/support-db`        | `packages/support-db`         | Library                 | —    | Prisma support schema, tickets, messages, assignments, SLA policies & history (PostgreSQL)                                            |
 | `@repo/eslint-config`     | `packages/eslint-config`      | Config                  | —    | Shared ESLint flat configs                                                                                                            |
 | `@repo/typescript-config` | `packages/typescript-config`  | Config                  | —    | Shared tsconfig bases                                                                                                                 |
 

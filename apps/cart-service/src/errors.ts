@@ -6,4 +6,3 @@ export class CartMergeConflictError extends Error {
     this.name = "CartMergeConflictError";
   }
 }
-

@@ -142,6 +142,9 @@ jobs:
           - service: fraud-service
             context: .
             dockerfile: apps/fraud-service/Dockerfile
+          - service: support-service
+            context: .
+            dockerfile: apps/support-service/Dockerfile
           - service: email-service
             context: .
             dockerfile: apps/email-service/Dockerfile

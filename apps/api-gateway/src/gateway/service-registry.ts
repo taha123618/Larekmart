@@ -132,6 +132,11 @@ export const services = {
     url: env.FRAUD_SERVICE_URL,
     timeoutMs: 10000,
   },
+  support: {
+    name: "support-service",
+    url: env.SUPPORT_SERVICE_URL,
+    timeoutMs: 10000,
+  },
 } as const satisfies Record<string, ServiceTarget>;
 
 export const downstreamServices = services;

@@ -78,5 +78,7 @@ images:
     newTag: staging
   - name: larekmart/fraud-service
     newTag: staging
+  - name: larekmart/support-service
+    newTag: staging
   - name: larekmart/email-service
     newTag: staging

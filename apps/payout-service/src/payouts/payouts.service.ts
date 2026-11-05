@@ -82,7 +82,12 @@ export class PayoutsService {
    */
   public async schedulePayoutBatch(
     request: PayoutScheduleRequest,
-  ): Promise<{ batchId: string; batchNumber: string; totalAmount: number; totalPayouts: number }> {
+  ): Promise<{
+    batchId: string;
+    batchNumber: string;
+    totalAmount: number;
+    totalPayouts: number;
+  }> {
     const batchId = `pb_${uuidv4()}`;
     const batchNumber = `BATCH_${Date.now()}`;
     const targetCurrency = request.currency || "PKR";
@@ -122,7 +127,10 @@ export class PayoutsService {
         // Continue gracefully if database is in test mock mode
       }
 
-      const balance = await this.ledgerService.getSellerBalance(sellerId, targetCurrency);
+      const balance = await this.ledgerService.getSellerBalance(
+        sellerId,
+        targetCurrency,
+      );
       if (balance.availableBalance < minThreshold) {
         continue;
       }
@@ -137,8 +145,16 @@ export class PayoutsService {
         const defaultAccount = `acc_${sellerId}_bank`;
 
         // 1. Post double-entry transaction to clear escrow
-        const escrowAccountId = await this.ledgerService.getOrCreateAccount(sellerId, "SELLER_ESCROW", targetCurrency);
-        const clearingAccountId = await this.ledgerService.getOrCreateAccount(sellerId, "PAYOUT_CLEARING", targetCurrency);
+        const escrowAccountId = await this.ledgerService.getOrCreateAccount(
+          sellerId,
+          "SELLER_ESCROW",
+          targetCurrency,
+        );
+        const clearingAccountId = await this.ledgerService.getOrCreateAccount(
+          sellerId,
+          "PAYOUT_CLEARING",
+          targetCurrency,
+        );
 
         await this.ledgerService.postBalancedTransaction(
           [
@@ -223,7 +239,9 @@ export class PayoutsService {
         batchTotal = batchTotal.plus(amountDec);
         successfulPayoutCount++;
       } catch (err) {
-        this.logger.error(`Error processing payout for seller ${sellerId}: ${err}`);
+        this.logger.error(
+          `Error processing payout for seller ${sellerId}: ${err}`,
+        );
       }
     }
 
@@ -254,7 +272,11 @@ export class PayoutsService {
    */
   public async reconcileBatch(
     request: PayoutReconcileRequest,
-  ): Promise<{ batchId: string; reconciledCount: number; failedCount: number }> {
+  ): Promise<{
+    batchId: string;
+    reconciledCount: number;
+    failedCount: number;
+  }> {
     let reconciledCount = 0;
     let failedCount = 0;
 
@@ -276,7 +298,10 @@ export class PayoutsService {
             .update(payouts)
             .set({
               status: "FAILED",
-              failureReason: evt.failureMessage || evt.failureCode || "Provider rejected disbursement",
+              failureReason:
+                evt.failureMessage ||
+                evt.failureCode ||
+                "Provider rejected disbursement",
               updatedAt: new Date(),
             })
             .where(eq(payouts.id, evt.payoutId));
@@ -317,7 +342,9 @@ export class PayoutsService {
   /**
    * Admin retry mechanism for failed payouts.
    */
-  public async retryPayout(payoutId: string): Promise<{ success: boolean; payoutId: string; status: string }> {
+  public async retryPayout(
+    payoutId: string,
+  ): Promise<{ success: boolean; payoutId: string; status: string }> {
     try {
       await db
         .update(payouts)
@@ -339,7 +366,11 @@ export class PayoutsService {
    */
   public async getAllPayouts(limit: number = 50): Promise<unknown[]> {
     try {
-      return await db.select().from(payouts).orderBy(desc(payouts.createdAt)).limit(limit);
+      return await db
+        .select()
+        .from(payouts)
+        .orderBy(desc(payouts.createdAt))
+        .limit(limit);
     } catch {
       return [];
     }

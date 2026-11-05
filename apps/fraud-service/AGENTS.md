@@ -30,4 +30,3 @@ The **Fraud Detection Service** is an enterprise-grade, low-latency microservice
 2. **Fail-Open vs Fail-Closed**: Payouts and Payments fail-closed or flag for review on engine degradation. Promotions fail-open with alerts.
 3. **Audit Trail**: Every analyst review creates an immutable `fraud_decisions` entry.
 4. **Zero-Trust**: Internal endpoints require constant-time `x-internal-secret` validation. Admin endpoints require verified Clerk Admin credentials.
-

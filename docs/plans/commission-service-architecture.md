@@ -29,15 +29,15 @@ In multi-tenant e-commerce platforms operating at Daraz/Alibaba/Amazon scale, co
 
 ## 2. Technology Stack & Service Boundaries
 
-| Component | Choice | Rationale |
-| :--- | :--- | :--- |
-| **Runtime & HTTP** | Node.js + TypeScript + Fastify 5 | High throughput, low latency JSON serialization, schema validation hooks. |
-| **Persistence** | PostgreSQL (`commission_db`) via PgBouncer | Robust relational ACID guarantees with connection multiplexing on port 6432. |
-| **ORM & Migrations**| Drizzle ORM | Zero-overhead, type-safe SQL query generation without prepared statement cache pollution. |
-| **Financial Math** | `Decimal.js` (34 digits precision) | Complete elimination of IEEE-754 floating-point rounding errors on currency fees. |
-| **Messaging** | `@repo/kafka` (Producer & Consumer) | Asynchronous cross-service event stream with DLQ and poison-pill isolation. |
-| **Cache & Leases** | `@repo/redis` (ioredis) | Active rule cache invalidation and distributed quote idempotency. |
-| **Observability** | `@repo/monitoring` (Prometheus + Pino) | Structured audit logging, metrics (`/metrics`), and health endpoints (`/health`). |
+| Component            | Choice                                     | Rationale                                                                                 |
+| :------------------- | :----------------------------------------- | :---------------------------------------------------------------------------------------- |
+| **Runtime & HTTP**   | Node.js + TypeScript + Fastify 5           | High throughput, low latency JSON serialization, schema validation hooks.                 |
+| **Persistence**      | PostgreSQL (`commission_db`) via PgBouncer | Robust relational ACID guarantees with connection multiplexing on port 6432.              |
+| **ORM & Migrations** | Drizzle ORM                                | Zero-overhead, type-safe SQL query generation without prepared statement cache pollution. |
+| **Financial Math**   | `Decimal.js` (34 digits precision)         | Complete elimination of IEEE-754 floating-point rounding errors on currency fees.         |
+| **Messaging**        | `@repo/kafka` (Producer & Consumer)        | Asynchronous cross-service event stream with DLQ and poison-pill isolation.               |
+| **Cache & Leases**   | `@repo/redis` (ioredis)                    | Active rule cache invalidation and distributed quote idempotency.                         |
+| **Observability**    | `@repo/monitoring` (Prometheus + Pino)     | Structured audit logging, metrics (`/metrics`), and health endpoints (`/health`).         |
 
 ---
 
@@ -199,6 +199,7 @@ sequenceDiagram
 The upcoming `payout-service` (Port 8023) integrates with `commission-service` to manage seller disbursements and platform revenue reconciliation.
 
 ### Append-Only Double-Entry Principles
+
 1. **Never mutate balance columns:** Balances are derived from balanced ledger entries (`SUM(debit) - SUM(credit)`).
 2. **Authoritative Provider Confirmation:** Payouts remain in `PROCESSING` until Stripe Connect / 1Link ACH callbacks verify transfer settlement.
 3. **Reserve Holds:** In-transit returns or fraud disputes freeze an adjustable reserve percentage (e.g. 10% rolling reserve for 14 days) before funds become eligible for batch settlement.

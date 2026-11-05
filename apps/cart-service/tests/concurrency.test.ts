@@ -101,39 +101,86 @@ async function runCartConcurrencyTests() {
     "Worker 2 must be blocked while Worker 1 holds the lock",
   );
   // Ensure lock was released in finally
-  assert.equal(mockRedisClient.storage[lockKey], undefined, "Lock must be released after completion");
+  assert.equal(
+    mockRedisClient.storage[lockKey],
+    undefined,
+    "Lock must be released after completion",
+  );
   console.log("✓ Distributed mutual exclusion and cleanup verified");
 
   // 4. Test Idempotent Cart Merge Item Deduplication
   console.log("4. Testing Idempotent Cart Merge Item Deduplication...");
   const existingUserCartItems = [
-    { productId: "prod_1", variantId: "v1", quantity: 2, unitPrice: 500, subtotal: 1000 },
-    { productId: "prod_2", variantId: "v2", quantity: 1, unitPrice: 1200, subtotal: 1200 },
+    {
+      productId: "prod_1",
+      variantId: "v1",
+      quantity: 2,
+      unitPrice: 500,
+      subtotal: 1000,
+    },
+    {
+      productId: "prod_2",
+      variantId: "v2",
+      quantity: 1,
+      unitPrice: 1200,
+      subtotal: 1200,
+    },
   ];
   const guestCartItems = [
-    { productId: "prod_1", variantId: "v1", quantity: 3, unitPrice: 500, subtotal: 1500 },
-    { productId: "prod_3", variantId: null, quantity: 1, unitPrice: 800, subtotal: 800 },
+    {
+      productId: "prod_1",
+      variantId: "v1",
+      quantity: 3,
+      unitPrice: 500,
+      subtotal: 1500,
+    },
+    {
+      productId: "prod_3",
+      variantId: null,
+      quantity: 1,
+      unitPrice: 800,
+      subtotal: 800,
+    },
   ];
 
   // Merge logic simulation
   const mergedItems = [...existingUserCartItems];
   for (const guestItem of guestCartItems) {
     const existingIndex = mergedItems.findIndex(
-      (u) => u.productId === guestItem.productId && (u.variantId || "") === (guestItem.variantId || ""),
+      (u) =>
+        u.productId === guestItem.productId &&
+        (u.variantId || "") === (guestItem.variantId || ""),
     );
     if (existingIndex > -1) {
       mergedItems[existingIndex]!.quantity += guestItem.quantity;
       mergedItems[existingIndex]!.subtotal =
-        mergedItems[existingIndex]!.quantity * mergedItems[existingIndex]!.unitPrice;
+        mergedItems[existingIndex]!.quantity *
+        mergedItems[existingIndex]!.unitPrice;
     } else {
       mergedItems.push({ ...guestItem });
     }
   }
 
-  assert.equal(mergedItems.length, 3, "Merged cart should contain 3 unique items");
-  assert.equal(mergedItems[0]!.quantity, 5, "prod_1 quantity should be combined (2 + 3 = 5)");
-  assert.equal(mergedItems[0]!.subtotal, 2500, "prod_1 subtotal should be updated to 2500");
-  assert.equal(mergedItems[2]!.productId, "prod_3", "prod_3 should be appended");
+  assert.equal(
+    mergedItems.length,
+    3,
+    "Merged cart should contain 3 unique items",
+  );
+  assert.equal(
+    mergedItems[0]!.quantity,
+    5,
+    "prod_1 quantity should be combined (2 + 3 = 5)",
+  );
+  assert.equal(
+    mergedItems[0]!.subtotal,
+    2500,
+    "prod_1 subtotal should be updated to 2500",
+  );
+  assert.equal(
+    mergedItems[2]!.productId,
+    "prod_3",
+    "prod_3 should be appended",
+  );
   console.log("✓ Deduplication and quantity combination logic verified");
 
   console.log("\n=======================================================");

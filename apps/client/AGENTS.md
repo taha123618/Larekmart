@@ -28,7 +28,7 @@ Postgres, Mongo, or Kafka directly.
 
 ## Where things live
 
-- `src/app/` — Next App Router routes (`/`, `/products`, `/products/[id]`, `/cart`, `/orders`, `/account`, `/track`, `/return`, `/sign-in`, `/sign-up`).
+- `src/app/` — Next App Router routes (`/`, `/products`, `/products/[id]`, `/cart`, `/orders`, `/account`, `/support`, `/account/support`, `/account/returns`, `/track`, `/return`, `/sign-in`, `/sign-up`).
 - `src/components/` — UI components:
   - `Navbar.tsx` — Multi-tier marketplace header with announcement bar, omnibar search, category ribbon, and theme switch.
   - `SearchBar.tsx` — Debounced OpenSearch input with search history pills, rich suggestions, and keyboard navigation.
@@ -49,9 +49,11 @@ Postgres, Mongo, or Kafka directly.
   - `ProductTabs.tsx` — Product details, specs, and live customer reviews with rating distribution breakdown, verified badges, helpful voting, report dialog, and photo lightbox.
   - `WriteReviewModal.tsx` — Modal for composing and editing customer reviews with star ratings, text feedback, and media uploads via MinIO/S3.
   - `returns/RequestReturnModal.tsx` — Self-service customer return modal with item multi-selection, partial quantities, reason picker, and evidence image/video upload.
+  - `support/OpenSupportTicketModal.tsx` — Modal for submitting customer support tickets with category selection, priority, order ID linking, and attachment uploads.
+  - `support/OrderSupportAction.tsx` — Contextual order action button opening pre-filled support modal directly from customer orders.
   - `Footer.tsx` — Multi-column marketplace directory with newsletter signup and payment badges.
   - `common/ScrollToTop.tsx` — Viewport scroll progress bar and circular SVG progress floating action button.
-- `src/services/` — Frontend client services (`fraud.service.ts`, `pricing.service.ts`, `return.service.ts`, `tax.service.ts`, `promotion.service.ts`, `review.service.ts`, `wishlist.service.ts`, `media.service.ts`, `shipping.service.ts`, `catalog.service.ts`, `recommendation.service.ts`, `cart.service.ts`, `notification.service.ts`).
+- `src/services/` — Frontend client services (`support.service.ts`, `fraud.service.ts`, `pricing.service.ts`, `return.service.ts`, `tax.service.ts`, `promotion.service.ts`, `review.service.ts`, `wishlist.service.ts`, `media.service.ts`, `shipping.service.ts`, `catalog.service.ts`, `recommendation.service.ts`, `cart.service.ts`, `notification.service.ts`).
 - `src/hooks/` — Custom hooks (`use-lenis.ts` with cancelAnimationFrame and pathname listener).
 - `src/stores/` — Zustand stores (`cartStore.ts`, `wishlistStore.ts`, `uiStore.ts`).
 - `src/lib/utils.ts` — `cn(...)` utility helper (`clsx` + `tailwind-merge`).

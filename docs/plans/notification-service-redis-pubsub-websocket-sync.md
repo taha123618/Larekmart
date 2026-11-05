@@ -11,8 +11,10 @@
 The Go-based `notification-service` (`port 8005`) provides in-app real-time notification streaming to storefront and admin users via WebSockets (`GET /ws`).
 
 ### The Bottleneck
+
 Previously, the WebSocket connection manager (`internal/websocket/Hub`) maintained client connections exclusively in an in-memory map (`userMap map[string]map[*Client]bool`).
 In a scaled horizontal deployment (e.g. multiple Kubernetes pods or Docker replicas behind the API Gateway):
+
 1. User A connects their browser to **Pod 1**.
 2. An asynchronous domain event (e.g., `order.created`, `review.approved`) is consumed from Apache Kafka by a worker running on **Pod 2**.
 3. **Pod 2** executes `SendToUser(userA, notification)` against its local `userMap`.
@@ -47,6 +49,7 @@ In a scaled horizontal deployment (e.g. multiple Kubernetes pods or Docker repli
 ```
 
 ### Invariants:
+
 1. **Unified Broadcast Channel**: Uses a single shared Redis Pub/Sub channel (`notifications:ws:broadcast`) to prevent high connection/subscription churn on Redis.
 2. **Instant Local Delivery + Peer Broadcast**: When `SendToUser` is triggered on a pod, local connections are delivered immediately (<0.1ms). The pod then dispatches a `BroadcastEnvelope` containing `{ event_id, user_id, origin_instance_id, payload, created_at }` to Redis.
 3. **Loop Suppression**: Pods check `origin_instance_id != localInstanceID` before processing inbound Pub/Sub envelopes to prevent duplicate deliveries to local clients.
@@ -64,4 +67,3 @@ In a scaled horizontal deployment (e.g. multiple Kubernetes pods or Docker repli
 5. **Service Bootstrap**: Update `cmd/notification/main.go` to pass `redisClient` to `websocket.NewHub`.
 6. **Automated Unit Tests**: Add test cases in `internal/websocket/hub_test.go` verifying local delivery, envelope marshaling, loop suppression, and nil-Redis fail-open.
 7. **Documentation**: Update `apps/notification-service/AGENTS.md` and `README.md`.
-

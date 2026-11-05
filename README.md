@@ -347,6 +347,11 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - **Redis Sliding-Window Velocity Defense**: Tracks card testing bursts, coupon redemption spam, and rapid checkout velocities using atomic Redis sliding windows and IP/device fingerprint rate limiters.
     - **Machine Learning & Heuristics Fusion**: Integrates configurable, explainable rules with scikit-learn anomaly scoring, computing structured risk scores (0-100) and discrete risk signals.
     - **Analyst Investigation Case Management & Event Orchestration**: Provides `/admin/fraud/cases` workflow with automated case assignment, analyst decision overrides (`APPROVE`, `BLOCK`, `DISMISS`), and real-time Kafka event broadcasts (`fraud.risk.detected`, `fraud.case.created`, `fraud.case.resolved`) that trigger order quarantining, escrow freezes, and payout holds.
+17. **Omnichannel Customer Support & SLA Resolution Engine (`support-service`)**:
+    - **Multi-Role Ticket Intake**: Supports customer, seller, and administrator ticket submissions linked directly to orders, payments, returns, and sellers.
+    - **Automated SLA Policies & Escalations**: Dynamic first-response and resolution deadline calculation per category and priority tier (`TIER_1` to `ESCALATIONS`) with SLA breach warnings and automated priority escalations.
+    - **Role-Based Message Isolation & Media Attachments**: Encrypted and redacted staff-only internal notes (`isInternalNote: true`) combined with public conversation threads and rich media/screenshot attachments.
+    - **Live Agent Queues & Workload Analytics**: Agent queue assignment, resolution velocity tracking, and real-time WebSocket event streaming via Socket.IO.
 
 For in-depth architectural specifications and diagrams, see [`docs/plans/README.md`](docs/plans/README.md).
 
@@ -385,7 +390,8 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 │   ├── seller-service/        # Fastify 5 + PostgreSQL + Drizzle + Redis storefront configuration, staff, policies & performance (:8021)
 │   ├── commission-service/    # Fastify 5 + PostgreSQL + Drizzle + Kafka + Decimal.js marketplace commission plans, rules & calculations (:8022)
 │   ├── payout-service/        # NestJS 11 (Fastify 5) + PostgreSQL + Drizzle + Kafka + Decimal.js seller payouts, double-entry ledger & settlements (:8023)
-│   └── fraud-service/         # Python 3.12+ (FastAPI) + PostgreSQL + SQLAlchemy + Redis + Kafka + scikit-learn fraud engine (:8024)
+│   ├── fraud-service/         # Python 3.12+ (FastAPI) + PostgreSQL + SQLAlchemy + Redis + Kafka + scikit-learn fraud engine (:8024)
+│   └── support-service/       # NestJS 11 (Fastify 5) + PostgreSQL + Prisma + Redis + Kafka + Socket.IO omnichannel support tickets & SLAs (:8025)
 ├── packages/
 │   ├── kafka/                # @repo/kafka    — kafkajs client wrapper + docker-compose
 │   ├── redis/                # @repo/redis    — ioredis client, cache helpers, rate limiter + docker-compose
@@ -400,6 +406,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 │   ├── shipping-db/          # @repo/shipping-db — Prisma shipments, tracking events & labels (PostgreSQL)
 │   ├── user-db/              # @repo/user-db   — Prisma profiles, addresses & preferences (PostgreSQL)
 │   ├── vendor-db/            # @repo/vendor-db — Prisma vendor schema, business profiles & KYB documents (PostgreSQL)
+│   ├── support-db/           # @repo/support-db — Prisma support schema, tickets, messages, assignments & SLA policies (PostgreSQL)
 │   ├── eslint-config/        # @repo/eslint-config — shared ESLint flat configs
 │   └── typescript-config/    # @repo/typescript-config — shared tsconfig bases
 ├── docs/                     # Architecture, dependencies, conventions, testing, ADRs
@@ -445,6 +452,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | **`commission-service`** | Fastify 5, Drizzle, PostgreSQL, Redis, Kafka, Decimal.js, Zod | `8022` | Marketplace commission plans, rule versioning, percentage & fixed fees, min/max limits, order item fee calculations, and settlement quote breakdowns. |
 | **`payout-service`** | NestJS 11 (Fastify 5), Drizzle, PostgreSQL, Redis, Kafka, Decimal.js, Zod | `8023` | Seller payouts, balanced append-only double-entry ledger, settlement batches, maturity holds, reserve reserves & payout provider reconciliation. |
 | **`fraud-service`** | Python 3.12+ (FastAPI), SQLAlchemy, PostgreSQL, Redis, Kafka, scikit-learn | `8024` | Real-time risk assessment, velocity abuse detection, scikit-learn anomaly scoring, promotion abuse, and fraud case management. |
+| **`support-service`** | NestJS 11 (Fastify 5), Prisma, PostgreSQL, Redis, Kafka, Socket.IO, Zod | `8025` | Omnichannel customer & seller support tickets, categories, SLA policies, escalations, agent queues, workload analytics & real-time Socket.IO. |
 
 ---
 
@@ -466,6 +474,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | **`@repo/shipping-db`** | PostgreSQL shipping persistence via Prisma: shipments, packages, tracking events, labels. | `shipping-service` |
 | **`@repo/user-db`** | PostgreSQL user-domain persistence via Prisma: profiles, addresses, preferences, settings. | `user-service` |
 | **`@repo/vendor-db`** | PostgreSQL vendor-domain persistence via Prisma: legal entities, business profiles, KYB documents & history. | `vendor-service` |
+| **`@repo/support-db`** | PostgreSQL support-domain persistence via Prisma: tickets, messages, assignments, SLA policies & history. | `support-service` |
 | **`@repo/eslint-config`** | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`). | `admin`, `client` |
 | **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`). | All 43 workspaces |
 
@@ -542,6 +551,8 @@ pnpm --filter commission-service db:migrate
 pnpm --filter payout-service db:migrate
 pnpm --filter @repo/vendor-db db:generate
 pnpm --filter @repo/vendor-db db:migrate
+pnpm --filter @repo/support-db db:generate
+pnpm --filter @repo/support-db db:migrate
 (cd apps/fraud-service && uv run alembic upgrade head)
 
 # 4. Start all workspaces concurrently in development mode

@@ -212,4 +212,22 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/disputes",
     requireAuth: true,
   },
+
+  // 16. Customer & Seller Support Tickets
+  {
+    prefix: "/api/v1/support/tickets",
+    target: services.support.url,
+    serviceName: services.support.name,
+    timeoutMs: services.support.timeoutMs,
+    rewritePrefix: "/api/v1/support/tickets",
+    requireAuth: true,
+  },
+  {
+    prefix: "/api/v1/support/categories",
+    target: services.support.url,
+    serviceName: services.support.name,
+    timeoutMs: services.support.timeoutMs,
+    rewritePrefix: "/api/v1/support/categories",
+    requireAuth: true,
+  },
 ];

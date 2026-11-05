@@ -1,0 +1,199 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  WAITING_ON_AGENT
+  ESCALATED
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  URGENT
+}
+
+enum TicketSource {
+  CUSTOMER
+  SELLER
+  ADMIN
+  SYSTEM
+}
+
+enum SenderRole {
+  CUSTOMER
+  SELLER
+  AGENT
+  ADMIN
+  SYSTEM
+}
+
+enum SupportTeam {
+  TIER_1
+  TIER_2
+  BILLING
+  SELLER_OPS
+  ESCALATIONS
+  LOGISTICS
+}
+
+model TicketCategory {
+  id              String         @id @default(uuid()) @db.Uuid
+  code            String         @unique @db.VarChar(64)
+  name            String         @db.VarChar(128)
+  description     String?        @db.Text
+  defaultPriority TicketPriority @default(MEDIUM)
+  slaPolicyId     String?        @db.Uuid
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @db.Timestamptz(6)
+
+  slaPolicy       TicketSlaPolicy? @relation(fields: [slaPolicyId], references: [id], onDelete: SetNull)
+  tickets         Ticket[]
+
+  @@map("ticket_categories")
+  @@index([isActive])
+}
+
+model TicketSlaPolicy {
+  id                       String         @id @default(uuid()) @db.Uuid
+  name                     String         @db.VarChar(128)
+  description              String?        @db.Text
+  priority                 TicketPriority @unique
+  firstResponseTimeMinutes Int            @default(240)
+  resolutionTimeMinutes    Int            @default(1440)
+  escalationTier           Int            @default(1)
+  isActive                 Boolean        @default(true)
+  createdAt                DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime       @updatedAt @db.Timestamptz(6)
+
+  categories               TicketCategory[]
+  tickets                  Ticket[]
+
+  @@map("ticket_sla_policies")
+  @@index([isActive])
+}
+
+model Ticket {
+  id                 String         @id @default(uuid()) @db.Uuid
+  ticketNumber       String         @unique @db.VarChar(64)
+  subject            String         @db.VarChar(255)
+  description        String         @db.Text
+  status             TicketStatus   @default(OPEN)
+  priority           TicketPriority @default(MEDIUM)
+  categoryId         String         @db.Uuid
+  slaPolicyId        String?        @db.Uuid
+  source             TicketSource   @default(CUSTOMER)
+  customerId         String?        @db.VarChar(128)
+  customerEmail      String?        @db.VarChar(255)
+  customerPhone      String?        @db.VarChar(64)
+  sellerId           String?        @db.VarChar(128)
+  orderId            String?        @db.VarChar(128)
+  paymentId          String?        @db.VarChar(128)
+  returnId           String?        @db.VarChar(128)
+  assignedAgentId    String?        @db.VarChar(128)
+  assignedTeam       SupportTeam?   @default(TIER_1)
+  firstResponseDueAt DateTime?      @db.Timestamptz(6)
+  resolutionDueAt    DateTime?      @db.Timestamptz(6)
+  firstResponseAt    DateTime?      @db.Timestamptz(6)
+  resolvedAt         DateTime?      @db.Timestamptz(6)
+  closedAt           DateTime?      @db.Timestamptz(6)
+  isEscalated        Boolean        @default(false)
+  escalatedAt        DateTime?      @db.Timestamptz(6)
+  escalationReason   String?        @db.Text
+  chatSessionId      String?        @db.VarChar(128)
+  metadata           Json?          @default("{}")
+  createdAt          DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime       @updatedAt @db.Timestamptz(6)
+
+  category           TicketCategory   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  slaPolicy          TicketSlaPolicy? @relation(fields: [slaPolicyId], references: [id], onDelete: SetNull)
+  messages           TicketMessage[]
+  assignments        TicketAssignment[]
+  history            TicketHistory[]
+
+  @@map("tickets")
+  @@index([status])
+  @@index([priority])
+  @@index([customerId])
+  @@index([sellerId])
+  @@index([orderId])
+  @@index([assignedAgentId])
+  @@index([assignedTeam])
+  @@index([createdAt])
+}
+
+model TicketMessage {
+  id               String       @id @default(uuid()) @db.Uuid
+  ticketId         String       @db.Uuid
+  senderId         String       @db.VarChar(128)
+  senderRole       SenderRole   @default(CUSTOMER)
+  senderName       String?      @db.VarChar(128)
+  isInternalNote   Boolean      @default(false)
+  content          String       @db.Text
+  mediaAttachments Json?        @default("[]")
+  createdAt        DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime     @updatedAt @db.Timestamptz(6)
+
+  ticket           Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_messages")
+  @@index([ticketId])
+  @@index([senderId])
+  @@index([isInternalNote])
+  @@index([createdAt])
+}
+
+model TicketAssignment {
+  id           String       @id @default(uuid()) @db.Uuid
+  ticketId     String       @db.Uuid
+  assignedBy   String       @db.VarChar(128)
+  assignedTo   String       @db.VarChar(128)
+  assignedTeam SupportTeam? @default(TIER_1)
+  assignedAt   DateTime     @default(now()) @db.Timestamptz(6)
+  status       String       @default("ACTIVE") @db.VarChar(32)
+  notes        String?      @db.Text
+
+  ticket       Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_assignments")
+  @@index([ticketId])
+  @@index([assignedTo])
+  @@index([assignedTeam])
+  @@index([status])
+}
+
+model TicketHistory {
+  id           String      @id @default(uuid()) @db.Uuid
+  ticketId     String      @db.Uuid
+  actorId      String      @db.VarChar(128)
+  actorRole    SenderRole  @default(SYSTEM)
+  action       String      @db.VarChar(64)
+  fromState    Json?
+  toState      Json?
+  changeReason String?     @db.Text
+  createdAt    DateTime    @default(now()) @db.Timestamptz(6)
+
+  ticket       Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_history")
+  @@index([ticketId])
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}
+

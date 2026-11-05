@@ -2,10 +2,7 @@
  * payout.service.ts — Client service for merchant double-entry ledger balance, automated payout history, and statements.
  */
 
-import type {
-  SellerBalanceResponse,
-  PayoutExecutionStatus,
-} from "@repo/types";
+import type { SellerBalanceResponse, PayoutExecutionStatus } from "@repo/types";
 import { getApiGatewayUrl } from "./gateway.service";
 
 const API_BASE = getApiGatewayUrl();
@@ -70,7 +67,8 @@ export async function fetchSellerBalance(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch seller balance (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch seller balance (HTTP ${res.status})`,
     );
   }
 
@@ -91,7 +89,8 @@ export async function fetchSellerPayouts(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch seller payouts (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch seller payouts (HTTP ${res.status})`,
     );
   }
 

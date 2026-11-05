@@ -31,7 +31,7 @@ export class HealthController {
     return [
       "# HELP payout_disbursements_total Total payout disbursements executed",
       "# TYPE payout_disbursements_total counter",
-      "payout_disbursements_total{status=\"SUCCESS\"} 0",
+      'payout_disbursements_total{status="SUCCESS"} 0',
       "# HELP payout_ledger_transactions_total Total balanced double-entry transactions posted",
       "# TYPE payout_ledger_transactions_total counter",
       "payout_ledger_transactions_total 0",

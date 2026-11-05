@@ -146,6 +146,7 @@ docker/
 | `commission-service`     | `8022`                            | `127.0.0.1:8022`                     | **Internal Only**   | Marketplace commission plans, rules, line item calculations & fee quotes      |
 | `payout-service`         | `8023`                            | `127.0.0.1:8023`                     | **Internal Only**   | Seller payouts, balanced append-only double-entry ledger & settlement batches |
 | `fraud-service`          | `8024`                            | `127.0.0.1:8024`                     | **Internal Only**   | Real-time risk assessment, velocity abuse detection & fraud case management   |
+| `support-service`        | `8025`                            | `127.0.0.1:8025`                     | **Internal Only**   | Omnichannel customer & seller support tickets, SLA engine & Socket.IO         |
 | `mysql`                  | `3306`                            | `127.0.0.1:3306`                     | **Internal Only**   | MySQL 8.0 database engine for tax compliance, rules & return tracking         |
 | `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                            |
 | `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                                   |

@@ -800,7 +800,10 @@ export class SettlementsService {
     const frozen = [];
     for (const item of items) {
       try {
-        const res = await this.freezeEscrow(item.id, reason || "FRAUD_RISK_DETECTED");
+        const res = await this.freezeEscrow(
+          item.id,
+          reason || "FRAUD_RISK_DETECTED",
+        );
         frozen.push(res);
       } catch (err) {
         this.logger.warn(`Could not freeze escrow ${item.id}: ${err}`);

@@ -183,12 +183,19 @@ export class SettlementsConsumer implements OnModuleInit, OnModuleDestroy {
   private async handleFraudRisk(payload: Record<string, any>) {
     const decision = String(payload.decision || "");
     const priority = String(payload.priority || "");
-    const riskScore = typeof payload.riskScore === "number" ? payload.riskScore : 0;
+    const riskScore =
+      typeof payload.riskScore === "number" ? payload.riskScore : 0;
     const workflow = String(payload.workflow || "");
 
     if (decision === "BLOCK" || priority === "CRITICAL" || riskScore >= 75) {
-      const orderId = workflow.includes("ORDER") ? String(payload.entityId) : undefined;
-      const vendorId = String(payload.sellerId || (workflow.includes("PAYOUT") ? payload.entityId : "") || "");
+      const orderId = workflow.includes("ORDER")
+        ? String(payload.entityId)
+        : undefined;
+      const vendorId = String(
+        payload.sellerId ||
+          (workflow.includes("PAYOUT") ? payload.entityId : "") ||
+          "",
+      );
 
       this.logger.warn(
         `Critical fraud risk detected for order=${orderId}, vendor=${vendorId}. Freezing escrow funds...`,

@@ -1,4 +1,10 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  Inject,
+} from "@nestjs/common";
 import { createKafkaClient, createConsumer } from "@repo/kafka";
 import { LedgerService } from "../ledger/ledger.service.js";
 import { db } from "../db/connection.js";
@@ -35,14 +41,19 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
 
   public async onModuleInit(): Promise<void> {
     if (env.NODE_ENV === "test") {
-      this.logger.log("Kafka consumer in test mode - real broker connection skipped");
+      this.logger.log(
+        "Kafka consumer in test mode - real broker connection skipped",
+      );
       return;
     }
 
     try {
       const brokers = env.KAFKA_BROKERS.split(",").map((b) => b.trim());
       const kafkaClient = createKafkaClient("payout-service-consumer", brokers);
-      this.consumer = createConsumer(kafkaClient, "payout-service-consumer-group");
+      this.consumer = createConsumer(
+        kafkaClient,
+        "payout-service-consumer-group",
+      );
       await this.consumer.connect();
       this.connected = true;
 
@@ -50,7 +61,9 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
         {
           topicName: COMMISSION_TOPICS.ACCRUED,
           topicHandler: async (message) => {
-            const payload = unwrapPayload(message) as unknown as CommissionAccruedEvent;
+            const payload = unwrapPayload(
+              message,
+            ) as unknown as CommissionAccruedEvent;
             if (!payload || !payload.calculationId) return;
             await this.handleCommissionAccrued(payload);
           },
@@ -58,7 +71,9 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
         {
           topicName: COMMISSION_TOPICS.ADJUSTED,
           topicHandler: async (message) => {
-            const payload = unwrapPayload(message) as unknown as CommissionAdjustedEvent;
+            const payload = unwrapPayload(
+              message,
+            ) as unknown as CommissionAdjustedEvent;
             if (!payload || !payload.adjustmentId) return;
             await this.handleCommissionAdjusted(payload);
           },
@@ -66,7 +81,9 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
         {
           topicName: COMMISSION_TOPICS.REVERSED,
           topicHandler: async (message) => {
-            const payload = unwrapPayload(message) as unknown as CommissionReversedEvent;
+            const payload = unwrapPayload(
+              message,
+            ) as unknown as CommissionReversedEvent;
             if (!payload || !payload.orderId) return;
             await this.handleCommissionReversed(payload);
           },
@@ -76,7 +93,9 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
           topicHandler: async (message) => {
             const payload = unwrapPayload(message);
             const orderId = String(payload.orderId || payload.id || "");
-            const sellerId = String(payload.sellerId || `seller_order_${orderId}`);
+            const sellerId = String(
+              payload.sellerId || `seller_order_${orderId}`,
+            );
             if (orderId) {
               await this.handleOrderDelivered(orderId, sellerId, payload);
             }
@@ -126,7 +145,9 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
         },
       ]);
 
-      this.logger.log("Payout consumer successfully subscribed to Kafka topics");
+      this.logger.log(
+        "Payout consumer successfully subscribed to Kafka topics",
+      );
     } catch (err) {
       this.logger.warn(`Could not start Kafka consumer: ${err}`);
       this.connected = false;
@@ -143,7 +164,9 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  public async handleCommissionAccrued(payload: CommissionAccruedEvent): Promise<void> {
+  public async handleCommissionAccrued(
+    payload: CommissionAccruedEvent,
+  ): Promise<void> {
     this.logger.log(
       `Accruing seller funds from commission calculation ${payload.calculationId} for order ${payload.orderId}`,
     );
@@ -153,8 +176,16 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
     const sellerId = `seller_order_${payload.orderId}`;
 
     try {
-      const escrowAccountId = await this.ledgerService.getOrCreateAccount(sellerId, "SELLER_ESCROW", currency);
-      const commissionAccountId = await this.ledgerService.getOrCreateAccount(null, "PLATFORM_COMMISSION", currency);
+      const escrowAccountId = await this.ledgerService.getOrCreateAccount(
+        sellerId,
+        "SELLER_ESCROW",
+        currency,
+      );
+      const commissionAccountId = await this.ledgerService.getOrCreateAccount(
+        null,
+        "PLATFORM_COMMISSION",
+        currency,
+      );
 
       await this.ledgerService.postBalancedTransaction(
         [
@@ -180,31 +211,52 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
         `txn_accrual_${payload.orderId}`,
       );
     } catch (err) {
-      this.logger.error(`Failed to post ledger accrual for order ${payload.orderId}: ${err}`);
+      this.logger.error(
+        `Failed to post ledger accrual for order ${payload.orderId}: ${err}`,
+      );
     }
   }
 
-  public async handleCommissionAdjusted(payload: CommissionAdjustedEvent): Promise<void> {
-    this.logger.log(`Adjusting ledger for adjustment ${payload.adjustmentId} on order ${payload.orderId}`);
+  public async handleCommissionAdjusted(
+    payload: CommissionAdjustedEvent,
+  ): Promise<void> {
+    this.logger.log(
+      `Adjusting ledger for adjustment ${payload.adjustmentId} on order ${payload.orderId}`,
+    );
   }
 
-  public async handleCommissionReversed(payload: CommissionReversedEvent): Promise<void> {
+  public async handleCommissionReversed(
+    payload: CommissionReversedEvent,
+  ): Promise<void> {
     this.logger.log(`Reversing ledger for cancelled order ${payload.orderId}`);
   }
 
-  public async handleOrderDelivered(orderId: string, sellerId: string, _payload: Record<string, unknown>): Promise<void> {
-    this.logger.log(`Order ${orderId} delivered. Settlement maturity unlocked for seller ${sellerId}`);
+  public async handleOrderDelivered(
+    orderId: string,
+    sellerId: string,
+    _payload: Record<string, unknown>,
+  ): Promise<void> {
+    this.logger.log(
+      `Order ${orderId} delivered. Settlement maturity unlocked for seller ${sellerId}`,
+    );
   }
 
-  public async handleSellerSuspended(sellerId: string, reason: string): Promise<void> {
-    this.logger.warn(`Seller ${sellerId} suspended: placing hold on payout accounts (${reason})`);
+  public async handleSellerSuspended(
+    sellerId: string,
+    reason: string,
+  ): Promise<void> {
+    this.logger.warn(
+      `Seller ${sellerId} suspended: placing hold on payout accounts (${reason})`,
+    );
     try {
       await db
         .update(payoutAccounts)
         .set({ holdPayouts: true, holdReason: reason, updatedAt: new Date() })
         .where(eq(payoutAccounts.sellerId, sellerId));
     } catch (err) {
-      this.logger.error(`Failed to update payout accounts hold for seller ${sellerId}: ${err}`);
+      this.logger.error(
+        `Failed to update payout accounts hold for seller ${sellerId}: ${err}`,
+      );
     }
   }
 
@@ -216,17 +268,24 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
         .set({ holdPayouts: false, holdReason: null, updatedAt: new Date() })
         .where(eq(payoutAccounts.sellerId, sellerId));
     } catch (err) {
-      this.logger.error(`Failed to release payout accounts hold for seller ${sellerId}: ${err}`);
+      this.logger.error(
+        `Failed to release payout accounts hold for seller ${sellerId}: ${err}`,
+      );
     }
   }
 
-  public async handleFraudRiskAlert(payload: Record<string, unknown>): Promise<void> {
+  public async handleFraudRiskAlert(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
     const workflow = String(payload.workflow || "");
     const decision = String(payload.decision || "");
     const priority = String(payload.priority || "");
-    const riskScore = typeof payload.riskScore === "number" ? payload.riskScore : 0;
+    const riskScore =
+      typeof payload.riskScore === "number" ? payload.riskScore : 0;
     const sellerId = String(
-      payload.sellerId || (workflow.includes("PAYOUT") ? payload.entityId : "") || "",
+      payload.sellerId ||
+        (workflow.includes("PAYOUT") ? payload.entityId : "") ||
+        "",
     );
 
     if (!sellerId) return;
@@ -242,7 +301,9 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  public async handleFraudCaseResolved(payload: Record<string, unknown>): Promise<void> {
+  public async handleFraudCaseResolved(
+    payload: Record<string, unknown>,
+  ): Promise<void> {
     const decision = String(payload.decision || "");
     const sellerId = String(payload.sellerId || payload.entityId || "");
 

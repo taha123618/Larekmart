@@ -58,7 +58,9 @@ export default function AdminCommissionsPage(): React.JSX.Element {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<"rules" | "versions" | "reports">("rules");
+  const [activeTab, setActiveTab] = useState<"rules" | "versions" | "reports">(
+    "rules",
+  );
 
   // Create Plan Sheet
   const [isPlanSheetOpen, setIsPlanSheetOpen] = useState(false);
@@ -69,7 +71,9 @@ export default function AdminCommissionsPage(): React.JSX.Element {
   // Create Rule Sheet
   const [isRuleSheetOpen, setIsRuleSheetOpen] = useState(false);
   const [rulePlanId, setRulePlanId] = useState("");
-  const [ruleScope, setRuleScope] = useState<"GLOBAL" | "SELLER" | "CATEGORY" | "PRODUCT">("GLOBAL");
+  const [ruleScope, setRuleScope] = useState<
+    "GLOBAL" | "SELLER" | "CATEGORY" | "PRODUCT"
+  >("GLOBAL");
   const [ruleScopeId, setRuleScopeId] = useState("");
   const [rulePercent, setRulePercent] = useState<number>(8.0);
   const [ruleFixed, setRuleFixed] = useState<number>(0);
@@ -79,7 +83,9 @@ export default function AdminCommissionsPage(): React.JSX.Element {
 
   // Edit Rule Sheet
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
-  const [editingRule, setEditingRule] = useState<AdminCommissionRule | null>(null);
+  const [editingRule, setEditingRule] = useState<AdminCommissionRule | null>(
+    null,
+  );
   const [editPercent, setEditPercent] = useState<number>(0);
   const [editFixed, setEditFixed] = useState<number>(0);
   const [editMin, setEditMin] = useState<string>("");
@@ -136,7 +142,8 @@ export default function AdminCommissionsPage(): React.JSX.Element {
       setNewPlanIsDefault(false);
     },
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : "Failed to create commission plan";
+      const msg =
+        err instanceof Error ? err.message : "Failed to create commission plan";
       toast.error(msg);
     },
   });
@@ -152,20 +159,29 @@ export default function AdminCommissionsPage(): React.JSX.Element {
       setIsRuleSheetOpen(false);
     },
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : "Failed to add commission rule";
+      const msg =
+        err instanceof Error ? err.message : "Failed to add commission rule";
       toast.error(msg);
     },
   });
 
   const updateRuleMutation = useMutation({
-    mutationFn: async ({ ruleId, input }: { ruleId: string; input: UpdateRuleInput }) => {
+    mutationFn: async ({
+      ruleId,
+      input,
+    }: {
+      ruleId: string;
+      input: UpdateRuleInput;
+    }) => {
       const token = (await getToken()) || undefined;
       return updateCommissionRule(ruleId, input, token);
     },
     onSuccess: () => {
       toast.success("Commission rule updated with version snapshot recorded.");
       queryClient.invalidateQueries({ queryKey: ["admin-commission-rules"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-commission-versions"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-commission-versions"],
+      });
       setIsEditSheetOpen(false);
       setEditingRule(null);
       setEditReason("");
@@ -202,7 +218,8 @@ export default function AdminCommissionsPage(): React.JSX.Element {
 
   const handleCreateRule = (e: React.FormEvent) => {
     e.preventDefault();
-    const targetPlanId = rulePlanId || plansQuery.data?.[0]?.id || "plan_default_marketplace";
+    const targetPlanId =
+      rulePlanId || plansQuery.data?.[0]?.id || "plan_default_marketplace";
     createRuleMutation.mutate({
       planId: targetPlanId,
       ruleType: "PERCENTAGE",
@@ -251,9 +268,12 @@ export default function AdminCommissionsPage(): React.JSX.Element {
               <Percent className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Marketplace Commissions</h1>
+              <h1 className="text-3xl font-bold tracking-tight">
+                Marketplace Commissions
+              </h1>
               <p className="text-muted-foreground text-sm mt-1">
-                Authoritative commission plans, tiered rules, version snapshots, and fee breakdowns.
+                Authoritative commission plans, tiered rules, version snapshots,
+                and fee breakdowns.
               </p>
             </div>
           </div>
@@ -264,9 +284,15 @@ export default function AdminCommissionsPage(): React.JSX.Element {
             variant="outline"
             size="sm"
             onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ["admin-commission-plans"] });
-              queryClient.invalidateQueries({ queryKey: ["admin-commission-rules"] });
-              queryClient.invalidateQueries({ queryKey: ["admin-commission-reports"] });
+              queryClient.invalidateQueries({
+                queryKey: ["admin-commission-plans"],
+              });
+              queryClient.invalidateQueries({
+                queryKey: ["admin-commission-rules"],
+              });
+              queryClient.invalidateQueries({
+                queryKey: ["admin-commission-reports"],
+              });
               toast.info("Refreshed commission data.");
             }}
           >
@@ -305,7 +331,8 @@ export default function AdminCommissionsPage(): React.JSX.Element {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              PKR {(reports?.summary.totalCommissionRevenue || 0).toLocaleString()}
+              PKR{" "}
+              {(reports?.summary.totalCommissionRevenue || 0).toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Authoritative ledger commission receipts
@@ -410,12 +437,21 @@ export default function AdminCommissionsPage(): React.JSX.Element {
           {/* Active Plans Sub-Card */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {plans.map((plan) => (
-              <Card key={plan.id} className={plan.isDefault ? "border-indigo-500/50 bg-indigo-500/5" : ""}>
+              <Card
+                key={plan.id}
+                className={
+                  plan.isDefault ? "border-indigo-500/50 bg-indigo-500/5" : ""
+                }
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-semibold">{plan.name}</CardTitle>
+                    <CardTitle className="text-base font-semibold">
+                      {plan.name}
+                    </CardTitle>
                     {plan.isDefault && (
-                      <Badge className="bg-indigo-600 text-white text-xs">DEFAULT</Badge>
+                      <Badge className="bg-indigo-600 text-white text-xs">
+                        DEFAULT
+                      </Badge>
                     )}
                   </div>
                   <CardDescription className="text-xs line-clamp-2">
@@ -433,9 +469,12 @@ export default function AdminCommissionsPage(): React.JSX.Element {
           {/* Rules Table */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Commission Resolution Rules</CardTitle>
+              <CardTitle className="text-lg">
+                Commission Resolution Rules
+              </CardTitle>
               <CardDescription>
-                Resolved in strict priority hierarchy: PRODUCT &gt; SELLER &gt; CATEGORY &gt; GLOBAL.
+                Resolved in strict priority hierarchy: PRODUCT &gt; SELLER &gt;
+                CATEGORY &gt; GLOBAL.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -456,13 +495,19 @@ export default function AdminCommissionsPage(): React.JSX.Element {
                 <TableBody>
                   {rulesQuery.isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={9}
+                        className="text-center py-8 text-muted-foreground"
+                      >
                         Loading commission rules...
                       </TableCell>
                     </TableRow>
                   ) : rules.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={9}
+                        className="text-center py-8 text-muted-foreground"
+                      >
                         No commission rules configured.
                       </TableCell>
                     </TableRow>
@@ -476,10 +521,10 @@ export default function AdminCommissionsPage(): React.JSX.Element {
                               rule.scope === "GLOBAL"
                                 ? "bg-blue-500/10 text-blue-600 border-blue-500/20"
                                 : rule.scope === "SELLER"
-                                ? "bg-purple-500/10 text-purple-600 border-purple-500/20"
-                                : rule.scope === "CATEGORY"
-                                ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                                : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                  ? "bg-purple-500/10 text-purple-600 border-purple-500/20"
+                                  : rule.scope === "CATEGORY"
+                                    ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                    : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                             }
                           >
                             {rule.scope}
@@ -488,7 +533,9 @@ export default function AdminCommissionsPage(): React.JSX.Element {
                         <TableCell className="font-mono text-xs">
                           {rule.scopeId || "All Marketplace"}
                         </TableCell>
-                        <TableCell className="text-xs">{rule.ruleType}</TableCell>
+                        <TableCell className="text-xs">
+                          {rule.ruleType}
+                        </TableCell>
                         <TableCell className="font-semibold text-sm">
                           {Number(rule.percentageRate).toFixed(2)}%
                         </TableCell>
@@ -496,10 +543,16 @@ export default function AdminCommissionsPage(): React.JSX.Element {
                           PKR {Number(rule.fixedAmount).toFixed(2)}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {rule.minCommission ? `Min: PKR ${rule.minCommission}` : "None"}
-                          {rule.maxCommission ? ` / Max: PKR ${rule.maxCommission}` : ""}
+                          {rule.minCommission
+                            ? `Min: PKR ${rule.minCommission}`
+                            : "None"}
+                          {rule.maxCommission
+                            ? ` / Max: PKR ${rule.maxCommission}`
+                            : ""}
                         </TableCell>
-                        <TableCell className="text-xs">{rule.priority}</TableCell>
+                        <TableCell className="text-xs">
+                          {rule.priority}
+                        </TableCell>
                         <TableCell>
                           <Badge
                             className={
@@ -535,9 +588,12 @@ export default function AdminCommissionsPage(): React.JSX.Element {
       {activeTab === "versions" && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Immutable Rule Version History</CardTitle>
+            <CardTitle className="text-lg">
+              Immutable Rule Version History
+            </CardTitle>
             <CardDescription>
-              Every rule change automatically archives a point-in-time snapshot with reason and user signature.
+              Every rule change automatically archives a point-in-time snapshot
+              with reason and user signature.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -555,24 +611,34 @@ export default function AdminCommissionsPage(): React.JSX.Element {
               <TableBody>
                 {versionsQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       Loading version snapshots...
                     </TableCell>
                   </TableRow>
                 ) : versions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No previous version records found.
                     </TableCell>
                   </TableRow>
                 ) : (
                   versions.map((ver) => (
                     <TableRow key={ver.id}>
-                      <TableCell className="font-mono text-xs">{ver.ruleId}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {ver.ruleId}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">v{ver.version}</Badge>
                       </TableCell>
-                      <TableCell className="text-xs font-medium">{ver.changedBy}</TableCell>
+                      <TableCell className="text-xs font-medium">
+                        {ver.changedBy}
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-md truncate">
                         {ver.changeReason}
                       </TableCell>
@@ -595,9 +661,12 @@ export default function AdminCommissionsPage(): React.JSX.Element {
       {activeTab === "reports" && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Seller Commission Breakdown</CardTitle>
+            <CardTitle className="text-lg">
+              Seller Commission Breakdown
+            </CardTitle>
             <CardDescription>
-              Settled order volume, total fees collected, and net merchant payouts per vendor.
+              Settled order volume, total fees collected, and net merchant
+              payouts per vendor.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -609,19 +678,27 @@ export default function AdminCommissionsPage(): React.JSX.Element {
                   <TableHead>Gross Merchandise Volume</TableHead>
                   <TableHead>Commission Collected</TableHead>
                   <TableHead>Effective Fee (%)</TableHead>
-                  <TableHead className="text-right">Net Seller Payout</TableHead>
+                  <TableHead className="text-right">
+                    Net Seller Payout
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {reportsQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       Loading report analytics...
                     </TableCell>
                   </TableRow>
                 ) : !reports || reports.sellerBreakdown.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No settled commissions recorded yet.
                     </TableCell>
                   </TableRow>
@@ -629,14 +706,19 @@ export default function AdminCommissionsPage(): React.JSX.Element {
                   reports.sellerBreakdown.map((row) => {
                     const effectiveFee =
                       row.grossSubtotal > 0
-                        ? ((row.commissionCollected / row.grossSubtotal) * 100).toFixed(2)
+                        ? (
+                            (row.commissionCollected / row.grossSubtotal) *
+                            100
+                          ).toFixed(2)
                         : "0.00";
                     return (
                       <TableRow key={row.sellerId}>
                         <TableCell className="font-mono text-xs font-medium">
                           {row.sellerId}
                         </TableCell>
-                        <TableCell className="text-xs">{row.orderCount}</TableCell>
+                        <TableCell className="text-xs">
+                          {row.orderCount}
+                        </TableCell>
                         <TableCell className="font-semibold text-xs">
                           PKR {row.grossSubtotal.toLocaleString()}
                         </TableCell>
@@ -740,7 +822,13 @@ export default function AdminCommissionsPage(): React.JSX.Element {
                 className="w-full border rounded-md p-2 text-xs bg-background"
                 value={ruleScope}
                 onChange={(e) =>
-                  setRuleScope(e.target.value as "GLOBAL" | "SELLER" | "CATEGORY" | "PRODUCT")
+                  setRuleScope(
+                    e.target.value as
+                      | "GLOBAL"
+                      | "SELLER"
+                      | "CATEGORY"
+                      | "PRODUCT",
+                  )
                 }
               >
                 <option value="GLOBAL">GLOBAL (All Marketplace)</option>
@@ -752,7 +840,9 @@ export default function AdminCommissionsPage(): React.JSX.Element {
 
             {ruleScope !== "GLOBAL" && (
               <div>
-                <label className="text-xs font-medium">Scope Identifier (Target ID)</label>
+                <label className="text-xs font-medium">
+                  Scope Identifier (Target ID)
+                </label>
                 <Input
                   placeholder="e.g. cat_electronics or seller_42"
                   value={ruleScopeId}
@@ -764,7 +854,9 @@ export default function AdminCommissionsPage(): React.JSX.Element {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium">Percentage Rate (%)</label>
+                <label className="text-xs font-medium">
+                  Percentage Rate (%)
+                </label>
                 <Input
                   type="number"
                   step="0.01"
@@ -809,7 +901,9 @@ export default function AdminCommissionsPage(): React.JSX.Element {
             </div>
 
             <div>
-              <label className="text-xs font-medium">Priority (Higher wins ties)</label>
+              <label className="text-xs font-medium">
+                Priority (Higher wins ties)
+              </label>
               <Input
                 type="number"
                 value={rulePriority}
@@ -822,7 +916,9 @@ export default function AdminCommissionsPage(): React.JSX.Element {
               className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white"
               disabled={createRuleMutation.isPending}
             >
-              {createRuleMutation.isPending ? "Adding..." : "Add Commission Rule"}
+              {createRuleMutation.isPending
+                ? "Adding..."
+                : "Add Commission Rule"}
             </Button>
           </form>
         </SheetContent>
@@ -834,24 +930,28 @@ export default function AdminCommissionsPage(): React.JSX.Element {
           <SheetHeader>
             <SheetTitle>Edit Commission Rule</SheetTitle>
             <SheetDescription>
-              Changes are version-controlled with an immutable snapshot archived.
+              Changes are version-controlled with an immutable snapshot
+              archived.
             </SheetDescription>
           </SheetHeader>
           {editingRule && (
             <form onSubmit={handleUpdateRule} className="space-y-4 mt-6">
               <div className="p-3 bg-muted rounded-md text-xs space-y-1">
                 <div>
-                  <span className="font-semibold">Rule ID:</span> {editingRule.id}
+                  <span className="font-semibold">Rule ID:</span>{" "}
+                  {editingRule.id}
                 </div>
                 <div>
-                  <span className="font-semibold">Scope:</span> {editingRule.scope} (
-                  {editingRule.scopeId || "GLOBAL"})
+                  <span className="font-semibold">Scope:</span>{" "}
+                  {editingRule.scope} ({editingRule.scopeId || "GLOBAL"})
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium">Percentage Rate (%)</label>
+                  <label className="text-xs font-medium">
+                    Percentage Rate (%)
+                  </label>
                   <Input
                     type="number"
                     step="0.01"
@@ -898,7 +998,9 @@ export default function AdminCommissionsPage(): React.JSX.Element {
                 <select
                   className="w-full border rounded-md p-2 text-xs bg-background"
                   value={editStatus}
-                  onChange={(e) => setEditStatus(e.target.value as "ACTIVE" | "INACTIVE")}
+                  onChange={(e) =>
+                    setEditStatus(e.target.value as "ACTIVE" | "INACTIVE")
+                  }
                 >
                   <option value="ACTIVE">ACTIVE</option>
                   <option value="INACTIVE">INACTIVE</option>
@@ -922,7 +1024,9 @@ export default function AdminCommissionsPage(): React.JSX.Element {
                 className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white"
                 disabled={updateRuleMutation.isPending}
               >
-                {updateRuleMutation.isPending ? "Saving..." : "Save Changes & Snapshot"}
+                {updateRuleMutation.isPending
+                  ? "Saving..."
+                  : "Save Changes & Snapshot"}
               </Button>
             </form>
           )}

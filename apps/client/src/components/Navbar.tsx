@@ -149,6 +149,9 @@ export default function Navbar() {
             >
               Returns
             </Link>
+            <Link href="/support" className="hover:text-white transition">
+              Support
+            </Link>
             <span className="hidden sm:inline text-slate-700">|</span>
             <CurrencySelector />
           </div>

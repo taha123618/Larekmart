@@ -34,7 +34,7 @@ infrastructure/
 │   │   ├── configmaps/         # common-config.yaml
 │   │   ├── secrets/            # secret-templates.yaml, secret-store.yaml, external-secrets.yaml (ESO)
 │   │   ├── frontends/          # client.yaml, admin.yaml
-│   │   ├── services/           # 26 backend service Deployments + ClusterIP Services (including promotion-service, tax-service, return-service, pricing-service, vendor-service, seller-service, commission-service, payout-service, and fraud-service)
+│   │   ├── services/           # 26 backend service Deployments + ClusterIP Services (including promotion-service, tax-service, return-service, pricing-service, vendor-service, seller-service, commission-service, payout-service, fraud-service, and support-service)
 │   │   ├── workers/            # email-service.yaml (headless Kafka consumer)
 │   │   ├── autoscaling/        # hpa.yaml (resource HPA) + keda-scaledobjects.yaml (Kafka lag autoscaling)
 │   │   ├── pdb/                # pod-disruption-budgets.yaml

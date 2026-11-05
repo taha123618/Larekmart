@@ -9,10 +9,10 @@
   - `apps/admin` (:3003): Administrator dashboard (Next.js 15, React 19, shadcn/ui, TanStack Query & Table, Recharts).
 - **1 Centralized API Gateway**:
   - `apps/api-gateway` (:8080 / :8090): Fastify 5 reverse proxy, Clerk JWT validation, Redis distributed sliding-window rate limiting, in-flight concurrency bulkheads, and thundering-herd mitigation (`SingleFlightGroup`).
-- **22 Microservices + 1 Headless Worker**:
-  - `product-service` (:8000), `order-service` (:8001), `payment-service` (:8002), `auth-service` (:8003), `analytic-service` (:8004, Go), `notification-service` (:8005, Go), `search-service` (:8006), `inventory-service` (:8007), `recommendation-service` (:8008, Python), `cart-service` (:8009), `catalog-service` (:8010), `shipping-service` (:8011), `user-service` (:8012), `media-service` (:8013), `review-service` (:8014), `wishlist-service` (:8015), `promotion-service` (:8016), `tax-service` (:8017), `return-service` (:8018), `pricing-service` (:8019), `vendor-service` (:8020), `seller-service` (:8021), `email-service` (Kafka worker).
-- **11 Shared Packages**:
-  - `@repo/kafka`, `@repo/types`, `@repo/monitoring`, `@repo/redis`, `@repo/opensearch`, `@repo/product-db`, `@repo/order-db`, `@repo/cart-db`, `@repo/inventory-db`, `@repo/catalog-db`, `@repo/shipping-db`, `@repo/user-db`, `@repo/vendor-db`.
+- **25 Microservices + 1 Headless Worker (26 Total Backend Services)**:
+  - `product-service` (:8000), `order-service` (:8001), `payment-service` (:8002), `auth-service` (:8003), `analytic-service` (:8004, Go), `notification-service` (:8005, Go), `search-service` (:8006), `inventory-service` (:8007), `recommendation-service` (:8008, Python), `cart-service` (:8009), `catalog-service` (:8010), `shipping-service` (:8011), `user-service` (:8012), `media-service` (:8013), `review-service` (:8014), `wishlist-service` (:8015), `promotion-service` (:8016), `tax-service` (:8017), `return-service` (:8018), `pricing-service` (:8019), `vendor-service` (:8020), `seller-service` (:8021), `commission-service` (:8022), `payout-service` (:8023), `fraud-service` (:8024, Python), `support-service` (:8025), `email-service` (Kafka worker).
+- **14 Shared Packages**:
+  - `@repo/kafka`, `@repo/types`, `@repo/monitoring`, `@repo/redis`, `@repo/opensearch`, `@repo/product-db`, `@repo/order-db`, `@repo/cart-db`, `@repo/inventory-db`, `@repo/catalog-db`, `@repo/shipping-db`, `@repo/user-db`, `@repo/vendor-db`, `@repo/support-db`.
 
 ---
 
@@ -27,7 +27,7 @@
    - Production target: `main`
    - Feature/bug branches are cut from `staging` and merged back via pull requests.
 4. **Verification & Quality Gates**:
-   - `pnpm check-types` across all 39 packages (0 errors).
-   - `pnpm test` (all 27 test suites).
+   - `pnpm check-types` across all 43 workspaces (0 errors).
+   - `pnpm test` (all 28 test suites).
    - `pnpm build` (production Next.js and services compilation).
    - `pnpm format:check` (Prettier code style).

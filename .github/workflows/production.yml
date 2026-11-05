@@ -63,6 +63,7 @@ jobs:
       SELLER_DATABASE_URL: ${{ secrets.PROD_SELLER_DATABASE_URL }}
       COMMISSION_DATABASE_URL: ${{ secrets.PROD_COMMISSION_DATABASE_URL }}
       PAYOUT_DATABASE_URL: ${{ secrets.PROD_PAYOUT_DATABASE_URL }}
+      SUPPORT_DATABASE_URL: ${{ secrets.PROD_SUPPORT_DATABASE_URL }}
 
     steps:
       - name: Checkout Code
@@ -126,6 +127,10 @@ jobs:
       - name: Execute Migrations - Stage 2 (Return Service)
         if: env.RETURN_DATABASE_URL != ''
         run: pnpm --filter return-service db:deploy
+
+      - name: Execute Migrations - Stage 2 (Support DB)
+        if: env.SUPPORT_DATABASE_URL != ''
+        run: pnpm --filter @repo/support-db db:deploy
 
       # ─── STAGE 3: Read Projections, Storefronts & Downstream Schemas ───
       - name: Execute Migrations - Stage 3 (Catalog DB Projections)
@@ -218,12 +223,13 @@ jobs:
               larekmart/commission-service=ghcr.io/${{ github.repository_owner }}/larekmart/commission-service:${SHA_SHORT} \
               larekmart/payout-service=ghcr.io/${{ github.repository_owner }}/larekmart/payout-service:${SHA_SHORT} \
               larekmart/fraud-service=ghcr.io/${{ github.repository_owner }}/larekmart/fraud-service:${SHA_SHORT} \
+              larekmart/support-service=ghcr.io/${{ github.repository_owner }}/larekmart/support-service:${SHA_SHORT} \
               larekmart/email-service=ghcr.io/${{ github.repository_owner }}/larekmart/email-service:${SHA_SHORT}
 
             echo "Applying Production manifests to namespace larekmart..."
             kubectl apply -k .
 
-            echo "Tracking zero-downtime rolling updates across all 27 workloads..."
+            echo "Tracking zero-downtime rolling updates across all 28 workloads..."
             DEPLOYMENTS=(
               client
               admin
@@ -252,6 +258,7 @@ jobs:
               commission-service
               payout-service
               fraud-service
+              support-service
               email-service
             )
             for dep in "${DEPLOYMENTS[@]}"; do

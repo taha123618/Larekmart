@@ -14,7 +14,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   `client` (storefront, :3002) and `admin` (dashboard, :3003).
 - **One API Gateway**:
   - `api-gateway` (:8080 / :8090) — Fastify 5 single public entrypoint reverse proxy, request correlation, Clerk session authentication, Redis rate limiting, circuit breaker, home aggregation (`/api/v1/home`), client header stripping, and internal secret injection.
-- **Twenty-four HTTP backend services & one headless worker (25 backend microservices in total)** own business logic and each owns its data:
+- **Twenty-five HTTP backend services & one headless worker (26 backend microservices in total)** own business logic and each owns its data:
   - `product-service` (:8000) — catalog, PostgreSQL via Prisma.
   - `order-service` (:8001) — orders, MongoDB via Mongoose.
   - `payment-service` (:8002) — Stripe; stateless.
@@ -40,57 +40,60 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
   - `commission-service` (:8022) — Fastify 5, marketplace commission plans, rule versioning, percentage & fixed fees, min/max limits, order item fee calculations, and settlement quote breakdowns; PostgreSQL (`larekmart_commission_db`) via Drizzle ORM + Redis cache + Decimal.js.
   - `payout-service` (:8023) — NestJS 11 (Fastify), seller payouts, balanced append-only double-entry ledger, settlement batches, maturity holds, reserve holds, and provider reconciliation; PostgreSQL (`larekmart_payout_db`) via Drizzle ORM + Redis cache + Decimal.js.
   - `fraud-service` (:8024) — Python 3.14 (FastAPI), real-time risk scoring (0-100), Redis sliding-window velocity tracker (`ZSET`), explainable heuristic rules engine, scikit-learn anomaly detection (IsolationForest), fraud investigation cases & analyst decisions, fail-open/fail-closed policies; PostgreSQL (`fraud_db`) + Redis cache.
+  - `support-service` (:8025) — NestJS 11 (Fastify), omnichannel customer/seller support tickets, categorization, agent queues, SLA deadline tracking, escalations, resolution analytics, and Socket.IO; PostgreSQL (`larekmart_support_db`) via `@repo/support-db` + Redis cache.
   - `email-service` — no HTTP; a Kafka worker that sends transactional email via Nodemailer.
 - **Backend services never call each other over HTTP.** They integrate through Kafka
   topics (see `docs/EVENT-DRIVEN-ARCHITECTURE.md`).
 
 ## Where does X live?
 
-| Need to change…                                            | Go to                                                  |
-| ---------------------------------------------------------- | ------------------------------------------------------ |
-| Single entrypoint proxy, rate limits, routing, aggregation | `apps/api-gateway`                                     |
-| Storefront UI/UX, cart, checkout                           | `apps/client`                                          |
-| Admin tables, forms, charts                                | `apps/admin`                                           |
-| Products/categories + product events                       | `apps/product-service`                                 |
-| Orders, order analytics                                    | `apps/order-service`                                   |
-| Stripe sessions, webhooks, Stripe sync                     | `apps/payment-service`                                 |
-| User admin CRUD, `user.created`                            | `apps/auth-service`                                    |
-| Notification orchestration, SMS, Push, In-App              | `apps/notification-service`                            |
-| Emails for user/order events                               | `apps/email-service`                                   |
-| Analytics ingestion, KPIs, daily aggregates                | `apps/analytic-service`                                |
-| Product search, autocomplete, facets, indexing             | `apps/search-service`                                  |
-| Inventory availability, reservations, stock ledger         | `apps/inventory-service`                               |
-| AI recommendations, embeddings, user interactions          | `apps/recommendation-service`                          |
-| Cart persistence, items, coupons, merge engine             | `apps/cart-service`                                    |
-| Product discovery, categories, brands, collections         | `apps/catalog-service`                                 |
-| Shipments, rates, tracking, carrier adapters               | `apps/shipping-service`                                |
-| Customer profiles, addresses, preferences                  | `apps/user-service`                                    |
-| Media uploads, variants, image processing                  | `apps/media-service`                                   |
-| Product reviews, ratings, verified purchases, moderation   | `apps/review-service`                                  |
-| Wishlists, saved products, guest merge, price-drop alerts  | `apps/wishlist-service`                                |
-| Promotions, campaigns, coupons, discounts, budget holds    | `apps/promotion-service`                               |
-| Tax calculation, rules, customer exemptions, audit logs    | `apps/tax-service`                                     |
-| Returns, RMA, warehouse inspection, refund SAGA            | `apps/return-service`                                  |
-| Merchandise pricing, price lists, multi-currency, quotes   | `apps/pricing-service`                                 |
-| Marketplace vendors, legal entities, KYB verification      | `apps/vendor-service`                                  |
-| Seller storefronts, staff permissions, seller settings     | `apps/seller-service`                                  |
-| Commission plans, tier rules, item fees & quotes           | `apps/commission-service`                              |
-| Seller payouts, double-entry ledger & settlement batches   | `apps/payout-service`                                  |
+| Need to change…                                             | Go to                                                  |
+| ----------------------------------------------------------- | ------------------------------------------------------ |
+| Single entrypoint proxy, rate limits, routing, aggregation  | `apps/api-gateway`                                     |
+| Storefront UI/UX, cart, checkout                            | `apps/client`                                          |
+| Admin tables, forms, charts                                 | `apps/admin`                                           |
+| Products/categories + product events                        | `apps/product-service`                                 |
+| Orders, order analytics                                     | `apps/order-service`                                   |
+| Stripe sessions, webhooks, Stripe sync                      | `apps/payment-service`                                 |
+| User admin CRUD, `user.created`                             | `apps/auth-service`                                    |
+| Notification orchestration, SMS, Push, In-App               | `apps/notification-service`                            |
+| Emails for user/order events                                | `apps/email-service`                                   |
+| Analytics ingestion, KPIs, daily aggregates                 | `apps/analytic-service`                                |
+| Product search, autocomplete, facets, indexing              | `apps/search-service`                                  |
+| Inventory availability, reservations, stock ledger          | `apps/inventory-service`                               |
+| AI recommendations, embeddings, user interactions           | `apps/recommendation-service`                          |
+| Cart persistence, items, coupons, merge engine              | `apps/cart-service`                                    |
+| Product discovery, categories, brands, collections          | `apps/catalog-service`                                 |
+| Shipments, rates, tracking, carrier adapters                | `apps/shipping-service`                                |
+| Customer profiles, addresses, preferences                   | `apps/user-service`                                    |
+| Media uploads, variants, image processing                   | `apps/media-service`                                   |
+| Product reviews, ratings, verified purchases, moderation    | `apps/review-service`                                  |
+| Wishlists, saved products, guest merge, price-drop alerts   | `apps/wishlist-service`                                |
+| Promotions, campaigns, coupons, discounts, budget holds     | `apps/promotion-service`                               |
+| Tax calculation, rules, customer exemptions, audit logs     | `apps/tax-service`                                     |
+| Returns, RMA, warehouse inspection, refund SAGA             | `apps/return-service`                                  |
+| Merchandise pricing, price lists, multi-currency, quotes    | `apps/pricing-service`                                 |
+| Marketplace vendors, legal entities, KYB verification       | `apps/vendor-service`                                  |
+| Seller storefronts, staff permissions, seller settings      | `apps/seller-service`                                  |
+| Commission plans, tier rules, item fees & quotes            | `apps/commission-service`                              |
+| Seller payouts, double-entry ledger & settlement batches    | `apps/payout-service`                                  |
 | Fraud assessment, risk scoring, analyst investigation cases | `apps/fraud-service`                                   |
-| Kafka client/producer/consumer helpers                     | `packages/kafka`                                       |
-| Shared types, Zod schemas, Kafka payload types             | `packages/types`                                       |
-| Telemetry, structured logging, health checks               | `packages/monitoring`                                  |
-| OpenSearch client, mappings, query builders                | `packages/opensearch`                                  |
-| Redis facade, key namespaces, slot tagging, locks, leases  | `packages/redis`                                       |
-| Product/category DB schema                                 | `packages/product-db`                                  |
-| Inventory DB schema and transactions                       | `packages/inventory-db`                                |
-| Order persistence schema                                   | `packages/order-db`                                    |
-| Cart persistence schema (Mongoose)                         | `packages/cart-db`                                     |
-| Catalog read-model schema and read-replica routing         | `packages/catalog-db`                                  |
-| Shipping schema, tracking events, labels                   | `packages/shipping-db`                                 |
-| User profiles, addresses, preferences schema               | `packages/user-db`                                     |
-| Vendor business entity, KYB & member schema                | `packages/vendor-db`                                   |
-| TS/ESLint baselines                                        | `packages/typescript-config`, `packages/eslint-config` |
+| Customer support tickets, SLA policies, escalations         | `apps/support-service`                                 |
+| Kafka client/producer/consumer helpers                      | `packages/kafka`                                       |
+| Shared types, Zod schemas, Kafka payload types              | `packages/types`                                       |
+| Telemetry, structured logging, health checks                | `packages/monitoring`                                  |
+| OpenSearch client, mappings, query builders                 | `packages/opensearch`                                  |
+| Redis facade, key namespaces, slot tagging, locks, leases   | `packages/redis`                                       |
+| Product/category DB schema                                  | `packages/product-db`                                  |
+| Inventory DB schema and transactions                        | `packages/inventory-db`                                |
+| Order persistence schema                                    | `packages/order-db`                                    |
+| Cart persistence schema (Mongoose)                          | `packages/cart-db`                                     |
+| Catalog read-model schema and read-replica routing          | `packages/catalog-db`                                  |
+| Shipping schema, tracking events, labels                    | `packages/shipping-db`                                 |
+| User profiles, addresses, preferences schema                | `packages/user-db`                                     |
+| Vendor business entity, KYB & member schema                 | `packages/vendor-db`                                   |
+| Support tickets, messages, assignments, SLA schema          | `packages/support-db`                                  |
+| TS/ESLint baselines                                         | `packages/typescript-config`, `packages/eslint-config` |
 
 ## Data ownership
 

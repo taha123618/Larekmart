@@ -269,6 +269,8 @@ export async function registerProxyRoutes(
           delete rewritten[GATEWAY_HEADERS.READ_YOUR_WRITES];
           delete rewritten["x-user-id"];
           delete rewritten["x-user-role"];
+          delete rewritten["x-user-email"];
+          delete rewritten["x-customer-email"];
           delete rewritten["x-user-is-super-admin"];
           delete rewritten["x-user-is-seller"];
           delete rewritten["x-user-can-manage-sellers"];

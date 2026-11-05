@@ -94,7 +94,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
       POSTGRES_DB: ${POSTGRES_DB:-product_db}
-      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db,commission_db,payout_db,fraud_db,larekmart_fraud_db,larekmart_payout_db}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db,commission_db,payout_db,fraud_db,larekmart_fraud_db,larekmart_payout_db,support_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -1449,6 +1449,46 @@ services:
     networks:
       - larekmart-network
 
+  support-service:
+    build:
+      context: .
+      dockerfile: apps/support-service/Dockerfile
+    container_name: larekmart-support-service
+    deploy: *microservice-deploy
+    restart: unless-stopped
+    expose:
+      - "8025"
+    ports:
+      - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:${SUPPORT_SERVICE_PORT:-8025}:8025"
+    env_file:
+      - ./apps/support-service/.env.example
+    environment:
+      - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/larekmart_support_db?schema=public"
+      - "DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/larekmart_support_db?schema=public"
+      - "REDIS_URL=redis://redis:6379"
+      - "KAFKA_BROKERS=kafka:9092,kafka-broker-2:9092,kafka-broker-3:9092"
+      - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
+      - "GATEWAY_INTERNAL_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8025/health || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - larekmart-network
+
   # ============================================================================
   # API Gateway (Centralized API Gateway for the Application)
   # ============================================================================
@@ -1492,6 +1532,7 @@ services:
       - "COMMISSION_SERVICE_URL=http://commission-service:8022"
       - "PAYOUT_SERVICE_URL=http://payout-service:8023"
       - "FRAUD_SERVICE_URL=http://fraud-service:8024"
+      - "SUPPORT_SERVICE_URL=http://support-service:8025"
       - "REDIS_URL=redis://redis:6379"
     healthcheck:
       test:

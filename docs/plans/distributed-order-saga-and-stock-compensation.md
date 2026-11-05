@@ -11,6 +11,7 @@
 During checkout, inventory is secured through the Asynchronous Fast-Claim Engine (`apps/inventory-service`) via an atomic Redis Lua lease and persisted reservation in PostgreSQL.
 
 ### The Bottlenecks & Gaps
+
 1. **Unreturned Redis Stock on Order Cancellation**:
    - When `order.cancelled` events were received by `inventory-service`, reservations were released in PostgreSQL, but `redisStockGatekeeper.incrementStockCounter()` was omitted. This caused phantom stock exhaustion in Redis where flash-sale items appeared sold out despite available PostgreSQL inventory.
 2. **Missing Payment Failure & Session Expiration Recovery**:
@@ -44,6 +45,7 @@ inventory-service       order-service
 ```
 
 ### Invariants:
+
 1. **Zero Phantom Depletion**: Every reservation release in PostgreSQL (`order.cancelled`, `payment.failed`, `inventory.reservation.cancelled`) strictly increments the corresponding Redis Stock Gatekeeper counter via atomic `INCREMENT_LUA`.
 2. **Eager Expiration Compensation**: Stripe `checkout.session.expired` and `payment_intent.payment_failed` webhooks immediately release reserved stock rather than waiting for passive TTL expirations.
 3. **Idempotent Saga Rollbacks**: Multiple rollback triggers for the same `referenceId` or `reservationId` are idempotent (`releaseReservationsByReference` returns empty array if already released).
@@ -65,4 +67,3 @@ inventory-service       order-service
 5. **Testing & Verification**:
    - Verify with unit tests in `inventory-service` and `payment-service`.
    - Update `docs/plans/README.md`, `docs/EVENT-DRIVEN-ARCHITECTURE.md`, `AGENTS.md`, and skills.
-

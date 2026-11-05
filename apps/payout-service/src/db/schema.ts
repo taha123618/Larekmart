@@ -18,9 +18,15 @@ export const payoutAccounts = pgTable(
   {
     id: varchar("id", { length: 64 }).primaryKey(),
     sellerId: varchar("seller_id", { length: 64 }).notNull(),
-    provider: varchar("provider", { length: 32 }).notNull().default("MOCK_BANK"),
-    accountHolderName: varchar("account_holder_name", { length: 255 }).notNull(),
-    accountNumberMasked: varchar("account_number_masked", { length: 64 }).notNull(),
+    provider: varchar("provider", { length: 32 })
+      .notNull()
+      .default("MOCK_BANK"),
+    accountHolderName: varchar("account_holder_name", {
+      length: 255,
+    }).notNull(),
+    accountNumberMasked: varchar("account_number_masked", {
+      length: 64,
+    }).notNull(),
     routingOrIban: varchar("routing_or_iban", { length: 64 }).notNull(),
     currency: varchar("currency", { length: 3 }).notNull().default("PKR"),
     schedule: varchar("schedule", { length: 32 }).notNull().default("WEEKLY"),
@@ -29,8 +35,12 @@ export const payoutAccounts = pgTable(
     holdPayouts: boolean("hold_payouts").notNull().default(false),
     holdReason: text("hold_reason"),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("idx_payout_accounts_seller").on(table.sellerId),
@@ -50,7 +60,9 @@ export const ledgerAccounts = pgTable(
     currency: varchar("currency", { length: 3 }).notNull().default("PKR"),
     description: text("description"),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("idx_ledger_accounts_seller").on(table.sellerId),
@@ -77,7 +89,9 @@ export const ledgerEntries = pgTable(
     balanceAfter: numeric("balance_after", { precision: 18, scale: 4 }),
     description: text("description"),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("idx_ledger_entries_txn").on(table.transactionId),
@@ -96,14 +110,20 @@ export const payoutBatches = pgTable(
     id: varchar("id", { length: 64 }).primaryKey(),
     batchNumber: varchar("batch_number", { length: 64 }).notNull().unique(),
     currency: varchar("currency", { length: 3 }).notNull().default("PKR"),
-    totalAmount: numeric("total_amount", { precision: 18, scale: 2 }).notNull().default("0.00"),
+    totalAmount: numeric("total_amount", { precision: 18, scale: 2 })
+      .notNull()
+      .default("0.00"),
     totalPayouts: integer("total_payouts").notNull().default(0),
     status: varchar("status", { length: 32 }).notNull().default("OPEN"), // OPEN, PROCESSING, RECONCILED, CLOSED
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
     reconciledAt: timestamp("reconciled_at", { withTimezone: true }),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("idx_payout_batches_status").on(table.status),
@@ -119,23 +139,33 @@ export const payouts = pgTable(
   {
     id: varchar("id", { length: 64 }).primaryKey(),
     payoutNumber: varchar("payout_number", { length: 64 }).notNull().unique(),
-    batchId: varchar("batch_id", { length: 64 }).references(() => payoutBatches.id),
+    batchId: varchar("batch_id", { length: 64 }).references(
+      () => payoutBatches.id,
+    ),
     sellerId: varchar("seller_id", { length: 64 }).notNull(),
     payoutAccountId: varchar("payout_account_id", { length: 64 })
       .notNull()
       .references(() => payoutAccounts.id),
     amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
-    feeAmount: numeric("fee_amount", { precision: 18, scale: 2 }).notNull().default("0.00"),
+    feeAmount: numeric("fee_amount", { precision: 18, scale: 2 })
+      .notNull()
+      .default("0.00"),
     netAmount: numeric("net_amount", { precision: 18, scale: 2 }).notNull(),
     currency: varchar("currency", { length: 3 }).notNull().default("PKR"),
     status: varchar("status", { length: 32 }).notNull().default("SCHEDULED"), // SCHEDULED, PROCESSING, COMPLETED, FAILED, CANCELLED, ON_HOLD
-    idempotencyKey: varchar("idempotency_key", { length: 128 }).notNull().unique(),
+    idempotencyKey: varchar("idempotency_key", { length: 128 })
+      .notNull()
+      .unique(),
     providerReference: varchar("provider_reference", { length: 128 }),
     failureReason: text("failure_reason"),
     processedAt: timestamp("processed_at", { withTimezone: true }),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("idx_payouts_seller").on(table.sellerId),
@@ -152,21 +182,39 @@ export const settlements = pgTable(
   "settlements",
   {
     id: varchar("id", { length: 64 }).primaryKey(),
-    settlementNumber: varchar("settlement_number", { length: 64 }).notNull().unique(),
+    settlementNumber: varchar("settlement_number", { length: 64 })
+      .notNull()
+      .unique(),
     sellerId: varchar("seller_id", { length: 64 }).notNull(),
     periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
     periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
-    grossSales: numeric("gross_sales", { precision: 18, scale: 2 }).notNull().default("0.00"),
-    totalCommission: numeric("total_commission", { precision: 18, scale: 2 }).notNull().default("0.00"),
-    totalRefunds: numeric("total_refunds", { precision: 18, scale: 2 }).notNull().default("0.00"),
-    reserveWithheld: numeric("reserve_withheld", { precision: 18, scale: 2 }).notNull().default("0.00"),
-    reserveReleased: numeric("reserve_released", { precision: 18, scale: 2 }).notNull().default("0.00"),
-    netSettlement: numeric("net_settlement", { precision: 18, scale: 2 }).notNull().default("0.00"),
+    grossSales: numeric("gross_sales", { precision: 18, scale: 2 })
+      .notNull()
+      .default("0.00"),
+    totalCommission: numeric("total_commission", { precision: 18, scale: 2 })
+      .notNull()
+      .default("0.00"),
+    totalRefunds: numeric("total_refunds", { precision: 18, scale: 2 })
+      .notNull()
+      .default("0.00"),
+    reserveWithheld: numeric("reserve_withheld", { precision: 18, scale: 2 })
+      .notNull()
+      .default("0.00"),
+    reserveReleased: numeric("reserve_released", { precision: 18, scale: 2 })
+      .notNull()
+      .default("0.00"),
+    netSettlement: numeric("net_settlement", { precision: 18, scale: 2 })
+      .notNull()
+      .default("0.00"),
     currency: varchar("currency", { length: 3 }).notNull().default("PKR"),
     payoutId: varchar("payout_id", { length: 64 }).references(() => payouts.id),
     status: varchar("status", { length: 32 }).notNull().default("CLOSED"),
-    statementSnapshot: jsonb("statement_snapshot").$type<Record<string, unknown>>().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    statementSnapshot: jsonb("statement_snapshot")
+      .$type<Record<string, unknown>>()
+      .default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("idx_settlements_seller").on(table.sellerId),
@@ -189,7 +237,9 @@ export const payoutAdjustments = pgTable(
     reason: text("reason").notNull(),
     referenceId: varchar("reference_id", { length: 64 }),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("idx_payout_adjustments_seller").on(table.sellerId),
@@ -210,7 +260,9 @@ export const payoutProviderEvents = pgTable(
     payoutId: varchar("payout_id", { length: 64 }),
     payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
     status: varchar("status", { length: 32 }).notNull().default("PROCESSED"),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("idx_payout_provider_events_payout").on(table.payoutId),

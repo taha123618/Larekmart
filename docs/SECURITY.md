@@ -13,7 +13,7 @@ Security architecture, authentication standards, perimeter protection, and data 
   - Fastify (`order-service`, `catalog-service`, `search-service`, `user-service`, `pricing-service`, `tax-service`, `seller-service`, `commission-service`, `review-service`, `wishlist-service`): `preHandler: shouldBeUser | shouldBeAdmin`.
   - Hono (`payment-service`, `inventory-service`, `media-service`, `promotion-service`): middleware checking Clerk session claims or trusted gateway headers.
   - Koa (`shipping-service`, `return-service`): `requireAdminOrInternal` middleware.
-  - NestJS Fastify (`vendor-service`, `payout-service`): `AdminOrInternalGuard` and `SellerGuard`.
+  - NestJS Fastify (`vendor-service`, `payout-service`, `support-service`): `AdminOrInternalGuard`, `SellerGuard`, and `SupportAuthGuard`.
   - FastAPI / Python (`recommendation-service`, `fraud-service`): dependency injection with `verify_admin_or_internal` and `safe_timing_compare`.
 - **Admin UI Gating**: `apps/admin/src/middleware.ts` routes non-admins to `/unauthorized`. Frontend gating provides defense-in-depth; all mutating operations are strictly re-authorized on backend microservices.
 - **Admin Self-Promotion Bootstrap**:
@@ -67,7 +67,7 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
   - Implemented across every downstream microservice, with Go services using `crypto/subtle.ConstantTimeCompare`.
   - Prevents timing side-channel attacks against `INTERNAL_SERVICE_SECRET`.
 - **Secret Is Transport Authentication, Not User Authority**:
-  - A valid internal secret proves the request came through the gateway; it must never grant admin rights to a proxied user. `commission-service`, `payout-service`, `fraud-service`, `seller-service`, `vendor-service`, `shipping-service`, and `analytic-service` require an admin/super-admin role for user requests and only allow pure M2M (secret with no user identity) where explicitly designed.
+  - A valid internal secret proves the request came through the gateway; it must never grant admin rights to a proxied user. `commission-service`, `payout-service`, `fraud-service`, `seller-service`, `vendor-service`, `shipping-service`, `support-service`, and `analytic-service` require an admin/super-admin role for user requests and only allow pure M2M (secret with no user identity) where explicitly designed.
 - **Production Secret Validation**:
   - `validateInternalServiceSecret` from `@repo/types` fails startup in production when the secret is missing, shorter than 16 characters, or matches a placeholder (`dev-shared-*`, `change-me`, `replace-me`, `example`, `dummy`, `__required`).
   - `validateClerkSecretKey` fails startup in production when `CLERK_SECRET_KEY` is missing, not prefixed with `sk_`, or matches a known mock/placeholder value.
@@ -83,6 +83,7 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
   - `user-service` scopes customer operations to `/me` or verified `request.userId`.
   - `cart-service` binds operations to verified `userId` or unguessable cryptographic guest tokens (`x-guest-token`).
   - **Seller Payout BFLA Hardening**: Seller payout routes (`GET /api/v1/sellers/me/payouts`, `/balance`, `/statements`) in the API Gateway mandate `requireSeller: true`. `payout-service` `SellerGuard` strictly requires `x-user-is-seller === "true"` or role `"seller" | "admin"`, rejecting ordinary customer tokens with `403 Forbidden` and preventing horizontal/vertical balance extraction across tenant boundaries.
+  - **Support Ticket Authorization & Internal Note Redaction**: Customers can only inspect or reply to support tickets they opened (`ticket.userId === request.userId`). Sellers can inspect tickets explicitly referencing their orders or products. Internal staff messages (`isInternal: true`) and operational audit notes are strictly redacted and excluded from API responses returned to non-admin callers.
   - Line-item price verification: COD and Stripe order totals are recomputed server-side from authoritative catalog prices (`getServerProductPricesPaisa`), rejecting client-declared price discrepancies with `409 Conflict`.
 - **Double-Entry Financial Ledger Invariants (`payout-service`)**:
   - Balanced append-only double-entry ledger (`ledger_entries`) within ACID transactions ensures `SUM(debit) == SUM(credit)` zero-sum invariant for every financial movement.
@@ -95,7 +96,7 @@ The centralized API Gateway (`apps/api-gateway`, Fastify 5 on port 8080/8090) se
 
 - **Parameterized Queries Everywhere**:
   - Zero raw SQL concatenations or unescaped template literals across the codebase.
-  - Prisma queries in `@repo/product-db`, `@repo/inventory-db`, `@repo/catalog-db`, `@repo/shipping-db`, and `@repo/user-db` use typed client methods. Zero occurrences of `$queryRawUnsafe`.
+  - Prisma queries in `@repo/product-db`, `@repo/inventory-db`, `@repo/catalog-db`, `@repo/shipping-db`, `@repo/user-db`, `@repo/vendor-db`, and `@repo/support-db` use typed client methods. Zero occurrences of `$queryRawUnsafe`.
   - Drizzle ORM queries in `commission-service`, `payout-service`, `seller-service`, `pricing-service`, `promotion-service`, `media-service`, `review-service`, and `wishlist-service` use prepared statements with strict parameter binding.
   - Health check queries strictly use tagged template literals (`prisma.$queryRaw\`SELECT 1\``).
   - PostgreSQL queries in `apps/analytic-service` strictly parameterize inputs (`$1`, `$2`, etc.).

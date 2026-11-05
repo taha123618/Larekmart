@@ -29,13 +29,19 @@ export async function idempotencyMiddleware(
   }
 
   const identity = req.userId || req.guestToken || "anonymous";
-  const idempotencyKey = redis.keys.simple(`idempotency:${identity}:${rawKey.trim()}`);
+  const idempotencyKey = redis.keys.simple(
+    `idempotency:${identity}:${rawKey.trim()}`,
+  );
 
   try {
-    const lockResult = await acquireIdempotencyLock(redis.client, idempotencyKey, {
-      lockTtlMs: 10000,
-      retentionTtlSec: 86400,
-    });
+    const lockResult = await acquireIdempotencyLock(
+      redis.client,
+      idempotencyKey,
+      {
+        lockTtlMs: 10000,
+        retentionTtlSec: 86400,
+      },
+    );
 
     if (lockResult.status === "conflict") {
       res.status(409).json({
@@ -51,10 +57,13 @@ export async function idempotencyMiddleware(
     }
 
     if (lockResult.status === "error") {
-      logger.warn("Idempotency lock check encountered Redis error; proceeding non-idempotently", {
-        idempotencyKey,
-        error: lockResult.message,
-      });
+      logger.warn(
+        "Idempotency lock check encountered Redis error; proceeding non-idempotently",
+        {
+          idempotencyKey,
+          error: lockResult.message,
+        },
+      );
       return next();
     }
 
@@ -86,9 +95,13 @@ export async function idempotencyMiddleware(
           await releaseIdempotencyLock(redis.client, idempotencyKey);
         }
       } catch (err) {
-        logger.error("Failed to commit/release idempotency lock", err as Error, {
-          idempotencyKey,
-        });
+        logger.error(
+          "Failed to commit/release idempotency lock",
+          err as Error,
+          {
+            idempotencyKey,
+          },
+        );
       }
     };
 
@@ -110,4 +123,3 @@ export async function idempotencyMiddleware(
     next();
   }
 }
-

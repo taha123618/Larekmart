@@ -84,11 +84,9 @@ export const idempotencyMiddleware = createMiddleware(async (c, next) => {
           });
         }
       } catch (err) {
-        logger.error(
-          "Failed to commit idempotency response",
-          err as Error,
-          { idempotencyKey },
-        );
+        logger.error("Failed to commit idempotency response", err as Error, {
+          idempotencyKey,
+        });
       }
     } else {
       await releaseIdempotencyLock(redis.client, idempotencyKey).catch(
@@ -104,4 +102,3 @@ export const idempotencyMiddleware = createMiddleware(async (c, next) => {
     return next();
   }
 });
-

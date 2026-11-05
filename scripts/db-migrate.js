@@ -106,6 +106,12 @@ export const MIGRATION_STAGES = [
         cwd: "apps/return-service",
         database: "return_db (MySQL)",
       },
+      {
+        name: "@repo/support-db",
+        type: "prisma",
+        cwd: "packages/support-db",
+        database: "larekmart_support_db (PostgreSQL)",
+      },
     ],
   },
   {

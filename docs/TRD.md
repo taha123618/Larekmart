@@ -12,7 +12,7 @@ Larekmart is implemented as a **pnpm 9 + Turborepo 2 monorepo** with strict boun
                                          | HTTP / JWT Session Claims
                                          v
 +-----------------------------------------------------------------------------------+
-|                              Microservices Layer (25 Services)                     |
+|                              Microservices Layer (26 Services)                     |
 |  product-service (:8000)   order-service (:8001)     payment-service (:8002)       |
 |  auth-service (:8003)      analytic-service (:8004)  notification-service (:8005)  |
 |  search-service (:8006)    inventory-service (:8007) recommendation-service (:8008)|
@@ -21,7 +21,7 @@ Larekmart is implemented as a **pnpm 9 + Turborepo 2 monorepo** with strict boun
 |  wishlist-service (:8015)  promotion-service (:8016) tax-service (:8017)           |
 |  return-service (:8018)    pricing-service (:8019)   vendor-service (:8020)        |
 |  seller-service (:8021)    commission-service (:8022) payout-service (:8023)       |
-|  email-service (Worker)                                                           |
+|  fraud-service (:8024)     support-service (:8025)   email-service (Worker)        |
 +----------------------------------------+------------------------------------------+
                                          | Asynchronous Event Streams
                                          v
@@ -65,6 +65,8 @@ Larekmart is implemented as a **pnpm 9 + Turborepo 2 monorepo** with strict boun
 | **`apps/seller-service`**         | Service | Fastify 5 (Node ESM)              | `8021` | `drizzle-orm`, `@repo/redis`, `@repo/kafka`                         | PostgreSQL       |
 | **`apps/commission-service`**     | Service | Fastify 5 (Node ESM)              | `8022` | `drizzle-orm`, `decimal.js`, `@repo/redis`, `@repo/kafka`           | PostgreSQL       |
 | **`apps/payout-service`**         | Service | NestJS 11 (Fastify 5)             | `8023` | `drizzle-orm`, `decimal.js`, `@repo/redis`, `@repo/kafka`           | PostgreSQL       |
+| **`apps/fraud-service`**          | Service | Python 3.12+ (FastAPI)            | `8024` | `fastapi`, `sqlalchemy`, `asyncpg`, `scikit-learn`, `aiokafka`      | PostgreSQL       |
+| **`apps/support-service`**        | Service | NestJS 11 (Fastify 5)             | `8025` | `@repo/support-db`, `@repo/redis`, `@repo/kafka`, `socket.io`       | PostgreSQL       |
 | **`packages/kafka`**              | Library | TypeScript (Node ESM)             | —      | `kafkajs`                                                           | —                |
 | **`packages/types`**              | Library | TypeScript                        | —      | `zod`, `@repo/product-db`, `@repo/order-db`                         | —                |
 | **`packages/monitoring`**         | Library | TypeScript (Node ESM)             | —      | — (Zero framework dependencies)                                     | —                |
@@ -78,6 +80,7 @@ Larekmart is implemented as a **pnpm 9 + Turborepo 2 monorepo** with strict boun
 | **`packages/shipping-db`**        | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
 | **`packages/user-db`**            | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
 | **`packages/vendor-db`**          | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
+| **`packages/support-db`**         | Library | TypeScript (Prisma Client)        | —      | `@prisma/client`, `prisma`                                          | PostgreSQL       |
 | **`packages/eslint-config`**      | Config  | ESLint Flat Config (v9)           | —      | `@eslint/js`, `typescript-eslint`, `@next/eslint-plugin-next`       | —                |
 | **`packages/typescript-config`**  | Config  | Shared tsconfig bases             | —      | `typescript@5.9.2`                                                  | —                |
 

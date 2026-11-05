@@ -142,29 +142,30 @@ promotionRoutes.post(
   "/promotions/reservations/:id/commit",
   idempotencyMiddleware,
   async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json().catch(() => ({}));
-  const parseResult = CommitReservationSchema.safeParse(body);
-  if (!parseResult.success) {
-    return c.json(
-      { message: "Invalid payload", errors: parseResult.error.format() },
-      400,
-    );
-  }
+    const id = c.req.param("id");
+    const body = await c.req.json().catch(() => ({}));
+    const parseResult = CommitReservationSchema.safeParse(body);
+    if (!parseResult.success) {
+      return c.json(
+        { message: "Invalid payload", errors: parseResult.error.format() },
+        400,
+      );
+    }
 
-  try {
-    const redemption = await promotionService.commitReservation(
-      id,
-      parseResult.data.orderId,
-    );
-    return c.json({ data: redemption });
-  } catch (error: any) {
-    return c.json(
-      { message: error.message || "Failed to commit reservation" },
-      400,
-    );
-  }
-});
+    try {
+      const redemption = await promotionService.commitReservation(
+        id,
+        parseResult.data.orderId,
+      );
+      return c.json({ data: redemption });
+    } catch (error: any) {
+      return c.json(
+        { message: error.message || "Failed to commit reservation" },
+        400,
+      );
+    }
+  },
+);
 
 /**
  * POST /api/v1/promotions/reservations/:id/release

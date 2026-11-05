@@ -4,10 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
-import {
-  fetchAdminPayouts,
-  retryAdminPayout,
-} from "@/services/payout.service";
+import { fetchAdminPayouts, retryAdminPayout } from "@/services/payout.service";
 import {
   Card,
   CardContent,
@@ -43,7 +40,9 @@ export default function AdminPayoutsPage(): React.JSX.Element {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
-  const [statusFilter, setStatusFilter] = useState<PayoutExecutionStatus | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState<
+    PayoutExecutionStatus | "ALL"
+  >("ALL");
 
   const payoutsQuery = useQuery({
     queryKey: ["admin-payouts-list"],
@@ -139,9 +138,12 @@ export default function AdminPayoutsPage(): React.JSX.Element {
               <Banknote className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Seller Payouts & Batches</h1>
+              <h1 className="text-3xl font-bold tracking-tight">
+                Seller Payouts & Batches
+              </h1>
               <p className="text-muted-foreground text-sm mt-1">
-                Authoritative double-entry ledger disbursements, bank settlements, and provider reconciliations.
+                Authoritative double-entry ledger disbursements, bank
+                settlements, and provider reconciliations.
               </p>
             </div>
           </div>
@@ -152,7 +154,9 @@ export default function AdminPayoutsPage(): React.JSX.Element {
             variant="outline"
             size="sm"
             onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ["admin-payouts-list"] });
+              queryClient.invalidateQueries({
+                queryKey: ["admin-payouts-list"],
+              });
               toast.info("Refreshed payout records.");
             }}
           >
@@ -211,7 +215,9 @@ export default function AdminPayoutsPage(): React.JSX.Element {
           </CardContent>
         </Card>
 
-        <Card className={failedCount > 0 ? "border-rose-500/50 bg-rose-500/5" : ""}>
+        <Card
+          className={failedCount > 0 ? "border-rose-500/50 bg-rose-500/5" : ""}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Failed / Action Required
@@ -219,7 +225,9 @@ export default function AdminPayoutsPage(): React.JSX.Element {
             <AlertTriangle className="w-4 h-4 text-rose-500" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${failedCount > 0 ? "text-rose-600" : ""}`}>
+            <div
+              className={`text-2xl font-bold ${failedCount > 0 ? "text-rose-600" : ""}`}
+            >
               {failedCount}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -231,7 +239,9 @@ export default function AdminPayoutsPage(): React.JSX.Element {
 
       {/* Filter Tabs */}
       <div className="flex border-b space-x-2 text-sm">
-        {(["ALL", "SCHEDULED", "PROCESSING", "COMPLETED", "FAILED"] as const).map((status) => (
+        {(
+          ["ALL", "SCHEDULED", "PROCESSING", "COMPLETED", "FAILED"] as const
+        ).map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -251,7 +261,8 @@ export default function AdminPayoutsPage(): React.JSX.Element {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Disbursement Registry</CardTitle>
           <CardDescription>
-            Individual payout transfers backed by append-only double-entry ledger accounts.
+            Individual payout transfers backed by append-only double-entry
+            ledger accounts.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -272,13 +283,19 @@ export default function AdminPayoutsPage(): React.JSX.Element {
             <TableBody>
               {payoutsQuery.isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell
+                    colSpan={9}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     Loading payout records...
                   </TableCell>
                 </TableRow>
               ) : filteredPayouts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell
+                    colSpan={9}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     No payouts found matching criteria.
                   </TableCell>
                 </TableRow>
@@ -291,7 +308,9 @@ export default function AdminPayoutsPage(): React.JSX.Element {
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {payout.batchId || "Ad-hoc"}
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{payout.sellerId}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {payout.sellerId}
+                    </TableCell>
                     <TableCell className="font-bold text-sm">
                       {payout.currency} {Number(payout.amount).toLocaleString()}
                     </TableCell>

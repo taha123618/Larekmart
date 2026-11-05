@@ -41,4 +41,3 @@ POST  /api/v1/admin/fraud/models/retrain           # Retrain scikit-learn Isolat
 GET   /health                                      # Health check
 GET   /metrics                                     # Prometheus metrics
 ```
-

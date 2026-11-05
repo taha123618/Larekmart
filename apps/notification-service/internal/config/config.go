@@ -97,6 +97,7 @@ func LoadFromEnv() *Config {
 			"shipping.tracking.updated", "tracking.updated",
 			"shipment.in_transit", "shipment.out_for_delivery", "shipment.delivered",
 			"payout.scheduled", "payout.completed", "payout.failed", "commission.accrued",
+			"support.ticket.created", "support.ticket.assigned", "support.ticket.updated", "support.ticket.resolved",
 		}),
 
 		EmailServiceEnabled: getEnvBool("EMAIL_SERVICE_ENABLED", true),

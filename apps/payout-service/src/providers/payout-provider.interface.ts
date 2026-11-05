@@ -21,6 +21,8 @@ export interface PayoutDisbursementResult {
 
 export interface IPayoutProviderAdapter {
   readonly providerName: string;
-  disburse(request: PayoutDisbursementRequest): Promise<PayoutDisbursementResult>;
+  disburse(
+    request: PayoutDisbursementRequest,
+  ): Promise<PayoutDisbursementResult>;
   verifyStatus(providerReference: string): Promise<PayoutDisbursementResult>;
 }

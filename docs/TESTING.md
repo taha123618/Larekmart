@@ -6,7 +6,7 @@ This document outlines the testing strategy, current verification mechanisms, an
 
 Larekmart features a unified multi-runtime testing strategy orchestrated via Turborepo (`pnpm test`):
 
-1. **Automated Unit & Integration Test Suites (27 Workspaces in `pnpm test`)**:
+1. **Automated Unit & Integration Test Suites (28 Workspaces in `pnpm test`)**:
    - `@repo/types`: Domain contracts and Zod schema validations (`pnpm --filter @repo/types test`).
    - `@repo/kafka`: Dead-letter queue (DLQ) routing, poison-pill fast-failing, and exponential backoff retries (`pnpm --filter @repo/kafka test`).
    - `@repo/redis`: Cluster sharding, CRC16 slot pinning, 3-node Redlock consensus, distributed leader election, and `withClusterLock` wrappers (`pnpm --filter @repo/redis test`).
@@ -37,6 +37,7 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `notification-service`: Native Go test suite for workers, templates, dispatchers, WebSocket lifecycle/origin checks, and RS256 JWT verification including forged-token rejection (`go test ./...`).
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
    - `fraud-service`: Python test suite with 20 tests covering multi-workflow risk scoring, velocity burst tracking, scikit-learn anomaly scoring, analyst adjudication, and Kafka consumer streaming (`cd apps/fraud-service && uv run alembic upgrade head && uv run pytest tests/ -v`).
+   - `support-service`: Ticket lifecycle management, customer/seller authorization boundaries, internal note confidentiality, SLA priority breach computation, Kafka event emission, and analytics (`pnpm --filter support-service test`).
 
 2. **Strict TypeScript Compilation**:
    ```bash

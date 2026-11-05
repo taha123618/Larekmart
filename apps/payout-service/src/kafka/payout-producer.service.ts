@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from "@nestjs/common";
 import { createKafkaClient, createProducer } from "@repo/kafka";
 import {
   PAYOUT_TOPICS,
@@ -18,7 +23,9 @@ export class PayoutProducerService implements OnModuleInit, OnModuleDestroy {
 
   public async onModuleInit(): Promise<void> {
     if (env.NODE_ENV === "test") {
-      this.logger.log("Kafka producer in test mode - real broker connection skipped");
+      this.logger.log(
+        "Kafka producer in test mode - real broker connection skipped",
+      );
       return;
     }
 
@@ -45,9 +52,13 @@ export class PayoutProducerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  public async emitPayoutScheduled(payload: PayoutScheduledEventPayload): Promise<void> {
+  public async emitPayoutScheduled(
+    payload: PayoutScheduledEventPayload,
+  ): Promise<void> {
     if (!this.connected || !this.producer) {
-      this.logger.log(`[Test/Mock] Emitted ${PAYOUT_TOPICS.SCHEDULED} for ${payload.payoutId}`);
+      this.logger.log(
+        `[Test/Mock] Emitted ${PAYOUT_TOPICS.SCHEDULED} for ${payload.payoutId}`,
+      );
       return;
     }
     try {
@@ -60,7 +71,9 @@ export class PayoutProducerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  public async emitPayoutProcessing(payload: PayoutProcessingEventPayload): Promise<void> {
+  public async emitPayoutProcessing(
+    payload: PayoutProcessingEventPayload,
+  ): Promise<void> {
     if (!this.connected || !this.producer) return;
     try {
       await this.producer.send(PAYOUT_TOPICS.PROCESSING, {
@@ -68,13 +81,19 @@ export class PayoutProducerService implements OnModuleInit, OnModuleDestroy {
         options: { key: payload.sellerId },
       });
     } catch (err) {
-      this.logger.error(`Failed to publish ${PAYOUT_TOPICS.PROCESSING}: ${err}`);
+      this.logger.error(
+        `Failed to publish ${PAYOUT_TOPICS.PROCESSING}: ${err}`,
+      );
     }
   }
 
-  public async emitPayoutCompleted(payload: PayoutCompletedEventPayload): Promise<void> {
+  public async emitPayoutCompleted(
+    payload: PayoutCompletedEventPayload,
+  ): Promise<void> {
     if (!this.connected || !this.producer) {
-      this.logger.log(`[Test/Mock] Emitted ${PAYOUT_TOPICS.COMPLETED} for ${payload.payoutId}`);
+      this.logger.log(
+        `[Test/Mock] Emitted ${PAYOUT_TOPICS.COMPLETED} for ${payload.payoutId}`,
+      );
       return;
     }
     try {
@@ -87,7 +106,9 @@ export class PayoutProducerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  public async emitPayoutFailed(payload: PayoutFailedEventPayload): Promise<void> {
+  public async emitPayoutFailed(
+    payload: PayoutFailedEventPayload,
+  ): Promise<void> {
     if (!this.connected || !this.producer) return;
     try {
       await this.producer.send(PAYOUT_TOPICS.FAILED, {
@@ -99,7 +120,9 @@ export class PayoutProducerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  public async emitPayoutReconciled(payload: PayoutReconciledEventPayload): Promise<void> {
+  public async emitPayoutReconciled(
+    payload: PayoutReconciledEventPayload,
+  ): Promise<void> {
     if (!this.connected || !this.producer) return;
     try {
       await this.producer.send(PAYOUT_TOPICS.RECONCILED, {
@@ -107,7 +130,9 @@ export class PayoutProducerService implements OnModuleInit, OnModuleDestroy {
         options: { key: payload.batchId },
       });
     } catch (err) {
-      this.logger.error(`Failed to publish ${PAYOUT_TOPICS.RECONCILED}: ${err}`);
+      this.logger.error(
+        `Failed to publish ${PAYOUT_TOPICS.RECONCILED}: ${err}`,
+      );
     }
   }
 }

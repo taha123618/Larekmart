@@ -22,7 +22,7 @@ Nine security findings (**SEC-15** through **SEC-18** and **SEC-23** through **S
 | **SEC-18** |  **LOW**   | CWE-942 / CWE-693 | Missing Strict CORS Origin Validation & Browser Defensive Security Headers              | **RESOLVED & VERIFIED** |
 | **SEC-23** |  **HIGH**  | CWE-347 / CWE-287 | Unverified Direct JWT Signature & Role Escalation in `fraud-service`                    | **RESOLVED & VERIFIED** |
 | **SEC-24** | **MEDIUM** | CWE-1188          | Missing Fail-Closed Production Boot Validation for `INTERNAL_SERVICE_SECRET` in fraud   | **RESOLVED & VERIFIED** |
-| **SEC-25** |  **HIGH**  | CWE-285 / CWE-862 | Broken Function Level Authorization (BFLA) on Seller Payouts in Gateway & Payout Svc   | **RESOLVED & VERIFIED** |
+| **SEC-25** |  **HIGH**  | CWE-285 / CWE-862 | Broken Function Level Authorization (BFLA) on Seller Payouts in Gateway & Payout Svc    | **RESOLVED & VERIFIED** |
 | **SEC-26** | **MEDIUM** | CWE-284 / CWE-200 | Incomplete Perimeter Header Stripping in API Gateway                                    | **RESOLVED & VERIFIED** |
 | **SEC-27** |  **LOW**   | CWE-489           | Unrestricted Dev Identity Bypass Flag in `fraud-service`                                | **RESOLVED & VERIFIED** |
 

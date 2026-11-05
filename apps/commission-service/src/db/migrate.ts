@@ -129,14 +129,19 @@ export async function runMigrations(): Promise<void> {
       ON CONFLICT (id) DO NOTHING;
     `);
 
-    console.log("[Migrate] commission-service database migration completed successfully.");
+    console.log(
+      "[Migrate] commission-service database migration completed successfully.",
+    );
   } finally {
     client.release();
   }
 }
 
 // Run directly when called as CLI
-if (process.argv[1]?.endsWith("migrate.ts") || process.argv[1]?.endsWith("migrate.js")) {
+if (
+  process.argv[1]?.endsWith("migrate.ts") ||
+  process.argv[1]?.endsWith("migrate.js")
+) {
   runMigrations()
     .then(() => process.exit(0))
     .catch((err) => {

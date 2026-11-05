@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "react-toastify";
@@ -19,7 +20,7 @@ import { ReturnTable } from "@/components/returns/ReturnTable";
 import { ReturnDetailsModal } from "@/components/returns/ReturnDetailsModal";
 import { InspectionModal } from "@/components/returns/InspectionModal";
 import { ApproveRejectDialog } from "@/components/returns/ApproveRejectDialog";
-import { RotateCcw, RefreshCw, Activity } from "lucide-react";
+import { RotateCcw, RefreshCw, Activity, LifeBuoy } from "lucide-react";
 import { fetchOperationsAnalytics } from "@/services/analytics.service";
 
 export default function ReturnsPage() {
@@ -264,6 +265,15 @@ export default function ReturnsPage() {
               ).toLocaleString()}
             </span>
           </div>
+
+          <Link
+            href="/support?category=RETURN_REFUND"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition shadow-xs"
+            title="View Return & Refund Support Tickets"
+          >
+            <LifeBuoy className="w-3.5 h-3.5 text-sky-500" />
+            <span>Support Cases</span>
+          </Link>
 
           <button
             onClick={() => {

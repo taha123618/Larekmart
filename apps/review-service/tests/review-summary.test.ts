@@ -20,7 +20,9 @@ async function runReviewSummaryTests() {
     indexNames.includes("reviews_prod_status_created_idx"),
     "reviews table must include composite index 'reviews_prod_status_created_idx'",
   );
-  console.log("✓ Composite indexes on (productId, status) and (productId, status, createdAt) verified");
+  console.log(
+    "✓ Composite indexes on (productId, status) and (productId, status, createdAt) verified",
+  );
 
   // 2. SingleFlight Coalescing Simulation
   console.log("2. Testing SingleFlight Concurrent Promise Coalescing...");
@@ -76,7 +78,9 @@ async function runReviewSummaryTests() {
     1,
     `Expected exactly 1 database call under concurrency, but received ${underlyingDbCallCount}`,
   );
-  console.log("✓ 15 concurrent requests coalesced into exactly 1 database fetch via SingleFlight");
+  console.log(
+    "✓ 15 concurrent requests coalesced into exactly 1 database fetch via SingleFlight",
+  );
 
   // 3. Rating Summary Math & Formatting Precision
   console.log("3. Testing Rating Summary Distribution Calculations...");
@@ -93,7 +97,9 @@ async function runReviewSummaryTests() {
 
   assert.equal(expectedAverage, 3.95);
   assert.equal(totalReviews, 20);
-  console.log("✓ Rating summary mathematical precision verified (average: 3.95)");
+  console.log(
+    "✓ Rating summary mathematical precision verified (average: 3.95)",
+  );
 
   console.log("\n=======================================================");
   console.log(" All Review Service Performance & Summary Tests Passed! ");

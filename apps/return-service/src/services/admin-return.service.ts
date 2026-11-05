@@ -156,7 +156,8 @@ export class AdminReturnService {
         return {
           success: true,
           status: currentStatus,
-          idempotencyKey: existingRefund?.idempotencyKey ?? `refund-${returnId}`,
+          idempotencyKey:
+            existingRefund?.idempotencyKey ?? `refund-${returnId}`,
           replayed: true,
         };
       }
