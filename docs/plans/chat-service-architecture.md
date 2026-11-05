@@ -3,6 +3,7 @@
 ## 1. Executive Summary
 
 The **Chat Service** is a real-time, horizontally scalable communications microservice powering:
+
 1. **Direct Buyer-to-Seller Messaging**: Pre-sale product inquiries, shipment updates, and post-delivery customer discussions.
 2. **Customer-to-Support Agent Live Conversations**: Instant live assistance linked seamlessly to customer support tickets without data duplication.
 3. **Marketplace Communications Moderation**: Automated abuse reporting, participant blocking, and staff oversight.
@@ -51,15 +52,15 @@ By decoupling real-time transport from ticket workflows in `support-service`, La
 
 ## 2. Technology Stack & Architectural Decisions
 
-| Layer | Technology | Decision Driver |
-| :--- | :--- | :--- |
-| **Runtime & Framework** | Node.js 20+ & Fastify 5 | High-throughput asynchronous event loop, low overhead, native JSON serialization. |
-| **Real-Time Transport** | Socket.IO 4 + `@socket.io/redis-adapter` | Multi-pod horizontal scale-out; sticky sessions or direct WebSocket transport; cross-instance broadcast via Redis Pub/Sub. |
-| **Primary Database** | PostgreSQL 16 + Drizzle ORM | Durable relational ACID persistence for conversation history, read receipts, and participant rosters. Drizzle provides zero-overhead compile-time type safety. |
-| **Transient State & Cache**| Redis (ioredis) | Ephemeral user presence (`online`, `offline`, `away`), active typing indicators, and distributed mutation `Idempotency-Key` leases. |
-| **Event Pipeline** | `@repo/kafka` | Asynchronous decoupled publishing to `notification-service` (push/email alerts for offline users) and `fraud-service` (suspicious message analysis). |
-| **Validation & Contracts**| Zod + `@repo/types` | Single-source-of-truth contracts shared across gateway, backend services, and frontends. |
-| **Security & Auth** | Zero-trust gateway propagation | Verified `x-user-id`, `x-user-role`, `x-authenticated` headers with constant-time secret verification (`crypto.timingSafeEqual`). |
+| Layer                       | Technology                               | Decision Driver                                                                                                                                                |
+| :-------------------------- | :--------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Runtime & Framework**     | Node.js 20+ & Fastify 5                  | High-throughput asynchronous event loop, low overhead, native JSON serialization.                                                                              |
+| **Real-Time Transport**     | Socket.IO 4 + `@socket.io/redis-adapter` | Multi-pod horizontal scale-out; sticky sessions or direct WebSocket transport; cross-instance broadcast via Redis Pub/Sub.                                     |
+| **Primary Database**        | PostgreSQL 16 + Drizzle ORM              | Durable relational ACID persistence for conversation history, read receipts, and participant rosters. Drizzle provides zero-overhead compile-time type safety. |
+| **Transient State & Cache** | Redis (ioredis)                          | Ephemeral user presence (`online`, `offline`, `away`), active typing indicators, and distributed mutation `Idempotency-Key` leases.                            |
+| **Event Pipeline**          | `@repo/kafka`                            | Asynchronous decoupled publishing to `notification-service` (push/email alerts for offline users) and `fraud-service` (suspicious message analysis).           |
+| **Validation & Contracts**  | Zod + `@repo/types`                      | Single-source-of-truth contracts shared across gateway, backend services, and frontends.                                                                       |
+| **Security & Auth**         | Zero-trust gateway propagation           | Verified `x-user-id`, `x-user-role`, `x-authenticated` headers with constant-time secret verification (`crypto.timingSafeEqual`).                              |
 
 ---
 

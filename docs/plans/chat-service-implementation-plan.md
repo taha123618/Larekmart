@@ -3,6 +3,7 @@
 ## 1. Overview & Objectives
 
 This implementation plan details the complete lifecycle delivery of `chat-service` according to the **6-Pillar Feature Service Delivery Standard**:
+
 - **Pillar 1**: Front-end storefront and admin UI integration.
 - **Pillar 2**: Cross-service, Kafka pipeline, and API Gateway route registration.
 - **Pillar 3**: Manifests (Docker Compose, Kubernetes, Prometheus, CI/CD) and documentation sync.
@@ -28,6 +29,7 @@ flowchart TD
 ## 3. Wave Details
 
 ### Wave 1: Domain Contracts & Database Layer
+
 - [x] Defined TypeScript types and Zod schemas in `packages/types/src/chat.ts`.
 - [x] Exported chat contracts from `packages/types/src/index.ts`.
 - [x] Created PostgreSQL database `larekmart_chat_db` on port 5432.
@@ -36,6 +38,7 @@ flowchart TD
 - [x] Registered `chat-service` in monorepo database orchestrator `scripts/db-migrate.js`.
 
 ### Wave 2: Service Engine & Socket.IO Gateway
+
 - [x] Scaffolded `apps/chat-service` with Fastify 5 runtime and TypeScript configuration.
 - [x] Configured Socket.IO with `@socket.io/redis-adapter` for horizontal multi-pod scalability.
 - [x] Implemented `ConversationService` and `MessageService` for business logic and participant authorization.
@@ -44,6 +47,7 @@ flowchart TD
 - [x] Implemented Prometheus metrics (`/metrics`) and health probes (`/health`).
 
 ### Wave 3: API Gateway & Event Pipelines
+
 - [x] Configured `CHAT_SERVICE_URL` in `apps/api-gateway/src/config/env.ts`.
 - [x] Registered `chat-service` in `apps/api-gateway/src/gateway/service-registry.ts`.
 - [x] Registered `/api/v1/chat` in `apps/api-gateway/src/routing/authenticated.routes.ts`.
@@ -54,6 +58,7 @@ flowchart TD
 - [x] Integrated `@repo/kafka` producer with transactional safety.
 
 ### Wave 4: Front-End UI Delivery
+
 - [x] Created typed API client `apps/client/src/services/chat.service.ts`.
 - [x] Created typed API client `apps/admin/src/services/chat.service.ts`.
 - [x] Built Storefront Chat Hub `apps/client/src/app/account/chat/page.tsx` with conversation filters, active messaging, and moderation tools.
@@ -62,6 +67,7 @@ flowchart TD
 - [x] Updated Storefront Account navigation (`apps/client/src/app/account/page.tsx`) and Admin Sidebar (`apps/admin/src/components/AppSidebar.tsx`).
 
 ### Wave 5: Comprehensive Testing & Security Hardening
+
 - [x] Implemented standalone unit tests: `apps/chat-service/tests/unit/chat.unit.test.ts` (12 test cases).
 - [x] Implemented end-to-end integration tests: `apps/chat-service/tests/integration/chat.integration.test.ts` (11 test cases).
 - [x] Verified 100% test pass rate across unit and integration suites.
@@ -70,6 +76,7 @@ flowchart TD
 - [x] Verified 0 TypeScript compile errors (`tsc --noEmit`).
 
 ### Wave 6: Manifests, Observability & Documentation
+
 - [x] Update `docker-compose.yml` and `docker-compose.traefik.yml`.
 - [x] Create Kubernetes Kustomize manifest `infrastructure/kubernetes/base/services/chat-service.yaml`.
 - [x] Add Prometheus scrape target in `infrastructure/observability/prometheus/prometheus.yml`.
