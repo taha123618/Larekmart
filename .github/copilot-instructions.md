@@ -43,7 +43,18 @@ Next.js apps (`client` :3002, `admin` :3003), 25 backend services (`product-serv
 - Preserve TypeScript strictness (`noUncheckedIndexedAccess`, `isolatedModules`).
 - Return structured `{ message }` errors in HTTP services; catch errors in Kafka handlers.
 
-### 3. After Making Changes
+### 3. Mandatory Feature Service Delivery Standard (The 6 Pillars)
+
+Whenever building, modifying, expanding, or integrating any feature service (e.g. `support-service`, `fraud-service`, `payout-service`, etc.), you must strictly follow all 6 pillars:
+
+1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**: Deliver full UI coverage across both applications: Customer Storefront (`apps/client`) and Admin Management Dashboard (`apps/admin`) with typed client services, responsive layouts, action dialogs, and design-system compliance.
+2. **Pillar 2 — Cross-Service & Gateway Integration (`apps/*` all services)**: Wire reverse proxying, rate-limiting, and circuit breakers in `api-gateway`; establish asynchronous Kafka event streams with transactional outbox and DLQ isolation; connect domain relationships without cross-service HTTP calls.
+3. **Pillar 3 — Documentation, Skills, Manifests & Configuration Updates (`*.md`, skills, `*.yml`)**: Update architecture docs (`docs/API.md`, `docs/ARCHITECTURE.md`, `docs/EVENT-DRIVEN-ARCHITECTURE.md`), deployment manifests (`docker-compose.yml`, Kubernetes Kustomize, Prometheus, GitHub workflows), and agent skills across all mirror folders.
+4. **Pillar 4 — Deep Project Analysis & Comprehensive Testing (Unit & Integration)**: Conduct deep architectural analysis before and after changes; write comprehensive tsx/jest unit and integration test suites; enforce 100% test pass rate with zero TypeScript compile errors.
+5. **Pillar 5 — Security Audit & Zero-Trust Hardening**: Remediate OWASP API Top 10 vulnerabilities; strip untrusted headers at the gateway; verify identity via verified Clerk Bearer tokens; enforce constant-time secret comparison (`crypto.timingSafeEqual`); prevent user-to-admin privilege escalation; redact internal notes and private data.
+6. **Pillar 6 — Global README.md & Root Architecture Sync**: Keep `README.md` system topology, port mappings, and service documentation synchronized with all codebase changes.
+
+### 4. After Making Changes
 
 - Run `pnpm check-types` across affected workspaces.
 - Run `pnpm build` for Next.js apps (`admin`, `client`) and `payment-service`.

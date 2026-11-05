@@ -133,7 +133,46 @@ Stop and ask. A short question costs far less than an unwanted commit, a wrong b
 
 ## 4. AI Agent Execution Lifecycle
 
-Every AI coding agent operating in this repository MUST follow this 3-stage lifecycle:
+Every AI coding agent operating in this repository MUST follow this 3-stage lifecycle and the 6 Pillars Feature Service Delivery Standard:
+
+### 4.1 Mandatory Feature Service Delivery Standard (The 6 Pillars)
+
+Whenever building, modifying, expanding, or integrating any feature service (e.g. `support-service`, `fraud-service`, `payout-service`, `commission-service`, etc.), agents MUST strictly execute all 6 pillars. No feature service work is complete if any pillar is skipped:
+
+1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**:
+   - Deliver full UI coverage across both applications: Customer Storefront (`apps/client`) and Admin Management Dashboard (`apps/admin`).
+   - Create typed API client services under `apps/client/src/services/<feature>.service.ts` and `apps/admin/src/services/<feature>.service.ts` routing through API Gateway.
+   - Implement responsive, mobile-first pages, dialogs/modals, data tables, filter toolbars, status badges, and action flows adhering to the Larekmart design system (dark/light mode, Tailwind CSS v4, Zustand/React Query state, hydration safety).
+
+2. **Pillar 2 — Cross-Service & Gateway Integration (`apps/*` all services and others)**:
+   - Register reverse-proxy routes in `apps/api-gateway` (`public.routes.ts`, `authenticated.routes.ts`, or `admin.routes.ts`) with route prefix mapping, circuit breakers, rate limiting, and identity header sanitization.
+   - Establish asynchronous event-driven pipelines via `@repo/kafka` (producers with transactional outbox, consumers with DLQ poison-pill isolation, typed event contracts in `@repo/types`).
+   - Wire cross-service domain links and correlations (e.g. linking to Orders, Payments, Returns, Users, Vendors, Sellers, Inventory, Media, Notifications). Backend services must never make direct synchronous HTTP calls to each other.
+
+3. **Pillar 3 — Documentation, Skills, Manifests & Configuration Updates (`*.md`, skills, `*.yml`)**:
+   - Update architecture documents, specifications, and data dictionaries (`docs/API.md`, `docs/ARCHITECTURE.md`, `docs/EVENT-DRIVEN-ARCHITECTURE.md`, `docs/DEPENDENCIES.md`, `docs/plans/*`).
+   - Update deployment manifests: `docker-compose.yml`, `docker-compose.traefik.yml`, Kubernetes Kustomize manifests (`infrastructure/kubernetes/base/services/*`, configmaps, network policies), Prometheus scraping configurations (`prometheus.yml`), and GitHub CI/CD workflows (`.github/workflows/*`).
+   - Update agent skills across all mirror folders (`.agents/skills/*`, `.claude/skills/*`, `.cursor/skills/*`, `.gemini/skills/*`, `.github/skills/*`).
+
+4. **Pillar 4 — Deep Project Analysis & Comprehensive Testing (Unit & Integration)**:
+   - Perform deep architectural analysis before and after making code changes.
+   - Implement comprehensive standalone tsx/jest test suites under `apps/<service>/tests/` or `packages/<pkg>/tests/`.
+   - Test happy paths, edge cases, input validation rejections, role boundaries, and distributed concurrency idempotency.
+   - Achieve 100% test pass rate with zero TypeScript compile errors (`pnpm check-types`).
+
+5. **Pillar 5 — Security Audit & Zero-Trust Hardening**:
+   - Perform an end-to-end security review against OWASP API Top 10 vulnerabilities.
+   - Enforce perimeter security: strip untrusted client identity headers at the API Gateway; verify identity solely from cryptographic Clerk Bearer tokens (fail-closed in production).
+   - Enforce constant-time timing-safe comparisons (`crypto.timingSafeEqual`) for internal shared secrets (`x-internal-secret`) and webhook signatures.
+   - Strictly decouple gateway transport secrets from administrative end-user privileges (prevent regular proxied users from escalating to admin).
+   - Ensure role-based data isolation and confidentiality (e.g. internal staff notes and sensitive data strictly redacted from customer/seller responses).
+   - Remediate all discovered vulnerabilities immediately and document findings in security reports.
+
+6. **Pillar 6 — Global README.md & Root Architecture Sync**:
+   - Update root `README.md` to document the new feature service, its port, database, Kafka topics, runtime, and integration touchpoints.
+   - Keep the system architecture diagram, visual showcase, and monorepo workspace tables in sync.
+
+### 4.2 Standard Lifecycle Stages (Before, While, After)
 
 ### Before Making Changes
 

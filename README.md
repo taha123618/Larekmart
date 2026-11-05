@@ -686,10 +686,22 @@ Workspace Skills (<workspace>/.agents/skills/*)
   - `testing`: Monorepo verification guidelines, Go race test coverage, Python pytest, and standalone tsx test suites.
   - `code-review`: Checklist for boundary validation, event contracts, zero-trust perimeter checks, and quality verification.
   - `documentation`: Scoped documentation rules and ADR maintenance.
+  - `feature-lifecycle`: 360° Feature Delivery Standard and 6-Pillar vertical execution playbook.
   - `docker-devops`: Docker, Compose, Kubernetes, CI/CD, and production operations.
   - `security-audit`: Vulnerability review workflow for codebases, APIs, and services.
   - `monitoring`: Telemetry, structured logging, health checks, and metrics via `@repo/monitoring`.
 - **Workspace-specific rules & skills**: Each app and package has a scoped `AGENTS.md`. Specialized workspace skills live in `<workspace>/.agents/skills/` (e.g. `tax-engine` in `apps/tax-service`, `review-lifecycle` in `apps/review-service`). Canonical root skills are mirrored across `.cursor/`, `.claude/`, `.gemini/`, and `.github/` via `pnpm run skills:sync`.
+
+### 🛡️ Mandatory Feature Service Delivery Standard (The 6 Pillars)
+
+Whenever developing, expanding, or integrating any feature service in Larekmart (e.g. `support-service`, `fraud-service`, `payout-service`, `commission-service`, etc.), developers and AI coding agents MUST strictly execute all 6 pillars before work is considered complete:
+
+1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**: Complete UI coverage across both applications: Customer Storefront (`apps/client`) and Admin Operations Dashboard (`apps/admin`) with typed client services, responsive layouts, action dialogs, and design-system compliance.
+2. **Pillar 2 — Cross-Service & Gateway Integration (`apps/*` all services)**: Wire reverse proxying, rate-limiting, and circuit breakers in `api-gateway`; establish asynchronous Kafka event streams with transactional outbox and DLQ isolation; connect domain relationships without cross-service HTTP calls.
+3. **Pillar 3 — Documentation, Skills, Manifests & Configuration Updates (`*.md`, skills, `*.yml`)**: Update architecture docs (`docs/API.md`, `docs/ARCHITECTURE.md`, `docs/EVENT-DRIVEN-ARCHITECTURE.md`), deployment manifests (`docker-compose.yml`, Kubernetes Kustomize, Prometheus, GitHub workflows), and agent skills across all mirror folders.
+4. **Pillar 4 — Deep Project Analysis & Comprehensive Testing (Unit & Integration)**: Conduct deep architectural analysis before and after changes; write comprehensive tsx/jest unit and integration test suites; enforce 100% test pass rate with zero TypeScript compile errors.
+5. **Pillar 5 — Security Audit & Zero-Trust Hardening**: Remediate OWASP API Top 10 vulnerabilities; strip untrusted headers at the gateway; verify identity via verified Clerk Bearer tokens; enforce constant-time secret comparison (`crypto.timingSafeEqual`); prevent user-to-admin privilege escalation; redact internal notes and private data.
+6. **Pillar 6 — Global README.md & Root Architecture Sync**: Keep `README.md` system topology, port mappings, and service documentation synchronized with all codebase changes.
 
 ---
 

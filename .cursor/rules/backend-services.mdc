@@ -18,5 +18,13 @@ Per-service detail: `apps/<service>/AGENTS.md`. Shared rules:
   secrets or connection strings (local Kafka broker list is in `@repo/kafka`).
 - Add/update the topic contract in `docs/EVENT-DRIVEN-ARCHITECTURE.md` and in
   `@repo/types` when payloads change.
+- **Mandatory 6-Pillar Feature Service Delivery Standard:**
+  Whenever creating, expanding, or modifying any feature service, agents must strictly follow all 6 pillars:
+  1. Front-End Delivery (`apps/admin/*`, `apps/client/*`)
+  2. Cross-Service & Gateway Integration (`apps/*` all services, API Gateway, Kafka pipelines)
+  3. Documentation, Skills, Manifests & Configuration Updates (`*.md`, skills, `*.yml`, Docker, K8s, CI/CD)
+  4. Deep Project Analysis & Comprehensive Testing (Unit, Integration, 100% pass rate, 0 type errors)
+  5. Security Audit & Zero-Trust Hardening (OWASP API Top 10, constant-time secret check, RBAC, redaction)
+  6. Global README.md & Root Architecture Sync
 
 Run `pnpm --filter <service> check-types` before finishing.

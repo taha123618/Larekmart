@@ -5,75 +5,115 @@ description: 360° Feature Delivery Standard and vertical implementation playboo
 
 # 360° Feature Delivery Standard & Lifecycle Playbook
 
-This skill defines the mandatory 8-stage vertical execution playbook for any feature or microservice in Larekmart (exemplified by `review-service` and `return-service`). No feature may be considered complete if any stage is skipped.
+This skill defines the **Mandatory 6-Pillar Feature Service Delivery Standard** for building, expanding, or integrating any feature service in Larekmart (exemplified by `support-service`, `fraud-service`, `payout-service`, `commission-service`, `return-service`, and `review-service`).
+
+No feature service may be considered complete or merged if any of the 6 pillars is skipped.
 
 ---
 
-## The 8 Mandatory Stages
+## The 6 Mandatory Pillars of Feature Service Delivery
 
 ```
-[1. Contracts & Types] -> [2. Backend Service & Outbox] -> [3. API Gateway Routing & Policies]
-         ↓
-[4. Kafka Event Streams & DLQ] -> [5. Client Storefront UI] -> [6. Admin Operations UI]
-         ↓
-[7. Automated Unit/Integration Tests] -> [8. Security & Zero-Trust Audit]
+┌─────────────────────────────────────────────────────────────────────────────┐
+│              Larekmart 6-Pillar Feature Service Delivery Standard            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Pillar 1: Front-End UI Delivery (apps/admin/*, apps/client/*)             │
+│  Pillar 2: Monorepo Microservices & Gateway Integration (apps/* all)        │
+│  Pillar 3: Documentation, Skills, Manifests & Config (*.md, skills, *.yml)  │
+│  Pillar 4: Deep Analysis, Unit Testing & Integration Testing (100% Pass)   │
+│  Pillar 5: Security Audit & Zero-Trust Hardening (OWASP API Top 10)         │
+│  Pillar 6: Root Architecture & README.md Synchronization                    │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Stage 1: Contracts & Types Foundation (`@repo/types`)
+---
 
-- Define TypeScript interfaces and Zod schemas in `packages/types/src/<feature>.ts`.
-- Export all contracts in `packages/types/src/index.ts`.
-- Define or update the target database schema (Prisma/PostgreSQL or Drizzle).
-- Never duplicate type declarations in local apps or packages.
+### Pillar 1: Front-End Delivery (`apps/admin/*`, `apps/client/*`)
 
-### Stage 2: Backend Microservice Implementation (`apps/<service>`)
+Whenever a feature service is added or expanded, both presentation layers must be fully implemented:
 
-- Follow the standard controller-service-repository layered architecture.
-- Enforce **Transactional Outbox** (`OutboxEvent`) for all mutations that produce asynchronous domain events to eliminate dual-write hazards.
-- Implement **Distributed Idempotency** (`Idempotency-Key` + Redis atomic lease) for high-impact mutations (`POST /orders`, `/refunds`, etc.).
-- Expose `GET /health` and `GET /ready` probes.
-- For high-concurrency inventory reservation paths, apply the **Asynchronous Fast-Claim Pattern** (Redis Lua fast-claim `<1ms` + `202 Accepted` response + Kafka micro-batch persistence worker via `batchReserveInventory()`). Refer to [docs/plans/hyperscale-flash-sale-architecture-hardening.md](../../../docs/plans/hyperscale-flash-sale-architecture-hardening.md).
-- For commission and financial ledgers, enforce **Decimal.js Precision** and **Append-Only Zero-Sum Journal Invariants** (`SUM(debits) == SUM(credits)`). Refer to [docs/plans/commission-and-payout-architecture-and-testing.md](../../../docs/plans/commission-and-payout-architecture-and-testing.md).
-- For fraud and risk detection, enforce **Real-Time Heuristic Rules & Stream Scoring** (Redis sliding-window velocity tracker `ZSET`, scikit-learn anomaly scoring, explainable rules, and automated case creation with analyst review workflows). Refer to [docs/plans/fraud-detection-engine-and-risk-scoring-architecture.md](../../../docs/plans/fraud-detection-engine-and-risk-scoring-architecture.md).
+1. **Customer Storefront (`apps/client`)**:
+   - Create typed API client service in `apps/client/src/services/<feature>.service.ts` routing through API Gateway.
+   - Deliver responsive, mobile-first customer pages (e.g. `/support`, `/account/support`, `/account/seller/*`).
+   - Implement interactive modals, status cards, and action flows adhering to the Larekmart design system (dark/light theme, Tailwind CSS v4, Zustand/React Query state).
+   - Ensure React 19 / Next.js 16 hydration safety (avoid Framer Motion on static SSR grids, guard client stores with `isMounted`).
+2. **Admin Operations Dashboard (`apps/admin`)**:
+   - Create typed admin service in `apps/admin/src/services/<feature>.service.ts`.
+   - Implement operations dashboards with real-time KPI metrics, searchable/filterable data tables, status transition dialogs, and React Query cache invalidation.
+   - Enforce Clerk admin authorization (`sessionClaims.metadata.role === 'admin'`).
+   - Register sidebar navigation links in `apps/admin/src/components/AppSidebar.tsx`.
 
-### Stage 3: API Gateway Reverse Proxy & Resilience (`apps/api-gateway`)
+---
 
-- Register route prefixes in `public.routes.ts`, `authenticated.routes.ts`, or `admin.routes.ts`.
-- Set upstream target URL, timeout, and configure the circuit breaker.
-- Apply `SingleFlightGroup` to cacheable, high-read paths to eliminate stampedes.
-- Ensure untrusted client headers are stripped before forwarding verified identity headers (`x-user-id`, `x-user-role`).
+### Pillar 2: Cross-Service & Gateway Integration (`apps/*` all services and others)
 
-### Stage 4: Kafka Event Streams & Poison-Pill Resilience (`@repo/kafka`)
+Every feature service must integrate seamlessly across the monorepo ecosystem:
 
-- Producers must use the `{ value: payload }` envelope and produce via transactional outbox.
-- Consumers must read `message.value` and route unparseable/invalid payloads to `<topic>.dlq`.
-- High-velocity event processors should use `kafkaConsumer.subscribeBatch()` to ingest events in transactional batches with SKU/partition micro-batching.
-- Document event schemas in `docs/EVENT-DRIVEN-ARCHITECTURE.md`.
+1. **API Gateway Reverse Proxy (`apps/api-gateway`)**:
+   - Register routes in `public.routes.ts`, `authenticated.routes.ts`, or `admin.routes.ts`.
+   - Configure upstream service registry, circuit breaker (`Opossum`), timeout limits, and rate-limiting rules.
+   - Apply `SingleFlightGroup` on high-velocity read aggregation routes to prevent backend thundering herds.
+   - **Perimeter Header Sanitization**: Unconditionally strip client-supplied `x-user-id`, `x-user-role`, `x-internal-secret`, and `x-session-claims` headers before injecting verified claims.
+2. **Asynchronous Kafka Pipelines (`@repo/kafka`)**:
+   - Establish Kafka topics with the `{ value: payload }` envelope and poison-pill isolation (`<topic>.dlq`).
+   - Enforce **Transactional Outbox** (`OutboxEvent`) for all mutations that produce asynchronous domain events to eliminate dual-write hazards.
+   - Use `kafkaConsumer.subscribeBatch()` for high-throughput stream ingestion.
+   - Wire cross-service consumer handlers in dependent microservices (e.g., `notification-service`, `analytic-service`, `order-service`, `return-service`).
+3. **Zero Synchronous HTTP Calls Between Services**:
+   - Backend services communicate strictly through Kafka events or shared database contracts; never introduce direct HTTP calls between backend microservices.
 
-### Stage 5: Customer Storefront Implementation (`apps/client`)
+---
 
-- Create customer client service in `apps/client/src/services/<feature>.service.ts` connecting via API Gateway.
-- Implement responsive, mobile-first pages and interactive components adhering to Larekmart design system (dark/light, glassmorphism, micro-animations).
-- Maintain React 19 / Next.js 16 hydration safety (avoid Framer Motion on static SSR grids, guard localStorage stores with `isMounted`).
+### Pillar 3: Documentation, Skills, Manifests & Configuration Updates (`*.md`, skills, `*.yml`)
 
-### Stage 6: Admin Operations UI (`apps/admin`)
+1. **Architecture & Contract Documents**:
+   - Update `docs/API.md` with complete endpoint specifications, request/response schemas, and error codes.
+   - Update `docs/ARCHITECTURE.md` and `docs/DEPENDENCIES.md` with the new service boundaries and data flows.
+   - Update `docs/EVENT-DRIVEN-ARCHITECTURE.md` with all new Kafka topics, payload schemas, and consumers.
+   - Create authoritative implementation plans in `docs/plans/<feature>-service-architecture.md` and `docs/plans/<feature>-service-implementation-plan.md`, indexing them in `docs/plans/README.md`.
+2. **Deployment & Orchestration Manifests (`*.yml`)**:
+   - **Docker Compose**: Add service definition to `docker-compose.yml` with port mapping, environment variables, healthchecks, and resource limits (`deploy.resources`). Add Traefik reverse-proxy labels in `docker-compose.traefik.yml` if exposed.
+   - **Kubernetes**: Add declarative Kustomize deployment manifests in `infrastructure/kubernetes/base/services/<feature>.yaml`, registering the service in `base/kustomization.yaml`, configmaps, and network policies.
+   - **Observability**: Add Prometheus scrape target in `infrastructure/observability/prometheus/prometheus.yml`.
+   - **CI/CD**: Update GitHub Actions workflows (`.github/workflows/production.yml`, `staging.yml`, `migrate.yml`, and `reusable-docker-build.yml`).
+3. **Agent Skills & Rules**:
+   - Update repository maps and guidelines across all skill folders (`.agents/skills/*`, `.claude/skills/*`, `.cursor/skills/*`, `.gemini/skills/*`, `.github/skills/*`).
 
-- Create admin service in `apps/admin/src/services/<feature>.service.ts`.
-- Implement responsive dashboard with KPI metrics, searchable/filterable data tables, action modals (approve, reject, inspect, retry), and React Query invalidation.
-- Enforce Clerk admin authorization.
+---
 
-### Stage 7: Automated Unit & Integration Testing
+### Pillar 4: Deep Project Analysis & Comprehensive Testing (Unit & Integration)
 
-- Add standalone tsx test suites under `apps/<service>/tests/` or `packages/<pkg>/tests/`.
-- Verify happy path, validation rejections, duplicate request handling, and error scenarios.
-- Run `pnpm test` (verify all 28+ suites pass).
+1. **Pre- & Post-Implementation Deep Analysis**:
+   - Analyze upstream dependencies, database schemas, foreign key relationships, and blast radius before making code edits.
+   - Verify post-implementation architectural integrity, boundary isolation, and error-handling resilience.
+2. **Unit & Integration Test Suites**:
+   - Write comprehensive unit tests for controllers, services, guards, and business logic (e.g., SLA computations, commission mathematics, idempotency leases).
+   - Write integration tests verifying real database queries, status transitions, role-based redactions, and error responses.
+   - Implement concurrency tests verifying Redis atomic locking and duplicate mutation prevention.
+3. **Quality Gates**:
+   - Maintain a 100% test pass rate (`pnpm test`).
+   - Enforce 0 TypeScript compile errors monorepo-wide (`pnpm check-types`).
+   - Pass linting on modified frontend applications (`pnpm lint`).
 
-### Stage 8: Security & Zero-Trust Hardening
+---
 
-- **Zero-Trust Identity**: Derive user identity exclusively from verified Clerk tokens; reject client-supplied IDs.
-- **IDOR Protection**: Explicitly verify resource ownership before reading or mutating records.
-- **Constant-Time Verification**: Microservice internal endpoints must verify `x-internal-secret` in constant time with SHA-256 pre-hashing (SEC-16).
-- **Admin Privilege Decoupling**: Gateway transport secret verification must never automatically elevate proxied regular users to admin status (SEC-15).
-- **Input Sanitization**: Validate media URLs against trusted S3/MinIO hosts and sanitize freeform text.
-- **Reference**: Follow guidelines in [docs/plans/security-audit-and-remediation-report.md](../../../docs/plans/security-audit-and-remediation-report.md).
-- **Verification Gates**: Pass `pnpm check-types`, `pnpm test`, and `pnpm build`.
+### Pillar 5: Security Audit & Zero-Trust Hardening
+
+1. **OWASP API Top 10 Mitigation**:
+   - **BOLA / IDOR Protection**: Explicitly verify resource ownership against verified session identity before reading or updating entities.
+   - **Constant-Time Secret Comparison (SEC-16)**: Internal service endpoints must verify `x-internal-secret` using constant-time timing-safe comparisons (`crypto.timingSafeEqual`) with SHA-256 pre-hashed buffers.
+   - **Admin Privilege Decoupling (SEC-15)**: Gateway transport secret verification must never automatically elevate proxied regular users to admin status. User roles must originate strictly from verified Clerk token metadata.
+   - **Data Privacy & Redaction**: Confidential internal notes (`isInternalNote: true`), merchant secrets, or PII must be systematically redacted from customer and seller query responses.
+   - **Fail-Closed Semantics**: Unauthenticated requests or cryptographic verification errors must fail closed with 401 Unauthorized / 403 Forbidden.
+2. **Distributed Idempotency**:
+   - State-mutating routes must enforce `Idempotency-Key` headers using `@repo/redis` atomic leases (`SET NX PX`) to reject concurrent duplicate mutations and transparently replay cached responses.
+
+---
+
+### Pillar 6: Global README.md & Root Architecture Sync
+
+1. **Root Documentation Synchronization**:
+   - Update root `README.md` to document the new feature service, including runtime, assigned port, database engine, Kafka topics, and primary responsibilities.
+   - Update the system topology ASCII/mermaid diagrams in `README.md` and `docs/ARCHITECTURE.md`.
+   - Keep the monorepo workspace inventory table in `README.md` and `AGENTS.md` fully up to date.
+   - Verify that all referenced markdown links and port numbers are accurate.

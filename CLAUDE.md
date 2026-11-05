@@ -27,6 +27,17 @@ the workspace map, the golden rules, commands, and the instruction hierarchy.
   - Multi-Pod WebSocket Desynchronization Hardening: [`docs/plans/notification-service-redis-pubsub-websocket-sync.md`](./docs/plans/notification-service-redis-pubsub-websocket-sync.md)
   - Security Audit & Remediation: [`docs/plans/security-audit-and-remediation-report.md`](./docs/plans/security-audit-and-remediation-report.md)
   - Commission & Payout Architecture: [`docs/plans/commission-and-payout-architecture-and-testing.md`](./docs/plans/commission-and-payout-architecture-and-testing.md)
+  - Support Service Implementation Plan: [`docs/plans/support-service-implementation-plan.md`](./docs/plans/support-service-implementation-plan.md)
+  - Database Migration & Seeding Orchestration: [`docs/plans/monorepo-database-orchestration-and-seeding-plan.md`](./docs/plans/monorepo-database-orchestration-and-seeding-plan.md)
+
+- **Mandatory Feature Service Delivery Standard (The 6 Pillars):**
+  Whenever building, modifying, expanding, or integrating any feature service in Larekmart (e.g. `support-service`, `fraud-service`, `payout-service`, etc.), all agents must strictly execute the 6 Pillars:
+  1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**: Deliver full UI coverage on both the customer storefront and admin dashboard with typed client services, responsive layouts, action dialogs, and design-system compliance.
+  2. **Pillar 2 — Cross-Service & Gateway Integration (`apps/*` all services)**: Wire reverse proxying, rate-limiting, and circuit breakers in `api-gateway`; establish asynchronous Kafka event streams with transactional outbox and DLQ isolation; connect domain relationships without cross-service HTTP calls.
+  3. **Pillar 3 — Documentation, Skills, Manifests & Configuration Updates (`*.md`, skills, `*.yml`)**: Update architecture docs (`docs/API.md`, `docs/ARCHITECTURE.md`, `docs/EVENT-DRIVEN-ARCHITECTURE.md`), deployment manifests (`docker-compose.yml`, Kubernetes Kustomize, Prometheus, GitHub workflows), and agent skills across all mirror folders.
+  4. **Pillar 4 — Deep Project Analysis & Comprehensive Testing (Unit & Integration)**: Conduct deep architectural analysis before and after changes; write comprehensive tsx/jest unit and integration test suites; enforce 100% test pass rate with zero TypeScript compile errors.
+  5. **Pillar 5 — Security Audit & Zero-Trust Hardening**: Remediate OWASP API Top 10 vulnerabilities; strip untrusted headers at the gateway; verify identity via verified Clerk Bearer tokens; enforce constant-time secret comparison (`crypto.timingSafeEqual`); prevent user-to-admin privilege escalation; redact internal notes and private data.
+  6. **Pillar 6 — Global README.md & Root Architecture Sync**: Keep `README.md` system topology, port mappings, and service documentation synchronized with all codebase changes.
 
 ---
 
