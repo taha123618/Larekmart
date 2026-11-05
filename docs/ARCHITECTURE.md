@@ -36,12 +36,13 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Checkout: `ShippingForm` (carrier rate calculations & COD) → `StripePaymentForm` (Stripe `CheckoutProvider`, custom UI) / `CodConfirmationForm` →
   return page polls the session status → `/orders`.
 - Customer Returns Hub: `/account/returns` real-time return tracking, status badges, RMA details, carrier tracking links, and printable return label slips. Returns can be initiated directly from `/orders` via `RequestReturnModal`.
+- Customer Support Center: `/support` (and `/account/support`) for opening support tickets, real-time message timeline with agents, attachments, SLA resolution tracking, FAQ knowledge base, and contextual order support via `OrderSupportAction` on `/orders`.
 - Merchant Storefronts & Onboarding: `/become-a-seller` merchant onboarding flow with KYB organization details, `/stores/[slug]` dedicated seller storefront profile and catalog showcase, and `SellerBadge` trust tags on marketplace product cards.
 - Auth: Clerk; server components fetch orders with `auth().getToken()`.
 
 **`admin` (dashboard, :3003)** — Next.js App Router, shadcn/ui, Tailwind v4.
 
-- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), vendors (`/vendors` legal business entity and KYB verification approval dashboard), sellers (`/sellers` marketplace seller account and commission oversight), fraud (`/fraud` case investigation, rule configuration, risk metrics, and analyst adjudication), and cache
+- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), vendors (`/vendors` legal business entity and KYB verification approval dashboard), sellers (`/sellers` marketplace seller account and commission oversight), fraud (`/fraud` case investigation, rule configuration, risk metrics, and analyst adjudication), support (`/support` omnichannel ticket operations, team queues, SLA policies, agent workloads, internal notes, and escalations), and cache
   performance (Redis hit/miss rates per service, scraped live from each service's `/metrics`).
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
@@ -292,6 +293,14 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Machine Learning & Heuristics: Blends explainable, deterministic rule evaluations with scikit-learn anomaly detection scores and risk signals.
 - Events: Publishes `fraud.assessment.completed`, `fraud.risk.detected`, `fraud.case.created`, `fraud.case.resolved`. Consumes `order.created`, `payment.successful`, `payment.failed`, `payout.scheduled`, `promotion.redeemed`, `promotion.reserved`, `return.created`.
 
+**`support-service` (NestJS 11 / Fastify, :8025)** — omnichannel customer, seller, and administrator support ticket management, SLA policies, escalations, agent queues, workload analytics, and real-time Socket.IO broadcasts.
+
+- Routes: `POST /api/v1/support/tickets`, `GET /api/v1/support/tickets`, `GET /api/v1/support/tickets/:id`, `POST /api/v1/support/tickets/:id/messages`, `PATCH /api/v1/support/tickets/:id`, `GET /api/v1/support/categories`, `POST /api/v1/admin/support/tickets/:id/assign`, `POST /api/v1/admin/support/tickets/:id/escalate`, `GET /api/v1/admin/support/analytics`, `GET /api/v1/admin/support/sla-policies`, `/health`, `/ready`, `/metrics`.
+- Persistence: PostgreSQL via `@repo/support-db` (Prisma) targeting `larekmart_support_db` (`tickets`, `ticket_messages`, `ticket_assignments`, `ticket_categories`, `ticket_sla_policies`, `ticket_history`).
+- Caching: Redis (`support:v1:*` namespace) through `@repo/redis` for active ticket caches and category lookups.
+- Real-Time Broadcasts: Socket.IO gateway emitting live queue changes, assignment notifications, and customer/agent messages.
+- Events: Publishes `support.ticket.created`, `support.ticket.assigned`, `support.ticket.updated`, `support.ticket.resolved`.
+
 ## Data ownership
 
 | Store      | Owner                            | Accessed via                  | Notable models                                                                                                                                                                    |
@@ -313,7 +322,8 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | PostgreSQL | seller-service                   | Drizzle (`pg`)                | `sellers`, `seller_stores`, `seller_staff`, `seller_settings`, `seller_policies`, `seller_status_history`, `seller_performance_snapshots`, `system_settings`, `admin_delegations` |
 | PostgreSQL | commission-service               | Drizzle (`pg`)                | `commission_plans`, `commission_rules`, `commission_rule_versions`, `commission_calculations`, `commission_line_items`, `commission_adjustments`                                  |
 | PostgreSQL | payout-service                   | Drizzle (`pg`)                | `payout_accounts`, `payouts`, `payout_batches`, `settlements`, `ledger_accounts`, `ledger_entries`, `payout_adjustments`, `payout_provider_events`                                |
-| PostgreSQL | fraud-service                    | SQLAlchemy async (`asyncpg`)  | `fraud_rules`, `risk_assessments`, `risk_signals`, `fraud_cases`, `fraud_decisions`, `risk_model_versions`                                                                         |
+| PostgreSQL | fraud-service                    | SQLAlchemy async (`asyncpg`)  | `fraud_rules`, `risk_assessments`, `risk_signals`, `fraud_cases`, `fraud_decisions`, `risk_model_versions`                                                                        |
+| PostgreSQL | support-service                  | `@repo/support-db` (Prisma)   | `tickets`, `ticket_messages`, `ticket_assignments`, `ticket_categories`, `ticket_sla_policies`, `ticket_history`                                                                  |
 | MySQL      | tax-service                      | Drizzle (`mysql2`)            | `tax_jurisdictions`, `tax_categories`, `tax_rules`, `tax_exemptions`, `tax_calculations`, `tax_calculation_lines`, `tax_provider_logs`                                            |
 | MySQL      | return-service                   | Drizzle (`mysql2`)            | `returns`, `return_items`, `return_media`, `return_shipments`, `return_inspections`, `return_refunds`, `return_state_transitions`, `return_outbox`                                |
 | S3/MinIO   | media-service                    | `ObjectStorage` (AWS SDK S3)  | `media` bucket: originals + generated variants (`{owners}/{ownerId}/{mediaId}/…` keys)                                                                                            |
@@ -337,6 +347,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 | Redis      | commission-service               | `@repo/redis` (ioredis)       | `commission:v1:*` (rule version cache, active plan cache, rate limits)                                                                                                            |
 | Redis      | payout-service                   | `@repo/redis` (ioredis)       | `payout:v1:*` (seller balance cache, idempotency lock, statement cache, rate limits)                                                                                              |
 | Redis      | fraud-service                    | `redis-py` async              | `fraud:v1:*` (sliding window velocity counters, rule cache, model version cache)                                                                                                  |
+| Redis      | support-service                  | `@repo/redis` (ioredis)       | `support:v1:*` (ticket active caches, category lookups, rate limits)                                                                                                              |
 | OpenSearch | search-service                   | `@repo/opensearch`            | `products-v1` index (alias `products`) — denormalized search document                                                                                                             |
 | MongoDB    | order-service                    | `@repo/order-db` (Mongoose)   | `Order`                                                                                                                                                                           |
 | MongoDB    | cart-service                     | `@repo/cart-db` (Mongoose)    | `Cart`, `ProcessedEvent`                                                                                                                                                          |

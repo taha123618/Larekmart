@@ -5,6 +5,7 @@
 In a hyperscale e-commerce marketplace, the return and refund lifecycle involves distributed coordination across customers, warehouse operators, payment gateways (Stripe), and multiple microservices (`payment-service`, `shipping-service`, `inventory-service`, `analytic-service`, and `notification-service`).
 
 During high-volume events (e.g. post-flash-sale returns or automated warehouse barcode scanning), two major race conditions can cause double refunds, inconsistent states, or redundant Kafka events:
+
 1. **Warehouse Inspection Concurrency Collision**:
    Concurrent HTTP requests to `POST /api/v1/admin/returns/:returnId/inspect` (e.g., from dual barcode scans, duplicate network retries, or multiple warehouse inspectors) previously lacked distributed locking. Both requests could enter `recordInspection`, update status, and record multiple inspections.
 2. **Non-Deterministic Refund Idempotency Keys**:
@@ -64,11 +65,13 @@ sequenceDiagram
 ## 3. Concrete Hardening Specifications
 
 ### 3.1 Distributed Cluster Locking for Inspection & Retries
+
 - **Lock Key Pattern**: `return:v1:lock:inspection:{returnId}` and `return:v1:lock:refund-retry:{returnId}`.
 - **Acquisition Mechanism**: `@repo/redis` `withClusterLock(redis.client, lockKey, workerId, async () => { ... }, { ttlMs: 10000 })`.
 - **Conflict Behavior**: If another replica or worker holds the lock, fail-fast with HTTP 409 Conflict (`An inspection is currently in progress for return ${returnId}`).
 
 ### 3.2 Deterministic Refund Idempotency Keys
+
 - **Initial Inspection Refund**: `refund-${returnId}`
   - No random UUID suffix.
   - Strict check against `returnRefunds` table via `refundRepository.findByIdempotencyKey(idempotencyKey)`.
@@ -78,6 +81,7 @@ sequenceDiagram
   - Guarantees each retry creates an explicit, traceable audit record while preventing concurrent duplicate retries for the same attempt.
 
 ### 3.3 Koa 2 Distributed Idempotency Middleware
+
 - **Path**: `apps/return-service/src/middleware/idempotency.middleware.ts`
 - **Supported Headers**: `Idempotency-Key` or `idempotency-key`.
 - **Redis Operations**:
@@ -88,6 +92,7 @@ sequenceDiagram
   - Concurrency Conflict: Returns HTTP 409 `{ message: "A mutation with this Idempotency-Key is currently in-flight", statusCode: 409 }`.
 
 ### 3.4 CORS & Gateway Alignment
+
 - Update `apps/return-service/src/app.ts` CORS headers to include `Idempotency-Key` and `idempotency-key`.
 
 ---
@@ -108,4 +113,3 @@ sequenceDiagram
      - Retrying refund generates versioned `refund-${returnId}-retry-1`.
 2. **Monorepo Strict Type Check**:
    - `pnpm check-types` across all 42 workspaces.
-

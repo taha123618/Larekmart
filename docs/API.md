@@ -1350,3 +1350,81 @@ All requests route through `api-gateway` on port `8080`.
 
 - **Auth**: Admin (`shouldBeAdmin`)
 - **Response**: Aggregated fraud KPIs (`totalAssessments`, `totalCases`, `openCases`, `blockRate`, `reviewRate`, `averageLatencyMs`).
+
+---
+
+## Support Service (`support-service`, `:8025`)
+
+### `POST /api/v1/support/tickets`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `CreateTicketSchema` (`subject`, `description`, `categoryCode`, `priority?`, `orderId?`, `returnId?`, `attachments?`)
+- **Response**: `{ success: true, data: Ticket }`
+- **Side Effect**: Emits `support.ticket.created` Kafka event, registers SLA deadlines, broadcasts via Socket.IO.
+
+### `GET /api/v1/support/tickets`
+
+- **Auth**: User (`shouldBeUser`)
+- **Query Params**: `status?`, `priority?`, `search?`, `limit?`, `offset?`
+- **Response**: `{ success: true, total: number, items: Ticket[] }`
+- **Scope**: Scoped strictly to authenticated user's tickets.
+
+### `GET /api/v1/support/tickets/:id`
+
+- **Auth**: User (`shouldBeUser`)
+- **Response**: `{ success: true, data: Ticket }`
+- **Note**: Redacts `isInternalNote: true` messages for customer privacy and security.
+
+### `POST /api/v1/support/tickets/:id/messages`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `AddTicketMessageSchema` (`content`, `attachments?`)
+- **Response**: `{ success: true, data: TicketMessage }`
+- **Side Effect**: Sets ticket status to `WAITING_ON_AGENT` and broadcasts message via Socket.IO.
+
+### `PATCH /api/v1/support/tickets/:id`
+
+- **Auth**: User (`shouldBeUser`)
+- **Body**: `UpdateTicketSchema` (`status?`, `priority?`)
+- **Response**: `{ success: true, data: Ticket }`
+
+### `GET /api/v1/support/categories`
+
+- **Auth**: Optional / Authenticated
+- **Response**: `{ success: true, data: TicketCategory[] }`
+
+### `GET /api/v1/admin/support/tickets`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Query Params**: `status?`, `priority?`, `categoryCode?`, `assignedTeam?`, `assignedAgentId?`, `search?`, `limit?`, `offset?`
+- **Response**: `{ success: true, total: number, items: Ticket[] }`
+
+### `GET /api/v1/admin/support/tickets/:id`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ success: true, data: Ticket }`
+- **Note**: Includes staff-only internal notes, assignment logs, and audit history.
+
+### `POST /api/v1/admin/support/tickets/:id/assign`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `AssignTicketSchema` (`assignedTo`, `assignedTeam?`, `notes?`)
+- **Response**: `{ success: true, data: { ticket: Ticket, assignment: TicketAssignment } }`
+- **Side Effect**: Emits `support.ticket.assigned` Kafka event, broadcasts to agent queue.
+
+### `POST /api/v1/admin/support/tickets/:id/escalate`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Body**: `EscalateTicketSchema` (`escalationReason`, `targetTeam?`, `priority?`)
+- **Response**: `{ success: true, data: Ticket }`
+- **Side Effect**: Emits `support.ticket.updated` Kafka event.
+
+### `GET /api/v1/admin/support/sla-policies`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ success: true, data: TicketSlaPolicy[] }`
+
+### `GET /api/v1/admin/support/analytics`
+
+- **Auth**: Admin (`shouldBeAdmin`)
+- **Response**: `{ success: true, data: SupportAnalytics }` (total tickets, status/priority breakdown, team breakdown, SLA breach rate, resolution duration, agent workloads).

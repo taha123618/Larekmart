@@ -3,7 +3,11 @@ import { desc } from "drizzle-orm";
 import { commissionService } from "../services/commission.service.js";
 import { requireAdmin } from "../middleware/auth.middleware.js";
 import { db } from "../db/connection.js";
-import { commissionPlans, commissionRules, commissionRuleVersions } from "../db/schema.js";
+import {
+  commissionPlans,
+  commissionRules,
+  commissionRuleVersions,
+} from "../db/schema.js";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
@@ -25,7 +29,9 @@ const updateRuleSchema = z.object({
 
 const createRuleSchema = z.object({
   planId: z.string().min(1),
-  ruleType: z.enum(["PERCENTAGE", "FIXED", "TIERED", "HYBRID"]).default("PERCENTAGE"),
+  ruleType: z
+    .enum(["PERCENTAGE", "FIXED", "TIERED", "HYBRID"])
+    .default("PERCENTAGE"),
   scope: z.enum(["GLOBAL", "SELLER", "CATEGORY", "PRODUCT"]).default("GLOBAL"),
   scopeId: z.string().optional().nullable(),
   percentageRate: z.number().min(0).max(100).default(0),
@@ -58,7 +64,11 @@ export async function adminCommissionRoutes(fastify: FastifyInstance) {
    * GET /api/v1/admin/commissions/rule-versions
    */
   fastify.get("/rule-versions", async (_request, reply) => {
-    const versions = await db.select().from(commissionRuleVersions).orderBy(desc(commissionRuleVersions.createdAt)).limit(50);
+    const versions = await db
+      .select()
+      .from(commissionRuleVersions)
+      .orderBy(desc(commissionRuleVersions.createdAt))
+      .limit(50);
     return reply.status(200).send(versions);
   });
 
@@ -108,8 +118,14 @@ export async function adminCommissionRoutes(fastify: FastifyInstance) {
       scopeId: parse.data.scopeId,
       percentageRate: String(parse.data.percentageRate),
       fixedAmount: String(parse.data.fixedAmount),
-      minCommission: parse.data.minCommission != null ? String(parse.data.minCommission) : null,
-      maxCommission: parse.data.maxCommission != null ? String(parse.data.maxCommission) : null,
+      minCommission:
+        parse.data.minCommission != null
+          ? String(parse.data.minCommission)
+          : null,
+      maxCommission:
+        parse.data.maxCommission != null
+          ? String(parse.data.maxCommission)
+          : null,
       priority: parse.data.priority,
       status: "ACTIVE",
     });

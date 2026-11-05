@@ -1,0 +1,38 @@
+{
+  "name": "support-service",
+  "version": "1.0.0",
+  "description": "Larekmart Support Service: tickets, categories, SLA policies, escalations, agent queues & real-time updates",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env --watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "check-types": "tsc --noEmit",
+    "test:unit": "NODE_ENV=test tsx tests/unit/sla-engine.unit.test.ts && NODE_ENV=test tsx tests/unit/auth-and-admin-guards.unit.test.ts && NODE_ENV=test tsx tests/unit/schemas-and-validation.unit.test.ts && NODE_ENV=test tsx tests/unit/idempotency.unit.test.ts",
+    "test:integration": "NODE_ENV=test tsx --env-file-if-exists=.env tests/tickets.test.ts && NODE_ENV=test tsx --env-file-if-exists=.env tests/sla-and-escalation.test.ts",
+    "test": "npm run test:unit && npm run test:integration"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.2.8",
+    "@nestjs/core": "^11.2.8",
+    "@nestjs/platform-fastify": "^11.2.8",
+    "@repo/kafka": "workspace:*",
+    "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "@repo/support-db": "workspace:*",
+    "@repo/types": "workspace:*",
+    "fastify": "^5.12.7",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.1.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^22.13.0",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

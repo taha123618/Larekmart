@@ -11,8 +11,10 @@
 The search microservice (`apps/search-service`, port 8006) synchronizes catalog, pricing, inventory, and review data asynchronously from Apache Kafka events to maintain denormalized OpenSearch product documents for fast storefront discovery.
 
 ### The Problem
+
 Previously, `product-events.consumer.ts` handled incoming events sequentially via `eachMessage` callbacks, making single-document REST calls to OpenSearch (`indexProductDocument`, `updateProductDocument`, `deleteProductDocument`) on every event.
 Under high-throughput flash sales or catalog imports (10,000+ events/min):
+
 1. **Network & Socket Starvation**: 10,000 separate HTTP connections to OpenSearch overwhelm the cluster socket pool and HTTP keep-alive buffers.
 2. **Indexing Lag & Segment Thrashing**: OpenSearch performs frequent small-segment Lucene commits rather than batch merges.
 3. **Redis Cache Invalidation Storms**: `invalidateSearchCacheNamespace()` was called once per event, repeatedly issuing `KEYS` / `DEL` sweeps against Redis.
@@ -42,6 +44,7 @@ Single Atomic Redis Cache Invalidation
 ```
 
 ### Invariants:
+
 1. **OpenSearch NDJSON Bulk API**: Events in a poll chunk (up to 100 events) are composed into a single `client.bulk()` request, cutting HTTP roundtrips by 99%.
 2. **Single Batch Cache Invalidation**: `invalidateSearchCacheNamespace()` is invoked exactly once per batch flush.
 3. **Drift Reconciler Continuity**: Dual-writing to pending reindex indices (`products-v2`) is preserved across batch operations.
@@ -56,4 +59,3 @@ Single Atomic Redis Cache Invalidation
 2. **Event Consumer**: Refactor `apps/search-service/src/consumers/product-events.consumer.ts` to register batch handlers using `consumer.subscribeBatch` with fallback to `consumer.subscribe`.
 3. **Testing**: Add automated unit and integration tests verifying batch processing, NDJSON formatting, drift reconciler interception, and single cache flush behavior.
 4. **Documentation**: Update `apps/search-service/AGENTS.md`, `README.md`, and monorepo rules.
-

@@ -54,7 +54,11 @@ export async function testConcurrencyAndSagaIdempotency() {
   };
 
   await middleware(ctx1, next1);
-  assert.equal(executionCount, 1, "Downstream handler should be called on first execution");
+  assert.equal(
+    executionCount,
+    1,
+    "Downstream handler should be called on first execution",
+  );
   assert.equal(ctx1.status, 201, "Status code should be 201");
   assert.deepEqual(ctx1.body, { returnId: "ret_abc_1", status: "REQUESTED" });
   console.log("  ✓ idempotency middleware executes and commits fresh request");
@@ -67,8 +71,16 @@ export async function testConcurrencyAndSagaIdempotency() {
   };
 
   await middleware(ctx2, next2);
-  assert.equal(executionCount, 1, "Downstream handler must NOT be called on duplicate key");
-  assert.equal(ctx2.status, 201, "Replayed status code should match original (201)");
+  assert.equal(
+    executionCount,
+    1,
+    "Downstream handler must NOT be called on duplicate key",
+  );
+  assert.equal(
+    ctx2.status,
+    201,
+    "Replayed status code should match original (201)",
+  );
   assert.deepEqual(ctx2.body, { returnId: "ret_abc_1", status: "REQUESTED" });
   assert.equal(
     ctx2.get("Idempotent-Replayed"),
@@ -80,17 +92,25 @@ export async function testConcurrencyAndSagaIdempotency() {
     "true",
     "Header x-idempotent-replay must be 'true'",
   );
-  console.log("  ✓ duplicate request transparently replayed with cached response");
+  console.log(
+    "  ✓ duplicate request transparently replayed with cached response",
+  );
 
   // ─── 6.3 Middleware: In-Flight Collision Returns 409 Conflict ──────────────
   const inFlightKey = `test-inflight-${Date.now()}`;
-  const redisInFlightKey = redis.keys.simple(`return:test:idemp:user_cust_123:${inFlightKey}`);
+  const redisInFlightKey = redis.keys.simple(
+    `return:test:idemp:user_cust_123:${inFlightKey}`,
+  );
 
   // Manually acquire lock simulating an active, in-progress mutation
   const lockAcq = await acquireIdempotencyLock(redis.client, redisInFlightKey, {
     lockTtlMs: 10000,
   });
-  assert.equal(lockAcq.status, "acquired", "Lock should be acquired for in-flight simulation");
+  assert.equal(
+    lockAcq.status,
+    "acquired",
+    "Lock should be acquired for in-flight simulation",
+  );
 
   const ctxConflict = createMockContext({ "idempotency-key": inFlightKey });
   let conflictNextCalled = false;
@@ -98,7 +118,11 @@ export async function testConcurrencyAndSagaIdempotency() {
     conflictNextCalled = true;
   });
 
-  assert.equal(conflictNextCalled, false, "Handler should not be invoked during conflict");
+  assert.equal(
+    conflictNextCalled,
+    false,
+    "Handler should not be invoked during conflict",
+  );
   assert.equal(ctxConflict.status, 409, "Status should be 409 Conflict");
   assert.equal(
     (ctxConflict.body as any).statusCode,
@@ -109,7 +133,9 @@ export async function testConcurrencyAndSagaIdempotency() {
     String((ctxConflict.body as any).message).includes("currently in-flight"),
     "Conflict message should specify mutation is currently in-flight",
   );
-  console.log("  ✓ in-flight mutation collision rejected with HTTP 409 Conflict");
+  console.log(
+    "  ✓ in-flight mutation collision rejected with HTTP 409 Conflict",
+  );
 
   // ─── 6.4 Middleware: Release on Error Allows Clean Retry ───────────────────
   const errorKey = `test-error-${Date.now()}`;
@@ -123,7 +149,10 @@ export async function testConcurrencyAndSagaIdempotency() {
     });
   } catch (err: any) {
     threw = true;
-    assert.equal(err.message, "Simulated database failure during return creation");
+    assert.equal(
+      err.message,
+      "Simulated database failure during return creation",
+    );
   }
   assert.equal(threw, true, "Middleware should rethrow downstream exception");
 
@@ -135,9 +164,15 @@ export async function testConcurrencyAndSagaIdempotency() {
     ctxRetry.status = 201;
     ctxRetry.body = { returnId: "ret_retry_ok" };
   });
-  assert.equal(retryExecuted, true, "Retry must be allowed after failure released the lock");
+  assert.equal(
+    retryExecuted,
+    true,
+    "Retry must be allowed after failure released the lock",
+  );
   assert.equal(ctxRetry.status, 201);
-  console.log("  ✓ failed mutation releases lock permitting immediate client retry");
+  console.log(
+    "  ✓ failed mutation releases lock permitting immediate client retry",
+  );
 
   // ─── 6.5 Warehouse Inspection Concurrency Lock Mutual Exclusion ────────────
   const returnId = `ret_test_inspect_${Date.now()}`;
@@ -177,9 +212,19 @@ export async function testConcurrencyAndSagaIdempotency() {
   const [res1, res2] = await Promise.all([promise1, promise2]);
 
   assert.deepEqual(res1, { status: "INSPECTION_COMPLETED", itemsInspected: 2 });
-  assert.equal(inspector1Completed, true, "Inspector 1 should complete successfully");
-  assert.equal(res2, null, "Inspector 2 should receive null (lock acquisition denied)");
-  console.log("  ✓ simultaneous warehouse inspection blocked by distributed cluster lock");
+  assert.equal(
+    inspector1Completed,
+    true,
+    "Inspector 1 should complete successfully",
+  );
+  assert.equal(
+    res2,
+    null,
+    "Inspector 2 should receive null (lock acquisition denied)",
+  );
+  console.log(
+    "  ✓ simultaneous warehouse inspection blocked by distributed cluster lock",
+  );
 
   // Verify lock is automatically released after Inspector 1 completes
   const inspector3 = `inspector:wh_user_3:${Date.now()}`;
@@ -191,7 +236,9 @@ export async function testConcurrencyAndSagaIdempotency() {
     { ttlMs: 5000 },
   );
   assert.deepEqual(res3, { status: "SUBSEQUENT_INSPECTION_OK" });
-  console.log("  ✓ cluster lock cleanly released following inspection completion");
+  console.log(
+    "  ✓ cluster lock cleanly released following inspection completion",
+  );
 
   // ─── 6.6 Deterministic Refund Idempotency Key Generation ───────────────────
   const sampleReturnId = "ret_888999";
@@ -219,7 +266,9 @@ export async function testConcurrencyAndSagaIdempotency() {
     "Second retry refund key must strictly be 'refund-{returnId}-retry-2'",
   );
 
-  console.log("  ✓ deterministic refund idempotency keys verified (no random UUID variance)\n");
+  console.log(
+    "  ✓ deterministic refund idempotency keys verified (no random UUID variance)\n",
+  );
 }
 
 // Standalone execution support
@@ -235,4 +284,3 @@ if (process.argv[1]?.endsWith("concurrency-and-saga-idempotency.test.ts")) {
       process.exit(1);
     });
 }
-

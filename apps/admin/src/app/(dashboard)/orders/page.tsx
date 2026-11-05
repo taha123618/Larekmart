@@ -6,12 +6,14 @@ import { OrderType } from "@repo/types";
 import { getApiGatewayUrl } from "@/services/gateway.service";
 import { fetchAnalyticsSummary } from "@/services/analytics.service";
 import { fetchAdminFraudCases } from "@/services/fraud.service";
+import { fetchSupportAnalytics } from "@/services/support.service";
 import {
   DollarSign,
   ShoppingBag,
   Activity,
   CheckCircle2,
   ShieldAlert,
+  LifeBuoy,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -39,14 +41,18 @@ const OrdersPage = async () => {
   const { getToken } = await auth();
   const token = await getToken();
 
-  const [data, analytics, fraudCases] = await Promise.all([
+  const [data, analytics, fraudCases, supportStats] = await Promise.all([
     getData(),
     fetchAnalyticsSummary(token),
     fetchAdminFraudCases({ status: "OPEN", limit: 20 }, token).catch(() => []),
+    fetchSupportAnalytics(token).catch(() => null),
   ]);
 
   const totalRevenue = analytics?.totalRevenue ?? 0;
   const totalOrders = analytics?.totalOrders ?? data.length;
+  const activeSupportTickets =
+    (supportStats?.statusBreakdown?.["OPEN"] ?? 0) +
+    (supportStats?.statusBreakdown?.["IN_PROGRESS"] ?? 0);
 
   return (
     <div className="space-y-6">
@@ -54,7 +60,8 @@ const OrdersPage = async () => {
         <div>
           <h1 className="font-semibold text-lg">Orders & Payments Registry</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Synchronized with order-service (:8001), analytic-service (:8004), and fraud-service (:8024)
+            Synchronized with order-service (:8001), analytic-service (:8004),
+            and fraud-service (:8024)
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
@@ -63,7 +70,7 @@ const OrdersPage = async () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <Card className="border-border/40">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -141,6 +148,29 @@ const OrdersPage = async () => {
                 className="text-primary hover:underline font-medium text-xs ml-1"
               >
                 Review &rarr;
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/40">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Support Cases
+            </CardTitle>
+            <LifeBuoy className="h-4 w-4 text-sky-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-sky-600 dark:text-sky-400">
+              {activeSupportTickets} Active
+            </div>
+            <p className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
+              <span>SLA Resolution</span>
+              <Link
+                href="/support"
+                className="text-primary hover:underline font-medium text-xs ml-1"
+              >
+                Manage &rarr;
               </Link>
             </p>
           </CardContent>

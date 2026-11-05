@@ -48,7 +48,9 @@ export const commissionRules = pgTable(
     planId: varchar("plan_id", { length: 64 })
       .notNull()
       .references(() => commissionPlans.id, { onDelete: "cascade" }),
-    ruleType: varchar("rule_type", { length: 32 }).notNull().default("PERCENTAGE"), // PERCENTAGE, FIXED, TIERED, HYBRID
+    ruleType: varchar("rule_type", { length: 32 })
+      .notNull()
+      .default("PERCENTAGE"), // PERCENTAGE, FIXED, TIERED, HYBRID
     scope: varchar("scope", { length: 32 }).notNull().default("GLOBAL"), // GLOBAL, SELLER, CATEGORY, PRODUCT
     scopeId: varchar("scope_id", { length: 128 }), // specific sellerId, categoryId, or productId
     percentageRate: numeric("percentage_rate", { precision: 5, scale: 2 })

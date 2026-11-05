@@ -256,6 +256,40 @@ const start = async () => {
           }
         },
       },
+      {
+        topicName: "support.ticket.created",
+        topicHandler: async (message) => {
+          const { ticketNumber, subject, customerEmail, priority } =
+            message.value || {};
+          logger.info(
+            `[email-service] Support ticket created: #${ticketNumber} for ${customerEmail}`,
+          );
+          if (customerEmail) {
+            await sendMail({
+              email: customerEmail,
+              subject: `Support Ticket Received: #${ticketNumber}`,
+              text: `Dear Customer,\n\nWe have received your support request regarding "${subject}".\n\nTicket Number: #${ticketNumber}\nPriority: ${priority || "MEDIUM"}\n\nOur customer support specialists will review and respond according to our SLA policy. You can track this ticket anytime in your Customer Support Portal.`,
+            });
+          }
+        },
+      },
+      {
+        topicName: "support.ticket.resolved",
+        topicHandler: async (message) => {
+          const { ticketNumber, customerEmail, resolutionTimeMinutes } =
+            message.value || {};
+          logger.info(
+            `[email-service] Support ticket resolved: #${ticketNumber}`,
+          );
+          if (customerEmail) {
+            await sendMail({
+              email: customerEmail,
+              subject: `Support Ticket Resolved: #${ticketNumber}`,
+              text: `Dear Customer,\n\nYour support ticket #${ticketNumber} has been marked as RESOLVED (Resolution duration: ${resolutionTimeMinutes || 0} min).\n\nIf you have further questions or if your issue was not fully resolved, simply log in to your Support Portal and reply to reopen the case.`,
+            });
+          }
+        },
+      },
     ]);
   } catch (error) {
     logger.fatal("Email service consumer error", error);

@@ -182,7 +182,8 @@ export async function fetchAdminFraudCaseDecisions(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch fraud case decisions (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch fraud case decisions (HTTP ${res.status})`,
     );
   }
 
@@ -221,7 +222,8 @@ export async function fetchAdminFraudPerformance(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch fraud performance metrics (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch fraud performance metrics (HTTP ${res.status})`,
     );
   }
 
@@ -242,7 +244,8 @@ export async function fetchAdminFraudModels(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch fraud model versions (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch fraud model versions (HTTP ${res.status})`,
     );
   }
 
@@ -279,5 +282,3 @@ export async function retrainAdminFraudModel(
 
   return res.json();
 }
-
-

@@ -16,7 +16,9 @@ export async function runBulkIndexingConsumerTests(): Promise<void> {
     const result = await indexing.bulkExecuteOperations([]);
     assert.equal(result.successful, 0);
     assert.equal(result.failed, 0);
-    console.log("  ✓ bulkExecuteOperations cleanly handles empty operation lists");
+    console.log(
+      "  ✓ bulkExecuteOperations cleanly handles empty operation lists",
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -29,12 +31,18 @@ export async function runBulkIndexingConsumerTests(): Promise<void> {
         subscribedBatchConfig = topics;
       },
       subscribe: async () => {
-        throw new Error("Should not use single subscribe when subscribeBatch is available");
+        throw new Error(
+          "Should not use single subscribe when subscribeBatch is available",
+        );
       },
     };
 
     await registerProductEventSubscriptions(mockBatchConsumer);
-    assert.equal(subscribedBatchConfig.length, 9, "Should register 9 batch topics");
+    assert.equal(
+      subscribedBatchConfig.length,
+      9,
+      "Should register 9 batch topics",
+    );
 
     const createdTopic = subscribedBatchConfig.find(
       (t) => t.topicName === config.kafka.topics.productCreated,
@@ -42,7 +50,9 @@ export async function runBulkIndexingConsumerTests(): Promise<void> {
     assert.ok(createdTopic, "product.created topic registered");
     assert.equal(createdTopic.batchSize, 100, "Configured batchSize is 100");
 
-    console.log("  ✓ subscribeBatch registered with 100-document micro-batching");
+    console.log(
+      "  ✓ subscribeBatch registered with 100-document micro-batching",
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -57,10 +67,17 @@ export async function runBulkIndexingConsumerTests(): Promise<void> {
     };
 
     await registerProductEventSubscriptions(mockLegacyConsumer);
-    assert.equal(subscribedTopics.length, 9, "Should register 9 legacy fallback topics");
-    console.log("  ✓ Seamless fallback to single-message subscribe when subscribeBatch is unavailable");
+    assert.equal(
+      subscribedTopics.length,
+      9,
+      "Should register 9 legacy fallback topics",
+    );
+    console.log(
+      "  ✓ Seamless fallback to single-message subscribe when subscribeBatch is unavailable",
+    );
   }
 
-  console.log("✔ [UNIT] OpenSearch Real-Time Bulk Indexing & Micro-Batching Tests Passed");
+  console.log(
+    "✔ [UNIT] OpenSearch Real-Time Bulk Indexing & Micro-Batching Tests Passed",
+  );
 }
-

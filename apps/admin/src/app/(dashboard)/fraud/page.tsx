@@ -70,19 +70,28 @@ export default function AdminFraudPage(): React.JSX.Element {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<"CASES" | "RULES" | "PERFORMANCE" | "MODELS">("CASES");
-  const [statusFilter, setStatusFilter] = useState<FraudCaseStatus | "ALL">("ALL");
-  const [priorityFilter, setPriorityFilter] = useState<FraudCasePriority | "ALL">("ALL");
+  const [activeTab, setActiveTab] = useState<
+    "CASES" | "RULES" | "PERFORMANCE" | "MODELS"
+  >("CASES");
+  const [statusFilter, setStatusFilter] = useState<FraudCaseStatus | "ALL">(
+    "ALL",
+  );
+  const [priorityFilter, setPriorityFilter] = useState<
+    FraudCasePriority | "ALL"
+  >("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCase, setSelectedCase] = useState<FraudCase | null>(null);
 
   // Retraining state
-  const [retrainModelName, setRetrainModelName] = useState("isolation_forest_v2");
+  const [retrainModelName, setRetrainModelName] = useState(
+    "isolation_forest_v2",
+  );
   const [retrainEstimators, setRetrainEstimators] = useState(50);
   const [retrainContamination, setRetrainContamination] = useState(0.05);
 
   // Review sheet state
-  const [analystDecision, setAnalystDecision] = useState<AnalystDecision>("BLOCK");
+  const [analystDecision, setAnalystDecision] =
+    useState<AnalystDecision>("BLOCK");
   const [reviewNotes, setReviewNotes] = useState("");
 
   const casesQuery = useQuery({
@@ -151,7 +160,8 @@ export default function AdminFraudPage(): React.JSX.Element {
       queryClient.invalidateQueries({ queryKey: ["admin-fraud-models"] });
     },
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : "Failed to retrain model";
+      const msg =
+        err instanceof Error ? err.message : "Failed to retrain model";
       toast.error(msg);
     },
   });
@@ -184,7 +194,8 @@ export default function AdminFraudPage(): React.JSX.Element {
       queryClient.invalidateQueries({ queryKey: ["admin-fraud-cases"] });
     },
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : "Failed to review fraud case";
+      const msg =
+        err instanceof Error ? err.message : "Failed to review fraud case";
       toast.error(msg);
     },
   });
@@ -206,8 +217,12 @@ export default function AdminFraudPage(): React.JSX.Element {
   const activeCasesCount = cases.filter(
     (c) => c.status === "OPEN" || c.status === "IN_REVIEW",
   ).length;
-  const criticalCasesCount = cases.filter((c) => c.priority === "CRITICAL").length;
-  const blockedCasesCount = cases.filter((c) => c.status === "RESOLVED_BLOCKED").length;
+  const criticalCasesCount = cases.filter(
+    (c) => c.priority === "CRITICAL",
+  ).length;
+  const blockedCasesCount = cases.filter(
+    (c) => c.status === "RESOLVED_BLOCKED",
+  ).length;
   const activeRulesCount = rules.filter((r) => r.isActive).length;
 
   const renderStatusBadge = (status: FraudCaseStatus) => {
@@ -295,7 +310,8 @@ export default function AdminFraudPage(): React.JSX.Element {
             Fraud & Risk Control Center
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Real-time anomaly scoring, velocity abuse detection, multi-workflow risk assessment, and analyst case reviews.
+            Real-time anomaly scoring, velocity abuse detection, multi-workflow
+            risk assessment, and analyst case reviews.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -303,10 +319,18 @@ export default function AdminFraudPage(): React.JSX.Element {
             variant="outline"
             size="sm"
             onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ["admin-fraud-cases"] });
-              queryClient.invalidateQueries({ queryKey: ["admin-fraud-rules"] });
-              queryClient.invalidateQueries({ queryKey: ["admin-fraud-performance"] });
-              queryClient.invalidateQueries({ queryKey: ["admin-fraud-models"] });
+              queryClient.invalidateQueries({
+                queryKey: ["admin-fraud-cases"],
+              });
+              queryClient.invalidateQueries({
+                queryKey: ["admin-fraud-rules"],
+              });
+              queryClient.invalidateQueries({
+                queryKey: ["admin-fraud-performance"],
+              });
+              queryClient.invalidateQueries({
+                queryKey: ["admin-fraud-models"],
+              });
             }}
             disabled={
               casesQuery.isFetching ||
@@ -348,11 +372,15 @@ export default function AdminFraudPage(): React.JSX.Element {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Critical Priority</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Critical Priority
+            </CardTitle>
             <ShieldAlert className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{criticalCasesCount}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {criticalCasesCount}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               Severe velocity spikes & extreme amounts
             </p>
@@ -361,7 +389,9 @@ export default function AdminFraudPage(): React.JSX.Element {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Confirmed Blocks</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Confirmed Blocks
+            </CardTitle>
             <Ban className="h-4 w-4 text-rose-500" />
           </CardHeader>
           <CardContent>
@@ -434,7 +464,8 @@ export default function AdminFraudPage(): React.JSX.Element {
               <div>
                 <CardTitle>Fraud Investigation Cases</CardTitle>
                 <CardDescription>
-                  Review flagged transactions, account takeovers, coupon abuse, and seller risk.
+                  Review flagged transactions, account takeovers, coupon abuse,
+                  and seller risk.
                 </CardDescription>
               </div>
 
@@ -462,7 +493,9 @@ export default function AdminFraudPage(): React.JSX.Element {
                   <option value="OPEN">Open</option>
                   <option value="IN_REVIEW">In Review</option>
                   <option value="RESOLVED_BLOCKED">Resolved (Blocked)</option>
-                  <option value="RESOLVED_DISMISSED">Resolved (Dismissed)</option>
+                  <option value="RESOLVED_DISMISSED">
+                    Resolved (Dismissed)
+                  </option>
                 </select>
 
                 <select
@@ -553,7 +586,8 @@ export default function AdminFraudPage(): React.JSX.Element {
           <CardHeader>
             <CardTitle>Configured Risk Scoring Rules</CardTitle>
             <CardDescription>
-              Deterministic scoring criteria evaluating user velocity, transaction amounts, and behavioral anomalies.
+              Deterministic scoring criteria evaluating user velocity,
+              transaction amounts, and behavioral anomalies.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -595,7 +629,10 @@ export default function AdminFraudPage(): React.JSX.Element {
                         </TableCell>
                         <TableCell>{renderWorkflowBadge(r.workflow)}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="font-bold text-amber-600">
+                          <Badge
+                            variant="outline"
+                            className="font-bold text-amber-600"
+                          >
                             +{r.scoreDelta}
                           </Badge>
                         </TableCell>
@@ -619,7 +656,9 @@ export default function AdminFraudPage(): React.JSX.Element {
                         </TableCell>
                         <TableCell>
                           {r.isActive ? (
-                            <Badge className="bg-emerald-500/10 text-emerald-600">Active</Badge>
+                            <Badge className="bg-emerald-500/10 text-emerald-600">
+                              Active
+                            </Badge>
                           ) : (
                             <Badge variant="outline">Disabled</Badge>
                           )}
@@ -640,7 +679,9 @@ export default function AdminFraudPage(): React.JSX.Element {
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">False Positive Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  False Positive Rate
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-emerald-500" />
               </CardHeader>
               <CardContent>
@@ -655,7 +696,9 @@ export default function AdminFraudPage(): React.JSX.Element {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">True Block Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  True Block Rate
+                </CardTitle>
                 <ShieldCheck className="h-4 w-4 text-rose-500" />
               </CardHeader>
               <CardContent>
@@ -670,7 +713,9 @@ export default function AdminFraudPage(): React.JSX.Element {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Average Latency</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Average Latency
+                </CardTitle>
                 <Clock className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
@@ -685,7 +730,9 @@ export default function AdminFraudPage(): React.JSX.Element {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Resolved</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Resolved
+                </CardTitle>
                 <CheckCircle2 className="h-4 w-4 text-indigo-500" />
               </CardHeader>
               <CardContent>
@@ -703,7 +750,8 @@ export default function AdminFraudPage(): React.JSX.Element {
             <CardHeader>
               <CardTitle>Rule Trigger & Precision Statistics</CardTitle>
               <CardDescription>
-                Auditable accuracy rates, triggers, and confirmed detections per scoring rule.
+                Auditable accuracy rates, triggers, and confirmed detections per
+                scoring rule.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -724,32 +772,34 @@ export default function AdminFraudPage(): React.JSX.Element {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(performanceQuery.data?.rulePerformance || []).map((stat) => (
-                        <TableRow key={stat.ruleCode}>
-                          <TableCell className="font-mono text-xs font-semibold">
-                            {stat.ruleCode}
-                          </TableCell>
-                          <TableCell>{stat.totalTriggers}</TableCell>
-                          <TableCell className="text-emerald-600 font-medium">
-                            {stat.confirmedFraud}
-                          </TableCell>
-                          <TableCell className="text-amber-600 font-medium">
-                            {stat.falsePositives}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                stat.accuracyRate >= 80
-                                  ? "border-emerald-500 text-emerald-600"
-                                  : "border-amber-500 text-amber-600"
-                              }
-                            >
-                              {stat.accuracyRate}%
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {(performanceQuery.data?.rulePerformance || []).map(
+                        (stat) => (
+                          <TableRow key={stat.ruleCode}>
+                            <TableCell className="font-mono text-xs font-semibold">
+                              {stat.ruleCode}
+                            </TableCell>
+                            <TableCell>{stat.totalTriggers}</TableCell>
+                            <TableCell className="text-emerald-600 font-medium">
+                              {stat.confirmedFraud}
+                            </TableCell>
+                            <TableCell className="text-amber-600 font-medium">
+                              {stat.falsePositives}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  stat.accuracyRate >= 80
+                                    ? "border-emerald-500 text-emerald-600"
+                                    : "border-amber-500 text-amber-600"
+                                }
+                              >
+                                {stat.accuracyRate}%
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ),
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -769,7 +819,8 @@ export default function AdminFraudPage(): React.JSX.Element {
                 Trigger scikit-learn Anomaly Model Retraining
               </CardTitle>
               <CardDescription>
-                Retrain the unsupervised IsolationForest model using baseline behavioral distributions and live telemetry.
+                Retrain the unsupervised IsolationForest model using baseline
+                behavioral distributions and live telemetry.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -784,23 +835,31 @@ export default function AdminFraudPage(): React.JSX.Element {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium">Estimators (Trees)</label>
+                  <label className="text-xs font-medium">
+                    Estimators (Trees)
+                  </label>
                   <Input
                     type="number"
                     value={retrainEstimators}
-                    onChange={(e) => setRetrainEstimators(Number(e.target.value))}
+                    onChange={(e) =>
+                      setRetrainEstimators(Number(e.target.value))
+                    }
                     min={10}
                     max={500}
                     className="text-xs h-9"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium">Contamination Rate (Outliers)</label>
+                  <label className="text-xs font-medium">
+                    Contamination Rate (Outliers)
+                  </label>
                   <Input
                     type="number"
                     step="0.01"
                     value={retrainContamination}
-                    onChange={(e) => setRetrainContamination(Number(e.target.value))}
+                    onChange={(e) =>
+                      setRetrainContamination(Number(e.target.value))
+                    }
                     min={0.01}
                     max={0.5}
                     className="text-xs h-9"
@@ -810,12 +869,18 @@ export default function AdminFraudPage(): React.JSX.Element {
               <div className="mt-4 flex justify-end">
                 <Button
                   size="sm"
-                  disabled={retrainMutation.isPending || !retrainModelName.trim()}
+                  disabled={
+                    retrainMutation.isPending || !retrainModelName.trim()
+                  }
                   onClick={() => retrainMutation.mutate()}
                   className="flex items-center gap-1.5"
                 >
-                  <Cpu className={`h-4 w-4 ${retrainMutation.isPending ? "animate-spin" : ""}`} />
-                  {retrainMutation.isPending ? "Retraining Model..." : "Retrain Anomaly Model"}
+                  <Cpu
+                    className={`h-4 w-4 ${retrainMutation.isPending ? "animate-spin" : ""}`}
+                  />
+                  {retrainMutation.isPending
+                    ? "Retraining Model..."
+                    : "Retrain Anomaly Model"}
                 </Button>
               </div>
             </CardContent>
@@ -825,7 +890,8 @@ export default function AdminFraudPage(): React.JSX.Element {
             <CardHeader>
               <CardTitle>Trained Model Versions</CardTitle>
               <CardDescription>
-                Historical and active IsolationForest models registered in `risk_model_versions`.
+                Historical and active IsolationForest models registered in
+                `risk_model_versions`.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -861,7 +927,9 @@ export default function AdminFraudPage(): React.JSX.Element {
                           </TableCell>
                           <TableCell>
                             {m.isActive ? (
-                              <Badge className="bg-emerald-500/10 text-emerald-600">Active</Badge>
+                              <Badge className="bg-emerald-500/10 text-emerald-600">
+                                Active
+                              </Badge>
                             ) : (
                               <Badge variant="outline">Archived</Badge>
                             )}
@@ -881,7 +949,10 @@ export default function AdminFraudPage(): React.JSX.Element {
       )}
 
       {/* Investigation & Review Sheet */}
-      <Sheet open={!!selectedCase} onOpenChange={(open) => !open && setSelectedCase(null)}>
+      <Sheet
+        open={!!selectedCase}
+        onOpenChange={(open) => !open && setSelectedCase(null)}
+      >
         <SheetContent className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
@@ -889,7 +960,8 @@ export default function AdminFraudPage(): React.JSX.Element {
               Case Investigation Review
             </SheetTitle>
             <SheetDescription>
-              Evaluate evidence signals, determine policy compliance, and commit an immutable analyst decision.
+              Evaluate evidence signals, determine policy compliance, and commit
+              an immutable analyst decision.
             </SheetDescription>
           </SheetHeader>
 
@@ -906,7 +978,9 @@ export default function AdminFraudPage(): React.JSX.Element {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Entity ID:</span>
-                  <span className="font-mono font-medium">{selectedCase.entityId}</span>
+                  <span className="font-mono font-medium">
+                    {selectedCase.entityId}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Workflow:</span>
@@ -931,7 +1005,10 @@ export default function AdminFraudPage(): React.JSX.Element {
                   </div>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {decisionsQuery.data.map((dec) => (
-                      <div key={dec.id} className="p-2.5 bg-muted/60 rounded border border-border/50 text-[11px] space-y-1">
+                      <div
+                        key={dec.id}
+                        className="p-2.5 bg-muted/60 rounded border border-border/50 text-[11px] space-y-1"
+                      >
                         <div className="flex justify-between items-center">
                           <span className="font-semibold">{dec.analystId}</span>
                           <Badge
@@ -944,7 +1021,9 @@ export default function AdminFraudPage(): React.JSX.Element {
                             {dec.decision}
                           </Badge>
                         </div>
-                        <p className="text-muted-foreground italic">&ldquo;{dec.notes}&rdquo;</p>
+                        <p className="text-muted-foreground italic">
+                          &ldquo;{dec.notes}&rdquo;
+                        </p>
                         <div className="text-[10px] text-muted-foreground">
                           {new Date(dec.createdAt).toLocaleString()}
                         </div>
@@ -956,11 +1035,15 @@ export default function AdminFraudPage(): React.JSX.Element {
 
               {/* Analyst Decision */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold">Analyst Decision</label>
+                <label className="text-xs font-semibold">
+                  Analyst Decision
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
-                    variant={analystDecision === "APPROVE" ? "default" : "outline"}
+                    variant={
+                      analystDecision === "APPROVE" ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => setAnalystDecision("APPROVE")}
                     className="flex items-center gap-1.5"
@@ -970,7 +1053,9 @@ export default function AdminFraudPage(): React.JSX.Element {
                   </Button>
                   <Button
                     type="button"
-                    variant={analystDecision === "BLOCK" ? "destructive" : "outline"}
+                    variant={
+                      analystDecision === "BLOCK" ? "destructive" : "outline"
+                    }
                     size="sm"
                     onClick={() => setAnalystDecision("BLOCK")}
                     className="flex items-center gap-1.5"
@@ -988,7 +1073,9 @@ export default function AdminFraudPage(): React.JSX.Element {
 
               {/* Review Notes */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold">Investigation Notes & Rationale</label>
+                <label className="text-xs font-semibold">
+                  Investigation Notes & Rationale
+                </label>
                 <Textarea
                   placeholder="Detail the verified evidence, phone verification result, or chargeback risk..."
                   value={reviewNotes}
@@ -1010,7 +1097,9 @@ export default function AdminFraudPage(): React.JSX.Element {
                     });
                   }}
                 >
-                  {reviewMutation.isPending ? "Submitting Resolution..." : "Commit Resolution"}
+                  {reviewMutation.isPending
+                    ? "Submitting Resolution..."
+                    : "Commit Resolution"}
                 </Button>
               </div>
             </div>
@@ -1020,4 +1109,3 @@ export default function AdminFraudPage(): React.JSX.Element {
     </div>
   );
 }
-

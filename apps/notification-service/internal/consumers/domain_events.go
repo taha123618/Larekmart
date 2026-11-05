@@ -167,6 +167,14 @@ func (h *DomainEventHandler) dispatchDomainNotification(ctx context.Context, top
 		return h.handleCommissionAccrued(ctx, payload)
 	case "shipping.tracking.updated", "tracking.updated", "shipment.in_transit", "shipment.out_for_delivery", "shipment.delivered":
 		return h.handleShippingTrackingUpdated(ctx, topic, payload)
+	case "support.ticket.created":
+		return h.handleSupportTicketCreated(ctx, payload)
+	case "support.ticket.assigned":
+		return h.handleSupportTicketAssigned(ctx, payload)
+	case "support.ticket.updated":
+		return h.handleSupportTicketUpdated(ctx, payload)
+	case "support.ticket.resolved":
+		return h.handleSupportTicketResolved(ctx, payload)
 	case "notification.dispatch":
 		return h.handleDirectDispatch(ctx, payload)
 	default:
@@ -617,6 +625,114 @@ func (h *DomainEventHandler) handleCommissionAccrued(ctx context.Context, payloa
 	return err
 }
 
+func (h *DomainEventHandler) handleSupportTicketCreated(ctx context.Context, payload map[string]interface{}) error {
+	ticketNumber, _ := payload["ticketNumber"].(string)
+	subject, _ := payload["subject"].(string)
+	priority, _ := payload["priority"].(string)
+	customerID, _ := payload["customerId"].(string)
+
+	if customerID == "" {
+		customerID = "support_admin"
+	}
+
+	title := fmt.Sprintf("Support Ticket Received: #%s", ticketNumber)
+	body := fmt.Sprintf("Your ticket regarding '%s' has been created with %s priority. Our support agents are reviewing it according to SLA.", subject, priority)
+
+	prio := models.PriorityNormal
+	if priority == "HIGH" || priority == "CRITICAL" || priority == "URGENT" {
+		prio = models.PriorityHigh
+	}
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   customerID,
+		Type:     "support_ticket_created",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: prio,
+	})
+
+	return err
+}
+
+func (h *DomainEventHandler) handleSupportTicketAssigned(ctx context.Context, payload map[string]interface{}) error {
+	ticketNumber, _ := payload["ticketNumber"].(string)
+	assignedTo, _ := payload["assignedTo"].(string)
+	assignedTeam, _ := payload["assignedTeam"].(string)
+
+	if assignedTo == "" {
+		return nil
+	}
+
+	title := fmt.Sprintf("Ticket Assigned: #%s", ticketNumber)
+	body := fmt.Sprintf("Support ticket #%s has been assigned to you (%s team). Please review SLA deadlines.", ticketNumber, assignedTeam)
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   assignedTo,
+		Type:     "support_ticket_assigned",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityHigh,
+	})
+
+	return err
+}
+
+func (h *DomainEventHandler) handleSupportTicketUpdated(ctx context.Context, payload map[string]interface{}) error {
+	ticketNumber, _ := payload["ticketNumber"].(string)
+	newStatus, _ := payload["newStatus"].(string)
+	newPriority, _ := payload["newPriority"].(string)
+	customerID, _ := payload["customerId"].(string)
+
+	if customerID == "" {
+		customerID = "public"
+	}
+
+	statusDesc := newStatus
+	if newPriority != "" {
+		statusDesc = fmt.Sprintf("%s (Priority: %s)", newStatus, newPriority)
+	}
+
+	title := fmt.Sprintf("Ticket Update: #%s", ticketNumber)
+	body := fmt.Sprintf("Your support ticket #%s has been updated: %s.", ticketNumber, statusDesc)
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   customerID,
+		Type:     "support_ticket_updated",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityNormal,
+	})
+
+	return err
+}
+
+func (h *DomainEventHandler) handleSupportTicketResolved(ctx context.Context, payload map[string]interface{}) error {
+	ticketNumber, _ := payload["ticketNumber"].(string)
+	customerID, _ := payload["customerId"].(string)
+	resMinutes, _ := payload["resolutionTimeMinutes"].(float64)
+
+	if customerID == "" {
+		customerID = "public"
+	}
+
+	title := fmt.Sprintf("Support Ticket Resolved: #%s", ticketNumber)
+	body := fmt.Sprintf("Your support case #%s has been resolved in %.0f minutes. If you have further questions, you can reopen it anytime.", ticketNumber, resMinutes)
+
+	_, err := h.notificationSvc.ProcessAndDispatch(ctx, services.CreateNotificationInput{
+		UserID:   customerID,
+		Type:     "support_ticket_resolved",
+		Title:    title,
+		Body:     body,
+		Metadata: payload,
+		Priority: models.PriorityNormal,
+	})
+
+	return err
+}
+
 func extractOrComputeEventID(topic string, key, rawValue []byte, payload map[string]interface{}) string {
 	if id, ok := payload["eventId"].(string); ok && id != "" {
 		return id
@@ -653,6 +769,8 @@ func extractSourceService(topic string) string {
 		return "commission-service"
 	case "shipping.tracking.updated", "tracking.updated", "shipment.in_transit", "shipment.out_for_delivery", "shipment.delivered", "shipment.created", "shipment.shipped":
 		return "shipping-service"
+	case "support.ticket.created", "support.ticket.assigned", "support.ticket.updated", "support.ticket.resolved":
+		return "support-service"
 	default:
 		return "unknown"
 	}

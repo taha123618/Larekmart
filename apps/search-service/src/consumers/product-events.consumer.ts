@@ -1,4 +1,7 @@
-import { indexingService, type BulkOperationItem } from "../services/indexing.service.js";
+import {
+  indexingService,
+  type BulkOperationItem,
+} from "../services/indexing.service.js";
 import { config } from "../config/config.js";
 import { logger, searchMetrics } from "../observability/metrics.js";
 import { ProductEventPayloadSchema } from "../schemas/indexing.schema.js";
@@ -251,7 +254,9 @@ export async function registerProductEventSubscriptions(
             const payload = item.value || item;
             const productId = payload.productId || payload.id;
             const available =
-              payload.availableQuantity ?? payload.available ?? payload.quantity;
+              payload.availableQuantity ??
+              payload.available ??
+              payload.quantity;
             if (productId !== undefined && productId !== null) {
               const inStock = available !== undefined ? available > 0 : true;
               ops.push({
@@ -259,7 +264,9 @@ export async function registerProductEventSubscriptions(
                 id: productId,
                 doc: {
                   inStock,
-                  ...(available !== undefined ? { stockQuantity: available } : {}),
+                  ...(available !== undefined
+                    ? { stockQuantity: available }
+                    : {}),
                 },
               });
             }
@@ -285,7 +292,9 @@ export async function registerProductEventSubscriptions(
             const payload = item.value || item;
             const productId = payload.productId || payload.id;
             const available =
-              payload.availableQuantity ?? payload.available ?? payload.quantity;
+              payload.availableQuantity ??
+              payload.available ??
+              payload.quantity;
             if (productId !== undefined && productId !== null) {
               const inStock = available !== undefined ? available > 0 : true;
               ops.push({
@@ -293,7 +302,9 @@ export async function registerProductEventSubscriptions(
                 id: productId,
                 doc: {
                   inStock,
-                  ...(available !== undefined ? { stockQuantity: available } : {}),
+                  ...(available !== undefined
+                    ? { stockQuantity: available }
+                    : {}),
                 },
               });
             }
@@ -319,7 +330,9 @@ export async function registerProductEventSubscriptions(
             const payload = item.value || item;
             const productId = payload.productId || payload.id;
             const available =
-              payload.availableQuantity ?? payload.available ?? payload.quantity;
+              payload.availableQuantity ??
+              payload.available ??
+              payload.quantity;
             if (productId !== undefined && productId !== null) {
               const inStock = available !== undefined ? available > 0 : true;
               ops.push({
@@ -327,7 +340,9 @@ export async function registerProductEventSubscriptions(
                 id: productId,
                 doc: {
                   inStock,
-                  ...(available !== undefined ? { stockQuantity: available } : {}),
+                  ...(available !== undefined
+                    ? { stockQuantity: available }
+                    : {}),
                 },
               });
             }

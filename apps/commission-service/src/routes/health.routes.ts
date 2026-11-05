@@ -19,7 +19,9 @@ export async function healthRoutes(fastify: FastifyInstance) {
   fastify.get("/ready", async (_request, reply) => {
     const dbHealth = await checkDatabaseHealth();
     if (dbHealth.status !== "up") {
-      return reply.status(503).send({ status: "not_ready", error: dbHealth.error });
+      return reply
+        .status(503)
+        .send({ status: "not_ready", error: dbHealth.error });
     }
     return reply.status(200).send({ status: "ready" });
   });

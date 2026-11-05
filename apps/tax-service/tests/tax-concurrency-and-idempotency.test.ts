@@ -33,7 +33,9 @@ async function runTaxConcurrencyAndIdempotencyTests() {
     jurIndexNames.includes("tax_jur_geo_idx"),
     "taxJurisdictions table must include composite index 'tax_jur_geo_idx'",
   );
-  console.log("  ✓ Verified composite index 'tax_jur_geo_idx' on taxJurisdictions");
+  console.log(
+    "  ✓ Verified composite index 'tax_jur_geo_idx' on taxJurisdictions",
+  );
 
   const rulesConfig = getTableConfig(taxRules);
   const rulesIndexNames = rulesConfig.indexes.map(
@@ -43,7 +45,9 @@ async function runTaxConcurrencyAndIdempotencyTests() {
     rulesIndexNames.includes("tax_rules_lookup_idx"),
     "taxRules table must include composite index 'tax_rules_lookup_idx'",
   );
-  console.log("  ✓ Verified composite index 'tax_rules_lookup_idx' on taxRules");
+  console.log(
+    "  ✓ Verified composite index 'tax_rules_lookup_idx' on taxRules",
+  );
 
   const calcConfig = getTableConfig(taxCalculations);
   const calcIndexNames = calcConfig.indexes.map(
@@ -53,7 +57,9 @@ async function runTaxConcurrencyAndIdempotencyTests() {
     calcIndexNames.includes("tax_calc_ref_idx"),
     "taxCalculations table must include composite index 'tax_calc_ref_idx'",
   );
-  console.log("  ✓ Verified composite index 'tax_calc_ref_idx' on taxCalculations");
+  console.log(
+    "  ✓ Verified composite index 'tax_calc_ref_idx' on taxCalculations",
+  );
 
   // ────────────────────────────────────────────────────────────
   // Test 2: Multi-Tier Caching for Jurisdictions & Tax Rules
@@ -69,7 +75,10 @@ async function runTaxConcurrencyAndIdempotencyTests() {
     "CA",
     "Los Angeles",
   );
-  assert.ok(matchedJurs1.length > 0, "Must resolve at least 1 matching jurisdiction");
+  assert.ok(
+    matchedJurs1.length > 0,
+    "Must resolve at least 1 matching jurisdiction",
+  );
 
   const cachedJurs = await redis.client.get(jurCacheKey);
   assert.ok(cachedJurs, "Matched jurisdictions must be written to Redis cache");
@@ -83,7 +92,10 @@ async function runTaxConcurrencyAndIdempotencyTests() {
   const rulesCacheKey = `tax:v1:rules:${jurIds.join(",")}:${catIds.join(",")}`;
   await redis.client.del(rulesCacheKey);
 
-  const rules1 = await taxRuleRepository.findActiveMatchingRules(jurIds, catIds);
+  const rules1 = await taxRuleRepository.findActiveMatchingRules(
+    jurIds,
+    catIds,
+  );
   assert.ok(rules1.length > 0, "Must resolve active rules");
 
   const cachedRules = await redis.client.get(rulesCacheKey);
@@ -100,7 +112,10 @@ async function runTaxConcurrencyAndIdempotencyTests() {
     "clothing",
     "groceries",
   ]);
-  assert.ok(batchCategories.length >= 2, "Must resolve requested categories in single batch");
+  assert.ok(
+    batchCategories.length >= 2,
+    "Must resolve requested categories in single batch",
+  );
   const codes = batchCategories.map((c) => c.code);
   assert.ok(codes.includes("standard"));
   assert.ok(codes.includes("clothing"));
@@ -140,12 +155,16 @@ async function runTaxConcurrencyAndIdempotencyTests() {
   assert.equal(q1.subtotal, q2.subtotal);
   assert.equal(q1.taxTotal, q2.taxTotal);
   assert.equal(q1.total, q2.total);
-  console.log("  ✓ Concurrent tax quote requests successfully coalesced via SingleFlight");
+  console.log(
+    "  ✓ Concurrent tax quote requests successfully coalesced via SingleFlight",
+  );
 
   // ────────────────────────────────────────────────────────────
   // Test 5: Distributed Idempotency on Tax Calculate Endpoint
   // ────────────────────────────────────────────────────────────
-  console.log("\n[Test 5] Distributed Idempotency on Fastify Calculate Endpoint");
+  console.log(
+    "\n[Test 5] Distributed Idempotency on Fastify Calculate Endpoint",
+  );
 
   const app = await buildServer();
 
@@ -185,7 +204,11 @@ async function runTaxConcurrencyAndIdempotencyTests() {
     payload: calculateReq,
   });
 
-  assert.equal(firstRes.statusCode, 200, "First calculation must succeed with 200");
+  assert.equal(
+    firstRes.statusCode,
+    200,
+    "First calculation must succeed with 200",
+  );
   const firstJson = firstRes.json();
   assert.ok(firstJson.calculationId);
   const assignedCalculationId = firstJson.calculationId;
@@ -213,12 +236,16 @@ async function runTaxConcurrencyAndIdempotencyTests() {
     assignedCalculationId,
     "Replayed calculation must return identical calculationId without generating a new record",
   );
-  console.log("  ✓ Idempotent replay returned cached calculation with 'Idempotent-Replayed: true'");
+  console.log(
+    "  ✓ Idempotent replay returned cached calculation with 'Idempotent-Replayed: true'",
+  );
 
   // 3. Test 409 Conflict when mutation is in-flight
   const inFlightIdempKey = `idemp_inflight_${Date.now()}`;
   const inFlightRedisKey = redis.keys.simple(`tax:idemp:${inFlightIdempKey}`);
-  await acquireIdempotencyLock(redis.client, inFlightRedisKey, { lockTtlMs: 10000 });
+  await acquireIdempotencyLock(redis.client, inFlightRedisKey, {
+    lockTtlMs: 10000,
+  });
 
   const conflictRes = await app.inject({
     method: "POST",
@@ -230,13 +257,19 @@ async function runTaxConcurrencyAndIdempotencyTests() {
     payload: calculateReq,
   });
 
-  assert.equal(conflictRes.statusCode, 409, "In-flight mutation must return 409 Conflict");
+  assert.equal(
+    conflictRes.statusCode,
+    409,
+    "In-flight mutation must return 409 Conflict",
+  );
   const conflictJson = conflictRes.json();
   assert.ok(
     conflictJson.message.includes("currently in-flight"),
     "409 message must indicate in-flight state",
   );
-  console.log("  ✓ Concurrent in-flight request safely rejected with 409 Conflict");
+  console.log(
+    "  ✓ Concurrent in-flight request safely rejected with 409 Conflict",
+  );
 
   // Cleanup
   await redis.client.del(
@@ -262,4 +295,3 @@ runTaxConcurrencyAndIdempotencyTests()
     console.error("Test execution failed:", err);
     process.exit(1);
   });
-

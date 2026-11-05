@@ -9,4 +9,3 @@
     "check-types": "uv run pytest tests/ -q"
   }
 }
-

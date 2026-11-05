@@ -570,7 +570,9 @@ async function runTests() {
     },
   });
   assert.equal(nonSellerBalanceRes.statusCode, 403);
-  pass("Non-seller customer role strictly rejected from seller balance (403 Forbidden)");
+  pass(
+    "Non-seller customer role strictly rejected from seller balance (403 Forbidden)",
+  );
 
   // ────────────────────────────────────────────────────────────
   // SUITE 5: Kafka Consumer Event Handlers

@@ -68,6 +68,7 @@ const envSchema = z
     COMMISSION_SERVICE_URL: z.string().default("http://localhost:8022"),
     PAYOUT_SERVICE_URL: z.string().default("http://localhost:8023"),
     FRAUD_SERVICE_URL: z.string().default("http://localhost:8024"),
+    SUPPORT_SERVICE_URL: z.string().default("http://localhost:8025"),
   })
   .superRefine((data, ctx) => {
     try {

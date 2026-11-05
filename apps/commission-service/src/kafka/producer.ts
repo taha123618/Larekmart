@@ -28,12 +28,19 @@ export class CommissionEventProducer {
     }
   }
 
-  private async send(topic: string, payload: object, key?: string): Promise<void> {
+  private async send(
+    topic: string,
+    payload: object,
+    key?: string,
+  ): Promise<void> {
     if (!this.connected) return;
     try {
       await kafkaProducer.send(topic, { value: payload }, { key });
     } catch (err) {
-      console.warn(`[CommissionKafka] Failed to publish event to '${topic}':`, err);
+      console.warn(
+        `[CommissionKafka] Failed to publish event to '${topic}':`,
+        err,
+      );
     }
   }
 

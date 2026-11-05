@@ -128,6 +128,23 @@
 
 ---
 
+### 3.5 Customer Support & SLA Resolution Center (`apps/support-service`, `apps/client`, `apps/admin`)
+
+#### PRD-SUP-01: Storefront Customer Support Portal (`apps/client`)
+
+- **Description**: Customers can submit, track, and reply to support tickets directly from the storefront (`/support`, `/account/support`).
+- **Entity Linking**: Tickets link directly to customer orders, products, returns, and dispute workflows.
+- **Real-Time Updates**: Instant message delivery and status transitions via Socket.IO events.
+
+#### PRD-SUP-02: Omnichannel Support Dashboard & Queue Operations (`apps/admin`)
+
+- **Agent Queues**: Centralized operational queue with SLA deadline tracking, status filters (`OPEN`, `IN_PROGRESS`, `WAITING_FOR_CUSTOMER`, `RESOLVED`, `CLOSED`), and priority badges (`LOW`, `MEDIUM`, `HIGH`, `URGENT`).
+- **Confidential Internal Notes**: Support agents can post internal notes (`isInternal: true`) that are strictly excluded from customer views.
+- **SLA Policy Engine**: Automatically evaluates SLA targets based on category and priority, alerting on impending breaches.
+- **Support Analytics**: Live metrics for total tickets, SLA compliance rate, average resolution time, and agent workload breakdown.
+
+---
+
 ## 4. Non-Functional Product Requirements
 
 | Dimension                 | Requirement                                                              | Target Standard               |

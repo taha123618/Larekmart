@@ -103,5 +103,7 @@ images:
     newTag: dev
   - name: larekmart/fraud-service
     newTag: dev
+  - name: larekmart/support-service
+    newTag: dev
   - name: larekmart/email-service
     newTag: dev

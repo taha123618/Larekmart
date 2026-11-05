@@ -10,6 +10,7 @@ Find vulnerabilities that violate a real trust boundary, then give owners the so
 ## Larekmart Production Security Audit Context
 
 For historical context and documented remediation standards across the 28 microservices and gateway boundaries of Larekmart, refer to:
+
 - [`docs/plans/security-audit-and-remediation-report.md`](../../../docs/plans/security-audit-and-remediation-report.md) — Remediation details for SEC-01 through SEC-18 including Constant-Time Pre-Hashing, Admin Privilege Decoupling, RS256 Verification, and Strict Origin Resolvers.
 
 ## Operating modes

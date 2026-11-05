@@ -160,6 +160,12 @@ export const ALL_LAREKMART_TOPICS = [
   "seller.updated",
   "seller.suspended",
   "seller.storefront.updated",
+
+  // Support Tickets & SLA Lifecycle
+  "support.ticket.created",
+  "support.ticket.assigned",
+  "support.ticket.updated",
+  "support.ticket.resolved",
 ] as const;
 
 export async function initializeTopics(): Promise<void> {

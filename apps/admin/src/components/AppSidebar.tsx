@@ -33,6 +33,7 @@ import {
   ShieldAlert,
   Percent,
   Banknote,
+  LifeBuoy,
 } from "lucide-react";
 import {
   Sidebar,
@@ -452,6 +453,14 @@ const AppSidebar = () => {
                   <Link href="/wishlists">
                     <Heart />
                     Customer Wishlists
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/support">
+                    <LifeBuoy />
+                    Support Tickets & SLA
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

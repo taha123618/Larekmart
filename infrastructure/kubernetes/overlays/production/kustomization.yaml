@@ -63,6 +63,8 @@ images:
     newTag: v1.0.0
   - name: larekmart/fraud-service
     newTag: v1.0.0
+  - name: larekmart/support-service
+    newTag: v1.0.0
   - name: larekmart/email-service
     newTag: v1.0.0
 

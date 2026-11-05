@@ -5,7 +5,9 @@ import { ShippingCache } from "../src/cache/shipping-cache.js";
 import { redis } from "../src/utils/redis.js";
 
 async function runWebhookIdempotencyTests() {
-  console.log("=== Shipping Service Webhook Idempotency & Concurrency Tests ===\n");
+  console.log(
+    "=== Shipping Service Webhook Idempotency & Concurrency Tests ===\n",
+  );
 
   // 1. Deterministic Fingerprint Generation
   console.log("1. Testing Deterministic Fingerprint on Missing eventId...");
@@ -35,7 +37,11 @@ async function runWebhookIdempotencyTests() {
     .digest("hex");
 
   assert.equal(fingerprint1, expectedFingerprint);
-  assert.equal(fingerprint1, fingerprint2, "Fingerprints must match deterministically across retries");
+  assert.equal(
+    fingerprint1,
+    fingerprint2,
+    "Fingerprints must match deterministically across retries",
+  );
   console.log("✓ Deterministic event fingerprint verified");
 
   // 2. In-flight Lease Contention
@@ -60,11 +66,23 @@ async function runWebhookIdempotencyTests() {
   const leaseKey = `webhook:lease:tcs:${testEventId}`;
 
   // Worker 1 acquires lease
-  const acquired1 = await mockRedisClient.set(leaseKey, "in_flight", "PX", 15000, "NX");
+  const acquired1 = await mockRedisClient.set(
+    leaseKey,
+    "in_flight",
+    "PX",
+    15000,
+    "NX",
+  );
   assert.equal(acquired1, "OK");
 
   // Worker 2 attempts while lease 1 is active -> fails
-  const acquired2 = await mockRedisClient.set(leaseKey, "in_flight", "PX", 15000, "NX");
+  const acquired2 = await mockRedisClient.set(
+    leaseKey,
+    "in_flight",
+    "PX",
+    15000,
+    "NX",
+  );
   assert.equal(acquired2, null, "Worker 2 must not acquire active lease");
 
   // Worker 1 completes and releases lease
@@ -72,7 +90,13 @@ async function runWebhookIdempotencyTests() {
   assert.equal(mockStorage[leaseKey], undefined);
 
   // Worker 3 can now acquire
-  const acquired3 = await mockRedisClient.set(leaseKey, "in_flight", "PX", 15000, "NX");
+  const acquired3 = await mockRedisClient.set(
+    leaseKey,
+    "in_flight",
+    "PX",
+    15000,
+    "NX",
+  );
   assert.equal(acquired3, "OK");
   await mockRedisClient.del(leaseKey);
   console.log("✓ Atomic in-flight lease mutual exclusion verified");
@@ -97,4 +121,3 @@ runWebhookIdempotencyTests().catch((err) => {
   console.error("Test failure:", err);
   process.exit(1);
 });
-

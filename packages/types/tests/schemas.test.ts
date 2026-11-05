@@ -566,7 +566,11 @@ async function runSchemaTests() {
     metadata: { source: "web_checkout" },
   };
   const parsedRiskReq = AssessRiskRequestSchema.safeParse(validRiskReq);
-  assert.equal(parsedRiskReq.success, true, "Valid risk assessment request must parse");
+  assert.equal(
+    parsedRiskReq.success,
+    true,
+    "Valid risk assessment request must parse",
+  );
 
   // Invalid workflow must fail
   const invalidRiskReq = {
@@ -597,7 +601,9 @@ async function runSchemaTests() {
   assert.equal(FRAUD_TOPICS.CASE_CREATED, "fraud.case.created");
   assert.equal(FRAUD_TOPICS.CASE_RESOLVED, "fraud.case.resolved");
 
-  console.log("✓ Fraud & Risk Scoring domain contracts and Kafka topics verified");
+  console.log(
+    "✓ Fraud & Risk Scoring domain contracts and Kafka topics verified",
+  );
 
   console.log("\n=======================================================");
   console.log(" All Domain Schema SQA Test Cases Passed Successfully! ");

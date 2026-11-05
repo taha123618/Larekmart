@@ -140,6 +140,13 @@ apps/fraud-service (Python) ┬─▶ SQLAlchemy async + asyncpg ─▶ PostgreS
                            ├─▶ scikit-learn + numpy + pandas
                            └─▶ @repo/types (JSON contracts alignment)
 
+apps/support-service (NestJS) ┬─▶ @repo/support-db ─▶ @prisma/client ─▶ PostgreSQL (larekmart_support_db)
+                             ├─▶ @repo/kafka ─▶ kafkajs ─▶ Kafka
+                             ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
+                             ├─▶ socket.io ─▶ WebSockets
+                             ├─▶ @repo/monitoring
+                             └─▶ @repo/types
+
 apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/redis ─▶ ioredis ─▶ Redis
                            ├─▶ @repo/monitoring
@@ -166,6 +173,7 @@ all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 | `@repo/shipping-db`       | persistence  | `@prisma/client`                                                    | Prisma shipping schema, shipments, methods, carrier tracking events and packages                                                                                                                                                                                                                                                                                                                        |
 | `@repo/user-db`           | persistence  | `@prisma/client`                                                    | Prisma user schema, profiles, addresses, preferences, settings, and idempotency events                                                                                                                                                                                                                                                                                                                  |
 | `@repo/vendor-db`         | persistence  | `@prisma/client`                                                    | Prisma vendor schema, business profiles, KYB documents, verifications, members, and status history                                                                                                                                                                                                                                                                                                      |
+| `@repo/support-db`        | persistence  | `@prisma/client`                                                    | Prisma support schema, tickets, messages, assignments, SLA policies, and ticket history                                                                                                                                                                                                                                                                                                                 |
 | `@repo/eslint-config`     | config       | eslint plugins                                                      | `base`, `next-js`, `react-internal`                                                                                                                                                                                                                                                                                                                                                                     |
 | `@repo/typescript-config` | config       | —                                                                   | `base.json`, `nextjs.json`, `react-library.json`                                                                                                                                                                                                                                                                                                                                                        |
 

@@ -1,7 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
 import { cartService } from "../services/cart.service.js";
 import { cartItemService } from "../services/cart-item.service.js";
-import { mergeService, CartMergeConflictError } from "../services/merge.service.js";
+import {
+  mergeService,
+  CartMergeConflictError,
+} from "../services/merge.service.js";
 import {
   AddToCartSchema,
   UpdateCartItemSchema,

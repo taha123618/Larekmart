@@ -145,28 +145,29 @@ erDiagram
 
 ## 4. API Specification
 
-| Method | Endpoint | Access Guard | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/internal/fraud/assess` | `x-internal-secret` | Synchronous risk assessment evaluating rules, velocity & ML. |
-| `GET` | `/api/v1/internal/fraud/assessments/{id}` | `x-internal-secret` | Retrieve assessment audit trail and triggered signals. |
-| `GET` | `/api/v1/admin/fraud/cases` | Clerk Admin Role | Query open/investigating fraud cases with pagination and filters. |
-| `POST` | `/api/v1/admin/fraud/cases/{id}/review`| Clerk Admin Role | Submit analyst resolution (`APPROVE`, `BLOCK`, `DISMISS`). |
-| `POST` | `/api/v1/admin/fraud/rules` | Clerk Admin Role | Dynamically create or update custom risk rules without redeploying. |
-| `GET` | `/health` | Public | Readiness & liveness probe testing PostgreSQL and Redis. |
-| `GET` | `/metrics` | Prometheus Scraper | Export risk metrics, assessment latencies, and decision distributions. |
+| Method | Endpoint                                  | Access Guard        | Description                                                            |
+| :----- | :---------------------------------------- | :------------------ | :--------------------------------------------------------------------- |
+| `POST` | `/api/v1/internal/fraud/assess`           | `x-internal-secret` | Synchronous risk assessment evaluating rules, velocity & ML.           |
+| `GET`  | `/api/v1/internal/fraud/assessments/{id}` | `x-internal-secret` | Retrieve assessment audit trail and triggered signals.                 |
+| `GET`  | `/api/v1/admin/fraud/cases`               | Clerk Admin Role    | Query open/investigating fraud cases with pagination and filters.      |
+| `POST` | `/api/v1/admin/fraud/cases/{id}/review`   | Clerk Admin Role    | Submit analyst resolution (`APPROVE`, `BLOCK`, `DISMISS`).             |
+| `POST` | `/api/v1/admin/fraud/rules`               | Clerk Admin Role    | Dynamically create or update custom risk rules without redeploying.    |
+| `GET`  | `/health`                                 | Public              | Readiness & liveness probe testing PostgreSQL and Redis.               |
+| `GET`  | `/metrics`                                | Prometheus Scraper  | Export risk metrics, assessment latencies, and decision distributions. |
 
 ---
 
 ## 5. Kafka Event Ingestion & Emission
 
 ### Published Topics:
+
 - `fraud.assessment.completed`: Broadcast after every evaluation for analytics and downstream auditing.
 - `fraud.risk.detected`: Emitted when score exceeds review/block thresholds.
 - `fraud.case.created`: Alerting and analyst queue notification.
 - `fraud.case.resolved`: Case resolved by analyst, updating ML feature stores and allowlists.
 
 ### Consumed Topics:
+
 - `order.created`: Asynchronous background profiling of order patterns.
 - `payment.successful` / `payment.failed`: Real-time payment failure velocity tracking.
 - `payout.scheduled`: Real-time cross-service risk assessment hook with `payout-service`.
-

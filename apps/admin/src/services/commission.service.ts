@@ -2,10 +2,7 @@
  * commission.service.ts — Admin service for marketplace commission plans, tiered rules, versioning, and fee analytics.
  */
 
-import type {
-  CommissionRuleType,
-  CommissionScope,
-} from "@repo/types";
+import type { CommissionRuleType, CommissionScope } from "@repo/types";
 import { getApiGatewayUrl } from "./gateway.service";
 
 const API_BASE = getApiGatewayUrl();
@@ -120,7 +117,8 @@ export async function fetchCommissionPlans(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch commission plans (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch commission plans (HTTP ${res.status})`,
     );
   }
 
@@ -143,7 +141,8 @@ export async function createCommissionPlan(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to create commission plan (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to create commission plan (HTTP ${res.status})`,
     );
   }
 
@@ -164,7 +163,8 @@ export async function fetchCommissionRules(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch commission rules (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch commission rules (HTTP ${res.status})`,
     );
   }
 
@@ -187,7 +187,8 @@ export async function createCommissionRule(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to create commission rule (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to create commission rule (HTTP ${res.status})`,
     );
   }
 
@@ -211,7 +212,8 @@ export async function updateCommissionRule(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to update commission rule (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to update commission rule (HTTP ${res.status})`,
     );
   }
 
@@ -253,7 +255,8 @@ export async function fetchCommissionReports(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch commission reports (HTTP ${res.status})`,
+      errorData.message ||
+        `Failed to fetch commission reports (HTTP ${res.status})`,
     );
   }
 

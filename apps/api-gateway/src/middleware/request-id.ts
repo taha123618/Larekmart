@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 const FORBIDDEN_CLIENT_HEADERS = [
   "x-user-id",
   "x-user-role",
+  "x-user-email",
+  "x-customer-email",
   "x-user-permissions",
   "x-internal-secret",
   "x-user-is-super-admin",

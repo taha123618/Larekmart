@@ -29,15 +29,15 @@ Operating a marketplace at Daraz, AliExpress, or Amazon scale requires strict ad
 
 ## 2. Technology Stack & Operational Guarantees
 
-| Component | Choice | Purpose |
-| :--- | :--- | :--- |
-| **Framework** | NestJS 11 + Fastify (`@nestjs/platform-fastify`) | Enterprise modular DI, performance, Fastify routing. |
-| **Persistence** | PostgreSQL (`payout_db`) via Drizzle ORM | ACID transactions, explicit table constraints, PgBouncer on port 6432. |
-| **Connection Pooling** | PgBouncer with `statement_cache_size=0` | Eliminates prepared statement cache collision in transaction pool mode. |
-| **Financial Arithmetic**| `Decimal.js` (34 digits of precision) | Absolute prevention of IEEE-754 floating-point inaccuracies on currency. |
-| **Messaging** | `@repo/kafka` (Producer & Consumer) | Asynchronous event streaming with automatic DLQ routing. |
-| **Provider Adapters** | `IPayoutProviderAdapter` (Bank ACH / Stripe Connect) | Decoupled abstraction for bank wires, 1Link, Raast, and Stripe Connect. |
-| **Perimeter Security** | Zero-Trust Gateway Secret + Admin Role Gates | Constant-time `x-internal-secret` verification; RBAC on admin endpoints. |
+| Component                | Choice                                               | Purpose                                                                  |
+| :----------------------- | :--------------------------------------------------- | :----------------------------------------------------------------------- |
+| **Framework**            | NestJS 11 + Fastify (`@nestjs/platform-fastify`)     | Enterprise modular DI, performance, Fastify routing.                     |
+| **Persistence**          | PostgreSQL (`payout_db`) via Drizzle ORM             | ACID transactions, explicit table constraints, PgBouncer on port 6432.   |
+| **Connection Pooling**   | PgBouncer with `statement_cache_size=0`              | Eliminates prepared statement cache collision in transaction pool mode.  |
+| **Financial Arithmetic** | `Decimal.js` (34 digits of precision)                | Absolute prevention of IEEE-754 floating-point inaccuracies on currency. |
+| **Messaging**            | `@repo/kafka` (Producer & Consumer)                  | Asynchronous event streaming with automatic DLQ routing.                 |
+| **Provider Adapters**    | `IPayoutProviderAdapter` (Bank ACH / Stripe Connect) | Decoupled abstraction for bank wires, 1Link, Raast, and Stripe Connect.  |
+| **Perimeter Security**   | Zero-Trust Gateway Secret + Admin Role Gates         | Constant-time `x-internal-secret` verification; RBAC on admin endpoints. |
 
 ---
 
@@ -165,14 +165,17 @@ erDiagram
 ## 5. API Endpoints Contract
 
 ### Seller Storefront APIs (Authenticated via Gateway Clerk Session)
+
 - `GET /api/v1/sellers/me/payouts`: Historical disbursements and current transfer statuses.
 - `GET /api/v1/sellers/me/balance`: Real-time ledger balance (available, pending, and reserve hold).
 - `GET /api/v1/sellers/me/statements`: Periodic settlement reports and earnings summaries.
 
 ### Internal APIs (Zero-Trust via `x-internal-secret`)
+
 - `POST /api/v1/internal/payouts/schedule`: Triggers batch settlement run for eligible sellers above minimum threshold.
 - `POST /api/v1/internal/payouts/reconcile`: Ingests provider ACH / bank settlement results and updates batch status.
 
 ### Admin APIs (`requireAdmin: true`)
+
 - `GET /api/v1/admin/payouts`: Full marketplace payout audit log with filtering by status and date.
 - `POST /api/v1/admin/payouts/:payoutId/retry`: Retries failed disbursements after bank account corrections.

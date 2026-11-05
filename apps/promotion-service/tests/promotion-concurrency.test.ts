@@ -2,7 +2,9 @@ import assert from "assert";
 import { redis } from "../src/utils/redis.js";
 
 async function runPromotionConcurrencyTests() {
-  console.log("=== Promotion Service Flash-Sale Concurrency & Idempotency Test Suite ===\n");
+  console.log(
+    "=== Promotion Service Flash-Sale Concurrency & Idempotency Test Suite ===\n",
+  );
 
   // 1. Global Limit with Active In-Flight Reservations Calculation
   console.log("1. Testing Global Limit with Active In-Flight Reservations...");
@@ -14,7 +16,11 @@ async function runPromotionConcurrencyTests() {
   assert.equal(totalCommittedAndActive, 5);
 
   const canReserve = totalCommittedAndActive < globalLimit;
-  assert.equal(canReserve, false, "Should block reservation when active + committed equals global limit");
+  assert.equal(
+    canReserve,
+    false,
+    "Should block reservation when active + committed equals global limit",
+  );
 
   let errorThrown = false;
   try {
@@ -26,7 +32,9 @@ async function runPromotionConcurrencyTests() {
     assert.equal(err.message, "Promotion global usage limit reached");
   }
   assert.equal(errorThrown, true);
-  console.log("✓ Global limit correctly includes active unexpired reservations to prevent flash-sale overselling");
+  console.log(
+    "✓ Global limit correctly includes active unexpired reservations to prevent flash-sale overselling",
+  );
 
   // 2. Per-Customer Usage Limit Enforcement
   console.log("2. Testing Per-Customer Usage Limit Enforcement...");
@@ -40,14 +48,21 @@ async function runPromotionConcurrencyTests() {
   let customerLimitBlocked = false;
   try {
     if (customerTotalUses >= maxPerCustomer) {
-      throw new Error(`Customer usage limit of ${maxPerCustomer} exceeded for this promotion`);
+      throw new Error(
+        `Customer usage limit of ${maxPerCustomer} exceeded for this promotion`,
+      );
     }
   } catch (err: any) {
     customerLimitBlocked = true;
-    assert.equal(err.message, "Customer usage limit of 1 exceeded for this promotion");
+    assert.equal(
+      err.message,
+      "Customer usage limit of 1 exceeded for this promotion",
+    );
   }
   assert.equal(customerLimitBlocked, true);
-  console.log("✓ Customer usage limit prevents circumvention via parallel uncommitted checkout calls");
+  console.log(
+    "✓ Customer usage limit prevents circumvention via parallel uncommitted checkout calls",
+  );
 
   // 3. Idempotency Key Lease Lifecycle Simulation
   console.log("3. Testing Idempotency Lease Lifecycle...");
@@ -70,17 +85,36 @@ async function runPromotionConcurrencyTests() {
   const idempKey = "promotions:idemp:user_test_456:key_abc_123";
 
   // Step 1: Claim in-flight
-  const claimed = await mockRedisClient.set(idempKey, JSON.stringify({ state: "IN_PROGRESS" }), "PX", 10000, "NX");
+  const claimed = await mockRedisClient.set(
+    idempKey,
+    JSON.stringify({ state: "IN_PROGRESS" }),
+    "PX",
+    10000,
+    "NX",
+  );
   assert.equal(claimed, "OK");
 
   // Step 2: Concurrent request with same key -> conflict
-  const conflict = await mockRedisClient.set(idempKey, JSON.stringify({ state: "IN_PROGRESS" }), "PX", 10000, "NX");
-  assert.equal(conflict, null, "Concurrent mutation with same key must be rejected");
+  const conflict = await mockRedisClient.set(
+    idempKey,
+    JSON.stringify({ state: "IN_PROGRESS" }),
+    "PX",
+    10000,
+    "NX",
+  );
+  assert.equal(
+    conflict,
+    null,
+    "Concurrent mutation with same key must be rejected",
+  );
 
   // Step 3: Commit response
   mockStorage[idempKey] = JSON.stringify({
     state: "COMPLETED",
-    response: { statusCode: 201, body: { reservationId: "res_789", discount: 500 } },
+    response: {
+      statusCode: 201,
+      body: { reservationId: "res_789", discount: 500 },
+    },
   });
 
   // Step 4: Replay
@@ -88,7 +122,9 @@ async function runPromotionConcurrencyTests() {
   assert.equal(record.state, "COMPLETED");
   assert.equal(record.response.statusCode, 201);
   assert.equal(record.response.body.reservationId, "res_789");
-  console.log("✓ Distributed idempotency in-flight conflict and completed response replay verified");
+  console.log(
+    "✓ Distributed idempotency in-flight conflict and completed response replay verified",
+  );
 
   console.log("\n=======================================================");
   console.log(" All Promotion Concurrency & Idempotency Tests Passed! ");
@@ -101,4 +137,3 @@ runPromotionConcurrencyTests().catch((err) => {
   console.error("Test execution failed:", err);
   process.exit(1);
 });
-

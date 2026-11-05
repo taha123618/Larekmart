@@ -40,12 +40,15 @@ export function getDeviceFingerprint(): string {
     }
 
     const screenData = `${window.screen?.width || 0}x${window.screen?.height || 0}x${window.screen?.colorDepth || 0}`;
-    const timezone = Intl?.DateTimeFormat?.().resolvedOptions()?.timeZone || "UTC";
+    const timezone =
+      Intl?.DateTimeFormat?.().resolvedOptions()?.timeZone || "UTC";
     const language = window.navigator?.language || "en";
     const cores = window.navigator?.hardwareConcurrency || 2;
     const userAgent = window.navigator?.userAgent || "browser";
 
-    const entropy = [screenData, timezone, language, cores, userAgent].join("|");
+    const entropy = [screenData, timezone, language, cores, userAgent].join(
+      "|",
+    );
     const fp = `dfp_${fnv1a(entropy)}${fnv1a(entropy.split("").reverse().join(""))}`;
 
     window.sessionStorage?.setItem(sessionKey, fp);
@@ -88,4 +91,3 @@ export function getClientRiskContext(): ClientRiskContext {
     timestamp: new Date().toISOString(),
   };
 }
-

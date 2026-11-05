@@ -44,6 +44,7 @@ jobs:
       COMMISSION_DATABASE_URL: ${{ secrets.COMMISSION_DATABASE_URL }}
       PAYOUT_DATABASE_URL: ${{ secrets.PAYOUT_DATABASE_URL }}
       FRAUD_DATABASE_URL: ${{ secrets.FRAUD_DATABASE_URL }}
+      SUPPORT_DATABASE_URL: ${{ secrets.SUPPORT_DATABASE_URL }}
 
     steps:
       - name: Checkout Code
@@ -79,6 +80,8 @@ jobs:
           DATABASE_URL="${VENDOR_DATABASE_URL}" pnpm --filter @repo/vendor-db exec prisma migrate status || true
           echo "=== [Stage 2] Shipping DB Migration Status ==="
           DATABASE_URL="${SHIPPING_DATABASE_URL}" pnpm --filter @repo/shipping-db exec prisma migrate status || true
+          echo "=== [Stage 2] Support DB Migration Status ==="
+          DATABASE_URL="${SUPPORT_DATABASE_URL}" pnpm --filter @repo/support-db exec prisma migrate status || true
           echo "=== [Stage 3] Catalog DB Migration Status ==="
           DATABASE_URL="${CATALOG_DATABASE_URL}" pnpm --filter @repo/catalog-db exec prisma migrate status || true
 
@@ -143,6 +146,12 @@ jobs:
         run: pnpm --filter return-service db:deploy
         env:
           MYSQL_URL: ${{ env.RETURN_DATABASE_URL }}
+
+      - name: Run support-db migrations (Stage 2)
+        if: github.event.inputs.action == 'deploy' && env.SUPPORT_DATABASE_URL != ''
+        run: pnpm --filter @repo/support-db db:deploy
+        env:
+          DATABASE_URL: ${{ env.SUPPORT_DATABASE_URL }}
 
       # ─── STAGE 3: Read Projections, Storefronts & Downstream Schemas ───
       - name: Run catalog-db migrations (Stage 3 Projections)

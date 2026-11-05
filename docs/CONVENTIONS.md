@@ -32,10 +32,10 @@ already established in the repository.
 
 ## Backend
 
-- **Framework per service is fixed:** Fastify (order, catalog, search, user, review, wishlist, tax, pricing, seller, commission), NestJS on Fastify (vendor, payout), Hono (payment, inventory, media, promotion), Koa (shipping, return), Express (product, auth, cart), Go Chi (analytic, notification), FastAPI (recommendation), and headless worker (email).
+- **Framework per service is fixed:** Fastify (order, catalog, search, user, review, wishlist, tax, pricing, seller, commission), NestJS on Fastify (vendor, payout, support), Hono (payment, inventory, media, promotion), Koa (shipping, return), Express (product, auth, cart), Go Chi (analytic, notification), FastAPI (recommendation, fraud), and headless worker (email).
 - **Structure:** mirror the existing folders — `src/routes`, `src/controllers`, `src/services`, `src/middleware`, `src/utils`. Fastify defines routes as a plugin function; Hono mounts route modules with `app.route(...)`.
 - **Route guards:** apply `shouldBeUser`/`shouldBeAdmin`/`shouldBeSellerOrAdmin` per route or via a router prefix. Mutating routes must be guarded.
-- **Persistence:** through designated database packages (`@repo/product-db`, `@repo/order-db`, `@repo/cart-db`, `@repo/inventory-db`, `@repo/vendor-db`, `@repo/shipping-db`, `@repo/user-db`) or service-level Drizzle ORM schemas. No ad-hoc clients, no cross-service direct DB access.
+- **Persistence:** through designated database packages (`@repo/product-db`, `@repo/order-db`, `@repo/cart-db`, `@repo/inventory-db`, `@repo/vendor-db`, `@repo/shipping-db`, `@repo/user-db`, `@repo/support-db`) or service-level Drizzle ORM schemas. No ad-hoc clients, no cross-service direct DB access.
 - **Financial Precision:** All monetary and commission calculations strictly use `Decimal.js` (`ROUND_HALF_UP`), and double-entry ledger postings strictly enforce zero-sum balance invariants (`SUM(debit) == SUM(credit)`).
 - **Events:** publish via `@repo/kafka` with the `{ value }` envelope; handlers read `message.value` and are wrapped so a bad message doesn't kill the loop.
 - **Errors:** return `{ message }` JSON with the correct status. Don't leak internals in production responses.
