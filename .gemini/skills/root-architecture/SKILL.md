@@ -53,6 +53,7 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 | Single entrypoint proxy, rate limits, routing, aggregation  | `apps/api-gateway`                                     |
 | Storefront UI/UX, cart, checkout                            | `apps/client`                                          |
 | Admin tables, forms, charts                                 | `apps/admin`                                           |
+| Seller & Merchant dashboard, catalog, inventory, orders, chat| `apps/seller`                                          |
 | Products/categories + product events                        | `apps/product-service`                                 |
 | Orders, order analytics                                     | `apps/order-service`                                   |
 | Stripe sessions, webhooks, Stripe sync                      | `apps/payment-service`                                 |

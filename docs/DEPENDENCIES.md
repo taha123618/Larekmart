@@ -8,8 +8,8 @@ and applications never import each other.
 
 ```
 apps/client ─┐
-             ├─▶ @repo/types ─┬─▶ @repo/product-db ─▶ @prisma/client ─▶ PostgreSQL
-apps/admin ──┘                └─▶ @repo/order-db   ─▶ mongoose      ─▶ MongoDB
+apps/admin ──┼─▶ @repo/types
+apps/seller ─┘
 
 apps/product-service ─┬─▶ @repo/product-db
                       ├─▶ @repo/kafka ─▶ kafkajs

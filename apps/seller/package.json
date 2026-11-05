@@ -1,0 +1,52 @@
+{
+  "name": "seller",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3004",
+    "build": "nuxt build",
+    "start": "node .output/server/index.mjs",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "lint": "eslint \"**/*.{vue,ts,js}\" --ignore-pattern \".nuxt/**\" --ignore-pattern \".output/**\" --ignore-pattern \"node_modules/**\"",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@clerk/vue": "^0.1.0",
+    "@nuxt/ui": "^3.0.0",
+    "@pinia/nuxt": "^0.9.0",
+    "@tanstack/vue-query": "^5.80.0",
+    "@tanstack/vue-table": "^8.21.3",
+    "@vee-validate/zod": "^4.14.7",
+    "@vueuse/core": "^13.0.0",
+    "@vueuse/nuxt": "^13.0.0",
+    "echarts": "^5.6.0",
+    "gsap": "^3.15.0",
+    "nuxt": "^3.17.0",
+    "pinia": "^2.3.0",
+    "socket.io-client": "^4.8.1",
+    "vee-validate": "^4.14.7",
+    "vue": "^3.5.14",
+    "vue-echarts": "^7.0.3",
+    "vue-router": "^5.4.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@nuxt/test-utils": "^3.17.0",
+    "@playwright/test": "^1.50.0",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/types": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^20",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^17.0.0",
+    "typescript": "^5",
+    "vitest": "^3.0.0",
+    "vue-tsc": "^2.2.0"
+  }
+}

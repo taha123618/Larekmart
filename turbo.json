@@ -33,7 +33,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", "bin/**"],
+      "outputs": [".next/**", "!.next/cache/**", ".output/**", "dist/**", "bin/**"],
       "env": [
         "DATABASE_URL",
         "NODE_ENV",
