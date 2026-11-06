@@ -51,6 +51,22 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     requireAuth: true,
   },
   {
+    prefix: "/api/v1/seller-orders",
+    target: services.order.url,
+    serviceName: services.order.name,
+    timeoutMs: services.order.timeoutMs,
+    rewritePrefix: "/seller-orders",
+    requireSeller: true,
+  },
+  {
+    prefix: "/seller-orders",
+    target: services.order.url,
+    serviceName: services.order.name,
+    timeoutMs: services.order.timeoutMs,
+    rewritePrefix: "/seller-orders",
+    requireSeller: true,
+  },
+  {
     prefix: "/user-orders",
     target: services.order.url,
     serviceName: services.order.name,

@@ -13,7 +13,10 @@
     "CLIENT_WS_URL",
     "ADMIN_API_GATEWAY_URL",
     "ADMIN_WS_URL",
-    "NOTIFICATION_WS_URL"
+    "NOTIFICATION_WS_URL",
+    "SELLER_BASE_URL",
+    "CI",
+    "CLERK_SECRET_KEY"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",
@@ -27,7 +30,10 @@
     "CLIENT_WS_URL",
     "ADMIN_API_GATEWAY_URL",
     "ADMIN_WS_URL",
-    "NOTIFICATION_WS_URL"
+    "NOTIFICATION_WS_URL",
+    "SELLER_BASE_URL",
+    "CI",
+    "CLERK_SECRET_KEY"
   ],
   "tasks": {
     "build": {

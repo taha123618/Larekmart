@@ -608,6 +608,22 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
+  // 7b. Get operational settings
+  app.get(
+    "/api/v1/sellers/:sellerId/settings",
+    { preHandler: [requireSellerStaffOrAdmin] },
+    async (request, reply) => {
+      const { sellerId } = request.params as { sellerId: string };
+      const settingsRows = await db
+        .select()
+        .from(sellerSettings)
+        .where(eq(sellerSettings.sellerId, sellerId))
+        .limit(1);
+
+      return reply.send(settingsRows[0] || null);
+    },
+  );
+
   // 8. Upsert policy
   app.put(
     "/api/v1/sellers/:sellerId/policies",
@@ -646,6 +662,21 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
         });
       }
 
+      const policyList = await db
+        .select()
+        .from(sellerPolicies)
+        .where(eq(sellerPolicies.sellerId, sellerId));
+
+      return reply.send(policyList);
+    },
+  );
+
+  // 8b. List policies for seller
+  app.get(
+    "/api/v1/sellers/:sellerId/policies",
+    { preHandler: [requireSellerStaffOrAdmin] },
+    async (request, reply) => {
+      const { sellerId } = request.params as { sellerId: string };
       const policyList = await db
         .select()
         .from(sellerPolicies)

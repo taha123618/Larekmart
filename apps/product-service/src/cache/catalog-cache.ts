@@ -54,6 +54,7 @@ export interface ProductListQuery {
   category?: string;
   search?: string;
   limit?: string;
+  sellerId?: string;
 }
 
 /** Reads the current cache namespace version from Redis (or memory). */
@@ -75,6 +76,7 @@ function normalizeListQuery(query: ProductListQuery): string {
     query.category ?? "",
     query.search ?? "",
     query.limit ?? "all",
+    query.sellerId ?? "",
   ]
     .map((part) => part.trim().toLowerCase())
     .join("|");

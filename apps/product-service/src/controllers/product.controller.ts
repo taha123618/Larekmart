@@ -164,13 +164,14 @@ export const deleteProduct = async (req: Request, res: Response) => {
 };
 
 export const getProducts = async (req: Request, res: Response) => {
-  const { sort, category, search, limit } = req.query;
+  const { sort, category, search, limit, sellerId } = req.query;
 
   const query = {
     sort: typeof sort === "string" ? sort : undefined,
     category: typeof category === "string" ? category : undefined,
     search: typeof search === "string" ? search : undefined,
     limit: typeof limit === "string" ? limit : undefined,
+    sellerId: typeof sellerId === "string" ? sellerId : undefined,
   };
 
   const cached = await getCachedProducts(query);
@@ -194,13 +195,13 @@ export const getProducts = async (req: Request, res: Response) => {
     async () => {
       return await prisma.product.findMany({
         where: {
-          category: {
-            slug: category as string,
-          },
-          name: {
-            contains: search as string,
-            mode: "insensitive",
-          },
+          category: category
+            ? { slug: category as string }
+            : undefined,
+          name: search
+            ? { contains: search as string, mode: "insensitive" }
+            : undefined,
+          sellerId: sellerId ? (sellerId as string) : undefined,
         },
         orderBy,
         take: limit ? Number(limit) : undefined,
