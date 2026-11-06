@@ -25,7 +25,11 @@ export const useSellerStore = defineStore("seller", {
     },
     hasSellers: (state): boolean => state.sellers.length > 0,
     activeStoreName(): string {
-      return this.activeSeller?.store?.name ?? "My Seller Store";
+      return (
+        this.activeSeller?.store?.name ??
+        this.activeSeller?.storeName ??
+        "My Seller Store"
+      );
     },
   },
 

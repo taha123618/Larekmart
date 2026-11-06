@@ -1,5 +1,5 @@
 import type {
-  Seller,
+  Seller as RepoSeller,
   SellerStore,
   SellerPolicy,
   SellerStaff,
@@ -12,8 +12,15 @@ import type {
   PolicyType,
 } from "@repo/types";
 
+export interface Seller extends RepoSeller {
+  store?: SellerStore | null;
+  storeName?: string;
+  slug?: string;
+  primaryUserId?: string;
+}
+
 export type {
-  Seller,
+  RepoSeller,
   SellerStore,
   SellerPolicy,
   SellerStaff,

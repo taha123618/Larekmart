@@ -37,6 +37,8 @@ export { useOrders, useOrder } from '../app/composables/useOrders';
 export { useProducts, useProduct, useCreateProduct, useUpdateProduct } from '../app/composables/useProducts';
 export { useSellers, useSellerProfile, useSellerSettings, useSellerPerformance, useSellerStaff, useSellerPolicies, useCreateSeller } from '../app/composables/useSeller';
 export { useSupportTickets, useCreateTicket, useChatConversations, useChatMessages } from '../app/composables/useSupport';
+export { formatCurrency, formatCompactNumber, formatDate, formatRelativeTime, formatPercentage } from '../app/utils/formatters';
+export { hasPermission, canManageProducts, canFulfillOrders, canViewFinancials, canManageStaff, SellerRole, PermissionCheckContext } from '../app/utils/permissions';
 export { defineLocale, extendLocale } from '../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale';
 export { ShortcutConfig, ShortcutsConfig, ShortcutsOptions } from '../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts.d';
 export { extractShortcuts, defineShortcuts } from '../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts';

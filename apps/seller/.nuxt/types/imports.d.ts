@@ -9,6 +9,10 @@ declare global {
   const avatarGroupInjectionKey: typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useAvatarGroup').avatarGroupInjectionKey
   const buttonGroupInjectionKey: typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useButtonGroup').buttonGroupInjectionKey
   const callOnce: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/once').callOnce
+  const canFulfillOrders: typeof import('../../app/utils/permissions').canFulfillOrders
+  const canManageProducts: typeof import('../../app/utils/permissions').canManageProducts
+  const canManageStaff: typeof import('../../app/utils/permissions').canManageStaff
+  const canViewFinancials: typeof import('../../app/utils/permissions').canViewFinancials
   const cancelIdleCallback: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/compat/idle-callback').cancelIdleCallback
   const clearError: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/error').clearError
   const clearNuxtData: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/asyncData').clearNuxtData
@@ -60,12 +64,18 @@ declare global {
   const formInputsInjectionKey: typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useFormField').formInputsInjectionKey
   const formLoadingInjectionKey: typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useFormField').formLoadingInjectionKey
   const formOptionsInjectionKey: typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useFormField').formOptionsInjectionKey
+  const formatCompactNumber: typeof import('../../app/utils/formatters').formatCompactNumber
+  const formatCurrency: typeof import('../../app/utils/formatters').formatCurrency
+  const formatDate: typeof import('../../app/utils/formatters').formatDate
+  const formatPercentage: typeof import('../../app/utils/formatters').formatPercentage
+  const formatRelativeTime: typeof import('../../app/utils/formatters').formatRelativeTime
   const getAppManifest: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/manifest').getAppManifest
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getRouteRules: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/manifest').getRouteRules
   const h: typeof import('vue').h
   const hasInjectionContext: typeof import('vue').hasInjectionContext
+  const hasPermission: typeof import('../../app/utils/permissions').hasPermission
   const ignorableWatch: typeof import('@vueuse/core').ignorableWatch
   const inject: typeof import('vue').inject
   const injectHead: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/head').injectHead
@@ -477,6 +487,9 @@ declare global {
   export type { NotificationOptions } from '../../app/composables/useNotifications'
   import('../../app/composables/useNotifications')
   // @ts-ignore
+  export type { SellerRole, PermissionCheckContext } from '../../app/utils/permissions'
+  import('../../app/utils/permissions')
+  // @ts-ignore
   export type { ShortcutConfig, ShortcutsConfig, ShortcutsOptions } from '../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts.d'
   import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts.d')
   // @ts-ignore
@@ -516,6 +529,10 @@ declare module 'vue' {
     readonly avatarGroupInjectionKey: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useAvatarGroup')['avatarGroupInjectionKey']>
     readonly buttonGroupInjectionKey: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useButtonGroup')['buttonGroupInjectionKey']>
     readonly callOnce: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/once')['callOnce']>
+    readonly canFulfillOrders: UnwrapRef<typeof import('../../app/utils/permissions')['canFulfillOrders']>
+    readonly canManageProducts: UnwrapRef<typeof import('../../app/utils/permissions')['canManageProducts']>
+    readonly canManageStaff: UnwrapRef<typeof import('../../app/utils/permissions')['canManageStaff']>
+    readonly canViewFinancials: UnwrapRef<typeof import('../../app/utils/permissions')['canViewFinancials']>
     readonly cancelIdleCallback: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/compat/idle-callback')['cancelIdleCallback']>
     readonly clearError: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/error')['clearError']>
     readonly clearNuxtData: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/asyncData')['clearNuxtData']>
@@ -567,12 +584,18 @@ declare module 'vue' {
     readonly formInputsInjectionKey: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useFormField')['formInputsInjectionKey']>
     readonly formLoadingInjectionKey: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useFormField')['formLoadingInjectionKey']>
     readonly formOptionsInjectionKey: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useFormField')['formOptionsInjectionKey']>
+    readonly formatCompactNumber: UnwrapRef<typeof import('../../app/utils/formatters')['formatCompactNumber']>
+    readonly formatCurrency: UnwrapRef<typeof import('../../app/utils/formatters')['formatCurrency']>
+    readonly formatDate: UnwrapRef<typeof import('../../app/utils/formatters')['formatDate']>
+    readonly formatPercentage: UnwrapRef<typeof import('../../app/utils/formatters')['formatPercentage']>
+    readonly formatRelativeTime: UnwrapRef<typeof import('../../app/utils/formatters')['formatRelativeTime']>
     readonly getAppManifest: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/manifest')['getAppManifest']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly getRouteRules: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/manifest')['getRouteRules']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly hasInjectionContext: UnwrapRef<typeof import('vue')['hasInjectionContext']>
+    readonly hasPermission: UnwrapRef<typeof import('../../app/utils/permissions')['hasPermission']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
     readonly injectHead: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/head')['injectHead']>
