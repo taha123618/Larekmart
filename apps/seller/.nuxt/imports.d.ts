@@ -57,6 +57,6 @@ export { Toast } from '../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@
 export { useToast } from '../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useToast';
 export { useAuthStore, AuthState } from '../app/stores/auth.store';
 export { useSellerStore, SellerState } from '../app/stores/seller.store';
-export { useUIStore, UIState } from '../app/stores/ui.store';
+export { useUIStore, useUiStore, UIState } from '../app/stores/ui.store';
 export { useColorMode } from '../../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.5/node_modules/@nuxtjs/color-mode/dist/runtime/composables';
 export { defineStore, acceptHMRUpdate, usePinia, storeToRefs } from '../../../node_modules/.pnpm/@pinia+nuxt@0.9.0_magicast@0.5.5_pinia@2.3.1_typescript@5.9.2_vue@3.5.45_typescript@5.9.2__/node_modules/@pinia/nuxt/dist/runtime/composables';

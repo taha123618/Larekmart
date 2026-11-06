@@ -1,0 +1,19 @@
+# Nuxt 3 & Nitro build outputs
+.nuxt/
+.output/
+dist/
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Testing
+coverage/
+
+# Misc & Logs
+*.log
+.DS_Store

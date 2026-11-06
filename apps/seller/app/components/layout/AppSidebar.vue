@@ -20,8 +20,11 @@ const navItems: NavItem[] = [
   { label: "Inventory", to: "/inventory", icon: "i-heroicons-circle-stack" },
   { label: "Orders", to: "/orders", icon: "i-heroicons-shopping-bag" },
   { label: "Finance", to: "/finance", icon: "i-heroicons-banknotes" },
+  { label: "Marketing", to: "/marketing", icon: "i-heroicons-ticket" },
+  { label: "Reviews", to: "/reviews", icon: "i-heroicons-star" },
+  { label: "Account Health", to: "/account-health", icon: "i-heroicons-shield-check" },
   { label: "Messages", to: "/chat", icon: "i-heroicons-chat-bubble-left-right" },
-  { label: "Support", to: "/support", icon: "i-heroicons-ticket" },
+  { label: "Support", to: "/support", icon: "i-heroicons-lifebuoy" },
   { label: "Settings", to: "/settings", icon: "i-heroicons-cog-6-tooth" },
 ];
 

@@ -54,3 +54,5 @@ export const useUIStore = defineStore("ui", {
     },
   },
 });
+
+export const useUiStore = useUIStore;

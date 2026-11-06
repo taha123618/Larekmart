@@ -24,8 +24,8 @@ The **LarekMart Seller Dashboard** (`apps/seller`) provides a modern, responsive
 ## 2. Six Pillars Feature Service Delivery Compliance
 
 ### Pillar 1 — Front-End Delivery (`apps/seller/*`)
-- **Full UI Coverage**: Delivered 17+ pages spanning Onboarding, Dashboard, Catalog/Products, Inventory, Orders, Finance & Payouts, Messaging, Support Tickets, and Settings.
-- **Responsive Layout**: Collapsible desktop sidebar with GSAP animation, mobile sliding drawer, breadcrumbs, search, notifications, and store switcher.
+- **Full UI Coverage**: Delivered 20+ pages spanning Onboarding (4-step KYB wizard), Dashboard with operating status notices, Catalog/Products, Inventory, Orders & Fulfillment, Finance & Payouts, Messaging, Support Tickets, Customer Reviews & Rating Responses, Store Marketing & Promotions, Account Health & Security Benchmarks, and Store Settings (staff invitations, policies, storefront customization).
+- **Responsive Layout**: Collapsible desktop sidebar with GSAP animation, mobile sliding drawer, breadcrumbs, search, notifications, and multi-seller store switcher.
 - **Design Tokens**: Standardized semantic badges (`ACTIVE`, `PENDING`, `SUSPENDED`, `REJECTED`, etc.), stats cards, data tables, empty states, and loading skeletons.
 
 ### Pillar 2 — Cross-Service & Gateway Integration
@@ -47,9 +47,9 @@ The **LarekMart Seller Dashboard** (`apps/seller`) provides a modern, responsive
 - **Agent Instructions**: Created scoped `apps/seller/AGENTS.md` and updated root `AGENTS.md`.
 
 ### Pillar 4 — Deep Analysis & Comprehensive Testing
-- **Unit Testing**: Vitest test suite (`apps/seller/tests/unit/components.spec.ts`, `schemas.spec.ts`) validating component rendering, status badge variants, stats card formatting, and form schemas.
+- **Unit Testing**: Vitest test suite (`apps/seller/tests/unit/components.spec.ts`, `schemas.spec.ts`, `stores.spec.ts`, `api.spec.ts`) validating component rendering, status badge variants, stats card formatting, form schemas, Pinia stores, and API error normalization with a 100% pass rate (14/14 tests passing).
 - **Type Safety**: Passed `pnpm --filter seller check-types` (`tsc --noEmit`) with 0 errors.
-- **Production Build**: Verified with `pnpm --filter seller build`.
+- **Production Build**: Verified with `pnpm --filter seller build` generating hardened client and Nitro SSR server bundles.
 
 ### Pillar 5 — Security Audit & Zero-Trust Hardening
 - **Client Identity Defense**: Client-supplied claim headers stripped at API Gateway; user identity verified cryptographically via Clerk Bearer tokens.

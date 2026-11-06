@@ -98,6 +98,27 @@ const chartPoints = [
       </template>
     </PageHeader>
 
+    <!-- Account Health & Verification Notice (Phase 10) -->
+    <div
+      v-if="sellerStore.activeSeller && ['SUSPENDED', 'UNDER_REVIEW', 'ONBOARDING'].includes(sellerStore.activeSeller.status)"
+      class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-rose-300 bg-rose-50 p-4 text-xs text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-200"
+    >
+      <div class="flex items-center gap-3">
+        <UIcon name="i-heroicons-exclamation-triangle" class="h-5 w-5 text-rose-600 shrink-0" />
+        <div>
+          <span class="font-bold">Store Operating Status:</span>
+          Your account is currently {{ sellerStore.activeSeller.status.toLowerCase().replace('_', ' ') }}. Some storefront capabilities may be restricted.
+        </div>
+      </div>
+      <NuxtLink
+        to="/account-health"
+        class="inline-flex items-center gap-1 font-semibold text-rose-700 underline hover:text-rose-800 dark:text-rose-300 shrink-0"
+      >
+        <span>View Account Health</span>
+        <UIcon name="i-heroicons-arrow-right" class="h-3.5 w-3.5" />
+      </NuxtLink>
+    </div>
+
     <!-- KPI Metrics Cards Grid -->
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       <StatsCard

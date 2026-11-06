@@ -60,6 +60,11 @@ export const useSellerStore = defineStore("seller", {
       }
     },
 
+    clearSellers() {
+      this.sellers = [];
+      this.activeSellerId = null;
+    },
+
     async fetchSellers() {
       this.isLoading = true;
       this.error = null;

@@ -426,6 +426,7 @@ declare global {
   const useTransition: typeof import('@vueuse/core').useTransition
   const useTransitionState: typeof import('vue').useTransitionState
   const useUIStore: typeof import('../../app/stores/ui.store').useUIStore
+  const useUiStore: typeof import('../../app/stores/ui.store').useUiStore
   const useUpdateProduct: typeof import('../../app/composables/useProducts').useUpdateProduct
   const useUrlSearchParams: typeof import('@vueuse/core').useUrlSearchParams
   const useUserMedia: typeof import('@vueuse/core').useUserMedia
@@ -932,6 +933,7 @@ declare module 'vue' {
     readonly useTransition: UnwrapRef<typeof import('@vueuse/core')['useTransition']>
     readonly useTransitionState: UnwrapRef<typeof import('vue')['useTransitionState']>
     readonly useUIStore: UnwrapRef<typeof import('../../app/stores/ui.store')['useUIStore']>
+    readonly useUiStore: UnwrapRef<typeof import('../../app/stores/ui.store')['useUiStore']>
     readonly useUpdateProduct: UnwrapRef<typeof import('../../app/composables/useProducts')['useUpdateProduct']>
     readonly useUrlSearchParams: UnwrapRef<typeof import('@vueuse/core')['useUrlSearchParams']>
     readonly useUserMedia: UnwrapRef<typeof import('@vueuse/core')['useUserMedia']>
