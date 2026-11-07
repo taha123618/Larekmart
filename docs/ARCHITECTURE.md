@@ -47,17 +47,14 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
   react-hook-form + Zod schemas from `@repo/types`.
-- Product images upload through media-service's presigned direct-to-storage flow
+- Product images upload through media-service's presigned direct-to-storage flow (`src/services/media.service.ts`); products reference them by `mediaId`, and the `MediaImage` component resolves references to URLs dynamically (legacy URL values pass through untouched during migration).
+- Access control: `src/middleware.ts` requires `metadata.role === "admin"`.
 
 **`seller` (dashboard, :3004)** — Nuxt 3 (SSR + Nitro), Vue 3, Nuxt UI, Tailwind CSS v4.
 
-- Multi-Vendor Operations: 4-step merchant onboarding wizard (vendor legal profile, document upload, store profile, approval status), KPI metric dashboards, Apache ECharts revenue & sales charts, catalog & product management, inventory tracking with low-stock alerts, order listing and shipment fulfillment, financial ledger & payout history, real-time buyer-seller messaging (Socket.IO client), support ticket tracking, store settings, staff invitations, and policy management.
+- Multi-Vendor Operations: 4-step merchant onboarding wizard (vendor legal profile, document upload, store profile, approval status), KPI metric dashboards, Apache ECharts revenue & sales charts, catalog & product management with RFC 4180 bulk CSV import/export, inventory tracking with low-stock alerts, authoritative pricing workbench with multi-currency FX simulation, dedicated deep analytics & conversion funnels, order listing and shipment fulfillment, financial ledger & payout history, real-time buyer-seller messaging (Socket.IO client), support ticket tracking, store settings, staff invitations, and policy management.
 - State & Data Fetching: Pinia for client UI state (sidebar collapse, store switcher); TanStack Vue Query v5 for server caching and optimistic mutations; VeeValidate 4 + Zod for type-safe form validation.
 - Auth & Route Guards: Clerk via `@clerk/vue` and Nitro `/api/auth/session` proxy; `seller-access` middleware enforcing `isSeller` platform toggle and store profile presence.
-  (`src/services/media.service.ts`); products reference them by `mediaId`, and the
-  `MediaImage` component resolves references to URLs dynamically (legacy URL values
-  pass through untouched during migration).
-- Access control: `src/middleware.ts` requires `metadata.role === "admin"`.
 
 ### Gateway
 
