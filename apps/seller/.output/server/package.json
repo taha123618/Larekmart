@@ -23,6 +23,7 @@
     "consola": "3.4.2",
     "debug": "4.4.3",
     "devalue": "5.9.4",
+    "echarts": "5.6.0",
     "entities": "7.0.1",
     "estree-walker": "2.0.2",
     "has-flag": "4.0.0",
@@ -33,12 +34,15 @@
     "pinia": "2.3.1",
     "source-map-js": "1.2.2",
     "supports-color": "7.2.0",
+    "tslib": "2.3.0",
     "ufo": "1.6.4",
     "unhead": "2.1.17",
     "vue": "3.5.45",
     "vue-bundle-renderer": "2.5.0",
     "vue-demi": "0.14.10",
+    "vue-echarts": "7.0.3",
     "vue-router": "5.4.0",
-    "zod": "3.25.76"
+    "zod": "3.25.76",
+    "zrender": "5.6.1"
   }
 }

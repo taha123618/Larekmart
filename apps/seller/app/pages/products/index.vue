@@ -2,19 +2,125 @@
 import { ref, onMounted, h } from "vue";
 import type { ColumnDef } from "@tanstack/vue-table";
 import { useApi } from "~/composables/useApi";
+import { useNotifications } from "~/composables/useNotifications";
 import type { Product } from "~/types";
 import PageHeader from "~/components/ui/PageHeader.vue";
 import DataTable from "~/components/ui/DataTable.vue";
 import StatusBadge from "~/components/ui/StatusBadge.vue";
+import BulkImportModal from "~/components/ui/BulkImportModal.vue";
+import { exportToCsv, type CsvColumn } from "~/utils/export";
+import type { ValidationRule } from "~/utils/csv-parser";
 
 definePageMeta({
   middleware: "seller-access",
 });
 
 const api = useApi();
+const notify = useNotifications();
 const products = ref<Product[]>([]);
 const isLoading = ref(true);
 const statusFilter = ref<string>("ALL");
+const isImportModalOpen = ref(false);
+const isImporting = ref(false);
+
+const productImportRules: ValidationRule<any>[] = [
+  { field: "name", required: true },
+  {
+    field: "sku",
+    required: true,
+    validate: (val) => (/^[a-zA-Z0-9_-]+$/.test(val) ? null : "SKU must contain only letters, numbers, hyphens, and underscores"),
+  },
+  {
+    field: "price",
+    required: true,
+    validate: (val) => {
+      const num = Number(val);
+      return !isNaN(num) && num > 0 ? null : "Price must be a valid positive number";
+    },
+    transform: (val) => Number(val),
+  },
+  {
+    field: "stockQuantity",
+    required: true,
+    validate: (val) => {
+      const num = Number(val);
+      return !isNaN(num) && num >= 0 ? null : "Stock quantity must be a non-negative integer";
+    },
+    transform: (val) => Math.round(Number(val)),
+  },
+  { field: "category", required: false },
+  { field: "description", required: false },
+];
+
+const sampleTemplateRows = [
+  {
+    name: "Wireless ANC Headphones",
+    sku: "SKU-ANC-001",
+    price: 14500,
+    stockQuantity: 50,
+    category: "Audio & Electronics",
+    description: "Premium noise cancelling over-ear headphones with 30-hour battery life",
+  },
+  {
+    name: "USB-C GaN 100W Fast Charger",
+    sku: "SKU-GAN-100",
+    price: 4500,
+    stockQuantity: 120,
+    category: "Accessories",
+    description: "Ultra-compact fast charger with dual USB-C Power Delivery ports",
+  },
+];
+
+const templateHeaders = [
+  { key: "name", label: "name" },
+  { key: "sku", label: "sku" },
+  { key: "price", label: "price" },
+  { key: "stockQuantity", label: "stockQuantity" },
+  { key: "category", label: "category" },
+  { key: "description", label: "description" },
+];
+
+const handleExportProducts = () => {
+  const columns: CsvColumn<Product>[] = [
+    { key: "sku", label: "SKU" },
+    { key: "name", label: "Product Name" },
+    { key: "category", label: "Category" },
+    { key: "price", label: "Price", formatter: (v) => `${Number(v).toFixed(2)}` },
+    { key: "stockQuantity", label: "Stock Quantity" },
+    { key: "status", label: "Status" },
+  ];
+  exportToCsv("seller_products_catalog", columns, products.value);
+};
+
+const handleImportSubmit = async (importedItems: any[]) => {
+  isImporting.value = true;
+  try {
+    let successCount = 0;
+    for (const item of importedItems) {
+      try {
+        await api.post("/api/v1/products", {
+          name: item.name,
+          sku: item.sku,
+          price: item.price,
+          stockQuantity: item.stockQuantity,
+          category: item.category || "General",
+          description: item.description || "",
+        });
+        successCount++;
+      } catch (postErr) {
+        // Continue with remainder
+      }
+    }
+
+    notify.success("Bulk Import Complete", `Successfully imported ${successCount} products into your catalog.`);
+    isImportModalOpen.value = false;
+    await fetchProducts();
+  } catch (err: any) {
+    notify.error("Import Failed", err?.message || "Failed to import products.");
+  } finally {
+    isImporting.value = false;
+  }
+};
 
 const fetchProducts = async () => {
   isLoading.value = true;
@@ -145,15 +251,46 @@ const columns: ColumnDef<Product, unknown>[] = [
       description="Manage all items, pricing, inventory stock, and variations available in your store."
     >
       <template #actions>
-        <NuxtLink
-          to="/products/create"
-          class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-primary-700"
-        >
-          <UIcon name="i-heroicons-plus" class="h-4 w-4" />
-          <span>New Product</span>
-        </NuxtLink>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+            @click="handleExportProducts"
+          >
+            <UIcon name="i-heroicons-arrow-down-tray" class="h-4 w-4" />
+            <span>Export CSV</span>
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+            @click="isImportModalOpen = true"
+          >
+            <UIcon name="i-heroicons-arrow-up-tray" class="h-4 w-4" />
+            <span>Bulk Import</span>
+          </button>
+          <NuxtLink
+            to="/products/create"
+            class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-primary-700"
+          >
+            <UIcon name="i-heroicons-plus" class="h-4 w-4" />
+            <span>New Product</span>
+          </NuxtLink>
+        </div>
       </template>
     </PageHeader>
+
+    <BulkImportModal
+      :is-open="isImportModalOpen"
+      title="Bulk Import Product Catalog"
+      description="Upload an RFC 4180 CSV spreadsheet to batch create or update multiple catalog products."
+      template-filename="products_import_template"
+      :template-headers="templateHeaders"
+      :sample-rows="sampleTemplateRows"
+      :rules="productImportRules"
+      :is-submitting="isImporting"
+      @close="isImportModalOpen = false"
+      @import="handleImportSubmit"
+    />
 
     <DataTable
       :data="products"

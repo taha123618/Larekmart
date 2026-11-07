@@ -14,9 +14,11 @@ type HydrationStrategies = {
 type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {}, {}, { hydrated: () => void }> & T
 
 
+export const ChartsBaseChart: typeof import("../app/components/charts/BaseChart.client.vue")['default']
 export const LayoutAppHeader: typeof import("../app/components/layout/AppHeader.vue")['default']
 export const LayoutAppSidebar: typeof import("../app/components/layout/AppSidebar.vue")['default']
 export const LayoutSellerSwitcher: typeof import("../app/components/layout/SellerSwitcher.vue")['default']
+export const UiBulkImportModal: typeof import("../app/components/ui/BulkImportModal.vue")['default']
 export const UiDataTable: typeof import("../app/components/ui/DataTable.vue")['default']
 export const UiEmptyState: typeof import("../app/components/ui/EmptyState.vue")['default']
 export const UiLoadingSpinner: typeof import("../app/components/ui/LoadingSpinner.vue")['default']
@@ -107,9 +109,11 @@ export const Head: typeof import("../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-
 export const Html: typeof import("../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/head/runtime/components")['Html']
 export const Body: typeof import("../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/head/runtime/components")['Body']
 export const NuxtIsland: typeof import("../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/components/nuxt-island")['default']
+export const LazyChartsBaseChart: LazyComponent<typeof import("../app/components/charts/BaseChart.client.vue")['default']>
 export const LazyLayoutAppHeader: LazyComponent<typeof import("../app/components/layout/AppHeader.vue")['default']>
 export const LazyLayoutAppSidebar: LazyComponent<typeof import("../app/components/layout/AppSidebar.vue")['default']>
 export const LazyLayoutSellerSwitcher: LazyComponent<typeof import("../app/components/layout/SellerSwitcher.vue")['default']>
+export const LazyUiBulkImportModal: LazyComponent<typeof import("../app/components/ui/BulkImportModal.vue")['default']>
 export const LazyUiDataTable: LazyComponent<typeof import("../app/components/ui/DataTable.vue")['default']>
 export const LazyUiEmptyState: LazyComponent<typeof import("../app/components/ui/EmptyState.vue")['default']>
 export const LazyUiLoadingSpinner: LazyComponent<typeof import("../app/components/ui/LoadingSpinner.vue")['default']>

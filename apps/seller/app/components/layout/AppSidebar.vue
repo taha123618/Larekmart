@@ -17,9 +17,11 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Dashboard", to: "/dashboard", icon: "i-heroicons-squares-2x2" },
   { label: "Products", to: "/products", icon: "i-heroicons-cube" },
+  { label: "Pricing", to: "/pricing", icon: "i-heroicons-tag" },
   { label: "Inventory", to: "/inventory", icon: "i-heroicons-circle-stack" },
   { label: "Orders", to: "/orders", icon: "i-heroicons-shopping-bag" },
   { label: "Finance", to: "/finance", icon: "i-heroicons-banknotes" },
+  { label: "Analytics", to: "/analytics", icon: "i-heroicons-chart-bar" },
   { label: "Marketing", to: "/marketing", icon: "i-heroicons-ticket" },
   { label: "Reviews", to: "/reviews", icon: "i-heroicons-star" },
   { label: "Account Health", to: "/account-health", icon: "i-heroicons-shield-check" },

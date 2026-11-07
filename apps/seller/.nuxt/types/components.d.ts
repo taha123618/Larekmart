@@ -14,9 +14,11 @@ type HydrationStrategies = {
 type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {}, {}, { hydrated: () => void }> & T
 
 interface _GlobalComponents {
+  ChartsBaseChart: typeof import("../../app/components/charts/BaseChart.client.vue")['default']
   LayoutAppHeader: typeof import("../../app/components/layout/AppHeader.vue")['default']
   LayoutAppSidebar: typeof import("../../app/components/layout/AppSidebar.vue")['default']
   LayoutSellerSwitcher: typeof import("../../app/components/layout/SellerSwitcher.vue")['default']
+  UiBulkImportModal: typeof import("../../app/components/ui/BulkImportModal.vue")['default']
   UiDataTable: typeof import("../../app/components/ui/DataTable.vue")['default']
   UiEmptyState: typeof import("../../app/components/ui/EmptyState.vue")['default']
   UiLoadingSpinner: typeof import("../../app/components/ui/LoadingSpinner.vue")['default']
@@ -107,9 +109,11 @@ interface _GlobalComponents {
   Html: typeof import("../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/head/runtime/components")['Html']
   Body: typeof import("../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/head/runtime/components")['Body']
   NuxtIsland: typeof import("../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/components/nuxt-island")['default']
+  LazyChartsBaseChart: LazyComponent<typeof import("../../app/components/charts/BaseChart.client.vue")['default']>
   LazyLayoutAppHeader: LazyComponent<typeof import("../../app/components/layout/AppHeader.vue")['default']>
   LazyLayoutAppSidebar: LazyComponent<typeof import("../../app/components/layout/AppSidebar.vue")['default']>
   LazyLayoutSellerSwitcher: LazyComponent<typeof import("../../app/components/layout/SellerSwitcher.vue")['default']>
+  LazyUiBulkImportModal: LazyComponent<typeof import("../../app/components/ui/BulkImportModal.vue")['default']>
   LazyUiDataTable: LazyComponent<typeof import("../../app/components/ui/DataTable.vue")['default']>
   LazyUiEmptyState: LazyComponent<typeof import("../../app/components/ui/EmptyState.vue")['default']>
   LazyUiLoadingSpinner: LazyComponent<typeof import("../../app/components/ui/LoadingSpinner.vue")['default']>

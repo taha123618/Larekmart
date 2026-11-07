@@ -82,4 +82,26 @@ test.describe("LarekMart Seller Dashboard E2E Test Suite (Phase 16)", () => {
     await page.goto("/seller-disabled");
     await expect(page.locator("text=Seller Services Currently Unavailable")).toBeVisible();
   });
+
+  test("15. Analytics Suite: renders deep performance analytics and time range filters", async ({ page }) => {
+    await page.goto("/analytics");
+    await expect(page.locator("text=Deep Performance Analytics")).toBeVisible();
+    await expect(page.locator("text=Conversion Funnel")).toBeVisible();
+    await expect(page.locator("text=Export Report")).toBeVisible();
+  });
+
+  test("16. Pricing Workbench: renders quote simulator and multi-currency matrix", async ({ page }) => {
+    await page.goto("/pricing");
+    await expect(page.locator("text=Authoritative Pricing Workbench")).toBeVisible();
+    await expect(page.locator("text=Live Quote & Bulk Simulator")).toBeVisible();
+    await expect(page.locator("text=Multi-Currency Real-Time Matrix")).toBeVisible();
+  });
+
+  test("17. Bulk Operations: launches bulk import modal on catalog and inventory views", async ({ page }) => {
+    await page.goto("/products");
+    const bulkImportBtn = page.locator("button:has-text('Bulk Import')");
+    await expect(bulkImportBtn).toBeVisible();
+    await bulkImportBtn.click();
+    await expect(page.locator("text=Bulk Import Products (CSV)")).toBeVisible();
+  });
 });

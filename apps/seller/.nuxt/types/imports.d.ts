@@ -24,6 +24,7 @@ declare global {
   const computedWithControl: typeof import('@vueuse/core').computedWithControl
   const controlledComputed: typeof import('@vueuse/core').controlledComputed
   const controlledRef: typeof import('@vueuse/core').controlledRef
+  const convertToCsv: typeof import('../../app/utils/export').convertToCsv
   const createError: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/error').createError
   const createEventHook: typeof import('@vueuse/core').createEventHook
   const createGlobalState: typeof import('@vueuse/core').createGlobalState
@@ -55,6 +56,8 @@ declare global {
   const eagerComputed: typeof import('@vueuse/core').eagerComputed
   const effect: typeof import('vue').effect
   const effectScope: typeof import('vue').effectScope
+  const exportToCsv: typeof import('../../app/utils/export').exportToCsv
+  const exportToJson: typeof import('../../app/utils/export').exportToJson
   const extendLocale: typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale').extendLocale
   const extendRef: typeof import('@vueuse/core').extendRef
   const extractShortcuts: typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts').extractShortcuts
@@ -65,6 +68,7 @@ declare global {
   const formLoadingInjectionKey: typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useFormField').formLoadingInjectionKey
   const formOptionsInjectionKey: typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useFormField').formOptionsInjectionKey
   const formatCompactNumber: typeof import('../../app/utils/formatters').formatCompactNumber
+  const formatCsvValue: typeof import('../../app/utils/export').formatCsvValue
   const formatCurrency: typeof import('../../app/utils/formatters').formatCurrency
   const formatDate: typeof import('../../app/utils/formatters').formatDate
   const formatPercentage: typeof import('../../app/utils/formatters').formatPercentage
@@ -121,6 +125,8 @@ declare global {
   const onUnmounted: typeof import('vue').onUnmounted
   const onUpdated: typeof import('vue').onUpdated
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
+  const parseAndValidateCsv: typeof import('../../app/utils/csv-parser').parseAndValidateCsv
+  const parseCsvText: typeof import('../../app/utils/csv-parser').parseCsvText
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
   const portalTargetInjectionKey: typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/usePortal').portalTargetInjectionKey
   const prefetchComponents: typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/preload').prefetchComponents
@@ -169,6 +175,7 @@ declare global {
   const toRef: typeof import('vue').toRef
   const toRefs: typeof import('vue').toRefs
   const toValue: typeof import('vue').toValue
+  const triggerFileDownload: typeof import('../../app/utils/export').triggerFileDownload
   const triggerRef: typeof import('vue').triggerRef
   const tryOnBeforeMount: typeof import('@vueuse/core').tryOnBeforeMount
   const tryOnBeforeUnmount: typeof import('@vueuse/core').tryOnBeforeUnmount
@@ -490,6 +497,12 @@ declare global {
   export type { NotificationOptions } from '../../app/composables/useNotifications'
   import('../../app/composables/useNotifications')
   // @ts-ignore
+  export type { ParseResult, ValidationRule } from '../../app/utils/csv-parser'
+  import('../../app/utils/csv-parser')
+  // @ts-ignore
+  export type { CsvColumn } from '../../app/utils/export'
+  import('../../app/utils/export')
+  // @ts-ignore
   export type { SellerRole, PermissionCheckContext } from '../../app/utils/permissions'
   import('../../app/utils/permissions')
   // @ts-ignore
@@ -547,6 +560,7 @@ declare module 'vue' {
     readonly computedWithControl: UnwrapRef<typeof import('@vueuse/core')['computedWithControl']>
     readonly controlledComputed: UnwrapRef<typeof import('@vueuse/core')['controlledComputed']>
     readonly controlledRef: UnwrapRef<typeof import('@vueuse/core')['controlledRef']>
+    readonly convertToCsv: UnwrapRef<typeof import('../../app/utils/export')['convertToCsv']>
     readonly createError: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/error')['createError']>
     readonly createEventHook: UnwrapRef<typeof import('@vueuse/core')['createEventHook']>
     readonly createGlobalState: UnwrapRef<typeof import('@vueuse/core')['createGlobalState']>
@@ -578,6 +592,8 @@ declare module 'vue' {
     readonly eagerComputed: UnwrapRef<typeof import('@vueuse/core')['eagerComputed']>
     readonly effect: UnwrapRef<typeof import('vue')['effect']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
+    readonly exportToCsv: UnwrapRef<typeof import('../../app/utils/export')['exportToCsv']>
+    readonly exportToJson: UnwrapRef<typeof import('../../app/utils/export')['exportToJson']>
     readonly extendLocale: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale')['extendLocale']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
     readonly extractShortcuts: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts')['extractShortcuts']>
@@ -588,6 +604,7 @@ declare module 'vue' {
     readonly formLoadingInjectionKey: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useFormField')['formLoadingInjectionKey']>
     readonly formOptionsInjectionKey: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/useFormField')['formOptionsInjectionKey']>
     readonly formatCompactNumber: UnwrapRef<typeof import('../../app/utils/formatters')['formatCompactNumber']>
+    readonly formatCsvValue: UnwrapRef<typeof import('../../app/utils/export')['formatCsvValue']>
     readonly formatCurrency: UnwrapRef<typeof import('../../app/utils/formatters')['formatCurrency']>
     readonly formatDate: UnwrapRef<typeof import('../../app/utils/formatters')['formatDate']>
     readonly formatPercentage: UnwrapRef<typeof import('../../app/utils/formatters')['formatPercentage']>
@@ -644,6 +661,8 @@ declare module 'vue' {
     readonly onUnmounted: UnwrapRef<typeof import('vue')['onUnmounted']>
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
+    readonly parseAndValidateCsv: UnwrapRef<typeof import('../../app/utils/csv-parser')['parseAndValidateCsv']>
+    readonly parseCsvText: UnwrapRef<typeof import('../../app/utils/csv-parser')['parseCsvText']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
     readonly portalTargetInjectionKey: UnwrapRef<typeof import('../../../../node_modules/.pnpm/@nuxt+ui@3.3.7_@babel+parser@7.29.13_axios@1.20.0_confbox@0.3.2_db0@0.3.4_drizzle-orm@0.45.4__bnfbf32niubya3l76vadz4xdei/node_modules/@nuxt/ui/dist/runtime/composables/usePortal')['portalTargetInjectionKey']>
     readonly prefetchComponents: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@3.21.11_@oxc-project+types@0.143.0_@types+node@20.19.13_@vue+compiler-sfc@3.5.45_bare-bu_iu6gtc7spkti3ayb65uj3vlrrm/node_modules/nuxt/dist/app/composables/preload')['prefetchComponents']>
@@ -692,6 +711,7 @@ declare module 'vue' {
     readonly toRef: UnwrapRef<typeof import('vue')['toRef']>
     readonly toRefs: UnwrapRef<typeof import('vue')['toRefs']>
     readonly toValue: UnwrapRef<typeof import('vue')['toValue']>
+    readonly triggerFileDownload: UnwrapRef<typeof import('../../app/utils/export')['triggerFileDownload']>
     readonly triggerRef: UnwrapRef<typeof import('vue')['triggerRef']>
     readonly tryOnBeforeMount: UnwrapRef<typeof import('@vueuse/core')['tryOnBeforeMount']>
     readonly tryOnBeforeUnmount: UnwrapRef<typeof import('@vueuse/core')['tryOnBeforeUnmount']>

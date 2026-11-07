@@ -21,7 +21,7 @@ function computeSellerBalances(
   currentDate: Date = new Date(),
 ): SellerBalanceSnapshot {
   let availableBalance = 0;
-  let pendingBalance = 0;
+  const pendingBalance = 0;
   let reservedBalance = 0;
 
   for (const entry of entries) {

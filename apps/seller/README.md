@@ -37,14 +37,20 @@ apps/seller/
 │   ├── middleware/              # auth.ts, seller-access.ts, guest.ts
 │   ├── pages/                   # File-based routes
 │   │   ├── dashboard/           # KPI metrics, revenue charts, recent orders
+│   │   ├── analytics/           # Deep analytics, ECharts GMV/returns, funnel, RFC 4180 export
+│   │   ├── pricing/             # Live quote simulator, volume tier rules, multi-currency matrix
 │   │   ├── onboarding/          # 4-step merchant onboarding & KYB verification
-│   │   ├── products/            # Product catalog, create, edit
-│   │   ├── inventory/           # Stock levels, reservations, low-stock alerts
+│   │   ├── products/            # Product catalog, create, edit, bulk CSV import/export
+│   │   ├── inventory/           # Stock levels, reservations, low-stock alerts, bulk stock adjustments
 │   │   ├── orders/              # Order listing, detail, shipment fulfillment
-│   │   ├── finance/             # Earnings ledger, balance, payouts, statements
+│   │   ├── finance/             # Earnings ledger, balance, payouts, dispute rebuttals
 │   │   ├── chat/                # Real-time buyer-seller messaging (Socket.IO)
+│   │   ├── messages/            # Route alias redirecting to /chat
 │   │   ├── support/             # Ticket management & inquiries
 │   │   ├── settings/            # Storefront customization, staff, policies
+│   │   ├── marketing/           # Merchant campaign participation
+│   │   ├── reviews/             # Customer review moderation & replies
+│   │   ├── account-health/      # Fraud & policy compliance indicators
 │   │   ├── login.vue            # Clerk sign-in & development authentication
 │   │   └── seller-disabled.vue  # Platform feature disable fallback
 │   ├── plugins/                 # clerk, vue-query, socket.io, gsap
@@ -97,7 +103,7 @@ apps/seller/
 
 ## 5. Testing & Quality Gates
 
-Run the test suite:
+Run the test suite (19 test suites, 82 tests, 100% pass rate):
 ```bash
 pnpm --filter seller test
 ```
