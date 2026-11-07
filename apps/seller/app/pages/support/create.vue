@@ -33,10 +33,12 @@ const handleSubmit = async () => {
   try {
     await api.post("/api/v1/support/tickets", {
       sellerId: sellerStore.activeSellerId,
+      categoryCode: form.value.category,
       category: form.value.category,
       priority: form.value.priority,
       subject: form.value.subject,
       description: form.value.description,
+      source: "SELLER",
     });
 
     notify.success("Ticket Submitted", "Our merchant operations team will review your request.");

@@ -18,8 +18,12 @@ const isLoading = ref(true);
 const fetchTickets = async () => {
   isLoading.value = true;
   try {
-    const data = await api.get<SupportTicket[]>("/api/v1/support/tickets");
-    tickets.value = Array.isArray(data) ? data : [];
+    const data = await api.get<any>("/api/v1/support/tickets");
+    tickets.value = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.items)
+        ? data.items
+        : [];
   } catch {
     tickets.value = [];
   } finally {

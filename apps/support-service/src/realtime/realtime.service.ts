@@ -1,9 +1,74 @@
+import crypto from "node:crypto";
 import { Injectable, Logger, Inject } from "@nestjs/common";
 import { Server as SocketIoServer, type Socket } from "socket.io";
 import { resolveCorsOrigins } from "@repo/types";
 import { env } from "../config/env.js";
 import { PrismaService } from "../database/prisma.service.js";
 import { safeTimingCompare } from "../common/guards/admin.guard.js";
+
+interface JwtClaims {
+  sub?: string;
+  exp?: number;
+  nbf?: number;
+  role?: string;
+  metadata?: { role?: string; isSeller?: boolean };
+}
+
+function verifySupportSocketJwtToken(token: string): JwtClaims | null {
+  const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
+  const parts = cleanToken.split(".");
+  if (parts.length !== 3) return null;
+
+  const jwtKey = process.env.CLERK_JWT_KEY;
+  const hmacKey = process.env.CLERK_JWT_HMAC_KEY;
+  const isTest = env.NODE_ENV === "test";
+
+  const signedData = `${parts[0]}.${parts[1]}`;
+  let signature: Buffer;
+  try {
+    signature = Buffer.from(parts[2]!, "base64url");
+  } catch {
+    return null;
+  }
+
+  let verified = false;
+  if (jwtKey && jwtKey.includes("-----BEGIN")) {
+    try {
+      const verifier = crypto.createVerify("RSA-SHA256");
+      verifier.update(signedData);
+      verified = verifier.verify(jwtKey, signature);
+    } catch {
+      verified = false;
+    }
+  } else if (hmacKey) {
+    try {
+      const expectedSig = crypto
+        .createHmac("sha256", hmacKey)
+        .update(signedData)
+        .digest();
+      verified =
+        signature.length === expectedSig.length &&
+        crypto.timingSafeEqual(signature, expectedSig);
+    } catch {
+      verified = false;
+    }
+  } else if (!isTest) {
+    return null;
+  }
+
+  if ((jwtKey || hmacKey) && !verified) return null;
+
+  try {
+    const payloadJson = Buffer.from(parts[1]!, "base64url").toString("utf-8");
+    const claims = JSON.parse(payloadJson) as JwtClaims;
+    const now = Math.floor(Date.now() / 1000);
+    if (claims.exp && now >= claims.exp) return null;
+    if (claims.nbf && now < claims.nbf) return null;
+    return claims;
+  } catch {
+    return null;
+  }
+}
 
 @Injectable()
 export class RealtimeService {
@@ -51,36 +116,72 @@ export class RealtimeService {
         try {
           const auth = socket.handshake.auth || {};
           const headers = socket.handshake.headers || {};
+          const isDevOrTest =
+            env.NODE_ENV === "development" || env.NODE_ENV === "test";
 
-          const secret =
-            (headers["x-internal-secret"] as string) ||
-            (auth.internalSecret as string);
+          const secret = headers["x-internal-secret"] as string | undefined;
           const isInternal = safeTimingCompare(
             secret,
             env.GATEWAY_INTERNAL_SECRET,
           );
 
-          const userId =
-            (headers["x-user-id"] as string) || (auth.userId as string);
-          const role =
-            (headers["x-user-role"] as string) ||
-            (auth.role as string) ||
-            "user";
-          const isSeller =
-            headers["x-user-is-seller"] === "true" || auth.isSeller === true;
+          let userId: string | undefined = undefined;
+          let role = "user";
+          let isSeller = false;
 
-          if (env.NODE_ENV === "production" && !isInternal) {
-            return next(new Error("Unauthorized: Invalid internal secret"));
+          // 1. Gateway-verified identity (internal secret + gateway header)
+          if (isInternal && headers["x-user-id"]) {
+            userId = headers["x-user-id"] as string;
+            role = (headers["x-user-role"] as string) || "user";
+            isSeller = headers["x-user-is-seller"] === "true";
+          } else {
+            // 2. Cryptographic token verification from handshake auth or Authorization header
+            const rawToken =
+              (auth.token as string | undefined) ||
+              (headers["authorization"] as string | undefined);
+
+            if (rawToken) {
+              const verifiedClaims = verifySupportSocketJwtToken(rawToken);
+              if (verifiedClaims?.sub) {
+                userId = verifiedClaims.sub;
+                role =
+                  verifiedClaims.metadata?.role ||
+                  verifiedClaims.role ||
+                  "user";
+                isSeller =
+                  verifiedClaims.metadata?.isSeller === true ||
+                  role === "seller";
+              }
+            }
           }
 
-          if (!userId && !isInternal && env.NODE_ENV === "production") {
+          // 3. Reject unauthenticated connections in production
+          if (env.NODE_ENV === "production" && !userId) {
+            return next(
+              new Error("Unauthorized: Invalid internal secret or missing token"),
+            );
+          }
+
+          // 4. In development/test mode only: fallback
+          if (!userId && isDevOrTest) {
+            userId =
+              (headers["x-user-id"] as string) || (auth.userId as string);
+            role =
+              (headers["x-user-role"] as string) ||
+              (auth.role as string) ||
+              "user";
+            isSeller =
+              headers["x-user-is-seller"] === "true" || auth.isSeller === true;
+          }
+
+          if (!userId) {
             return next(
               new Error("Unauthorized: Missing user authentication"),
             );
           }
 
           socket.data = {
-            userId: userId || "system",
+            userId,
             role,
             isSeller,
             isInternal,

@@ -68,6 +68,30 @@ export async function registerConversationRoutes(
     },
   );
 
+  app.get(
+    "/api/v1/chat",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const parsed = ConversationFilterSchema.safeParse(request.query);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: "Bad Request",
+          message: "Invalid query parameters",
+          issues: parsed.error.issues,
+        });
+      }
+
+      const user = request.user!;
+      const result = await ConversationService.listUserConversations(
+        user.userId,
+        parsed.data,
+        user.isAdmin,
+      );
+      return reply.send(result);
+    },
+  );
+
   // 3. Get single conversation details
   app.get(
     "/api/v1/chat/conversations/:id",

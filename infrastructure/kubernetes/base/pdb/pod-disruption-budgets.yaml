@@ -75,4 +75,26 @@ spec:
     matchLabels:
       app.kubernetes.io/name: larekmart
       app.kubernetes.io/component: api-gateway
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: seller-pdb
+  namespace: larekmart
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: seller
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: seller-service-pdb
+  namespace: larekmart
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: seller-service
 

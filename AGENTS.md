@@ -7,8 +7,8 @@ and the relevant scoped `AGENTS.md`.
 
 ## 1. What this is
 
-**Larekmart** is a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . It is a
-**pnpm + Turborepo monorepo** with two Next.js frontends, 26 backend services, and
+**Larekmart** is a production-grade microservices e-commerce platform for marketplaces like Amazon, Daraz, AliExpress, Alibaba, and others. It is a
+**pnpm + Turborepo monorepo** with three frontends (Customer Storefront in Next.js 16, Admin Dashboard in Next.js 15, and Seller & Merchant Dashboard in Nuxt 3), 28 backend services, and
 shared internal packages. Cross-service communication is **asynchronous via Kafka**;
 there are no service-to-service HTTP calls.
 
@@ -32,7 +32,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 
 1. **Root (always)** — this file.
 2. **Scope** — the `AGENTS.md` in the workspace you are editing:
-   - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`, `apps/api-gateway/AGENTS.md`
+   - `apps/admin/AGENTS.md`, `apps/client/AGENTS.md`, `apps/seller/AGENTS.md`, `apps/api-gateway/AGENTS.md`
    - `apps/<service>/AGENTS.md` for `auth-service`, `order-service`, `payment-service`, `email-service`, `product-service`, `analytic-service`, `notification-service`, `search-service`, `inventory-service`, `recommendation-service`, `cart-service`, `catalog-service`, `shipping-service`, `user-service`, `media-service`, `review-service`, `wishlist-service`, `promotion-service`, `tax-service`, `return-service`, `pricing-service`, `vendor-service`, `seller-service`, `commission-service`, `payout-service`, `fraud-service`, `support-service`, `chat-service`
    - `packages/<pkg>/AGENTS.md` for `kafka`, `types`, `monitoring`, `redis`, `opensearch`, `product-db`, `order-db`, `cart-db`, `inventory-db`, `catalog-db`, `shipping-db`, `user-db`, `vendor-db`, `support-db`, `typescript-config`
 3. **Feature skills** — `.agents/skills/<skill>/SKILL.md`, loaded by name when relevant.
@@ -139,10 +139,10 @@ Every AI coding agent operating in this repository MUST follow this 3-stage life
 
 Whenever building, modifying, expanding, or integrating any feature service (e.g. `chat-service`, `support-service`, `fraud-service`, `payout-service`, `commission-service`, etc.), agents MUST strictly execute all 6 pillars. No feature service work is complete if any pillar is skipped:
 
-1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**:
-   - Deliver full UI coverage across both applications: Customer Storefront (`apps/client`) and Admin Management Dashboard (`apps/admin`).
-   - Create typed API client services under `apps/client/src/services/<feature>.service.ts` and `apps/admin/src/services/<feature>.service.ts` routing through API Gateway.
-   - Implement responsive, mobile-first pages, dialogs/modals, data tables, filter toolbars, status badges, and action flows adhering to the Larekmart design system (dark/light mode, Tailwind CSS v4, Zustand/React Query state, hydration safety).
+1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`, `apps/seller/*`)**:
+   - Deliver full UI coverage across all three applications: Customer Storefront (`apps/client`), Admin Management Dashboard (`apps/admin`), and Seller & Merchant Dashboard (`apps/seller`).
+   - Create typed API client services under `apps/client/src/services/<feature>.service.ts`, `apps/admin/src/services/<feature>.service.ts`, and `apps/seller/app/composables/use<Feature>.ts` routing through API Gateway.
+   - Implement responsive, mobile-first pages, dialogs/modals, data tables, filter toolbars, status badges, and action flows adhering to the Larekmart design system (dark/light mode, Tailwind CSS v4, Zustand/React Query or Pinia/Vue Query state, hydration safety).
 
 2. **Pillar 2 — Cross-Service & Gateway Integration (`apps/*` all services and others)**:
    - Register reverse-proxy routes in `apps/api-gateway` (`public.routes.ts`, `authenticated.routes.ts`, or `admin.routes.ts`) with route prefix mapping, circuit breakers, rate limiting, and identity header sanitization.
@@ -193,8 +193,8 @@ Whenever building, modifying, expanding, or integrating any feature service (e.g
 ### After Making Changes
 
 1. **Type-Check**: Run `pnpm check-types` (or `pnpm --filter <workspace> check-types`) across affected packages.
-2. **Build**: Run `pnpm build` (or `pnpm --filter <workspace> build`) if a Next.js app or `payment-service` was modified.
-3. **Lint**: Run `pnpm lint` if `apps/admin` or `apps/client` were touched.
+2. **Build**: Run `pnpm build` (or `pnpm --filter <workspace> build`) if a frontend app (`client`, `admin`, `seller`) or `payment-service` was modified.
+3. **Lint**: Run `pnpm lint` if `apps/admin`, `apps/client`, or `apps/seller` were touched.
 4. **Format**: Run `pnpm format` on modified files.
 5. **Review Diff**: Verify no secrets, `.env` files, or generated Prisma files were staged.
 6. **Update Documentation**: Update relevant `README.md`, `AGENTS.md`, or `docs/` files if architecture, contracts, or workflows were changed.

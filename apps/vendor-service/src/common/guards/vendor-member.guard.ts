@@ -7,6 +7,8 @@ import {
 } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { PrismaService } from "../../database/prisma.service.js";
+import { env } from "../../config/env.js";
+import { isInternalService } from "./admin.guard.js";
 
 @Injectable()
 export class VendorMemberGuard implements CanActivate {
@@ -14,6 +16,16 @@ export class VendorMemberGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
+    const isInternal = isInternalService(request);
+    const isDevOrTest =
+      env.NODE_ENV === "development" || env.NODE_ENV === "test";
+
+    if (!isInternal && !isDevOrTest) {
+      throw new ForbiddenException(
+        "Invalid or missing internal service secret",
+      );
+    }
+
     const userId = request.headers["x-user-id"] as string | undefined;
     const role = request.headers["x-user-role"] as string | undefined;
     const params = request.params as { vendorId?: string };
@@ -23,7 +35,7 @@ export class VendorMemberGuard implements CanActivate {
       throw new ForbiddenException("Authentication required");
     }
 
-    if (role === "admin") {
+    if (role === "admin" || role === "super_admin") {
       return true;
     }
 

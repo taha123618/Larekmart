@@ -22,8 +22,33 @@ const isLoading = ref(true);
 const fetchInventory = async () => {
   isLoading.value = true;
   try {
-    const data = await api.get<InventoryStock[]>("/api/v1/inventory");
-    inventoryItems.value = Array.isArray(data) ? data : [];
+    const data = await api.get<any>("/api/v1/inventory");
+    const rawList = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.data)
+        ? data.data
+        : [];
+    inventoryItems.value = rawList.map((item: any) => ({
+      ...item,
+      availableStock:
+        item.availableStock ??
+        Math.max(0, (item.quantityOnHand ?? 0) - (item.quantityReserved ?? 0)),
+      reservedStock: item.reservedStock ?? (item.quantityReserved ?? 0),
+      safetyStock: item.safetyStock ?? 0,
+      reorderPoint: item.reorderPoint ?? 10,
+      productName:
+        item.productName || item.product?.name || `Product #${item.productId}`,
+      sku:
+        item.sku ||
+        `SKU-${item.productId?.slice?.(0, 8) || item.id?.slice?.(0, 8)}`,
+      status:
+        item.status ||
+        ((item.quantityOnHand ?? 0) <= 0
+          ? "OUT_OF_STOCK"
+          : (item.quantityOnHand ?? 0) <= (item.reorderPoint ?? 10)
+            ? "LOW_STOCK"
+            : "IN_STOCK"),
+    }));
   } catch {
     inventoryItems.value = [];
   } finally {

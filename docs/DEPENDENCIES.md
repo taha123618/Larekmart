@@ -159,7 +159,7 @@ apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/monitoring
                            └─▶ @repo/types
 
-apps/admin, apps/client ─▶ @repo/eslint-config, @repo/typescript-config
+apps/admin, apps/client, apps/seller ─▶ @repo/eslint-config, @repo/typescript-config
 all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 ```
 

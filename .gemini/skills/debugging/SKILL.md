@@ -120,6 +120,29 @@ Actionable troubleshooting playbooks for Larekmart services and infrastructure.
    - Symptoms: `data-motion-id` or inline styles injected into SVGs before React hydration completes.
    - Fix: Add `suppressHydrationWarning` directly to the `<svg>` or Lucide icon component (e.g. `<Sparkles suppressHydrationWarning />`).
 
+## 5. Nuxt 3 & Seller Dashboard (`apps/seller` :3004) Troubleshooting
+
+### Issue: Nuxt SSR Hydration Mismatch or Client Global Reference Error
+1. **Window / Storage Access on Server**:
+   - Symptoms: `window is not defined` or `localStorage is not defined` during SSR.
+   - Fix: Guard access with `import.meta.client` or wrap in `onMounted`:
+     ```ts
+     if (import.meta.client) {
+       const saved = localStorage.getItem('seller_theme');
+     }
+     ```
+2. **Session Hydration via Nitro Server**:
+   - Verify `/api/auth/session` route decrypts and cryptographically validates the Clerk JWT against `CLERK_JWT_KEY` / `CLERK_JWT_HMAC_KEY`.
+   - Never use unverified base64 decode fallbacks in production.
+
+### Issue: Real-Time Chat & Support Socket.IO Disconnects
+1. **Handshake Verification Failure (401/403)**:
+   - Check if Socket.IO handshake carries a valid Clerk session token in `socket.handshake.auth.token`.
+   - Verify that API Gateway reverse proxy forwards `/socket.io` with proper WebSocket upgrade headers.
+2. **Room Subscription & Storefront Scoping**:
+   - Verify that the seller joins room `seller:<sellerId>` or `conversation:<id>`.
+   - Ensure the active store in `seller.store.ts` matches `currentSeller.id`.
+
 ## 5. Notification Service & WebSockets (Go :8005)
 
 ### Issue: In-app WebSocket not receiving real-time notifications

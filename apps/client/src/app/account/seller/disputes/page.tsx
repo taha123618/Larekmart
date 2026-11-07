@@ -228,6 +228,36 @@ export default function MerchantDisputesPage(): React.JSX.Element {
           </p>
         </div>
 
+        <a
+          href={`${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/finance/disputes`}
+          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition self-start sm:self-auto"
+        >
+          <Store className="w-4 h-4" />
+          <span>Open in Seller Central</span>
+        </a>
+      </div>
+
+      {/* Migration Notice Banner */}
+      <div className="mb-8 p-4 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-900 dark:text-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Store className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+          <div>
+            <h3 className="text-sm font-bold text-indigo-950 dark:text-indigo-200">
+              Seller Operations Migrated to Seller Central
+            </h3>
+            <p className="text-xs text-indigo-800/80 dark:text-indigo-300/80 mt-0.5">
+              Full dispute rebuttals, financial settlement statements, and payout history have moved to the dedicated Seller Central Dashboard.
+            </p>
+          </div>
+        </div>
+        <a
+          href={`${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/finance/disputes`}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition shrink-0"
+        >
+          <span>Go to Seller Central &rarr;</span>
+        </a>
+      </div>
+
         <button
           onClick={loadData}
           className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0"

@@ -12,7 +12,7 @@ data:
   # API Gateway is fronted by the ingress controller: trust exactly one proxy
   # hop so client IPs are resolved without accepting arbitrary X-Forwarded-For.
   TRUST_PROXY: "1"
-  CORS_ORIGIN: "https://larekmart.com,https://admin.larekmart.com"
+  CORS_ORIGIN: "https://larekmart.com,https://admin.larekmart.com,https://seller.larekmart.com"
 
   # Kafka Message Bus
   KAFKA_BROKERS: "kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
@@ -40,6 +40,8 @@ data:
   CLIENT_WS_URL: "wss://larekmart.com/ws"
   ADMIN_API_GATEWAY_URL: ""
   ADMIN_WS_URL: "wss://admin.larekmart.com/ws"
+  SELLER_API_GATEWAY_URL: ""
+  SELLER_WS_URL: "wss://seller.larekmart.com/ws"
 
   # Internal Service Discovery URLs
   PRODUCT_SERVICE_URL: "http://product-service.larekmart.svc.cluster.local:8000"
@@ -68,3 +70,4 @@ data:
   PAYOUT_SERVICE_URL: "http://payout-service.larekmart.svc.cluster.local:8023"
   FRAUD_SERVICE_URL: "http://fraud-service.larekmart.svc.cluster.local:8024"
   SUPPORT_SERVICE_URL: "http://support-service.larekmart.svc.cluster.local:8025"
+  CHAT_SERVICE_URL: "http://chat-service.larekmart.svc.cluster.local:8026"

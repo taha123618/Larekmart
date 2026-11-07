@@ -18,8 +18,12 @@ const isLoading = ref(true);
 const fetchPayouts = async () => {
   isLoading.value = true;
   try {
-    const data = await api.get<PayoutRecord[]>("/api/v1/sellers/me/payouts");
-    payouts.value = Array.isArray(data) ? data : [];
+    const data = await api.get<any>("/api/v1/sellers/me/payouts");
+    payouts.value = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.payouts)
+        ? data.payouts
+        : [];
   } catch {
     payouts.value = [];
   } finally {

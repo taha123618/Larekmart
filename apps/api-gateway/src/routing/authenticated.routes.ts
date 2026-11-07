@@ -34,6 +34,7 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     serviceName: services.order.name,
     timeoutMs: services.order.timeoutMs,
     rewritePrefix: "/orders",
+    requireAuth: true,
   },
   {
     prefix: "/orders",
@@ -41,6 +42,7 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     serviceName: services.order.name,
     timeoutMs: services.order.timeoutMs,
     rewritePrefix: "/orders",
+    requireAuth: true,
   },
   {
     prefix: "/api/v1/user-orders",
@@ -66,14 +68,6 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/seller-orders",
     requireSeller: true,
   },
-  {
-    prefix: "/user-orders",
-    target: services.order.url,
-    serviceName: services.order.name,
-    timeoutMs: services.order.timeoutMs,
-    rewritePrefix: "/user-orders",
-    requireAuth: true,
-  },
 
   // 4. Payment Service Authenticated Routes
   {
@@ -91,6 +85,7 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     serviceName: services.inventory.name,
     timeoutMs: services.inventory.timeoutMs,
     rewritePrefix: "/api/v1/inventory",
+    requireAuth: true,
   },
 
   // 6. Shipping Service

@@ -10,8 +10,8 @@ monorepo. This skill is the orientation map; deep detail is in `docs/ARCHITECTUR
 
 ## Mental model
 
-- **Two frontends** own all user interaction and route through the centralized API Gateway:
-  `client` (storefront, :3002) and `admin` (dashboard, :3003).
+- **Three frontends** own all user interaction and route through the centralized API Gateway:
+  `client` (storefront, :3002), `admin` (dashboard, :3003), and `seller` (merchant dashboard, :3004).
 - **One API Gateway**:
   - `api-gateway` (:8080 / :8090) — Fastify 5 single public entrypoint reverse proxy, request correlation, Clerk session authentication, Redis rate limiting, circuit breaker, home aggregation (`/api/v1/home`), client header stripping, and internal secret injection.
 - **Twenty-five HTTP backend services & one headless worker (26 backend microservices in total)** own business logic and each owns its data:

@@ -173,23 +173,32 @@ export type Ticket = z.infer<typeof TicketSchema>;
 // API Request & Query Schemas
 // ============================================================================
 
-export const CreateTicketSchema = z.object({
-  subject: z.string().min(3).max(255),
-  description: z.string().min(10),
-  categoryCode: z.string().min(2).max(64),
-  priority: TicketPriorityEnum.optional().default("MEDIUM"),
-  source: TicketSourceEnum.optional().default("CUSTOMER"),
-  customerId: z.string().optional(),
-  customerEmail: z.string().email().optional(),
-  customerPhone: z.string().optional(),
-  sellerId: z.string().optional(),
-  orderId: z.string().optional(),
-  paymentId: z.string().optional(),
-  returnId: z.string().optional(),
-  chatSessionId: z.string().optional(),
-  attachments: z.array(MediaAttachmentSchema).optional().default([]),
-  metadata: z.record(z.string(), z.any()).optional().default({}),
-});
+export const CreateTicketSchema = z.preprocess(
+  (data: any) => {
+    if (data && typeof data === "object") {
+      const categoryCode = data.categoryCode ?? data.category;
+      return { ...data, categoryCode };
+    }
+    return data;
+  },
+  z.object({
+    subject: z.string().min(3).max(255),
+    description: z.string().min(10),
+    categoryCode: z.string().min(2).max(64),
+    priority: TicketPriorityEnum.optional().default("MEDIUM"),
+    source: TicketSourceEnum.optional().default("CUSTOMER"),
+    customerId: z.string().optional(),
+    customerEmail: z.string().email().optional(),
+    customerPhone: z.string().optional(),
+    sellerId: z.string().optional(),
+    orderId: z.string().optional(),
+    paymentId: z.string().optional(),
+    returnId: z.string().optional(),
+    chatSessionId: z.string().optional(),
+    attachments: z.array(MediaAttachmentSchema).optional().default([]),
+    metadata: z.record(z.string(), z.any()).optional().default({}),
+  }),
+);
 export type CreateTicketInput = z.input<typeof CreateTicketSchema>;
 
 export const UpdateTicketSchema = z.object({

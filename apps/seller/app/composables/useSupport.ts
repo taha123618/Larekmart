@@ -28,11 +28,18 @@ export function useCreateTicket() {
       subject: string;
       description: string;
       category: string;
+      categoryCode?: string;
       priority?: SupportTicket["priority"];
+      source?: string;
+      sellerId?: string;
     }) =>
       apiFetch<SupportTicket>("/api/v1/support/tickets", {
         method: "POST",
-        body,
+        body: {
+          ...body,
+          categoryCode: body.categoryCode || body.category,
+          source: body.source || "SELLER",
+        },
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["support", "tickets"] });

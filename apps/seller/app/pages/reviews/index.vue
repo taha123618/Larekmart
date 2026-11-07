@@ -45,7 +45,14 @@ onMounted(async () => {
 async function fetchReviews() {
   isLoading.value = true;
   try {
-    const data = await api.get<Review[]>("/api/v1/reviews").catch(() => []);
+    const res = await api.get<any>("/api/v1/reviews").catch(() => null);
+    const data = Array.isArray(res)
+      ? res
+      : Array.isArray(res?.reviews)
+        ? res.reviews
+        : Array.isArray(res?.items)
+          ? res.items
+          : [];
     reviews.value = Array.isArray(data) && data.length > 0 ? data : [
       {
         id: "rev_101",
@@ -131,6 +138,7 @@ async function handleSaveReply() {
   try {
     // Attempt backend save via review endpoint if available
     await api.post(`/api/v1/reviews/${replyingToReview.value.id}/reply`, {
+      content: replyText.value.trim(),
       reply: replyText.value.trim(),
     }).catch(() => null);
 

@@ -2,6 +2,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
 import type { Ref } from "vue";
 import { computed, unref } from "vue";
 import type {
+  DisputeResponse,
+  DisputesOverview,
+  SubmitRebuttalInput,
+  DisputeStatus,
+} from "@repo/types";
+import type {
   Seller,
   SellerStore,
   SellerPerformanceSnapshot,
@@ -119,6 +125,72 @@ export function useCreateSeller() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["sellers", "me"] });
+    },
+  });
+}
+
+export function useVendorDisputes(
+  vendorId: Ref<string | null> | string,
+  status?: Ref<DisputeStatus | undefined> | DisputeStatus,
+) {
+  const api = useApi();
+  const idRef = computed(() => unref(vendorId));
+  const statusRef = computed(() => unref(status));
+
+  return useQuery({
+    queryKey: ["vendor", idRef, "disputes", statusRef],
+    queryFn: async () => {
+      const vid = idRef.value;
+      if (!vid) return { disputes: [], total: 0 };
+      const query = statusRef.value ? `?status=${statusRef.value}` : "";
+      return api.get<{ disputes: DisputeResponse[]; total: number }>(
+        `/api/v1/vendors/${vid}/disputes${query}`,
+      );
+    },
+    enabled: computed(() => Boolean(idRef.value)),
+  });
+}
+
+export function useVendorDisputesOverview(
+  vendorId: Ref<string | null> | string,
+) {
+  const api = useApi();
+  const idRef = computed(() => unref(vendorId));
+
+  return useQuery({
+    queryKey: ["vendor", idRef, "disputes-overview"],
+    queryFn: async () => {
+      const vid = idRef.value;
+      if (!vid) return null;
+      return api.get<DisputesOverview>(
+        `/api/v1/vendors/${vid}/disputes/overview`,
+      );
+    },
+    enabled: computed(() => Boolean(idRef.value)),
+  });
+}
+
+export function useSubmitDisputeRebuttal() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      vendorId,
+      disputeId,
+      rebuttal,
+    }: {
+      vendorId: string;
+      disputeId: string;
+      rebuttal: SubmitRebuttalInput;
+    }) => {
+      return api.post<DisputeResponse>(
+        `/api/v1/vendors/${vendorId}/disputes/${disputeId}/rebuttal`,
+        rebuttal,
+      );
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["vendor"] });
     },
   });
 }

@@ -17,8 +17,7 @@ the workspace map, the golden rules, commands, and the instruction hierarchy.
   scoped file it belongs to) so every agent stays in sync.
 - This repo is a pnpm 9 + Turborepo monorepo. Use `pnpm`, not npm or yarn, and prefer
   `pnpm --filter <workspace> ...` for scoped commands.
-- **Verification:** Run `pnpm check-types` across workspaces, plus `pnpm build` (Next apps,
-  payment-service) and `pnpm lint` (admin, client) where they apply. When adding tests,
+- **Verification:** Run `pnpm check-types` across workspaces, plus `pnpm build` (frontend apps: client, admin, seller, plus payment-service) and `pnpm lint` (admin, client, seller) where they apply. When adding tests,
   follow [`docs/TESTING.md`](./docs/TESTING.md).
 - **Architecture & Engineering Plans:** Authoritative specifications, invariants, and verification reports live in [`docs/plans/`](./docs/plans/README.md). Consult them before modifying cross-service flows:
   - Hyperscale Flash-Sale Hardening: [`docs/plans/hyperscale-flash-sale-architecture-hardening.md`](./docs/plans/hyperscale-flash-sale-architecture-hardening.md)
@@ -30,10 +29,11 @@ the workspace map, the golden rules, commands, and the instruction hierarchy.
   - Support Service Implementation Plan: [`docs/plans/support-service-implementation-plan.md`](./docs/plans/support-service-implementation-plan.md)
   - Chat Service Architecture & Implementation: [`docs/plans/chat-service-architecture.md`](./docs/plans/chat-service-architecture.md)
   - Database Migration & Seeding Orchestration: [`docs/plans/monorepo-database-orchestration-and-seeding-plan.md`](./docs/plans/monorepo-database-orchestration-and-seeding-plan.md)
+  - Seller Dashboard Implementation Plan: [`docs/plans/seller-dashboard-implementation-plan.md`](./docs/plans/seller-dashboard-implementation-plan.md)
 
 - **Mandatory Feature Service Delivery Standard (The 6 Pillars):**
   Whenever building, modifying, expanding, or integrating any feature service in Larekmart (e.g. `chat-service`, `support-service`, `fraud-service`, `payout-service`, etc.), all agents must strictly execute the 6 Pillars:
-  1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**: Deliver full UI coverage on both the customer storefront and admin dashboard with typed client services, responsive layouts, action dialogs, and design-system compliance.
+  1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`, `apps/seller/*`)**: Deliver full UI coverage on the customer storefront, admin dashboard, and seller dashboard with typed client services, responsive layouts, action dialogs, and design-system compliance.
   2. **Pillar 2 — Cross-Service & Gateway Integration (`apps/*` all services)**: Wire reverse proxying, rate-limiting, and circuit breakers in `api-gateway`; establish asynchronous Kafka event streams with transactional outbox and DLQ isolation; connect domain relationships without cross-service HTTP calls.
   3. **Pillar 3 — Documentation, Skills, Manifests & Configuration Updates (`*.md`, skills, `*.yml`)**: Update architecture docs (`docs/API.md`, `docs/ARCHITECTURE.md`, `docs/EVENT-DRIVEN-ARCHITECTURE.md`), deployment manifests (`docker-compose.yml`, Kubernetes Kustomize, Prometheus, GitHub workflows), and agent skills across all mirror folders.
   4. **Pillar 4 — Deep Project Analysis & Comprehensive Testing (Unit & Integration)**: Conduct deep architectural analysis before and after changes; write comprehensive tsx/jest unit and integration test suites; enforce 100% test pass rate with zero TypeScript compile errors.

@@ -594,35 +594,39 @@ export default function AccountPage(): React.JSX.Element {
         </Link>
 
         {isSellerEnabled && (
-          <Link
-            href="/become-a-seller"
+          <a
+            href={
+              isSeller
+                ? process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"
+                : `${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/onboarding`
+            }
             className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all font-semibold"
           >
             <Store className="w-4 h-4 text-indigo-500" />
             <span>
-              {isSeller ? "Seller Portal (Active)" : "Become a Seller"}
+              {isSeller ? "Seller Central (Active)" : "Become a Seller"}
             </span>
-          </Link>
+          </a>
         )}
 
         {isSeller && (
-          <Link
-            href="/account/seller/payouts"
+          <a
+            href={`${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/finance/payouts`}
             className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all font-semibold"
           >
             <Coins className="w-4 h-4 text-emerald-500" />
             <span>Escrow & Payouts</span>
-          </Link>
+          </a>
         )}
 
         {isSeller && (
-          <Link
-            href="/account/seller/disputes"
+          <a
+            href={`${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/finance/disputes`}
             className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-all font-semibold"
           >
             <ShieldAlert className="w-4 h-4 text-amber-500" />
             <span>Disputes & Claims</span>
-          </Link>
+          </a>
         )}
       </div>
 

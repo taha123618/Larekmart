@@ -222,13 +222,19 @@ function FooterComponent() {
             return [
               {
                 label: "Seller Portal",
-                href: "/become-a-seller",
+                href:
+                  process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004",
                 count: "[PORTAL]",
               },
             ];
           }
           if (!isSellerRegistrationOpen) return [];
-          return [item];
+          return [
+            {
+              ...item,
+              href: `${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/onboarding`,
+            },
+          ];
         }
         return [item];
       }),

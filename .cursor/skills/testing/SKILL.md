@@ -29,6 +29,7 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 | **`pricing-service`**        | Node.js Test Runner / `tsx` | Ten suites via `tests/pricing-service.test.ts`: decimal arithmetic precision, volume tiered pricing, currency conversion, negative price prevention, quote snapshot persistence, Fastify endpoints, and event emission                                                                                           |
 | **`vendor-service`**         | Node.js Test Runner / `tsx` | Legal entity registration, KYB document verification, member access, status transitions, and lifecycle event emission (`tests/vendor-service.test.ts`)                                                                                                                                                           |
 | **`seller-service`**         | Node.js Test Runner / `tsx` | Marketplace storefront profiles, multi-staff permissions, operational settings, metrics snapshots, and Fastify endpoints (`tests/seller-service.test.ts`)                                                                                                                                                        |
+| **`seller`**                 | Vitest / Playwright         | Pinia stores, API error handling, utilities, UI components, and end-to-end multi-step merchant onboarding workflows (`tests/`)                                                                                                                                                                                  |
 | **`commission-service`**     | Node.js Test Runner / `tsx` | Tiered rate evaluation, Decimal.js financial precision, rule versioning, order fee calculation, quote snapshots, and event emission (`tests/commission-service.test.ts`)                                                                                                                                         |
 | **`payout-service`**         | Node.js Test Runner / `tsx` | Append-only balanced double-entry ledger invariant tests (`SUM(debit) == SUM(credit)`), settlement batches, provider reconciliation, and seller balance queries (`tests/payout-service.test.ts`)                                                                                                                 |
 | **`fraud-service`**          | Pytest (`pytest`) via `uv`  | Real-time multi-entity risk scoring, Redis sliding-window velocity tracker, explainable rules, scikit-learn anomaly detection, analyst case reviews, and Kafka event stream processing (20 tests via `tests/`)                                                                                                   |
@@ -67,6 +68,7 @@ pnpm --filter return-service test
 pnpm --filter pricing-service test
 pnpm --filter vendor-service test
 pnpm --filter seller-service test
+pnpm --filter seller test
 pnpm --filter commission-service test
 pnpm --filter payout-service test
 pnpm --filter fraud-service test

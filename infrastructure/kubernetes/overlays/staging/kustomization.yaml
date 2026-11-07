@@ -18,6 +18,9 @@ patches:
         value: staging-admin.larekmart.com
       - op: replace
         path: /spec/rules/2/host
+        value: staging-seller.larekmart.com
+      - op: replace
+        path: /spec/rules/3/host
         value: staging-api.larekmart.com
     target:
       kind: Ingress
@@ -27,6 +30,8 @@ images:
   - name: larekmart/client
     newTag: staging
   - name: larekmart/admin
+    newTag: staging
+  - name: larekmart/seller
     newTag: staging
   - name: larekmart/product-service
     newTag: staging

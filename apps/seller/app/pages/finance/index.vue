@@ -21,24 +21,45 @@ const isLoading = ref(true);
 onMounted(async () => {
   try {
     const [balRes, stmtRes, payRes] = await Promise.all([
-      api.get<SellerBalance>("/api/v1/sellers/me/balance").catch(() => null),
-      api.get<SettlementStatement[]>("/api/v1/sellers/me/statements").catch(() => []),
-      api.get<PayoutRecord[]>("/api/v1/sellers/me/payouts").catch(() => []),
+      api.get<any>("/api/v1/sellers/me/balance").catch(() => null),
+      api.get<any>("/api/v1/sellers/me/statements").catch(() => []),
+      api.get<any>("/api/v1/sellers/me/payouts").catch(() => []),
     ]);
 
-    balance.value = balRes || {
-      sellerId: "me",
-      currency: "USD",
-      availableBalance: 4850.75,
-      pendingBalance: 1240.0,
-      reservedBalance: 350.0,
-      totalEarnings: 38420.5,
-      lastPayoutDate: new Date(Date.now() - 86400000 * 7).toISOString(),
-      lastPayoutAmount: 2500.0,
-    };
+    if (balRes) {
+      balance.value = {
+        sellerId: balRes.sellerId || "me",
+        currency: balRes.currency || "USD",
+        availableBalance: balRes.availableBalance ?? 0,
+        pendingBalance: balRes.pendingBalance ?? balRes.pendingSettlement ?? 0,
+        reservedBalance: balRes.reservedBalance ?? balRes.reserveHold ?? 0,
+        totalEarnings: balRes.totalEarnings ?? balRes.lifetimePayouts ?? 0,
+        lastPayoutDate: balRes.lastPayoutDate || balRes.lastPayoutAt || null,
+        lastPayoutAmount: balRes.lastPayoutAmount ?? 0,
+      };
+    } else {
+      balance.value = {
+        sellerId: "me",
+        currency: "USD",
+        availableBalance: 4850.75,
+        pendingBalance: 1240.0,
+        reservedBalance: 350.0,
+        totalEarnings: 38420.5,
+        lastPayoutDate: new Date(Date.now() - 86400000 * 7).toISOString(),
+        lastPayoutAmount: 2500.0,
+      };
+    }
 
-    statements.value = Array.isArray(stmtRes) ? stmtRes : [];
-    recentPayouts.value = Array.isArray(payRes) ? payRes : [];
+    statements.value = Array.isArray(stmtRes)
+      ? stmtRes
+      : Array.isArray(stmtRes?.statements)
+        ? stmtRes.statements
+        : [];
+    recentPayouts.value = Array.isArray(payRes)
+      ? payRes
+      : Array.isArray(payRes?.payouts)
+        ? payRes.payouts
+        : [];
   } catch {
     //
   } finally {
@@ -54,6 +75,13 @@ onMounted(async () => {
       description="View available balances, settlement cycles, automatic payout schedules, and tax statements."
     >
       <template #actions>
+        <NuxtLink
+          to="/finance/disputes"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs transition hover:bg-slate-50 dark:hover:bg-slate-700"
+        >
+          <UIcon name="i-heroicons-shield-exclamation" class="h-4 w-4 text-rose-500" />
+          <span>Customer Disputes</span>
+        </NuxtLink>
         <NuxtLink
           to="/finance/payouts"
           class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-primary-700"

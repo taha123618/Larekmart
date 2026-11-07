@@ -37,7 +37,12 @@ const scrollToBottom = async () => {
 
 onMounted(async () => {
   try {
-    const list = await api.get<ChatConversation[]>("/api/v1/chat").catch(() => []);
+    const res = await api.get<any>("/api/v1/chat/conversations").catch(() => null);
+    const list = Array.isArray(res)
+      ? res
+      : Array.isArray(res?.conversations)
+        ? res.conversations
+        : [];
     if (Array.isArray(list) && list.length > 0) {
       conversations.value = list;
       activeConversationId.value = list[0]?.id ?? null;

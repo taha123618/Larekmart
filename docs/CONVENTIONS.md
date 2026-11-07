@@ -53,6 +53,7 @@ already established in the repository.
 - **Forms:** `react-hook-form` + `zodResolver` with schemas imported from `@repo/types`.
 - **UI (admin):** shadcn/ui components live in `src/components/ui`; compose with
   `cn()` from `@/lib/utils`; icons from `lucide-react`; toasts via `react-toastify`.
+- **UI (seller):** Nuxt UI 3 + Tailwind CSS v4; forms via VeeValidate 4 + Zod; state via Pinia (client-only) + TanStack Vue Query (server state); GSAP 3 animations; Socket.IO client for chat.
 - **State (client):** `zustand` with `persist` for the cart; keep server data on the
   server.
 - **Styling:** Tailwind v4 utility classes with the design tokens/CSS variables defined
@@ -67,8 +68,8 @@ already established in the repository.
 
 - **Prettier** is the formatter: `pnpm format` (`**/*.{ts,tsx,md}`). Run it on files you
   touch.
-- **ESLint** flat configs come from `@repo/eslint-config`; only `admin` and `client`
-  currently define a `lint` script.
+- **ESLint** flat configs come from `@repo/eslint-config`; `admin`, `client`, and `seller`
+  define a `lint` script.
 - Don't reformat entire files unrelated to your change.
 
 ## Comments and dead code
