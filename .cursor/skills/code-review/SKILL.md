@@ -37,13 +37,14 @@ boundary/contract/security rule), **should-fix**, or **nit**.
 - [ ] Stripe webhooks still verify the signature; no secrets or `.env` files leaked.
 - [ ] `NEXT_PUBLIC_*` used only for non-secret values.
 
-### Frontend
+### Frontend (Next.js & Nuxt 3)
 
-- [ ] Server Components by default; `"use client"` only where needed.
-- [ ] Service endpoints resolve via `getApiGatewayUrl()` / `NEXT_PUBLIC_API_GATEWAY_URL`, not hardcoded.
-- [ ] Auth token fetched correctly (`auth().getToken()` on the server,
-      `useAuth().getToken()` on the client).
-- [ ] New remote images registered in `next.config.ts`.
+- [ ] React: Server Components by default; `"use client"` only where needed.
+- [ ] Nuxt: `<script setup lang="ts">`, Pinia for client UI state, TanStack Vue Query for server data.
+- [ ] Service endpoints resolve via `getApiGatewayUrl()` / `NEXT_PUBLIC_API_GATEWAY_URL` / `NUXT_PUBLIC_API_GATEWAY_URL`, not hardcoded.
+- [ ] Auth token fetched correctly (`auth().getToken()` on Next server, `useAuth().getToken()` on client, `useApi` on Nuxt).
+- [ ] New remote images registered in `next.config.ts` or `nuxt.config.ts`.
+- [ ] SSR hydration safety preserved: `import.meta.client` / `isMounted` checks on localStorage-backed stores.
 
 ### Backend
 

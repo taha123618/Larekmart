@@ -21,13 +21,18 @@ const ProfileButton = () => {
           <UserButton.Action
             label="Seller Portal"
             labelIcon={<Store className="w-4 h-4 text-emerald-500" />}
-            onClick={() => router.push("/become-a-seller")}
+            onClick={() => {
+              window.location.href =
+                process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004";
+            }}
           />
         ) : (
           <UserButton.Action
             label="Become a Seller"
             labelIcon={<Store className="w-4 h-4 text-indigo-500" />}
-            onClick={() => router.push("/become-a-seller")}
+            onClick={() => {
+              window.location.href = `${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/onboarding`;
+            }}
           />
         )}
         <UserButton.Action

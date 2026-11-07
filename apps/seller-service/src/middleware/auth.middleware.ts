@@ -227,3 +227,128 @@ export async function requireSellerStaffOrAdmin(
       .send({ message: "Access forbidden: Not authorized for this seller" });
   }
 }
+
+/**
+ * Enforces that caller is either a platform admin or the primary owner of the seller account.
+ */
+export async function requireSellerOwnerOrAdmin(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  if (!isTrustedContext(request)) {
+    reply.status(401).send({ message: "Authentication required" });
+    return;
+  }
+  const role = getUserRole(request);
+  if (
+    role === "admin" ||
+    role === "super_admin" ||
+    isMachineToMachine(request)
+  ) {
+    return;
+  }
+
+  const userId = getUserId(request);
+  if (!userId) {
+    reply.status(401).send({ message: "Authentication required" });
+    return;
+  }
+
+  const params = request.params as { sellerId?: string };
+  const sellerId = params.sellerId;
+  if (!sellerId) {
+    reply.status(400).send({ message: "Missing seller ID parameter" });
+    return;
+  }
+
+  const sellerRows = await db
+    .select({ primaryUserId: sellers.primaryUserId })
+    .from(sellers)
+    .where(eq(sellers.id, sellerId))
+    .limit(1);
+
+  if (sellerRows.length === 0 || sellerRows[0]?.primaryUserId !== userId) {
+    reply
+      .status(403)
+      .send({ message: "Access forbidden: Only store owner or administrator authorized" });
+  }
+}
+
+/**
+ * Enforces that caller has permission to invite, modify, or remove staff members.
+ */
+export async function requireStaffManagementPermission(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  if (!isTrustedContext(request)) {
+    reply.status(401).send({ message: "Authentication required" });
+    return;
+  }
+  const role = getUserRole(request);
+  if (
+    role === "admin" ||
+    role === "super_admin" ||
+    isMachineToMachine(request)
+  ) {
+    return;
+  }
+
+  const userId = getUserId(request);
+  if (!userId) {
+    reply.status(401).send({ message: "Authentication required" });
+    return;
+  }
+
+  const params = request.params as { sellerId?: string };
+  const sellerId = params.sellerId;
+  if (!sellerId) {
+    reply.status(400).send({ message: "Missing seller ID parameter" });
+    return;
+  }
+
+  // Check if primary owner
+  const sellerRows = await db
+    .select({ primaryUserId: sellers.primaryUserId })
+    .from(sellers)
+    .where(eq(sellers.id, sellerId))
+    .limit(1);
+
+  if (sellerRows.length > 0 && sellerRows[0]?.primaryUserId === userId) {
+    return;
+  }
+
+  // Check if staff has management role or manage_staff permission
+  const staffRows = await db
+    .select({
+      id: sellerStaff.id,
+      role: sellerStaff.role,
+      permissions: sellerStaff.permissions,
+      status: sellerStaff.status,
+    })
+    .from(sellerStaff)
+    .where(
+      and(
+        eq(sellerStaff.sellerId, sellerId),
+        eq(sellerStaff.userId, userId),
+        eq(sellerStaff.status, "ACTIVE"),
+      ),
+    )
+    .limit(1);
+
+  if (staffRows.length === 0) {
+    reply.status(403).send({ message: "Access forbidden: Not authorized for this seller" });
+    return;
+  }
+
+  const staff = staffRows[0]!;
+  const hasStaffPerm =
+    staff.role === "MANAGER" ||
+    staff.role === "ADMIN" ||
+    (Array.isArray(staff.permissions) &&
+      (staff.permissions.includes("manage_staff") || staff.permissions.includes("*")));
+
+  if (!hasStaffPerm) {
+    reply.status(403).send({ message: "Access forbidden: Staff management permission required" });
+  }
+}

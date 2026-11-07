@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { promotionService } from "../services/promotion.service.js";
+import { promotionRepository } from "../repositories/promotion.repository.js";
 import {
   shouldBeAdmin,
   optionalUserOrGuest,
@@ -30,6 +31,26 @@ export const promotionRoutes = new Hono<{ Variables: AuthVariables }>();
 promotionRoutes.get("/promotions/active", async (c) => {
   const active = await promotionService.getActivePromotions();
   return c.json({ data: active });
+});
+
+/**
+ * GET /api/v1/promotions
+ * List active promotions or filtered promotions for storefront & seller portals.
+ */
+promotionRoutes.get("/promotions", async (c) => {
+  const query = c.req.query();
+  const activeOnly = query.active === "true";
+  if (activeOnly) {
+    const active = await promotionService.getActivePromotions();
+    return c.json({ data: active });
+  }
+  const result = await promotionRepository.findWithFilters({
+    page: query.page ? Number(query.page) : 1,
+    limit: query.limit ? Number(query.limit) : 50,
+    status: query.status,
+    search: query.search,
+  });
+  return c.json({ data: result.items, total: result.total });
 });
 
 /**

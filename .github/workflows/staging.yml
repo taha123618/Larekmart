@@ -193,6 +193,7 @@ jobs:
             kustomize edit set image \
               larekmart/client=ghcr.io/${{ github.repository_owner }}/larekmart/client:staging-${SHA_SHORT} \
               larekmart/admin=ghcr.io/${{ github.repository_owner }}/larekmart/admin:staging-${SHA_SHORT} \
+              larekmart/seller=ghcr.io/${{ github.repository_owner }}/larekmart/seller:staging-${SHA_SHORT} \
               larekmart/product-service=ghcr.io/${{ github.repository_owner }}/larekmart/product-service:staging-${SHA_SHORT} \
               larekmart/order-service=ghcr.io/${{ github.repository_owner }}/larekmart/order-service:staging-${SHA_SHORT} \
               larekmart/payment-service=ghcr.io/${{ github.repository_owner }}/larekmart/payment-service:staging-${SHA_SHORT} \
@@ -229,6 +230,7 @@ jobs:
             DEPLOYMENTS=(
               staging-client
               staging-admin
+              staging-seller
               staging-product-service
               staging-order-service
               staging-payment-service
@@ -290,6 +292,7 @@ jobs:
           DEPLOYMENTS=(
             staging-client
             staging-admin
+            staging-seller
             staging-product-service
             staging-order-service
             staging-payment-service

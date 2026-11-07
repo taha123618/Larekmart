@@ -83,4 +83,10 @@ export async function reviewRoutes(fastify: FastifyInstance) {
     { preHandler: [shouldBeUser] },
     reviewController.addSellerResponse.bind(reviewController),
   );
+
+  fastify.post(
+    "/api/v1/reviews/:reviewId/reply",
+    { preHandler: [shouldBeUser] },
+    reviewController.addSellerResponse.bind(reviewController),
+  );
 }

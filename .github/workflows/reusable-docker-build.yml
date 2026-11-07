@@ -64,6 +64,9 @@ jobs:
           - service: admin
             context: .
             dockerfile: apps/admin/Dockerfile
+          - service: seller
+            context: .
+            dockerfile: apps/seller/Dockerfile
           - service: api-gateway
             context: .
             dockerfile: apps/api-gateway/Dockerfile

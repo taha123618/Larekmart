@@ -18,8 +18,8 @@ Monorepo-wide coding standards for Larekmart.
 ## Backend Service Standards
 
 1. **Framework & Runtime Discipline**:
-   - `apps/order-service`, `apps/catalog-service`, `apps/search-service`, `apps/user-service`, `apps/review-service`, `apps/wishlist-service`, `apps/tax-service`, `apps/pricing-service`, `apps/seller-service`, `apps/commission-service`: Fastify 5 (Node.js ESM)
-   - `apps/vendor-service` (NestJS 10), `apps/payout-service` (NestJS 11): NestJS on Fastify (Node.js ESM)
+   - `apps/order-service`, `apps/catalog-service`, `apps/search-service`, `apps/user-service`, `apps/review-service`, `apps/wishlist-service`, `apps/tax-service`, `apps/pricing-service`, `apps/seller-service`, `apps/commission-service`, `apps/chat-service`: Fastify 5 (Node.js ESM)
+   - `apps/vendor-service` (NestJS 10), `apps/payout-service` (NestJS 11), `apps/support-service` (NestJS 11): NestJS on Fastify (Node.js ESM)
    - `apps/payment-service`, `apps/inventory-service`, `apps/media-service`, `apps/promotion-service`: Hono 4 (Node.js ESM)
    - `apps/shipping-service`, `apps/return-service`: Koa (Node.js ESM)
    - `apps/product-service`, `apps/auth-service`, `apps/cart-service`: Express 5 (Node.js ESM)
@@ -36,6 +36,8 @@ Monorepo-wide coding standards for Larekmart.
 
 ## Frontend Standards
 
+### React 19 & Next.js Standards (`apps/client`, `apps/admin`)
+
 1. **Server Components First**: Use React Server Components by default; add `"use client"` only for client state, browser events, or browser APIs.
 2. **Data Fetching**:
    - Server Components: `auth().getToken()` with standard `fetch()` using `getApiGatewayUrl()` from `@/services/gateway.service`.
@@ -49,3 +51,15 @@ Monorepo-wide coding standards for Larekmart.
 7. **SSR Hydration Safety (React 19 & Next.js 16)**:
    - Guard `localStorage`-backed Zustand store reads with an `isMounted` flag before rendering dependent attributes on the client.
    - Add `suppressHydrationWarning` to SVG icons (to protect against browser extensions injecting attributes like `data-motion-id`) and live countdown tickers/timestamps.
+
+### Vue 3 & Nuxt 3 Standards (`apps/seller`)
+
+1. **Composition API & SFCs**: Use `<script setup lang="ts">` with strict TypeScript typing across all components, composables, and pages.
+2. **State Management Division**:
+   - Use Pinia (`stores/auth.store.ts`, `stores/seller.store.ts`, `stores/ui.store.ts`) strictly for client-only state (active store workspace, sidebar toggle, search query, toasts).
+   - Use TanStack Vue Query (`@tanstack/vue-query`) for all server data fetching, mutations, background refetching, and cache invalidation. Do not duplicate server data in Pinia.
+3. **API & Token Injection**: Use the `useApi` composable for all HTTP requests to automatically inject the Clerk Bearer token and route through the API Gateway (`/api/v1/*`).
+4. **Forms & Validation**: Use VeeValidate 4 + `@vee-validate/zod` with shared schemas from `@repo/types`.
+5. **Animations (GSAP 3)**: Scope GSAP timelines to component lifecycles using Vue lifecycle hooks (`onMounted`, `onUnmounted`) with cleanups. Respect `prefers-reduced-motion`.
+6. **Real-Time Communications**: Use Socket.IO client (`socket.io-client`) via `useSocket` plugin connected to `/socket.io` through the API Gateway. Ensure listeners are cleaned up on unmount.
+7. **SSR Hydration Safety**: Guard browser-only globals (`window`, `localStorage`, `document`) with `import.meta.client` or place inside `onMounted`.

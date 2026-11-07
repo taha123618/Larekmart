@@ -32,6 +32,7 @@ import { Hono, type Context } from "hono";
 import { z } from "zod";
 import {
   shouldBeAdmin,
+  shouldBeSellerOrAdmin,
   shouldBeUser,
   type AuthVariables,
 } from "../middleware/authMiddleware.js";
@@ -125,10 +126,28 @@ async function getAvailability(c: Context<{ Variables: AuthVariables }>) {
 // =========================================================================
 
 /**
- * GET /api/v1/inventory/items
- * Admin endpoint listing all inventory items across products and warehouses.
+ * GET /api/v1/inventory
+ * Seller & Admin endpoint listing inventory items.
  */
-inventoryRoute.get("/items", shouldBeAdmin, async (c) => {
+inventoryRoute.get("/", shouldBeSellerOrAdmin, async (c) => {
+  const query = InventoryItemsQuerySchema.safeParse(c.req.query());
+  const items = await listAllInventoryItems({
+    productId: query.success ? query.data.productId : undefined,
+    variantId: query.success ? query.data.variantId : undefined,
+    warehouseId: query.success ? query.data.warehouseId : undefined,
+    status: query.success
+      ? (query.data.status as InventoryItemStatus | undefined)
+      : undefined,
+    limit: query.success ? query.data.limit : undefined,
+  });
+  return c.json({ data: items });
+});
+
+/**
+ * GET /api/v1/inventory/items
+ * Admin & Seller endpoint listing all inventory items across products and warehouses.
+ */
+inventoryRoute.get("/items", shouldBeSellerOrAdmin, async (c) => {
   const query = InventoryItemsQuerySchema.safeParse(c.req.query());
   if (!query.success) return validationResponse(c, query.error);
   const items = await listAllInventoryItems({

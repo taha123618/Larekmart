@@ -54,12 +54,12 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 - **Side Effect**: Emits `product.created` Kafka event, assigns creator `sellerId: req.userId`, and emits `x-db-lsn` response header
 - **Response**: `ProductType`
 
-### `PUT /products/:id`
+### `PUT /products/:id` and `PATCH /products/:id`
 
 - **Auth**: Seller Owner or Admin (`shouldBeSellerOrAdmin`)
 - **Body**: Partial `ProductFormSchema`
 - **Ownership**: Strictly verifies `product.sellerId === req.userId` for sellers; non-owners receive `403 Forbidden`
-- **Side Effect**: Emits `x-db-lsn` response header
+- **Side Effect**: Emits `product.updated` Kafka event and `x-db-lsn` response header
 - **Response**: Updated `ProductType`
 
 ### `DELETE /products/:id`
@@ -134,9 +134,21 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 
 ### `GET /orders`
 
-- **Auth**: Admin (`shouldBeAdmin`)
-- **Query Params**: `limit` (number)
-- **Response**: `OrderType[]`
+- **Auth**: Seller or Admin (`shouldBeSeller`)
+- **Query Params**: `limit` (number), `sellerId` (string, admin only)
+- **Response**: `OrderType[]` (scoped to authenticated seller or admin)
+
+### `GET /seller-orders`
+
+- **Auth**: Seller or Admin (`shouldBeSeller`)
+- **Query Params**: `limit` (number), `sellerId` (string, admin only)
+- **Response**: `OrderType[]` (IDOR-protected seller orders list)
+
+### `PATCH /orders/:id`
+
+- **Auth**: Seller or Admin (`shouldBeSeller`)
+- **Body**: `{ status?: string, trackingNumber?: string, carrier?: string }`
+- **Response**: Updated `OrderType` with outbox event dispatch
 
 ### `GET /order-chart`
 
@@ -303,6 +315,12 @@ Comprehensive catalog of all HTTP endpoints exposed by Larekmart backend service
 - **Response**: Liveness, OpenSearch/Redis readiness, and Prometheus metrics respectively
 
 ## 7. Inventory Service (`:8007`)
+
+### `GET /api/v1/inventory` and `GET /api/v1/inventory/items`
+
+- **Auth**: Seller or Admin (`shouldBeSellerOrAdmin`)
+- **Query Params**: `productId?`, `variantId?`, `warehouseId?`, `status?`, `limit?`
+- **Response**: `{ data: InventoryItem[] }` stock authority items
 
 ### `GET /api/v1/inventory/:productId` and `GET /api/v1/inventory/:productId/availability`
 
@@ -1193,6 +1211,35 @@ All requests route through `api-gateway` on port `8080`.
 
 - **Auth**: User (`shouldBeUser`)
 - **Response**: `{ sellers: SellerWithStore[] }`
+
+### `GET /api/v1/sellers/:id/storefront` and `PATCH /api/v1/sellers/:id/storefront`
+
+- **Auth**: Seller Staff or Admin (`requireSellerStaffOrAdmin`)
+- **Body** (PATCH): `UpdateStorefrontSchema` (`name?`, `slug?`, `headline?`, `description?`, `vacationMode?`)
+- **Response**: Storefront profile with associated public policies
+
+### `GET /api/v1/sellers/:id/settings` and `PATCH /api/v1/sellers/:id/settings`
+
+- **Auth**: Seller Staff or Admin (`requireSellerStaffOrAdmin`)
+- **Body** (PATCH): `UpdateSellerSettingsSchema` (`autoFulfillOrders?`, `notifyOnLowStock?`, `vacationMode?`)
+- **Response**: Updated `sellerSettings` configuration
+
+### `GET /api/v1/sellers/:id/policies` and `PUT /api/v1/sellers/:id/policies`
+
+- **Auth**: Seller Staff or Admin (`requireSellerStaffOrAdmin`)
+- **Body** (PUT): `UpsertPolicySchema` (`policyType`, `title`, `content`)
+- **Response**: List or updated policy record
+
+### `GET /api/v1/sellers/:id/staff` and `POST /api/v1/sellers/:id/staff`
+
+- **Auth**: Seller Staff or Admin (`requireSellerStaffOrAdmin`)
+- **Body** (POST): `AddStaffSchema` (`userId`, `role`, `permissions?`)
+- **Response**: List of staff members or created member
+
+### `GET /api/v1/sellers/:id/performance`
+
+- **Auth**: Seller Staff or Admin (`requireSellerStaffOrAdmin`)
+- **Response**: `SellerPerformanceSnapshot` (ratings, fulfillments, cancellations, response rates)
 
 ### `GET /api/v1/storefronts/:slug`
 

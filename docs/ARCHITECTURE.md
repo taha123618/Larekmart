@@ -47,11 +47,14 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Data tables: TanStack Table with column defs per section.
 - Mutations: TanStack Query `useMutation` with a Clerk token; forms use
   react-hook-form + Zod schemas from `@repo/types`.
-- Product images upload through media-service's presigned direct-to-storage flow
-  (`src/services/media.service.ts`); products reference them by `mediaId`, and the
-  `MediaImage` component resolves references to URLs dynamically (legacy URL values
-  pass through untouched during migration).
+- Product images upload through media-service's presigned direct-to-storage flow (`src/services/media.service.ts`); products reference them by `mediaId`, and the `MediaImage` component resolves references to URLs dynamically (legacy URL values pass through untouched during migration).
 - Access control: `src/middleware.ts` requires `metadata.role === "admin"`.
+
+**`seller` (dashboard, :3004)** — Nuxt 3 (SSR + Nitro), Vue 3, Nuxt UI, Tailwind CSS v4.
+
+- Multi-Vendor Operations: 4-step merchant onboarding wizard (vendor legal profile, document upload, store profile, approval status), KPI metric dashboards, Apache ECharts revenue & sales charts, catalog & product management with RFC 4180 bulk CSV import/export, inventory tracking with low-stock alerts, authoritative pricing workbench with multi-currency FX simulation, dedicated deep analytics & conversion funnels, order listing and shipment fulfillment, financial ledger & payout history, real-time buyer-seller messaging (Socket.IO client), support ticket tracking, store settings, staff invitations, and policy management.
+- State & Data Fetching: Pinia for client UI state (sidebar collapse, store switcher); TanStack Vue Query v5 for server caching and optimistic mutations; VeeValidate 4 + Zod for type-safe form validation.
+- Auth & Route Guards: Clerk via `@clerk/vue` and Nitro `/api/auth/session` proxy; `seller-access` middleware enforcing `isSeller` platform toggle and store profile presence.
 
 ### Gateway
 
@@ -536,7 +539,7 @@ buyer (Browse Seller Store) ── GET /api/v1/sellers/slug/:slug ──▶ sell
 - **Chaos Engineering & In-Flight Concurrency Bulkheads:** Multi-database checkout Saga resilience is verified continuously via CNCF Chaos Mesh manifests (`infrastructure/chaos/`). The API Gateway enforces in-flight concurrency bulkheads (clamping concurrent checkout requests from 50 to 5) and adaptive rate-limiting (clamping from 30 to 5 req/min) during downstream degradation, fast-shedding with HTTP 503 and `Retry-After: 15` to protect database pools. The **mixed-traffic drill** (`infrastructure/chaos/flash-sale-mixed-traffic.yaml`) runs order-plane latency and catalog replica lag in a `Parallel` branch during flash-sale checkout, then a 60s `Suspend` observes recovery; success requires both checkout fast-shed and LSN-guarded storefront reads with no stale-product regressions.
 - **CORS:** each service allow-lists the specific frontend origins it serves
 
-  (`client` :3002, `admin` :3003) via `resolveCorsOrigins`/explicit callbacks. Wildcards are
+  (`client` :3002, `admin` :3003, `seller` :3004) via `resolveCorsOrigins`/explicit callbacks. Wildcards are
   rejected when credentials are enabled.
 
 - **Error shape:** `{ message }` JSON with correct status codes; a global error handler

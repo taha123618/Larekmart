@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { Server as HttpServer } from "http";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
@@ -8,13 +9,84 @@ import { PresenceService } from "./presence.service.js";
 import { ConversationService } from "../services/conversation.service.js";
 import { MessageService } from "../services/message.service.js";
 
+interface JwtClaims {
+  sub?: string;
+  exp?: number;
+  nbf?: number;
+  role?: string;
+  metadata?: { role?: string; isSeller?: boolean };
+}
+
+function verifySocketJwtToken(token: string): JwtClaims | null {
+  const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
+  const parts = cleanToken.split(".");
+  if (parts.length !== 3) return null;
+
+  const jwtKey = env.CLERK_JWT_KEY || process.env.CLERK_JWT_KEY;
+  const hmacKey = env.CLERK_JWT_HMAC_KEY || process.env.CLERK_JWT_HMAC_KEY;
+  const isTest = env.NODE_ENV === "test";
+
+  const signedData = `${parts[0]}.${parts[1]}`;
+  let signature: Buffer;
+  try {
+    signature = Buffer.from(parts[2]!, "base64url");
+  } catch {
+    return null;
+  }
+
+  let verified = false;
+  if (jwtKey && jwtKey.includes("-----BEGIN")) {
+    try {
+      const verifier = crypto.createVerify("RSA-SHA256");
+      verifier.update(signedData);
+      verified = verifier.verify(jwtKey, signature);
+    } catch {
+      verified = false;
+    }
+  } else if (hmacKey) {
+    try {
+      const expectedSig = crypto
+        .createHmac("sha256", hmacKey)
+        .update(signedData)
+        .digest();
+      verified =
+        signature.length === expectedSig.length &&
+        crypto.timingSafeEqual(signature, expectedSig);
+    } catch {
+      verified = false;
+    }
+  } else if (!isTest) {
+    return null;
+  }
+
+  if ((jwtKey || hmacKey) && !verified) return null;
+
+  try {
+    const payloadJson = Buffer.from(parts[1]!, "base64url").toString("utf-8");
+    const claims = JSON.parse(payloadJson) as JwtClaims;
+    const now = Math.floor(Date.now() / 1000);
+    if (claims.exp && now >= claims.exp) return null;
+    if (claims.nbf && now < claims.nbf) return null;
+    return claims;
+  } catch {
+    return null;
+  }
+}
+
 let io: SocketIOServer | null = null;
 
 export function initSocketIO(server: HttpServer): SocketIOServer {
   io = new SocketIOServer(server, {
     path: "/socket.io/chat",
     cors: {
-      origin: [env.CLIENT_URL, env.ADMIN_URL, "http://localhost:3000", "http://localhost:3002", "http://localhost:3003"],
+      origin: [
+        env.CLIENT_URL,
+        env.ADMIN_URL,
+        "http://localhost:3000",
+        "http://localhost:3002",
+        "http://localhost:3003",
+        "http://localhost:3004",
+      ],
       credentials: true,
     },
     transports: ["websocket", "polling"],
@@ -40,20 +112,62 @@ export function initSocketIO(server: HttpServer): SocketIOServer {
   // Socket Authentication Middleware
   io.use(async (socket: Socket, next) => {
     try {
-      const isDevOrTest = env.NODE_ENV === "development" || env.NODE_ENV === "test";
-      const internalSecret = (socket.handshake.headers["x-internal-secret"] || socket.handshake.auth?.internalSecret) as string | undefined;
-      const isInternal = safeTimingCompare(internalSecret, env.INTERNAL_SERVICE_SECRET);
+      const isDevOrTest =
+        env.NODE_ENV === "development" || env.NODE_ENV === "test";
+      const internalSecret = (socket.handshake.headers["x-internal-secret"] ||
+        socket.handshake.auth?.internalSecret) as string | undefined;
+      const isInternal = safeTimingCompare(
+        internalSecret,
+        env.INTERNAL_SERVICE_SECRET,
+      );
 
-      const userId = (socket.handshake.auth?.userId || socket.handshake.headers["x-user-id"]) as string | undefined;
-      const role = (socket.handshake.auth?.role || socket.handshake.headers["x-user-role"] || "user") as string;
+      let userId: string | undefined = undefined;
+      let role = "user";
 
-      // In production, reject unverified connections lacking valid internal secret or credentials
-      if (!isInternal && !isDevOrTest) {
-        return next(new Error("Unauthorized: Direct unverified WebSocket connections disallowed in production"));
+      // 1. Gateway-verified identity (internal secret + gateway header)
+      if (isInternal && socket.handshake.headers["x-user-id"]) {
+        userId = socket.handshake.headers["x-user-id"] as string;
+        role = (socket.handshake.headers["x-user-role"] as string) || "user";
+      } else {
+        // 2. Cryptographic token verification from handshake auth or Authorization header
+        const rawToken =
+          (socket.handshake.auth?.token as string | undefined) ||
+          (socket.handshake.headers["authorization"] as string | undefined);
+
+        if (rawToken) {
+          const verifiedClaims = verifySocketJwtToken(rawToken);
+          if (verifiedClaims?.sub) {
+            userId = verifiedClaims.sub;
+            role =
+              verifiedClaims.metadata?.role ||
+              verifiedClaims.role ||
+              "user";
+          }
+        }
+      }
+
+      // 3. Reject unauthenticated connections in production
+      if (env.NODE_ENV === "production" && !userId) {
+        return next(
+          new Error(
+            "Unauthorized: Direct unverified WebSocket connections disallowed in production",
+          ),
+        );
+      }
+
+      // 4. In development/test mode only: fallback
+      if (!userId && isDevOrTest) {
+        userId = (socket.handshake.auth?.userId ||
+          socket.handshake.headers["x-user-id"]) as string | undefined;
+        role = (socket.handshake.auth?.role ||
+          socket.handshake.headers["x-user-role"] ||
+          "user") as string;
       }
 
       if (!userId) {
-        return next(new Error("Authentication failed: Missing userId in handshake"));
+        return next(
+          new Error("Authentication failed: Missing authenticated credentials"),
+        );
       }
 
       socket.data.userId = userId;

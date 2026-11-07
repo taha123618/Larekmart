@@ -107,13 +107,22 @@ export const ReportReviewSchema = z.object({
 });
 export type ReportReviewInput = z.infer<typeof ReportReviewSchema>;
 
-export const CreateSellerResponseSchema = z.object({
-  content: z
-    .string()
-    .min(5, "Response must be at least 5 characters")
-    .max(3000, "Response cannot exceed 3000 characters")
-    .trim(),
-});
+export const CreateSellerResponseSchema = z.preprocess(
+  (data: any) => {
+    if (data && typeof data === "object") {
+      const content = data.content ?? data.reply;
+      return { ...data, content };
+    }
+    return data;
+  },
+  z.object({
+    content: z
+      .string()
+      .min(5, "Response must be at least 5 characters")
+      .max(3000, "Response cannot exceed 3000 characters")
+      .trim(),
+  }),
+);
 export type CreateSellerResponseInput = z.infer<
   typeof CreateSellerResponseSchema
 >;

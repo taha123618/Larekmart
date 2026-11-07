@@ -107,8 +107,9 @@ docker/
 | Service / Container      | Container Port                    | Host Port (Dev / Local)              | Production Exposure | Protocol / Purpose                                                            |
 | ------------------------ | --------------------------------- | ------------------------------------ | ------------------- | ----------------------------------------------------------------------------- |
 | **`traefik`**            | `80`, `443`, `8088`               | `80:80`, `443:443`, `127.0.0.1:8088` | **Public**          | Edge router, automated Let's Encrypt TLS, dynamic container discovery         |
-| **`client`**             | `3002`                            | `127.0.0.1:3002`                     | Traefik Ingress     | Next.js 15 Storefront UI (`shop.localhost`)                                   |
+| **`client`**             | `3002`                            | `127.0.0.1:3002`                     | Traefik Ingress     | Next.js 16 Storefront UI (`shop.localhost`)                                   |
 | **`admin`**              | `3003`                            | `127.0.0.1:3003`                     | Traefik Ingress     | Next.js 15 Admin Dashboard UI (`admin.localhost`)                             |
+| **`seller`**             | `3004`                            | `127.0.0.1:3004`                     | Traefik Ingress     | Nuxt 3 Seller Dashboard UI (`seller.localhost`)                               |
 | **`dozzle`** (Nginx)     | `80` (proxy) / `8888` (dozzle)    | `127.0.0.1:8085`                     | Traefik Ingress     | Real-time container log streaming (`logs.localhost` / `:8085`)                |
 | **`rootprint`**          | `8282`                            | `127.0.0.1:8282`                     | Traefik Ingress     | Distributed log analytics & search UI (`rootprint.localhost` / `:8282`)       |
 | **`minio`** (Rootprint)  | `9000` (API), `9001` (Console)    | `127.0.0.1:9000`, `127.0.0.1:9001`   | **Internal Only**   | S3-compatible index storage & web console for Quickwit/Rootprint              |
@@ -147,6 +148,7 @@ docker/
 | `payout-service`         | `8023`                            | `127.0.0.1:8023`                     | **Internal Only**   | Seller payouts, balanced append-only double-entry ledger & settlement batches |
 | `fraud-service`          | `8024`                            | `127.0.0.1:8024`                     | **Internal Only**   | Real-time risk assessment, velocity abuse detection & fraud case management   |
 | `support-service`        | `8025`                            | `127.0.0.1:8025`                     | **Internal Only**   | Omnichannel customer & seller support tickets, SLA engine & Socket.IO         |
+| `chat-service`           | `8026`                            | `127.0.0.1:8026`                     | **Internal Only**   | Real-time buyer-seller messaging, live customer support chat & Socket.IO       |
 | `mysql`                  | `3306`                            | `127.0.0.1:3306`                     | **Internal Only**   | MySQL 8.0 database engine for tax compliance, rules & return tracking         |
 | `media-worker`           | None                              | None                                 | **Internal Only**   | Sharp image-processing job claimer                                            |
 | `media-cleanup`          | None                              | None                                 | **Internal Only**   | Session expiry, stale-job requeue, purge GC                                   |
@@ -534,8 +536,10 @@ Every single container image used in the Larekmart platform is cataloged below, 
 | **payout-service**         | NestJS Microservice    | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **fraud-service**          | Python Microservice    | `uv:python3.12-bookworm-slim`      | `dhi/python:3.12`        | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Rootless uv)   |
 | **email-service**          | Node Worker            | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
-| **client**                 | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |
+| **client**                 | Frontend (Next.js 16)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |
 | **admin**                  | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |
+| **seller**                 | Frontend (Nuxt 3)      | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Nitro/SSR)     |
+| **chat-service**           | Node Microservice      | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **notification-service**   | Go Microservice        | `alpine:3.20`                      | `dhi/alpine:3.20`        | `appuser` (10001)   | 0 Critical / 0 High    | Hardened (Static binary) |
 | **recommendation-service** | Python Microservice    | `uv:python3.12-bookworm-slim`      | `dhi/python:3.12`        | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Rootless uv)   |
 | **postgres**               | Backing Database       | `pgvector/pgvector:pg16`           | `dhi/postgres:16`        | `postgres` (999)    | 0 Critical / 0 High    | Pinned & Scanned         |

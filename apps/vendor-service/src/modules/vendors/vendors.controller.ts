@@ -33,6 +33,11 @@ export class VendorsController {
     return this.vendorsService.createVendor(userId, body);
   }
 
+  @Get()
+  async getVendors(@Headers("x-user-id") userId: string) {
+    return this.vendorsService.getUserVendors(userId);
+  }
+
   @Get("user/me")
   async getMyVendors(@Headers("x-user-id") userId: string) {
     return this.vendorsService.getUserVendors(userId);

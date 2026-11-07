@@ -198,6 +198,7 @@ jobs:
             kustomize edit set image \
               larekmart/client=ghcr.io/${{ github.repository_owner }}/larekmart/client:${SHA_SHORT} \
               larekmart/admin=ghcr.io/${{ github.repository_owner }}/larekmart/admin:${SHA_SHORT} \
+              larekmart/seller=ghcr.io/${{ github.repository_owner }}/larekmart/seller:${SHA_SHORT} \
               larekmart/product-service=ghcr.io/${{ github.repository_owner }}/larekmart/product-service:${SHA_SHORT} \
               larekmart/order-service=ghcr.io/${{ github.repository_owner }}/larekmart/order-service:${SHA_SHORT} \
               larekmart/payment-service=ghcr.io/${{ github.repository_owner }}/larekmart/payment-service:${SHA_SHORT} \
@@ -234,6 +235,7 @@ jobs:
             DEPLOYMENTS=(
               client
               admin
+              seller
               product-service
               order-service
               payment-service
@@ -302,6 +304,7 @@ jobs:
           DEPLOYMENTS=(
             client
             admin
+            seller
             product-service
             order-service
             payment-service

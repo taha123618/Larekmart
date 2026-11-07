@@ -13,6 +13,8 @@ images:
     newTag: v1.0.0
   - name: larekmart/admin
     newTag: v1.0.0
+  - name: larekmart/seller
+    newTag: v1.0.0
   - name: larekmart/product-service
     newTag: v1.0.0
   - name: larekmart/order-service

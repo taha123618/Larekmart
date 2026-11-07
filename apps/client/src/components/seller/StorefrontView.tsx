@@ -75,6 +75,14 @@ export function StorefrontView({
               Open for Orders
             </span>
           )}
+          <a
+            href={`${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/settings`}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-colors"
+            title="Manage in Seller Central"
+          >
+            <Store className="h-3.5 w-3.5" />
+            <span>Manage Store</span>
+          </a>
           <button
             onClick={handleShare}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-colors"

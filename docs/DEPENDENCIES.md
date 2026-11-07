@@ -8,8 +8,8 @@ and applications never import each other.
 
 ```
 apps/client ─┐
-             ├─▶ @repo/types ─┬─▶ @repo/product-db ─▶ @prisma/client ─▶ PostgreSQL
-apps/admin ──┘                └─▶ @repo/order-db   ─▶ mongoose      ─▶ MongoDB
+apps/admin ──┼─▶ @repo/types
+apps/seller ─┘
 
 apps/product-service ─┬─▶ @repo/product-db
                       ├─▶ @repo/kafka ─▶ kafkajs
@@ -159,7 +159,7 @@ apps/api-gateway ──────────┬─▶ @fastify/http-proxy
                            ├─▶ @repo/monitoring
                            └─▶ @repo/types
 
-apps/admin, apps/client ─▶ @repo/eslint-config, @repo/typescript-config
+apps/admin, apps/client, apps/seller ─▶ @repo/eslint-config, @repo/typescript-config
 all workspaces          ─▶ @repo/typescript-config, @repo/monitoring
 ```
 

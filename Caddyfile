@@ -65,7 +65,17 @@
         }
     }
 
-    # 4. Default Fallback -> Next.js Client Storefront
+    # 4. Nuxt 3 Seller Dashboard (/seller/*)
+    handle /seller/* {
+        reverse_proxy seller:3004 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # 5. Default Fallback -> Next.js Client Storefront
     handle {
         reverse_proxy client:3002 {
             header_up Host {host}

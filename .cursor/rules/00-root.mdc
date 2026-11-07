@@ -32,8 +32,8 @@ mirror for Cursor; when they disagree, `AGENTS.md` wins.
   weaken TypeScript strictness.
 - **Scope your instructions:** read the `AGENTS.md` in the workspace you are editing
   (`apps/*/AGENTS.md`, `packages/*/AGENTS.md`) before making changes.
-- **Verify:** `pnpm check-types` always; add `pnpm build` (Next apps, payment-service)
-  and `pnpm lint` (admin, client) when relevant; run test suites with `pnpm test` (`docs/TESTING.md`).
+- **Verify:** `pnpm check-types` always; add `pnpm build` (frontend apps: client, admin, seller, plus payment-service)
+  and `pnpm lint` (client, admin, seller) when relevant; run test suites with `pnpm test` (`docs/TESTING.md`).
 - **Chaos:** multi-database sagas and mixed traffic are validated with the Chaos Mesh
   manifests in `infrastructure/chaos/` (including `flash-sale-mixed-traffic.yaml`, which runs
   order-plane latency and catalog replica lag in parallel during checkout). Keep the manifests,

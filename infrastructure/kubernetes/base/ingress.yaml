@@ -19,6 +19,7 @@ spec:
     - hosts:
         - larekmart.com
         - admin.larekmart.com
+        - seller.larekmart.com
         - api.larekmart.com
       secretName: larekmart-tls
   rules:
@@ -50,6 +51,17 @@ spec:
                 name: admin
                 port:
                   number: 3003
+
+    - host: seller.larekmart.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: seller
+                port:
+                  number: 3004
 
     - host: api.larekmart.com
       http:

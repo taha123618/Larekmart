@@ -17,7 +17,7 @@ No feature service may be considered complete or merged if any of the 6 pillars 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │              Larekmart 6-Pillar Feature Service Delivery Standard            │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Pillar 1: Front-End UI Delivery (apps/admin/*, apps/client/*)             │
+│  Pillar 1: Front-End UI Delivery (apps/admin/*, apps/client/*, apps/seller/*)  │
 │  Pillar 2: Monorepo Microservices & Gateway Integration (apps/* all)        │
 │  Pillar 3: Documentation, Skills, Manifests & Config (*.md, skills, *.yml)  │
 │  Pillar 4: Deep Analysis, Unit Testing & Integration Testing (100% Pass)   │
@@ -28,9 +28,9 @@ No feature service may be considered complete or merged if any of the 6 pillars 
 
 ---
 
-### Pillar 1: Front-End Delivery (`apps/admin/*`, `apps/client/*`)
+### Pillar 1: Front-End Delivery (`apps/admin/*`, `apps/client/*`, `apps/seller/*`)
 
-Whenever a feature service is added or expanded, both presentation layers must be fully implemented:
+Whenever a feature service is added or expanded, all relevant presentation layers must be fully implemented:
 
 1. **Customer Storefront (`apps/client`)**:
    - Create typed API client service in `apps/client/src/services/<feature>.service.ts` routing through API Gateway.
@@ -42,6 +42,10 @@ Whenever a feature service is added or expanded, both presentation layers must b
    - Implement operations dashboards with real-time KPI metrics, searchable/filterable data tables, status transition dialogs, and React Query cache invalidation.
    - Enforce Clerk admin authorization (`sessionClaims.metadata.role === 'admin'`).
    - Register sidebar navigation links in `apps/admin/src/components/AppSidebar.tsx`.
+3. **Seller & Merchant Dashboard (`apps/seller`)**:
+   - For merchant-facing features (catalog, inventory, orders, fulfillment, payouts, support, chat, policies, storefront settings), deliver Nuxt 3 pages under `apps/seller/app/pages/`.
+   - Wire Pinia stores (`seller.store.ts`, `auth.store.ts`) and TanStack Vue Query composables (`useProducts`, `useOrders`, `useSupport`, etc.).
+   - Follow the Nuxt UI 3 / Tailwind CSS v4 design system with dark/light mode and mobile-first responsive layouts.
 
 ---
 

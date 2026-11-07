@@ -214,20 +214,19 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 
 ```
                          ┌───────────────────────┐
-                         │        Clerk          │  auth + session claims (role: user|admin)
+                         │        Clerk          │  auth + session claims (role: user|admin|seller)
                          └───────────┬───────────┘
                                      │ Bearer JWT
-          ┌──────────────────────────┴──────────────────────────┐
-          │                                                     │
-   ┌──────▼───────┐                                      ┌──────▼───────┐
-   │   client     │                                      │    admin     │
-   │  Next.js 16  │                                      │  Next.js 15  │
-   │   :3002      │                                      │   :3003      │
-   └──────┬───────┘                                      └──────┬───────┘
-          │                                                     │
-          │                   HTTPS / REST                      │
-          └──────────────────────────┬──────────────────────────┘
-                                     │
+          ┌──────────────────────────┼──────────────────────────┐
+          │                          │                          │
+   ┌──────▼───────┐           ┌──────▼───────┐           ┌──────▼───────┐
+   │   client     │           │    seller    │           │    admin     │
+   │  Next.js 16  │           │    Nuxt 3    │           │  Next.js 15  │
+   │   :3002      │           │    :3004     │           │   :3003      │
+   └──────┬───────┘           └──────┬───────┘           └──────┬───────┘
+          │                          │                          │
+          └──────────────────────────┼──────────────────────────┘
+                                     │ HTTPS / REST
                                      ▼
                       ┌─────────────────────────────┐
                       │         api-gateway         │  Fastify 5 (:8080 / :8090)
@@ -267,6 +266,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 ```text
        ┌──────────────────────────────┐
        │     apps/client (:3002)      │  Customer Storefront (LiveChatDrawer, /account/chat, Order actions)
+       │     apps/seller (:3004)      │  Seller Dashboard (/chat, /support, Order fulfillment actions)
        │     apps/admin  (:3003)      │  Admin Moderation & Support Center (/chat, /support)
        └──────────────┬───────────────┘
                       │ HTTPS & WebSockets (WSS)
@@ -405,6 +405,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 ├── apps/
 │   ├── admin/                # Next.js 15 admin dashboard (:3003)
 │   ├── client/               # Next.js 16 customer storefront (:3002)
+│   ├── seller/               # Nuxt 3 seller dashboard & merchant management (:3004)
 │   ├── api-gateway/          # Fastify 5 API Gateway reverse proxy & aggregator (:8080 / :8090)
 │   ├── auth-service/         # Express 5 + Clerk user management (:8003)
 │   ├── order-service/        # Fastify 5 + MongoDB orders & analytics (:8001)
@@ -465,6 +466,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | --------------------- | ------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`client`**          | Next.js 16, React 19, Tailwind v4, Zustand, Framer Motion, GSAP, Stripe, Clerk        | `3002` | Customer storefront: catalog search/filter, persistent cart, Framer Motion drawers/modals, GSAP banners, Stripe checkout, order history.                                                                                                                                              |
 | **`admin`**           | Next.js 15, React 19, Tailwind v4, shadcn/ui, TanStack Table & Query, Recharts, Clerk | `3003` | Admin dashboard: catalog management, user administration proxy, order trends, and real-time KPI cards & charts from `analytic-service`.                                                                                                                                               |
+| **`seller`**          | Nuxt 3, Vue 3.5, Tailwind v4, Nuxt UI 3, Pinia, TanStack Query & Table, Clerk, Socket.IO, ECharts | `3004` | Seller & Merchant dashboard: multi-seller onboarding, catalog & inventory management, order fulfillment, balance & payout statements, live chat, policies, staff permissions, and performance KPI charts. |
 | **`api-gateway`**     | Fastify 5, `@fastify/http-proxy`, Opossum, Redis, Clerk                               | `8080` | Unified public reverse proxy, header sanitization, Clerk JWT validation, SingleFlight thundering-herd protection, In-Flight Concurrency Bulkheads (50 normal / 5 degraded), dynamic adaptive rate-limiting guardrails, edge stock availability cache, and `/api/v1/home` aggregation. |
 | **`product-service`** | Express 5, Prisma, PostgreSQL, Kafka                                                  | `8000` | Product and category catalog CRUD; publishes `product.created` and `product.deleted`.                                                                                                                                                                                                 |
 | **`order-service`**   | Fastify 5, Mongoose, MongoDB, Kafka                                                   | `8001` | Multi-DB Dual-ACK Saga orchestrator, `DistributedLeaderElector` Transactional Outbox worker, saga timeout cluster locking, MongoDB horizontal hashed sharding, distributed idempotency, and 6-month sales analytics.                                                                  |
@@ -527,13 +529,13 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 
 - **Runtime & Language**: Node.js ≥ 18, TypeScript 5.9 (Strict mode enabled across all packages), ESM (`"type": "module"`)
 - **Monorepo Tooling**: pnpm 9 workspaces, Turborepo 2
-- **Frontend Frameworks**: Next.js 16 & 15 (App Router, Turbopack, React Server Components), React 19
-- **UI & Design System**: Tailwind CSS v4, shadcn/ui, Radix UI primitives, Lucide React, Recharts
-- **State Management & Forms**: Zustand (persisted), TanStack React Query v5, TanStack Table v8, React Hook Form + Zod
+- **Frontend Frameworks**: Next.js 16 & 15 (App Router, Turbopack, React Server Components), Nuxt 3 (SSR + Nitro), Vue 3.5, React 19
+- **UI & Design System**: Tailwind CSS v4, Nuxt UI 3, Reka UI, shadcn/ui, Radix UI primitives, Lucide React, Apache ECharts, GSAP 3, Recharts
+- **State Management & Forms**: Zustand (persisted), Pinia, TanStack React/Vue Query v5, TanStack Table v8, VeeValidate 4, React Hook Form + Zod
 - **Backend & Gateway Frameworks**: Fastify 5 (`@fastify/http-proxy`, `@fastify/helmet`, Opossum circuit breaker with graceful degradation for non-critical paths), NestJS 11 (Fastify 5), Express 5, Hono 4 (`@hono/node-server` 2.x), Koa, Go 1.22 (Chi), Python 3.12+ (FastAPI), Socket.IO (with `@socket.io/redis-adapter` for horizontal multi-pod WebSocket clustering)
 - **Databases & Persistence**: PostgreSQL (via Prisma ORM, Drizzle ORM & pg, including `larekmart_chat_db`), MongoDB (via Mongoose), MySQL 8.0 (physically isolated instances: `tax_db` on port 3306 and `return_db` on port 3307 via Drizzle ORM)
 - **Message Broker**: Apache Kafka (KafkaJS, 3-broker KRaft cluster with quorum voting, min ISR 2, and Kafka UI)
-- **Authentication**: Clerk (`@clerk/nextjs`, `@clerk/express`, `@clerk/fastify`, `@hono/clerk-auth`)
+- **Authentication**: Clerk (`@clerk/nextjs`, `@clerk/vue`, `@clerk/express`, `@clerk/fastify`, `@hono/clerk-auth`)
 - **Payments**: Stripe (Custom Checkout Element + Webhooks)
 
 ---
@@ -740,7 +742,7 @@ Workspace Skills (<workspace>/.agents/skills/*)
 
 Whenever developing, expanding, or integrating any feature service in Larekmart (e.g. `support-service`, `fraud-service`, `payout-service`, `commission-service`, etc.), developers and AI coding agents MUST strictly execute all 6 pillars before work is considered complete:
 
-1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**: Complete UI coverage across both applications: Customer Storefront (`apps/client`) and Admin Operations Dashboard (`apps/admin`) with typed client services, responsive layouts, action dialogs, and design-system compliance.
+1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`, `apps/seller/*`)**: Complete UI coverage across all three applications: Customer Storefront (`apps/client`), Admin Operations Dashboard (`apps/admin`), and Seller & Merchant Dashboard (`apps/seller`) with typed client services, responsive layouts, action dialogs, and design-system compliance.
 2. **Pillar 2 — Cross-Service & Gateway Integration (`apps/*` all services)**: Wire reverse proxying, rate-limiting, and circuit breakers in `api-gateway`; establish asynchronous Kafka event streams with transactional outbox and DLQ isolation; connect domain relationships without cross-service HTTP calls.
 3. **Pillar 3 — Documentation, Skills, Manifests & Configuration Updates (`*.md`, skills, `*.yml`)**: Update architecture docs (`docs/API.md`, `docs/ARCHITECTURE.md`, `docs/EVENT-DRIVEN-ARCHITECTURE.md`), deployment manifests (`docker-compose.yml`, Kubernetes Kustomize, Prometheus, GitHub workflows), and agent skills across all mirror folders.
 4. **Pillar 4 — Deep Project Analysis & Comprehensive Testing (Unit & Integration)**: Conduct deep architectural analysis before and after changes; write comprehensive tsx/jest unit and integration test suites; enforce 100% test pass rate with zero TypeScript compile errors.

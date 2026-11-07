@@ -390,6 +390,13 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
         </div>
 
         <div className="flex items-center gap-3">
+          <a
+            href={`${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/finance/payouts`}
+            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition"
+          >
+            <Store className="w-4 h-4" />
+            <span>Open in Seller Central</span>
+          </a>
           <button
             onClick={() => loadData()}
             className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
@@ -410,6 +417,24 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
             Request Payout
           </button>
         </div>
+      </div>
+
+      {/* Migration Notice Banner */}
+      <div className="p-4 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-900 dark:text-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Store className="h-5 w-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+          <p className="text-xs">
+            Merchant settlements, ledger balances, and automated payout requests have moved to the dedicated{" "}
+            <span className="font-semibold text-indigo-700 dark:text-indigo-300">Seller Central Portal</span>.
+          </p>
+        </div>
+        <a
+          href={`${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/finance/payouts`}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition shrink-0"
+        >
+          <span>Go to Seller Central</span>
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </a>
       </div>
 
       {/* Security & Risk Hold Banner */}

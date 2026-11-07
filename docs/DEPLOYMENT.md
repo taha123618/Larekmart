@@ -19,7 +19,7 @@ This runbook outlines standard operating procedures (SOP) for deploying, managin
 
 Before deploying application workloads, ensure stateful backing services are provisioned and accessible:
 
-- **PostgreSQL**: 16+ (multi-database setup for `product_db`, `inventory_db`, `catalog_db`, `shipping_db`, `user_db`, `media_db`, `larekmart_vendor_db`, `larekmart_seller_db`, `larekmart_commission_db`, `larekmart_payout_db`, `larekmart_support_db`).
+- **PostgreSQL**: 16+ (multi-database setup for `product_db`, `inventory_db`, `catalog_db`, `shipping_db`, `user_db`, `media_db`, `larekmart_vendor_db`, `larekmart_seller_db`, `larekmart_commission_db`, `larekmart_payout_db`, `larekmart_support_db`, `larekmart_chat_db`).
 - **MongoDB**: 7.0+ ReplicaSet (`order_db`, `cart_db`).
 - **Apache Kafka / Redpanda**: 3.7+ (with standard topics configured: `order-events`, `inventory-events`, `payment-events`, `product-events`, etc.).
 - **Redis**: 7.2+ Cluster or Sentinel for caching, rate limiting, and session state.
@@ -159,12 +159,12 @@ If a deployment fails readiness probes or health verification during CI/CD execu
 
 ```bash
 DEPLOYMENTS=(
-  client admin product-service order-service payment-service auth-service
+  client admin seller product-service order-service payment-service auth-service
   analytic-service notification-service search-service inventory-service
   recommendation-service cart-service catalog-service shipping-service
   user-service media-service review-service wishlist-service promotion-service
   tax-service return-service pricing-service vendor-service seller-service
-  commission-service payout-service fraud-service support-service email-service
+  commission-service payout-service fraud-service support-service chat-service email-service
 )
 for dep in "${DEPLOYMENTS[@]}"; do
   kubectl rollout undo deployment/"${dep}" -n larekmart

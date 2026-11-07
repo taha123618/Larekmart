@@ -38,6 +38,8 @@ Larekmart features a unified multi-runtime testing strategy orchestrated via Tur
    - `recommendation-service`: Python test suite with 34 tests covering hybrid algorithms and API endpoints (`uv run pytest tests/`).
    - `fraud-service`: Python test suite with 20 tests covering multi-workflow risk scoring, velocity burst tracking, scikit-learn anomaly scoring, analyst adjudication, and Kafka consumer streaming (`cd apps/fraud-service && uv run alembic upgrade head && uv run pytest tests/ -v`).
    - `support-service`: Ticket lifecycle management, customer/seller authorization boundaries, internal note confidentiality, SLA priority breach computation, Kafka event emission, and analytics (`pnpm --filter support-service test`).
+   - `chat-service`: Fastify endpoints, Socket.IO multi-pod cluster, Kafka events, constant-time secret comparison, and chat moderation (`pnpm --filter chat-service test`).
+   - `seller`: Vitest unit and integration suites (14 test files, 56 tests) covering Pinia auth store, role-based navigation, Cartesian product calculations, order lifecycle state machines, KYB onboarding, 14-day escrow settlement holds, support SLA calculations, and review moderation (`pnpm --filter seller test`).
 
 2. **Strict TypeScript Compilation**:
    ```bash

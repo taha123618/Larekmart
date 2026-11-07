@@ -6,14 +6,14 @@ with this summary.
 
 ## Repository Architecture
 
-pnpm 9 + Turborepo monorepo for **Larekmart**, a production-grade microservices e-commerce platform for market place like: amazon,daraz,ALiexpress,ALibaba and other . Two
-Next.js apps (`client` :3002, `admin` :3003), 25 backend services (`product-service` :8000,
+pnpm 9 + Turborepo monorepo for **Larekmart**, a production-grade microservices e-commerce platform for marketplaces like Amazon, Daraz, AliExpress, Alibaba, and others. Three frontend apps (Next.js `client` :3002, Next.js `admin` :3003, Nuxt 3 `seller` :3004), 28 backend services (`product-service` :8000,
 `order-service` :8001, `payment-service` :8002, `auth-service` :8003, `analytic-service` :8004,
 `notification-service` :8005, `search-service` :8006, `inventory-service` :8007,
 `recommendation-service` :8008, `cart-service` :8009, `catalog-service` :8010, `shipping-service` :8011,
 `user-service` :8012, `media-service` :8013, `review-service` :8014, `wishlist-service` :8015,
 `promotion-service` :8016, `tax-service` :8017, `return-service` :8018, `pricing-service` :8019,
-`vendor-service` :8020, `seller-service` :8021, `commission-service` :8022, `payout-service` :8023, `email-service` worker), `api-gateway` (:8080), and shared packages (`@repo/kafka`, `@repo/types`,
+`vendor-service` :8020, `seller-service` :8021, `commission-service` :8022, `payout-service` :8023,
+`fraud-service` :8024, `support-service` :8025, `chat-service` :8026, `email-service` worker), `api-gateway` (:8080), and shared packages (`@repo/kafka`, `@repo/types`,
 `@repo/monitoring`, `@repo/redis`, `@repo/opensearch`, `@repo/product-db`, `@repo/inventory-db`,
 `@repo/order-db`, `@repo/cart-db`, `@repo/catalog-db`, `@repo/shipping-db`, `@repo/user-db`, `@repo/vendor-db`, `@repo/eslint-config`, `@repo/typescript-config`).
 
@@ -47,7 +47,7 @@ Next.js apps (`client` :3002, `admin` :3003), 25 backend services (`product-serv
 
 Whenever building, modifying, expanding, or integrating any feature service (e.g. `chat-service`, `support-service`, `fraud-service`, `payout-service`, etc.), you must strictly follow all 6 pillars:
 
-1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`)**: Deliver full UI coverage across both applications: Customer Storefront (`apps/client`) and Admin Management Dashboard (`apps/admin`) with typed client services, responsive layouts, action dialogs, and design-system compliance.
+1. **Pillar 1 — Front-End Delivery (`apps/admin/*`, `apps/client/*`, `apps/seller/*`)**: Deliver full UI coverage across all three applications: Customer Storefront (`apps/client`), Admin Management Dashboard (`apps/admin`), and Seller & Merchant Dashboard (`apps/seller`) with typed client services, responsive layouts, action dialogs, and design-system compliance.
 2. **Pillar 2 — Cross-Service & Gateway Integration (`apps/*` all services)**: Wire reverse proxying, rate-limiting, and circuit breakers in `api-gateway`; establish asynchronous Kafka event streams with transactional outbox and DLQ isolation; connect domain relationships without cross-service HTTP calls.
 3. **Pillar 3 — Documentation, Skills, Manifests & Configuration Updates (`*.md`, skills, `*.yml`)**: Update architecture docs (`docs/API.md`, `docs/ARCHITECTURE.md`, `docs/EVENT-DRIVEN-ARCHITECTURE.md`), deployment manifests (`docker-compose.yml`, Kubernetes Kustomize, Prometheus, GitHub workflows), and agent skills across all mirror folders.
 4. **Pillar 4 — Deep Project Analysis & Comprehensive Testing (Unit & Integration)**: Conduct deep architectural analysis before and after changes; write comprehensive tsx/jest unit and integration test suites; enforce 100% test pass rate with zero TypeScript compile errors.
@@ -57,8 +57,8 @@ Whenever building, modifying, expanding, or integrating any feature service (e.g
 ### 4. After Making Changes
 
 - Run `pnpm check-types` across affected workspaces.
-- Run `pnpm build` for Next.js apps (`admin`, `client`) and `payment-service`.
-- Run `pnpm lint` for `admin` and `client`.
+- Run `pnpm build` for frontend apps (`admin`, `client`, `seller`) and `payment-service`.
+- Run `pnpm lint` for `admin`, `client`, and `seller`.
 - Update relevant `AGENTS.md` and `docs/` files when contracts, architecture, or behavior change.
 - When touching resilience, update the Chaos Mesh manifests in `infrastructure/chaos/`
   (including the parallel `flash-sale-mixed-traffic.yaml` order-plane + replica-lag drill)

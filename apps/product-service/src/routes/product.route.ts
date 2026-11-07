@@ -20,6 +20,7 @@ const router: Router = Router();
 router.post("/", shouldBeSellerOrAdmin, createProduct);
 router.post("/backfill-search", shouldBeAdmin, backfillSearchIndexHandler);
 router.put("/:id", shouldBeSellerOrAdmin, updateProduct);
+router.patch("/:id", shouldBeSellerOrAdmin, updateProduct);
 router.delete("/:id", shouldBeSellerOrAdmin, deleteProduct);
 router.get("/", getProducts);
 // Must be registered before "/:id" so it is not captured as a product id.

@@ -87,3 +87,53 @@ export const shouldBeAdmin = createMiddleware<{ Variables: AuthVariables }>(
     await next();
   },
 );
+
+export const shouldBeSellerOrAdmin = createMiddleware<{
+  Variables: AuthVariables;
+}>(async (c, next) => {
+  // 1. Fast-path: Check trusted API Gateway internal header propagation
+  const internalSecret = c.req.header(GATEWAY_HEADERS.INTERNAL_SECRET);
+  const configuredSecret = process.env.INTERNAL_SERVICE_SECRET;
+  const gatewayUserId = c.req.header(GATEWAY_HEADERS.USER_ID);
+  const gatewayUserRole = c.req.header(GATEWAY_HEADERS.USER_ROLE);
+  const gatewayIsSeller =
+    c.req.header(GATEWAY_HEADERS.IS_SELLER) === "true" ||
+    c.req.header("x-user-is-seller") === "true";
+
+  if (
+    internalSecret &&
+    configuredSecret &&
+    safeTimingCompare(internalSecret, configuredSecret) &&
+    gatewayUserId
+  ) {
+    if (
+      gatewayUserRole !== "admin" &&
+      gatewayUserRole !== "seller" &&
+      !gatewayIsSeller
+    ) {
+      return c.json({ message: "Seller or Admin role required!" }, 403);
+    }
+    c.set("userId", gatewayUserId);
+    c.set("userRole", gatewayUserRole || (gatewayIsSeller ? "seller" : "user"));
+    await next();
+    return;
+  }
+
+  // 2. Direct Clerk token verification
+  const auth = getAuth(c);
+  if (!auth?.userId) {
+    return c.json({ message: "You are not logged in." }, 401);
+  }
+
+  const claims = auth.sessionClaims as CustomJwtSessionClaims;
+  const role = claims?.metadata?.role;
+  const isSeller = claims?.metadata?.isSeller === true || role === "seller";
+
+  if (role !== "admin" && !isSeller) {
+    return c.json({ message: "Seller or Admin role required!" }, 403);
+  }
+
+  c.set("userId", auth.userId);
+  c.set("userRole", role || (isSeller ? "seller" : "user"));
+  await next();
+});

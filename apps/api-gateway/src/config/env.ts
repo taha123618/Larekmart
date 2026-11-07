@@ -24,7 +24,7 @@ const envSchema = z
     CORS_ORIGIN: z
       .string()
       .default(
-        "http://localhost:3000,http://localhost:3002,http://localhost:3003",
+        "http://localhost:3000,http://localhost:3002,http://localhost:3003,http://localhost:3004",
       ),
 
     // Clerk Auth

@@ -8,9 +8,9 @@ This document is the authoritative engineering specification for the Continuous 
 
 Larekmart is a production-grade distributed microservices e-commerce platform built as a **pnpm + Turborepo monorepo**. The ecosystem consists of:
 
-- **2 Next.js Frontends**: Storefront (`apps/client`, Next.js 16) and Admin Dashboard (`apps/admin`, Next.js 15).
+- **3 Frontends**: Storefront (`apps/client`, Next.js 16), Admin Dashboard (`apps/admin`, Next.js 15), and Seller & Merchant Dashboard (`apps/seller`, Nuxt 3).
 - **1 Edge API Gateway**: Fastify 5 (`apps/api-gateway`).
-- **24 Polyglot HTTP Backend Microservices**: Node.js (Fastify, Express, Hono, Koa, NestJS), Go 1.22 (Chi), and Python 3.12+ (FastAPI).
+- **27 Polyglot HTTP Backend Microservices**: Node.js (Fastify, Express, Hono, Koa, NestJS), Go 1.22 (Chi), and Python 3.12+ (FastAPI).
 - **1 Headless Worker**: Email Service (`apps/email-service`).
 - **Shared Internal Packages**: Contracts (`@repo/types`), Event Messaging (`@repo/kafka`), Observability (`@repo/monitoring`), Caching (`@repo/redis`), Search (`@repo/opensearch`), and 8 Database Packages (`product-db`, `inventory-db`, `order-db`, `cart-db`, `catalog-db`, `shipping-db`, `user-db`, `vendor-db`).
 - **Container Registry**: GitHub Container Registry (`ghcr.io/taha123618/larekmart/*`).
@@ -26,7 +26,7 @@ Larekmart is a production-grade distributed microservices e-commerce platform bu
                     ▼                                     ▼
      ┌─────────────────────────────────────────────────────────┐
      │                STAGE 1: Code Quality Gate               │
-     │  - pnpm lint (admin + client)                           │
+     │  - pnpm lint (admin + client + seller)                  │
      │  - pnpm format:check (Prettier)                         │
      │  - pnpm db:generate (Prisma & Drizzle)                  │
      │  - pnpm check-types (Strict TypeScript compilation)     │

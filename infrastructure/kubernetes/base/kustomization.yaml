@@ -13,6 +13,7 @@ resources:
   - ingress.yaml
   - frontends/client.yaml
   - frontends/admin.yaml
+  - frontends/seller.yaml
   - services/api-gateway.yaml
   - services/product-service.yaml
   - services/order-service.yaml

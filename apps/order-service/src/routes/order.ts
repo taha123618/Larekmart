@@ -273,16 +273,106 @@ export const orderRoute = async (fastify: FastifyInstance) => {
 
   fastify.get(
     "/orders",
-    { preHandler: shouldBeAdmin },
+    { preHandler: shouldBeSeller },
     async (request, reply) => {
-      const { limit } = request.query as { limit: number };
+      const { limit, sellerId } = request.query as {
+        limit?: number;
+        sellerId?: string;
+      };
+      const isAdmin = request.userRole === "admin";
+      const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+
+      const query: Record<string, unknown> = {};
+      if (!isAdmin) {
+        query.$or = [
+          { sellerId: request.userId },
+          { "products.sellerId": request.userId },
+        ];
+      } else if (sellerId) {
+        query.$or = [
+          { sellerId },
+          { "products.sellerId": sellerId },
+        ];
+      }
+
       const { result: orders } = await measureAsync(
-        "db.order.findAdminOrders",
+        "db.order.findOrders",
         async () => {
-          return await Order.find().limit(limit).sort({ createdAt: -1 });
+          return await Order.find(query).limit(safeLimit).sort({ createdAt: -1 });
         },
       );
       return reply.send(orders);
+    },
+  );
+
+  fastify.patch(
+    "/orders/:id",
+    { preHandler: shouldBeSeller },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        return reply.status(400).send({ message: "Invalid order ID format" });
+      }
+
+      const order = await Order.findById(id);
+      if (!order) {
+        return reply.status(404).send({ message: "Order not found" });
+      }
+
+      const isAdmin = request.userRole === "admin";
+      const isAssignedSeller =
+        order.sellerId === request.userId ||
+        order.products.some((p: any) => p.sellerId === request.userId);
+
+      if (!isAdmin && !isAssignedSeller) {
+        return reply.status(403).send({
+          message: "Access forbidden: you cannot update an order you do not own",
+        });
+      }
+
+      const body = request.body as {
+        status?: string;
+        carrier?: string;
+        trackingNumber?: string;
+      };
+
+      const validStatuses = [
+        "success",
+        "failed",
+        "pending_confirmation",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled_out_of_stock",
+        "cancelled_tax_mismatch",
+        "cancelled",
+        "fraud_blocked",
+        "refund_pending",
+        "refunded",
+      ] as const;
+      type OrderStatus = (typeof validStatuses)[number];
+
+      if (body.status && validStatuses.includes(body.status as OrderStatus)) {
+        order.status = body.status as OrderStatus;
+      }
+      if (body.carrier) {
+        order.carrier = body.carrier;
+      }
+
+      await order.save();
+
+      // Dispatch order.status.updated via transactional outbox
+      await dispatchViaOutbox("order.status.updated", {
+        orderId: order._id.toString(),
+        userId: order.userId,
+        status: order.status,
+        carrier: order.carrier,
+        trackingNumber: body.trackingNumber || null,
+        updatedAt: new Date().toISOString(),
+      });
+
+      return reply.send(order);
     },
   );
 

@@ -22,9 +22,14 @@ import {
 import {
   requireUser,
   requireSellerStaffOrAdmin,
+  requireSellerOwnerOrAdmin,
+  requireStaffManagementPermission,
   requireSellerEnabled,
   requireSellerQualification,
   getUserId,
+  getUserRole,
+  isManageAdmin,
+  isMachineToMachine,
 } from "../middleware/auth.middleware.js";
 import { sellerEventProducer } from "../kafka/producer.js";
 import { cacheService } from "../services/cache.service.js";
@@ -247,6 +252,26 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const currentSeller = sellerRows[0]!;
+
+      // SEC-28: Prevent non-admin sellers or staff from altering account status or hijacking ownership
+      const role = getUserRole(request);
+      const isAdmin =
+        role === "admin" ||
+        role === "super_admin" ||
+        isManageAdmin(request) ||
+        isMachineToMachine(request);
+
+      if (
+        (body.status !== undefined || body.primaryUserId !== undefined) &&
+        !isAdmin
+      ) {
+        return reply.status(403).send({
+          message:
+            "Only platform administrators can change seller status or primary ownership",
+          code: "FORBIDDEN_ADMIN_FIELD",
+        });
+      }
+
       const updateData: Partial<typeof sellers.$inferInsert> = {
         updatedAt: new Date(),
       };
@@ -378,7 +403,30 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
           ? new Date(body.vacationEndDate)
           : null;
       }
-      if (body.status !== undefined) updateData.status = body.status;
+      if (body.status !== undefined) {
+        const role = getUserRole(request);
+        const isAdmin =
+          role === "admin" ||
+          role === "super_admin" ||
+          isManageAdmin(request) ||
+          isMachineToMachine(request);
+
+        const sellerRows = await db
+          .select({ status: sellers.status })
+          .from(sellers)
+          .where(eq(sellers.id, sellerId))
+          .limit(1);
+        const isSellerSuspended = sellerRows[0]?.status === "SUSPENDED";
+
+        if (!isAdmin && isSellerSuspended && body.status === "ACTIVE") {
+          return reply.status(403).send({
+            message:
+              "Cannot activate a storefront when the seller account is suspended by administrator",
+            code: "SELLER_ACCOUNT_SUSPENDED",
+          });
+        }
+        updateData.status = body.status;
+      }
 
       await db
         .update(sellerStores)
@@ -469,7 +517,30 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
           ? new Date(body.vacationEndDate)
           : null;
       }
-      if (body.status !== undefined) updateData.status = body.status;
+      if (body.status !== undefined) {
+        const role = getUserRole(request);
+        const isAdmin =
+          role === "admin" ||
+          role === "super_admin" ||
+          isManageAdmin(request) ||
+          isMachineToMachine(request);
+
+        const sellerRows = await db
+          .select({ status: sellers.status })
+          .from(sellers)
+          .where(eq(sellers.id, sellerId))
+          .limit(1);
+        const isSellerSuspended = sellerRows[0]?.status === "SUSPENDED";
+
+        if (!isAdmin && isSellerSuspended && body.status === "ACTIVE") {
+          return reply.status(403).send({
+            message:
+              "Cannot activate a storefront when the seller account is suspended by administrator",
+            code: "SELLER_ACCOUNT_SUSPENDED",
+          });
+        }
+        updateData.status = body.status;
+      }
 
       await db
         .update(sellerStores)
@@ -506,10 +577,35 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
   // 5. Add staff member
   app.post(
     "/api/v1/sellers/:sellerId/staff",
-    { preHandler: [requireSellerStaffOrAdmin] },
+    { preHandler: [requireStaffManagementPermission] },
     async (request, reply) => {
       const { sellerId } = request.params as { sellerId: string };
       const body = AddStaffSchema.parse(request.body);
+      const userId = getUserId(request) || "system";
+      const role = getUserRole(request);
+      const isAdmin =
+        role === "admin" ||
+        role === "super_admin" ||
+        isManageAdmin(request) ||
+        isMachineToMachine(request);
+
+      const sellerRows = await db
+        .select({ primaryUserId: sellers.primaryUserId })
+        .from(sellers)
+        .where(eq(sellers.id, sellerId))
+        .limit(1);
+
+      const isOwner =
+        (sellerRows.length > 0 && sellerRows[0]?.primaryUserId === userId) ||
+        isAdmin;
+
+      if (body.role === "OWNER" && !isOwner) {
+        return reply.status(403).send({
+          message:
+            "Only the primary store owner or administrator can assign the OWNER role",
+          code: "CANNOT_ASSIGN_OWNER_ROLE",
+        });
+      }
 
       // Check if user is already a staff member
       const existing = await db
@@ -608,6 +704,22 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
+  // 7b. Get operational settings
+  app.get(
+    "/api/v1/sellers/:sellerId/settings",
+    { preHandler: [requireSellerStaffOrAdmin] },
+    async (request, reply) => {
+      const { sellerId } = request.params as { sellerId: string };
+      const settingsRows = await db
+        .select()
+        .from(sellerSettings)
+        .where(eq(sellerSettings.sellerId, sellerId))
+        .limit(1);
+
+      return reply.send(settingsRows[0] || null);
+    },
+  );
+
   // 8. Upsert policy
   app.put(
     "/api/v1/sellers/:sellerId/policies",
@@ -646,6 +758,21 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
         });
       }
 
+      const policyList = await db
+        .select()
+        .from(sellerPolicies)
+        .where(eq(sellerPolicies.sellerId, sellerId));
+
+      return reply.send(policyList);
+    },
+  );
+
+  // 8b. List policies for seller
+  app.get(
+    "/api/v1/sellers/:sellerId/policies",
+    { preHandler: [requireSellerStaffOrAdmin] },
+    async (request, reply) => {
+      const { sellerId } = request.params as { sellerId: string };
       const policyList = await db
         .select()
         .from(sellerPolicies)

@@ -112,24 +112,24 @@ export default function Navbar() {
             {isSeller ? (
               // When isSeller is true: display seller-related UI & link
               <>
-                <Link
-                  href="/become-a-seller"
+                <a
+                  href={process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}
                   className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
                 >
                   <Store className="w-3.5 h-3.5" />
                   <span>Seller Portal</span>
-                </Link>
+                </a>
                 <span className="hidden sm:inline text-slate-700">|</span>
               </>
             ) : isSellerEnabled && isSellerRegistrationOpen ? (
               // When isSeller is false: display onboarding CTA if registration is open
               <>
-                <Link
-                  href="/become-a-seller"
+                <a
+                  href={`${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/onboarding`}
                   className="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1"
                 >
                   <span>Sell on Larekmart</span>
-                </Link>
+                </a>
                 <span className="hidden sm:inline text-slate-700">|</span>
               </>
             ) : null}
