@@ -35,7 +35,7 @@ export { useApi, ApiFetchOptions, ApiError } from '../app/composables/useApi';
 export { useNotifications, NotificationOptions } from '../app/composables/useNotifications';
 export { useOrders, useOrder } from '../app/composables/useOrders';
 export { useProducts, useProduct, useCreateProduct, useUpdateProduct } from '../app/composables/useProducts';
-export { useSellers, useSellerProfile, useSellerSettings, useSellerPerformance, useSellerStaff, useSellerPolicies, useCreateSeller } from '../app/composables/useSeller';
+export { useSellers, useSellerProfile, useSellerSettings, useSellerPerformance, useSellerStaff, useSellerPolicies, useCreateSeller, useVendorDisputes, useVendorDisputesOverview, useSubmitDisputeRebuttal } from '../app/composables/useSeller';
 export { useSupportTickets, useCreateTicket, useChatConversations, useChatMessages } from '../app/composables/useSupport';
 export { formatCurrency, formatCompactNumber, formatDate, formatRelativeTime, formatPercentage } from '../app/utils/formatters';
 export { hasPermission, canManageProducts, canFulfillOrders, canViewFinancials, canManageStaff, SellerRole, PermissionCheckContext } from '../app/utils/permissions';

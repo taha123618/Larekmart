@@ -31,7 +31,6 @@ import {
   Sparkles,
   Lock,
   AlertTriangle,
-  Coins,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -466,21 +465,24 @@ export default function BecomeASellerPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
+              <a
+                href={
+                  process.env.NEXT_PUBLIC_SELLER_URL ||
+                  "http://localhost:3004"
+                }
+                className="flex-1 text-center py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20"
+              >
+                <Store className="w-4 h-4" />
+                Open Seller Central
+              </a>
               {existingMerchant.storeSlug && (
                 <Link
                   href={`/stores/${existingMerchant.storeSlug}`}
                   className="flex-1 text-center py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
                 >
-                  View My Public Storefront
+                  View Storefront
                 </Link>
               )}
-              <Link
-                href="/account/seller/payouts"
-                className="flex-1 text-center py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Coins className="w-4 h-4" />
-                Escrow & Payouts
-              </Link>
               <Link
                 href="/products"
                 className="flex-1 text-center py-2.5 px-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-sm font-semibold transition-colors"
@@ -590,13 +592,6 @@ export default function BecomeASellerPage() {
                   >
                     <span>Launch Seller Central Onboarding &rarr;</span>
                   </a>
-                </div>
-              </div>
-            )}
-                      server approval and merchant activation will be granted
-                      following Super Admin or automated KYB compliance review.
-                    </p>
-                  </div>
                 </div>
               </div>
             )}
@@ -946,17 +941,21 @@ export default function BecomeASellerPage() {
                 </div>
 
                 <div className="pt-6 flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                  <a
+                    href={
+                      process.env.NEXT_PUBLIC_SELLER_URL ||
+                      "http://localhost:3004"
+                    }
+                    className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors shadow-lg shadow-emerald-600/20 inline-flex items-center justify-center gap-2"
+                  >
+                    <Store className="w-4 h-4" />
+                    <span>Open Seller Central</span>
+                  </a>
                   <Link
                     href={`/stores/${createdSlug}`}
-                    className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-colors shadow-lg shadow-indigo-600/20"
+                    className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-colors shadow-lg shadow-indigo-600/20 inline-flex items-center justify-center"
                   >
                     View Storefront Preview
-                  </Link>
-                  <Link
-                    href="/products"
-                    className="flex-1 py-3 px-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 font-semibold text-sm transition-colors"
-                  >
-                    Return to Shopping
                   </Link>
                 </div>
               </div>

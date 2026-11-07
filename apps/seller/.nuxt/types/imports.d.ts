@@ -411,6 +411,7 @@ declare global {
   const useStepper: typeof import('@vueuse/core').useStepper
   const useStorageAsync: typeof import('@vueuse/core').useStorageAsync
   const useStyleTag: typeof import('@vueuse/core').useStyleTag
+  const useSubmitDisputeRebuttal: typeof import('../../app/composables/useSeller').useSubmitDisputeRebuttal
   const useSupportTickets: typeof import('../../app/composables/useSupport').useSupportTickets
   const useSupported: typeof import('@vueuse/core').useSupported
   const useSwipe: typeof import('@vueuse/core').useSwipe
@@ -442,6 +443,8 @@ declare global {
   const useUserMedia: typeof import('@vueuse/core').useUserMedia
   const useVModel: typeof import('@vueuse/core').useVModel
   const useVModels: typeof import('@vueuse/core').useVModels
+  const useVendorDisputes: typeof import('../../app/composables/useSeller').useVendorDisputes
+  const useVendorDisputesOverview: typeof import('../../app/composables/useSeller').useVendorDisputesOverview
   const useVibrate: typeof import('@vueuse/core').useVibrate
   const useVirtualList: typeof import('@vueuse/core').useVirtualList
   const useWakeLock: typeof import('@vueuse/core').useWakeLock
@@ -931,6 +934,7 @@ declare module 'vue' {
     readonly useStepper: UnwrapRef<typeof import('@vueuse/core')['useStepper']>
     readonly useStorageAsync: UnwrapRef<typeof import('@vueuse/core')['useStorageAsync']>
     readonly useStyleTag: UnwrapRef<typeof import('@vueuse/core')['useStyleTag']>
+    readonly useSubmitDisputeRebuttal: UnwrapRef<typeof import('../../app/composables/useSeller')['useSubmitDisputeRebuttal']>
     readonly useSupportTickets: UnwrapRef<typeof import('../../app/composables/useSupport')['useSupportTickets']>
     readonly useSupported: UnwrapRef<typeof import('@vueuse/core')['useSupported']>
     readonly useSwipe: UnwrapRef<typeof import('@vueuse/core')['useSwipe']>
@@ -962,6 +966,8 @@ declare module 'vue' {
     readonly useUserMedia: UnwrapRef<typeof import('@vueuse/core')['useUserMedia']>
     readonly useVModel: UnwrapRef<typeof import('@vueuse/core')['useVModel']>
     readonly useVModels: UnwrapRef<typeof import('@vueuse/core')['useVModels']>
+    readonly useVendorDisputes: UnwrapRef<typeof import('../../app/composables/useSeller')['useVendorDisputes']>
+    readonly useVendorDisputesOverview: UnwrapRef<typeof import('../../app/composables/useSeller')['useVendorDisputesOverview']>
     readonly useVibrate: UnwrapRef<typeof import('@vueuse/core')['useVibrate']>
     readonly useVirtualList: UnwrapRef<typeof import('@vueuse/core')['useVirtualList']>
     readonly useWakeLock: UnwrapRef<typeof import('@vueuse/core')['useWakeLock']>

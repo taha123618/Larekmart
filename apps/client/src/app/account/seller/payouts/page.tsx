@@ -419,6 +419,24 @@ export default function MerchantPayoutsPage(): React.JSX.Element {
         </div>
       </div>
 
+      {/* Migration Notice Banner */}
+      <div className="p-4 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-900 dark:text-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Store className="h-5 w-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+          <p className="text-xs">
+            Merchant settlements, ledger balances, and automated payout requests have moved to the dedicated{" "}
+            <span className="font-semibold text-indigo-700 dark:text-indigo-300">Seller Central Portal</span>.
+          </p>
+        </div>
+        <a
+          href={`${process.env.NEXT_PUBLIC_SELLER_URL || "http://localhost:3004"}/finance/payouts`}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition shrink-0"
+        >
+          <span>Go to Seller Central</span>
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </a>
+      </div>
+
       {/* Security & Risk Hold Banner */}
       {hasSecurityHold && (
         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 flex items-start gap-3">
