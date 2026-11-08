@@ -7,7 +7,11 @@ import {
   isReadYourWritesActive,
   clearReadYourWrites,
 } from "@repo/redis";
-import { CatalogCacheKeys } from "../src/cache/catalog-cache.js";
+import {
+  CatalogCacheKeys,
+  SingleFlightGroup,
+  getCachedOrFetch,
+} from "../src/cache/catalog-cache.js";
 import { healthRoutes } from "../src/routes/health.routes.js";
 import { configureFastifyPlugins } from "../src/plugins/fastify.js";
 import {
@@ -375,6 +379,40 @@ async function runCatalogServiceTests(): Promise<void> {
     // Restore repository method
     catalogRepository.findProducts = originalFindProducts;
   }
+
+  // ---------------------------------------------------------------------------
+  // TEST 9: SingleFlightGroup & getCachedOrFetch Thundering Herd Coalescing
+  // ---------------------------------------------------------------------------
+  console.log(
+    "\n9. Testing SingleFlightGroup & getCachedOrFetch thundering herd coalescing...",
+  );
+
+  const sf = new SingleFlightGroup();
+  let dbCallCount = 0;
+  const mockSlowDbFetch = async () => {
+    dbCallCount++;
+    await new Promise((r) => setTimeout(r, 25));
+    return { id: "cat_999", name: "Coalesced Category" };
+  };
+
+  // Launch 25 concurrent requests for the exact same key
+  const concurrentCalls = Array.from({ length: 25 }, () =>
+    sf.do("test:category:coalesce", mockSlowDbFetch),
+  );
+  const results = await Promise.all(concurrentCalls);
+
+  assert.equal(
+    dbCallCount,
+    1,
+    `SingleFlight must execute underlying fetcher exactly 1 time, got: ${dbCallCount}`,
+  );
+  assert.equal(results.length, 25);
+  for (const res of results) {
+    assert.equal(res.id, "cat_999");
+  }
+  console.log(
+    "  ✓ 25 concurrent misses coalesced into exactly 1 underlying execution via SingleFlightGroup",
+  );
 
   console.log("\n==================================================");
   console.log("🎉 ALL CATALOG SERVICE SQA TESTS PASSED (100%)");

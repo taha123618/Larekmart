@@ -47,7 +47,10 @@ OutboxEventSchema.index({
 });
 
 // Automated 7-day TTL index for pruning published events:
-OutboxEventSchema.index({ publishedAt: 1 }, { expireAfterSeconds: 604800 });
+OutboxEventSchema.index(
+  { publishedAt: 1 },
+  { expireAfterSeconds: 604800, partialFilterExpression: { status: "PUBLISHED" } },
+);
 
 export type OutboxEventSchemaType = InferSchemaType<typeof OutboxEventSchema>;
 export type OutboxEventDocument = HydratedDocument<OutboxEventSchemaType>;

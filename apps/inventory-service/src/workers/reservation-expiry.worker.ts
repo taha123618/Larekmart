@@ -51,43 +51,56 @@ export function startReservationExpiryWorker(
             );
             await invalidateInventoryCache();
 
-            for (const item of expiredList) {
-              await redisStockGatekeeper.incrementStockCounter(
-                {
-                  productId: item.inventoryItem.productId,
-                  variantId: item.inventoryItem.variantId,
-                  warehouseId: item.inventoryItem.warehouseId,
-                },
-                item.quantity,
+            const CHUNK_SIZE = 20;
+            for (let i = 0; i < expiredList.length; i += CHUNK_SIZE) {
+              const chunk = expiredList.slice(i, i + CHUNK_SIZE);
+              await Promise.allSettled(
+                chunk.map(async (item) => {
+                  await redisStockGatekeeper.incrementStockCounter(
+                    {
+                      productId: item.inventoryItem.productId,
+                      variantId: item.inventoryItem.variantId,
+                      warehouseId: item.inventoryItem.warehouseId,
+                    },
+                    item.quantity,
+                  );
+                  await invalidateInventoryCache(
+                    item.inventoryItem.productId,
+                    item.inventoryItem.variantId,
+                  );
+                  try {
+                    await producer.send(
+                      "inventory.reservation.expired",
+                      {
+                        value: {
+                          inventoryItemId: item.inventoryItemId,
+                          productId: item.inventoryItem.productId,
+                          variantId: item.inventoryItem.variantId,
+                          warehouseId: item.inventoryItem.warehouseId,
+                          quantity: item.inventoryItem.quantity,
+                          availableQuantity:
+                            item.inventoryItem.availableQuantity,
+                          reservedQuantity: item.inventoryItem.reservedQuantity,
+                          soldQuantity: item.inventoryItem.soldQuantity,
+                          status: item.inventoryItem.status,
+                          reservationId: item.id,
+                          referenceType: item.referenceType,
+                          referenceId: item.referenceId,
+                          occurredAt: new Date().toISOString(),
+                        },
+                      },
+                      item.inventoryItem.productId
+                        ? { key: String(item.inventoryItem.productId) }
+                        : undefined,
+                    );
+                  } catch (pubErr) {
+                    logger.error(
+                      "Failed to publish reservation expired event",
+                      pubErr,
+                    );
+                  }
+                }),
               );
-              await invalidateInventoryCache(
-                item.inventoryItem.productId,
-                item.inventoryItem.variantId,
-              );
-              try {
-                await producer.send("inventory.reservation.expired", {
-                  value: {
-                    inventoryItemId: item.inventoryItemId,
-                    productId: item.inventoryItem.productId,
-                    variantId: item.inventoryItem.variantId,
-                    warehouseId: item.inventoryItem.warehouseId,
-                    quantity: item.inventoryItem.quantity,
-                    availableQuantity: item.inventoryItem.availableQuantity,
-                    reservedQuantity: item.inventoryItem.reservedQuantity,
-                    soldQuantity: item.inventoryItem.soldQuantity,
-                    status: item.inventoryItem.status,
-                    reservationId: item.id,
-                    referenceType: item.referenceType,
-                    referenceId: item.referenceId,
-                    occurredAt: new Date().toISOString(),
-                  },
-                });
-              } catch (pubErr) {
-                logger.error(
-                  "Failed to publish reservation expired event",
-                  pubErr,
-                );
-              }
             }
 
             logger.info(

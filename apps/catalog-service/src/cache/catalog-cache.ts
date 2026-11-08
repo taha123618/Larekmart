@@ -49,6 +49,59 @@ export async function setCached<T>(
   }
 }
 
+/**
+ * In-flight promise coalescing (SingleFlight) suppressing thundering herds
+ * on concurrent cache misses.
+ */
+export class SingleFlightGroup {
+  private calls = new Map<string, Promise<unknown>>();
+
+  public async do<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const existing = this.calls.get(key) as Promise<T> | undefined;
+    if (existing) {
+      return existing;
+    }
+
+    const promise = fn().finally(() => {
+      this.calls.delete(key);
+    });
+
+    this.calls.set(key, promise);
+    return promise;
+  }
+}
+
+export const catalogSingleFlight = new SingleFlightGroup();
+
+/**
+ * Reads from Redis cache, or executes the fetcher function with SingleFlight
+ * in-flight request coalescing to shield downstream databases from cache stampedes.
+ */
+export async function getCachedOrFetch<T>(
+  key: string,
+  fetcher: () => Promise<T>,
+  ttlSeconds: number = env.CATALOG_CACHE_TTL_SECONDS,
+): Promise<T> {
+  const cached = await getCached<T>(key);
+  if (cached !== null) {
+    return cached;
+  }
+
+  return catalogSingleFlight.do(key, async () => {
+    // Double check cache after acquiring in-flight slot
+    const doubleCheck = await getCached<T>(key);
+    if (doubleCheck !== null) {
+      return doubleCheck;
+    }
+
+    const freshData = await fetcher();
+    if (freshData !== null && freshData !== undefined) {
+      await setCached(key, freshData, ttlSeconds);
+    }
+    return freshData;
+  });
+}
+
 export async function invalidateKey(key: string): Promise<void> {
   try {
     await cacheDel(redis.client, key);

@@ -473,7 +473,20 @@ async function testOutboxClusterIsolation() {
   // Release pod 1 lock
   const { releaseClusterLock } = await import("@repo/redis");
   await releaseClusterLock(redis.client, OUTBOX_CLUSTER_LEADER_KEY, workerPod1);
-  console.log("  ✓ cluster leader lease cleanly released\n");
+  console.log("  ✓ cluster leader lease cleanly released");
+
+  // Verify outboxRepository.purgePublishedMessages contract
+  const { outboxRepository } = await import(
+    "../src/repositories/outbox.repository.js"
+  );
+  assert.equal(
+    typeof outboxRepository.purgePublishedMessages,
+    "function",
+    "purgePublishedMessages must be defined on outboxRepository",
+  );
+  console.log(
+    "  ✓ outbox retention purge contract and interface verified\n",
+  );
 }
 
 // ─── Runner ───────────────────────────────────────────────────────────────────

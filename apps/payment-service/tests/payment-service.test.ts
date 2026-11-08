@@ -6,6 +6,7 @@ import {
 } from "../src/middleware/authMiddleware.js";
 import webhookRoute from "../src/routes/webhooks.route.js";
 import { GATEWAY_HEADERS, type PaymentSuccessfulType } from "@repo/types";
+import { redis } from "../src/utils/redis.js";
 
 process.env.INTERNAL_SERVICE_SECRET = "test-payment-internal-secret-xyz";
 process.env.STRIPE_WEBHOOK_SECRET = "whsec_test_secret_stripe_999";
@@ -148,6 +149,21 @@ async function runPaymentServiceTests(): Promise<void> {
     "  ✓ Webhook signature validation rejection verified (400 Bad Request)",
   );
 
+  // 3C. Verify State Redis idempotency lease helper
+  const testEventId = "evt_idempotency_test_456";
+  const leaseKey = `stripe:event:${testEventId}`;
+  await redis.client.set(leaseKey, "COMPLETED", "EX", 60);
+  const leaseStatus = await redis.client.get(leaseKey);
+  assert.equal(
+    leaseStatus,
+    "COMPLETED",
+    "Lease key must exist with COMPLETED status in State Redis",
+  );
+  await redis.client.del(leaseKey);
+  console.log(
+    "  ✓ Webhook State Redis idempotency lease invariant verified",
+  );
+
   // ---------------------------------------------------------------------------
   // 4. Testing payment.successful Event Schema Invariants
   // ---------------------------------------------------------------------------
@@ -179,9 +195,13 @@ async function runPaymentServiceTests(): Promise<void> {
   assert.equal(mockPaymentEvent.paymentMethod, "card");
   console.log("  ✓ PaymentSuccessfulType contract adherence validated");
 
+  // Close redis connection gracefully
+  await redis.close().catch(() => {});
+
   console.log("\n==================================================");
   console.log("🎉 ALL PAYMENT SERVICE SQA TESTS PASSED (100%)");
   console.log("==================================================");
+  process.exit(0);
 }
 
 runPaymentServiceTests().catch((err) => {

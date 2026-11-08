@@ -14,7 +14,8 @@
     "hono": "^4.9.6",
     "stripe": "^18.5.0",
     "@repo/kafka": "workspace:*",
-    "@repo/monitoring": "workspace:*"
+    "@repo/monitoring": "workspace:*",
+    "@repo/redis": "workspace:*"
   },
   "devDependencies": {
     "@repo/types": "workspace:*",

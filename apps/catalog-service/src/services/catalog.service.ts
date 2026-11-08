@@ -7,6 +7,7 @@ import {
   CatalogCacheKeys,
   getCached,
   setCached,
+  getCachedOrFetch,
 } from "../cache/catalog-cache.js";
 import { catalogRepository } from "../repositories/catalog.repository.js";
 import { databaseContext } from "../utils/database-context.js";
@@ -77,8 +78,19 @@ export class CatalogService {
 
     // Bypass cache if client has active Read-Your-Writes consistency lease
     if (!forcePrimary) {
-      const cached = await getCached<CatalogProductCardType>(cacheKey);
-      if (cached) return cached;
+      return getCachedOrFetch(cacheKey, async () => {
+        let product = await catalogRepository.findProductById(
+          idOrSlug,
+          forcePrimary,
+        );
+        if (!product) {
+          product = await catalogRepository.findProductBySlug(
+            idOrSlug,
+            forcePrimary,
+          );
+        }
+        return product;
+      });
     }
 
     let product = await catalogRepository.findProductById(
@@ -90,10 +102,6 @@ export class CatalogService {
         idOrSlug,
         forcePrimary,
       );
-    }
-
-    if (product) {
-      await setCached(cacheKey, product);
     }
     return product;
   }
@@ -109,16 +117,12 @@ export class CatalogService {
     const cacheKey = CatalogCacheKeys.featured();
 
     if (!forcePrimary) {
-      const cached = await getCached<CatalogProductCardType[]>(cacheKey);
-      if (cached) return cached;
+      return getCachedOrFetch(cacheKey, async () => {
+        return catalogRepository.findFeaturedProducts(limit, forcePrimary);
+      });
     }
 
-    const products = await catalogRepository.findFeaturedProducts(
-      limit,
-      forcePrimary,
-    );
-    await setCached(cacheKey, products);
-    return products;
+    return catalogRepository.findFeaturedProducts(limit, forcePrimary);
   }
 
   async getNewArrivals(
@@ -132,16 +136,12 @@ export class CatalogService {
     const cacheKey = CatalogCacheKeys.newArrivals();
 
     if (!forcePrimary) {
-      const cached = await getCached<CatalogProductCardType[]>(cacheKey);
-      if (cached) return cached;
+      return getCachedOrFetch(cacheKey, async () => {
+        return catalogRepository.findNewArrivals(limit, forcePrimary);
+      });
     }
 
-    const products = await catalogRepository.findNewArrivals(
-      limit,
-      forcePrimary,
-    );
-    await setCached(cacheKey, products);
-    return products;
+    return catalogRepository.findNewArrivals(limit, forcePrimary);
   }
 
   async getBestSellers(
@@ -155,16 +155,12 @@ export class CatalogService {
     const cacheKey = CatalogCacheKeys.bestSellers();
 
     if (!forcePrimary) {
-      const cached = await getCached<CatalogProductCardType[]>(cacheKey);
-      if (cached) return cached;
+      return getCachedOrFetch(cacheKey, async () => {
+        return catalogRepository.findBestSellers(limit, forcePrimary);
+      });
     }
 
-    const products = await catalogRepository.findBestSellers(
-      limit,
-      forcePrimary,
-    );
-    await setCached(cacheKey, products);
-    return products;
+    return catalogRepository.findBestSellers(limit, forcePrimary);
   }
 }
 

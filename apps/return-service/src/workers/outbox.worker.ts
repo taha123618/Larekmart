@@ -25,6 +25,8 @@ export const OUTBOX_LEADER_TTL_MS = 10_000;
 let running = false;
 let stopSignal = false;
 let producerInstance: KafkaProducer | null = null;
+let lastPurgeTime = 0;
+const PURGE_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 export async function processOutboxBatch(
   workerId = OUTBOX_WORKER_ID,
@@ -89,6 +91,25 @@ export async function processOutboxBatch(
         if (res.status === "fulfilled" && res.value) {
           publishedCount++;
         }
+      }
+    }
+
+    // Retention Sweeper: Clean up aged published outbox records (>7 days) while holding leader lease
+    const nowMs = Date.now();
+    if (nowMs - lastPurgeTime > PURGE_INTERVAL_MS) {
+      lastPurgeTime = nowMs;
+      try {
+        const purged = await outboxRepository.purgePublishedMessages(7);
+        if (purged > 0) {
+          console.log(
+            `[return-service:outbox] Cleaned up ${purged} published outbox records older than 7 days`,
+          );
+        }
+      } catch (purgeErr) {
+        console.warn(
+          "[return-service:outbox] Failed to purge published outbox records:",
+          purgeErr,
+        );
       }
     }
   } finally {

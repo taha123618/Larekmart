@@ -6,6 +6,7 @@ import {
   CatalogCacheKeys,
   getCached,
   setCached,
+  getCachedOrFetch,
 } from "../cache/catalog-cache.js";
 import { categoryRepository } from "../repositories/category.repository.js";
 import { catalogRepository } from "../repositories/catalog.repository.js";
@@ -26,8 +27,13 @@ export class CategoryService {
     const cacheKey = CatalogCacheKeys.categoryTree();
 
     if (!forcePrimary) {
-      const cached = await getCached<CatalogCategoryItemType[]>(cacheKey);
-      if (cached) return cached;
+      return getCachedOrFetch(
+        cacheKey,
+        async () => {
+          return categoryRepository.findCategoryTree(forcePrimary);
+        },
+        3600, // 1 hour TTL
+      );
     }
 
     const tree = await categoryRepository.findCategoryTree(forcePrimary);

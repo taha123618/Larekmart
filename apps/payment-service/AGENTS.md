@@ -47,6 +47,7 @@ Stripe product sync driven by Kafka. It emits `payment.successful` after verifyi
 - Webhook signature verification must use
   `stripe.webhooks.constructEvent(body, sig, webhookSecret)` with raw request text, not
   parsed JSON.
+- Webhook Idempotency: Acquires an atomic lease in State Redis (`stripe:event:{id}`, 24h TTL) before dispatching `payment.successful`, returning `{ received: true, duplicate: true }` on replay to prevent duplicate downstream order creation and event ingestion.
 - Send amounts in the smallest currency unit (cents); the codebase multiplies by `100` where
   appropriate.
 

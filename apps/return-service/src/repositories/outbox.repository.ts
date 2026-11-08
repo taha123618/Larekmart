@@ -115,6 +115,22 @@ export class OutboxRepository {
       })
       .where(condition);
   }
+
+  /**
+   * Purges published outbox records older than the specified retention days to prevent storage bloat.
+   */
+  async purgePublishedMessages(olderThanDays = 7): Promise<number> {
+    const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
+    const result = await this.db
+      .delete(returnOutbox)
+      .where(
+        and(
+          eq(returnOutbox.status, "PUBLISHED"),
+          lt(returnOutbox.publishedAt, cutoff),
+        ),
+      );
+    return (result as any)[0]?.affectedRows ?? 0;
+  }
 }
 
 export const outboxRepository = new OutboxRepository();

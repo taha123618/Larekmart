@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import Stripe from "stripe";
 import stripe from "../utils/stripe";
 import { producer } from "../utils/kafka";
+import { redis } from "../utils/redis";
 import { createEventAttestation } from "@repo/kafka";
 import { createLogger, captureError } from "@repo/monitoring";
 
@@ -35,6 +36,32 @@ webhookRoute.post("/stripe", async (c) => {
   }
 
   logger.info(`Received Stripe webhook event: ${event.type}`);
+
+  const idempotencyKey = `stripe:event:${event.id}`;
+  let leaseAcquired = false;
+
+  try {
+    // Acquire atomic idempotency lease in State Redis (24-hour TTL)
+    const setRes = await redis.client.set(
+      idempotencyKey,
+      "PROCESSING",
+      "EX",
+      86400,
+      "NX",
+    );
+    if (!setRes) {
+      logger.info(
+        `Duplicate Stripe webhook event detected and skipped: ${event.id} (type: ${event.type})`,
+      );
+      return c.json({ received: true, duplicate: true });
+    }
+    leaseAcquired = true;
+  } catch (redisErr) {
+    logger.warn(
+      `Redis idempotency lease check failed for event ${event.id}; proceeding with fail-open fallback`,
+      { error: String(redisErr) },
+    );
+  }
 
   try {
     switch (event.type) {
@@ -182,8 +209,17 @@ webhookRoute.post("/stripe", async (c) => {
       default:
         break;
     }
+    if (leaseAcquired) {
+      await redis.client
+        .set(idempotencyKey, "COMPLETED", "EX", 86400)
+        .catch(() => {});
+    }
     return c.json({ received: true });
   } catch (err) {
+    if (leaseAcquired) {
+      // Release lease on error so Stripe retry can be re-processed
+      await redis.client.del(idempotencyKey).catch(() => {});
+    }
     captureError(err, {
       serviceName: "payment-service",
       logger,
