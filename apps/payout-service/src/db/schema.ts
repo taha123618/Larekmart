@@ -58,9 +58,15 @@ export const ledgerAccounts = pgTable(
     sellerId: varchar("seller_id", { length: 64 }),
     accountType: varchar("account_type", { length: 64 }).notNull(), // SELLER_ESCROW, PLATFORM_COMMISSION, PAYOUT_CLEARING, DISPUTE_RESERVE, TAX_WITHHOLDING
     currency: varchar("currency", { length: 3 }).notNull().default("PKR"),
+    currentBalance: numeric("current_balance", { precision: 15, scale: 2 })
+      .notNull()
+      .default("0.00"),
     description: text("description"),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },

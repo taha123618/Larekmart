@@ -51,6 +51,18 @@ export class ConversationService {
   }
 
   /**
+   * Retrieves all active conversation IDs for a user to scope presence broadcasts.
+   */
+  static async getUserConversationIds(userId: string): Promise<string[]> {
+    const rows = await db
+      .select({ conversationId: conversationParticipants.conversationId })
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.userId, userId));
+
+    return rows.map((r) => r.conversationId);
+  }
+
+  /**
    * Creates a new conversation with participants and optional initial message.
    */
   static async createConversation(

@@ -61,21 +61,34 @@ export async function processOutboxBatch(
       workerId,
     );
 
-    for (const msg of messages) {
-      try {
-        const payload: unknown = JSON.parse(msg.payload as string);
-        if (activeProducer) {
-          await activeProducer.send(msg.topic, payload as object);
+    const CHUNK_SIZE = 10;
+    for (let i = 0; i < messages.length; i += CHUNK_SIZE) {
+      const chunk = messages.slice(i, i + CHUNK_SIZE);
+      const results = await Promise.allSettled(
+        chunk.map(async (msg) => {
+          try {
+            const payload: unknown = JSON.parse(msg.payload as string);
+            if (activeProducer) {
+              await activeProducer.send(msg.topic, payload as object);
+            }
+            await outboxRepository.markPublished(msg.id, workerId);
+            return true;
+          } catch (err) {
+            const errMsg = err instanceof Error ? err.message : String(err);
+            console.error(
+              `[return-service:outbox] Failed to publish message ${msg.id} on topic ${msg.topic}:`,
+              errMsg,
+            );
+            await outboxRepository.markFailed(msg.id, errMsg, workerId);
+            return false;
+          }
+        }),
+      );
+
+      for (const res of results) {
+        if (res.status === "fulfilled" && res.value) {
+          publishedCount++;
         }
-        await outboxRepository.markPublished(msg.id, workerId);
-        publishedCount++;
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        console.error(
-          `[return-service:outbox] Failed to publish message ${msg.id} on topic ${msg.topic}:`,
-          errMsg,
-        );
-        await outboxRepository.markFailed(msg.id, errMsg, workerId);
       }
     }
   } finally {

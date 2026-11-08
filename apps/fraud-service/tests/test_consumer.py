@@ -200,3 +200,54 @@ async def test_return_created_stream_triggers_assessment():
         res = await mock_assess(req)
         assert res.decision == "REVIEW"
         assert res.riskScore == 45
+
+
+@pytest.mark.asyncio
+async def test_concurrent_batch_message_processing():
+    import asyncio
+    from app.kafka.consumer import _process_single_message
+
+    with patch(
+        "app.kafka.consumer.fraud_service.assess_risk", new_callable=AsyncMock
+    ) as mock_assess:
+        mock_assess.return_value = AssessRiskResponse(
+            assessmentId="test-batch-assess",
+            workflow="ORDER",
+            entityId="ord_batch_1",
+            riskScore=10,
+            decision="ALLOW",
+            triggeredRules=[],
+            signals=[],
+            latencyMs=5,
+            failModeUsed=False,
+            createdAt="2026-11-04T00:00:00Z",
+        )
+
+        sem = asyncio.Semaphore(10)
+
+        class MockMsg:
+            def __init__(self, topic, value):
+                self.topic = topic
+                self.value = value
+
+        messages = [
+            MockMsg(
+                "order.created",
+                {
+                    "value": {
+                        "orderId": f"ord_{i}",
+                        "userId": f"usr_{i}",
+                        "amount": 1000,
+                        "currency": "PKR",
+                    }
+                },
+            )
+            for i in range(5)
+        ]
+
+        tasks = [_process_single_message(m, sem) for m in messages]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        assert len(results) == 5
+        assert all(r is None for r in results)
+        assert mock_assess.call_count == 5

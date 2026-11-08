@@ -184,11 +184,25 @@ export function initSocketIO(server: HttpServer): SocketIOServer {
 
     // Track presence
     await PresenceService.setUserOnline(userId);
-    io?.emit("presence:updated", {
-      userId,
-      status: "ONLINE",
-      lastSeenAt: new Date().toISOString(),
-    });
+    socket.join(`user:${userId}`);
+
+    // Scope presence broadcast exclusively to mutual conversation rooms (eliminates O(N^2) cluster fanout)
+    let convIds: string[] = [];
+    try {
+      convIds = await ConversationService.getUserConversationIds(userId);
+      for (const convId of convIds) {
+        socket.join(`conv:${convId}`);
+        socket.to(`conv:${convId}`).emit("presence:updated", {
+          userId,
+          status: "ONLINE",
+          lastSeenAt: new Date().toISOString(),
+        });
+      }
+    } catch (err: any) {
+      console.warn(
+        `[ChatGateway] Failed to load user conversations for presence scoping: ${err.message}`,
+      );
+    }
 
     // 1. Join Conversation Room
     socket.on("conversation:join", async (data: { conversationId: string }, callback) => {
@@ -267,11 +281,13 @@ export function initSocketIO(server: HttpServer): SocketIOServer {
     // Disconnect
     socket.on("disconnect", async () => {
       await PresenceService.setUserOffline(userId);
-      io?.emit("presence:updated", {
-        userId,
-        status: "OFFLINE",
-        lastSeenAt: new Date().toISOString(),
-      });
+      for (const convId of convIds) {
+        io?.to(`conv:${convId}`).emit("presence:updated", {
+          userId,
+          status: "OFFLINE",
+          lastSeenAt: new Date().toISOString(),
+        });
+      }
     });
   });
 

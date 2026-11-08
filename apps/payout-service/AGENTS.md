@@ -7,7 +7,7 @@ Authoritative Plan & Testing Blueprint: [docs/plans/commission-and-payout-archit
 
 ## 2. Invariants & Financial Invariants
 
-1. **Append-Only Double-Entry Journal**: Balances are calculated dynamically from `ledger_entries` (`SUM(credits) - SUM(debits)`). A mutable column is never treated as the authoritative financial source of truth.
+1. **Append-Only Double-Entry Journal & Materialized Balances**: Balances are calculated dynamically from `ledger_entries` (`SUM(credits) - SUM(debits)`) and maintained on `ledger_accounts.current_balance` for $O(1)$ indexed reads. Every transaction atomically increments/decrements account balances within the same database transaction.
 2. **Debits Equal Credits**: Every transaction posted to the ledger must balance to $0.00 difference across accounts.
 3. **Provider Authoritative Confirmation**: Payouts remain in `PROCESSING` until the payment provider webhook or reconciliation batch confirms settlement.
 4. **Idempotency Enforcement**: All payout creation and batch runs enforce unique idempotency keys.

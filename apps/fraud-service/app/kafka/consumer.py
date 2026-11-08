@@ -1,5 +1,6 @@
 import asyncio
 import json
+from typing import Any
 from aiokafka import AIOKafkaConsumer
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -11,6 +12,185 @@ logger = get_logger("fraud-service.kafka-consumer")
 
 _consumer_task: asyncio.Task | None = None
 _running: bool = False
+
+
+async def _process_single_message(msg: Any, sem: asyncio.Semaphore) -> None:
+    async with sem:
+        payload = (
+            msg.value.get("value", msg.value)
+            if isinstance(msg.value, dict)
+            else {}
+        )
+        topic = msg.topic
+
+        try:
+            # 1. Order Checkout Stream Processing
+            if topic == "order.created":
+                user_id = str(payload.get("userId") or "")
+                order_id = str(payload.get("orderId") or payload.get("id") or "")
+                amount_raw = payload.get("amount") or payload.get("totalAmount") or 0
+                amount = (
+                    float(amount_raw) / 100.0
+                    if amount_raw > 10000
+                    else float(amount_raw)
+                )
+                payment_method = str(
+                    payload.get("paymentMethod")
+                    or ("cod" if payload.get("isCod") else "card")
+                )
+                device_fp = payload.get("deviceFingerprint")
+
+                if user_id:
+                    await velocity_tracker.record_event(f"user:{user_id}")
+                if device_fp:
+                    await velocity_tracker.record_event(f"dfp:{device_fp}")
+
+                if order_id and user_id:
+                    assess_req = AssessRiskRequest(
+                        workflow="ORDER",
+                        entityId=order_id,
+                        entityType="ORDER",
+                        userId=user_id,
+                        amount=amount,
+                        currency=str(payload.get("currency") or "PKR"),
+                        paymentMethod=payment_method,
+                        deviceFingerprint=device_fp,
+                        metadata={
+                            "email": payload.get("email"),
+                            "isCod": payload.get("isCod", False),
+                            "carrier": payload.get("carrier"),
+                        },
+                    )
+                    await fraud_service.assess_risk(assess_req)
+
+            # 2. Successful Payment Stream Processing
+            elif topic == "payment.successful":
+                user_id = str(payload.get("userId") or "")
+                device_fp = payload.get("deviceFingerprint")
+                if user_id:
+                    await velocity_tracker.record_event(f"user:{user_id}")
+                if device_fp:
+                    await velocity_tracker.record_event(f"dfp:{device_fp}")
+
+            # 3. Payment Failure & Brute Force Carding Detection
+            elif topic == "payment.failed":
+                user_id = str(payload.get("userId") or "")
+                if user_id:
+                    fail_count = await velocity_tracker.record_event(
+                        f"payment_failure:{user_id}"
+                    )
+                    if fail_count >= 4:
+                        session_id = str(
+                            payload.get("sessionId")
+                            or payload.get("referenceId")
+                            or f"fail_{user_id}"
+                        )
+                        assess_req = AssessRiskRequest(
+                            workflow="PAYMENT",
+                            entityId=session_id,
+                            entityType="PAYMENT_INTENT",
+                            userId=user_id,
+                            amount=float(payload.get("amount") or 0),
+                            metadata={
+                                "failureReason": payload.get("error")
+                                or payload.get("message"),
+                                "failureVelocity": fail_count,
+                            },
+                        )
+                        await fraud_service.assess_risk(assess_req)
+
+            # 4. Seller Payout Risk Pre-Screening
+            elif topic == "payout.scheduled":
+                payout_id = str(payload.get("payoutId") or payload.get("id") or "")
+                seller_id = str(payload.get("sellerId") or "")
+                amount = float(payload.get("amount") or 0)
+                currency = str(payload.get("currency") or "PKR")
+                if payout_id and seller_id:
+                    assess_req = AssessRiskRequest(
+                        workflow="PAYOUT",
+                        entityId=payout_id,
+                        entityType="SELLER_PAYOUT",
+                        sellerId=seller_id,
+                        amount=amount,
+                        currency=currency,
+                        metadata={
+                            "provider": payload.get("provider"),
+                            "accountAgeHours": payload.get("accountAgeHours", 72),
+                            "holdActive": payload.get("holdActive", False),
+                        },
+                    )
+                    await fraud_service.assess_risk(assess_req)
+
+            # 5. Coupon Redemption Velocity
+            elif topic in ("promotion.redeemed", "promotion.reserved"):
+                user_id = str(payload.get("userId") or "")
+                coupon_code = str(
+                    payload.get("couponCode") or payload.get("code") or ""
+                )
+                if user_id and coupon_code:
+                    red_count = await velocity_tracker.record_event(
+                        f"coupon_velocity:{user_id}"
+                    )
+                    if red_count >= 4:
+                        assess_req = AssessRiskRequest(
+                            workflow="PROMOTION",
+                            entityId=f"promo_{user_id}_{coupon_code}",
+                            entityType="PROMOTION_RESERVATION",
+                            userId=user_id,
+                            metadata={
+                                "couponCode": coupon_code,
+                                "velocity": red_count,
+                            },
+                        )
+                        await fraud_service.assess_risk(assess_req)
+
+            # 6. Return Abuse & High Return Velocity
+            elif topic == "return.created":
+                user_id = str(payload.get("userId") or "")
+                return_id = str(payload.get("returnId") or payload.get("id") or "")
+                if user_id and return_id:
+                    ret_count = await velocity_tracker.record_event(
+                        f"return_velocity:{user_id}"
+                    )
+                    if ret_count >= 3:
+                        assess_req = AssessRiskRequest(
+                            workflow="ORDER",
+                            entityId=return_id,
+                            entityType="RETURN_REQUEST",
+                            userId=user_id,
+                            amount=float(payload.get("refundAmount") or 0),
+                            metadata={"returnVelocity": ret_count},
+                        )
+                        await fraud_service.assess_risk(assess_req)
+
+            # 7. Chat Abuse & Harassment Reporting
+            elif topic == "chat.message.reported":
+                reported_user_id = str(payload.get("reportedByUserId") or "")
+                message_id = str(payload.get("messageId") or "")
+                conv_id = str(payload.get("conversationId") or "")
+                if reported_user_id and message_id:
+                    rep_count = await velocity_tracker.record_event(
+                        f"chat_abuse:{reported_user_id}"
+                    )
+                    assess_req = AssessRiskRequest(
+                        workflow="ACCOUNT",
+                        entityId=message_id,
+                        entityType="CHAT_MESSAGE",
+                        userId=reported_user_id,
+                        metadata={
+                            "conversationId": conv_id,
+                            "reason": payload.get("reason"),
+                            "abuseVelocity": rep_count,
+                        },
+                    )
+                    await fraud_service.assess_risk(assess_req)
+
+        except Exception as handler_err:
+            logger.warn(
+                "Error processing event in fraud consumer handler",
+                topic=topic,
+                error=str(handler_err),
+            )
 
 
 async def start_kafka_consumer() -> None:
@@ -42,190 +222,17 @@ async def start_kafka_consumer() -> None:
             await consumer.start()
             logger.info("AIOKafkaConsumer connected and subscribed to topics")
 
+            sem = asyncio.Semaphore(10)  # Bounded worker concurrency pool
+
             while _running:
                 try:
                     msg_batch = await consumer.getmany(timeout_ms=1000, max_records=20)
-                    for tp, messages in msg_batch.items():
-                        for msg in messages:
-                            payload = (
-                                msg.value.get("value", msg.value)
-                                if isinstance(msg.value, dict)
-                                else {}
-                            )
-                            topic = msg.topic
-
-                            try:
-                                # 1. Order Checkout Stream Processing
-                                if topic == "order.created":
-                                    user_id = str(payload.get("userId") or "")
-                                    order_id = str(payload.get("orderId") or payload.get("id") or "")
-                                    amount_raw = payload.get("amount") or payload.get("totalAmount") or 0
-                                    amount = (
-                                        float(amount_raw) / 100.0
-                                        if amount_raw > 10000
-                                        else float(amount_raw)
-                                    )
-                                    payment_method = str(
-                                        payload.get("paymentMethod")
-                                        or ("cod" if payload.get("isCod") else "card")
-                                    )
-                                    device_fp = payload.get("deviceFingerprint")
-
-                                    if user_id:
-                                        await velocity_tracker.record_event(f"user:{user_id}")
-                                    if device_fp:
-                                        await velocity_tracker.record_event(f"dfp:{device_fp}")
-
-                                    if order_id and user_id:
-                                        assess_req = AssessRiskRequest(
-                                            workflow="ORDER",
-                                            entityId=order_id,
-                                            entityType="ORDER",
-                                            userId=user_id,
-                                            amount=amount,
-                                            currency=str(payload.get("currency") or "PKR"),
-                                            paymentMethod=payment_method,
-                                            deviceFingerprint=device_fp,
-                                            metadata={
-                                                "email": payload.get("email"),
-                                                "isCod": payload.get("isCod", False),
-                                                "carrier": payload.get("carrier"),
-                                            },
-                                        )
-                                        await fraud_service.assess_risk(assess_req)
-
-                                # 2. Successful Payment Stream Processing
-                                elif topic == "payment.successful":
-                                    user_id = str(payload.get("userId") or "")
-                                    device_fp = payload.get("deviceFingerprint")
-                                    if user_id:
-                                        await velocity_tracker.record_event(f"user:{user_id}")
-                                    if device_fp:
-                                        await velocity_tracker.record_event(f"dfp:{device_fp}")
-
-                                # 3. Payment Failure & Brute Force Carding Detection
-                                elif topic == "payment.failed":
-                                    user_id = str(payload.get("userId") or "")
-                                    if user_id:
-                                        fail_count = await velocity_tracker.record_event(
-                                            f"payment_failure:{user_id}"
-                                        )
-                                        if fail_count >= 4:
-                                            session_id = str(
-                                                payload.get("sessionId")
-                                                or payload.get("referenceId")
-                                                or f"fail_{user_id}"
-                                            )
-                                            assess_req = AssessRiskRequest(
-                                                workflow="PAYMENT",
-                                                entityId=session_id,
-                                                entityType="PAYMENT_ATTEMPT",
-                                                userId=user_id,
-                                                amount=float(payload.get("amount") or 0),
-                                                metadata={
-                                                    "failureCount": fail_count,
-                                                    "reason": payload.get("reason"),
-                                                },
-                                            )
-                                            await fraud_service.assess_risk(assess_req)
-
-                                # 4. Seller Payout Disbursement Risk Assessment
-                                elif topic == "payout.scheduled":
-                                    seller_id = str(payload.get("sellerId") or "")
-                                    payout_id = str(payload.get("payoutId") or payload.get("id") or "")
-                                    amount = float(payload.get("amount") or 0)
-
-                                    if seller_id:
-                                        await velocity_tracker.record_event(f"payout_seller:{seller_id}")
-
-                                    if payout_id and seller_id:
-                                        assess_req = AssessRiskRequest(
-                                            workflow="PAYOUT",
-                                            entityId=payout_id,
-                                            entityType="PAYOUT",
-                                            sellerId=seller_id,
-                                            amount=amount,
-                                            currency=str(payload.get("currency") or "PKR"),
-                                            metadata={
-                                                "sellerId": seller_id,
-                                                "payoutNumber": payload.get("payoutNumber"),
-                                            },
-                                        )
-                                        await fraud_service.assess_risk(assess_req)
-
-                                # 5. Promotion & Coupon Velocity Abuse
-                                elif topic in ("promotion.redeemed", "promotion.reserved"):
-                                    user_id = str(payload.get("userId") or "")
-                                    promo_id = str(payload.get("promotionId") or "")
-                                    if user_id:
-                                        coupon_count = await velocity_tracker.record_event(
-                                            f"coupon:{user_id}"
-                                        )
-                                        if coupon_count >= 4:
-                                            assess_req = AssessRiskRequest(
-                                                workflow="PROMOTION",
-                                                entityId=str(
-                                                    payload.get("redemptionId")
-                                                    or payload.get("reservationId")
-                                                    or f"coupon_{user_id}"
-                                                ),
-                                                entityType="PROMOTION_REDEMPTION",
-                                                userId=user_id,
-                                                metadata={
-                                                    "promotionId": promo_id,
-                                                    "couponVelocity": coupon_count,
-                                                },
-                                            )
-                                            await fraud_service.assess_risk(assess_req)
-
-                                # 6. Return Abuse & High Return Velocity
-                                elif topic == "return.created":
-                                    user_id = str(payload.get("userId") or "")
-                                    return_id = str(payload.get("returnId") or payload.get("id") or "")
-                                    if user_id and return_id:
-                                        ret_count = await velocity_tracker.record_event(
-                                            f"return:{user_id}"
-                                        )
-                                        if ret_count >= 3:
-                                            assess_req = AssessRiskRequest(
-                                                workflow="ORDER",
-                                                entityId=return_id,
-                                                entityType="RETURN_REQUEST",
-                                                userId=user_id,
-                                                amount=float(payload.get("refundAmount") or 0),
-                                                metadata={"returnVelocity": ret_count},
-                                            )
-                                            await fraud_service.assess_risk(assess_req)
-
-                                # 7. Chat Abuse & Harassment Reporting
-                                elif topic == "chat.message.reported":
-                                    reported_user_id = str(payload.get("reportedByUserId") or "")
-                                    message_id = str(payload.get("messageId") or "")
-                                    conv_id = str(payload.get("conversationId") or "")
-                                    if reported_user_id and message_id:
-                                        rep_count = await velocity_tracker.record_event(
-                                            f"chat_abuse:{reported_user_id}"
-                                        )
-                                        assess_req = AssessRiskRequest(
-                                            workflow="ACCOUNT",
-                                            entityId=message_id,
-                                            entityType="CHAT_MESSAGE",
-                                            userId=reported_user_id,
-                                            metadata={
-                                                "conversationId": conv_id,
-                                                "reason": payload.get("reason"),
-                                                "abuseVelocity": rep_count,
-                                            },
-                                        )
-                                        await fraud_service.assess_risk(assess_req)
-
-                            except Exception as handler_err:
-                                logger.warn(
-                                    "Error processing event in fraud consumer handler",
-                                    topic=topic,
-                                    error=str(handler_err),
-                                )
-
+                    all_messages = [
+                        msg for messages in msg_batch.values() for msg in messages
+                    ]
+                    if all_messages:
+                        tasks = [_process_single_message(m, sem) for m in all_messages]
+                        await asyncio.gather(*tasks, return_exceptions=True)
                 except asyncio.CancelledError:
                     break
                 except Exception as e:

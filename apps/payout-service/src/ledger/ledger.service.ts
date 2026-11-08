@@ -113,6 +113,20 @@ export class LedgerService {
           description: leg.description,
           metadata: leg.metadata || {},
         });
+
+        // Atomically update materialized balance on ledger_accounts (O(1) balance reads)
+        const delta =
+          leg.entryType === "CREDIT"
+            ? new Decimal(leg.amount).toFixed(4)
+            : new Decimal(leg.amount).negated().toFixed(4);
+
+        await db
+          .update(ledgerAccounts)
+          .set({
+            currentBalance: sql`${ledgerAccounts.currentBalance} + ${delta}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(ledgerAccounts.id, leg.accountId));
       }
     } catch (err) {
       this.logger.warn(
@@ -132,6 +146,56 @@ export class LedgerService {
     currency: string = "PKR",
   ): Promise<SellerBalanceResponse> {
     try {
+      // 1. Fast Path: Indexed O(1) materialized balance read from ledger_accounts
+      const accounts = await db
+        .select({
+          id: ledgerAccounts.id,
+          accountType: ledgerAccounts.accountType,
+          currentBalance: ledgerAccounts.currentBalance,
+        })
+        .from(ledgerAccounts)
+        .where(
+          and(
+            eq(ledgerAccounts.sellerId, sellerId),
+            eq(ledgerAccounts.currency, currency),
+          ),
+        );
+
+      if (accounts.length > 0) {
+        let grossBalance = new Decimal(0);
+        let activeReserveHold = new Decimal(0);
+        let lifetimeDisbursed = new Decimal(0);
+
+        for (const acc of accounts) {
+          const bal = new Decimal(acc.currentBalance || "0");
+          if (acc.accountType === "SELLER_ESCROW") {
+            grossBalance = bal;
+          } else if (acc.accountType === "DISPUTE_RESERVE") {
+            activeReserveHold = Decimal.max(0, bal);
+          } else if (acc.accountType === "PAYOUT_CLEARING") {
+            lifetimeDisbursed = Decimal.max(0, bal);
+          }
+        }
+
+        const availableBalance = Decimal.max(
+          0,
+          grossBalance.minus(activeReserveHold),
+        );
+
+        return {
+          sellerId,
+          currency,
+          availableBalance: Number(availableBalance.toFixed(2)),
+          pendingSettlement: Number(grossBalance.toFixed(2)),
+          reserveHold: Number(activeReserveHold.toFixed(2)),
+          lifetimePayouts: Number(lifetimeDisbursed.toFixed(2)),
+          lastPayoutAt: null,
+          holdPayouts: false,
+          holdReason: null,
+        };
+      }
+
+      // 2. Fallback Path: If accounts not yet populated, compute from journal
       const escrowAccountId = await this.getOrCreateAccount(
         sellerId,
         "SELLER_ESCROW",

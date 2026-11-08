@@ -6,6 +6,7 @@ import {
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { idempotencyHook } from "../middleware/idempotency.middleware.js";
 import { ConversationService } from "../services/conversation.service.js";
+import { PresenceService } from "../websocket/presence.service.js";
 
 export async function registerConversationRoutes(
   app: FastifyInstance,
@@ -121,6 +122,17 @@ export async function registerConversationRoutes(
           message: err.message,
         });
       }
+    },
+  );
+
+  // 4. Get presence of a user (on-demand cached lookup)
+  app.get(
+    "/api/v1/chat/presence/:userId",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { userId } = request.params as { userId: string };
+      const presence = await PresenceService.getUserPresence(userId);
+      return reply.send({ userId, ...presence });
     },
   );
 }

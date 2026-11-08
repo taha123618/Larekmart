@@ -237,8 +237,9 @@ export async function sweepPendingOutboxEvents(
       });
     }
 
-    for (const event of events) {
-      // Re-verify heartbeat drift before dispatching each event in the batch
+    const CHUNK_SIZE = 10;
+    for (let i = 0; i < events.length; i += CHUNK_SIZE) {
+      // Re-verify heartbeat drift before dispatching each chunk in the batch
       if (isElectorActive && workerId === OUTBOX_WORKER_ID) {
         if (!outboxLeaderElector!.isLeadershipValid) {
           logger.warn(
@@ -248,9 +249,18 @@ export async function sweepPendingOutboxEvents(
           break;
         }
       }
-      const ok = await publishOutboxEvent(event, workerId, activeFencingToken);
-      if (ok) {
-        publishedCount++;
+
+      const chunk = events.slice(i, i + CHUNK_SIZE);
+      const results = await Promise.allSettled(
+        chunk.map((event) =>
+          publishOutboxEvent(event, workerId, activeFencingToken),
+        ),
+      );
+
+      for (const res of results) {
+        if (res.status === "fulfilled" && res.value) {
+          publishedCount++;
+        }
       }
     }
   } catch (err) {

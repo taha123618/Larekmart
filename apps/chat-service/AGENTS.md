@@ -26,13 +26,13 @@ It provides real-time buyer-to-seller messaging, live customer-to-support agent 
   - `auth.middleware.ts`: Verifies `x-user-id`, constant-time timing-safe comparisons for `x-internal-secret`, role guards.
   - `idempotency.middleware.ts`: Redis distributed lease lock preventing duplicate message and conversation mutations.
 - `src/websocket/` —
-  - `chat.gateway.ts`: Socket.IO 4 server mounted onto Fastify HTTP instance, configured with `@socket.io/redis-adapter` for multi-pod horizontal scaling. Room partitioning on `conv:{id}` and user channels `user:{userId}`.
+  - `chat.gateway.ts`: Socket.IO 4 server mounted onto Fastify HTTP instance, configured with `@socket.io/redis-adapter` for multi-pod horizontal scaling. Room partitioning on `conv:{id}` and user channels `user:{userId}`. Employs hybrid room scoping: presence broadcasts are restricted exclusively to active conversation rooms (`conv:${id}`) to eliminate $O(N^2)$ global socket fanout.
   - `presence.service.ts`: Redis presence tracking (`ONLINE`, `OFFLINE`, `AWAY`) and heartbeat tracking.
 - `src/services/` —
-  - `conversation.service.ts`: Conversation creation, participant authorization, paginated thread listing, and thread lookup.
+  - `conversation.service.ts`: Conversation creation, participant authorization, paginated thread listing, thread lookup, and `getUserConversationIds` for scoped presence distribution.
   - `message.service.ts`: Message dispatch, attachment linking, read receipts, abuse reporting, and blocking.
 - `src/routes/` —
-  - `conversation.routes.ts`: `/api/v1/chat/conversations` endpoints.
+  - `conversation.routes.ts`: `/api/v1/chat/conversations` endpoints and `GET /api/v1/chat/presence/:userId` on-demand cached presence lookup.
   - `message.routes.ts`: `/api/v1/chat/conversations/:id/messages`, `/api/v1/chat/messages/:id/report`, `/api/v1/chat/users/:id/block`.
   - `health.routes.ts`: `/health`, `/metrics` (Prometheus).
 - `src/kafka/` —
@@ -48,6 +48,7 @@ It provides real-time buyer-to-seller messaging, live customer-to-support agent 
 - `POST /api/v1/chat/conversations/:id/messages/read` — Mark conversation as read.
 - `POST /api/v1/chat/messages/:messageId/report` — Report abusive message.
 - `POST /api/v1/chat/users/:userId/block` — Block user from direct messaging.
+- `GET /api/v1/chat/presence/:userId` — On-demand presence status lookup (`ONLINE`, `OFFLINE`, `AWAY`) querying Redis directly.
 - `GET /health` — Service readiness probe.
 - `GET /metrics` — Prometheus metrics.
 

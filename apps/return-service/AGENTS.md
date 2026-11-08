@@ -99,7 +99,7 @@ Import `ReturnStateMachine.assertTransition()` before every status change. Termi
 
 ### Transactional Outbox Pattern
 
-All Kafka event publishing goes through the `return_outbox` table (written in the same DB transaction as the state change). The `outbox.worker.ts` polls for `PENDING` rows and publishes them to Kafka, then marks them `PUBLISHED` or `FAILED`. **Never call `producer.send()` directly from service or controller code.**
+All Kafka event publishing goes through the `return_outbox` table (written in the same DB transaction as the state change). The `outbox.worker.ts` polls for `PENDING` rows, dispatches them in bounded concurrent chunks (`CHUNK_SIZE = 10` via `Promise.allSettled`), and marks them `PUBLISHED` or `FAILED`. **Never call `producer.send()` directly from service or controller code.**
 
 ### Distributed Idempotency & Concurrency Locking
 

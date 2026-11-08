@@ -1,7 +1,9 @@
 import crypto from "node:crypto";
-import { Injectable, Logger, Inject } from "@nestjs/common";
+import { Injectable, Logger, Inject, OnModuleDestroy } from "@nestjs/common";
 import { Server as SocketIoServer, type Socket } from "socket.io";
+import { createRedisClient, type Redis } from "@repo/redis";
 import { resolveCorsOrigins } from "@repo/types";
+import { v4 as uuidv4 } from "uuid";
 import { env } from "../config/env.js";
 import { PrismaService } from "../database/prisma.service.js";
 import { safeTimingCompare } from "../common/guards/admin.guard.js";
@@ -71,9 +73,12 @@ function verifySupportSocketJwtToken(token: string): JwtClaims | null {
 }
 
 @Injectable()
-export class RealtimeService {
+export class RealtimeService implements OnModuleDestroy {
   private readonly logger = new Logger(RealtimeService.name);
+  private readonly podId = uuidv4();
   private io: SocketIoServer | null = null;
+  private pubClient: Redis | null = null;
+  private subClient: Redis | null = null;
 
   constructor(
     @Inject(PrismaService)
@@ -110,6 +115,40 @@ export class RealtimeService {
         },
         path: "/socket.io",
       });
+
+      // Setup Redis Pub/Sub Backplane for horizontal scaling across pods
+      try {
+        this.pubClient = createRedisClient({
+          url: env.REDIS_URL,
+          serviceName: "support-realtime-pub",
+        });
+        this.subClient = this.pubClient.duplicate();
+
+        this.subClient.subscribe("support:realtime:events", (err) => {
+          if (err) {
+            this.logger.warn(`Failed to subscribe to support:realtime:events: ${err.message}`);
+          } else {
+            this.logger.log("Support Realtime Redis Pub/Sub backplane subscribed successfully");
+          }
+        });
+
+        this.subClient.on("message", (channel: string, message: string) => {
+          if (channel !== "support:realtime:events") return;
+          try {
+            const payload = JSON.parse(message);
+            if (payload.originPodId === this.podId) return; // avoid echo loops
+            if (payload.room) {
+              this.io?.to(payload.room).emit(payload.event, payload.data);
+            } else {
+              this.io?.emit(payload.event, payload.data);
+            }
+          } catch (e: any) {
+            this.logger.warn(`Failed to process peer realtime message: ${e.message}`);
+          }
+        });
+      } catch (err: any) {
+        this.logger.warn(`Failed to configure Support Redis Pub/Sub: ${err.message}`);
+      }
 
       // Handshake authentication and zero-trust validation
       this.io.use((socket: Socket, next) => {
@@ -287,58 +326,95 @@ export class RealtimeService {
     }
   }
 
-  notifyTicketCreated(ticket: Record<string, any>) {
+  private emitToRoom(room: string, event: string, data: any) {
     if (!this.io) return;
+    this.io.to(room).emit(event, data);
+    if (this.pubClient) {
+      this.pubClient
+        .publish(
+          "support:realtime:events",
+          JSON.stringify({
+            originPodId: this.podId,
+            room,
+            event,
+            data,
+          }),
+        )
+        .catch((err) => {
+          this.logger.warn(
+            `Failed to publish realtime event to Redis: ${err.message}`,
+          );
+        });
+    }
+  }
+
+  notifyTicketCreated(ticket: Record<string, any>) {
     // Broadcast to staff queue instead of globally to prevent data leakage (SEC-28)
-    this.io.to("team:staff").emit("ticket:created", ticket);
+    this.emitToRoom("team:staff", "ticket:created", ticket);
     if (ticket.customerId) {
-      this.io.to(`user:${ticket.customerId}`).emit("ticket:created", ticket);
+      this.emitToRoom(`user:${ticket.customerId}`, "ticket:created", ticket);
     }
     if (ticket.sellerId) {
-      this.io.to(`seller:${ticket.sellerId}`).emit("ticket:created", ticket);
+      this.emitToRoom(`seller:${ticket.sellerId}`, "ticket:created", ticket);
     }
   }
 
   notifyTicketUpdated(ticket: Record<string, any>) {
-    if (!this.io) return;
-    this.io.to(`ticket:${ticket.id}`).emit("ticket:updated", ticket);
-    this.io.to("team:staff").emit("queue:updated", {
+    this.emitToRoom(`ticket:${ticket.id}`, "ticket:updated", ticket);
+    this.emitToRoom("team:staff", "queue:updated", {
       ticketId: ticket.id,
       status: ticket.status,
     });
   }
 
   notifyTicketAssigned(assignment: Record<string, any>) {
-    if (!this.io) return;
-    this.io
-      .to(`ticket:${assignment.ticketId}`)
-      .emit("ticket:assigned", assignment);
+    this.emitToRoom(
+      `ticket:${assignment.ticketId}`,
+      "ticket:assigned",
+      assignment,
+    );
     if (assignment.assignedTo) {
-      this.io
-        .to(`agent:${assignment.assignedTo}`)
-        .emit("ticket:assigned_to_me", assignment);
+      this.emitToRoom(
+        `agent:${assignment.assignedTo}`,
+        "ticket:assigned_to_me",
+        assignment,
+      );
     }
     if (assignment.assignedTeam) {
-      this.io
-        .to(`team:${assignment.assignedTeam}`)
-        .emit("team:new_assignment", assignment);
+      this.emitToRoom(
+        `team:${assignment.assignedTeam}`,
+        "team:new_assignment",
+        assignment,
+      );
     }
   }
 
   notifyTicketMessage(ticketId: string, message: Record<string, any>) {
-    if (!this.io) return;
     // Internal notes are only broadcast to staff/agents
     if (message.isInternalNote) {
-      this.io
-        .to(`ticket:${ticketId}:internal`)
-        .emit("ticket:internal_note", message);
+      this.emitToRoom(
+        `ticket:${ticketId}:internal`,
+        "ticket:internal_note",
+        message,
+      );
     } else {
-      this.io.to(`ticket:${ticketId}`).emit("ticket:message", message);
+      this.emitToRoom(`ticket:${ticketId}`, "ticket:message", message);
     }
   }
 
   notifyTicketResolved(ticket: Record<string, any>) {
-    if (!this.io) return;
-    this.io.to(`ticket:${ticket.id}`).emit("ticket:resolved", ticket);
+    this.emitToRoom(`ticket:${ticket.id}`, "ticket:resolved", ticket);
+  }
+
+  async onModuleDestroy() {
+    if (this.io) {
+      this.io.close();
+    }
+    if (this.pubClient) {
+      await this.pubClient.quit().catch(() => {});
+    }
+    if (this.subClient) {
+      await this.subClient.quit().catch(() => {});
+    }
   }
 }

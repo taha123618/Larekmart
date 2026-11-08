@@ -31,7 +31,7 @@ A high-performance hybrid recommendation platform for Larekmart built with Pytho
   - `interaction_service.py` — Telemetry ingestion and cache invalidation
 - `app/cache/redis.py` — Async Redis cache helper with TTL and key prefixing.
 - `app/messaging/` — Kafka event streaming:
-  - `kafka.py` — Global `aiokafka` consumer and producer manager
+  - `kafka.py` — Global `aiokafka` consumer and producer manager with bounded concurrent batching (`consumer.getmany(timeout_ms=500, max_records=50)` and `asyncio.Semaphore(10)`).
   - `consumers/event_consumer.py` — Registers Kafka handlers for `product.*`, `order.*`, `payment.*`, and `review.*`
 - `app/workers/` — Celery background processing:
   - `celery.py` — Celery application configuration with Redis broker

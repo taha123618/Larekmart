@@ -1537,6 +1537,12 @@ All requests route through `api-gateway` on port `8080`.
 - **Response**: `201 Created` with `{ success: true, blockId: string }`
 - **Side Effect**: Prevents future messages between the two parties.
 
+### `GET /api/v1/chat/presence/:userId`
+
+- **Auth**: User / Admin (`requireAuth`)
+- **Response**: `200 OK` with `{ userId: string, status: "ONLINE" | "OFFLINE" | "AWAY", lastSeenAt: string }`
+- **Description**: Fast on-demand cached presence query against Redis, avoiding WebSocket broadcast polling.
+
 ### Socket.IO Real-Time Gateway (`ws://localhost:8026`)
 
 - **Events Emitted by Client**:

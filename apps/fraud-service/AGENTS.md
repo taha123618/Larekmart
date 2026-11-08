@@ -17,7 +17,7 @@ The **Fraud Detection Service** is an enterprise-grade, low-latency microservice
 - `app/redis/velocity.py` — Redis sorted-set sliding window rate limiter and velocity counter.
 - `app/engine/rules_engine.py` — Configurable rule evaluation engine with fail-open and fail-closed handling.
 - `app/engine/ml_engine.py` — scikit-learn anomaly scoring (IsolationForest / baseline feature scaling).
-- `app/kafka/` — Asynchronous Kafka producer and consumer (`aiokafka`).
+- `app/kafka/` — Asynchronous Kafka producer and concurrent batch consumer (`aiokafka`) with bounded worker pools (`asyncio.gather` + `asyncio.Semaphore(10)`) eliminating consumer partition lag during burst traffic.
 - `app/schemas/fraud.py` — Pydantic v2 schemas for request, response, and database transfer objects.
 - `app/services/fraud_service.py` — Orchestrator coordinating velocity tracking, rule evaluation, ML anomaly detection, case generation, and Kafka event dispatch.
 - `app/api/internal.py` — Internal endpoints (`POST /api/v1/internal/fraud/assess`, `GET /api/v1/internal/fraud/assessments/{id}`).

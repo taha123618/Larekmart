@@ -20,7 +20,7 @@ It provides enterprise customer, seller, and administrator support ticket manage
 - `src/database/` — Global `DatabaseModule` with lifecycle-managed `PrismaService` backed by `@repo/support-db`.
 - `src/kafka/` — `KafkaModule` and `KafkaService` publishing typed events using the `{ value: payload }` envelope.
 - `src/redis/` — `RedisModule` and `RedisService` caching ticket data via `@repo/redis`.
-- `src/realtime/` — `RealtimeModule` and `RealtimeService` using Socket.IO for live queue, assignment, and ticket updates.
+- `src/realtime/` — `RealtimeModule` and `RealtimeService` using Socket.IO backed by a unified Redis Pub/Sub channel (`support:realtime:events`) for live queue, assignment, and ticket updates synchronized across horizontal Kubernetes pods.
 - `src/common/` —
   - `guards/`: `AuthGuard` (`x-user-id` validated against trusted gateway in production), `AdminGuard` (`role === "admin" / "super_admin"` or `isSuper` with timing-safe gateway check).
   - `filters/`: `HttpExceptionFilter` ensuring RFC-compliant and consistent `{ message, errors }` responses.

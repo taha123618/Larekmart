@@ -63,39 +63,60 @@ class KafkaConsumerManager:
             # Don't crash API server if Kafka is temporarily unreachable in dev/test
             self._running = False
 
+    async def _process_single_message(
+        self, msg: Any, sem: asyncio.Semaphore
+    ) -> None:
+        async with sem:
+            topic = msg.topic
+            raw_val = msg.value
+
+            # Monorepo convention: message value might be wrapped in { value: payload }
+            payload: dict[str, Any]
+            if isinstance(raw_val, dict) and "value" in raw_val and isinstance(raw_val["value"], dict):
+                payload = raw_val["value"]
+            elif isinstance(raw_val, dict):
+                payload = raw_val
+            else:
+                payload = {"data": raw_val}
+
+            handler = self._handlers.get(topic)
+            if handler:
+                try:
+                    await handler(topic, payload)
+                    KAFKA_EVENTS_CONSUMED_TOTAL.labels(topic=topic, status="success").inc()
+                except Exception as handler_err:
+                    KAFKA_EVENTS_FAILED_TOTAL.labels(
+                        topic=topic, error_type=type(handler_err).__name__
+                    ).inc()
+                    logger.error(
+                        "error_handling_kafka_event",
+                        topic=topic,
+                        error=str(handler_err),
+                    )
+
     async def _consume_loop(self) -> None:
         if not self.consumer:
             return
 
+        sem = asyncio.Semaphore(10)
+
         while self._running:
             try:
-                msg = await self.consumer.getone()
-                topic = msg.topic
-                raw_val = msg.value
+                # Batch consumption with bounded concurrency
+                batch_dict = await self.consumer.getmany(timeout_ms=500, max_records=50)
+                if not batch_dict:
+                    await asyncio.sleep(0.05)
+                    continue
 
-                # Monorepo convention: message value might be wrapped in { value: payload }
-                payload: dict[str, Any]
-                if isinstance(raw_val, dict) and "value" in raw_val and isinstance(raw_val["value"], dict):
-                    payload = raw_val["value"]
-                elif isinstance(raw_val, dict):
-                    payload = raw_val
-                else:
-                    payload = {"data": raw_val}
+                all_messages = []
+                for _tp, msgs in batch_dict.items():
+                    all_messages.extend(msgs)
 
-                handler = self._handlers.get(topic)
-                if handler:
-                    try:
-                        await handler(topic, payload)
-                        KAFKA_EVENTS_CONSUMED_TOTAL.labels(topic=topic, status="success").inc()
-                    except Exception as handler_err:
-                        KAFKA_EVENTS_FAILED_TOTAL.labels(
-                            topic=topic, error_type=type(handler_err).__name__
-                        ).inc()
-                        logger.error(
-                            "error_handling_kafka_event",
-                            topic=topic,
-                            error=str(handler_err),
-                        )
+                if all_messages:
+                    await asyncio.gather(
+                        *[self._process_single_message(m, sem) for m in all_messages],
+                        return_exceptions=True,
+                    )
             except asyncio.CancelledError:
                 break
             except Exception as loop_err:

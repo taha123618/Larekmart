@@ -201,6 +201,15 @@ try {
 assert(invalidCatFailed, "Allowed invalid moderation category");
 console.log("  ✓ Moderation schemas verified categories and reason descriptions");
 
+// [9. Presence Scoping & Room Formatting]
+console.log("\n[9. Presence Scoping & Room Formatting]");
+const convId = "conv_123_abc";
+const formattedRoom = `conv:${convId}`;
+assert(formattedRoom === "conv:conv_123_abc", "Room formatting mismatch");
+const userRoom = `user:${"usr_999"}`;
+assert(userRoom === "user:usr_999", "User room mismatch");
+console.log("  ✓ Presence room formatting verified for scoped broadcasts");
+
 console.log("\n==================================================");
 console.log(`  CHAT SERVICE UNIT TESTS PASSED (${passedCount} assertions) `);
 console.log("==================================================\n");

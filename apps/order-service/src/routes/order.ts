@@ -16,6 +16,7 @@ import {
   getCachedOrderChart,
   setCachedOrderChart,
 } from "../cache/order-chart-cache";
+import { fetchSellerOrdersCoalesced } from "../cache/seller-orders-cache.js";
 import { dispatchViaOutbox } from "../outbox/outbox-relay.js";
 import { executeWithIdempotency } from "../middleware/idempotency.js";
 
@@ -121,12 +122,19 @@ export const orderRoute = async (fastify: FastifyInstance) => {
 
       const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
 
-      const { result: orders } = await measureAsync(
-        "db.order.findSellerOrders",
+      const orders = await fetchSellerOrdersCoalesced(
+        effectiveSellerId || "all",
+        safeLimit,
         async () => {
-          return await Order.find(query)
-            .limit(safeLimit)
-            .sort({ createdAt: -1 });
+          const { result } = await measureAsync(
+            "db.order.findSellerOrders",
+            async () => {
+              return await Order.find(query)
+                .limit(safeLimit)
+                .sort({ createdAt: -1 });
+            },
+          );
+          return result;
         },
       );
       return reply.send(orders);
@@ -295,10 +303,19 @@ export const orderRoute = async (fastify: FastifyInstance) => {
         ];
       }
 
-      const { result: orders } = await measureAsync(
-        "db.order.findOrders",
+      const targetSellerId = !isAdmin ? request.userId : (sellerId || "all");
+
+      const orders = await fetchSellerOrdersCoalesced(
+        targetSellerId || "all",
+        safeLimit,
         async () => {
-          return await Order.find(query).limit(safeLimit).sort({ createdAt: -1 });
+          const { result } = await measureAsync(
+            "db.order.findOrders",
+            async () => {
+              return await Order.find(query).limit(safeLimit).sort({ createdAt: -1 });
+            },
+          );
+          return result;
         },
       );
       return reply.send(orders);
