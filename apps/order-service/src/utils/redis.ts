@@ -14,15 +14,18 @@
  * - `redis.ping()` — health checks
  * - `redis.close()` — shutdown
  */
-import { createRedisService } from "@repo/redis";
+import { createStateRedisService } from "@repo/redis";
 import type { RedisService } from "@repo/redis";
 import { logger } from "../observability/metrics.js";
 
-/** Connection URL. Redis is optional — the service degrades without it. */
-export const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
+/** Connection URL. Falls back to REDIS_STATE_URL, then REDIS_URL, then localhost. */
+export const REDIS_URL =
+  process.env.REDIS_STATE_URL ??
+  process.env.REDIS_URL ??
+  "redis://localhost:6379";
 
 /** Redis handle for order-service; the connection is created on import. */
-export const redis: RedisService = createRedisService({
+export const redis: RedisService = createStateRedisService({
   url: REDIS_URL,
   keyPrefix: process.env.REDIS_KEY_PREFIX ?? "order:v1:",
   serviceName: "order-service",

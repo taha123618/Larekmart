@@ -31,7 +31,11 @@
  */
 
 // Per-service facade (preferred entry point for services)
-export { createRedisService } from "./service.js";
+export {
+  createRedisService,
+  createStateRedisService,
+  createCacheRedisService,
+} from "./service.js";
 export type { RedisService, RedisServiceOptions } from "./service.js";
 
 // Client management

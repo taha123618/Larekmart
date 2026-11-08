@@ -325,6 +325,36 @@ services:
     networks:
       - larekmart-network
 
+  redis-state:
+    build:
+      context: ./docker/redis
+      dockerfile: Dockerfile
+    container_name: larekmart-redis-state
+    deploy: *cache-deploy
+    restart: unless-stopped
+    command:
+      [
+        "redis-server",
+        "--port",
+        "6380",
+        "--maxmemory-policy",
+        "noeviction",
+        "--appendonly",
+        "yes",
+      ]
+    ports:
+      - "${DB_BIND_IP:-127.0.0.1}:6380:6380"
+    volumes:
+      - redis_state_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - larekmart-network
+
   kafka:
     build:
       context: ./docker/kafka
@@ -1463,7 +1493,7 @@ services:
     env_file:
       - ./apps/support-service/.env.example
     environment:
-      - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/larekmart_support_db?schema=public"
+      - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/support_db?schema=public&pgbouncer=true&statement_cache_size=0"
       - "DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/larekmart_support_db?schema=public"
       - "REDIS_URL=redis://redis:6379"
       - "KAFKA_BROKERS=kafka:9092,kafka-broker-2:9092,kafka-broker-3:9092"
@@ -1481,6 +1511,8 @@ services:
       start_period: 20s
     depends_on:
       postgres:
+        condition: service_healthy
+      pgbouncer:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -1503,7 +1535,8 @@ services:
     env_file:
       - ./apps/chat-service/.env.example
     environment:
-      - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/larekmart_chat_db"
+      - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/chat_db?schema=public&pgbouncer=true&statement_cache_size=0"
+      - "DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/chat_db?schema=public"
       - "REDIS_URL=redis://redis:6379"
       - "KAFKA_BROKERS=kafka:9092,kafka-broker-2:9092,kafka-broker-3:9092"
       - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
@@ -1519,6 +1552,8 @@ services:
       start_period: 20s
     depends_on:
       postgres:
+        condition: service_healthy
+      pgbouncer:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -1768,6 +1803,8 @@ volumes:
     name: larekmart_mongo_data
   redis_data:
     name: larekmart_redis_data
+  redis_state_data:
+    name: larekmart_redis_state_data
   kafka_broker_1_data:
     name: larekmart_kafka_broker_1_data
   kafka_broker_2_data:

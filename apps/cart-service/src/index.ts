@@ -14,6 +14,7 @@ import { redis } from "./utils/redis.js";
 import { producer, consumer } from "./utils/kafka.js";
 import { connectKafka, disconnectKafka } from "./publishers/cart.publisher.js";
 import {
+  handleProductCreated,
   handleProductUpdated,
   handleProductDeleted,
   handlePriceUpdated,
@@ -112,6 +113,12 @@ export const startServer = async (): Promise<void> => {
     try {
       await consumer.connect();
       await consumer.subscribe([
+        {
+          topicName: "product.created",
+          topicHandler: async (msg) => {
+            if (msg.value) await handleProductCreated(msg.value);
+          },
+        },
         {
           topicName: "product.updated",
           topicHandler: async (msg) => {

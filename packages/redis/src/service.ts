@@ -87,3 +87,41 @@ export function createRedisService(options: RedisServiceOptions): RedisService {
     close: () => closeRedisClient(url, logger),
   };
 }
+
+/**
+ * Creates a dedicated State Redis service handle (e.g. for inventory stock gatekeeper,
+ * idempotency locks, and Saga distributed state) configured with `noeviction`.
+ * Falls back to REDIS_STATE_URL, then REDIS_URL, then "redis://localhost:6379".
+ */
+export function createStateRedisService(
+  options: Omit<RedisServiceOptions, "url"> & { url?: string },
+): RedisService {
+  const url =
+    options.url ??
+    process.env.REDIS_STATE_URL ??
+    process.env.REDIS_URL ??
+    "redis://localhost:6379";
+  return createRedisService({
+    ...options,
+    url,
+  });
+}
+
+/**
+ * Creates a dedicated Cache Redis service handle (e.g. for API Gateway rate limits,
+ * catalog/product read caches, and search query buffers) configured with `allkeys-lru`.
+ * Falls back to REDIS_CACHE_URL, then REDIS_URL, then "redis://localhost:6379".
+ */
+export function createCacheRedisService(
+  options: Omit<RedisServiceOptions, "url"> & { url?: string },
+): RedisService {
+  const url =
+    options.url ??
+    process.env.REDIS_CACHE_URL ??
+    process.env.REDIS_URL ??
+    "redis://localhost:6379";
+  return createRedisService({
+    ...options,
+    url,
+  });
+}

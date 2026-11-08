@@ -173,6 +173,63 @@ export const ALL_LAREKMART_TOPICS = [
   "chat.message.reported",
 ] as const;
 
+/**
+ * Topic Tiering configuration for 50,000+ RPS Flash-Sale Concurrency.
+ * Defines partition allocations to enable horizontal consumer pod scaling.
+ */
+const TIER_1_TOPICS = new Set<string>([
+  "order.created",
+  "order.completed",
+  "order.cancelled",
+  "order-successful",
+  "payment.successful",
+  "payment-successful",
+  "payment.refund.requested",
+  "payment.refund.completed",
+  "inventory.reservation.requested",
+  "inventory.stock.sold",
+  "inventory.reserved",
+  "inventory.restocked",
+]);
+
+const TIER_2_TOPICS = new Set<string>([
+  "product.viewed",
+  "product.searched",
+  "product.added_to_cart",
+  "product.removed_from_cart",
+  "wishlist.product_added",
+  "recommendation.interaction",
+]);
+
+const TIER_3_TOPICS = new Set<string>([
+  "product.created",
+  "product.updated",
+  "product.deleted",
+  "pricing.price.updated",
+  "pricing.quote.generated",
+  "cart.created",
+  "cart.updated",
+  "cart.item_added",
+  "cart.item_updated",
+  "cart.item_removed",
+  "cart.merged",
+  "wishlist.created",
+  "wishlist.updated",
+  "review.created",
+]);
+
+export function getTopicPartitionCount(topic: string): number {
+  const tier1Partitions = Number(process.env.KAFKA_TIER1_PARTITIONS) || 16;
+  const tier2Partitions = Number(process.env.KAFKA_TIER2_PARTITIONS) || 16;
+  const tier3Partitions = Number(process.env.KAFKA_TIER3_PARTITIONS) || 8;
+  const defaultPartitions = Number(process.env.KAFKA_DEFAULT_PARTITIONS) || 4;
+
+  if (TIER_1_TOPICS.has(topic)) return tier1Partitions;
+  if (TIER_2_TOPICS.has(topic)) return tier2Partitions;
+  if (TIER_3_TOPICS.has(topic)) return tier3Partitions;
+  return defaultPartitions;
+}
+
 export async function initializeTopics(): Promise<void> {
   const kafkaBrokers = (
     process.env.KAFKA_BROKERS || "localhost:9094,localhost:9095,localhost:9096"
@@ -194,7 +251,7 @@ export async function initializeTopics(): Promise<void> {
       (topic) => !existingSet.has(topic),
     ).map((topic) => ({
       topic,
-      numPartitions: 3,
+      numPartitions: getTopicPartitionCount(topic),
       replicationFactor: 1, // compatible with 1 to 3 broker setups
     }));
 
@@ -206,14 +263,14 @@ export async function initializeTopics(): Promise<void> {
     }
 
     console.log(
-      `[KafkaTopicInit] Creating ${topicsToCreate.length} missing topics...`,
+      `[KafkaTopicInit] Creating ${topicsToCreate.length} missing topics with tiered partitioning...`,
     );
     await admin.createTopics({
       topics: topicsToCreate,
       waitForLeaders: true,
     });
     console.log(
-      `[KafkaTopicInit] Successfully created ${topicsToCreate.length} topics with 3 partitions!`,
+      `[KafkaTopicInit] Successfully created ${topicsToCreate.length} topics with tiered partitions!`,
     );
   } finally {
     await admin.disconnect();

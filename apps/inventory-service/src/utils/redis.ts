@@ -1,8 +1,8 @@
-import { createRedisService, type RedisService } from "@repo/redis";
+import { createStateRedisService, type RedisService } from "@repo/redis";
 import { logger } from "../observability/metrics.js";
 
-export const redis: RedisService = createRedisService({
-  url: process.env.REDIS_URL ?? "redis://localhost:6379",
+export const redis: RedisService = createStateRedisService({
+  url: process.env.REDIS_STATE_URL ?? process.env.REDIS_URL ?? "redis://localhost:6379",
   keyPrefix: process.env.REDIS_KEY_PREFIX ?? "inventory:v1:",
   serviceName: "inventory-service",
   logger,
