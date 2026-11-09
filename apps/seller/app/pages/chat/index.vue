@@ -114,7 +114,7 @@ onMounted(async () => {
   }
 
   // Socket.IO listener for real-time messages
-  const { $socket } = useNuxtApp();
+  const { $socket } = useNuxtApp() as any;
   if ($socket) {
     $socket.on("chat:message", (msg: ChatMessage) => {
       if (msg.conversationId === activeConversationId.value) {
@@ -150,7 +150,7 @@ const handleSendMessage = () => {
   void scrollToBottom();
 
   // Emit via Socket.io
-  const { $socket } = useNuxtApp();
+  const { $socket } = useNuxtApp() as any;
   if ($socket && $socket.connected) {
     $socket.emit("chat:send", newMsg);
   }

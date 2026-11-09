@@ -53,11 +53,11 @@ const volumeTiers = ref<VolumeTier[]>([
 ]);
 
 // Selected Tier based on Simulator Qty
-const activeSimTier = computed(() => {
+const activeSimTier = computed<VolumeTier>(() => {
   const qty = simQuantity.value;
   return (
-    volumeTiers.value.find((t) => qty >= t.minQty && (t.maxQty === undefined || qty <= t.maxQty)) ||
-    volumeTiers.value[0]
+    volumeTiers.value.find((t) => qty >= t.minQty && (t.maxQty === undefined || qty <= t.maxQty)) ??
+    volumeTiers.value[0]!
   );
 });
 

@@ -1,6 +1,18 @@
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "~/stores/auth.store";
 
+declare module "nuxt/app" {
+  interface NuxtApp {
+    $socket: Socket;
+  }
+}
+
+declare module "vue" {
+  interface ComponentCustomProperties {
+    $socket: Socket;
+  }
+}
+
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig();
   const authStore = useAuthStore();

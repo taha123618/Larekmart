@@ -27,7 +27,7 @@ const revenuePeriod = ref<"7d" | "30d" | "90d">("30d");
 
 onMounted(async () => {
   // GSAP animation for cards
-  const { $gsap } = useNuxtApp();
+  const { $gsap } = useNuxtApp() as any;
   if ($gsap) {
     $gsap.from(".stats-card", {
       opacity: 0,

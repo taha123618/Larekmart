@@ -18,7 +18,7 @@ definePageMeta({
 });
 
 const sellerStore = useSellerStore();
-const activeVendorId = computed(() => sellerStore.currentSeller?.vendorId || null);
+const activeVendorId = computed(() => sellerStore.activeSeller?.vendorId || null);
 
 const statusFilter = ref<DisputeStatus | undefined>(undefined);
 const { data: disputesData, isLoading: isLoadingDisputes } = useVendorDisputes(activeVendorId, statusFilter);
@@ -61,8 +61,11 @@ async function handleRebuttalSubmit() {
       vendorId: activeVendorId.value,
       disputeId: activeDispute.value.id,
       rebuttal: {
-        statement: rebuttalText.value,
-        evidenceUrls: proofUrls,
+        sellerRebuttal: rebuttalText.value,
+        sellerEvidenceUrls:
+          proofUrls.length > 0
+            ? proofUrls
+            : ["https://larekmart.com/evidence/submission-placeholder"],
       },
     });
 
@@ -106,19 +109,19 @@ function formatCurrency(amount: number, currency = "USD"): string {
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       <StatsCard
         title="Active Disputes"
-        :value="overview?.activeCount?.toString() || '0'"
+        :value="((overview?.openCount ?? 0) + (overview?.underReviewCount ?? 0)).toString()"
         period="Requires attention"
         icon="i-heroicons-shield-exclamation"
       />
       <StatsCard
         title="Frozen Balance"
-        :value="overview?.totalFrozenAmount ? formatCurrency(overview.totalFrozenAmount) : '$0.00'"
+        :value="overview?.totalDisputedAmount ? formatCurrency(overview.totalDisputedAmount) : '$0.00'"
         period="Escrow hold"
         icon="i-heroicons-lock-closed"
       />
       <StatsCard
         title="Pending Rebuttal"
-        :value="overview?.awaitingSellerCount?.toString() || '0'"
+        :value="overview?.evidenceRequestedCount?.toString() || '0'"
         period="7-day SLA window"
         icon="i-heroicons-clock"
       />
@@ -149,11 +152,11 @@ function formatCurrency(amount: number, currency = "USD"): string {
           type="button"
           :class="[
             'rounded-lg px-3 py-1.5 text-xs font-semibold transition',
-            statusFilter === 'OPEN'
+            statusFilter === 'OPENED'
               ? 'bg-primary-600 text-white shadow-xs'
               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
           ]"
-          @click="statusFilter = 'OPEN'"
+          @click="statusFilter = 'OPENED'"
         >
           Awaiting Rebuttal
         </button>
@@ -173,11 +176,11 @@ function formatCurrency(amount: number, currency = "USD"): string {
           type="button"
           :class="[
             'rounded-lg px-3 py-1.5 text-xs font-semibold transition',
-            statusFilter === 'RESOLVED'
+            statusFilter === 'RESOLVED_BUYER_FAVOR'
               ? 'bg-primary-600 text-white shadow-xs'
               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
           ]"
-          @click="statusFilter = 'RESOLVED'"
+          @click="statusFilter = 'RESOLVED_BUYER_FAVOR'"
         >
           Resolved
         </button>
@@ -220,8 +223,8 @@ function formatCurrency(amount: number, currency = "USD"): string {
                 Order #{{ d.orderId ? d.orderId.slice(0, 8) : 'N/A' }}
               </td>
               <td class="px-6 py-4">
-                <div class="max-w-xs truncate font-medium text-slate-800 dark:text-slate-200">{{ d.reason }}</div>
-                <div v-if="d.description" class="max-w-xs truncate text-xs text-slate-500">{{ d.description }}</div>
+                <div class="max-w-xs truncate font-medium text-slate-800 dark:text-slate-200">{{ d.type.replace(/_/g, ' ') }}</div>
+                <div v-if="d.buyerClaim" class="max-w-xs truncate text-xs text-slate-500">{{ d.buyerClaim }}</div>
               </td>
               <td class="px-6 py-4 font-semibold text-rose-600 dark:text-rose-400">
                 {{ formatCurrency(d.disputedAmount, d.currency) }}
@@ -234,7 +237,7 @@ function formatCurrency(amount: number, currency = "USD"): string {
               </td>
               <td class="px-6 py-4 text-right">
                 <button
-                  v-if="d.status === 'OPEN' || !d.rebuttal"
+                  v-if="d.status === 'OPENED' || !d.sellerRebuttal"
                   type="button"
                   class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-primary-700 transition"
                   @click="openRebuttal(d)"

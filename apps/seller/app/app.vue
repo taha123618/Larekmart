@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { useHead } from "#imports";
-
 useHead({
-  titleTemplate: (titleChunk) => {
+  titleTemplate: (titleChunk?: string) => {
     return titleChunk
       ? `${titleChunk} — LarekMart Seller Central`
       : "LarekMart Seller Central";
@@ -16,15 +14,12 @@ useHead({
 </script>
 
 <template>
-  <div>
+  <UApp>
     <NuxtRouteAnnouncer />
     <NuxtLoadingIndicator color="#2563eb" :height="3" />
 
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
-
-    <!-- Global Nuxt UI Notifications / Toasts container -->
-    <UNotifications />
-  </div>
+  </UApp>
 </template>

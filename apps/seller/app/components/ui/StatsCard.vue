@@ -4,7 +4,7 @@ import { computed } from "vue";
 interface Props {
   title: string;
   value: string | number;
-  change?: number | null;
+  change?: number | string | null;
   period?: string;
   icon?: string;
   prefix?: string;
@@ -20,9 +20,14 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
 });
 
-const isPositive = computed(() => (props.change ?? 0) >= 0);
+const isPositive = computed(() => {
+  if (typeof props.change === "number") return props.change >= 0;
+  if (typeof props.change === "string") return !props.change.startsWith("-");
+  return true;
+});
 const formattedChange = computed(() => {
   if (props.change === null || props.change === undefined) return null;
+  if (typeof props.change === "string") return props.change;
   const prefix = props.change > 0 ? "+" : "";
   return `${prefix}${props.change.toFixed(1)}%`;
 });

@@ -318,7 +318,7 @@ const handleExportJson = () => {
 };
 
 onMounted(() => {
-  const { $gsap } = useNuxtApp();
+  const { $gsap } = useNuxtApp() as any;
   if ($gsap) {
     $gsap.from(".analytics-card", {
       opacity: 0,
