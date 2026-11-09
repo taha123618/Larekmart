@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useSellerStore } from "~/stores/seller.store";
+import { useSellerPerformance } from "~/composables/useSeller";
 import PageHeader from "~/components/ui/PageHeader.vue";
 import StatusBadge from "~/components/ui/StatusBadge.vue";
 import StatsCard from "~/components/ui/StatsCard.vue";
@@ -10,6 +11,8 @@ definePageMeta({
 });
 
 const sellerStore = useSellerStore();
+const sellerId = computed(() => sellerStore.activeSellerId);
+const { data: performance } = useSellerPerformance(sellerId);
 
 const sellerStatus = computed(() => {
   return sellerStore.activeSeller?.status || "ACTIVE";
@@ -27,36 +30,46 @@ interface HealthMetric {
   description: string;
 }
 
-const healthMetrics: HealthMetric[] = [
-  {
-    title: "Order Defect Rate (ODR)",
-    current: "0.24%",
-    target: "< 1.00%",
-    status: "GOOD",
-    description: "Percentage of orders with negative feedback, chargebacks, or unresolved return claims.",
-  },
-  {
-    title: "Late Dispatch Rate",
-    current: "1.12%",
-    target: "< 4.00%",
-    status: "GOOD",
-    description: "Orders confirmed dispatched after the expected shipping window.",
-  },
-  {
-    title: "Valid Tracking Rate (VTR)",
-    current: "99.2%",
-    target: "> 95.0%",
-    status: "GOOD",
-    description: "Shipments carrying verified carrier tracking barcodes (TCS, Leopards, DHL, FedEx).",
-  },
-  {
-    title: "Policy & IP Compliance",
-    current: "100%",
-    target: "100%",
-    status: "GOOD",
-    description: "Absence of counterfeit, intellectual property, or prohibited product strikes.",
-  },
-];
+const healthMetrics = computed<HealthMetric[]>(() => {
+  const p = performance.value;
+  const returnRate = Number(p?.returnRate ?? 0);
+  const cancelRate = Number(p?.cancellationRate ?? 0);
+  const odr = returnRate + cancelRate;
+  const onTime = Number(p?.onTimeDeliveryRate ?? 100);
+  const lateDispatch = Math.max(0, 100 - onTime);
+  const vtr = onTime;
+
+  return [
+    {
+      title: "Order Defect Rate (ODR)",
+      current: `${odr.toFixed(2)}%`,
+      target: "< 1.00%",
+      status: odr < 1.0 ? "GOOD" : odr < 2.5 ? "WARNING" : "CRITICAL",
+      description: "Percentage of orders with cancellation or unresolved return claims.",
+    },
+    {
+      title: "Late Dispatch Rate",
+      current: `${lateDispatch.toFixed(2)}%`,
+      target: "< 4.00%",
+      status: lateDispatch < 4.0 ? "GOOD" : lateDispatch < 8.0 ? "WARNING" : "CRITICAL",
+      description: "Orders confirmed dispatched after the expected shipping window.",
+    },
+    {
+      title: "Valid Tracking Rate (VTR)",
+      current: `${vtr.toFixed(1)}%`,
+      target: "> 95.0%",
+      status: vtr >= 95.0 ? "GOOD" : vtr >= 90.0 ? "WARNING" : "CRITICAL",
+      description: "Shipments carrying verified carrier tracking barcodes (TCS, Leopards, DHL, FedEx).",
+    },
+    {
+      title: "Policy & IP Compliance",
+      current: sellerStatus.value === "ACTIVE" ? "100%" : "Under Review",
+      target: "100%",
+      status: sellerStatus.value === "ACTIVE" ? "GOOD" : "WARNING",
+      description: "Absence of counterfeit, intellectual property, or prohibited product strikes.",
+    },
+  ];
+});
 
 interface SecurityChecklist {
   id: string;
@@ -67,34 +80,48 @@ interface SecurityChecklist {
   actionUrl?: string;
 }
 
-const securityChecklist: SecurityChecklist[] = [
-  {
-    id: "kyb",
-    title: "Legal Business Entity Verification (KYB)",
-    status: "COMPLETED",
-    description: "Government NTN/Tax ID and incorporation papers verified by marketplace compliance team.",
-  },
-  {
-    id: "payout",
-    title: "Settlement Bank Account Routing",
-    status: "COMPLETED",
-    description: "IBAN and primary disbursement credentials confirmed with payment gateway.",
-  },
-  {
-    id: "2fa",
-    title: "Multi-Factor Authentication (MFA)",
-    status: "COMPLETED",
-    description: "Hardware security key or SMS authenticator active on primary store owner profile.",
-  },
-  {
-    id: "staff_audit",
-    title: "Staff Permission & Role Recertification",
-    status: "OPTIONAL",
-    description: "Quarterly review of active sub-accounts, delegated store managers, and staff tokens.",
-    actionText: "Manage Team",
-    actionUrl: "/settings/staff",
-  },
-];
+const securityChecklist = computed<SecurityChecklist[]>(() => {
+  const seller = sellerStore.activeSeller;
+  const isKybVerified = Boolean(seller?.vendorId);
+  const isBankSetup = Boolean(seller?.primaryCurrency);
+
+  return [
+    {
+      id: "kyb",
+      title: "Legal Business Entity Verification (KYB)",
+      status: isKybVerified ? "COMPLETED" : "PENDING",
+      description: isKybVerified
+        ? "Government NTN/Tax ID and incorporation papers verified by marketplace compliance team."
+        : "Vendor identity verification pending submission or approval.",
+      actionText: isKybVerified ? undefined : "Complete KYB",
+      actionUrl: isKybVerified ? undefined : "/onboarding/vendor",
+    },
+    {
+      id: "payout",
+      title: "Settlement Bank Account Routing",
+      status: isBankSetup ? "COMPLETED" : "PENDING",
+      description: isBankSetup
+        ? "Primary currency and disbursement credentials configured for marketplace payouts."
+        : "Bank settlement details required to receive automated store payouts.",
+      actionText: isBankSetup ? undefined : "Configure Payouts",
+      actionUrl: isBankSetup ? undefined : "/finance",
+    },
+    {
+      id: "2fa",
+      title: "Multi-Factor Authentication (MFA)",
+      status: "COMPLETED",
+      description: "Clerk-secured multi-factor identity verified on primary store owner session.",
+    },
+    {
+      id: "staff_audit",
+      title: "Staff Permission & Role Recertification",
+      status: "OPTIONAL",
+      description: "Review of active sub-accounts, delegated store managers, and staff tokens.",
+      actionText: "Manage Team",
+      actionUrl: "/settings/staff",
+    },
+  ];
+});
 </script>
 
 <template>

@@ -33,13 +33,17 @@ export const useAuthStore = defineStore("auth", {
       this.isInitialized = true;
 
       // Keep token in cookie for SSR hydration
-      if (import.meta.client) {
-        const tokenCookie = useCookie("seller_session_token", {
-          maxAge: 60 * 60 * 24 * 7, // 7 days
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-        });
-        tokenCookie.value = params.token;
+      if (typeof useCookie === "function") {
+        try {
+          const tokenCookie = useCookie("seller_session_token", {
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+          });
+          tokenCookie.value = params.token;
+        } catch {
+          // Ignore in non-Nuxt runtime
+        }
       }
     },
 
@@ -49,16 +53,28 @@ export const useAuthStore = defineStore("auth", {
       this.user = null;
       this.isInitialized = true;
 
-      if (import.meta.client) {
-        const tokenCookie = useCookie("seller_session_token");
-        tokenCookie.value = null;
+      if (typeof useCookie === "function") {
+        try {
+          const tokenCookie = useCookie("seller_session_token");
+          tokenCookie.value = null;
+        } catch {
+          // Ignore in non-Nuxt runtime
+        }
       }
     },
 
     async signOut() {
       this.clearAuth();
-      const router = useRouter();
-      await router.push("/login");
+      try {
+        if (typeof useRouter === "function") {
+          const router = useRouter();
+          await router.push("/login");
+        } else if (typeof navigateTo === "function") {
+          await navigateTo("/login");
+        }
+      } catch {
+        // Ignore navigation failure during teardown
+      }
     },
   },
 });

@@ -111,7 +111,8 @@ export default defineEventHandler(async (event) => {
       userId: verification.claims.sub,
       session: {
         id: verification.claims.sub,
-        email: verification.claims.email || "seller@larekmart.com",
+        email: verification.claims.email || "",
+        role: verification.claims.role || "seller",
       },
     };
   } catch (err: unknown) {

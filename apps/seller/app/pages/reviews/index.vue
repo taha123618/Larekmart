@@ -53,50 +53,9 @@ async function fetchReviews() {
         : Array.isArray(res?.items)
           ? res.items
           : [];
-    reviews.value = Array.isArray(data) && data.length > 0 ? data : [
-      {
-        id: "rev_101",
-        productId: "prod_1",
-        productName: "Premium Wireless ANC Headphones",
-        userId: "usr_buyer_92",
-        userName: "Alex Mercer",
-        rating: 5,
-        title: "Outstanding acoustic clarity and fast shipping",
-        comment: "Received the item within 48 hours. Battery life exceeds expectations and active noise cancelation is superb for travel.",
-        isVerifiedPurchase: true,
-        sellerReply: "Thank you Alex! We take pride in delivering fast order fulfillment and top-tier audio gear.",
-        repliedAt: new Date(Date.now() - 86400000).toISOString(),
-        createdAt: new Date(Date.now() - 172800000).toISOString(),
-      },
-      {
-        id: "rev_102",
-        productId: "prod_2",
-        productName: "Ergonomic Mechanical Keyboard",
-        userId: "usr_buyer_44",
-        userName: "Sara Chen",
-        rating: 4,
-        title: "Solid build, great tactile switches",
-        comment: "Keys feel amazing for daily programming. Box arrived with a slightly crumpled corner, but keyboard itself was pristine.",
-        isVerifiedPurchase: true,
-        sellerReply: null,
-        repliedAt: null,
-        createdAt: new Date(Date.now() - 259200000).toISOString(),
-      },
-      {
-        id: "rev_103",
-        productId: "prod_3",
-        productName: "USB-C Multiport Dock 10-in-1",
-        userId: "usr_buyer_12",
-        userName: "Tariq Malik",
-        rating: 5,
-        title: "Best hub for dual 4K monitors",
-        comment: "Zero driver friction on macOS. Passthrough 100W PD charging works seamlessly without thermal throttling.",
-        isVerifiedPurchase: true,
-        sellerReply: null,
-        repliedAt: null,
-        createdAt: new Date(Date.now() - 345600000).toISOString(),
-      },
-    ];
+    reviews.value = data;
+  } catch {
+    reviews.value = [];
   } finally {
     isLoading.value = false;
   }

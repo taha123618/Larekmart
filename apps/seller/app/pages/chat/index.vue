@@ -35,6 +35,25 @@ const scrollToBottom = async () => {
   }
 };
 
+const fetchMessages = async (convId: string) => {
+  if (!convId) {
+    messages.value = [];
+    return;
+  }
+  try {
+    const res = await api.get<any>(`/api/v1/chat/conversations/${convId}/messages`).catch(() => []);
+    const list = Array.isArray(res)
+      ? res
+      : Array.isArray(res?.messages)
+        ? res.messages
+        : [];
+    messages.value = list;
+    void scrollToBottom();
+  } catch {
+    messages.value = [];
+  }
+};
+
 onMounted(async () => {
   try {
     const res = await api.get<any>("/api/v1/chat/conversations").catch(() => null);
@@ -43,71 +62,18 @@ onMounted(async () => {
       : Array.isArray(res?.conversations)
         ? res.conversations
         : [];
-    if (Array.isArray(list) && list.length > 0) {
-      conversations.value = list;
-      activeConversationId.value = list[0]?.id ?? null;
+    conversations.value = list;
+    if (Array.isArray(list) && list.length > 0 && list[0]?.id) {
+      activeConversationId.value = list[0].id;
+      await fetchMessages(list[0].id);
     } else {
-      // Mock conversation for initial experience
-      conversations.value = [
-        {
-          id: "conv_101",
-          customerId: "cust_901",
-          customerName: "Emily Davis",
-          lastMessage: "Is this headphone compatible with PS5?",
-          lastMessageTime: "10:24 AM",
-          unreadCount: 1,
-          productId: "prod_1",
-          productName: "Premium ANC Wireless Headphones",
-          status: "ACTIVE",
-        },
-        {
-          id: "conv_102",
-          customerId: "cust_902",
-          customerName: "David Miller",
-          lastMessage: "Thank you for the quick shipping!",
-          lastMessageTime: "Yesterday",
-          unreadCount: 0,
-          status: "ACTIVE",
-        },
-      ];
-      activeConversationId.value = "conv_101";
+      activeConversationId.value = null;
+      messages.value = [];
     }
-
-    // Initial messages
-    messages.value = [
-      {
-        id: "msg_1",
-        conversationId: "conv_101",
-        senderId: "cust_901",
-        senderType: "CUSTOMER",
-        senderName: "Emily Davis",
-        text: "Hi! I am looking to purchase the Premium ANC Wireless Headphones. Is this model compatible with PlayStation 5 via 3.5mm or Bluetooth?",
-        timestamp: "10:20 AM",
-        read: true,
-      },
-      {
-        id: "msg_2",
-        conversationId: "conv_101",
-        senderId: sellerStore.activeSellerId || "seller_me",
-        senderType: "SELLER",
-        senderName: sellerStore.activeStoreName,
-        text: "Hello Emily! Yes, it supports low-latency 2.4GHz wireless dongle connection as well as direct 3.5mm analog input into the PS5 controller.",
-        timestamp: "10:22 AM",
-        read: true,
-      },
-      {
-        id: "msg_3",
-        conversationId: "conv_101",
-        senderId: "cust_901",
-        senderType: "CUSTOMER",
-        senderName: "Emily Davis",
-        text: "Awesome, does it come with the 3.5mm audio cable included in the box?",
-        timestamp: "10:24 AM",
-        read: false,
-      },
-    ];
   } catch {
-    //
+    conversations.value = [];
+    messages.value = [];
+    activeConversationId.value = null;
   } finally {
     isLoading.value = false;
     void scrollToBottom();
@@ -125,18 +91,21 @@ onMounted(async () => {
   }
 });
 
-const selectConversation = (id: string) => {
+const selectConversation = async (id: string) => {
   activeConversationId.value = id;
-  void scrollToBottom();
+  await fetchMessages(id);
 };
 
-const handleSendMessage = () => {
+const handleSendMessage = async () => {
   const text = newMessageText.value.trim();
   if (!text || !activeConversationId.value) return;
 
-  const newMsg: ChatMessage = {
+  const convId = activeConversationId.value;
+  newMessageText.value = "";
+
+  const localMsg: ChatMessage = {
     id: `msg_${Date.now()}`,
-    conversationId: activeConversationId.value,
+    conversationId: convId,
     senderId: sellerStore.activeSellerId || "me",
     senderType: "SELLER",
     senderName: sellerStore.activeStoreName,
@@ -145,14 +114,19 @@ const handleSendMessage = () => {
     read: true,
   };
 
-  messages.value.push(newMsg);
-  newMessageText.value = "";
+  messages.value.push(localMsg);
   void scrollToBottom();
+
+  try {
+    await api.post(`/api/v1/chat/conversations/${convId}/messages`, { text }).catch(() => null);
+  } catch {
+    // Socket relay fallback
+  }
 
   // Emit via Socket.io
   const { $socket } = useNuxtApp() as any;
   if ($socket && $socket.connected) {
-    $socket.emit("chat:send", newMsg);
+    $socket.emit("chat:send", localMsg);
   }
 };
 </script>
@@ -180,6 +154,11 @@ const handleSendMessage = () => {
         </div>
 
         <div class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          <div v-if="conversations.length === 0" class="p-8 text-center text-xs text-slate-400">
+            <UIcon name="i-heroicons-chat-bubble-bottom-center-text" class="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />
+            <p class="font-medium text-slate-600 dark:text-slate-400">No buyer messages</p>
+            <p class="mt-1 text-[11px] text-slate-400">Inquiries from customers will appear here in real time.</p>
+          </div>
           <div
             v-for="c in conversations"
             :key="c.id"
@@ -209,77 +188,90 @@ const handleSendMessage = () => {
 
       <!-- Chat Room Stream -->
       <div class="hidden sm:flex flex-1 flex-col">
-        <!-- Active Chat Header -->
         <div
-          v-if="activeConversation"
-          class="flex items-center justify-between border-b border-slate-200 px-6 py-3.5 dark:border-slate-800"
+          v-if="!activeConversation"
+          class="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400"
         >
-          <div>
-            <h3 class="font-bold text-xs text-slate-900 dark:text-white">
-              {{ activeConversation.customerName }}
-            </h3>
-            <p
-              v-if="activeConversation.productName"
-              class="text-[10px] text-slate-500 dark:text-slate-400"
-            >
-              Inquiring about: <span class="font-semibold text-slate-700 dark:text-slate-300">{{ activeConversation.productName }}</span>
-            </p>
-          </div>
-
-          <span class="inline-flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Online
-          </span>
+          <UIcon name="i-heroicons-chat-bubble-left-right" class="h-12 w-12 text-slate-300 dark:text-slate-600 mb-3" />
+          <p class="font-semibold text-sm text-slate-700 dark:text-slate-300">No Conversation Selected</p>
+          <p class="text-xs text-slate-400 mt-1">Select an active conversation to respond to customer inquiries.</p>
         </div>
 
-        <!-- Messages Stream -->
-        <div
-          ref="messagesContainer"
-          class="flex-1 overflow-y-auto p-6 space-y-4"
-        >
+        <template v-else>
+          <!-- Active Chat Header -->
           <div
-            v-for="msg in messages"
-            :key="msg.id"
-            :class="[
-              'flex flex-col max-w-[70%]',
-              msg.senderType === 'SELLER' ? 'ml-auto items-end' : 'mr-auto items-start',
-            ]"
+            class="flex items-center justify-between border-b border-slate-200 px-6 py-3.5 dark:border-slate-800"
           >
-            <div
-              :class="[
-                'rounded-2xl px-4 py-2.5 text-xs shadow-xs',
-                msg.senderType === 'SELLER'
-                  ? 'bg-primary-600 text-white rounded-br-none'
-                  : 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white rounded-bl-none',
-              ]"
-            >
-              {{ msg.text }}
+            <div>
+              <h3 class="font-bold text-xs text-slate-900 dark:text-white">
+                {{ activeConversation.customerName }}
+              </h3>
+              <p
+                v-if="activeConversation.productName"
+                class="text-[10px] text-slate-500 dark:text-slate-400"
+              >
+                Inquiring about: <span class="font-semibold text-slate-700 dark:text-slate-300">{{ activeConversation.productName }}</span>
+              </p>
             </div>
-            <span class="mt-1 text-[9px] text-slate-400">
-              {{ msg.timestamp }}
+
+            <span class="inline-flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+              <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Active
             </span>
           </div>
-        </div>
 
-        <!-- Chat Input Bar -->
-        <form
-          class="border-t border-slate-200 p-4 flex items-center gap-3 dark:border-slate-800"
-          @submit.prevent="handleSendMessage"
-        >
-          <input
-            v-model="newMessageText"
-            type="text"
-            placeholder="Write a message to customer..."
-            class="flex-1 rounded-xl border border-slate-300 px-4 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-          />
-          <button
-            type="submit"
-            :disabled="!newMessageText.trim()"
-            class="rounded-xl bg-primary-600 p-2.5 text-white shadow-xs transition hover:bg-primary-700 disabled:opacity-40"
+          <!-- Messages Stream -->
+          <div
+            ref="messagesContainer"
+            class="flex-1 overflow-y-auto p-6 space-y-4"
           >
-            <UIcon name="i-heroicons-paper-airplane" class="h-4 w-4" />
-          </button>
-        </form>
+            <div v-if="messages.length === 0" class="py-12 text-center text-xs text-slate-400">
+              No message history in this conversation.
+            </div>
+            <div
+              v-for="msg in messages"
+              :key="msg.id"
+              :class="[
+                'flex flex-col max-w-[70%]',
+                msg.senderType === 'SELLER' ? 'ml-auto items-end' : 'mr-auto items-start',
+              ]"
+            >
+              <div
+                :class="[
+                  'rounded-2xl px-4 py-2.5 text-xs shadow-xs',
+                  msg.senderType === 'SELLER'
+                    ? 'bg-primary-600 text-white rounded-br-none'
+                    : 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white rounded-bl-none',
+                ]"
+              >
+                {{ msg.text }}
+              </div>
+              <span class="mt-1 text-[9px] text-slate-400">
+                {{ msg.timestamp }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Chat Input Bar -->
+          <form
+            class="border-t border-slate-200 p-4 flex items-center gap-3 dark:border-slate-800"
+            @submit.prevent="handleSendMessage"
+          >
+            <input
+              v-model="newMessageText"
+              type="text"
+              placeholder="Write a message to customer..."
+              class="flex-1 rounded-xl border border-slate-300 px-4 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+            <button
+              type="submit"
+              :disabled="!newMessageText.trim()"
+              class="rounded-xl bg-primary-600 p-2.5 text-white shadow-xs transition hover:bg-primary-700 disabled:opacity-40"
+            >
+              <UIcon name="i-heroicons-paper-airplane" class="h-4 w-4" />
+            </button>
+          </form>
+        </template>
       </div>
     </div>
   </div>

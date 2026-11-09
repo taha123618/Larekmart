@@ -6,8 +6,8 @@ import { useNotifications } from "~/composables/useNotifications";
 import type { Product } from "~/types";
 import PageHeader from "~/components/ui/PageHeader.vue";
 import StatsCard from "~/components/ui/StatsCard.vue";
-import DataTable from "~/components/ui/DataTable.vue";
-import StatusBadge from "~/components/ui/StatusBadge.vue";
+import LoadingSpinner from "~/components/ui/LoadingSpinner.vue";
+import EmptyState from "~/components/ui/EmptyState.vue";
 import { exportToCsv, type CsvColumn } from "~/utils/export";
 
 definePageMeta({
@@ -110,8 +110,25 @@ const fetchCatalog = async () => {
   }
 };
 
+const fetchRates = async () => {
+  try {
+    const res = await api.get<{ rates?: Array<{ targetCurrency: string; exchangeRate: string | number }> }>("/api/v1/prices/currencies");
+    if (res && Array.isArray(res.rates) && res.rates.length > 0) {
+      const map: Record<string, number> = { USD: 1.0 };
+      for (const r of res.rates) {
+        if (r.targetCurrency && r.exchangeRate) {
+          map[r.targetCurrency] = Number(r.exchangeRate);
+        }
+      }
+      exchangeRates.value = map;
+    }
+  } catch {
+    // Retain defaults if rates endpoint is unavailable
+  }
+};
+
 onMounted(() => {
-  void fetchCatalog();
+  void Promise.allSettled([fetchCatalog(), fetchRates()]);
 });
 
 // Quick Price Edit Modal State
@@ -386,7 +403,29 @@ const handleExportPricing = () => {
         </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <div v-if="isLoading" class="py-12 flex justify-center">
+        <LoadingSpinner size="lg" label="Loading catalog pricing..." />
+      </div>
+
+      <div v-else-if="products.length === 0" class="py-6">
+        <EmptyState
+          title="No Products in Catalog"
+          description="Your catalog has no active SKUs yet. Create your first product to configure volume tiers and live pricing schedules."
+          icon="i-heroicons-tag"
+        >
+          <template #action>
+            <NuxtLink
+              to="/products/create"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-primary-700 transition"
+            >
+              <UIcon name="i-heroicons-plus" class="h-4 w-4" />
+              <span>Create Product</span>
+            </NuxtLink>
+          </template>
+        </EmptyState>
+      </div>
+
+      <div v-else class="overflow-x-auto">
         <table class="w-full text-left text-xs">
           <thead>
             <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-500">

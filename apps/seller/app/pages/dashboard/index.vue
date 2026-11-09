@@ -53,31 +53,70 @@ onMounted(async () => {
 });
 
 const gmv = computed(() => {
-  return performance.value?.grossMerchandiseValue ?? 12450.0;
+  return performance.value?.grossMerchandiseValue ?? 0.0;
 });
 
 const totalOrders = computed(() => {
-  return performance.value?.totalOrders ?? 84;
+  return performance.value?.totalOrders ?? recentOrders.value.length;
 });
 
 const fulfillmentRate = computed(() => {
-  return performance.value?.fulfillmentRate ?? 98.4;
+  return performance.value?.fulfillmentRate != null
+    ? Number(performance.value.fulfillmentRate)
+    : 100.0;
 });
 
 const sellerScore = computed(() => {
-  return performance.value?.sellerScore ?? 94;
+  return performance.value?.sellerScore != null
+    ? Number(performance.value.sellerScore)
+    : 100;
 });
 
-// Mock revenue data points for chart
-const chartPoints = [
-  { day: "Mon", gmv: 1200, orders: 12 },
-  { day: "Tue", gmv: 2100, orders: 19 },
-  { day: "Wed", gmv: 1800, orders: 15 },
-  { day: "Thu", gmv: 2400, orders: 22 },
-  { day: "Fri", gmv: 3100, orders: 28 },
-  { day: "Sat", gmv: 2800, orders: 24 },
-  { day: "Sun", gmv: 3400, orders: 31 },
-];
+// Real dynamic revenue points calculated from order history or performance snapshots
+const chartPoints = computed(() => {
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const orders = recentOrders.value;
+
+  if (orders.length > 0) {
+    const dayMap = new Map<string, { gmv: number; orders: number }>();
+    days.forEach((d) => dayMap.set(d, { gmv: 0, orders: 0 }));
+
+    orders.forEach((o) => {
+      const d = o.createdAt ? new Date(o.createdAt) : new Date();
+      const dayName = days[(d.getDay() + 6) % 7] ?? "Mon";
+      const curr = dayMap.get(dayName) ?? { gmv: 0, orders: 0 };
+      curr.gmv += Number(o.totalAmount || 0);
+      curr.orders += 1;
+      dayMap.set(dayName, curr);
+    });
+
+    return days.map((d) => ({
+      day: d,
+      gmv: Math.round(dayMap.get(d)!.gmv),
+      orders: dayMap.get(d)!.orders,
+    }));
+  }
+
+  // If performance snapshot exists, distribute total GMV across days proportionally
+  const totalG = gmv.value;
+  const totalO = totalOrders.value;
+  if (totalG > 0 || totalO > 0) {
+    const weights = [0.10, 0.14, 0.12, 0.16, 0.18, 0.14, 0.16];
+    return days.map((d, i) => ({
+      day: d,
+      gmv: Math.round(totalG * (weights[i] ?? 0.14)),
+      orders: Math.round(totalO * (weights[i] ?? 0.14)),
+    }));
+  }
+
+  // Real zero baseline when store has no sales yet
+  return days.map((d) => ({ day: d, gmv: 0, orders: 0 }));
+});
+
+const maxChartGmv = computed(() => {
+  const max = Math.max(...chartPoints.value.map((p) => p.gmv));
+  return max > 0 ? max : 1000;
+});
 </script>
 
 <template>
@@ -210,7 +249,7 @@ const chartPoints = [
               <!-- Bar fill -->
               <div
                 class="w-full max-w-[42px] rounded-t-md bg-gradient-to-t from-primary-600 to-indigo-500 transition-all duration-300 group-hover:from-primary-500 group-hover:to-indigo-400"
-                :style="{ height: `${(item.gmv / 3500) * 100}%` }"
+                :style="{ height: item.gmv > 0 ? `${(item.gmv / maxChartGmv) * 100}%` : '4px' }"
               />
             </div>
             <span class="text-xs font-medium text-slate-500 dark:text-slate-400">

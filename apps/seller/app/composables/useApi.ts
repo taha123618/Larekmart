@@ -20,19 +20,36 @@ export function useApi() {
   const getBaseUrl = (): string => {
     // In client browser, call the public gateway URL (or local proxy)
     if (import.meta.client) {
-      return config.public.apiGatewayUrl || "http://localhost:8080";
+      return (
+        config.public?.apiGatewayUrl ||
+        process.env.NUXT_PUBLIC_API_GATEWAY_URL ||
+        "http://localhost:8090"
+      );
     }
-    // In SSR, call the internal gateway URL
-    return config.apiGatewayUrl || "http://localhost:8090";
+    // In SSR, call the internal gateway URL with dynamic env fallback
+    return (
+      process.env.API_GATEWAY_URL ||
+      process.env.NUXT_API_GATEWAY_URL ||
+      config.apiGatewayUrl ||
+      config.public?.apiGatewayUrl ||
+      "http://localhost:8090"
+    );
   };
 
   const apiFetch = async <T>(
     endpoint: string,
     options: ApiFetchOptions = {},
   ): Promise<T> => {
-    const token =
-      authStore.sessionToken ||
-      (import.meta.client ? useCookie("seller_session_token").value : null);
+    let cookieToken: string | null = null;
+    try {
+      if (typeof useCookie === "function") {
+        cookieToken = useCookie("seller_session_token").value || null;
+      }
+    } catch {
+      // In isolated environments or non-Nuxt test runners
+    }
+
+    const token = authStore.sessionToken || cookieToken;
 
     const headers: Record<string, string> = {
       Accept: "application/json",
@@ -43,14 +60,32 @@ export function useApi() {
       headers.Authorization = `Bearer ${token}`;
     }
 
+    const primaryBaseUrl = getBaseUrl();
+
     try {
       const response = await $fetch<T>(endpoint, {
-        baseURL: getBaseUrl(),
+        baseURL: primaryBaseUrl,
         ...options,
         headers,
       });
       return response;
     } catch (err: unknown) {
+      // Dynamic fallback between 8090 (Traefik) and 8080 (direct Fastify)
+      const errStr = String(err);
+      if (
+        (errStr.includes("ECONNREFUSED") || errStr.includes("fetch failed")) &&
+        primaryBaseUrl.includes("8090")
+      ) {
+        try {
+          return await $fetch<T>(endpoint, {
+            baseURL: "http://localhost:8080",
+            ...options,
+            headers,
+          });
+        } catch {
+          // Continue to standard error handler
+        }
+      }
       const fetchErr = err as {
         response?: { status?: number; _data?: { message?: string } };
         message?: string;

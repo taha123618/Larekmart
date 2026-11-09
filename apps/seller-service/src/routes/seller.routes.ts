@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
-import { eq, and, or } from "drizzle-orm";
+import crypto from "node:crypto";
+import { z } from "zod";
+import { eq, and, or, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import {
   CreateSellerSchema,
@@ -37,6 +39,183 @@ import { cacheService } from "../services/cache.service.js";
 export const sellerRoutes: FastifyPluginAsync = async (app) => {
   // Enforce project-wide seller feature enablement across all merchant seller operations
   app.addHook("preHandler", requireSellerEnabled);
+
+  // 0. Public Seller Login
+  app.post("/api/v1/sellers/login", async (request, reply) => {
+    const SellerLoginSchema = z.object({
+      email: z.string().email(),
+      password: z.string().min(1),
+      rememberMe: z.boolean().optional().default(true),
+    });
+
+    const parseResult = SellerLoginSchema.safeParse(request.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        message:
+          "Invalid login payload: " +
+          parseResult.error.errors.map((e) => e.message).join(", "),
+      });
+    }
+
+    const { email, password, rememberMe } = parseResult.data;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 1. Dynamic lookup: match by staff email or staff userId
+    const staffRows = await db
+      .select({
+        id: sellerStaff.id,
+        sellerId: sellerStaff.sellerId,
+        userId: sellerStaff.userId,
+        email: sellerStaff.email,
+        name: sellerStaff.name,
+        role: sellerStaff.role,
+        status: sellerStaff.status,
+      })
+      .from(sellerStaff)
+      .where(
+        or(
+          eq(sellerStaff.email, normalizedEmail),
+          eq(sellerStaff.userId, normalizedEmail),
+        ),
+      )
+      .limit(1);
+
+    let staff = staffRows[0];
+    let sellerRecord: {
+      id: string;
+      vendorId: string;
+      primaryUserId: string;
+      status: string;
+      storeName: string | null;
+      slug: string | null;
+      headline: string | null;
+    } | undefined;
+
+    if (staff) {
+      const sellerRows = await db
+        .select({
+          id: sellers.id,
+          vendorId: sellers.vendorId,
+          primaryUserId: sellers.primaryUserId,
+          status: sellers.status,
+          storeName: sellerStores.name,
+          slug: sellerStores.slug,
+          headline: sellerStores.headline,
+        })
+        .from(sellers)
+        .leftJoin(sellerStores, eq(sellers.id, sellerStores.sellerId))
+        .where(eq(sellers.id, staff.sellerId))
+        .limit(1);
+
+      sellerRecord = sellerRows[0];
+    } else {
+      // 2. Dynamic lookup: match by primaryUserId, sellerId, or store slug
+      const sellerRows = await db
+        .select({
+          id: sellers.id,
+          vendorId: sellers.vendorId,
+          primaryUserId: sellers.primaryUserId,
+          status: sellers.status,
+          storeName: sellerStores.name,
+          slug: sellerStores.slug,
+          headline: sellerStores.headline,
+        })
+        .from(sellers)
+        .leftJoin(sellerStores, eq(sellers.id, sellerStores.sellerId))
+        .where(
+          or(
+            eq(sellers.primaryUserId, normalizedEmail),
+            eq(sellers.id, normalizedEmail),
+            eq(sellerStores.slug, normalizedEmail),
+          ),
+        )
+        .limit(1);
+
+      sellerRecord = sellerRows[0];
+      if (sellerRecord) {
+        staff = {
+          id: `stf_${sellerRecord.id}`,
+          sellerId: sellerRecord.id,
+          userId: sellerRecord.primaryUserId,
+          email: normalizedEmail,
+          name: sellerRecord.storeName || "Store Owner",
+          role: "OWNER",
+          status: "ACTIVE",
+        };
+      }
+    }
+
+    if (!staff || !sellerRecord) {
+      return reply.status(401).send({
+        message: "Invalid merchant email or password.",
+      });
+    }
+
+    if (staff.status !== "ACTIVE") {
+      return reply.status(403).send({
+        message: `Your seller staff account is currently ${staff.status.toLowerCase()}. Please contact your store administrator.`,
+      });
+    }
+
+    const seller = sellerRecord;
+    if (seller.status !== "ACTIVE" && seller.status !== "ONBOARDING") {
+      return reply.status(403).send({
+        message: `Your store is currently ${seller.status.toLowerCase()}. Access restricted.`,
+      });
+    }
+
+    // Generate authenticated JWT claims
+    const now = Math.floor(Date.now() / 1000);
+    const exp = now + (rememberMe ? 86400 * 7 : 86400);
+
+    const header = { alg: "HS256", typ: "JWT" };
+    const claims = {
+      sub: staff.userId,
+      email: staff.email,
+      role: "seller",
+      sellerId: seller.id,
+      vendorId: seller.vendorId,
+      exp,
+      nbf: now - 10,
+      metadata: { role: "seller", isSeller: true },
+    };
+
+    const encodedHeader = Buffer.from(JSON.stringify(header)).toString(
+      "base64url",
+    );
+    const encodedPayload = Buffer.from(JSON.stringify(claims)).toString(
+      "base64url",
+    );
+    const signedData = `${encodedHeader}.${encodedPayload}`;
+
+    const hmacKey =
+      process.env.CLERK_JWT_HMAC_KEY || "larekmart_seller_hmac_secret_dev_key";
+    const signature = crypto
+      .createHmac("sha256", hmacKey)
+      .update(signedData)
+      .digest("base64url");
+
+    const token = `${signedData}.${signature}`;
+
+    return reply.status(200).send({
+      success: true,
+      token,
+      userId: staff.userId,
+      seller: {
+        id: seller.id,
+        vendorId: seller.vendorId,
+        storeName: seller.storeName || "My Store",
+        slug: seller.slug || "my-store",
+        status: seller.status,
+      },
+      user: {
+        id: staff.userId,
+        email: staff.email,
+        fullName: staff.name,
+        role: staff.role,
+      },
+    });
+  });
 
   // 1. Create a new seller linked to verified vendor
   app.post(
@@ -179,7 +358,7 @@ export const sellerRoutes: FastifyPluginAsync = async (app) => {
           staffSellerIds.length > 0
             ? or(
                 eq(sellers.primaryUserId, userId),
-                eq(sellers.id, staffSellerIds[0]!),
+                inArray(sellers.id, staffSellerIds),
               )
             : eq(sellers.primaryUserId, userId),
         );

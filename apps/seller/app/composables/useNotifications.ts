@@ -15,7 +15,7 @@ export function useNotifications() {
         toast.add({
           title: options.title,
           description: options.description,
-          color: options.color === "error" ? "error" : options.color === "warning" ? "warning" : "primary",
+          color: options.color === "error" ? "error" : options.color === "warning" ? "warning" : options.color === "success" ? "success" : "primary",
           icon: options.icon,
         });
         return;

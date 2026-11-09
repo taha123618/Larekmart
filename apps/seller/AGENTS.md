@@ -47,7 +47,7 @@ apps/seller/
 │   ├── middleware/                 # auth.ts, seller-access.ts, guest.ts
 │   ├── pages/                      # 17+ views across dashboard, onboarding, products, inventory, orders, finance, chat, support, settings
 │   ├── plugins/                    # vue-query, socket.io, gsap, clerk
-│   ├── server/api/auth/session.get.ts # Nitro route verifying Clerk JWT sessions
+│   ├── server/api/auth/            # Nitro routes for login.post.ts and session.get.ts
 │   ├── stores/                     # auth.store, seller.store, ui.store
 │   └── types/                      # TypeScript definitions (Seller, Vendor, Product, Order, Payout, etc.)
 ├── tests/

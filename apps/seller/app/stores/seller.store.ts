@@ -35,7 +35,21 @@ export const useSellerStore = defineStore("seller", {
 
   actions: {
     initFromStorage() {
-      if (import.meta.client) {
+      // 1. Check cookie first (available in both SSR and Client)
+      try {
+        if (typeof useCookie === "function") {
+          const activeCookie = useCookie<string | null>("seller_active_id");
+          if (activeCookie.value) {
+            this.activeSellerId = activeCookie.value;
+            return;
+          }
+        }
+      } catch {
+        // Safe fallback in test environments
+      }
+
+      // 2. Client-side localStorage fallback
+      if (typeof window !== "undefined" && window.localStorage) {
         const storedId = localStorage.getItem("larekmart_active_seller_id");
         if (storedId) {
           this.activeSellerId = storedId;
@@ -45,7 +59,21 @@ export const useSellerStore = defineStore("seller", {
 
     setActiveSeller(sellerId: string) {
       this.activeSellerId = sellerId;
-      if (import.meta.client) {
+      try {
+        if (typeof useCookie === "function") {
+          const activeCookie = useCookie<string | null>("seller_active_id", {
+            maxAge: 60 * 60 * 24 * 7,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+          });
+          activeCookie.value = sellerId;
+        }
+      } catch {
+        // Safe fallback in test environments
+      }
+
+      if (typeof window !== "undefined" && window.localStorage) {
         localStorage.setItem("larekmart_active_seller_id", sellerId);
       }
     },

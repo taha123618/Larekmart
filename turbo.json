@@ -16,7 +16,9 @@
     "NOTIFICATION_WS_URL",
     "SELLER_BASE_URL",
     "CI",
-    "CLERK_SECRET_KEY"
+    "CLERK_SECRET_KEY",
+    "CLERK_JWT_KEY",
+    "CLERK_JWT_HMAC_KEY"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",
@@ -33,13 +35,26 @@
     "NOTIFICATION_WS_URL",
     "SELLER_BASE_URL",
     "CI",
-    "CLERK_SECRET_KEY"
+    "CLERK_SECRET_KEY",
+    "CLERK_JWT_KEY",
+    "CLERK_JWT_HMAC_KEY"
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", ".output/**", "dist/**", "bin/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        ".output/**",
+        "dist/**",
+        "bin/**"
+      ],
       "env": [
         "DATABASE_URL",
         "NODE_ENV",
@@ -57,7 +72,9 @@
       ]
     },
     "lint": {
-      "dependsOn": ["^lint"],
+      "dependsOn": [
+        "^lint"
+      ],
       "env": [
         "NODE_ENV",
         "ADMIN_REGISTRATION_SECRET",
@@ -68,7 +85,9 @@
       ]
     },
     "check-types": {
-      "dependsOn": ["^check-types"]
+      "dependsOn": [
+        "^check-types"
+      ]
     },
     "test": {
       "cache": false
@@ -87,34 +106,54 @@
       "cache": false
     },
     "@repo/catalog-db#db:migrate": {
-      "dependsOn": ["@repo/product-db#db:migrate"]
+      "dependsOn": [
+        "@repo/product-db#db:migrate"
+      ]
     },
     "@repo/catalog-db#db:deploy": {
-      "dependsOn": ["@repo/product-db#db:deploy"]
+      "dependsOn": [
+        "@repo/product-db#db:deploy"
+      ]
     },
     "seller-service#db:migrate": {
-      "dependsOn": ["@repo/vendor-db#db:migrate"]
+      "dependsOn": [
+        "@repo/vendor-db#db:migrate"
+      ]
     },
     "seller-service#db:deploy": {
-      "dependsOn": ["@repo/vendor-db#db:deploy"]
+      "dependsOn": [
+        "@repo/vendor-db#db:deploy"
+      ]
     },
     "review-service#db:migrate": {
-      "dependsOn": ["@repo/product-db#db:migrate"]
+      "dependsOn": [
+        "@repo/product-db#db:migrate"
+      ]
     },
     "review-service#db:deploy": {
-      "dependsOn": ["@repo/product-db#db:deploy"]
+      "dependsOn": [
+        "@repo/product-db#db:deploy"
+      ]
     },
     "wishlist-service#db:migrate": {
-      "dependsOn": ["@repo/product-db#db:migrate"]
+      "dependsOn": [
+        "@repo/product-db#db:migrate"
+      ]
     },
     "wishlist-service#db:deploy": {
-      "dependsOn": ["@repo/product-db#db:deploy"]
+      "dependsOn": [
+        "@repo/product-db#db:deploy"
+      ]
     },
     "pricing-service#db:migrate": {
-      "dependsOn": ["@repo/product-db#db:migrate"]
+      "dependsOn": [
+        "@repo/product-db#db:migrate"
+      ]
     },
     "pricing-service#db:deploy": {
-      "dependsOn": ["@repo/product-db#db:deploy"]
+      "dependsOn": [
+        "@repo/product-db#db:deploy"
+      ]
     }
   }
 }

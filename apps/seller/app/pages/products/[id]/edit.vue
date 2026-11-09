@@ -19,6 +19,7 @@ const notify = useNotifications();
 const productId = route.params.id as string;
 const isLoading = ref(true);
 const isSaving = ref(false);
+const productFound = ref(false);
 
 const form = ref({
   name: "",
@@ -45,8 +46,12 @@ onMounted(async () => {
         description: data.description,
         status: data.status || "ACTIVE",
       };
+      productFound.value = true;
+    } else {
+      productFound.value = false;
     }
   } catch (err: unknown) {
+    productFound.value = false;
     notify.error("Error", "Failed to load product details");
   } finally {
     isLoading.value = false;
@@ -94,6 +99,17 @@ const handleSave = async () => {
 
     <div v-if="isLoading" class="rounded-xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
       <LoadingSpinner size="lg" label="Loading product..." />
+    </div>
+
+    <div v-else-if="!productFound" class="rounded-xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
+      <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Product not found</p>
+      <p class="mt-1 text-xs text-slate-500">The product you are trying to edit could not be found in your store catalog.</p>
+      <NuxtLink
+        to="/products"
+        class="mt-4 inline-block rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700"
+      >
+        Back to Products
+      </NuxtLink>
     </div>
 
     <form v-else class="space-y-6" @submit.prevent="handleSave">

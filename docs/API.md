@@ -1200,6 +1200,13 @@ All requests route through `api-gateway` on port `8080`.
 - **Auth**: Super Admin (`shouldBeAdmin`, strictly requires `super_admin` or `isSuperAdmin: true`)
 - **Response**: `{ success: true, message: "Delegation revoked" }`
 
+### `POST /api/v1/sellers/login`
+
+- **Auth**: Public
+- **Body**: `{ email: string, password: string, rememberMe?: boolean }`
+- **Response**: `{ success: true, token: string, userId: string, seller: { id, vendorId, storeName, slug, status }, user: { id, email, fullName, role } }`
+- **Description**: Authenticates merchant store owners and delegated sub-account staff members across single or multi-store organizations. Issues an HS256 HMAC-SHA256 session token verified timing-safely by API Gateway and sets SSR session cookies.
+
 ### `POST /api/v1/sellers`
 
 - **Auth**: User (`shouldBeUser`)

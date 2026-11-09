@@ -47,48 +47,16 @@ onMounted(async () => {
 async function fetchPromotions() {
   isLoading.value = true;
   try {
-    const data = await api.get<Promotion[]>("/api/v1/promotions").catch(() => []);
-    promotions.value = Array.isArray(data) && data.length > 0 ? data : [
-      {
-        id: "prm_1",
-        name: "Spring Tech Super Sale",
-        code: "TECHSPRING15",
-        discountType: "PERCENTAGE",
-        discountValue: 15,
-        startDate: new Date(Date.now() - 345600000).toISOString(),
-        endDate: new Date(Date.now() + 864000000).toISOString(),
-        status: "ACTIVE",
-        budget: 1500,
-        budgetUsed: 642,
-        redemptionCount: 78,
-      },
-      {
-        id: "prm_2",
-        name: "First-Time Store Follower Discount",
-        code: "WELCOME10",
-        discountType: "PERCENTAGE",
-        discountValue: 10,
-        startDate: new Date(Date.now() - 2592000000).toISOString(),
-        endDate: new Date(Date.now() + 5184000000).toISOString(),
-        status: "ACTIVE",
-        budget: 3000,
-        budgetUsed: 1890,
-        redemptionCount: 215,
-      },
-      {
-        id: "prm_3",
-        name: "Flash Weekend Free Shipping Voucher",
-        code: "FREESHIP50",
-        discountType: "FIXED_AMOUNT",
-        discountValue: 10,
-        startDate: new Date(Date.now() - 604800000).toISOString(),
-        endDate: new Date(Date.now() - 86400000).toISOString(),
-        status: "EXPIRED",
-        budget: 500,
-        budgetUsed: 500,
-        redemptionCount: 50,
-      },
-    ];
+    const data = await api.get<any>("/api/v1/promotions").catch(() => []);
+    promotions.value = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.promotions)
+        ? data.promotions
+        : Array.isArray(data?.items)
+          ? data.items
+          : [];
+  } catch {
+    promotions.value = [];
   } finally {
     isLoading.value = false;
   }
@@ -106,21 +74,8 @@ async function handleCreatePromotion() {
       budget: newPromotion.value.budget,
     };
 
-    await api.post("/api/v1/promotions", payload).catch(() => null);
-
-    promotions.value.unshift({
-      id: `prm_${Date.now()}`,
-      name: payload.name,
-      code: payload.code,
-      discountType: payload.discountType,
-      discountValue: payload.discountValue,
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + newPromotion.value.durationDays * 86400000).toISOString(),
-      status: "ACTIVE",
-      budget: payload.budget,
-      budgetUsed: 0,
-      redemptionCount: 0,
-    });
+    await api.post("/api/v1/promotions", payload);
+    await fetchPromotions();
 
     isCreateModalOpen.value = false;
     newPromotion.value = {

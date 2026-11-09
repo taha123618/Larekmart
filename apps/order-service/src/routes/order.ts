@@ -142,6 +142,67 @@ export const orderRoute = async (fastify: FastifyInstance) => {
   );
 
   fastify.get(
+    "/orders",
+    { preHandler: shouldBeUser },
+    async (request, reply) => {
+      const isAdmin = request.userRole === "admin";
+      const isSeller = request.userRole === "seller";
+      const { sellerId, limit } = request.query as {
+        sellerId?: string;
+        limit?: number;
+      };
+      const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+
+      if (isSeller) {
+        const effectiveSellerId = sellerId && isAdmin ? sellerId : request.userId;
+        const query: Record<string, unknown> = {};
+        if (effectiveSellerId) {
+          query.$or = [
+            { sellerId: effectiveSellerId },
+            { "products.sellerId": effectiveSellerId },
+          ];
+        }
+        const orders = await fetchSellerOrdersCoalesced(
+          effectiveSellerId || "all",
+          safeLimit,
+          async () => {
+            const { result } = await measureAsync(
+              "db.order.findSellerOrders",
+              async () => {
+                return await Order.find(query)
+                  .limit(safeLimit)
+                  .sort({ createdAt: -1 });
+              },
+            );
+            return result;
+          },
+        );
+        return reply.send(orders);
+      }
+
+      if (isAdmin) {
+        const query: Record<string, unknown> = {};
+        if (sellerId) {
+          query.$or = [
+            { sellerId },
+            { "products.sellerId": sellerId },
+          ];
+        }
+        const orders = await Order.find(query)
+          .limit(safeLimit)
+          .sort({ createdAt: -1 });
+        return reply.send(orders);
+      }
+
+      // Default: customer orders for authenticated user
+      const orders = await Order.find({ userId: request.userId })
+        .limit(safeLimit)
+        .sort({ createdAt: -1 });
+      return reply.send(orders);
+    },
+  );
+
+  fastify.get(
     "/orders/:id",
     { preHandler: shouldBeUser },
     async (request, reply) => {

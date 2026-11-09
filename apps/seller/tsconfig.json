@@ -22,7 +22,6 @@
   "include": [
     "app/**/*",
     "app/**/*.vue",
-    "server/**/*",
     ".nuxt/nuxt.d.ts"
   ],
   "exclude": [

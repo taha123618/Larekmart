@@ -39,6 +39,7 @@ It provides storefront configuration (store name, slug, tagline, banner, logo, b
   - `GET /api/v1/sellers/:sellerId/storefront` — fetch storefront configuration by seller ID.
 
 - Merchant Endpoints (`requireUser`, `requireSellerStaffOrAdmin`):
+  - `POST /api/v1/sellers/login` — authenticate merchant store owner or sub-account staff member and issue HS256 HMAC-SHA256 session token.
   - `POST /api/v1/sellers` — register seller storefront linked to verified `vendorId`.
   - `GET /api/v1/sellers/me` — list all seller storefronts owned by current user or where user is a staff member.
   - `GET /api/v1/sellers/:sellerId` — get seller overview and operational status.

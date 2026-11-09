@@ -27,51 +27,9 @@ const fetchOrder = async () => {
     const data = await api.get<Order>(`/api/v1/orders/${orderId}`);
     order.value = data;
   } catch (err: unknown) {
-    // Fallback order model for demo/development if test order ID
-    order.value = {
-      id: orderId,
-      orderNumber: "ORD-94821",
-      sellerId: "seller_1",
-      customerId: "cust_123",
-      customerName: "Alex Johnson",
-      customerEmail: "alex.j@example.com",
-      status: "CONFIRMED",
-      totalAmount: 189.98,
-      currency: "USD",
-      itemsCount: 2,
-      shippingAddress: {
-        name: "Alex Johnson",
-        line1: "742 Evergreen Terrace",
-        city: "Springfield",
-        state: "OR",
-        postalCode: "97477",
-        country: "United States",
-      },
-      items: [
-        {
-          id: "item_1",
-          orderId,
-          productId: "prod_1",
-          productName: "Premium ANC Wireless Headphones",
-          sku: "WNC-HP-001",
-          quantity: 1,
-          unitPrice: 129.99,
-          subtotal: 129.99,
-        },
-        {
-          id: "item_2",
-          orderId,
-          productId: "prod_2",
-          productName: "Hard Shell Headphone Carrying Case",
-          sku: "CASE-HP-002",
-          quantity: 1,
-          unitPrice: 59.99,
-          subtotal: 59.99,
-        },
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    order.value = null;
+    const msg = (err as { message?: string })?.message || "Could not load order details.";
+    notify.error("Order Not Found", msg);
   } finally {
     isLoading.value = false;
   }
@@ -89,11 +47,9 @@ const updateOrderStatus = async (newStatus: Order["status"]) => {
       order.value.status = newStatus;
     }
     notify.success("Order Updated", `Order status updated to ${newStatus}`);
-  } catch {
-    if (order.value) {
-      order.value.status = newStatus;
-    }
-    notify.info("Order Updated", `Status updated to ${newStatus}`);
+  } catch (err: unknown) {
+    const msg = (err as { message?: string })?.message || "Failed to update order status.";
+    notify.error("Update Failed", msg);
   } finally {
     isUpdating.value = false;
   }
@@ -206,16 +162,28 @@ const updateOrderStatus = async (newStatus: Order["status"]) => {
             <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-3">
               Shipping Destination
             </h3>
-            <div class="text-xs space-y-1 text-slate-600 dark:text-slate-400">
+            <div v-if="order.shippingAddress" class="text-xs space-y-1 text-slate-600 dark:text-slate-400">
               <p class="font-semibold text-slate-900 dark:text-white">{{ order.shippingAddress.name }}</p>
               <p>{{ order.shippingAddress.line1 }}</p>
               <p v-if="order.shippingAddress.line2">{{ order.shippingAddress.line2 }}</p>
               <p>{{ order.shippingAddress.city }}, {{ order.shippingAddress.state }} {{ order.shippingAddress.postalCode }}</p>
               <p>{{ order.shippingAddress.country }}</p>
             </div>
+            <p v-else class="text-xs text-slate-400">No shipping destination details provided.</p>
           </div>
         </div>
       </div>
+    </div>
+
+    <div v-else class="rounded-xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
+      <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Order not found</p>
+      <p class="mt-1 text-xs text-slate-500">The requested order could not be located or you do not have permission to view it.</p>
+      <NuxtLink
+        to="/orders"
+        class="mt-4 inline-block rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700"
+      >
+        Return to Orders
+      </NuxtLink>
     </div>
   </div>
 </template>

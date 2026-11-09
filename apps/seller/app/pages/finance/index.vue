@@ -30,23 +30,23 @@ onMounted(async () => {
       balance.value = {
         sellerId: balRes.sellerId || "me",
         currency: balRes.currency || "USD",
-        availableBalance: balRes.availableBalance ?? 0,
-        pendingBalance: balRes.pendingBalance ?? balRes.pendingSettlement ?? 0,
-        reservedBalance: balRes.reservedBalance ?? balRes.reserveHold ?? 0,
-        totalEarnings: balRes.totalEarnings ?? balRes.lifetimePayouts ?? 0,
+        availableBalance: Number(balRes.availableBalance ?? 0),
+        pendingBalance: Number(balRes.pendingBalance ?? balRes.pendingSettlement ?? 0),
+        reservedBalance: Number(balRes.reservedBalance ?? balRes.reserveHold ?? 0),
+        totalEarnings: Number(balRes.totalEarnings ?? balRes.lifetimePayouts ?? 0),
         lastPayoutDate: balRes.lastPayoutDate || balRes.lastPayoutAt || null,
-        lastPayoutAmount: balRes.lastPayoutAmount ?? 0,
+        lastPayoutAmount: Number(balRes.lastPayoutAmount ?? 0),
       };
     } else {
       balance.value = {
         sellerId: "me",
         currency: "USD",
-        availableBalance: 4850.75,
-        pendingBalance: 1240.0,
-        reservedBalance: 350.0,
-        totalEarnings: 38420.5,
-        lastPayoutDate: new Date(Date.now() - 86400000 * 7).toISOString(),
-        lastPayoutAmount: 2500.0,
+        availableBalance: 0,
+        pendingBalance: 0,
+        reservedBalance: 0,
+        totalEarnings: 0,
+        lastPayoutDate: null,
+        lastPayoutAmount: 0,
       };
     }
 
