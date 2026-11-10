@@ -10,6 +10,20 @@ from app.observability.metrics import KAFKA_EVENTS_CONSUMED_TOTAL, KAFKA_EVENTS_
 logger = get_logger("kafka_consumer")
 
 
+def _safe_json_deserialize(m: bytes | None) -> Any:
+    if not m:
+        return {}
+    try:
+        return json.loads(m.decode("utf-8"))
+    except Exception as e:
+        logger.warning("kafka_malformed_json_poison_pill", error=str(e))
+        return {
+            "_poison_pill": True,
+            "_raw": m.decode("utf-8", errors="replace"),
+            "_error": str(e),
+        }
+
+
 class KafkaConsumerManager:
     def __init__(self) -> None:
         self.settings = get_settings()
@@ -50,18 +64,24 @@ class KafkaConsumerManager:
                 group_id=group_id,
                 auto_offset_reset="earliest",
                 enable_auto_commit=True,
-                metadata_max_age_ms=10000,
+                auto_commit_interval_ms=5000,
+                session_timeout_ms=self.settings.kafka_session_timeout_ms,
+                heartbeat_interval_ms=self.settings.kafka_heartbeat_interval_ms,
+                max_poll_interval_ms=self.settings.kafka_max_poll_interval_ms,
+                request_timeout_ms=30000,
+                metadata_max_age_ms=5000,
                 retry_backoff_ms=500,
-                value_deserializer=lambda m: json.loads(m.decode("utf-8")),
+                value_deserializer=_safe_json_deserialize,
             )
             await self.consumer.start()
             self._running = True
             self._task = asyncio.create_task(self._consume_loop())
             logger.info("kafka_consumer_started_successfully", topics=topics)
         except Exception as exc:
-            logger.error("failed_to_start_kafka_consumer", error=str(exc))
-            # Don't crash API server if Kafka is temporarily unreachable in dev/test
-            self._running = False
+            logger.error("failed_to_start_kafka_consumer_will_retry_in_background", error=str(exc))
+            self.consumer = None
+            self._running = True
+            self._task = asyncio.create_task(self._consume_loop())
 
     async def _process_single_message(
         self, msg: Any, sem: asyncio.Semaphore
@@ -69,6 +89,17 @@ class KafkaConsumerManager:
         async with sem:
             topic = msg.topic
             raw_val = msg.value
+
+            if isinstance(raw_val, dict) and raw_val.get("_poison_pill"):
+                KAFKA_EVENTS_FAILED_TOTAL.labels(
+                    topic=topic, error_type="PoisonPillJSONDecodeError"
+                ).inc()
+                logger.error(
+                    "poison_pill_skipped_in_recommendation_consumer",
+                    topic=topic,
+                    error=raw_val.get("_error"),
+                )
+                return
 
             # Monorepo convention: message value might be wrapped in { value: payload }
             payload: dict[str, Any]
@@ -95,13 +126,36 @@ class KafkaConsumerManager:
                     )
 
     async def _consume_loop(self) -> None:
-        if not self.consumer:
-            return
-
         sem = asyncio.Semaphore(10)
+        retry_delay = 2
+        max_retry_delay = 30
 
         while self._running:
             try:
+                if self.consumer is None:
+                    topics = list(self._handlers.keys())
+                    if not topics:
+                        await asyncio.sleep(1)
+                        continue
+                    self.consumer = AIOKafkaConsumer(
+                        *topics,
+                        bootstrap_servers=self.settings.kafka_bootstrap_servers,
+                        group_id=self.settings.kafka_consumer_group,
+                        auto_offset_reset="earliest",
+                        enable_auto_commit=True,
+                        auto_commit_interval_ms=5000,
+                        session_timeout_ms=self.settings.kafka_session_timeout_ms,
+                        heartbeat_interval_ms=self.settings.kafka_heartbeat_interval_ms,
+                        max_poll_interval_ms=self.settings.kafka_max_poll_interval_ms,
+                        request_timeout_ms=30000,
+                        metadata_max_age_ms=5000,
+                        retry_backoff_ms=500,
+                        value_deserializer=_safe_json_deserialize,
+                    )
+                    await self.consumer.start()
+                    logger.info("kafka_consumer_reconnected_successfully", topics=topics)
+                    retry_delay = 2
+
                 # Batch consumption with bounded concurrency
                 batch_dict = await self.consumer.getmany(timeout_ms=500, max_records=50)
                 if not batch_dict:
@@ -120,8 +174,20 @@ class KafkaConsumerManager:
             except asyncio.CancelledError:
                 break
             except Exception as loop_err:
-                logger.warning("kafka_consumer_transient_warning", error=str(loop_err))
-                await asyncio.sleep(1)
+                logger.warning(
+                    f"kafka_consumer_transient_warning_reconnecting_in_{retry_delay}s",
+                    error=str(loop_err),
+                )
+                if self.consumer is not None:
+                    try:
+                        await self.consumer.stop()
+                    except Exception:
+                        pass
+                    if self._handlers:
+                        self.consumer = None
+                if self._running:
+                    await asyncio.sleep(retry_delay)
+                    retry_delay = min(max_retry_delay, retry_delay * 2)
 
     async def stop(self) -> None:
         self._running = False
@@ -131,8 +197,13 @@ class KafkaConsumerManager:
                 await self._task
             except asyncio.CancelledError:
                 pass
+            self._task = None
         if self.consumer:
-            await self.consumer.stop()
+            try:
+                await self.consumer.stop()
+            except Exception:
+                pass
+            self.consumer = None
             logger.info("kafka_consumer_stopped")
 
 

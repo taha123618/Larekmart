@@ -14,7 +14,9 @@ const EnvSchema = z
         "postgresql://postgres:postgres@localhost:5432/larekmart_payout_db?schema=public",
       ),
     REDIS_URL: z.string().default("redis://localhost:6379"),
-    KAFKA_BROKERS: z.string().default("localhost:9092"),
+    KAFKA_BROKERS: z
+      .string()
+      .default("localhost:9094,localhost:9095,localhost:9096"),
     INTERNAL_SERVICE_SECRET: z
       .string()
       .default("dev-shared-internal-secret-larekmart"),

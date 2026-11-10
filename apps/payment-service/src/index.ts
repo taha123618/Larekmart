@@ -82,6 +82,7 @@ const start = async () => {
       process.env.NODE_ENV,
       "payment-service",
     );
+    // Initialize Kafka producer and consumer with resilient timeouts
     await Promise.all([producer.connect(), consumer.connect()]);
     await runKafkaSubscriptions();
     serve(

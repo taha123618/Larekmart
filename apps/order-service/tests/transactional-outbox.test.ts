@@ -27,6 +27,8 @@ import {
   sweepPendingOutboxEvents,
   startOutboxSweeper,
   stopOutboxSweeper,
+  OUTBOX_WORKER_ID,
+  OUTBOX_CLUSTER_LEADER_KEY,
 } from "../src/outbox/outbox-relay.js";
 
 const MONGO_URI =
@@ -159,7 +161,12 @@ async function runOutboxTests() {
       $set: { lockedUntil: null, status: "PENDING" },
     });
 
-    const recoveredCount = await sweepPendingOutboxEvents();
+    const recoveredCount = await sweepPendingOutboxEvents(
+      20,
+      OUTBOX_WORKER_ID,
+      undefined,
+      { bypassClusterLock: true },
+    );
     assert.ok(
       recoveredCount >= 1,
       "Sweeper must recover and publish pending events",
@@ -191,6 +198,9 @@ async function runOutboxTests() {
     capturedEvents.length = 0;
     const worker1Id = "replica-pod-1:1234:aaa";
     const worker2Id = "replica-pod-2:5678:bbb";
+
+    // Clear any existing leader lease key to test clean concurrent acquisition
+    await redis.client.del(OUTBOX_CLUSTER_LEADER_KEY);
 
     // Simulate two horizontal container replicas triggering a sweep at the exact same millisecond
     const [sweepResult1, sweepResult2] = await Promise.all([

@@ -1,12 +1,13 @@
 import type { Kafka, Consumer, Producer } from "kafkajs";
 import { createLogger, captureError, measureAsync } from "@repo/monitoring";
+import { getTopicPartitionCount } from "./init-topics.js";
 
 /** Delay before the first retry during consumer connect/subscribe; doubles on every attempt. */
 const RETRY_BASE_DELAY_MS = 2_000;
 /** Upper bound so a permanently down broker does not back off into a hang. */
 const RETRY_MAX_DELAY_MS = 30_000;
-/** Total retry budget for broker operations. */
-const RETRY_MAX_ATTEMPTS = 5;
+/** Total retry budget for broker operations during cluster elections and cold monorepo boot. */
+const RETRY_MAX_ATTEMPTS = 8;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -78,7 +79,16 @@ export const createConsumer = (
   options: ConsumerRetryOptions = {},
 ) => {
   const logger = createLogger(`kafka-consumer:${groupId}`);
-  const consumer: Consumer = kafka.consumer({ groupId });
+  const consumer: Consumer = kafka.consumer({
+    groupId,
+    retry: {
+      retries: 8,
+      initialRetryTime: 300,
+      maxRetryTime: 30_000,
+    },
+    sessionTimeout: 30_000,
+    heartbeatInterval: 3_000,
+  });
 
   const {
     enableDlq = true,
@@ -189,6 +199,105 @@ export const createConsumer = (
     throw lastError;
   };
 
+  const ensureTopicsExist = async (topicNames: string[]) => {
+    if (typeof (kafka as any).admin !== "function") return;
+    try {
+      const admin = kafka.admin();
+      await admin.connect();
+      try {
+        const existingTopics = await admin.listTopics();
+        const existingSet = new Set(existingTopics);
+        const existingNormalized = new Set(
+          existingTopics.map((t) => t.replace(/\./g, "_")),
+        );
+        const missingTopics = topicNames.filter(
+          (t) =>
+            !existingSet.has(t) &&
+            !existingNormalized.has(t.replace(/\./g, "_")),
+        );
+        if (missingTopics.length > 0) {
+          logger.info(
+            `Auto-creating missing topics before consumer subscribe: ${missingTopics.join(", ")}`,
+          );
+          try {
+            await admin.createTopics({
+              topics: missingTopics.map((topic) => ({
+                topic,
+                numPartitions: getTopicPartitionCount(topic),
+                replicationFactor: 1,
+              })),
+              waitForLeaders: true,
+              timeout: 15_000,
+            });
+            await sleep(500);
+          } catch (createErr) {
+            logger.warn(
+              `Could not auto-create missing topics: ${String(createErr)}`,
+            );
+          }
+        }
+      } finally {
+        await admin.disconnect().catch(() => {});
+      }
+    } catch (err) {
+      logger.warn(
+        `Failed to verify or auto-create topics before subscription: ${String(err)}`,
+      );
+    }
+  };
+
+  let isConsumerRunning = false;
+  let autoRecoveryTimer: NodeJS.Timeout | null = null;
+  const registeredHandlers = new Map<string, (message: any) => Promise<void>>();
+
+  if (
+    typeof (consumer as any).on === "function" &&
+    (consumer as any).events?.CRASH
+  ) {
+    (consumer as any).on((consumer as any).events.CRASH, async (event: any) => {
+      const err = event?.payload?.error;
+      const willRestart = Boolean(event?.payload?.restart);
+      logger.error(
+        `Kafka consumer crashed for group [${groupId}] (autoRestart=${willRestart}):`,
+        {
+          error: err?.message || String(err),
+          name: err?.name,
+        },
+      );
+
+      // If KafkaJS does not restart (e.g. KafkaJSGroupCoordinatorNotFound or transient network partitions)
+      if (!willRestart && registeredHandlers.size > 0) {
+        if (autoRecoveryTimer) {
+          clearTimeout(autoRecoveryTimer);
+        }
+        isConsumerRunning = false;
+        autoRecoveryTimer = setTimeout(async () => {
+          try {
+            logger.info(
+              `Attempting auto-recovery for crashed consumer group [${groupId}]...`,
+            );
+            await connect();
+            const topicsToResubscribe = Array.from(
+              registeredHandlers.entries(),
+            ).map(([topicName, topicHandler]) => ({
+              topicName,
+              topicHandler,
+            }));
+            await subscribe(topicsToResubscribe);
+            logger.info(
+              `Consumer group [${groupId}] successfully auto-recovered after crash`,
+            );
+          } catch (recoveryErr) {
+            logger.warn(
+              `Auto-recovery attempt failed for consumer group [${groupId}] (will retry on next event):`,
+              { error: String(recoveryErr) },
+            );
+          }
+        }, 5_000);
+      }
+    });
+  }
+
   const connect = async () => {
     try {
       await retry(() => consumer.connect(), "connect");
@@ -209,20 +318,73 @@ export const createConsumer = (
       topicHandler: (message: any) => Promise<void>;
     }[],
   ) => {
-    try {
-      await retry(
-        () =>
-          consumer.subscribe({
-            topics: topics.map((topic) => topic.topicName),
-            fromBeginning: true,
-          }),
-        "subscribe",
-      );
+    for (const item of topics) {
+      registeredHandlers.set(item.topicName, item.topicHandler);
+    }
 
+    if (isConsumerRunning) {
+      logger.info(
+        `Kafka consumer for group [${groupId}] is already running. Stopping consumer to update subscriptions: ${topics.map((t) => t.topicName).join(", ")}`,
+      );
+      if (typeof (consumer as any).stop === "function") {
+        try {
+          await consumer.stop();
+        } catch (stopErr) {
+          logger.warn(
+            `Error stopping consumer before re-subscribe: ${String(stopErr)}`,
+          );
+        }
+      }
+      isConsumerRunning = false;
+    }
+
+    const allTopicNames = Array.from(registeredHandlers.keys());
+    await ensureTopicsExist(allTopicNames);
+    try {
+      await retry(async () => {
+        try {
+          await consumer.subscribe({
+            topics: allTopicNames,
+            fromBeginning: true,
+          });
+        } catch (subErr: any) {
+          if (
+            subErr?.name === "KafkaJSNonRetriableError" &&
+            String(subErr?.message).includes(
+              "Cannot subscribe to topic while consumer is running",
+            ) &&
+            typeof (consumer as any).stop === "function"
+          ) {
+            logger.warn(
+              `Caught active consumer running state; stopping consumer and retrying subscribe...`,
+            );
+            await consumer.stop();
+            await consumer.subscribe({
+              topics: allTopicNames,
+              fromBeginning: true,
+            });
+            return;
+          }
+          if (
+            String(subErr?.message).includes(
+              "This server does not host this topic-partition",
+            ) ||
+            subErr?.name === "KafkaJSProtocolError"
+          ) {
+            logger.warn(
+              `Kafka cluster metadata propagation delay detected (${subErr?.message}); verifying broker topics before retry...`,
+            );
+            await ensureTopicsExist(allTopicNames);
+          }
+          throw subErr;
+        }
+      }, "subscribe");
+
+      isConsumerRunning = true;
       await consumer.run({
         eachMessage: async ({ topic, partition, message }) => {
-          const topicConfig = topics.find((t) => t.topicName === topic);
-          if (!topicConfig) return;
+          const handler = registeredHandlers.get(topic);
+          if (!handler) return;
 
           const rawValue = message.value?.toString();
           if (!rawValue) return;
@@ -260,7 +422,7 @@ export const createConsumer = (
           while (attempt <= maxRetries) {
             try {
               await measureAsync(`kafka.handle.${topic}`, async () => {
-                await topicConfig.topicHandler(parsed);
+                await handler(parsed);
               });
               return; // Success!
             } catch (handlerError) {
@@ -320,6 +482,7 @@ export const createConsumer = (
   };
 
   const subscribeBatch = async (topics: KafkaBatchConsumerConfig[]) => {
+    await ensureTopicsExist(topics.map((t) => t.topicName));
     try {
       await retry(
         () =>
@@ -493,6 +656,12 @@ export const createConsumer = (
 
   const disconnect = async () => {
     try {
+      if (autoRecoveryTimer) {
+        clearTimeout(autoRecoveryTimer);
+        autoRecoveryTimer = null;
+      }
+      isConsumerRunning = false;
+      registeredHandlers.clear();
       if (dlqProducer) {
         await dlqProducer.disconnect();
         dlqProducer = null;

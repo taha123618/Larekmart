@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Any
 from aiokafka import AIOKafkaProducer
@@ -14,6 +15,19 @@ async def get_kafka_producer() -> AIOKafkaProducer | None:
     settings = get_settings()
     if not settings.KAFKA_ENABLED:
         return None
+
+    try:
+        current_loop = asyncio.get_running_loop()
+        if _producer is not None:
+            producer_loop = getattr(_producer, "_loop", None)
+            if producer_loop is not None and producer_loop is not current_loop:
+                try:
+                    await _producer.stop()
+                except Exception:
+                    pass
+                _producer = None
+    except RuntimeError:
+        pass
 
     if _producer is None:
         try:

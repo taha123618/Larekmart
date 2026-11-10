@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # Kafka Integration
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9094,localhost:9095,localhost:9096"
     KAFKA_CONSUMER_GROUP: str = "fraud-service-group"
-    KAFKA_ENABLED: bool = False
+    KAFKA_ENABLED: bool = True
     KAFKA_CLIENT_ID: str = "fraud-service"
 
     # Security & Zero-Trust

@@ -11,13 +11,18 @@ export const ALL_LAREKMART_TOPICS = [
 
   // Orders
   "order.created",
+  "order.confirmed",
   "order.completed",
   "order.cancelled",
+  "order.updated",
   "order-successful",
 
   // Payments
   "payment.successful",
+  "payment.failed",
   "payment-successful",
+  "payment.refund.requested",
+  "payment.refund.completed",
 
   // Behavioral & Recommendations
   "product.viewed",
@@ -51,9 +56,15 @@ export const ALL_LAREKMART_TOPICS = [
   "wishlist.updated",
   "wishlist.deleted",
   "wishlist.item.added",
+  "wishlist.item_added",
   "wishlist.item.removed",
+  "wishlist.item_removed",
+  "wishlist.item.moved",
+  "wishlist.cleared",
   "wishlist.merged",
+  "wishlist.price-drop",
   "wishlist.price-drop.alert",
+  "wishlist.restocked",
   "wishlist.restock.alert",
 
   // Promotion Events
@@ -64,6 +75,9 @@ export const ALL_LAREKMART_TOPICS = [
   "promotion.redeemed",
   "promotion.reservation.released",
   "promotion.budget.exhausted",
+  "promotion.campaign_created",
+  "promotion.coupon_applied",
+  "promotion.discount_applied",
 
   // Shipping & Logistics
   "shipment.created",
@@ -79,6 +93,8 @@ export const ALL_LAREKMART_TOPICS = [
   "shipment.cancelled",
   "shipment.failed",
   "tracking.updated",
+  "shipping.tracking.updated",
+  "shipping.label.created",
 
   // Email & Notifications
   "email.dispatch",
@@ -102,7 +118,10 @@ export const ALL_LAREKMART_TOPICS = [
   // Inventory
   "inventory.created",
   "inventory.reserved",
+  "inventory.reservation.requested",
   "inventory.reservation.confirmed",
+  "inventory.reservation.cancelled",
+  "inventory.reservation.failed",
   "inventory.stock.sold",
   "inventory.released",
   "inventory.reservation.expired",
@@ -110,6 +129,7 @@ export const ALL_LAREKMART_TOPICS = [
   "inventory.adjusted",
   "inventory.low_stock",
   "inventory.out_of_stock",
+  "inventory.availability.changed",
 
   // Media
   "media.upload_requested",
@@ -117,30 +137,37 @@ export const ALL_LAREKMART_TOPICS = [
   "media.processing_started",
   "media.processing_completed",
   "media.processing_failed",
+  "media.processed",
   "media.deleted",
   "media.quarantined",
 
   // Tax Events
+  "tax.calculated",
   "tax.calculation.completed",
   "tax.calculation.failed",
-  "tax.rules.updated",
   "tax.calculation.adjusted",
+  "tax.calculation.voided",
+  "tax.exempted",
+  "tax.rules.updated",
 
   // Return & Refund Events
+  "return.created",
   "return.requested",
   "return.approved",
   "return.rejected",
   "return.cancelled",
   "return.shipment.requested",
+  "return.inspected",
   "return.inspection.completed",
   "return.refund.requested",
   "return.completed",
   "payment.refund.succeeded",
   "payment.refund.failed",
-  "shipping.label.created",
   "order.delivered",
 
   // Pricing Events
+  "price.updated",
+  "product.tax-category.updated",
   "pricing.price.created",
   "pricing.price.updated",
   "pricing.price.expired",
@@ -171,6 +198,44 @@ export const ALL_LAREKMART_TOPICS = [
   "chat.conversation.created",
   "chat.message.created",
   "chat.message.reported",
+
+  // Fraud Assessment & Risk Lifecycle
+  "fraud.assessment.completed",
+  "fraud.risk.detected",
+  "fraud.case.created",
+  "fraud.case.resolved",
+  "fraud.case.escalated",
+
+  // Commission Engine Lifecycle
+  "commission.calculated",
+  "commission.accrued",
+  "commission.adjusted",
+  "commission.reversed",
+
+  // Payout Ledger Lifecycle
+  "payout.scheduled",
+  "payout.processing",
+  "payout.completed",
+  "payout.failed",
+  "payout.reconciled",
+
+  // Vendor Escrow & Disbursements
+  "vendor.escrow.credited",
+  "vendor.escrow.released",
+  "vendor.payout.requested",
+  "vendor.payout.completed",
+
+  // Dispute & Chargeback Lifecycle
+  "dispute.created",
+  "dispute.rebuttal_submitted",
+  "dispute.resolved",
+  "payment.dispute.created",
+  "payment.dispute.closed",
+
+  // Storefront & Operational Settings
+  "marketplace.settings.updated",
+  "admin.delegation.granted",
+  "admin.delegation.revoked",
 ] as const;
 
 /**
@@ -179,10 +244,12 @@ export const ALL_LAREKMART_TOPICS = [
  */
 const TIER_1_TOPICS = new Set<string>([
   "order.created",
+  "order.confirmed",
   "order.completed",
   "order.cancelled",
   "order-successful",
   "payment.successful",
+  "payment.failed",
   "payment-successful",
   "payment.refund.requested",
   "payment.refund.completed",
@@ -190,6 +257,7 @@ const TIER_1_TOPICS = new Set<string>([
   "inventory.stock.sold",
   "inventory.reserved",
   "inventory.restocked",
+  "inventory.availability.changed",
 ]);
 
 const TIER_2_TOPICS = new Set<string>([
@@ -246,10 +314,18 @@ export async function initializeTopics(): Promise<void> {
   try {
     const existingTopics = await admin.listTopics();
     const existingSet = new Set(existingTopics);
+    const existingNormalized = new Set(
+      existingTopics.map((t) => t.replace(/\./g, "_")),
+    );
 
-    const topicsToCreate = ALL_LAREKMART_TOPICS.filter(
-      (topic) => !existingSet.has(topic),
-    ).map((topic) => ({
+    const topicsToCreate = ALL_LAREKMART_TOPICS.filter((topic) => {
+      if (existingSet.has(topic)) return false;
+      const normalized = topic.replace(/\./g, "_");
+      if (existingNormalized.has(normalized)) {
+        return false;
+      }
+      return true;
+    }).map((topic) => ({
       topic,
       numPartitions: getTopicPartitionCount(topic),
       replicationFactor: 1, // compatible with 1 to 3 broker setups
@@ -263,15 +339,40 @@ export async function initializeTopics(): Promise<void> {
     }
 
     console.log(
-      `[KafkaTopicInit] Creating ${topicsToCreate.length} missing topics with tiered partitioning...`,
+      `[KafkaTopicInit] Creating ${topicsToCreate.length} missing topics with tiered partitioning in batch...`,
     );
-    await admin.createTopics({
-      topics: topicsToCreate,
-      waitForLeaders: true,
-    });
-    console.log(
-      `[KafkaTopicInit] Successfully created ${topicsToCreate.length} topics with tiered partitions!`,
-    );
+
+    try {
+      await admin.createTopics({
+        topics: topicsToCreate,
+        waitForLeaders: true,
+        timeout: 30_000,
+      });
+      console.log(
+        `[KafkaTopicInit] Successfully created all ${topicsToCreate.length} missing topics!`,
+      );
+    } catch (batchErr: any) {
+      console.warn(
+        `[KafkaTopicInit] Batch creation encountered an issue (${batchErr?.message || batchErr}); falling back to individual topic creation...`,
+      );
+      let createdCount = 0;
+      for (const item of topicsToCreate) {
+        try {
+          await admin.createTopics({
+            topics: [item],
+            waitForLeaders: true,
+          });
+          createdCount++;
+        } catch (topicErr: any) {
+          console.warn(
+            `[KafkaTopicInit] Warning: Could not create topic "${item.topic}": ${topicErr?.message || topicErr}`,
+          );
+        }
+      }
+      console.log(
+        `[KafkaTopicInit] Created ${createdCount} of ${topicsToCreate.length} topics via fallback.`,
+      );
+    }
   } finally {
     await admin.disconnect();
     console.log("[KafkaTopicInit] Admin connection closed.");

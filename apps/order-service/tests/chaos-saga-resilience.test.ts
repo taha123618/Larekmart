@@ -164,7 +164,12 @@ async function runChaosSagaResilienceTests() {
 
     // Sweeper attempts to process outbox during broker drop
     const workerId = `chaos-worker-${Date.now()}`;
-    const publishedDuringDrop = await sweepPendingOutboxEvents(10, workerId);
+    const publishedDuringDrop = await sweepPendingOutboxEvents(
+      10,
+      workerId,
+      undefined,
+      { bypassClusterLock: true },
+    );
     assert.equal(
       publishedDuringDrop,
       0,
@@ -199,7 +204,12 @@ async function runChaosSagaResilienceTests() {
       { _id: outboxEvent._id },
       { $set: { lockedUntil: new Date(Date.now() - 1000) } },
     );
-    const publishedAfterRecovery = await sweepPendingOutboxEvents(10, workerId);
+    const publishedAfterRecovery = await sweepPendingOutboxEvents(
+      10,
+      workerId,
+      undefined,
+      { bypassClusterLock: true },
+    );
     assert.equal(
       publishedAfterRecovery,
       1,
@@ -238,6 +248,7 @@ async function runChaosSagaResilienceTests() {
     const sweptCount = await processPendingConfirmationTimeouts(
       60_000,
       `sweeper-${Date.now()}`,
+      { bypassClusterLock: true },
     );
     assert.ok(
       sweptCount >= 1,
@@ -270,6 +281,7 @@ async function runChaosSagaResilienceTests() {
       "\n4. Testing Sweeper Cluster Lock Isolation across Pod Alpha and Pod Beta...",
     );
     const leaderKey = "order:saga:timeout:sweeper:leader";
+    await redis.client.del(leaderKey);
     const lockAcquired = await redis.client.set(
       leaderKey,
       "pod-alpha-holding-lock",

@@ -123,11 +123,8 @@ type KafkaConsumerHandle = {
   ) => Promise<void>;
 };
 
-/** Subscribes the media-service consumer to all cleanup topics. */
-export async function startDomainDeletionConsumer(
-  kafkaConsumerRef: KafkaConsumerHandle,
-  database: MediaDb,
-): Promise<void> {
+/** Returns the topic handler list for all domain cleanup events. */
+export function getDomainDeletionTopicHandlers(database: MediaDb) {
   const topics = [
     "product.deleted",
     "seller.deleted",
@@ -137,23 +134,29 @@ export async function startDomainDeletionConsumer(
     "brand.deleted",
   ];
 
-  await kafkaConsumerRef.subscribe(
-    topics.map((topicName) => ({
-      topicName,
-      topicHandler: async (message: unknown) => {
-        // The @repo/kafka wrapper passes the parsed envelope { value: payload }.
-        const envelope = message as { value?: unknown };
-        try {
-          await handleDomainDeleted(
-            topicName,
-            envelope.value ?? envelope,
-            database,
-          );
-        } catch (error) {
-          // Logged, never thrown — one bad event must not kill the loop.
-          logger.error(`Failed handling ${topicName}`, error);
-        }
-      },
-    })),
-  );
+  return topics.map((topicName) => ({
+    topicName,
+    topicHandler: async (message: unknown) => {
+      // The @repo/kafka wrapper passes the parsed envelope { value: payload }.
+      const envelope = message as { value?: unknown };
+      try {
+        await handleDomainDeleted(
+          topicName,
+          envelope.value ?? envelope,
+          database,
+        );
+      } catch (error) {
+        // Logged, never thrown — one bad event must not kill the loop.
+        logger.error(`Failed handling ${topicName}`, error);
+      }
+    },
+  }));
+}
+
+/** Subscribes the media-service consumer to all cleanup topics. */
+export async function startDomainDeletionConsumer(
+  kafkaConsumerRef: KafkaConsumerHandle,
+  database: MediaDb,
+): Promise<void> {
+  await kafkaConsumerRef.subscribe(getDomainDeletionTopicHandlers(database));
 }

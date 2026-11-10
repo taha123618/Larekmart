@@ -161,6 +161,7 @@ export async function sweepPendingOutboxEvents(
   batchSize = 20,
   workerId = OUTBOX_WORKER_ID,
   fencingToken?: number,
+  options?: { bypassClusterLock?: boolean },
 ): Promise<number> {
   if (isSweeping) {
     return 0;
@@ -171,7 +172,9 @@ export async function sweepPendingOutboxEvents(
   let activeFencingToken = fencingToken;
   const isElectorActive = outboxLeaderElector && outboxLeaderElector.isRunning;
 
-  if (isElectorActive && workerId === OUTBOX_WORKER_ID) {
+  if (options?.bypassClusterLock) {
+    isClusterLeader = true;
+  } else if (isElectorActive && workerId === OUTBOX_WORKER_ID) {
     // If managed elector is active, verify that leadership is currently valid and within drift bounds
     if (!outboxLeaderElector!.isLeadershipValid) {
       logger.warn(

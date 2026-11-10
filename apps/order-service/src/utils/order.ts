@@ -652,36 +652,43 @@ export const markOrderRefunded = async (refundPayload: any) => {
 export const processPendingConfirmationTimeouts = async (
   timeoutMs = 60000,
   workerId = OUTBOX_WORKER_ID,
+  options?: { bypassClusterLock?: boolean },
 ): Promise<number> => {
+  const executeSweep = async () => {
+    const threshold = new Date(Date.now() - timeoutMs);
+    const stuckOrders = await Order.find({
+      status: "pending_confirmation",
+      createdAt: { $lte: threshold },
+    });
+
+    if (stuckOrders.length === 0) return 0;
+
+    logger.warn(
+      `Found ${stuckOrders.length} pending_confirmation orders timed out past ${timeoutMs}ms`,
+    );
+
+    for (const order of stuckOrders) {
+      await cancelOutOfStockOrder({
+        orderId: order._id.toString(),
+        reservationId: (order as any).reservationId,
+        referenceId: (order as any).paymentSessionId,
+        reason: "TIMEOUT",
+        details: `Dual-ACK confirmation timed out after ${timeoutMs / 1000}s`,
+      });
+    }
+
+    return stuckOrders.length;
+  };
+
+  if (options?.bypassClusterLock) {
+    return await executeSweep();
+  }
+
   const result = await withClusterLock(
     redis.client,
     "order:saga:timeout:sweeper:leader",
     workerId,
-    async () => {
-      const threshold = new Date(Date.now() - timeoutMs);
-      const stuckOrders = await Order.find({
-        status: "pending_confirmation",
-        createdAt: { $lte: threshold },
-      });
-
-      if (stuckOrders.length === 0) return 0;
-
-      logger.warn(
-        `Found ${stuckOrders.length} pending_confirmation orders timed out past ${timeoutMs}ms`,
-      );
-
-      for (const order of stuckOrders) {
-        await cancelOutOfStockOrder({
-          orderId: order._id.toString(),
-          reservationId: (order as any).reservationId,
-          referenceId: (order as any).paymentSessionId,
-          reason: "TIMEOUT",
-          details: `Dual-ACK confirmation timed out after ${timeoutMs / 1000}s`,
-        });
-      }
-
-      return stuckOrders.length;
-    },
+    executeSweep,
     { ttlMs: 25_000 },
   );
 

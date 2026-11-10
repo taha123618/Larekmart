@@ -28,7 +28,9 @@ const envSchema = z
     TAX_CACHE_TTL_SECONDS: z.coerce.number().default(3600),
 
     // Kafka
-    KAFKA_BROKERS: z.string().default("localhost:9092"),
+    KAFKA_BROKERS: z
+      .string()
+      .default("localhost:9094,localhost:9095,localhost:9096"),
 
     // Auth
     CLERK_PUBLISHABLE_KEY: z

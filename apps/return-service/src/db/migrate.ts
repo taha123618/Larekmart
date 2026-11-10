@@ -192,11 +192,50 @@ export async function runMigrations(): Promise<void> {
         status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
         retry_count INT NOT NULL DEFAULT 0,
         last_error TEXT NULL,
+        locked_by VARCHAR(128) NULL,
+        locked_until TIMESTAMP NULL,
         published_at TIMESTAMP NULL,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_return_outbox_status (status)
+        INDEX idx_return_outbox_status (status),
+        INDEX idx_return_outbox_claim (status, locked_until)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // 10b. Ensure locked_by, locked_until and claim index exist if table was created in an earlier migration
+    const [outboxColumns]: any = await conn.query(`
+      SELECT COLUMN_NAME
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'return_outbox'
+    `);
+    const colNames = new Set(
+      ((outboxColumns as any[]) || []).map((c: any) => c.COLUMN_NAME),
+    );
+    if (!colNames.has("locked_by")) {
+      console.log("Adding locked_by column to return_outbox...");
+      await conn.query(
+        `ALTER TABLE return_outbox ADD COLUMN locked_by VARCHAR(128) NULL AFTER last_error`,
+      );
+    }
+    if (!colNames.has("locked_until")) {
+      console.log("Adding locked_until column to return_outbox...");
+      await conn.query(
+        `ALTER TABLE return_outbox ADD COLUMN locked_until TIMESTAMP NULL AFTER locked_by`,
+      );
+    }
+
+    const [outboxIndexes]: any = await conn.query(`
+      SELECT INDEX_NAME
+      FROM INFORMATION_SCHEMA.STATISTICS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'return_outbox'
+    `);
+    const indexNames = new Set(
+      ((outboxIndexes as any[]) || []).map((idx: any) => idx.INDEX_NAME),
+    );
+    if (!indexNames.has("idx_return_outbox_claim")) {
+      await conn.query(
+        `ALTER TABLE return_outbox ADD INDEX idx_return_outbox_claim (status, locked_until)`,
+      );
+    }
 
     console.log("return-service MySQL migrations completed successfully.");
   } finally {

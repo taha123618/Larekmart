@@ -2,6 +2,7 @@ import os
 import pytest
 from httpx import ASGITransport, AsyncClient
 from app.core.config import get_settings
+from app.kafka.producer import stop_kafka_producer
 from app.main import app
 from app.redis.velocity import velocity_tracker
 
@@ -12,12 +13,14 @@ os.environ["INTERNAL_SERVICE_SECRET"] = "test-internal-secret-12345"
 
 
 @pytest.fixture(autouse=True)
-async def reset_velocity():
-    """Resets velocity counters and Redis client before each test."""
+async def reset_resources():
+    """Resets velocity counters, Redis client, and Kafka producer before and after each test."""
     import app.redis.velocity as vel
     await velocity_tracker.reset()
+    await stop_kafka_producer()
     yield
     await velocity_tracker.reset()
+    await stop_kafka_producer()
     if vel._redis_client:
         try:
             await vel._redis_client.aclose()

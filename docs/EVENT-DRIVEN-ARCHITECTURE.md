@@ -11,7 +11,7 @@ Local Kafka is provided by `packages/kafka/docker-compose.yml`:
 
 - 3 brokers (`confluentinc/cp-kafka:7.5.0`) on `localhost:9094`, `:9095`, `:9096`
 - ZooKeeper on `:2181`
-- Kafka UI on `http://localhost:8090`
+- Kafka UI on `http://localhost:8080`
 - `KAFKA_CLUSTER_ID`-style fixed `CLUSTER_ID`, replication factor 3 for internal topics
 
 Start it with:
@@ -189,10 +189,10 @@ the three broker addresses (currently hardcoded in `packages/kafka/src/client.ts
 | `support.ticket.created`                         | support-service            | notification-service, email-service, analytic-service, chat-service                                                          | `SupportTicketCreatedEvent` (`ticketId`, `ticketNumber`, `subject`, `categoryCode`, `priority`, `status`, `source`, `customerId`, `orderId`, `timestamp`)                                                                                                                           |
 | `support.ticket.assigned`                        | support-service            | notification-service, analytic-service                                                                                       | `SupportTicketAssignedEvent` (`ticketId`, `ticketNumber`, `assignedBy`, `assignedTo`, `assignedTeam`, `timestamp`)                                                                                                                                                                  |
 | `support.ticket.updated`                         | support-service            | notification-service, analytic-service                                                                                       | `SupportTicketUpdatedEvent` (`ticketId`, `ticketNumber`, `previousStatus`, `newStatus`, `previousPriority`, `newPriority`, `updatedBy`, `timestamp`)                                                                                                                                |
-| `support.ticket.resolved`                        | support-service            | notification-service, email-service, analytic-service                                                                        | `SupportTicketResolvedEvent` (`ticketId`, `ticketNumber`, `resolvedBy`, `resolutionTimeMinutes`, `slaBreached`, `timestamp`)                                                                                                                         |
-| `chat.conversation.created`                      | chat-service               | notification-service, support-service, analytic-service                                                                      | `ChatConversationCreatedEvent` (`conversationId`, `type`, `createdById`, `participantUserIds`, `sellerId`, `ticketId`, `orderId`, `createdAt`)                                                                                                       |
-| `chat.message.created`                           | chat-service               | notification-service, email-service, fraud-service, analytic-service                                                         | `ChatMessageCreatedEvent` (`messageId`, `conversationId`, `conversationType`, `senderId`, `senderRole`, `content`, `messageType`, `recipientUserIds`, `sellerId`, `ticketId`, `orderId`, `createdAt`)                                              |
-| `chat.message.reported`                          | chat-service               | fraud-service, support-service, analytic-service                                                                             | `ChatMessageReportedEvent` (`reportId`, `messageId`, `conversationId`, `reporterUserId`, `reportedUserId`, `reason`, `category`, `reportedAt`)                                                                                                       |
+| `support.ticket.resolved`                        | support-service            | notification-service, email-service, analytic-service                                                                        | `SupportTicketResolvedEvent` (`ticketId`, `ticketNumber`, `resolvedBy`, `resolutionTimeMinutes`, `slaBreached`, `timestamp`)                                                                                                                                                        |
+| `chat.conversation.created`                      | chat-service               | notification-service, support-service, analytic-service                                                                      | `ChatConversationCreatedEvent` (`conversationId`, `type`, `createdById`, `participantUserIds`, `sellerId`, `ticketId`, `orderId`, `createdAt`)                                                                                                                                      |
+| `chat.message.created`                           | chat-service               | notification-service, email-service, fraud-service, analytic-service                                                         | `ChatMessageCreatedEvent` (`messageId`, `conversationId`, `conversationType`, `senderId`, `senderRole`, `content`, `messageType`, `recipientUserIds`, `sellerId`, `ticketId`, `orderId`, `createdAt`)                                                                               |
+| `chat.message.reported`                          | chat-service               | fraud-service, support-service, analytic-service                                                                             | `ChatMessageReportedEvent` (`reportId`, `messageId`, `conversationId`, `reporterUserId`, `reportedUserId`, `reason`, `category`, `reportedAt`)                                                                                                                                      |
 
 ### `product.created`
 
@@ -1397,8 +1397,8 @@ Emitted when a new buyer-to-seller or live support conversation thread is initia
     "sellerId": "seller_merchant_001",
     "ticketId": null,
     "orderId": "order_ord_001",
-    "createdAt": "2026-11-05T03:00:00.000Z"
-  }
+    "createdAt": "2026-11-05T03:00:00.000Z",
+  },
 }
 ```
 
@@ -1423,8 +1423,8 @@ Emitted when a participant sends a message or attachment into a conversation thr
     "sellerId": "seller_merchant_001",
     "ticketId": null,
     "orderId": "order_ord_001",
-    "createdAt": "2026-11-05T03:00:05.000Z"
-  }
+    "createdAt": "2026-11-05T03:00:05.000Z",
+  },
 }
 ```
 
@@ -1445,8 +1445,8 @@ Emitted when an end user or staff member flags a message for abuse, scam, or ter
     "reportedUserId": "user_buyer_test_001",
     "reason": "Off-platform payment solicitation",
     "category": "SCAM_OR_FRAUD",
-    "reportedAt": "2026-11-05T03:05:00.000Z"
-  }
+    "reportedAt": "2026-11-05T03:05:00.000Z",
+  },
 }
 ```
 

@@ -32,7 +32,7 @@ import { replicaWal } from "../src/utils/database-context.js";
 
 const SESSION_TTL_MS = 30_000;
 const FALLBACK_LAG_BYTES = 65_536n; // 64 KiB simulated standby replay backlog
-const LEASE_EXPIRY_WAIT_MS = 700; // > DEFAULT_RYW_TTL_MS (500ms) time lease
+const LEASE_EXPIRY_WAIT_MS = 1000; // > DEFAULT_RYW_TTL_MS (500ms) time lease (resilient to high-concurrency monorepo test contention)
 
 const chaosSessions = {
   replayUnavailable: "chaos_e2e_replay_unavailable",

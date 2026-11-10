@@ -4,11 +4,29 @@ from typing import Any
 from aiokafka import AIOKafkaConsumer
 from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.observability.metrics import (
+    KAFKA_EVENTS_CONSUMED_TOTAL,
+    KAFKA_EVENTS_FAILED_TOTAL,
+)
 from app.redis.velocity import velocity_tracker
 from app.schemas.fraud import AssessRiskRequest
 from app.services.fraud_service import fraud_service
 
 logger = get_logger("fraud-service.kafka-consumer")
+
+
+def _safe_json_deserialize(v: bytes | None) -> Any:
+    if not v:
+        return {}
+    try:
+        return json.loads(v.decode("utf-8"))
+    except Exception as e:
+        logger.warning("kafka_malformed_json_poison_pill", error=str(e))
+        return {
+            "_poison_pill": True,
+            "_raw": v.decode("utf-8", errors="replace"),
+            "_error": str(e),
+        }
 
 _consumer_task: asyncio.Task | None = None
 _running: bool = False
@@ -16,6 +34,17 @@ _running: bool = False
 
 async def _process_single_message(msg: Any, sem: asyncio.Semaphore) -> None:
     async with sem:
+        if isinstance(msg.value, dict) and msg.value.get("_poison_pill"):
+            KAFKA_EVENTS_FAILED_TOTAL.labels(
+                topic=msg.topic, error_type="PoisonPillJSONDecodeError"
+            ).inc()
+            logger.error(
+                "poison_pill_skipped_in_fraud_consumer",
+                topic=msg.topic,
+                error=msg.value.get("_error"),
+            )
+            return
+
         payload = (
             msg.value.get("value", msg.value)
             if isinstance(msg.value, dict)
@@ -145,8 +174,8 @@ async def _process_single_message(msg: Any, sem: asyncio.Semaphore) -> None:
                         await fraud_service.assess_risk(assess_req)
 
             # 6. Return Abuse & High Return Velocity
-            elif topic == "return.created":
-                user_id = str(payload.get("userId") or "")
+            elif topic in ("return.requested", "return.created"):
+                user_id = str(payload.get("userId") or payload.get("customerId") or "")
                 return_id = str(payload.get("returnId") or payload.get("id") or "")
                 if user_id and return_id:
                     ret_count = await velocity_tracker.record_event(
@@ -158,14 +187,37 @@ async def _process_single_message(msg: Any, sem: asyncio.Semaphore) -> None:
                             entityId=return_id,
                             entityType="RETURN_REQUEST",
                             userId=user_id,
-                            amount=float(payload.get("refundAmount") or 0),
+                            amount=float(payload.get("refundAmount") or payload.get("totalRefund") or 0),
                             metadata={"returnVelocity": ret_count},
                         )
                         await fraud_service.assess_risk(assess_req)
 
-            # 7. Chat Abuse & Harassment Reporting
+            # 7. Rapid Chat Message Flood Detection
+            elif topic == "chat.message.created":
+                sender_id = str(payload.get("senderId") or "")
+                if sender_id and payload.get("senderRole") == "buyer":
+                    chat_count = await velocity_tracker.record_event(
+                        f"chat_velocity:{sender_id}"
+                    )
+                    if chat_count >= 20:  # Excessive message flood in 5m
+                        assess_req = AssessRiskRequest(
+                            workflow="ACCOUNT",
+                            entityId=str(payload.get("messageId") or f"chat_{sender_id}"),
+                            entityType="CHAT_MESSAGE",
+                            userId=sender_id,
+                            metadata={
+                                "conversationId": str(payload.get("conversationId") or ""),
+                                "abuseVelocity": chat_count,
+                                "reason": "High frequency chat flood detected",
+                            },
+                        )
+                        await fraud_service.assess_risk(assess_req)
+
+            # 8. Chat Abuse & Harassment Reporting
             elif topic == "chat.message.reported":
-                reported_user_id = str(payload.get("reportedByUserId") or "")
+                reported_user_id = str(
+                    payload.get("reportedUserId") or payload.get("reportedByUserId") or ""
+                )
                 message_id = str(payload.get("messageId") or "")
                 conv_id = str(payload.get("conversationId") or "")
                 if reported_user_id and message_id:
@@ -185,7 +237,12 @@ async def _process_single_message(msg: Any, sem: asyncio.Semaphore) -> None:
                     )
                     await fraud_service.assess_risk(assess_req)
 
+            KAFKA_EVENTS_CONSUMED_TOTAL.labels(topic=topic, status="success").inc()
+
         except Exception as handler_err:
+            KAFKA_EVENTS_FAILED_TOTAL.labels(
+                topic=topic, error_type=type(handler_err).__name__
+            ).inc()
             logger.warn(
                 "Error processing event in fraud consumer handler",
                 topic=topic,
@@ -203,55 +260,74 @@ async def start_kafka_consumer() -> None:
     _running = True
 
     async def _consume_loop():
-        consumer = None
-        try:
-            consumer = AIOKafkaConsumer(
-                "order.created",
-                "payment.successful",
-                "payment.failed",
-                "payout.scheduled",
-                "promotion.redeemed",
-                "promotion.reserved",
-                "return.created",
-                "chat.message.reported",
-                bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS.split(","),
-                group_id=settings.KAFKA_CONSUMER_GROUP,
-                auto_offset_reset="latest",
-                value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-            )
-            await consumer.start()
-            logger.info("AIOKafkaConsumer connected and subscribed to topics")
+        retry_delay = 2
+        max_retry_delay = 30
+        while _running:
+            consumer = None
+            try:
+                bootstrap_servers = [
+                    s.strip()
+                    for s in settings.KAFKA_BOOTSTRAP_SERVERS.split(",")
+                    if s.strip()
+                ]
+                consumer = AIOKafkaConsumer(
+                    "order.created",
+                    "payment.successful",
+                    "payment.failed",
+                    "payout.scheduled",
+                    "promotion.redeemed",
+                    "promotion.reserved",
+                    "return.requested",
+                    "return.created",
+                    "chat.message.created",
+                    "chat.message.reported",
+                    bootstrap_servers=bootstrap_servers,
+                    group_id=settings.KAFKA_CONSUMER_GROUP,
+                    auto_offset_reset="latest",
+                    session_timeout_ms=30000,
+                    heartbeat_interval_ms=3000,
+                    max_poll_interval_ms=300000,
+                    request_timeout_ms=30000,
+                    retry_backoff_ms=500,
+                    value_deserializer=_safe_json_deserialize,
+                )
+                await consumer.start()
+                logger.info("AIOKafkaConsumer connected and subscribed to topics")
+                retry_delay = 2
 
-            sem = asyncio.Semaphore(10)  # Bounded worker concurrency pool
+                sem = asyncio.Semaphore(10)  # Bounded worker concurrency pool
 
-            while _running:
-                try:
-                    msg_batch = await consumer.getmany(timeout_ms=1000, max_records=20)
-                    all_messages = [
-                        msg for messages in msg_batch.values() for msg in messages
-                    ]
-                    if all_messages:
-                        tasks = [_process_single_message(m, sem) for m in all_messages]
-                        await asyncio.gather(*tasks, return_exceptions=True)
-                except asyncio.CancelledError:
-                    break
-                except Exception as e:
-                    logger.warn("Transient error in Kafka consumer loop", error=str(e))
-                    await asyncio.sleep(2)
+                while _running:
+                    try:
+                        msg_batch = await consumer.getmany(timeout_ms=1000, max_records=20)
+                        all_messages = [
+                            msg for messages in msg_batch.values() for msg in messages
+                        ]
+                        if all_messages:
+                            tasks = [_process_single_message(m, sem) for m in all_messages]
+                            await asyncio.gather(*tasks, return_exceptions=True)
+                    except asyncio.CancelledError:
+                        return
+                    except Exception as e:
+                        logger.warn("Transient error in Kafka consumer loop", error=str(e))
+                        await asyncio.sleep(1)
 
-        except Exception as e:
-            logger.warn(
-                "Could not start Kafka consumer; continuing without stream ingestion",
-                error=str(e),
-            )
-        finally:
-            if consumer:
-                try:
-                    await consumer.stop()
-                except Exception:
-                    pass
-                except Exception:
-                    pass
+            except asyncio.CancelledError:
+                return
+            except Exception as e:
+                logger.warn(
+                    f"Could not connect to Kafka consumer; retrying in {retry_delay}s",
+                    error=str(e),
+                )
+                if _running:
+                    await asyncio.sleep(retry_delay)
+                    retry_delay = min(max_retry_delay, retry_delay * 2)
+            finally:
+                if consumer:
+                    try:
+                        await consumer.stop()
+                    except Exception:
+                        pass
 
     _consumer_task = asyncio.create_task(_consume_loop())
 

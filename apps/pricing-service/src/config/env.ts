@@ -22,7 +22,7 @@ const EnvSchema = z
     PRICING_CACHE_TTL_SECONDS: z.coerce.number().default(3600),
     KAFKA_BROKERS: z
       .string()
-      .default("localhost:9092,localhost:9094,localhost:9096"),
+      .default("localhost:9094,localhost:9095,localhost:9096"),
     KAFKA_CLIENT_ID: z.string().default("pricing-service"),
     KAFKA_GROUP_ID: z.string().default("pricing-service-group"),
     CLERK_SECRET_KEY: z.string().default("sk_test_placeholder"),

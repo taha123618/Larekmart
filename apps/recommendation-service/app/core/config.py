@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     KAFKA_CONSUMER_GROUP: str = "recommendation-service-group"
     KAFKA_ENABLED: bool = True
     KAFKA_CLIENT_ID: str = "recommendation-service"
+    KAFKA_SESSION_TIMEOUT_MS: int = 30000
+    KAFKA_HEARTBEAT_INTERVAL_MS: int = 3000
+    KAFKA_MAX_POLL_INTERVAL_MS: int = 300000
 
     # Celery settings
     CELERY_BROKER_URL: str = "redis://localhost:6379/2"
@@ -131,6 +134,18 @@ class Settings(BaseSettings):
     @property
     def kafka_consumer_group(self) -> str:
         return self.KAFKA_CONSUMER_GROUP
+
+    @property
+    def kafka_session_timeout_ms(self) -> int:
+        return self.KAFKA_SESSION_TIMEOUT_MS
+
+    @property
+    def kafka_heartbeat_interval_ms(self) -> int:
+        return self.KAFKA_HEARTBEAT_INTERVAL_MS
+
+    @property
+    def kafka_max_poll_interval_ms(self) -> int:
+        return self.KAFKA_MAX_POLL_INTERVAL_MS
 
     @property
     def celery_broker_url(self) -> str:

@@ -2,7 +2,7 @@ import { serve } from "@hono/node-server";
 import { createApp, shutdown } from "./app.js";
 import { logger } from "./observability/metrics.js";
 import { consumer, producer } from "./utils/kafka.js";
-import { startDomainDeletionConsumer } from "./messaging/consumers/domain-deletion.consumer.js";
+import { getDomainDeletionTopicHandlers } from "./messaging/consumers/domain-deletion.consumer.js";
 import { handleProductMediaClaim } from "./messaging/consumers/product-claim.consumer.js";
 import { handleUserAvatarClaim } from "./messaging/consumers/user-claim.consumer.js";
 import { db } from "./db/client.js";
@@ -19,10 +19,13 @@ async function start(): Promise<void> {
   try {
     await producer.connect();
     await consumer.connect();
-    await startDomainDeletionConsumer(consumer, db);
-    // Claim media referenced by products so ownership tracks the catalog
-    // (draft uploads made by admin before the product row exists).
+
+    const domainDeletionHandlers = getDomainDeletionTopicHandlers(db);
+
+    // Atomically subscribe all topics in a single call to prevent
+    // "Cannot subscribe to topic while consumer is running".
     await consumer.subscribe([
+      ...domainDeletionHandlers,
       {
         topicName: "product.created",
         topicHandler: async (message) => {

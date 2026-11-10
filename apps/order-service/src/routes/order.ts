@@ -340,49 +340,7 @@ export const orderRoute = async (fastify: FastifyInstance) => {
     },
   );
 
-  fastify.get(
-    "/orders",
-    { preHandler: shouldBeSeller },
-    async (request, reply) => {
-      const { limit, sellerId } = request.query as {
-        limit?: number;
-        sellerId?: string;
-      };
-      const isAdmin = request.userRole === "admin";
-      const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
-
-      const query: Record<string, unknown> = {};
-      if (!isAdmin) {
-        query.$or = [
-          { sellerId: request.userId },
-          { "products.sellerId": request.userId },
-        ];
-      } else if (sellerId) {
-        query.$or = [
-          { sellerId },
-          { "products.sellerId": sellerId },
-        ];
-      }
-
-      const targetSellerId = !isAdmin ? request.userId : (sellerId || "all");
-
-      const orders = await fetchSellerOrdersCoalesced(
-        targetSellerId || "all",
-        safeLimit,
-        async () => {
-          const { result } = await measureAsync(
-            "db.order.findOrders",
-            async () => {
-              return await Order.find(query).limit(safeLimit).sort({ createdAt: -1 });
-            },
-          );
-          return result;
-        },
-      );
-      return reply.send(orders);
-    },
-  );
-
+  // Update order status/tracking by assigned seller or admin
   fastify.patch(
     "/orders/:id",
     { preHandler: shouldBeSeller },

@@ -37,3 +37,15 @@ FRAUD_VELOCITY_CHECK_DURATION_SECONDS = Histogram(
     buckets=[0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1],
 )
 
+KAFKA_EVENTS_CONSUMED_TOTAL = Counter(
+    "kafka_events_consumed_total",
+    "Total number of Kafka events consumed by topic and status",
+    ["topic", "status"],
+)
+
+KAFKA_EVENTS_FAILED_TOTAL = Counter(
+    "kafka_events_failed_total",
+    "Total number of Kafka event processing failures",
+    ["topic", "error_type"],
+)
+

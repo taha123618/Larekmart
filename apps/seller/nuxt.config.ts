@@ -10,6 +10,11 @@ export default defineNuxtConfig({
   // Server-side rendering
   ssr: true,
 
+  // Experimental flags
+  experimental: {
+    appManifest: false,
+  },
+
   // Modules
   modules: [
     "@nuxt/ui",

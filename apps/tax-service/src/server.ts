@@ -16,7 +16,6 @@ import { adminTaxRoutes } from "./routes/admin-tax.routes.js";
 export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({
     logger: false,
-    disableRequestLogging: true,
   });
 
   // 1. CORS Configuration

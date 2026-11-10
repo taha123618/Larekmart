@@ -39,7 +39,11 @@ export default defineEventHandler(async (event) => {
         process.env.API_GATEWAY_URL,
         process.env.NUXT_API_GATEWAY_URL,
         config.apiGatewayUrl,
-        config.public?.apiGatewayUrl
+        config.public?.apiGatewayUrl,
+        "http://localhost:8090",
+        "http://localhost:8080",
+        process.env.SELLER_SERVICE_URL,
+        "http://localhost:8021",
       ].filter(Boolean) as string[],
     ),
   );
@@ -47,7 +51,7 @@ export default defineEventHandler(async (event) => {
   let gatewayResponse: GatewayLoginResponse | null = null;
   let lastError: { statusCode?: number; statusMessage?: string } | null = null;
 
-  // Authoritative merchant login via API Gateway -> seller-service
+  // Authoritative merchant login via API Gateway -> seller-service fallback
   for (const url of candidateUrls) {
     try {
       gatewayResponse = await $fetch<GatewayLoginResponse>(
@@ -63,12 +67,12 @@ export default defineEventHandler(async (event) => {
             password,
             rememberMe,
           },
-          timeout: 8000,
+          timeout: 3000,
         },
       );
 
       if (gatewayResponse?.success && gatewayResponse.token) {
-        break; // Successfully authenticated via API Gateway
+        break; // Successfully authenticated via API Gateway or direct service
       }
     } catch (err: unknown) {
       const fetchErr = err as {
@@ -111,9 +115,13 @@ export default defineEventHandler(async (event) => {
   }
 
   throw createError({
-    statusCode: lastError?.statusCode || 502,
+    statusCode:
+      lastError?.statusCode && lastError.statusCode < 500
+        ? lastError.statusCode
+        : 503,
     statusMessage:
-      lastError?.statusMessage ||
-      "API Gateway authentication service unavailable",
+      lastError?.statusCode && lastError.statusCode < 500
+        ? lastError.statusMessage
+        : "Backend authentication service is unavailable. Please ensure API Gateway (port 8090) or seller-service (port 8021) is running.",
   });
 });

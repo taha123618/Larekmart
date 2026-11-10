@@ -291,7 +291,11 @@ async function runSagaTests() {
       { $set: { createdAt: new Date(Date.now() - 65000) } },
     );
 
-    const processedCount = await processPendingConfirmationTimeouts(60000);
+    const processedCount = await processPendingConfirmationTimeouts(
+      60000,
+      undefined,
+      { bypassClusterLock: true },
+    );
     assert.strictEqual(
       processedCount >= 1,
       true,

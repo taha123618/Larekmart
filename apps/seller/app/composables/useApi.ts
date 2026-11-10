@@ -70,10 +70,14 @@ export function useApi() {
       });
       return response;
     } catch (err: unknown) {
-      // Dynamic fallback between 8090 (Traefik) and 8080 (direct Fastify)
+      // Dynamic fallback between 8090 (API Gateway) and 8080 (Traefik) or direct service
       const errStr = String(err);
       if (
-        (errStr.includes("ECONNREFUSED") || errStr.includes("fetch failed")) &&
+        (errStr.includes("ECONNREFUSED") ||
+          errStr.includes("fetch failed") ||
+          errStr.includes("timeout") ||
+          errStr.includes("TimeoutError") ||
+          errStr.includes("aborted")) &&
         primaryBaseUrl.includes("8090")
       ) {
         try {
@@ -83,7 +87,18 @@ export function useApi() {
             headers,
           });
         } catch {
-          // Continue to standard error handler
+          // If seller-service route, try port 8021 directly
+          if (endpoint.startsWith("/api/v1/sellers")) {
+            try {
+              return await $fetch<T>(endpoint, {
+                baseURL: "http://localhost:8021",
+                ...options,
+                headers,
+              });
+            } catch {
+              // Continue to standard error handler
+            }
+          }
         }
       }
       const fetchErr = err as {

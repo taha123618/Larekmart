@@ -8,7 +8,10 @@ export interface KafkaSendOptions {
 }
 
 export const createProducer = (kafka: Kafka) => {
-  const producer: Producer = kafka.producer();
+  const producer: Producer = kafka.producer({
+    allowAutoTopicCreation: true,
+    transactionTimeout: 30_000,
+  });
 
   const connect = async () => {
     try {

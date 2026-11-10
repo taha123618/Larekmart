@@ -1,6 +1,7 @@
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { getDb } from "./db/connection.js";
+import { runMigrations } from "./db/migrate.js";
 import { sql } from "drizzle-orm";
 import { startOutboxWorker } from "./workers/outbox.worker.js";
 import { startConsumers } from "./workers/consumers.js";
@@ -9,6 +10,13 @@ export async function startServer(): Promise<void> {
   // Verify DB connectivity before accepting traffic
   await getDb().execute(sql`SELECT 1`);
   console.log("[return-service] Database connection verified.");
+
+  // Run idempotent schema migrations to ensure all columns and indexes exist
+  try {
+    await runMigrations();
+  } catch (migErr) {
+    console.warn("[return-service] Migration check warning:", migErr);
+  }
 
   // Start background workers
   await startConsumers();

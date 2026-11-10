@@ -16,7 +16,9 @@ const EnvSchema = z
       .default("postgresql://postgres:password123@localhost:5432/review_db"),
     REDIS_URL: z.string().default("redis://localhost:6379"),
     REDIS_KEY_PREFIX: z.string().default("review:v1:"),
-    KAFKA_BROKERS: z.string().default("localhost:9092"),
+    KAFKA_BROKERS: z
+      .string()
+      .default("localhost:9094,localhost:9095,localhost:9096"),
     KAFKA_CLIENT_ID: z.string().default("review-service"),
     KAFKA_GROUP_ID: z.string().default("review-service-group"),
     CLERK_SECRET_KEY: z.string().default("sk_test_placeholder"),
