@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   Logger,
   BadRequestException,
   NotFoundException,
@@ -21,7 +22,9 @@ export class SettlementsService {
   private readonly logger = new Logger(SettlementsService.name);
 
   constructor(
+    @Inject(PrismaService)
     private readonly prisma: PrismaService,
+    @Inject(KafkaService)
     private readonly kafka: KafkaService,
   ) {}
 
@@ -338,14 +341,25 @@ export class SettlementsService {
   }> {
     const now = new Date();
 
-    const matured = await this.prisma.vendorEscrowLedger.findMany({
-      where: {
-        status: "HELD_IN_ESCROW",
-        releaseDueAt: {
-          lte: now,
+    let matured: any[] = [];
+    try {
+      matured = await this.prisma.vendorEscrowLedger.findMany({
+        where: {
+          status: "HELD_IN_ESCROW",
+          releaseDueAt: {
+            lte: now,
+          },
         },
-      },
-    });
+      });
+    } catch (err: any) {
+      if (err?.code === "P2021") {
+        this.logger.warn(
+          "Vendor escrow ledger table (vendor_escrow_ledgers) not found in database; skipping maturity sweep",
+        );
+        return { count: 0, releasedTotal: 0 };
+      }
+      throw err;
+    }
 
     if (matured.length === 0) {
       return { count: 0, releasedTotal: 0 };
@@ -791,24 +805,29 @@ export class SettlementsService {
     vendorId?: string,
     reason?: string,
   ) {
-    const where: any = { status: "HELD" };
+    const where: any = { status: "HELD_IN_ESCROW" };
     if (orderId) where.orderId = orderId;
     if (vendorId) where.vendorId = vendorId;
     if (!orderId && !vendorId) return [];
 
-    const items = await this.prisma.vendorEscrowLedger.findMany({ where });
-    const frozen = [];
-    for (const item of items) {
-      try {
-        const res = await this.freezeEscrow(
-          item.id,
-          reason || "FRAUD_RISK_DETECTED",
-        );
-        frozen.push(res);
-      } catch (err) {
-        this.logger.warn(`Could not freeze escrow ${item.id}: ${err}`);
+    try {
+      const items = await this.prisma.vendorEscrowLedger.findMany({ where });
+      const frozen = [];
+      for (const item of items) {
+        try {
+          const res = await this.freezeEscrow(
+            item.id,
+            reason || "FRAUD_RISK_DETECTED",
+          );
+          frozen.push(res);
+        } catch (err) {
+          this.logger.warn(`Could not freeze escrow ${item.id}: ${err}`);
+        }
       }
+      return frozen;
+    } catch (err) {
+      this.logger.error(`Failed to query escrow ledger for freezing: ${err}`);
+      return [];
     }
-    return frozen;
   }
 }

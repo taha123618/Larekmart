@@ -1,5 +1,7 @@
 import {
   Injectable,
+  Inject,
+  forwardRef,
   OnModuleInit,
   OnModuleDestroy,
   Logger,
@@ -15,7 +17,10 @@ export class SettlementsConsumer implements OnModuleInit, OnModuleDestroy {
   private isConnected = false;
   private sweepInterval: NodeJS.Timeout | null = null;
 
-  constructor(private readonly settlementsService: SettlementsService) {}
+  constructor(
+    @Inject(forwardRef(() => SettlementsService))
+    private readonly settlementsService: SettlementsService,
+  ) {}
 
   async onModuleInit() {
     if (process.env.NODE_ENV === "test" || env.NODE_ENV === "test") {
@@ -29,8 +34,16 @@ export class SettlementsConsumer implements OnModuleInit, OnModuleDestroy {
     this.sweepInterval = setInterval(
       async () => {
         try {
-          await this.settlementsService.releaseMaturedEscrow();
-        } catch (err) {
+          if (this.settlementsService?.releaseMaturedEscrow) {
+            await this.settlementsService.releaseMaturedEscrow();
+          }
+        } catch (err: any) {
+          if (err?.code === "P2021") {
+            this.logger.warn(
+              "Escrow maturity sweeper skipped: vendor_escrow_ledgers table not yet present in database",
+            );
+            return;
+          }
           this.logger.error("Error in automated escrow maturity sweeper", err);
         }
       },
@@ -129,6 +142,7 @@ export class SettlementsConsumer implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleOrderPayment(payload: Record<string, any>) {
+    if (!this.settlementsService) return;
     const orderId = payload.orderId || payload.id;
     if (!orderId) return;
 
@@ -157,6 +171,7 @@ export class SettlementsConsumer implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleShipmentDelivered(payload: Record<string, any>) {
+    if (!this.settlementsService) return;
     const orderId = payload.orderId;
     if (!orderId) return;
 
@@ -171,6 +186,7 @@ export class SettlementsConsumer implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleReturnApproved(payload: Record<string, any>) {
+    if (!this.settlementsService) return;
     const orderId = payload.orderId;
     if (!orderId) return;
 
@@ -181,6 +197,7 @@ export class SettlementsConsumer implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleFraudRisk(payload: Record<string, any>) {
+    if (!this.settlementsService) return;
     const decision = String(payload.decision || "");
     const priority = String(payload.priority || "");
     const riskScore =
@@ -197,15 +214,24 @@ export class SettlementsConsumer implements OnModuleInit, OnModuleDestroy {
           "",
       );
 
+      // Only attempt freezing escrow if this fraud event targets an order or vendor
+      if (!orderId && !vendorId) {
+        return;
+      }
+
       this.logger.warn(
         `Critical fraud risk detected for order=${orderId}, vendor=${vendorId}. Freezing escrow funds...`,
       );
 
-      await this.settlementsService.freezeEscrowByOrderOrVendor(
-        orderId,
-        vendorId || undefined,
-        `FRAUD_ALERT: score=${riskScore}`,
-      );
+      try {
+        await this.settlementsService.freezeEscrowByOrderOrVendor(
+          orderId,
+          vendorId || undefined,
+          `FRAUD_ALERT: score=${riskScore}`,
+        );
+      } catch (err) {
+        this.logger.error("Failed to freeze escrow on fraud alert", err);
+      }
     }
   }
 }

@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "topics:init": "tsx src/init-topics.ts",
+    "dlq": "tsx src/dlq/cli.ts",
     "check-types": "tsc --noEmit",
-    "test": "tsx tests/consumer-dlq.test.ts && tsx tests/consumer-batch.test.ts"
+    "test": "tsx tests/consumer-dlq.test.ts && tsx tests/consumer-batch.test.ts && tsx tests/dlq-replayer.test.ts"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "@repo/monitoring": "workspace:*",
+    "@repo/opensearch": "workspace:*",
     "kafkajs": "^2.2.4"
   }
 }

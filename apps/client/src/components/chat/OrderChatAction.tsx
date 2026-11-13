@@ -16,9 +16,11 @@ export default function OrderChatAction({
 
   const orderId = order._id || (order as { id?: string }).id || "";
   const sellerId =
-    (order as any).sellerId ||
-    (order as any).vendorId ||
-    (order.products && order.products[0] && (order.products[0] as any).sellerId) ||
+    (order as { sellerId?: string }).sellerId ||
+    (order as { vendorId?: string }).vendorId ||
+    (order.products &&
+      order.products[0] &&
+      (order.products[0] as { sellerId?: string }).sellerId) ||
     "seller_default";
 
   return (
@@ -38,7 +40,9 @@ export default function OrderChatAction({
         initialType="DIRECT_BUYER_SELLER"
         initialOrderId={orderId}
         initialSellerId={sellerId}
-        title={orderId ? `Order #${orderId.slice(0, 8)} Inquiry` : "Order Inquiry"}
+        title={
+          orderId ? `Order #${orderId.slice(0, 8)} Inquiry` : "Order Inquiry"
+        }
       />
     </>
   );

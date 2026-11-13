@@ -8,6 +8,8 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { SettlementsService } from "./settlements.service.js";
 import { AuthGuard } from "../../common/guards/auth.guard.js";
@@ -21,7 +23,10 @@ import {
 @Controller("api/v1/vendors/:vendorId/settlements")
 @UseGuards(AuthGuard, VendorMemberGuard)
 export class SettlementsController {
-  constructor(private readonly settlementsService: SettlementsService) {}
+  constructor(
+    @Inject(forwardRef(() => SettlementsService))
+    private readonly settlementsService: SettlementsService,
+  ) {}
 
   @Get("balance")
   async getBalance(@Param("vendorId") vendorId: string) {

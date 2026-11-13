@@ -85,10 +85,14 @@ export class DisputesController {
     const isAdmin =
       req.user?.role === "admin" || req.user?.role === "super_admin";
 
-    // Ownership check: must be buyer, vendor, or admin
+    // Ownership check: must be buyer, authorized vendor member/owner, or admin
     if (!isAdmin && dispute.buyerId !== req.user?.userId) {
-      // Allow vendor member check downstream or block
-      if (req.headers["x-vendor-id"] !== dispute.vendorId) {
+      const isAuthorizedVendor =
+        await this.disputesService.isVendorMemberOrOwner(
+          dispute.vendorId,
+          req.user?.userId,
+        );
+      if (!isAuthorizedVendor) {
         throw new ForbiddenException("Access denied to this dispute");
       }
     }

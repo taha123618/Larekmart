@@ -1,4 +1,6 @@
 import { Kafka } from "kafkajs";
+import path from "node:path";
+import { createRequire } from "node:module";
 
 if (
   typeof process !== "undefined" &&
@@ -6,6 +8,74 @@ if (
   !process.env.KAFKAJS_NO_PARTITIONER_WARNING
 ) {
   process.env.KAFKAJS_NO_PARTITIONER_WARNING = "1";
+}
+
+// KafkaJS bugfix for Node 20+: Prevent negative timeout in RequestQueue.scheduleCheckPendingRequests
+// which causes Node.js TimeoutNegativeWarning and [RequestQueue] Response without match race conditions.
+let safeSocketFactory: (() => (options: any) => any) | undefined;
+
+try {
+  const req = typeof require !== "undefined" ? require : createRequire(import.meta.url);
+  const kafkajsMain = req.resolve("kafkajs");
+  const rqPath = path.join(path.dirname(kafkajsMain), "src/network/requestQueue/index.js");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const RequestQueue = req(rqPath);
+  if (RequestQueue?.prototype?.scheduleCheckPendingRequests) {
+    RequestQueue.prototype.scheduleCheckPendingRequests = function () {
+      const scheduleAt = (this.throttledUntil || 0) - Date.now();
+      if ((!this.pending || this.pending.length === 0) && scheduleAt <= 0) {
+        return;
+      }
+      if (!this.throttleCheckTimeoutId) {
+        const timeoutMs = scheduleAt > 0 ? scheduleAt : 100;
+        this.throttleCheckTimeoutId = setTimeout(() => {
+          this.throttleCheckTimeoutId = null;
+          this.checkPendingRequests();
+        }, timeoutMs);
+      }
+    };
+  }
+
+  // KafkaJS bugfix for Node 20+: Guard socket.write against ERR_STREAM_WRITE_AFTER_END
+  // when brokers close idle/rebalance connections while requests are queued.
+  const sfPath = path.join(path.dirname(kafkajsMain), "src/network/socketFactory.js");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const originalFactoryModule = req(sfPath);
+  if (typeof originalFactoryModule === "function" && !(originalFactoryModule as any)._isPatched) {
+    safeSocketFactory = function () {
+      const rawFactory = originalFactoryModule();
+      return function (options: any) {
+        const socket = rawFactory(options);
+        const originalWrite = socket.write;
+        socket.write = function (this: any, chunk: any, encoding: any, cb: any) {
+          if (this.destroyed || this.writableEnded || !this.writable) {
+            if (typeof encoding === "function") encoding();
+            else if (typeof cb === "function") cb();
+            return false;
+          }
+          try {
+            return originalWrite.apply(this, arguments as any);
+          } catch (err: any) {
+            if (
+              err &&
+              (err.code === "ERR_STREAM_WRITE_AFTER_END" ||
+                err.message?.includes("write after end"))
+            ) {
+              return false;
+            }
+            throw err;
+          }
+        };
+        return socket;
+      };
+    };
+    (safeSocketFactory as any)._isPatched = true;
+    if (req.cache && req.cache[sfPath]) {
+      req.cache[sfPath].exports = safeSocketFactory;
+    }
+  }
+} catch {
+  // Fail-open if internal KafkaJS module layout changes
 }
 
 /**
@@ -61,5 +131,6 @@ export const createKafkaClient = (
       maxRetryTime: 30_000,
       retries: 8,
     },
+    ...(safeSocketFactory ? { socketFactory: safeSocketFactory() } : {}),
   });
 };

@@ -80,13 +80,18 @@ onMounted(async () => {
   }
 
   // Socket.IO listener for real-time messages
-  const { $socket } = useNuxtApp() as any;
-  if ($socket) {
-    $socket.on("chat:message", (msg: ChatMessage) => {
+  const socket = useSocket();
+  if (socket) {
+    const handleIncomingMessage = (msg: ChatMessage) => {
       if (msg.conversationId === activeConversationId.value) {
         messages.value.push(msg);
         void scrollToBottom();
       }
+    };
+
+    socket.on("chat:message", handleIncomingMessage);
+    onUnmounted(() => {
+      socket.off("chat:message", handleIncomingMessage);
     });
   }
 });
@@ -124,9 +129,9 @@ const handleSendMessage = async () => {
   }
 
   // Emit via Socket.io
-  const { $socket } = useNuxtApp() as any;
-  if ($socket && $socket.connected) {
-    $socket.emit("chat:send", localMsg);
+  const socket = useSocket();
+  if (socket && socket.connected) {
+    socket.emit("chat:send", localMsg);
   }
 };
 </script>

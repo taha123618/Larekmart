@@ -35,12 +35,17 @@ import {
 import MediaImage from "@/components/MediaImage";
 import { getApiGatewayUrl } from "@/services/gateway.service";
 
+export const dynamic = "force-dynamic";
+
 // ─── Health check ─────────────────────────────────────────────────────────────
 
 async function getCatalogHealth(): Promise<{ ok: boolean; status?: string }> {
   try {
     const base = getApiGatewayUrl();
-    const res = await fetch(`${base}/ready`, { cache: "no-store" });
+    const res = await fetch(`${base}/ready`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(3000),
+    });
     if (res.ok) {
       const data = (await res.json()) as { status?: string };
       return { ok: true, status: data.status };

@@ -35,6 +35,7 @@ import {
   Banknote,
   LifeBuoy,
   MessageSquare,
+  Radio,
 } from "lucide-react";
 import {
   Sidebar,
@@ -493,6 +494,14 @@ const AppSidebar = () => {
                   <Link href="/cache">
                     <Database />
                     Cache Performance
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/kafka-dlq">
+                    <Radio />
+                    Kafka DLQ & Resilience
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -48,9 +48,12 @@ function verifySupportSocketJwtToken(token: string): JwtClaims | null {
         .createHmac("sha256", hmacKey)
         .update(signedData)
         .digest();
-      verified =
-        signature.length === expectedSig.length &&
-        crypto.timingSafeEqual(signature, expectedSig);
+      const sigHash = crypto.createHash("sha256").update(signature).digest();
+      const expectedHash = crypto
+        .createHash("sha256")
+        .update(expectedSig)
+        .digest();
+      verified = crypto.timingSafeEqual(sigHash, expectedHash);
     } catch {
       verified = false;
     }
@@ -126,9 +129,13 @@ export class RealtimeService implements OnModuleDestroy {
 
         this.subClient.subscribe("support:realtime:events", (err) => {
           if (err) {
-            this.logger.warn(`Failed to subscribe to support:realtime:events: ${err.message}`);
+            this.logger.warn(
+              `Failed to subscribe to support:realtime:events: ${err.message}`,
+            );
           } else {
-            this.logger.log("Support Realtime Redis Pub/Sub backplane subscribed successfully");
+            this.logger.log(
+              "Support Realtime Redis Pub/Sub backplane subscribed successfully",
+            );
           }
         });
 
@@ -143,11 +150,15 @@ export class RealtimeService implements OnModuleDestroy {
               this.io?.emit(payload.event, payload.data);
             }
           } catch (e: any) {
-            this.logger.warn(`Failed to process peer realtime message: ${e.message}`);
+            this.logger.warn(
+              `Failed to process peer realtime message: ${e.message}`,
+            );
           }
         });
       } catch (err: any) {
-        this.logger.warn(`Failed to configure Support Redis Pub/Sub: ${err.message}`);
+        this.logger.warn(
+          `Failed to configure Support Redis Pub/Sub: ${err.message}`,
+        );
       }
 
       // Handshake authentication and zero-trust validation
@@ -197,7 +208,9 @@ export class RealtimeService implements OnModuleDestroy {
           // 3. Reject unauthenticated connections in production
           if (env.NODE_ENV === "production" && !userId) {
             return next(
-              new Error("Unauthorized: Invalid internal secret or missing token"),
+              new Error(
+                "Unauthorized: Invalid internal secret or missing token",
+              ),
             );
           }
 
@@ -214,9 +227,7 @@ export class RealtimeService implements OnModuleDestroy {
           }
 
           if (!userId) {
-            return next(
-              new Error("Unauthorized: Missing user authentication"),
-            );
+            return next(new Error("Unauthorized: Missing user authentication"));
           }
 
           socket.data = {
@@ -268,8 +279,7 @@ export class RealtimeService implements OnModuleDestroy {
             });
 
             if (ticket) {
-              const isOwnerCustomer =
-                ticket.customerId === socket.data?.userId;
+              const isOwnerCustomer = ticket.customerId === socket.data?.userId;
               const isOwnerSeller =
                 socket.data?.isSeller &&
                 ticket.sellerId === socket.data?.userId;
@@ -283,7 +293,10 @@ export class RealtimeService implements OnModuleDestroy {
               }
             }
           } catch (err) {
-            this.logger.error("Error verifying ticket access for room join", err);
+            this.logger.error(
+              "Error verifying ticket access for room join",
+              err,
+            );
           }
         });
 

@@ -94,7 +94,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
       POSTGRES_DB: ${POSTGRES_DB:-product_db}
-      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db,commission_db,payout_db,fraud_db,larekmart_fraud_db,larekmart_payout_db,support_db}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db,commission_db,payout_db,fraud_db,larekmart_fraud_db,larekmart_payout_db,support_db,larekmart_support_db,chat_db,larekmart_chat_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -1453,7 +1453,7 @@ services:
     ports:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:${FRAUD_SERVICE_PORT:-8024}:8024"
     env_file:
-      - ./apps/fraud-service/.env.example
+      - ./apps/fraud-service/.env
     environment:
       - "DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/fraud_db"
       - "REDIS_URL=redis://redis:6379/4"
@@ -1491,7 +1491,7 @@ services:
     ports:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:${SUPPORT_SERVICE_PORT:-8025}:8025"
     env_file:
-      - ./apps/support-service/.env.example
+      - ./apps/support-service/.env
     environment:
       - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/support_db?schema=public&pgbouncer=true&statement_cache_size=0"
       - "DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/larekmart_support_db?schema=public"
@@ -1533,7 +1533,7 @@ services:
     ports:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:${CHAT_SERVICE_PORT:-8026}:8026"
     env_file:
-      - ./apps/chat-service/.env.example
+      - ./apps/chat-service/.env
     environment:
       - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/chat_db?schema=public&pgbouncer=true&statement_cache_size=0"
       - "DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/chat_db?schema=public"

@@ -12,6 +12,7 @@ Scope rules for AI coding agents working in this package.
 - **Search execution** (`searchProductDocuments`) that shapes hits/total/facets consistently
 - **Bulk indexing** and **single-document** operations (index, update, get, delete)
 - **Zero-downtime reindexing** (`reindexProducts`)
+- **DLQ Audit Indexing** (`ensureDlqIndexExists`, `indexDlqRecord`, `searchDlqRecords`) for full-text querying across dead letters
 - Low-level **response wrapper types** (`OpenSearchHit<T>`, `OpenSearchSearchResponse<T>`)
 
 ## 2. What belongs here

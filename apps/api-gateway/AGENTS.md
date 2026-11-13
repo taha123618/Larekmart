@@ -59,6 +59,7 @@ Port: **8090** (standalone / Docker; 8080 reserved for Kafka UI)
 | `/api/v1/admin/fraud`       | `fraud-service`          | 8024 | `/api/v1/admin/fraud`   |
 | `/api/v1/support`           | `support-service`        | 8025 | `/api/v1/support`       |
 | `/api/v1/admin/support`     | `support-service`        | 8025 | `/api/v1/admin/support` |
+| `/api/v1/admin/dlq`         | `api-gateway` (Internal) | 8090 | `""` (DLQ Ops Engine)   |
 
 ## 3. Running & Verifying
 

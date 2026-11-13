@@ -288,6 +288,7 @@ async def start_kafka_consumer() -> None:
                     heartbeat_interval_ms=3000,
                     max_poll_interval_ms=300000,
                     request_timeout_ms=30000,
+                    metadata_max_age_ms=5000,
                     retry_backoff_ms=500,
                     value_deserializer=_safe_json_deserialize,
                 )

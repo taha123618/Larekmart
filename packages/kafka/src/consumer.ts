@@ -86,8 +86,10 @@ export const createConsumer = (
       initialRetryTime: 300,
       maxRetryTime: 30_000,
     },
-    sessionTimeout: 30_000,
-    heartbeatInterval: 3_000,
+    sessionTimeout: 45_000,
+    rebalanceTimeout: 60_000,
+    heartbeatInterval: 5_000,
+    maxBytesPerPartition: 1_048_576,
   });
 
   const {
@@ -257,13 +259,19 @@ export const createConsumer = (
     (consumer as any).on((consumer as any).events.CRASH, async (event: any) => {
       const err = event?.payload?.error;
       const willRestart = Boolean(event?.payload?.restart);
-      logger.error(
-        `Kafka consumer crashed for group [${groupId}] (autoRestart=${willRestart}):`,
-        {
-          error: err?.message || String(err),
-          name: err?.name,
-        },
-      );
+      if (willRestart) {
+        logger.warn(
+          `Kafka consumer group [${groupId}] encountered a recoverable connection reset and is auto-restarting: ${err?.message || String(err)}`,
+        );
+      } else {
+        logger.error(
+          `Kafka consumer crashed for group [${groupId}] (autoRestart=false):`,
+          {
+            error: err?.message || String(err),
+            name: err?.name,
+          },
+        );
+      }
 
       // If KafkaJS does not restart (e.g. KafkaJSGroupCoordinatorNotFound or transient network partitions)
       if (!willRestart && registeredHandlers.size > 0) {

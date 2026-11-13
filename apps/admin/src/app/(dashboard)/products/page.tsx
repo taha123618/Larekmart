@@ -4,10 +4,16 @@ import { DataTable } from "./data-table";
 import BackfillSearchButton from "@/components/BackfillSearchButton";
 import { getApiGatewayUrl } from "@/services/gateway.service";
 
+export const dynamic = "force-dynamic";
+
 const getData = async (): Promise<ProductsType> => {
   try {
     const productUrl = getApiGatewayUrl();
-    const res = await fetch(`${productUrl}/api/v1/products`);
+    const res = await fetch(`${productUrl}/api/v1/products`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
     const data = await res.json();
     return data;
   } catch (error) {

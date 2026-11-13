@@ -49,9 +49,12 @@ function verifySocketJwtToken(token: string): JwtClaims | null {
         .createHmac("sha256", hmacKey)
         .update(signedData)
         .digest();
-      verified =
-        signature.length === expectedSig.length &&
-        crypto.timingSafeEqual(signature, expectedSig);
+      const sigHash = crypto.createHash("sha256").update(signature).digest();
+      const expectedHash = crypto
+        .createHash("sha256")
+        .update(expectedSig)
+        .digest();
+      verified = crypto.timingSafeEqual(sigHash, expectedHash);
     } catch {
       verified = false;
     }
@@ -100,13 +103,21 @@ export function initSocketIO(server: HttpServer): SocketIOServer {
     Promise.all([pubClient.connect(), subClient.connect()])
       .then(() => {
         io?.adapter(createAdapter(pubClient, subClient));
-        console.log("[ChatGateway:Socket.IO] Redis adapter initialized successfully.");
+        console.log(
+          "[ChatGateway:Socket.IO] Redis adapter initialized successfully.",
+        );
       })
       .catch((err) => {
-        console.warn("[ChatGateway:Socket.IO] Redis adapter connection warning:", err.message);
+        console.warn(
+          "[ChatGateway:Socket.IO] Redis adapter connection warning:",
+          err.message,
+        );
       });
   } catch (err) {
-    console.warn("[ChatGateway:Socket.IO] Failed to configure Redis adapter:", err);
+    console.warn(
+      "[ChatGateway:Socket.IO] Failed to configure Redis adapter:",
+      err,
+    );
   }
 
   // Socket Authentication Middleware
@@ -139,9 +150,7 @@ export function initSocketIO(server: HttpServer): SocketIOServer {
           if (verifiedClaims?.sub) {
             userId = verifiedClaims.sub;
             role =
-              verifiedClaims.metadata?.role ||
-              verifiedClaims.role ||
-              "user";
+              verifiedClaims.metadata?.role || verifiedClaims.role || "user";
           }
         }
       }
@@ -205,50 +214,68 @@ export function initSocketIO(server: HttpServer): SocketIOServer {
     }
 
     // 1. Join Conversation Room
-    socket.on("conversation:join", async (data: { conversationId: string }, callback) => {
-      try {
-        const isParticipant = await ConversationService.isParticipant(data.conversationId, userId);
-        if (!isParticipant && role !== "admin") {
-          return callback?.({ error: "Forbidden: Not a participant" });
-        }
+    socket.on(
+      "conversation:join",
+      async (data: { conversationId: string }, callback) => {
+        try {
+          const isParticipant = await ConversationService.isParticipant(
+            data.conversationId,
+            userId,
+          );
+          if (!isParticipant && role !== "admin") {
+            return callback?.({ error: "Forbidden: Not a participant" });
+          }
 
-        socket.join(`conv:${data.conversationId}`);
-        callback?.({ success: true, room: `conv:${data.conversationId}` });
-      } catch (err: any) {
-        callback?.({ error: err.message });
-      }
-    });
+          socket.join(`conv:${data.conversationId}`);
+          callback?.({ success: true, room: `conv:${data.conversationId}` });
+        } catch (err: any) {
+          callback?.({ error: err.message });
+        }
+      },
+    );
 
     // 2. Leave Conversation Room
-    socket.on("conversation:leave", (data: { conversationId: string }, callback) => {
-      socket.leave(`conv:${data.conversationId}`);
-      callback?.({ success: true });
-    });
+    socket.on(
+      "conversation:leave",
+      (data: { conversationId: string }, callback) => {
+        socket.leave(`conv:${data.conversationId}`);
+        callback?.({ success: true });
+      },
+    );
 
     // 3. Send Message Real-Time
-    socket.on("message:send", async (data: {
-      conversationId: string;
-      content: string;
-      messageType?: any;
-      replyToMessageId?: string;
-      attachments?: any[];
-    }, callback) => {
-      try {
-        const created = await MessageService.sendMessage(userId, role, {
-          conversationId: data.conversationId,
-          content: data.content,
-          messageType: data.messageType || "TEXT",
-          replyToMessageId: data.replyToMessageId,
-          attachments: data.attachments,
-        });
+    socket.on(
+      "message:send",
+      async (
+        data: {
+          conversationId: string;
+          content: string;
+          messageType?: any;
+          replyToMessageId?: string;
+          attachments?: any[];
+        },
+        callback,
+      ) => {
+        try {
+          const created = await MessageService.sendMessage(userId, role, {
+            conversationId: data.conversationId,
+            content: data.content,
+            messageType: data.messageType || "TEXT",
+            replyToMessageId: data.replyToMessageId,
+            attachments: data.attachments,
+          });
 
-        // Broadcast to conversation room
-        io?.to(`conv:${data.conversationId}`).emit("message:created", created);
-        callback?.({ success: true, message: created });
-      } catch (err: any) {
-        callback?.({ error: err.message });
-      }
-    });
+          // Broadcast to conversation room
+          io?.to(`conv:${data.conversationId}`).emit(
+            "message:created",
+            created,
+          );
+          callback?.({ success: true, message: created });
+        } catch (err: any) {
+          callback?.({ error: err.message });
+        }
+      },
+    );
 
     // 4. Typing Indicators
     socket.on("typing:start", (data: { conversationId: string }) => {
@@ -266,17 +293,24 @@ export function initSocketIO(server: HttpServer): SocketIOServer {
     });
 
     // 5. Message Read Acknowledgment
-    socket.on("message:read", async (data: { conversationId: string; messageId?: string }) => {
-      try {
-        await MessageService.markAsRead(data.conversationId, userId, data.messageId);
-        socket.to(`conv:${data.conversationId}`).emit("message:read", {
-          conversationId: data.conversationId,
-          userId,
-          messageId: data.messageId,
-          readAt: new Date().toISOString(),
-        });
-      } catch {}
-    });
+    socket.on(
+      "message:read",
+      async (data: { conversationId: string; messageId?: string }) => {
+        try {
+          await MessageService.markAsRead(
+            data.conversationId,
+            userId,
+            data.messageId,
+          );
+          socket.to(`conv:${data.conversationId}`).emit("message:read", {
+            conversationId: data.conversationId,
+            userId,
+            messageId: data.messageId,
+            readAt: new Date().toISOString(),
+          });
+        } catch {}
+      },
+    );
 
     // Disconnect
     socket.on("disconnect", async () => {

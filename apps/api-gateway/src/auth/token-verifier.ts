@@ -60,13 +60,18 @@ export function extractAuthClaims(
 
   // 2. Dynamic Merchant / Seller JWT verification fallback (HS256 HMAC timing-safe)
   const authHeader = request.headers.authorization;
-  if (authHeader && typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+  if (
+    authHeader &&
+    typeof authHeader === "string" &&
+    authHeader.startsWith("Bearer ")
+  ) {
     const rawToken = authHeader.slice(7).trim();
     const parts = rawToken.split(".");
     if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
       try {
         const hmacKey =
-          process.env.CLERK_JWT_HMAC_KEY || "larekmart_seller_hmac_secret_dev_key";
+          process.env.CLERK_JWT_HMAC_KEY ||
+          "larekmart_seller_hmac_secret_dev_key";
         const signedData = `${parts[0]}.${parts[1]}`;
         const signature = Buffer.from(parts[2], "base64url");
         const expectedSig = crypto
@@ -74,10 +79,13 @@ export function extractAuthClaims(
           .update(signedData)
           .digest();
 
-        if (
-          signature.length === expectedSig.length &&
-          crypto.timingSafeEqual(signature, expectedSig)
-        ) {
+        const sigHash = crypto.createHash("sha256").update(signature).digest();
+        const expectedHash = crypto
+          .createHash("sha256")
+          .update(expectedSig)
+          .digest();
+
+        if (crypto.timingSafeEqual(sigHash, expectedHash)) {
           const payload = JSON.parse(
             Buffer.from(parts[1], "base64url").toString("utf-8"),
           ) as {

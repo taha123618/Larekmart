@@ -89,6 +89,17 @@ export {
 // ── Reindexing ───────────────────────────────────────────────────────────────
 export { reindexProducts } from "./reindex.js";
 
+// ── Dead-Letter Queue (DLQ) Auditing ──────────────────────────────────────────
+export {
+  DLQ_INDEX_NAME,
+  DLQ_INDEX_SETTINGS,
+  ensureDlqIndexExists,
+  indexDlqRecord,
+  searchDlqRecords,
+  type DlqSearchParams,
+  type DlqSearchResult,
+} from "./dlq/index.js";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 export type {
   OpenSearchClientConfig,

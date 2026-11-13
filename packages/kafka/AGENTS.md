@@ -53,6 +53,15 @@ Current helper surface is intentionally small. Expose helpers, not raw clients.
   - **Terminal DLQ Routing**: If retries are exhausted, the message is dispatched to `<topic>.dlq` with failure metadata headers (`x-original-topic`, `x-original-partition`, `x-original-offset`, `x-consumer-group`, `x-error-message`, `x-attempt-count`, `x-is-poison-pill`, `x-failed-at`), and the partition offset is committed so partition consumption is not blocked.
   - An embedded lazy producer is managed automatically per consumer instance and cleanly disconnected on shutdown.
 
+## DLQ Operations & Guarded Replay Engine
+
+- `discoverDlqTopics(kafkaAdmin)`: Discovers all provisioned `<topic>.dlq` topics across the cluster.
+- `getDlqTopicSummaries(kafkaAdmin)`: Returns live partition watermarks, message counts, and offset ranges.
+- `fetchDlqRecords(kafka, options)`: Inspects dead letters and parses error diagnostic headers without committing consumer offsets.
+- `replayDeadLetter(kafka, record, options)`: Safely republishes messages back to source topics with provenance headers (`x-larekmart-replay-count`, `x-larekmart-replayed-by`, `x-larekmart-payload-modified`), while diverting repeat failures ($\ge 3$ replays) to terminal graveyard `<topic>.dlq.parked`.
+- `runDlqMirrorWorker(kafka, opensearchNode?)`: Background daemon streaming all `*.dlq` events into OpenSearch (`larekmart-dlq-records`) in real time.
+- CLI: Run `pnpm dlq` (`pnpm dlq list`, `pnpm dlq inspect <topic>`, `pnpm dlq replay <topic> <partition> <offset>`, `pnpm dlq mirror`).
+
 ## What not to do
 
 - Do not instantiate `kafkajs` directly in apps. Use the package helpers.

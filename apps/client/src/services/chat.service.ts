@@ -151,11 +151,14 @@ export async function sendMessage(
   payload: Omit<SendMessageInput, "conversationId">,
   authToken?: string | null,
 ): Promise<Message> {
-  const res = await fetch(`${CHAT_BASE}/conversations/${conversationId}/messages`, {
-    method: "POST",
-    headers: getHeaders(authToken),
-    body: JSON.stringify(payload),
-  });
+  const res = await fetch(
+    `${CHAT_BASE}/conversations/${conversationId}/messages`,
+    {
+      method: "POST",
+      headers: getHeaders(authToken),
+      body: JSON.stringify(payload),
+    },
+  );
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
@@ -186,9 +189,7 @@ export async function markConversationRead(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `Failed to mark read (${res.status})`,
-    );
+    throw new Error(errorData.message || `Failed to mark read (${res.status})`);
   }
 
   return res.json();
@@ -225,7 +226,7 @@ export async function blockUser(
   targetUserId: string,
   payload: BlockUserInput,
   authToken?: string | null,
-): Promise<{ success: boolean; block: any }> {
+): Promise<{ success: boolean; block: unknown }> {
   const res = await fetch(`${CHAT_BASE}/users/${targetUserId}/block`, {
     method: "POST",
     headers: getHeaders(authToken),

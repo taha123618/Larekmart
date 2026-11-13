@@ -14,43 +14,50 @@ export async function startKafkaConsumers(): Promise<void> {
       {
         topicName: "user.created",
         topicHandler: async (msg) => {
-          if (msg.value) await handleAuthUserCreated(msg.value);
+          const payload = msg?.value ?? msg;
+          if (payload) await handleAuthUserCreated(payload);
         },
       },
       {
         topicName: "user.updated",
         topicHandler: async (msg) => {
-          if (msg.value) await handleAuthUserCreated(msg.value);
+          const payload = msg?.value ?? msg;
+          if (payload) await handleAuthUserCreated(payload);
         },
       },
       {
         topicName: "auth.user_created",
         topicHandler: async (msg) => {
-          if (msg.value) await handleAuthUserCreated(msg.value);
+          const payload = msg?.value ?? msg;
+          if (payload) await handleAuthUserCreated(payload);
         },
       },
       {
         topicName: "user.registered",
         topicHandler: async (msg) => {
-          if (msg.value) await handleAuthUserCreated(msg.value);
+          const payload = msg?.value ?? msg;
+          if (payload) await handleAuthUserCreated(payload);
         },
       },
       {
         topicName: "seller.created",
         topicHandler: async (msg) => {
-          if (msg.value) await handleSellerPrivilegeGranted(msg.value);
+          const payload = msg?.value ?? msg;
+          if (payload) await handleSellerPrivilegeGranted(payload);
         },
       },
       {
         topicName: "seller.activated",
         topicHandler: async (msg) => {
-          if (msg.value) await handleSellerPrivilegeGranted(msg.value);
+          const payload = msg?.value ?? msg;
+          if (payload) await handleSellerPrivilegeGranted(payload);
         },
       },
       {
         topicName: "vendor.verified",
         topicHandler: async (msg) => {
-          if (msg.value) await handleSellerPrivilegeGranted(msg.value);
+          const payload = msg?.value ?? msg;
+          if (payload) await handleSellerPrivilegeGranted(payload);
         },
       },
     ]);

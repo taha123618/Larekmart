@@ -29,7 +29,11 @@ function verifySellerJwt(token: string): {
   try {
     signature = Buffer.from(parts[2]!, "base64url");
   } catch {
-    return { verified: false, claims: null, error: "Invalid signature encoding" };
+    return {
+      verified: false,
+      claims: null,
+      error: "Invalid signature encoding",
+    };
   }
 
   let verified = false;
@@ -47,15 +51,22 @@ function verifySellerJwt(token: string): {
         .createHmac("sha256", hmacKey)
         .update(signedData)
         .digest();
-      verified =
-        signature.length === expectedSig.length &&
-        crypto.timingSafeEqual(signature, expectedSig);
+      const sigHash = crypto.createHash("sha256").update(signature).digest();
+      const expectedHash = crypto
+        .createHash("sha256")
+        .update(expectedSig)
+        .digest();
+      verified = crypto.timingSafeEqual(sigHash, expectedHash);
     } catch {
       verified = false;
     }
   } else if (!isTest && !isDev) {
     // Fail closed in production when no signing key is configured
-    return { verified: false, claims: null, error: "Signing key not configured" };
+    return {
+      verified: false,
+      claims: null,
+      error: "Signing key not configured",
+    };
   }
 
   // If a key was provided and verification failed, strictly reject
@@ -75,7 +86,11 @@ function verifySellerJwt(token: string): {
     }
     return { verified: true, claims };
   } catch {
-    return { verified: false, claims: null, error: "Failed to parse token payload" };
+    return {
+      verified: false,
+      claims: null,
+      error: "Failed to parse token payload",
+    };
   }
 }
 

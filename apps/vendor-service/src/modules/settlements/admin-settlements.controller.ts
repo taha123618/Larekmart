@@ -8,6 +8,8 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { SettlementsService } from "./settlements.service.js";
 import { AuthGuard } from "../../common/guards/auth.guard.js";
@@ -18,7 +20,9 @@ import { PrismaService } from "../../database/prisma.service.js";
 @UseGuards(AuthGuard, AdminGuard)
 export class AdminSettlementsController {
   constructor(
+    @Inject(forwardRef(() => SettlementsService))
     private readonly settlementsService: SettlementsService,
+    @Inject(PrismaService)
     private readonly prisma: PrismaService,
   ) {}
 

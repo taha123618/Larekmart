@@ -154,7 +154,7 @@ export async function registerProxyRoutes(
             }
           }
         },
-        onResponse: (request, _reply, res) => {
+        onResponse: (request, reply, res) => {
           const startMs: number =
             (request as FastifyRequest & { _proxyStartMs?: number })
               ._proxyStartMs ?? Date.now();
@@ -240,6 +240,11 @@ export async function registerProxyRoutes(
               }
             }
           }
+
+          // Crucial: reply.send(res.stream) sends the upstream response stream to the client.
+          // In @fastify/reply-from, providing a custom onResponse hook overrides the default
+          // reply.send(res.stream), so we must explicitly forward the stream here.
+          reply.send((res as any).stream);
         },
         rewriteRequestHeaders: (originalReq, headers) => {
           // Stamp the wall-clock start time so onError/onResponse can compute latency
@@ -277,6 +282,11 @@ export async function registerProxyRoutes(
           delete rewritten["x-internal-secret"];
           delete rewritten["x-user-permissions"];
           delete rewritten["x-seller-id"];
+          delete rewritten["x-vendor-id"];
+          delete rewritten["x-admin-claim-secret"];
+          delete rewritten["x-carrier-signature"];
+          delete rewritten["x-impersonate-user-id"];
+          delete rewritten["x-impersonate-role"];
           delete rewritten["x-dev-admin-override"];
           delete rewritten["x-dev-role"];
           delete rewritten["x-force-primary"];

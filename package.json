@@ -38,6 +38,8 @@
     "check-types": "turbo run check-types",
     "test": "turbo run test",
     "// db": "=== Database & Kafka ===",
+    "dlq": "pnpm --filter @repo/kafka dlq",
+    "kafka:dlq": "pnpm --filter @repo/kafka dlq",
     "kafka:init-topics": "pnpm --filter @repo/kafka topics:init",
     "db:generate": "turbo run db:generate",
     "db:migrate": "node scripts/db-migrate.js --action=migrate",

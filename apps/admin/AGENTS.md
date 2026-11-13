@@ -81,6 +81,7 @@ This app talks HTTP to:
 - `commission-service` — marketplace commission plan configuration, rule tier editing, and settlement fee reports (`/api/v1/admin/commissions/*`).
 - `payout-service` — seller payout dashboard, ledger inspection, settlement batch scheduling, retry failed disbursements, and payout statement reconciliation (`/api/v1/admin/payouts/*`).
 - `fraud-service` — fraud and risk control center (`/fraud`), anomaly score analysis, transaction velocity abuse investigation, human analyst case reviews (`/api/v1/admin/fraud/cases/*`), and configurable scoring rules (`/api/v1/admin/fraud/rules`).
+- `api-gateway` (DLQ Operations) — dead-letter queue operations control center (`/kafka-dlq`), real-time OpenSearch full-text error queries (`/api/v1/admin/dlq/records`), partition backlog counts (`/api/v1/admin/dlq/topics`), and guarded message replays (`/api/v1/admin/dlq/replay`).
 - `support-service` — omnichannel support tickets dashboard (`/support`), agent assignment queues, SLA policy configurations, team queues, escalations, public replies, internal staff notes, and resolution analytics (`/api/v1/admin/support/*`).
 - every caching service — its `/metrics` endpoint, for the **Cache Performance** page
   (`/cache`). That page reads `cache_hits_total` / `cache_misses_total` / `cache_errors_total`

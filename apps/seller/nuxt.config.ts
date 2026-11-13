@@ -4,6 +4,12 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   telemetry: false,
 
+  // Dev server configuration: Bind to dual-stack IPv4/IPv6 so localhost resolves cleanly
+  devServer: {
+    host: "::",
+    port: 3004,
+  },
+
   // Source directory
   srcDir: "app/",
 
@@ -16,11 +22,7 @@ export default defineNuxtConfig({
   },
 
   // Modules
-  modules: [
-    "@nuxt/ui",
-    "@pinia/nuxt",
-    "@vueuse/nuxt",
-  ],
+  modules: ["@nuxt/ui", "@pinia/nuxt", "@vueuse/nuxt"],
 
   // CSS
   css: ["~/assets/css/main.css"],
@@ -33,9 +35,12 @@ export default defineNuxtConfig({
 
     // Public (exposed to client)
     public: {
-      apiGatewayUrl: process.env.NUXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8080",
-      wsUrl: process.env.NUXT_PUBLIC_WS_URL || "http://localhost:8080",
-      clerkPublishableKey: process.env.NUXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_Y2xlcmsuZXhhbXBsZS5jb20k",
+      apiGatewayUrl:
+        process.env.NUXT_PUBLIC_API_GATEWAY_URL || "http://localhost:8090",
+      wsUrl: process.env.NUXT_PUBLIC_WS_URL || "http://localhost:8090",
+      clerkPublishableKey:
+        process.env.NUXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+        "pk_test_Y2xlcmsuZXhhbXBsZS5jb20k",
       appEnv: process.env.NODE_ENV || "development",
     },
   },
@@ -43,6 +48,16 @@ export default defineNuxtConfig({
   // Nitro configuration
   nitro: {
     routeRules: {
+      // Global defensive security headers
+      "/**": {
+        headers: {
+          "X-Content-Type-Options": "nosniff",
+          "X-Frame-Options": "DENY",
+          "X-XSS-Protection": "1; mode=block",
+          "Referrer-Policy": "strict-origin-when-cross-origin",
+          "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        },
+      },
       // Proxy API calls to gateway in SSR
       "/api/v1/**": {
         proxy: `${process.env.NUXT_API_GATEWAY_URL || "http://localhost:8090"}/api/v1/**`,
@@ -60,6 +75,9 @@ export default defineNuxtConfig({
   // Vite config for dev proxy and client builds
   vite: {
     server: {
+      hmr: {
+        port: 24678,
+      },
       proxy: {
         "/api/v1": {
           target: "http://localhost:8090",

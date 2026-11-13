@@ -7,6 +7,7 @@ import {
   NestFastifyApplication,
 } from "@nestjs/platform-fastify";
 import { AppModule } from "../src/app.module.js";
+import { SettlementsConsumer } from "../src/modules/settlements/settlements.consumer.js";
 import {
   RequestPayoutSchema,
   VendorCommissionRateSchema,
@@ -306,6 +307,41 @@ async function runSettlementTests() {
     );
     console.log(
       "  ✓ IDOR prevention: non-member rejected from vendor settlements (403)",
+    );
+
+    // ────────────────────────────────────────────────────────────
+    // Test 5: SettlementsConsumer Dependency Injection & Fraud Handlers
+    // ────────────────────────────────────────────────────────────
+    console.log("\n[Test 5] SettlementsConsumer DI Resolution & Event Routing");
+
+    const consumer = app.get(SettlementsConsumer);
+    assert.ok(consumer, "SettlementsConsumer must be registered and resolved");
+    assert.ok(
+      (consumer as any).settlementsService,
+      "SettlementsService must be successfully injected into SettlementsConsumer (not undefined)",
+    );
+
+    // Test non-order/non-vendor fraud event is safely handled without error
+    await assert.doesNotReject(async () => {
+      await (consumer as any).handleFraudRisk({
+        decision: "BLOCK",
+        workflow: "USER_LOGIN",
+        entityId: "usr_999",
+      });
+    });
+
+    // Test order fraud event triggers freeze without error
+    await assert.doesNotReject(async () => {
+      await (consumer as any).handleFraudRisk({
+        decision: "BLOCK",
+        workflow: "ORDER_CHECKOUT",
+        entityId: "order_test_99",
+        riskScore: 90,
+      });
+    });
+
+    console.log(
+      "  ✓ SettlementsConsumer properly injects SettlementsService and routes fraud risk safely",
     );
 
     console.log("\n==================================================");

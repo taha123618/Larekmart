@@ -18,3 +18,19 @@ export {
   type AttestationPayloadInput,
   type VerifyAttestationInput,
 } from "./attestation";
+export {
+  discoverDlqTopics,
+  getDlqTopicSummaries,
+  fetchDlqRecords,
+  parseKafkaHeaders,
+} from "./dlq/inspector";
+export { replayDeadLetter, replayDeadLettersBatch } from "./dlq/replayer";
+export { runDlqMirrorWorker } from "./dlq/mirror-worker";
+export type {
+  DeadLetterRecord,
+  DeadLetterStatus,
+  DeadLetterHeaders,
+  DlqTopicSummary,
+  ReplayOptions,
+  ReplayResult,
+} from "./dlq/types";

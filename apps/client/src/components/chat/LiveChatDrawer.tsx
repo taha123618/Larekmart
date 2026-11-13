@@ -10,13 +10,9 @@ import {
   Loader2,
   ShieldAlert,
   Paperclip,
-  Check,
   CheckCheck,
   AlertTriangle,
   RefreshCw,
-  User,
-  Store,
-  Headphones,
 } from "lucide-react";
 import type { Conversation, Message, ConversationType } from "@repo/types";
 import {
@@ -26,7 +22,6 @@ import {
   markConversationRead,
   createConversation,
   reportMessage,
-  blockUser,
 } from "@/services/chat.service";
 
 interface LiveChatDrawerProps {
@@ -49,13 +44,14 @@ export default function LiveChatDrawer({
   title = "Live Chat & Support",
 }: LiveChatDrawerProps) {
   const { getToken, userId } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [reportModalMessageId, setReportModalMessageId] = useState<string | null>(null);
+  const [reportModalMessageId, setReportModalMessageId] = useState<
+    string | null
+  >(null);
   const [reportReason, setReportReason] = useState("");
   const [isReporting, setIsReporting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -79,11 +75,13 @@ export default function LiveChatDrawer({
         },
         token,
       );
-      setConversations(res.items);
 
       if (res.items.length > 0 && !activeConv) {
         setActiveConv(res.items[0] || null);
-      } else if (res.items.length === 0 && (initialSellerId || initialTicketId || initialType === "SUPPORT_TICKET")) {
+      } else if (
+        res.items.length === 0 &&
+        (initialSellerId || initialTicketId || initialType === "SUPPORT_TICKET")
+      ) {
         // Auto-create or prepare conversation
         try {
           const newConv = await createConversation(
@@ -98,29 +96,44 @@ export default function LiveChatDrawer({
             },
             token,
           );
-          setConversations([newConv]);
           setActiveConv(newConv);
         } catch {
           // creation failed or already exists
         }
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load chat conversations");
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to load chat conversations",
+      );
     } finally {
       setLoading(false);
     }
-  }, [getToken, initialType, initialSellerId, initialOrderId, initialTicketId, title, activeConv]);
+  }, [
+    getToken,
+    initialType,
+    initialSellerId,
+    initialOrderId,
+    initialTicketId,
+    title,
+    activeConv,
+  ]);
 
   const loadMessages = useCallback(
     async (convId: string, markRead = true) => {
       try {
         const token = await getToken();
-        const res = await fetchConversationMessages(convId, { limit: 50 }, token);
+        const res = await fetchConversationMessages(
+          convId,
+          { limit: 50 },
+          token,
+        );
         setMessages(res.items);
         if (markRead) {
           await markConversationRead(convId, undefined, token).catch(() => {});
         }
-      } catch (err: any) {
+      } catch {
         // quiet poll fail
       }
     },
@@ -174,8 +187,10 @@ export default function LiveChatDrawer({
       );
       setMessages((prev) => [...prev, newMsg]);
       scrollToBottom();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to send message");
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to send message",
+      );
       setInputText(text);
     } finally {
       setSending(false);
@@ -195,26 +210,12 @@ export default function LiveChatDrawer({
       toast.success("Message reported to moderators for safety review");
       setReportModalMessageId(null);
       setReportReason("");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to report message");
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to report message",
+      );
     } finally {
       setIsReporting(false);
-    }
-  };
-
-  const handleBlock = async (targetId: string) => {
-    if (!confirm("Are you sure you want to block this user from messaging you?")) return;
-    try {
-      const token = await getToken();
-      await blockUser(
-        targetId,
-        { blockedUserId: targetId, reason: "User requested block" },
-        token,
-      );
-      toast.success("User blocked successfully");
-      loadConversations();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to block user");
     }
   };
 
@@ -234,7 +235,9 @@ export default function LiveChatDrawer({
                 {title}
               </h3>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {activeConv ? activeConv.title || "Active Conversation" : "Connecting..."}
+                {activeConv
+                  ? activeConv.title || "Active Conversation"
+                  : "Connecting..."}
               </p>
             </div>
           </div>
@@ -265,7 +268,9 @@ export default function LiveChatDrawer({
             <div className="flex h-full flex-col items-center justify-center text-center text-neutral-400">
               <MessageSquare className="h-10 w-10 stroke-1 mb-2" />
               <p className="text-sm">No messages yet</p>
-              <p className="text-xs text-neutral-500">Send a message below to start the conversation.</p>
+              <p className="text-xs text-neutral-500">
+                Send a message below to start the conversation.
+              </p>
             </div>
           ) : (
             messages.map((msg) => {
@@ -287,28 +292,42 @@ export default function LiveChatDrawer({
                         {msg.senderRole}
                       </span>
                     )}
-                    <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                    <p className="whitespace-pre-wrap break-words">
+                      {msg.content}
+                    </p>
 
                     {/* Attachments */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <div className="mt-2 space-y-1">
-                        {msg.attachments.map((att: any) => (
-                          <a
-                            key={att.id || att.mediaFileId}
-                            href={att.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-xs underline opacity-90 hover:opacity-100"
-                          >
-                            <Paperclip className="h-3 w-3" />
-                            {att.fileName}
-                          </a>
-                        ))}
+                        {msg.attachments.map(
+                          (att: {
+                            id?: string;
+                            mediaFileId?: string;
+                            fileUrl: string;
+                            fileName?: string;
+                          }) => (
+                            <a
+                              key={att.id || att.mediaFileId}
+                              href={att.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-xs underline opacity-90 hover:opacity-100"
+                            >
+                              <Paperclip className="h-3 w-3" />
+                              {att.fileName}
+                            </a>
+                          ),
+                        )}
                       </div>
                     )}
 
                     <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-70">
-                      <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                      <span>
+                        {new Date(msg.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
                       {isMine && <CheckCheck className="h-3 w-3" />}
                     </div>
 
@@ -348,7 +367,11 @@ export default function LiveChatDrawer({
               disabled={!inputText.trim() || sending}
               className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white transition hover:bg-emerald-700 disabled:opacity-50"
             >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </button>
           </div>
         </form>
@@ -362,7 +385,8 @@ export default function LiveChatDrawer({
                 <h4 className="font-semibold text-sm">Report Message</h4>
               </div>
               <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-3">
-                Please specify why this message violates marketplace standards (spam, harassment, fraud):
+                Please specify why this message violates marketplace standards
+                (spam, harassment, fraud):
               </p>
               <textarea
                 value={reportReason}

@@ -40,10 +40,9 @@ export class WebhookService {
           .digest("hex");
         const sigBuf = Buffer.from(signature, "utf8");
         const expBuf = Buffer.from(computedHmac, "utf8");
-        if (
-          sigBuf.length === expBuf.length &&
-          crypto.timingSafeEqual(sigBuf, expBuf)
-        ) {
+        const sigHash = crypto.createHash("sha256").update(sigBuf).digest();
+        const expHash = crypto.createHash("sha256").update(expBuf).digest();
+        if (crypto.timingSafeEqual(sigHash, expHash)) {
           return true;
         }
       }

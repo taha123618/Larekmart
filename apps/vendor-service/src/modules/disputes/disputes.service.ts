@@ -544,4 +544,36 @@ export class DisputesService {
         : [],
     };
   }
+
+  /**
+   * Validates whether a given user is the owner or an active member of a vendor organization.
+   * Used for authorization and BOLA/IDOR prevention.
+   */
+  async isVendorMemberOrOwner(
+    vendorId: string,
+    userId?: string,
+  ): Promise<boolean> {
+    if (!userId || !vendorId) return false;
+    try {
+      const vendor = await this.prisma.vendor.findUnique({
+        where: { id: vendorId },
+        include: {
+          members: {
+            where: { userId },
+          },
+        },
+      });
+
+      if (!vendor) return false;
+      if (vendor.ownerUserId === userId) return true;
+
+      const member = vendor.members[0];
+      return Boolean(member && member.status === "ACTIVE");
+    } catch (err) {
+      this.logger.error(
+        `Failed to verify vendor membership for user ${userId} on vendor ${vendorId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return false;
+    }
+  }
 }

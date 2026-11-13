@@ -1504,6 +1504,41 @@ await consumer.consume(topics, handlers, {
 });
 ```
 
+### DLQ Replay Engine & Terminal Graveyard Diversion
+
+To recover messages safely from dead-letter queues without risking infinite reprocessing loops or poison-pill storms, Larekmart provides an active **Guarded DLQ Replay Engine**:
+
+```
+      [DLQ Message in <topic>.dlq]
+                   │
+                   ▼
+       [Operator / CLI Replay]
+                   │
+         Replay Count < 3?
+          ├── Yes ──▶ Stamp Headers:
+          │            • x-larekmart-replay-count = N + 1
+          │            • x-larekmart-replayed-by  = <admin | cli>
+          │            • x-larekmart-replayed-at  = <ISO timestamp>
+          │            • x-larekmart-payload-modified = <bool>
+          │           Republish to Source Topic (<topic>)
+          │
+          └── No  ──▶ Exceeded Max Replay Threshold (>= 3)
+                      Divert to Graveyard Topic (<topic>.dlq.parked)
+                      Stamp x-larekmart-parked-reason = "EXCEEDED_MAX_REPLAY_THRESHOLD"
+```
+
+#### Replay Commands & Interfaces
+
+1. **Terminal CLI (`pnpm dlq`):**
+   - `pnpm dlq list [filter]`: Scan cluster for all DLQ topics and unread backlog counts.
+   - `pnpm dlq inspect <topic> [limit]`: Inspect failed records, error stacks, headers, and poison pills.
+   - `pnpm dlq replay <topic> <partition> <offset> [--by <operator>]`: Safely republish with loop-prevention guards.
+
+2. **Admin Web Control Center (`apps/admin/src/app/(dashboard)/kafka-dlq`):**
+   - Real-time OpenSearch full-text querying across `larekmart-dlq-records`.
+   - Inspection sheet with stack trace analysis and inline JSON payload editor to sanitize broken records before replay.
+   - Authenticated API Gateway routes at `/api/v1/admin/dlq/*` guarded by Clerk RBAC.
+
 ## Ephemeral Real-Time Event Backplane (Redis Pub/Sub)
 
 For high-velocity, ephemeral UI streaming (such as in-app WebSocket pushes where durable Kafka storage is redundant overhead), microservices utilize dedicated Redis Pub/Sub channels alongside Kafka.

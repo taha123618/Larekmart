@@ -15,6 +15,7 @@ import { readinessHandler } from "./health/ready.js";
 import { registerProxyRoutes } from "./gateway/proxy.js";
 import { homeAggregationRoutes } from "./aggregation/home.js";
 import { inventoryEdgeRoutes } from "./aggregation/inventory-edge.js";
+import { adminDlqRoutes } from "./routing/admin-dlq.routes.js";
 import {
   metrics,
   gatewayRequestsTotal,
@@ -42,6 +43,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     disableRequestLogging: true,
     trustProxy: parseTrustProxy(env.TRUST_PROXY),
     bodyLimit: 5 * 1024 * 1024, // 5MB body limit
+    forceCloseConnections: true,
   });
 
   // 1. Centralized Error Handler
@@ -106,6 +108,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // 9. Aggregation & Edge Cache Routes
   await app.register(homeAggregationRoutes);
   await app.register(inventoryEdgeRoutes);
+  await app.register(adminDlqRoutes);
 
   // 10. Register Microservice Proxy Upstreams
   await registerProxyRoutes(app);

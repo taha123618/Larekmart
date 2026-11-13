@@ -92,9 +92,15 @@ export async function requireAdminOrInternal(
             .createHmac("sha256", hmacKey)
             .update(signedData)
             .digest();
-          verified =
-            signature.length === expectedSig.length &&
-            crypto.timingSafeEqual(signature, expectedSig);
+          const sigHash = crypto
+            .createHash("sha256")
+            .update(signature)
+            .digest();
+          const expectedHash = crypto
+            .createHash("sha256")
+            .update(expectedSig)
+            .digest();
+          verified = crypto.timingSafeEqual(sigHash, expectedHash);
         } catch {
           verified = false;
         }

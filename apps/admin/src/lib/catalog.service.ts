@@ -145,6 +145,7 @@ async function safeFetch<T>(url: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(url, {
       next: { revalidate: 60 }, // 1-minute ISR cache
+      signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return fallback;
     return (await res.json()) as T;

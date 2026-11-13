@@ -8,19 +8,14 @@ import {
   MessageSquare,
   Send,
   Search,
-  Filter,
   RefreshCw,
   Loader2,
   Paperclip,
   CheckCheck,
   ShieldAlert,
   AlertTriangle,
-  User,
   Store,
   Headphones,
-  ArrowLeft,
-  Clock,
-  MoreVertical,
   Ban,
 } from "lucide-react";
 import type { Conversation, Message, ConversationType } from "@repo/types";
@@ -44,7 +39,9 @@ export default function AccountChatPage() {
   const [inputText, setInputText] = useState("");
   const [filterType, setFilterType] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
-  const [reportModalMessageId, setReportModalMessageId] = useState<string | null>(null);
+  const [reportModalMessageId, setReportModalMessageId] = useState<
+    string | null
+  >(null);
   const [reportReason, setReportReason] = useState("");
   const [isReporting, setIsReporting] = useState(false);
 
@@ -59,7 +56,8 @@ export default function AccountChatPage() {
     try {
       setLoading(true);
       const token = await getToken();
-      const typeParam = filterType !== "ALL" ? (filterType as ConversationType) : undefined;
+      const typeParam =
+        filterType !== "ALL" ? (filterType as ConversationType) : undefined;
       const res = await fetchMyConversations(
         {
           type: typeParam,
@@ -72,8 +70,8 @@ export default function AccountChatPage() {
       if (res.items.length > 0 && !selectedConv) {
         setSelectedConv(res.items[0] || null);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load chats");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to load chats");
     } finally {
       setLoading(false);
     }
@@ -84,12 +82,16 @@ export default function AccountChatPage() {
       try {
         setMessagesLoading(true);
         const token = await getToken();
-        const res = await fetchConversationMessages(convId, { limit: 100 }, token);
+        const res = await fetchConversationMessages(
+          convId,
+          { limit: 100 },
+          token,
+        );
         setMessages(res.items);
         if (markRead) {
           await markConversationRead(convId, undefined, token).catch(() => {});
         }
-      } catch (err: any) {
+      } catch {
         toast.error("Could not load message history");
       } finally {
         setMessagesLoading(false);
@@ -141,8 +143,10 @@ export default function AccountChatPage() {
       );
       setMessages((prev) => [...prev, newMsg]);
       scrollToBottom();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to send message");
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to send message",
+      );
       setInputText(content);
     } finally {
       setSending(false);
@@ -159,18 +163,23 @@ export default function AccountChatPage() {
         { reason: reportReason.trim(), category: "OTHER" },
         token,
       );
-      toast.success("Abuse report submitted. Thank you for keeping Larekmart safe.");
+      toast.success(
+        "Abuse report submitted. Thank you for keeping Larekmart safe.",
+      );
       setReportModalMessageId(null);
       setReportReason("");
-    } catch (err: any) {
-      toast.error(err.message || "Report failed");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Report failed");
     } finally {
       setIsReporting(false);
     }
   };
 
   const handleBlock = async (targetUserId: string) => {
-    if (!confirm("Are you sure you want to block this user from messaging you?")) return;
+    if (
+      !confirm("Are you sure you want to block this user from messaging you?")
+    )
+      return;
     try {
       const token = await getToken();
       await blockUser(
@@ -180,8 +189,8 @@ export default function AccountChatPage() {
       );
       toast.success("User blocked.");
       loadConversations();
-    } catch (err: any) {
-      toast.error(err.message || "Block failed");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Block failed");
     }
   };
 
@@ -197,7 +206,9 @@ export default function AccountChatPage() {
                   Account
                 </Link>
                 <span>/</span>
-                <span className="text-neutral-900 font-medium dark:text-white">Messages</span>
+                <span className="text-neutral-900 font-medium dark:text-white">
+                  Messages
+                </span>
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white mt-1">
                 Conversations & Live Chat
@@ -257,13 +268,13 @@ export default function AccountChatPage() {
                   <div className="flex h-48 items-center justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
                   </div>
-                ) : conversations.length === 0 ? (
+                ) : conversations?.length === 0 ? (
                   <div className="p-8 text-center text-neutral-400">
                     <MessageSquare className="h-8 w-8 mx-auto mb-2 stroke-1" />
                     <p className="text-xs">No active conversations found</p>
                   </div>
                 ) : (
-                  conversations.map((conv) => {
+                  conversations?.map((conv) => {
                     const isSelected = selectedConv?.id === conv.id;
                     const isSupport = conv.type === "SUPPORT_TICKET";
                     return (
@@ -283,16 +294,25 @@ export default function AccountChatPage() {
                               : "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
                           }`}
                         >
-                          {isSupport ? <Headphones className="h-4 w-4" /> : <Store className="h-4 w-4" />}
+                          {isSupport ? (
+                            <Headphones className="h-4 w-4" />
+                          ) : (
+                            <Store className="h-4 w-4" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <h4 className="text-xs font-semibold text-neutral-900 truncate dark:text-white">
-                              {conv.title || (isSupport ? "Support Ticket" : "Seller Inquiry")}
+                              {conv.title ||
+                                (isSupport
+                                  ? "Support Ticket"
+                                  : "Seller Inquiry")}
                             </h4>
                             <span className="text-[10px] text-neutral-400 shrink-0">
                               {conv.lastMessageAt
-                                ? new Date(conv.lastMessageAt).toLocaleDateString([], {
+                                ? new Date(
+                                    conv.lastMessageAt,
+                                  ).toLocaleDateString([], {
                                     month: "short",
                                     day: "numeric",
                                   })
@@ -357,7 +377,9 @@ export default function AccountChatPage() {
                     ) : messages.length === 0 ? (
                       <div className="flex h-full flex-col items-center justify-center text-center text-neutral-400">
                         <MessageSquare className="h-10 w-10 stroke-1 mb-2" />
-                        <p className="text-sm font-medium">No messages in this conversation yet</p>
+                        <p className="text-sm font-medium">
+                          No messages in this conversation yet
+                        </p>
                         <p className="text-xs text-neutral-500">
                           Type a message below to start communicating.
                         </p>
@@ -382,38 +404,53 @@ export default function AccountChatPage() {
                                   {msg.senderRole}
                                 </span>
                               )}
-                              <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                              <p className="whitespace-pre-wrap break-words">
+                                {msg.content}
+                              </p>
 
-                              {msg.attachments && msg.attachments.length > 0 && (
-                                <div className="mt-2 space-y-1">
-                                  {msg.attachments.map((att: any) => (
-                                    <a
-                                      key={att.id || att.mediaFileId}
-                                      href={att.fileUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1.5 text-xs underline opacity-90 hover:opacity-100"
-                                    >
-                                      <Paperclip className="h-3 w-3" />
-                                      {att.fileName}
-                                    </a>
-                                  ))}
-                                </div>
-                              )}
+                              {msg.attachments &&
+                                msg.attachments.length > 0 && (
+                                  <div className="mt-2 space-y-1">
+                                    {msg.attachments.map(
+                                      (att: {
+                                        id?: string;
+                                        mediaFileId?: string;
+                                        fileUrl: string;
+                                        fileName?: string;
+                                      }) => (
+                                        <a
+                                          key={att.id || att.mediaFileId}
+                                          href={att.fileUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1.5 text-xs underline opacity-90 hover:opacity-100"
+                                        >
+                                          <Paperclip className="h-3 w-3" />
+                                          {att.fileName}
+                                        </a>
+                                      ),
+                                    )}
+                                  </div>
+                                )}
 
                               <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-75">
                                 <span>
-                                  {new Date(msg.createdAt).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
+                                  {new Date(msg.createdAt).toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    },
+                                  )}
                                 </span>
                                 {isMine && <CheckCheck className="h-3 w-3" />}
                               </div>
 
                               {!isMine && (
                                 <button
-                                  onClick={() => setReportModalMessageId(msg.id)}
+                                  onClick={() =>
+                                    setReportModalMessageId(msg.id)
+                                  }
                                   className="absolute -right-7 top-2 hidden text-neutral-400 hover:text-red-500 group-hover:block"
                                   title="Report message"
                                 >
@@ -463,7 +500,8 @@ export default function AccountChatPage() {
                     Select a conversation
                   </h3>
                   <p className="text-xs text-neutral-500 mt-1 max-w-sm">
-                    Choose a thread from the left sidebar to read your buyer-to-seller interactions or customer support updates.
+                    Choose a thread from the left sidebar to read your
+                    buyer-to-seller interactions or customer support updates.
                   </p>
                 </div>
               )}
@@ -476,10 +514,13 @@ export default function AccountChatPage() {
               <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div className="flex items-center gap-2 text-red-600 mb-2">
                   <AlertTriangle className="h-5 w-5" />
-                  <h3 className="font-semibold text-base">Report Abusive Message</h3>
+                  <h3 className="font-semibold text-base">
+                    Report Abusive Message
+                  </h3>
                 </div>
                 <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-4">
-                  Please provide details about this policy violation. Our trust and safety team reviews all reports.
+                  Please provide details about this policy violation. Our trust
+                  and safety team reviews all reports.
                 </p>
                 <textarea
                   value={reportReason}
@@ -520,7 +561,8 @@ export default function AccountChatPage() {
               Sign In to View Messages
             </h2>
             <p className="mt-2 text-sm text-neutral-500">
-              You must be signed in to communicate with sellers or live support agents.
+              You must be signed in to communicate with sellers or live support
+              agents.
             </p>
             <div className="mt-6">
               <SignInButton mode="modal">
