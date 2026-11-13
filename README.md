@@ -345,8 +345,8 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
      - **Gateway API Routes (`/api/v1/admin/dlq/*`)**: Authenticated Fastify proxy endpoints protected by Clerk RBAC.
 7. **PostgreSQL Connection Isolation & PgBouncer Pooling (Port 6432)**:
    - Multiplexes up to 1,000 incoming client connections into dedicated physical pools (`pool_mode = transaction`).
-   - Guaranteed pool quotas prevent non-critical background traffic from starving Tier-1 commerce databases (`product_db`, `inventory_db`, `catalog_db`, `pricing_db`).
-   - Prisma packages configure `directUrl` for zero-overhead direct migrations on port 5432 while routing runtime traffic through PgBouncer.
+   - Guaranteed pool quotas prevent non-critical background traffic from starving Tier-1 commerce databases (`product_db`, `inventory_db`, `catalog_db`, `pricing_db`, `payout_db`, `fraud_db`).
+   - Prisma, Drizzle, and AsyncPG (with `prepared_statement_cache_size=0`) route runtime traffic safely through PgBouncer while migrations use direct connections on port 5432.
 8. **Decoupled Telemetry Pipeline & Go Ingestion Engine (`analytic-service`)**:
    - High-throughput **Go 1.22 (Chi)** microservice consuming 80+ platform Kafka event streams across all 28 microservices with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
    - Single-responsibility dual-target telemetry pipeline: streams raw, unaggregated high-velocity event frames directly into **ClickHouse** columnar storage for high-compression time-series analytics, while writing only pre-aggregated, low-velocity daily KPI summaries into **PostgreSQL** (`postgres-analytics`), eliminating write-amplification and Go heap lock contention under peak shopping bursts.
@@ -411,6 +411,10 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
 22. **Semantic Vector Search & AI Customer Support Assistant (`packages/opensearch`, `support-service`, `client`)**:
     - **OpenSearch 384-Dimensional k-NN Vector Search**: HNSW cosine similarity index mappings and vector query builder alongside BM25 keyword matching for semantic product discovery.
     - **AI Customer Support Assistant**: Knowledge base intent classifier answering tracking, shipping, return, and payment queries in real-time, accompanied by a floating storefront chat widget with 1-click action triggers and support ticket escalation.
+23. **Schema Registry Contract Governance & Debezium CDC Streaming (`docker-compose.schema-registry.yml`, `docker-compose.cdc.yml`, `@repo/kafka`)**:
+    - **Karapace Schema Registry (Host :8082 / Container :8081)**: Confluent-compatible Schema Registry providing strict schema governance, Avro/JSON Schema validation, and backward/full compatibility enforcement across all 28 microservices. Messages encode using Confluent Wire Format (`0x00` magic byte + 4-byte big-endian Schema ID) with transparent plain-JSON fallback.
+    - **Kafka Topic Governance**: `KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"` across all 3 Kafka brokers and `KAFKA_CLUSTERS_0_TOPIC_AUTO_CREATE: "false"` in `kafka-ui`, guaranteeing that all messages route through registered topics and monitored DLQs.
+    - **Debezium CDC Outbox Engine**: Real-time logical WAL replication (`pgoutput`) streaming database outbox mutations (`inventory_db`, `payout_db`) directly to Kafka topics in sub-5ms without database polling loops, with persistent volumes preserving CDC offsets across restarts.
 
 For in-depth architectural specifications and diagrams, see [`docs/plans/README.md`](docs/plans/README.md).
 
@@ -553,8 +557,8 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 - **UI & Design System**: Tailwind CSS v4, Nuxt UI 3, Reka UI, shadcn/ui, Radix UI primitives, Lucide React, Apache ECharts, GSAP 3, Recharts
 - **State Management & Forms**: Zustand (persisted), Pinia, TanStack React/Vue Query v5, TanStack Table v8, VeeValidate 4, React Hook Form + Zod
 - **Backend & Gateway Frameworks**: Fastify 5 (`@fastify/http-proxy`, `@fastify/helmet`, Opossum circuit breaker with graceful degradation for non-critical paths), NestJS 11 (Fastify 5), Express 5, Hono 4 (`@hono/node-server` 2.x), Koa, Go 1.22 (Chi), Python 3.12+ (FastAPI), Socket.IO (with `@socket.io/redis-adapter` for horizontal multi-pod WebSocket clustering)
-- **Databases & Persistence**: PostgreSQL (via Prisma ORM, Drizzle ORM & pg, including `larekmart_chat_db`), MongoDB (via Mongoose), MySQL 8.0 (physically isolated instances: `tax_db` on port 3306 and `return_db` on port 3307 via Drizzle ORM)
-- **Message Broker & Event Mesh**: Apache Kafka (KafkaJS, 3-broker KRaft cluster with quorum voting, min ISR 2, and Kafka UI), Karapace Schema Registry (:8081, Confluent wire-format JSON/Avro contract evolution), and Debezium Server (Real-Time CDC Outbox Event Router streaming PostgreSQL WAL to Kafka sub-5ms)
+- **Databases & Persistence**: PostgreSQL (via Prisma ORM, Drizzle ORM & pg, including `chat_db`), MongoDB (via Mongoose), MySQL 8.0 (physically isolated instances: `tax_db` on port 3306 and `return_db` on port 3307 via Drizzle ORM)
+- **Message Broker & Event Mesh**: Apache Kafka (KafkaJS, 3-broker KRaft cluster with quorum voting, min ISR 2, and Kafka UI), Karapace Schema Registry (host :8082 / container :8081, Confluent wire-format JSON/Avro contract evolution), and Debezium Server (Real-Time CDC Outbox Event Router streaming PostgreSQL WAL to Kafka sub-5ms)
 - **Authentication**: Clerk (`@clerk/nextjs`, `@clerk/vue`, `@clerk/express`, `@clerk/fastify`, `@hono/clerk-auth`)
 - **Payments**: Stripe (Custom Checkout Element + Webhooks)
 - **Observability & Distributed Tracing**: OpenTelemetry Collector, Grafana Tempo 2.6.1 (distributed tracing & saga spans), Prometheus (metrics), Grafana Loki (logs with automated trace linking), and Grafana SRE dashboards

@@ -116,6 +116,9 @@ docker/
 | **`quickwit`**           | `7280`                            | `127.0.0.1:7280`                     | **Internal Only**   | Fast distributed search & indexing engine for Rootprint logs                  |
 | **`caddy`** (profile)    | `80`, `443`                       | `127.0.0.1:8086`, `127.0.0.1:8443`   | Optional Ingress    | Standalone HTTP/2 & HTTP/3 reverse proxy (run via `--profile caddy`)          |
 | **`kafka-ui`**           | `8080`                            | `127.0.0.1:8080`                     | Traefik Ingress     | Topic & consumer monitoring UI (`kafka.localhost` bound to DEV_TOOLS_BIND_IP) |
+| **`schema-registry`**   | `8081`                            | `127.0.0.1:8082`                     | Traefik Ingress     | Karapace Confluent-compatible Schema Registry (`schema-registry.localhost`)   |
+| **`debezium-inventory`** | None (worker)                     | None                                 | **Internal Only**   | PostgreSQL logical WAL CDC outbox streaming to Kafka (`inventory_db`)          |
+| **`debezium-payout`**    | None (worker)                     | None                                 | **Internal Only**   | PostgreSQL logical WAL CDC outbox streaming to Kafka (`payout_db`)             |
 | `postgres`               | `5432`                            | `127.0.0.1:5432`                     | **Internal Only**   | PostgreSQL + pgvector databases                                               |
 | `mongo`                  | `27017`                           | `127.0.0.1:27017`                    | **Internal Only**   | MongoDB Database                                                              |
 | `mongo-express`          | `8081`                            | `127.0.0.1:8081`                     | **Internal Only**   | Mongo-Express Web Admin UI                                                    |

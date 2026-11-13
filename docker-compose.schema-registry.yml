@@ -14,7 +14,7 @@ services:
     container_name: larekmart-schema-registry
     restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "${SCHEMA_REGISTRY_BIND_IP:-127.0.0.1}:${SCHEMA_REGISTRY_PORT:-8082}:8081"
     environment:
       KARAPACE_PORT: 8081
       KARAPACE_HOST: 0.0.0.0
@@ -24,6 +24,13 @@ services:
       KARAPACE_REGISTRY: "true"
       KARAPACE_REST: "false"
       KARAPACE_COMPATIBILITY: "BACKWARD"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/subjects || exit 1"]
       interval: 10s

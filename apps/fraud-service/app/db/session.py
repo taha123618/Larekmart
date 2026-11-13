@@ -19,12 +19,18 @@ def get_engine() -> AsyncEngine:
         if url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+        connect_args = {}
+        if "6432" in url or "pgbouncer" in url:
+            connect_args["prepared_statement_cache_size"] = 0
+            connect_args["statement_cache_size"] = 0
+
         _engine = create_async_engine(
             url,
             pool_size=settings.DB_POOL_SIZE,
             max_overflow=settings.DB_MAX_OVERFLOW,
             echo=settings.DB_ECHO,
             future=True,
+            connect_args=connect_args,
         )
     return _engine
 
