@@ -8,3 +8,4 @@ export * from "./repositories/inventory.repository";
 export * from "./repositories/reservation.repository";
 export * from "./repositories/movement.repository";
 export * from "./repositories/warehouse.repository";
+export * from "./outbox";

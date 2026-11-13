@@ -74,6 +74,20 @@ scrape_configs:
         labels:
           component: otel-collector
 
+  - job_name: tempo
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["tempo:3200"]
+        labels:
+          component: tracing
+
+  - job_name: schema-registry
+    metrics_path: /_metrics
+    static_configs:
+      - targets: ["schema-registry:8081"]
+        labels:
+          component: schema-registry
+
   # ──────────────────────────────────────────
   # Node.js / TypeScript microservices
   # These expose /metrics via @repo/monitoring

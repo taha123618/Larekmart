@@ -1,0 +1,52 @@
+name: larekmart-cdc
+
+# ==============================================================================
+# Larekmart CDC Suite — Debezium Server (PostgreSQL Logical Replication to Kafka)
+# ==============================================================================
+# Captures PostgreSQL transactional outbox events in real-time via WAL pgoutput
+# and streams them directly to Kafka topics (<5ms latency) without DB polling.
+# ==============================================================================
+
+services:
+  debezium-inventory:
+    image: debezium/server:2.7.3.Final
+    container_name: larekmart-debezium-inventory
+    restart: unless-stopped
+    environment:
+      JAVA_OPTS: "-Xms128m -Xmx384m -XX:+UseG1GC"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    volumes:
+      - ./infrastructure/cdc/debezium/inventory:/debezium/conf:ro
+    networks:
+      - larekmart-network
+
+  debezium-payout:
+    image: debezium/server:2.7.3.Final
+    container_name: larekmart-debezium-payout
+    restart: unless-stopped
+    environment:
+      JAVA_OPTS: "-Xms128m -Xmx384m -XX:+UseG1GC"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    volumes:
+      - ./infrastructure/cdc/debezium/payout:/debezium/conf:ro
+    networks:
+      - larekmart-network
+
+networks:
+  larekmart-network:
+    name: larekmart-network
+    driver: bridge

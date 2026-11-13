@@ -31,10 +31,14 @@ export async function runMigrations(): Promise<void> {
         seller_id VARCHAR(64),
         account_type VARCHAR(64) NOT NULL,
         currency VARCHAR(3) NOT NULL DEFAULT 'PKR',
+        current_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
         description TEXT,
         metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+      ALTER TABLE ledger_accounts ADD COLUMN IF NOT EXISTS current_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00;
+      ALTER TABLE ledger_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
       CREATE INDEX IF NOT EXISTS idx_ledger_accounts_seller ON ledger_accounts(seller_id);
       CREATE INDEX IF NOT EXISTS idx_ledger_accounts_type ON ledger_accounts(account_type);
 
@@ -145,6 +149,18 @@ export async function runMigrations(): Promise<void> {
       );
       CREATE INDEX IF NOT EXISTS idx_payout_provider_events_payout ON payout_provider_events(payout_id);
       CREATE INDEX IF NOT EXISTS idx_payout_provider_events_event ON payout_provider_events(event_id);
+
+      CREATE TABLE IF NOT EXISTS outbox_events (
+        id VARCHAR(64) PRIMARY KEY,
+        aggregatetype VARCHAR(255) NOT NULL,
+        aggregateid VARCHAR(255) NOT NULL,
+        type VARCHAR(255) NOT NULL,
+        payload JSONB NOT NULL,
+        timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_payout_outbox_events_created_at ON outbox_events(created_at);
+      CREATE INDEX IF NOT EXISTS idx_payout_outbox_events_type ON outbox_events(type);
     `);
 
     console.log("payout_db database tables and indexes verified successfully.");

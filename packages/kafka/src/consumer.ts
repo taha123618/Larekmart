@@ -7,6 +7,7 @@ import {
   runWithTraceContext,
 } from "@repo/monitoring";
 import { getTopicPartitionCount } from "./init-topics.js";
+import { schemaRegistry } from "./schema-registry/client.js";
 
 /** Delay before the first retry during consumer connect/subscribe; doubles on every attempt. */
 const RETRY_BASE_DELAY_MS = 2_000;
@@ -418,9 +419,17 @@ export const createConsumer = (
             const offset = message.offset;
             let parsed: unknown;
 
-            // Step 1: Parse JSON Payload (Poison-Pill Detection)
+            // Step 1: Parse Payload (Confluent Schema Registry wire-format & JSON)
             try {
-              parsed = JSON.parse(rawValue);
+              if (message.value) {
+                const decoded = schemaRegistry.decodeMessage(message.value);
+                parsed =
+                  typeof decoded.payload === "string"
+                    ? JSON.parse(decoded.payload)
+                    : decoded.payload;
+              } else {
+                parsed = JSON.parse(rawValue);
+              }
             } catch (parseError) {
               captureError(parseError, {
                 serviceName: `kafka-consumer:${groupId}`,
@@ -545,10 +554,18 @@ export const createConsumer = (
               continue;
             }
 
-            // Step 1: Poison-Pill syntax parsing check
+            // Step 1: Poison-Pill syntax parsing check (Confluent wire-format & JSON)
             let parsed: unknown;
             try {
-              parsed = JSON.parse(rawValue);
+              if (message.value) {
+                const decoded = schemaRegistry.decodeMessage(message.value);
+                parsed =
+                  typeof decoded.payload === "string"
+                    ? JSON.parse(decoded.payload)
+                    : decoded.payload;
+              } else {
+                parsed = JSON.parse(rawValue);
+              }
             } catch (parseError) {
               captureError(parseError, {
                 serviceName: `kafka-consumer:${groupId}`,

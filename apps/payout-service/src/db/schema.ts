@@ -275,3 +275,27 @@ export const payoutProviderEvents = pgTable(
     index("idx_payout_provider_events_event").on(table.eventId),
   ],
 );
+
+// ────────────────────────────────────────────────────────────
+// 9. Outbox Events (Debezium Real-Time CDC Outbox Event Router)
+// ────────────────────────────────────────────────────────────
+export const outboxEvents = pgTable(
+  "outbox_events",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    aggregatetype: varchar("aggregatetype", { length: 255 }).notNull(),
+    aggregateid: varchar("aggregateid", { length: 255 }).notNull(),
+    type: varchar("type", { length: 255 }).notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    timestamp: timestamp("timestamp", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_payout_outbox_events_created_at").on(table.createdAt),
+    index("idx_payout_outbox_events_type").on(table.type),
+  ],
+);

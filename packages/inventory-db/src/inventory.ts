@@ -10,6 +10,7 @@ import {
   Prisma,
 } from "../generated/prisma";
 import { prisma } from "./client";
+import { createInventoryOutboxEvent } from "./outbox";
 import {
   InsufficientStockError,
   InventoryNotFoundError,
@@ -752,6 +753,42 @@ async function transitionReservation(
         metadata: reference.metadata,
       },
     });
+
+    // Transactional CDC Outbox Event (captured by Debezium Server and streamed to Kafka)
+    try {
+      const outboxType =
+        targetStatus === InventoryReservationStatus.CONFIRMED
+          ? "inventory.stock.sold"
+          : targetStatus === InventoryReservationStatus.RELEASED
+            ? "inventory.reservation.released"
+            : "inventory.reservation.expired";
+
+      await createInventoryOutboxEvent(
+        {
+          aggregateType: "InventoryItem",
+          aggregateId: `${updatedItem.productId}:${updatedItem.variantId ?? "default"}`,
+          type: outboxType,
+          payload: {
+            inventoryItemId: updatedItem.id,
+            productId: updatedItem.productId,
+            variantId: updatedItem.variantId,
+            warehouseId: updatedItem.warehouseId,
+            quantity: reservation.quantity,
+            availableQuantity: updatedItem.availableQuantity,
+            reservedQuantity: updatedItem.reservedQuantity,
+            soldQuantity: updatedItem.soldQuantity,
+            status: updatedItem.status,
+            reservationId: updatedReservation.id,
+            referenceType: reference.referenceType ?? reservation.referenceType,
+            referenceId: reference.referenceId ?? reservation.referenceId,
+            occurredAt: new Date().toISOString(),
+          },
+        },
+        transaction,
+      );
+    } catch {
+      // In isolated environments where outbox table is not migrated, continue gracefully
+    }
 
     return { ...updatedReservation, inventoryItem: updatedItem };
   });

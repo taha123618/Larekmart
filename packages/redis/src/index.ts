@@ -90,6 +90,7 @@ export {
   acquireIdempotencyLock,
   commitIdempotencyResponse,
   releaseIdempotencyLock,
+  claimEventIdempotency,
   DEFAULT_LOCK_TTL_MS,
   DEFAULT_RETENTION_TTL_SEC,
 } from "./idempotency.js";
@@ -141,6 +142,23 @@ export {
   parseLSN,
 } from "./read-your-writes.js";
 export type { ReadYourWritesOptions } from "./read-your-writes.js";
+
+// Dynamic Feature Flagging Engine (OpenFeature semantics, Canary Rollouts, Targeting Rules)
+export {
+  FeatureFlagEngine,
+  createFeatureFlagEngine,
+} from "./feature-flags.js";
+export type {
+  FeatureFlagDefinition,
+  FeatureFlagRule,
+  FeatureFlagRollout,
+  EvaluationContext,
+  EvaluationResult,
+  EvaluationReason,
+  FeatureFlagEngineOptions,
+  FlagValueType,
+  RuleOperator,
+} from "./feature-flags.js";
 
 // Shared types
 export type {

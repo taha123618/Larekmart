@@ -5,12 +5,14 @@ import {
   measureAsync,
   injectTraceContext,
 } from "@repo/monitoring";
+import { schemaRegistry } from "./schema-registry/client.js";
 
 const logger = createLogger("kafka-producer");
 
 export interface KafkaSendOptions {
   key?: string;
   headers?: Record<string, string | Buffer>;
+  schemaId?: number;
 }
 
 export const createProducer = (kafka: Kafka) => {
@@ -46,12 +48,17 @@ export const createProducer = (kafka: Kafka) => {
         // Automatically inject active W3C traceparent into Kafka message headers
         injectTraceContext(headers as Record<string, string>);
 
+        const value =
+          options?.schemaId !== undefined
+            ? schemaRegistry.encodeMessage(options.schemaId, message)
+            : JSON.stringify(message);
+
         await producer.send({
           topic,
           messages: [
             {
               key: options?.key,
-              value: JSON.stringify(message),
+              value,
               headers,
             },
           ],

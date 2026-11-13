@@ -11,6 +11,7 @@ import { eq, desc } from "drizzle-orm";
 import { LedgerService } from "../ledger/ledger.service.js";
 import { MockBankAdapter } from "../providers/mock-bank-adapter.js";
 import { PayoutProducerService } from "../kafka/payout-producer.service.js";
+import { createPayoutOutboxEvent } from "../db/outbox.js";
 import { v4 as uuidv4 } from "uuid";
 import Decimal from "decimal.js";
 import type {
@@ -197,6 +198,28 @@ export class PayoutsService {
           processedAt: new Date(),
         });
 
+        // 2b. Write Transactional CDC Outbox Event (Debezium Outbox Event Router)
+        try {
+          await createPayoutOutboxEvent({
+            aggregateType: "Payout",
+            aggregateId: payoutId,
+            type: "payout.scheduled",
+            payload: {
+              payoutId,
+              payoutNumber,
+              sellerId,
+              batchId,
+              amount: amountDec.toNumber(),
+              netAmount: netAmountDec.toNumber(),
+              currency: targetCurrency,
+              idempotencyKey: `${request.idempotencyKey}_${sellerId}`,
+              timestamp: new Date().toISOString(),
+            },
+          });
+        } catch (outboxErr) {
+          this.logger.warn(`Could not persist payout.scheduled outbox event: ${outboxErr}`);
+        }
+
         // 3. Emit Kafka events
         await this.payoutProducer.emitPayoutScheduled({
           payoutId,
@@ -224,6 +247,26 @@ export class PayoutsService {
         });
 
         if (disburseResult.success) {
+          try {
+            await createPayoutOutboxEvent({
+              aggregateType: "Payout",
+              aggregateId: payoutId,
+              type: "payout.completed",
+              payload: {
+                payoutId,
+                payoutNumber,
+                sellerId,
+                providerReference: disburseResult.providerReference,
+                amount: netAmountDec.toNumber(),
+                currency: targetCurrency,
+                settledAt: new Date().toISOString(),
+                timestamp: new Date().toISOString(),
+              },
+            });
+          } catch (outboxErr) {
+            this.logger.warn(`Could not persist payout.completed outbox event: ${outboxErr}`);
+          }
+
           await this.payoutProducer.emitPayoutCompleted({
             payoutId,
             payoutNumber,
@@ -292,6 +335,22 @@ export class PayoutsService {
               updatedAt: new Date(),
             })
             .where(eq(payouts.id, evt.payoutId));
+          try {
+            await createPayoutOutboxEvent({
+              aggregateType: "Payout",
+              aggregateId: evt.payoutId,
+              type: "payout.completed",
+              payload: {
+                payoutId: evt.payoutId,
+                batchId: request.batchId,
+                providerReference: evt.providerRef,
+                status: "COMPLETED",
+                timestamp: new Date().toISOString(),
+              },
+            });
+          } catch {
+            // Non-blocking outbox capture
+          }
           reconciledCount++;
         } else {
           await db
@@ -305,6 +364,25 @@ export class PayoutsService {
               updatedAt: new Date(),
             })
             .where(eq(payouts.id, evt.payoutId));
+          try {
+            await createPayoutOutboxEvent({
+              aggregateType: "Payout",
+              aggregateId: evt.payoutId,
+              type: "payout.failed",
+              payload: {
+                payoutId: evt.payoutId,
+                batchId: request.batchId,
+                status: "FAILED",
+                failureReason:
+                  evt.failureMessage ||
+                  evt.failureCode ||
+                  "Provider rejected disbursement",
+                timestamp: new Date().toISOString(),
+              },
+            });
+          } catch {
+            // Non-blocking outbox capture
+          }
           failedCount++;
         }
       } catch {

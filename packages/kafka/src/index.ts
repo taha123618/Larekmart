@@ -11,6 +11,7 @@ export {
   type KafkaBatchConsumerConfig,
 } from "./consumer";
 export { initializeTopics, ALL_LAREKMART_TOPICS } from "./init-topics";
+export { initializeSchemas, CORE_EVENT_SCHEMAS } from "./init-schemas";
 export {
   createEventAttestation,
   verifyEventAttestation,
@@ -34,3 +35,15 @@ export type {
   ReplayOptions,
   ReplayResult,
 } from "./dlq/types";
+export {
+  SchemaRegistryClient,
+  schemaRegistry,
+  CONFLUENT_MAGIC_BYTE,
+  WIRE_FORMAT_HEADER_LENGTH,
+  type SchemaType,
+  type CompatibilityLevel,
+  type SchemaRegistryOptions,
+  type RegisteredSchema,
+  type SchemaRegistrationInput,
+  type DecodedMessage,
+} from "./schema-registry/index";

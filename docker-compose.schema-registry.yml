@@ -1,0 +1,53 @@
+name: larekmart-schema-registry
+
+# ==============================================================================
+# Larekmart Schema Registry — Karapace (Confluent-compatible Kafka Schema Registry)
+# ==============================================================================
+# Provides strict schema governance, Avro/JSON Schema validation, and compatibility
+# enforcement (BACKWARD, FULL) across all 28 microservices, preventing breaking
+# payload changes from entering Kafka topics.
+# ==============================================================================
+
+services:
+  schema-registry:
+    image: ghcr.io/aiven/karapace:latest
+    container_name: larekmart-schema-registry
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      KARAPACE_PORT: 8081
+      KARAPACE_HOST: 0.0.0.0
+      KARAPACE_ADVERTISED_HOSTNAME: schema-registry
+      KARAPACE_BOOTSTRAP_URI: kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092
+      KARAPACE_TOPIC_NAME: _schemas
+      KARAPACE_REGISTRY: "true"
+      KARAPACE_REST: "false"
+      KARAPACE_COMPATIBILITY: "BACKWARD"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/subjects || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=larekmart-network"
+      - "traefik.http.routers.schema-registry.rule=Host(`${SCHEMA_REGISTRY_DOMAIN:-schema-registry.localhost}`)"
+      - "traefik.http.routers.schema-registry.entrypoints=web,websecure"
+      - "traefik.http.services.schema-registry.loadbalancer.server.port=8081"
+    networks:
+      - larekmart-network
+
+networks:
+  larekmart-network:
+    name: larekmart-network
+    driver: bridge

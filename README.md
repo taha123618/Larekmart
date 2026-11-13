@@ -539,7 +539,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 - **State Management & Forms**: Zustand (persisted), Pinia, TanStack React/Vue Query v5, TanStack Table v8, VeeValidate 4, React Hook Form + Zod
 - **Backend & Gateway Frameworks**: Fastify 5 (`@fastify/http-proxy`, `@fastify/helmet`, Opossum circuit breaker with graceful degradation for non-critical paths), NestJS 11 (Fastify 5), Express 5, Hono 4 (`@hono/node-server` 2.x), Koa, Go 1.22 (Chi), Python 3.12+ (FastAPI), Socket.IO (with `@socket.io/redis-adapter` for horizontal multi-pod WebSocket clustering)
 - **Databases & Persistence**: PostgreSQL (via Prisma ORM, Drizzle ORM & pg, including `larekmart_chat_db`), MongoDB (via Mongoose), MySQL 8.0 (physically isolated instances: `tax_db` on port 3306 and `return_db` on port 3307 via Drizzle ORM)
-- **Message Broker**: Apache Kafka (KafkaJS, 3-broker KRaft cluster with quorum voting, min ISR 2, and Kafka UI)
+- **Message Broker & Event Mesh**: Apache Kafka (KafkaJS, 3-broker KRaft cluster with quorum voting, min ISR 2, and Kafka UI), Karapace Schema Registry (:8081, Confluent wire-format JSON/Avro contract evolution), and Debezium Server (Real-Time CDC Outbox Event Router streaming PostgreSQL WAL to Kafka sub-5ms)
 - **Authentication**: Clerk (`@clerk/nextjs`, `@clerk/vue`, `@clerk/express`, `@clerk/fastify`, `@hono/clerk-auth`)
 - **Payments**: Stripe (Custom Checkout Element + Webhooks)
 - **Observability & Distributed Tracing**: OpenTelemetry Collector, Grafana Tempo 2.6.1 (distributed tracing & saga spans), Prometheus (metrics), Grafana Loki (logs with automated trace linking), and Grafana SRE dashboards

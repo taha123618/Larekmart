@@ -200,3 +200,71 @@ groups:
         annotations:
           summary: "Kafka broker count dropped to {{ $value }}"
           description: "No Kafka brokers available. All async event processing is halted."
+
+  # ══════════════════════════════════════════════════════
+  # CDC (CHANGE DATA CAPTURE) & LOGICAL REPLICATION
+  # ══════════════════════════════════════════════════════
+  - name: cdc_and_replication
+    rules:
+      - alert: PostgresReplicationSlotInactive
+        expr: pg_replication_slots_active == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL replication slot {{ $labels.slot_name }} is INACTIVE"
+          description: |
+            Replication slot {{ $labels.slot_name }} on database {{ $labels.datname }} has been inactive for >2m.
+            Debezium CDC streaming may be halted and WAL logs will accumulate on disk.
+            Remediation: check Debezium server logs (`docker logs debezium-inventory` / `debezium-payout`).
+
+      - alert: PostgresReplicationSlotLagHigh
+        expr: pg_replication_slots_wal_bytes_behind > 104857600
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High replication slot WAL lag on {{ $labels.slot_name }} (>100MB)"
+          description: |
+            Replication slot {{ $labels.slot_name }} is {{ $value | humanize1024 }} bytes behind the WAL flush LSN.
+            Possible causes: Debezium connector throttling, Kafka sink latency, or high write throughput.
+
+      - alert: DebeziumServerDown
+        expr: up{job=~"debezium.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Debezium CDC server {{ $labels.job }} is DOWN"
+          description: "Debezium standalone server container is unresponsive. Transactional outbox event streaming is paused."
+
+  # ══════════════════════════════════════════════════════
+  # SCHEMA REGISTRY (KARAPACE)
+  # ══════════════════════════════════════════════════════
+  - name: schema_registry
+    rules:
+      - alert: SchemaRegistryDown
+        expr: up{job="schema-registry"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Karapace Schema Registry is DOWN"
+          description: |
+            Schema Registry instance on {{ $labels.instance }} is unreachable.
+            Kafka producers and consumers requiring wire-format serialization or schema validation will fail.
+            Remediation: check Karapace logs (`docker logs schema-registry`) and Kafka connectivity to `_schemas`.
+
+      - alert: SchemaRegistryHighErrorRate
+        expr: |
+          (
+            rate(karapace_requests_total{status=~"5.."}[5m])
+            /
+            rate(karapace_requests_total[5m])
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx error rate on Schema Registry"
+          description: "Schema Registry is failing schema registrations or compatibility checks at {{ $value | humanizePercentage }}."

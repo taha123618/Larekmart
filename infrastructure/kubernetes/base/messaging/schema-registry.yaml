@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: schema-registry
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: schema-registry
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: messaging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: schema-registry
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: schema-registry
+        app.kubernetes.io/part-of: larekmart
+        app.kubernetes.io/component: messaging
+    spec:
+      containers:
+        - name: karapace
+          image: ghcr.io/aiven/karapace:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            - name: KARAPACE_PORT
+              value: "8081"
+            - name: KARAPACE_HOST
+              value: "0.0.0.0"
+            - name: KARAPACE_ADVERTISED_HOSTNAME
+              value: "schema-registry"
+            - name: KARAPACE_BOOTSTRAP_URI
+              value: "kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
+            - name: KARAPACE_TOPIC_NAME
+              value: "_schemas"
+            - name: KARAPACE_REGISTRY
+              value: "true"
+            - name: KARAPACE_REST
+              value: "false"
+            - name: KARAPACE_COMPATIBILITY
+              value: "BACKWARD"
+          livenessProbe:
+            httpGet:
+              path: /subjects
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /subjects
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: schema-registry
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: schema-registry
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: messaging
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: schema-registry

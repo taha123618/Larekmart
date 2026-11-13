@@ -182,3 +182,23 @@ export async function releaseIdempotencyLock(
     return false;
   }
 }
+
+/**
+ * Atomically claims execution of an asynchronous event or message in Redis.
+ * Uses atomic SET NX EX to ensure only one consumer process ever processes the event.
+ * Returns `true` if the event was successfully claimed (first execution attempt),
+ * or `false` if the event was already claimed or processed.
+ *
+ * @param client - ioredis client instance
+ * @param eventId - Unique event identifier (or message deduplication ID)
+ * @param ttlSeconds - Retention TTL in seconds (default: 86,400s / 24 hours)
+ */
+export async function claimEventIdempotency(
+  client: Redis,
+  eventId: string,
+  ttlSeconds: number = 86400,
+): Promise<boolean> {
+  const key = `idempotency:event:${eventId}`;
+  const result = await client.set(key, "1", "EX", ttlSeconds, "NX");
+  return result === "OK";
+}

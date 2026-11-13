@@ -117,3 +117,17 @@ model InventoryMovement {
   @@index([referenceType, referenceId])
   @@map("inventory_movements")
 }
+
+model OutboxEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  aggregatetype String   @map("aggregatetype") @db.VarChar(255)
+  aggregateid   String   @map("aggregateid") @db.VarChar(255)
+  type          String   @map("type") @db.VarChar(255)
+  payload       Json     @map("payload")
+  timestamp     DateTime @default(now()) @map("timestamp") @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt])
+  @@index([type])
+  @@map("outbox_events")
+}

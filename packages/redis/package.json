@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "check-types": "tsc --noEmit",
-    "test": "tsx tests/redis-cluster-sharding.test.ts",
+    "test": "tsx tests/redis-cluster-sharding.test.ts && tsx tests/idempotency.test.ts && tsx tests/feature-flags.test.ts",
     "verify:redis": "pnpm dlx tsx src/scripts/verify-redis.ts"
   },
   "keywords": [

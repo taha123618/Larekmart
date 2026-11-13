@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debezium-inventory
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: debezium-inventory
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: cdc
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Single active replication slot consumer
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: debezium-inventory
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: debezium-inventory
+        app.kubernetes.io/part-of: larekmart
+        app.kubernetes.io/component: cdc
+    spec:
+      containers:
+        - name: debezium
+          image: debezium/server:2.7.3.Final
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms128m -Xmx384m -XX:+UseG1GC"
+            - name: DEBEZIUM_SINK_TYPE
+              value: "kafka"
+            - name: DEBEZIUM_SINK_KAFKA_PRODUCER_BOOTSTRAP_SERVERS
+              value: "kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
+            - name: DEBEZIUM_SOURCE_CONNECTOR_CLASS
+              value: "io.debezium.connector.postgresql.PostgresConnector"
+            - name: DEBEZIUM_SOURCE_OFFSET_STORAGE
+              value: "org.apache.kafka.connect.storage.KafkaOffsetBackingStore"
+            - name: DEBEZIUM_SOURCE_OFFSET_STORAGE_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
+            - name: DEBEZIUM_SOURCE_OFFSET_STORAGE_KAFKA_TOPIC
+              value: "debezium.inventory.offsets"
+            - name: DEBEZIUM_SOURCE_DATABASE_HOSTNAME
+              value: "postgres.larekmart.svc.cluster.local"
+            - name: DEBEZIUM_SOURCE_DATABASE_PORT
+              value: "5432"
+            - name: DEBEZIUM_SOURCE_DATABASE_USER
+              value: "postgres"
+            - name: DEBEZIUM_SOURCE_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: common-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DEBEZIUM_SOURCE_DATABASE_DBNAME
+              value: "inventory_db"
+            - name: DEBEZIUM_SOURCE_TOPIC_PREFIX
+              value: "inventory_cdc"
+            - name: DEBEZIUM_SOURCE_TABLE_INCLUDE_LIST
+              value: "public.outbox_events"
+            - name: DEBEZIUM_SOURCE_PLUGIN_NAME
+              value: "pgoutput"
+            - name: DEBEZIUM_SOURCE_SLOT_NAME
+              value: "debezium_inventory_slot"
+            - name: DEBEZIUM_SOURCE_PUBLICATION_NAME
+              value: "debezium_inventory_pub"
+            - name: DEBEZIUM_TRANSFORMS
+              value: "outbox"
+            - name: DEBEZIUM_TRANSFORMS_OUTBOX_TYPE
+              value: "io.debezium.transforms.outbox.EventRouter"
+            - name: DEBEZIUM_TRANSFORMS_OUTBOX_TABLE_FIELDS_ADDITIONAL_PLACEMENT
+              value: "type:header:eventType"
+            - name: DEBEZIUM_TRANSFORMS_OUTBOX_TABLE_EXPAND_JSON_PAYLOAD
+              value: "true"
+            - name: DEBEZIUM_TRANSFORMS_OUTBOX_ROUTE_BY_FIELD
+              value: "type"
+            - name: DEBEZIUM_TRANSFORMS_OUTBOX_ROUTE_TOPIC_REPLACEMENT
+              value: "${routedByValue}"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debezium-payout
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: debezium-payout
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: cdc
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Single active replication slot consumer
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: debezium-payout
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: debezium-payout
+        app.kubernetes.io/part-of: larekmart
+        app.kubernetes.io/component: cdc
+    spec:
+      containers:
+        - name: debezium
+          image: debezium/server:2.7.3.Final
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms128m -Xmx384m -XX:+UseG1GC"
+            - name: DEBEZIUM_SINK_TYPE
+              value: "kafka"
+            - name: DEBEZIUM_SINK_KAFKA_PRODUCER_BOOTSTRAP_SERVERS
+              value: "kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
+            - name: DEBEZIUM_SOURCE_CONNECTOR_CLASS
+              value: "io.debezium.connector.postgresql.PostgresConnector"
+            - name: DEBEZIUM_SOURCE_OFFSET_STORAGE
+              value: "org.apache.kafka.connect.storage.KafkaOffsetBackingStore"
+            - name: DEBEZIUM_SOURCE_OFFSET_STORAGE_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
+            - name: DEBEZIUM_SOURCE_OFFSET_STORAGE_KAFKA_TOPIC
+              value: "debezium.payout.offsets"
+            - name: DEBEZIUM_SOURCE_DATABASE_HOSTNAME
+              value: "postgres.larekmart.svc.cluster.local"
+            - name: DEBEZIUM_SOURCE_DATABASE_PORT
+              value: "5432"
+            - name: DEBEZIUM_SOURCE_DATABASE_USER
+              value: "postgres"
+            - name: DEBEZIUM_SOURCE_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: common-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DEBEZIUM_SOURCE_DATABASE_DBNAME
+              value: "payout_db"
+            - name: DEBEZIUM_SOURCE_TOPIC_PREFIX
+              value: "payout_cdc"
+            - name: DEBEZIUM_SOURCE_TABLE_INCLUDE_LIST
+              value: "public.outbox_events"
+            - name: DEBEZIUM_SOURCE_PLUGIN_NAME
+              value: "pgoutput"
+            - name: DEBEZIUM_SOURCE_SLOT_NAME
+              value: "debezium_payout_slot"
+            - name: DEBEZIUM_SOURCE_PUBLICATION_NAME
+              value: "debezium_payout_pub"
+            - name: DEBEZIUM_TRANSFORMS
+              value: "outbox"
+            - name: DEBEZIUM_TRANSFORMS_OUTBOX_TYPE
+              value: "io.debezium.transforms.outbox.EventRouter"
+            - name: DEBEZIUM_TRANSFORMS_OUTBOX_TABLE_FIELDS_ADDITIONAL_PLACEMENT
+              value: "type:header:eventType"
+            - name: DEBEZIUM_TRANSFORMS_OUTBOX_TABLE_EXPAND_JSON_PAYLOAD
+              value: "true"
+            - name: DEBEZIUM_TRANSFORMS_OUTBOX_ROUTE_BY_FIELD
+              value: "type"
+            - name: DEBEZIUM_TRANSFORMS_OUTBOX_ROUTE_TOPIC_REPLACEMENT
+              value: "${routedByValue}"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

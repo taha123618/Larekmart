@@ -48,6 +48,8 @@ resources:
   - pdb/pod-disruption-budgets.yaml
   - network-policies/network-policies.yaml
   - messaging/kafka-cluster.yaml
+  - messaging/schema-registry.yaml
+  - messaging/debezium-cdc.yaml
 
 labels:
   - pairs:

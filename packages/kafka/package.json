@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "topics:init": "tsx src/init-topics.ts",
+    "schemas:init": "tsx src/init-schemas.ts",
     "dlq": "tsx src/dlq/cli.ts",
     "check-types": "tsc --noEmit",
-    "test": "tsx tests/consumer-dlq.test.ts && tsx tests/consumer-batch.test.ts && tsx tests/dlq-replayer.test.ts"
+    "test": "tsx tests/consumer-dlq.test.ts && tsx tests/consumer-batch.test.ts && tsx tests/dlq-replayer.test.ts && tsx tests/schema-registry.test.ts"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

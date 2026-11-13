@@ -18,6 +18,8 @@ include:
   - path: docker-compose.traefik.yml
   - path: docker-compose.dozzle.yml
   - path: docker-compose.caddy.yml
+  - path: docker-compose.cdc.yml
+  - path: docker-compose.schema-registry.yml
 
 # ============================================================================
 # Reusable Deploy Resource Profiles (Anti-Starvation Limits & Reservations)
@@ -95,6 +97,14 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
       POSTGRES_DB: ${POSTGRES_DB:-product_db}
       POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db,commission_db,payout_db,fraud_db,larekmart_fraud_db,larekmart_payout_db,support_db,larekmart_support_db,chat_db,larekmart_chat_db}
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
+      - "-c"
+      - "max_replication_slots=10"
+      - "-c"
+      - "max_wal_senders=10"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -533,6 +543,7 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: larekmart-cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
       KAFKA_CLUSTERS_0_READONLY: "false"
       KAFKA_CLUSTERS_0_TOPIC_AUTO_CREATE: "true"
     depends_on:
