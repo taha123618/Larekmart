@@ -17,3 +17,46 @@ jobs:
   quality-gates:
     name: Monorepo Quality Gates
     uses: ./.github/workflows/reusable-quality-gates.yml
+
+  e2e-tests:
+    name: Playwright E2E Tests
+    needs: quality-gates
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.base_ref == 'main' || github.base_ref == 'staging'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install Monorepo Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('packages/e2e/package.json', 'pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright Chromium with System Dependencies
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @repo/e2e exec playwright install --with-deps chromium
+
+      - name: Run Playwright E2E Tests
+        run: pnpm e2e -- --reporter=github
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: "http://localhost:3002"
+

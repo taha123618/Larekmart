@@ -42,8 +42,15 @@ type Config struct {
 	TwilioAuthToken   string
 	TwilioPhoneNumber string
 
-	PushProvider string
-	PushAPIKey   string
+	PushProvider          string
+	PushAPIKey            string
+	FCMCredentialsJSON    string
+	FCMCredentialsBase64  string
+	APNSKeyPath           string
+	APNSKeyBase64         string
+	APNSKeyID             string
+	APNSTeamID            string
+	APNSBundleID          string
 
 	// WebSockets & CORS
 	WebSocketAllowedOrigins []string
@@ -111,8 +118,15 @@ func LoadFromEnv() *Config {
 		TwilioAuthToken:   getEnv("TWILIO_AUTH_TOKEN", ""),
 		TwilioPhoneNumber: getEnv("TWILIO_PHONE_NUMBER", ""),
 
-		PushProvider: getEnv("PUSH_PROVIDER", "mock"),
-		PushAPIKey:   getEnv("PUSH_API_KEY", "mock-push-api-key"),
+		PushProvider:          getEnv("PUSH_PROVIDER", "mock"),
+		PushAPIKey:            getEnv("PUSH_API_KEY", "mock-push-api-key"),
+		FCMCredentialsJSON:    getEnv("FCM_CREDENTIALS_JSON", ""),
+		FCMCredentialsBase64:  getEnv("FCM_CREDENTIALS_BASE64", ""),
+		APNSKeyPath:           getEnv("APNS_KEY_PATH", ""),
+		APNSKeyBase64:         getEnv("APNS_KEY_BASE64", ""),
+		APNSKeyID:             getEnv("APNS_KEY_ID", ""),
+		APNSTeamID:            getEnv("APNS_TEAM_ID", ""),
+		APNSBundleID:          getEnv("APNS_BUNDLE_ID", ""),
 
 		WebSocketAllowedOrigins: getEnvSlice("WEBSOCKET_ALLOWED_ORIGINS", []string{"http://localhost:3002", "http://localhost:3003"}),
 		WebSocketPingInterval:   getEnvDuration("WEBSOCKET_PING_INTERVAL", 30*time.Second),

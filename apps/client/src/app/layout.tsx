@@ -16,6 +16,8 @@ import { RuntimeConfigProvider } from "@/components/providers/RuntimeConfigProvi
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import ClientWrapper from "@/wrapper/client-wrapper";
 import ScrollToTop from "@/components/common/ScrollToTop";
+import PwaRegister from "@/components/common/PwaRegister";
+import SupportChatWidget from "@/components/support/SupportChatWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,10 +33,16 @@ export const metadata: Metadata = {
   title: "Larekmart — Modern Global Marketplace",
   description:
     "Shop millions of trending products with buyer protection, fast delivery, and secure payments.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Larekmart",
+  },
   icons: {
     icon: "/icon.png",
     shortcut: "/favicon.ico",
-    apple: "/icon.png",
+    apple: "/logo.png",
   },
 };
 
@@ -65,6 +73,7 @@ export default function RootLayout({
                 disableTransitionOnChange
               >
                 <ClientWrapper>
+                  <PwaRegister />
                   <CartStoreHydration />
                   <CartDrawer />
                   <WishlistDrawer />
@@ -83,6 +92,9 @@ export default function RootLayout({
 
                   {/* SCROLL TO TOP FLOATING BUTTON & PROGRESS */}
                   <ScrollToTop />
+
+                  {/* AI SUPPORT ASSISTANT FLOATING CHAT */}
+                  <SupportChatWidget />
 
                   <ToastContainer position="bottom-right" theme="dark" />
                 </ClientWrapper>

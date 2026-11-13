@@ -144,7 +144,32 @@ func main() {
 	}
 	smsChan := sms.NewSMSChannel(smsProvider, smsSender, logger)
 
-	pushProvider := push.NewMockProvider(logger)
+	var pushProvider push.Provider
+	switch cfg.PushProvider {
+	case "fcm":
+		pushProvider = push.NewFCMProvider(cfg.FCMCredentialsJSON, cfg.FCMCredentialsBase64, logger)
+		logger.Info(ctx, "FCM Push notification provider initialized", map[string]interface{}{
+			"provider": "fcm",
+		})
+	case "apns":
+		pushProvider = push.NewAPNSProvider(push.APNSConfig{
+			KeyPath:   cfg.APNSKeyPath,
+			KeyBase64: cfg.APNSKeyBase64,
+			KeyID:     cfg.APNSKeyID,
+			TeamID:    cfg.APNSTeamID,
+			BundleID:  cfg.APNSBundleID,
+			IsProd:    cfg.AppEnv == "production",
+		}, logger)
+		logger.Info(ctx, "APNS Push notification provider initialized", map[string]interface{}{
+			"provider":  "apns",
+			"bundle_id": cfg.APNSBundleID,
+		})
+	default:
+		pushProvider = push.NewMockProvider(logger)
+		logger.Info(ctx, "Mock Push notification provider initialized", map[string]interface{}{
+			"provider": "mock",
+		})
+	}
 	pushChan := push.NewPushChannel(pushProvider, deviceRepo, logger)
 
 	inappChan := inapp.NewInAppChannel(wsHub, logger)

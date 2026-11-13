@@ -37,6 +37,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,md,js,json}\"",
     "check-types": "turbo run check-types",
     "test": "turbo run test",
+    "e2e": "pnpm --filter @repo/e2e test",
     "// db": "=== Database & Kafka ===",
     "dlq": "pnpm --filter @repo/kafka dlq",
     "kafka:dlq": "pnpm --filter @repo/kafka dlq",

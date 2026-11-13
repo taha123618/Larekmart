@@ -9,6 +9,7 @@ import type {
   CreateTicketInput,
   AddTicketMessageInput,
   TicketFilterInput,
+  AiSupportResponse,
 } from "@repo/types";
 import { getApiGatewayUrl } from "./gateway.service";
 
@@ -152,6 +153,30 @@ export async function fetchSupportCategories(
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
       errorData.message || `Failed to fetch support categories (${res.status})`,
+    );
+  }
+
+  const json = await res.json();
+  return json.data;
+}
+
+/**
+ * Ask AI Support Assistant for instant guidance & FAQ responses
+ */
+export async function askAiSupportAssistant(
+  message: string,
+  context?: { orderId?: string; productId?: string; category?: string },
+): Promise<AiSupportResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/support/ai/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, context }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || `AI Support Assistant error (${res.status})`,
     );
   }
 

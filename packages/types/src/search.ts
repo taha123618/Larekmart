@@ -89,6 +89,11 @@ export const SearchQueryParamsSchema = z.object({
     .union([z.string(), z.array(z.string())])
     .transform((val) => (typeof val === "string" ? val.split(",") : val))
     .optional(),
+  semantic: z
+    .union([z.boolean(), z.enum(["true", "false"])])
+    .transform((val) => (typeof val === "string" ? val === "true" : Boolean(val)))
+    .optional(),
+  vector: z.array(z.number()).optional(),
 });
 
 export type SearchQueryParams = z.infer<typeof SearchQueryParamsSchema>;

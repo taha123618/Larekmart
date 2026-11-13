@@ -403,6 +403,14 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - **Zero-Impact Synthetic Isolation**: Dedicated canary identifiers (`CANARY_USER_ID = "usr_synthetic_canary_daemon"`, `CANARY_SKU_ID = 99901`) and `x-synthetic-probe: true` header tagging. Downstream side-effects are completely dropped: `email-service` suppresses confirmation emails, `analytic-service` skips revenue/GMV recording, `fraud-service` bypasses velocity/anomaly scoring, and `payout-service` skips seller ledger accruals.
     - **Zero-Trust Perimeter Sanitization**: API Gateway automatically strips `x-synthetic-probe` from unauthenticated or non-admin external requests, preventing attackers from injecting the flag to evade fraud monitoring or revenue tracking.
     - **Prometheus SLA Alerting & Admin Waterfall UI**: Exposes Prometheus gauges (`canary_probe_consecutive_failures`, `canary_probe_sla_percentage`, `canary_probe_duration_seconds`) with automated Alertmanager rules firing Critical P1 alerts upon $\ge 2$ consecutive checkout failures. Visualized in the Admin Dashboard at `/system-health` with rolling SLA uptime cards, interactive waterfall latency breakdowns per HTTP step, and on-demand trigger buttons.
+20. **Storefront Progressive Web App (PWA) & Offline Resilience (`apps/client`)**:
+    - **Mobile-App Native Experience**: Full W3C Web App Manifest metadata (`manifest.ts`), home screen installation, theme color integration, and background worker lifecycle.
+    - **Service Worker Caching**: Custom Service Worker (`sw.js`) combining Cache-First asset retrieval for static bundles/images with Network-First navigation caching and a dedicated `/offline` graceful fallback page.
+21. **Multi-Channel Push Notification Engine (`apps/notification-service`)**:
+    - **Native FCM & APNS Delivery**: High-throughput Go engine utilizing the official Firebase Admin Go SDK (`firebase.google.com/go/v4`) for Android/web and HTTP/2 APNS (`github.com/sideshow/apns2`) for Apple devices, dynamically selectable via `PUSH_PROVIDER=fcm|apns|mock`.
+22. **Semantic Vector Search & AI Customer Support Assistant (`packages/opensearch`, `support-service`, `client`)**:
+    - **OpenSearch 384-Dimensional k-NN Vector Search**: HNSW cosine similarity index mappings and vector query builder alongside BM25 keyword matching for semantic product discovery.
+    - **AI Customer Support Assistant**: Knowledge base intent classifier answering tracking, shipping, return, and payment queries in real-time, accompanied by a floating storefront chat widget with 1-click action triggers and support ticket escalation.
 
 For in-depth architectural specifications and diagrams, see [`docs/plans/README.md`](docs/plans/README.md).
 
@@ -461,7 +469,8 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 │   ├── vendor-db/            # @repo/vendor-db — Prisma vendor schema, business profiles & KYB documents (PostgreSQL)
 │   ├── support-db/           # @repo/support-db — Prisma support schema, tickets, messages, assignments & SLA policies (PostgreSQL)
 │   ├── eslint-config/        # @repo/eslint-config — shared ESLint flat configs
-│   └── typescript-config/    # @repo/typescript-config — shared tsconfig bases
+│   ├── typescript-config/    # @repo/typescript-config — shared tsconfig bases
+│   └── e2e/                  # @repo/e2e      — Playwright end-to-end testing suite & shared fixtures
 ├── docs/                     # Architecture, dependencies, conventions, testing, ADRs
 ├── .agents/skills/           # AI coding agent root skills
 ├── turbo.json                # Turborepo task pipeline
@@ -532,6 +541,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | **`@repo/support-db`** | PostgreSQL support-domain persistence via Prisma: tickets, messages, assignments, SLA policies & history. | `support-service` |
 | **`@repo/eslint-config`** | Shared ESLint flat configurations (`base`, `next-js`, `react-internal`). | `admin`, `client` |
 | **`@repo/typescript-config`** | Shared strict TypeScript compiler configurations (`base.json`, `nextjs.json`, `react-library.json`). | All 47 workspaces |
+| **`@repo/e2e`** | Cross-browser Playwright end-to-end testing suite: checkout flows, cart persistence, product search, and seller order views. | `client`, `admin`, `seller`, CI |
 
 ---
 

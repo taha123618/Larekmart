@@ -1,0 +1,24 @@
+{
+  "name": "@repo/e2e",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./playwright.config.ts"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.48.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^24.3.1"
+  }
+}

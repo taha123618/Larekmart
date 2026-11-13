@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchSystemSettings } from "@/services/seller.service";
+import { getPendingVendors } from "@/services/vendor-verification.service";
 import {
   Home,
   Inbox,
@@ -31,6 +32,7 @@ import {
   Building2,
   Store,
   ShieldAlert,
+  ShieldCheck,
   Percent,
   Banknote,
   LifeBuoy,
@@ -104,6 +106,14 @@ const AppSidebar = () => {
   });
 
   const isSellerEnabled = systemSettings?.isSellerEnabled ?? true;
+
+  const { data: pendingVendorsData } = useQuery({
+    queryKey: ["sidebar-pending-vendors-count"],
+    queryFn: () => getPendingVendors(undefined, { limit: 1 }).catch(() => null),
+    staleTime: 30000,
+  });
+
+  const pendingVerificationCount = pendingVendorsData?.total ?? 0;
 
   return (
     <Sidebar collapsible="icon">
@@ -290,6 +300,17 @@ const AppSidebar = () => {
           </div>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/vendor-verification">
+                    <ShieldCheck />
+                    <span>Seller Verification</span>
+                  </Link>
+                </SidebarMenuButton>
+                {pendingVerificationCount > 0 && (
+                  <SidebarMenuBadge>{pendingVerificationCount}</SidebarMenuBadge>
+                )}
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link href="/vendors">

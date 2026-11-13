@@ -100,9 +100,16 @@ When writing automated tests in Larekmart, adhere to the following architecture:
 - Follow that shape for new integration checks: a script under `src/` (so `pnpm check-types`
   covers it), opt-in, isolated from a shared dependency, self-cleaning, and non-zero on failure.
 
-### 4. End-to-End (E2E) Testing Layer
+### 4. End-to-End (E2E) Testing Layer (`@repo/e2e`)
 
-- **Playwright** is recommended for cross-browser testing of customer checkout and admin dashboard flows.
+- **Playwright Suite (`packages/e2e`)**: Automated cross-browser test suite targeting Customer Storefront (`:3002`), Admin Dashboard (`:3003`), and Seller Dashboard (`:3004`).
+  - `pnpm e2e` or `pnpm --filter @repo/e2e test` runs tests across Chromium, Firefox, and WebKit.
+  - Test suites cover:
+    - Customer checkout flow with Stripe test card (`tests/customer-checkout.spec.ts`).
+    - Guest cart persistence across reloads (`tests/cart-persistence.spec.ts`).
+    - OpenSearch product discovery and category filtering (`tests/product-search.spec.ts`).
+    - Seller order management table verification (`tests/seller-order-view.spec.ts`).
+  - Exported test fixtures (`fillStripePayment`, `assertCartCount`) available to `client`, `admin`, and `seller` packages.
 - **Chaos drills** are the E2E layer for degraded infrastructure. Validate manifests with
   `kubectl kustomize infrastructure/chaos/` and run `flash-sale-mixed-traffic.yaml` on a
   non-production cluster to exercise order-plane latency and catalog replica lag in parallel.

@@ -80,6 +80,18 @@ export function buildProductSearchQuery(
         ]
       : [{ match_all: {} }];
 
+  // If a dense vector embedding is provided, attach the OpenSearch k-NN clause
+  if (params.vector && Array.isArray(params.vector) && params.vector.length > 0) {
+    textClauses.push({
+      knn: {
+        embedding: {
+          vector: params.vector,
+          k: params.limit || 20,
+        },
+      },
+    });
+  }
+
   const query: Record<string, any> = {
     bool: {
       must: textClauses,

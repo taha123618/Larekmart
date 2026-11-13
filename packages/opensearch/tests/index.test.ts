@@ -190,6 +190,25 @@ async function runOpenSearchTests(): Promise<void> {
       "  ✓ DLQ search query parameters properly translated to bool query",
     );
 
+    // -------------------------------------------------------------------------
+    // TEST 7: Semantic vector search & k-NN clause generation
+    // -------------------------------------------------------------------------
+    console.log("\n7. Testing semantic k-NN vector search query builder...");
+    const dummyVector = new Array(384).fill(0.05);
+    const vectorQuery = buildProductSearchQuery({
+      q: "warm winter jacket",
+      page: 1,
+      limit: 15,
+      vector: dummyVector,
+      sort: "relevance",
+    });
+
+    const knnClause = vectorQuery.query.bool.must.find((m: any) => m.knn);
+    assert.ok(knnClause, "k-NN vector clause should be present");
+    assert.strictEqual(knnClause.knn.embedding.k, 15);
+    assert.strictEqual(knnClause.knn.embedding.vector.length, 384);
+    console.log("  ✓ Semantic k-NN vector clause generated with 384 dimensions");
+
     console.log("\n==================================================");
     console.log("🎉 All @repo/opensearch Tests Passed Cleanly!");
     console.log("==================================================");

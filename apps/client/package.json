@@ -8,6 +8,7 @@
     "build": "cross-env NODE_ENV=production next build",
     "start": "next start",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "test:e2e": "pnpm --filter @repo/e2e test",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
@@ -44,6 +45,7 @@
     "zustand": "^5.0.7"
   },
   "devDependencies": {
+    "@repo/e2e": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@repo/types": "workspace:*",
     "@repo/typescript-config": "workspace:*",

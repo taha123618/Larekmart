@@ -301,3 +301,37 @@ export interface SupportTicketResolvedEvent {
   slaBreached: boolean;
   timestamp: string;
 }
+
+// ============================================================================
+// AI Customer Support Assistant
+// ============================================================================
+
+export const AiSupportMessageSchema = z.object({
+  message: z.string().min(1).max(2000),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string(),
+      }),
+    )
+    .optional()
+    .default([]),
+  orderId: z.string().optional(),
+});
+export type AiSupportMessageInput = z.infer<typeof AiSupportMessageSchema>;
+
+export interface AiSupportResponse {
+  answer: string;
+  intent:
+    | "SHIPPING_INQUIRY"
+    | "RETURN_POLICY"
+    | "PAYMENT_METHODS"
+    | "ORDER_TRACKING"
+    | "SELLER_ONBOARDING"
+    | "GENERAL_HELP";
+  confidence: number;
+  sources?: string[];
+  canEscalate: boolean;
+  suggestedAction?: "TRACK_ORDER" | "REQUEST_RETURN" | "OPEN_TICKET" | "VIEW_CART";
+}

@@ -221,4 +221,13 @@ export const publicRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/socket.io",
     websocket: true,
   },
+
+  // 19. Support Service AI Assistant (Public customer FAQ & guidance)
+  {
+    prefix: "/api/v1/support/ai",
+    target: services.support.url,
+    serviceName: services.support.name,
+    timeoutMs: services.support.timeoutMs,
+    rewritePrefix: "/api/v1/support/ai",
+  },
 ];

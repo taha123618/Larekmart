@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "check-types": "tsc --noEmit",
-    "test:unit": "NODE_ENV=test tsx tests/unit/sla-engine.unit.test.ts && NODE_ENV=test tsx tests/unit/auth-and-admin-guards.unit.test.ts && NODE_ENV=test tsx tests/unit/schemas-and-validation.unit.test.ts && NODE_ENV=test tsx tests/unit/idempotency.unit.test.ts",
+    "test:unit": "NODE_ENV=test tsx tests/unit/sla-engine.unit.test.ts && NODE_ENV=test tsx tests/unit/auth-and-admin-guards.unit.test.ts && NODE_ENV=test tsx tests/unit/schemas-and-validation.unit.test.ts && NODE_ENV=test tsx tests/unit/idempotency.unit.test.ts && NODE_ENV=test tsx tests/unit/ai-support.unit.test.ts",
     "test:integration": "NODE_ENV=test tsx --env-file-if-exists=.env tests/tickets.test.ts && NODE_ENV=test tsx --env-file-if-exists=.env tests/sla-and-escalation.test.ts",
     "test": "npm run test:unit && npm run test:integration"
   },

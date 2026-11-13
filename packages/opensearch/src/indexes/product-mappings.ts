@@ -11,6 +11,7 @@
  */
 export const PRODUCT_INDEX_SETTINGS = {
   settings: {
+    "index.knn": true,
     number_of_shards: 1,
     number_of_replicas: 0,
     analysis: {
@@ -107,6 +108,15 @@ export const PRODUCT_INDEX_SETTINGS = {
       isFeatured: { type: "boolean" },
       createdAt: { type: "date" },
       updatedAt: { type: "date" },
+      embedding: {
+        type: "knn_vector",
+        dimension: 384,
+        method: {
+          name: "hnsw",
+          space_type: "cosinesimil",
+          engine: "nmslib",
+        },
+      },
     },
   },
 } as const;

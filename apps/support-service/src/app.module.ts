@@ -8,6 +8,7 @@ import { HealthModule } from "./health/health.module.js";
 import { CategoriesModule } from "./modules/categories/categories.module.js";
 import { SlaModule } from "./modules/sla/sla.module.js";
 import { TicketsModule } from "./modules/tickets/tickets.module.js";
+import { AiSupportModule } from "./modules/ai/ai-support.module.js";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter.js";
 
 @Module({
@@ -20,6 +21,7 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter.js";
     CategoriesModule,
     SlaModule,
     TicketsModule,
+    AiSupportModule,
   ],
   providers: [
     {
