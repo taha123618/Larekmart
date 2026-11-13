@@ -16,6 +16,14 @@ services:
   traefik:
     image: traefik:v3.2
     container_name: larekmart-traefik
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.10"
+          memory: 64M
     restart: unless-stopped
     command:
       # API & Dashboard

@@ -36,7 +36,7 @@ This guide details how to run, configure, and use **Rootprint** (log analytics a
 | ----------------- | --------- | ----------------------- | ------------------------------- | ------------------------------------ |
 | **Rootprint UI**  | `8282`    | `http://rootprint:8282` | —                               | Web UI and log analytics dashboard   |
 | **Quickwit API**  | `7280`    | `http://quickwit:7280`  | —                               | Search & indexing engine             |
-| **MinIO S3 API**  | `9000`    | `http://minio:9000`     | `changemeuser` / `changemepass` | S3-compatible storage for index data |
+| **MinIO S3 API**  | `9010` (mapped via `MINIO_API_PORT`, container :9000)    | `http://minio:9000`     | `changemeuser` / `changemepass` | S3-compatible storage for index data (host 9010 avoids ClickHouse 9000) |
 | **MinIO Console** | `9001`    | `http://minio:9001`     | `changemeuser` / `changemepass` | Web management console for buckets   |
 | **PostgreSQL 17** | Internal  | `postgres:5432`         | `rootprint` / `rootprint`       | Metadata database                    |
 

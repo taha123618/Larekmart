@@ -255,7 +255,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
 ┌───────────────────────┐                                           │
 │   analytic-service    │                                           │
 │   Go (Chi) :8004      │                                           │
-│   PostgreSQL (pgx)    │                                           │
+│ ClickHouse & Postgres │                                           │
 └───────────────────────┘                                           │
         ▲                                                           │
         └───────────────────────────────────────────────────────────┘
@@ -349,7 +349,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
    - Prisma packages configure `directUrl` for zero-overhead direct migrations on port 5432 while routing runtime traffic through PgBouncer.
 8. **Decoupled Telemetry Pipeline & Go Ingestion Engine (`analytic-service`)**:
    - High-throughput **Go 1.22 (Chi)** microservice consuming 80+ platform Kafka event streams across all 28 microservices with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
-   - Micro-batches events (1,000 events / 500ms window) directly into monthly partitioned PostgreSQL tables (`PARTITION BY RANGE (created_at)`) with BRIN indexing using native binary COPY protocol (`pgx.CopyFrom`), reducing database write overhead by over **99.8%** compared to single-row inserts.
+   - Single-responsibility dual-target telemetry pipeline: streams raw, unaggregated high-velocity event frames directly into **ClickHouse** columnar storage for high-compression time-series analytics, while writing only pre-aggregated, low-velocity daily KPI summaries into **PostgreSQL** (`postgres-analytics`), eliminating write-amplification and Go heap lock contention under peak shopping bursts.
    - Lock-free atomic counters (`sync/atomic` with CAS bit casting for float64 metrics) provide `<1ms` KPI snapshot queries, backed by Redis TTL read-through caching.
    - Graceful shutdown drains in-flight channels and flushes pending micro-batches on `SIGTERM`/`SIGINT` to guarantee zero event loss.
 9. **Distributed Leader Election & Sweeper Cluster Isolation (`@repo/redis`)**:
@@ -395,7 +395,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - **Live Agent Queues & Workload Analytics**: Agent queue assignment, resolution velocity tracking, and real-time WebSocket event streaming via Socket.IO synchronized horizontally across replicas via a Redis Pub/Sub backplane.
 18. **Real-Time Buyer-to-Seller & Live Support Chat Engine (`chat-service`)**:
     - **Bi-Directional Transport & WebSocket Clustering**: Fastify 5 + Socket.IO microservice running on port `8026` with `@socket.io/redis-adapter` over Redis Pub/Sub for zero-loss horizontal multi-pod fanout. Isolated rooms (`conv:{id}`) support live typing indicators, hybrid room-scoped presence tracking, and delivery acknowledgments without inter-pod memory leakage or $O(N^2)$ socket broadcast fanout.
-    - **Relational Chat Persistence & Participant Isolation (Drizzle ORM + PostgreSQL)**: Durable PostgreSQL storage via Drizzle ORM (`larekmart_chat_db`) across 6 relational tables (`conversations`, `conversation_participants`, `messages`, `message_receipts`, `message_attachments`, `conversation_blocks`). Enforces strict tenant and participant isolation (403 Forbidden for non-participants; verified `ADMIN` oversight).
+    - **Relational Chat Persistence & Participant Isolation (Drizzle ORM + PostgreSQL)**: Durable PostgreSQL storage via Drizzle ORM (`chat_db`) across 6 relational tables (`conversations`, `conversation_participants`, `messages`, `message_receipts`, `message_attachments`, `conversation_blocks`). Enforces strict tenant and participant isolation (403 Forbidden for non-participants; verified `ADMIN` oversight).
     - **Asynchronous Event-Driven Pipeline (Apache Kafka)**: Publishes typed domain events (`chat.conversation.created`, `chat.message.created`, `chat.message.reported`) via `@repo/kafka`. Offline message notifications are consumed by `notification-service`; report abuse events trigger Redis sliding-window velocity checks in `fraud-service` and automatically generate high-priority arbitration tickets in `support-service`.
     - **Communications Trust, Moderation & Zero-Trust Hardening**: Bi-directional participant blocking with instant messaging prohibition, message abuse reporting with category classification (`SPAM`, `HARASSMENT`, `SCAM_OR_FRAUD`), prevention of self-reporting and phantom solo rooms, and constant-time `safeTimingCompare` internal gateway secret verification. Staff intervention auto-registers administrators as active audit-trail participants.
 19. **Automated Synthetic Canary & E2E Health Prober (`@repo/monitoring`, `api-gateway`, `admin`)**:
@@ -493,7 +493,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | **`payment-service`** | Hono, Stripe SDK, Kafka | `8002` | Creates Stripe checkout sessions, verifies Stripe webhooks, mirrors catalog products to Stripe, and processes automated Saga refunds; publishes `payment.successful`. |
 | **`auth-service`** | Express 5, Clerk Backend SDK, Kafka | `8003` | Admin user management proxying Clerk backend; publishes `user.created`. |
 | **`email-service`** | Node.js (ESM), Nodemailer (Gmail OAuth2), Kafka | — | Headless worker consuming `user.created` (welcome) and `order.created` (order receipts). |
-| **`analytic-service`** | Go 1.22 (Chi), PostgreSQL (`pgx/v5`), Redis, Kafka, Prometheus | `8004` | Decoupled multithreaded Kafka ingestion, binary `pgx.CopyFrom` batching, partitioned storage with BRIN indexes, lock-free atomic KPI counters, and REST analytics. |
+| **`analytic-service`** | Go 1.22 (Chi), ClickHouse, PostgreSQL (`pgx/v5`), Redis, Kafka, Prometheus | `8004` | Decoupled multithreaded Kafka ingestion, ClickHouse columnar OLAP time-series streaming, pre-aggregated PostgreSQL KPI summaries, lock-free atomic counters, and REST analytics. |
 | **`notification-service`** | Go 1.22 (Chi), PostgreSQL, Redis, WebSockets, Kafka, OpenTelemetry | `8005` | Multi-channel notification orchestration (Email, SMS, Push, In-App), worker pools, Redis deduplication, and real-time WebSocket hub. |
 | **`search-service`** | Fastify 5, OpenSearch, Redis, Kafka, Clerk | `8006` | Product search, autocomplete, faceting, rate limiting, Kafka-driven indexing, and zero-downtime reindexing. |
 | **`inventory-service`** | Hono 4, Prisma, PostgreSQL, Redis, Kafka, Clerk | `8007` | Stock availability, High-Velocity Redis Stock Gatekeeper (Lua decrement), centralized stock counters, reservations, and inventory events. |
@@ -580,8 +580,10 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 # ==============================================================================
 # Option A: Full Docker Compose Environment (Recommended)
 # ==============================================================================
-# Spins up backing databases (Postgres with pgvector, MongoDB replica set, isolated MySQL instances for tax_db & return_db, Redis,
-# 3-broker Kafka KRaft cluster, OpenSearch), Kafka UI, all 28 backend services, and both Next.js frontends:
+# Spins up backing databases (Postgres with pgvector, isolated postgres-analytics, ClickHouse columnar OLAP,
+# MongoDB replica set, isolated MySQL instances for tax_db & return_db, Redis cache & redis-state,
+# PgBouncer connection pooling, 3-broker Kafka KRaft cluster, OpenSearch), Kafka UI, all 28 backend services,
+# and all three frontends (Storefront, Admin, Seller):
 docker compose up -d --build
 
 # View logs:
@@ -596,8 +598,8 @@ docker compose down
 # 1. Automated monorepo setup (dependencies, .env files, AI skills sync)
 pnpm run setup
 
-# 2. Start backing infrastructure in Docker (PostgreSQL, MongoDB, Mongo-Express, MySQL tax_db, MySQL return_db, Redis, 3-broker Kafka, OpenSearch, Kafka UI)
-docker compose up -d postgres mongo mongo-express mysql mysql-returns redis kafka-broker-1 kafka-broker-2 kafka-broker-3 opensearch kafka-ui
+# 2. Start backing infrastructure in Docker (PostgreSQL, PgBouncer, ClickHouse, postgres-analytics, MongoDB, Mongo-Express, MySQL tax_db, MySQL return_db, Redis, redis-state, 3-broker Kafka, OpenSearch, Kafka UI)
+docker compose up -d postgres pgbouncer postgres-analytics clickhouse mongo mongo-express mysql mysql-returns redis redis-state kafka-broker-1 kafka-broker-2 kafka-broker-3 opensearch kafka-ui
 
 # 3. Generate Prisma Clients & apply database migrations
 pnpm --filter @repo/product-db db:generate

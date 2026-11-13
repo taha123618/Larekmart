@@ -45,6 +45,36 @@ name: larekmart-observability
 #   fails to start and Grafana can show "No data".
 # ============================================================================
 
+# ============================================================================
+# Observability Deploy Resource Profiles (Anti-Starvation Host Caps)
+# ============================================================================
+x-obs-heavy-deploy: &obs-heavy-deploy
+  resources:
+    limits:
+      cpus: "0.75"
+      memory: 768M
+    reservations:
+      cpus: "0.15"
+      memory: 128M
+
+x-obs-medium-deploy: &obs-medium-deploy
+  resources:
+    limits:
+      cpus: "0.50"
+      memory: 512M
+    reservations:
+      cpus: "0.10"
+      memory: 64M
+
+x-obs-light-deploy: &obs-light-deploy
+  resources:
+    limits:
+      cpus: "0.25"
+      memory: 256M
+    reservations:
+      cpus: "0.05"
+      memory: 32M
+
 services:
   # ────────────────────────────────────────────────────────────────────────────
   # Prometheus — Metrics collection and alerting engine
@@ -52,6 +82,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.53.0
     container_name: larekmart-prometheus
+    deploy: *obs-heavy-deploy
     restart: unless-stopped
     command:
       - --config.file=/etc/prometheus/prometheus.yml
@@ -82,6 +113,7 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.27.0
     container_name: larekmart-alertmanager
+    deploy: *obs-light-deploy
     restart: unless-stopped
     command:
       - --config.file=/etc/alertmanager/alertmanager.yml
@@ -100,6 +132,7 @@ services:
   grafana:
     image: grafana/grafana:11.2.0
     container_name: larekmart-grafana
+    deploy: *obs-medium-deploy
     restart: unless-stopped
     ports:
       - "3001:3000"
@@ -135,6 +168,7 @@ services:
   loki:
     image: grafana/loki:3.1.0
     container_name: larekmart-loki
+    deploy: *obs-medium-deploy
     restart: unless-stopped
     ports:
       - "3100:3100"
@@ -157,6 +191,7 @@ services:
   tempo:
     image: grafana/tempo:2.6.1
     container_name: larekmart-tempo
+    deploy: *obs-medium-deploy
     restart: unless-stopped
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
@@ -179,6 +214,7 @@ services:
   promtail:
     image: grafana/promtail:3.1.0
     container_name: larekmart-promtail
+    deploy: *obs-light-deploy
     user: root
     restart: unless-stopped
     command: -config.file=/etc/promtail/config.yml
@@ -202,6 +238,7 @@ services:
   node-exporter:
     image: prom/node-exporter:v1.8.2
     container_name: larekmart-node-exporter
+    deploy: *obs-light-deploy
     restart: unless-stopped
     command:
       - --path.procfs=/host/proc
@@ -223,6 +260,7 @@ services:
   redis-exporter:
     image: oliver006/redis_exporter:v1.62.0
     container_name: larekmart-redis-exporter
+    deploy: *obs-light-deploy
     restart: unless-stopped
     environment:
       REDIS_ADDR: redis://redis:6379
@@ -237,6 +275,7 @@ services:
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:v0.15.0
     container_name: larekmart-postgres-exporter
+    deploy: *obs-light-deploy
     restart: unless-stopped
     environment:
       DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres:5432/product_db?sslmode=disable
@@ -251,6 +290,7 @@ services:
   mongodb-exporter:
     image: percona/mongodb_exporter:0.41.2
     container_name: larekmart-mongodb-exporter
+    deploy: *obs-light-deploy
     restart: unless-stopped
     environment:
       MONGODB_URI: "mongodb://${MONGO_INITDB_ROOT_USERNAME:-root}:${MONGO_INITDB_ROOT_PASSWORD:-example}@mongo:27017/admin?authSource=admin"
@@ -265,6 +305,7 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: larekmart-cadvisor
+    deploy: *obs-light-deploy
     restart: unless-stopped
     privileged: true
     volumes:
@@ -288,6 +329,7 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.104.0
     container_name: larekmart-otel-collector
+    deploy: *obs-medium-deploy
     restart: unless-stopped
     command:
       - --config=/etc/otel-collector-config.yml

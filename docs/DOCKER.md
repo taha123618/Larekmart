@@ -110,16 +110,18 @@ docker/
 | **`client`**             | `3002`                            | `127.0.0.1:3002`                     | Traefik Ingress     | Next.js 16 Storefront UI (`shop.localhost`)                                   |
 | **`admin`**              | `3003`                            | `127.0.0.1:3003`                     | Traefik Ingress     | Next.js 15 Admin Dashboard UI (`admin.localhost`)                             |
 | **`seller`**             | `3004`                            | `127.0.0.1:3004`                     | Traefik Ingress     | Nuxt 3 Seller Dashboard UI (`seller.localhost`)                               |
-| **`dozzle`** (Nginx)     | `80` (proxy) / `8888` (dozzle)    | `127.0.0.1:8085`                     | Traefik Ingress     | Real-time container log streaming (`logs.localhost` / `:8085`)                |
+| **`dozzle`**             | `8888`                            | `127.0.0.1:8888`                     | Traefik Ingress     | Real-time container log streaming (`logs.localhost` / `:8888`)                |
 | **`rootprint`**          | `8282`                            | `127.0.0.1:8282`                     | Traefik Ingress     | Distributed log analytics & search UI (`rootprint.localhost` / `:8282`)       |
-| **`minio`** (Rootprint)  | `9000` (API), `9001` (Console)    | `127.0.0.1:9000`, `127.0.0.1:9001`   | **Internal Only**   | S3-compatible index storage & web console for Quickwit/Rootprint              |
+| **`minio`** (Rootprint)  | `9000` (API), `9001` (Console)    | `127.0.0.1:9010`, `127.0.0.1:9001`   | **Internal Only**   | S3-compatible index storage & web console for Quickwit/Rootprint (host 9010 avoids ClickHouse 9000 collision) |
 | **`quickwit`**           | `7280`                            | `127.0.0.1:7280`                     | **Internal Only**   | Fast distributed search & indexing engine for Rootprint logs                  |
 | **`caddy`** (profile)    | `80`, `443`                       | `127.0.0.1:8086`, `127.0.0.1:8443`   | Optional Ingress    | Standalone HTTP/2 & HTTP/3 reverse proxy (run via `--profile caddy`)          |
-| **`kafka-ui`**           | `8080`                            | `127.0.0.1:8080`                     | Traefik Ingress     | Topic & consumer monitoring UI (`kafka.localhost`)                            |
+| **`kafka-ui`**           | `8080`                            | `127.0.0.1:8080`                     | Traefik Ingress     | Topic & consumer monitoring UI (`kafka.localhost` bound to DEV_TOOLS_BIND_IP) |
 | `postgres`               | `5432`                            | `127.0.0.1:5432`                     | **Internal Only**   | PostgreSQL + pgvector databases                                               |
 | `mongo`                  | `27017`                           | `127.0.0.1:27017`                    | **Internal Only**   | MongoDB Database                                                              |
 | `mongo-express`          | `8081`                            | `127.0.0.1:8081`                     | **Internal Only**   | Mongo-Express Web Admin UI                                                    |
 | `redis`                  | `6379`                            | `127.0.0.1:6379`                     | **Internal Only**   | In-memory cache & pub/sub                                                     |
+| `redis-state`            | `6380`                            | `127.0.0.1:6380`                     | **Internal Only**   | Non-evicting Redis store (noeviction, outbox locks, SingleFlight leases)       |
+| `clickhouse`             | `8123` (HTTP), `9000` (Native)    | `127.0.0.1:8123`, `127.0.0.1:9000`   | **Internal Only**   | Columnar OLAP warehouse for high-velocity raw time-series event streams       |
 | `kafka`                  | `9092` (internal) / `9094` (host) | `127.0.0.1:9092, 127.0.0.1:9094`     | **Internal Only**   | Apache Kafka KRaft event broker                                               |
 | `opensearch`             | `9200`, `9600`                    | `127.0.0.1:9200, 127.0.0.1:9600`     | **Internal Only**   | Product search & autocomplete engine                                          |
 | `product-service`        | `8000`                            | `127.0.0.1:8000`                     | **Internal Only**   | Product catalog CRUD & sync                                                   |
@@ -166,11 +168,11 @@ To eliminate route collisions where Next.js dynamic catch-all pages (`[[...slug]
 
 | Router                 | Priority | Matching Rule                                                                                                               | Target Service       | Purpose / Middlewares                                                                |
 | :--------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------- | :------------------- | :----------------------------------------------------------------------------------- |
-| **`api-gateway-ws`**   | `120`    | `(Host(api.localhost) \|\| Host(...) \|\| Host(localhost)) && PathPrefix(/ws)`                                              | `api-gateway` (8090) | Sticky session cookie (`lm_ws_affinity`) for real-time WebSocket session persistence |
+| **`api-gateway-ws`**   | `120`    | `(Host(api.localhost) || Host(...) || Host(localhost)) && (PathPrefix(/ws) || PathPrefix(/socket.io))` | `api-gateway` (8090) | Sticky session cookie (`lm_ws_affinity`) for real-time WebSocket & Socket.IO session persistence |
 | **`api-gateway`**      | `100`    | `Host(api.localhost)`                                                                                                       | `api-gateway` (8090) | Dedicated API host routing; native Fastify `/api/v1/*` handling, rate limiting       |
-| **`api-gateway-path`** | `100`    | `(Host(shop.localhost) \|\| Host(...) \|\| Host(localhost)) && (PathPrefix(/api) \|\| PathPrefix(/notifications) \|\| ...)` | `api-gateway` (8090) | Shared-domain API path router strictly bound with `&&` (zero frontend asset overlap) |
+| **`api-gateway-path`** | `100`    | `(Host(shop.localhost) || Host(...) || Host(localhost)) && (PathPrefix(/api) || PathPrefix(/notifications) || ...)` | `api-gateway` (8090) | Shared-domain API path router strictly bound with `&&` (zero frontend asset overlap) |
 | **`admin`**            | `60`     | `Host(admin.localhost)`                                                                                                     | `admin` (3003)       | Next.js admin dashboard UI                                                           |
-| **`client`**           | `50`     | `Host(shop.localhost) \|\| Host(larekmart.localhost) \|\| Host(localhost)`                                                  | `client` (3002)      | Next.js storefront customer UI (cleanly receives all root and hydration traffic)     |
+| **`client`**           | `50`     | `Host(shop.localhost) || Host(larekmart.localhost) || Host(localhost)`                                                  | `client` (3002)      | Next.js storefront customer UI (cleanly receives all root and hydration traffic)     |
 
 ### 4.2 Unified Storefront Client Environment
 
@@ -186,12 +188,12 @@ Both storefront and admin frontends route all HTTP operations uniformly through 
 
 ## 5. Microservice Resource Limits & Anti-Starvation Profiles
 
-To prevent stateful datastores and 23 concurrent microservices from competing greedily for host memory and triggering the Linux Out-Of-Memory (OOM) killer, `docker-compose.yml` standardizes resource boundaries using 6 reusable YAML extension profiles:
+To prevent stateful datastores and 28 concurrent microservices from competing greedily for host memory and triggering the Linux Out-Of-Memory (OOM) killer, `docker-compose.yml` standardizes resource boundaries using 6 reusable YAML extension profiles:
 
 | Profile Anchor          | CPU Limit | Memory Limit | CPU Reservation | Memory Reservation | Assigned Workspaces                                                                                                                                                 |
 | :---------------------- | :-------- | :----------- | :-------------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `x-microservice-deploy` | `0.50`    | `512M`       | `0.10`          | `128M`             | Standard microservices: Auth, Order, Payment, Product, Catalog, Inventory, User, Shipping, Media, Review, Wishlist, Promotion, Tax, Return, Pricing, Vendor, Seller |
-| `x-heavy-deploy`        | `1.00`    | `1024M`      | `0.20`          | `256M`             | Heavy workloads: `recommendation-service` (pgvector), `api-gateway`, `client`, `admin`, `mongo`, Kafka Brokers 1–3                                                  |
+| `x-heavy-deploy`        | `1.00`    | `1024M`      | `0.20`          | `256M`             | Heavy workloads: `analytic-service`, `recommendation-service` (pgvector), `api-gateway`, `client`, `admin`, `mongo`, Kafka Brokers 1–3                              |
 | `x-database-deploy`     | `1.50`    | `1536M`      | `0.25`          | `512M`             | Primary stateful engines: `postgres` & `opensearch`                                                                                                                 |
 | `x-search-deploy`       | `0.75`    | `768M`       | `0.15`          | `256M`             | Indexing & isolated relational nodes: `search-service`, `postgres-analytics`, `mysql` (Tax DB), `mysql-returns` (Return DB)                                         |
 | `x-light-deploy`        | `0.25`    | `256M`       | `0.05`          | `64M`              | Background workers & utilities: `email-service`, `media-cleanup`, `pgbouncer`, `mongo-express`                                                                      |

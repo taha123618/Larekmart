@@ -9,13 +9,14 @@ High-throughput, multithreaded Go analytics microservice and worker that consume
    - Ingestion is fully decoupled from processing: a dedicated reader goroutine consumes 70+ platform topics across all 25 microservices and immediately deposits events into a thread-safe, bounded channel queue buffer (10,000 capacity).
    - Kafka heartbeat loops run uninterrupted in their own goroutine, completely eliminating event-loop starvation, heartbeat timeouts (`session.timeout.ms`), and catastrophic consumer group rebalance storms under peak flash-sale loads.
 
-2. **Binary COPY Micro-Batching (`pgx.CopyFrom`)**:
-   - A dedicated worker pool drains the bounded buffer and persists events in micro-batches (up to 1,000 events or 500ms flush window) using PostgreSQL's native binary COPY protocol (`pgx.CopyFrom`).
-   - Bypasses SQL query parsing, tokenization, and query planning overhead, delivering 5–10x higher write throughput than standard multi-row `INSERT` statements.
+2. **Single-Responsibility Storage Routing & Micro-Batching**:
+   - A dedicated worker pool drains the bounded buffer and persists events in micro-batches (up to 1,000 events or 500ms flush window).
+   - Raw, unaggregated time-series frames stream directly to **ClickHouse** columnar storage (`events` table).
+   - PostgreSQL (`postgres-analytics`) receives only pre-aggregated daily KPI rollups (`IncrementDailySummary`), cutting write I/O by >99% and eliminating dual-write Go runtime heap inflation.
 
-3. **Time-Partitioned Storage & Columnar Analytics Engine**:
-   - Primary analytical data resides in **ClickHouse** (port `8123` HTTP / `9000` TCP) utilizing `ReplacingMergeTree` columnar storage with `toYYYYMM` partitioning and native Kafka streaming engine (`ENGINE = Kafka`) with materialized views for **0% compute overhead on backend nodes**.
-   - PostgreSQL 16 (`analytics_events` table) acts as dual-path transactional analytical storage, partitioned by month (`PARTITION BY RANGE (created_at)`) with Block Range Indexes (BRIN).
+3. **Time-Partitioned Columnar Analytics Engine**:
+   - Primary analytical data resides in **ClickHouse** (port `8123` HTTP / `9000` TCP) utilizing `ReplacingMergeTree` columnar storage with `toYYYYMM` partitioning and native micro-batched ingestion.
+   - PostgreSQL 16 acts as transactional relational storage for daily KPI summary projections with Block Range Indexes (BRIN).
 
 4. **Lock-Free In-Memory Atomic Counters**:
    - Real-time KPI summaries (`/analytics/summary`, `/analytics/merchants`) query lock-free atomic counters (`sync/atomic` with CAS bit casting for float64 revenue and tax metrics) for instant `<1ms` response times.

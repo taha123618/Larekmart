@@ -96,7 +96,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
       POSTGRES_DB: ${POSTGRES_DB:-product_db}
-      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db,commission_db,payout_db,fraud_db,larekmart_fraud_db,larekmart_payout_db,support_db,larekmart_support_db,chat_db,larekmart_chat_db}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db,commission_db,payout_db,fraud_db,support_db,chat_db}
     command:
       - "postgres"
       - "-c"
@@ -539,7 +539,7 @@ services:
     deploy: *cache-deploy
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${DEV_TOOLS_BIND_IP:-127.0.0.1}:8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: larekmart-cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092
@@ -628,6 +628,9 @@ services:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8001:8001"
     env_file:
       - ./apps/order-service/.env
+    environment:
+      - "REDIS_URL=redis://redis:6379"
+      - "REDIS_STATE_URL=redis://redis-state:6380"
     healthcheck:
       test:
         [
@@ -711,7 +714,7 @@ services:
       context: ./apps/analytic-service
       dockerfile: Dockerfile
     container_name: larekmart-analytic-service
-    deploy: *microservice-deploy
+    deploy: *heavy-deploy
     restart: unless-stopped
     expose:
       - "8004"
@@ -720,6 +723,7 @@ services:
     environment:
       - "DATABASE_URL=postgresql://${POSTGRES_ANALYTICS_USER:-postgres}:${POSTGRES_ANALYTICS_PASSWORD:-password123}@postgres-analytics:5432/analytics_db?sslmode=disable"
       - "REDIS_URL=redis://redis:6379"
+      - "REDIS_STATE_URL=redis://redis-state:6380"
       - "REDIS_KEY_PREFIX=analytics:v1:"
       - "KAFKA_BROKERS=kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092"
       - "KAFKA_GROUP_ID=analytic-service-group"
@@ -842,6 +846,11 @@ services:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8007:8007"
     env_file:
       - ./apps/inventory-service/.env
+    environment:
+      - "DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/inventory_db?schema=public&pgbouncer=true&statement_cache_size=0"
+      - "DIRECT_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres:5432/inventory_db?schema=public"
+      - "REDIS_URL=redis://redis:6379"
+      - "REDIS_STATE_URL=redis://redis-state:6380"
     healthcheck:
       test:
         [
@@ -908,6 +917,9 @@ services:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8009:8009"
     env_file:
       - ./apps/cart-service/.env
+    environment:
+      - "REDIS_URL=redis://redis:6379"
+      - "REDIS_STATE_URL=redis://redis-state:6380"
     healthcheck:
       test:
         [
@@ -943,6 +955,7 @@ services:
       - "DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/catalog_db?schema=public&pgbouncer=true&statement_cache_size=0"
       - "DATABASE_READ_REPLICA_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/catalog_db?schema=public&pgbouncer=true&statement_cache_size=0"
       - "REDIS_URL=redis://redis:6379"
+      - "REDIS_STATE_URL=redis://redis-state:6380"
       - "REDIS_KEY_PREFIX=catalog:v1:"
       - "KAFKA_BROKERS=kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092"
       - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
@@ -1197,6 +1210,9 @@ services:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:8016:8016"
     env_file:
       - ./apps/promotion-service/.env
+    environment:
+      - "REDIS_URL=redis://redis:6379"
+      - "REDIS_STATE_URL=redis://redis-state:6380"
     healthcheck:
       test:
         [
@@ -1300,6 +1316,11 @@ services:
       - "${INTERNAL_SERVICE_BIND_IP:-127.0.0.1}:${PRICING_SERVICE_PORT:-8019}:8019"
     env_file:
       - ./apps/pricing-service/.env
+    environment:
+      - "DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/pricing_db?schema=public&pgbouncer=true&statement_cache_size=0"
+      - "DIRECT_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres:5432/pricing_db?schema=public"
+      - "REDIS_URL=redis://redis:6379"
+      - "REDIS_STATE_URL=redis://redis-state:6380"
     healthcheck:
       test:
         [
@@ -1474,7 +1495,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://localhost:8024/health || exit 1",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8024/health'')" || exit 1',
         ]
       interval: 15s
       timeout: 5s
@@ -1505,8 +1526,9 @@ services:
       - ./apps/support-service/.env
     environment:
       - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/support_db?schema=public&pgbouncer=true&statement_cache_size=0"
-      - "DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/larekmart_support_db?schema=public"
+      - "DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/support_db?schema=public"
       - "REDIS_URL=redis://redis:6379"
+      - "REDIS_STATE_URL=redis://redis-state:6380"
       - "KAFKA_BROKERS=kafka:9092,kafka-broker-2:9092,kafka-broker-3:9092"
       - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
       - "GATEWAY_INTERNAL_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
@@ -1549,6 +1571,7 @@ services:
       - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/chat_db?schema=public&pgbouncer=true&statement_cache_size=0"
       - "DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/chat_db?schema=public"
       - "REDIS_URL=redis://redis:6379"
+      - "REDIS_STATE_URL=redis://redis-state:6380"
       - "KAFKA_BROKERS=kafka:9092,kafka-broker-2:9092,kafka-broker-3:9092"
       - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
     healthcheck:
@@ -1619,6 +1642,7 @@ services:
       - "SUPPORT_SERVICE_URL=http://support-service:8025"
       - "CHAT_SERVICE_URL=http://chat-service:8026"
       - "REDIS_URL=redis://redis:6379"
+      - "REDIS_STATE_URL=redis://redis-state:6380"
       - "CANARY_DAEMON_ENABLED=${CANARY_DAEMON_ENABLED:-false}"
     healthcheck:
       test:
@@ -1654,7 +1678,7 @@ services:
       - "traefik.http.routers.api-gateway-path.service=api-gateway"
       - "traefik.http.routers.api-gateway-path.priority=100"
       # Real-Time WebSocket Router with Session Affinity for Horizontal Scaling
-      - "traefik.http.routers.api-gateway-ws.rule=(Host(`${API_DOMAIN:-api.localhost}`) || Host(`${DOMAIN:-localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`) || Host(`${ADMIN_DOMAIN:-admin.localhost}`)) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.api-gateway-ws.rule=(Host(`${API_DOMAIN:-api.localhost}`) || Host(`${DOMAIN:-localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`) || Host(`${ADMIN_DOMAIN:-admin.localhost}`)) && (PathPrefix(`/ws`) || PathPrefix(`/socket.io`))"
       - "traefik.http.routers.api-gateway-ws.entrypoints=web,websecure"
       - "traefik.http.routers.api-gateway-ws.service=api-gateway-ws-svc"
       - "traefik.http.routers.api-gateway-ws.priority=120"

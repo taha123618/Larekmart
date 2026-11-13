@@ -11,6 +11,14 @@ services:
   caddy:
     image: caddy:alpine
     container_name: larekmart-caddy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
+        reservations:
+          cpus: "0.05"
+          memory: 64M
     restart: unless-stopped
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
@@ -22,12 +30,11 @@ services:
       - "${CADDY_BIND_IP:-127.0.0.1}:${CADDY_HTTP_PORT:-8086}:80"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.caddy-app.rule=Host(`${APP_DOMAIN:-app.localhost}`) || Host(`${CLIENT_DOMAIN:-shop.localhost}`) || Host(`${STORE_DOMAIN:-larekmart.localhost}`) || Host(`${SELLER_DOMAIN:-seller.localhost}`)"
+      - "traefik.http.routers.caddy-app.rule=Host(`${APP_DOMAIN:-app.localhost}`)"
+      - "traefik.http.routers.caddy-app.priority=10"
       - "traefik.http.services.caddy-app.loadbalancer.server.port=80"
       - "traefik.http.routers.caddy-app.entrypoints=web,websecure"
       - "traefik.docker.network=larekmart-network"
-      - "traefik.http.routers.caddy-app.tls=true"
-      - "traefik.http.routers.caddy-app.tls.certresolver=cert-resolver"
     networks:
       - larekmart-network
 
