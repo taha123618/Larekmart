@@ -311,9 +311,12 @@ export async function registerProxyRoutes(
           rewritten[GATEWAY_HEADERS.INTERNAL_SECRET] =
             env.INTERNAL_SERVICE_SECRET;
 
-          // Forward W3C traceparent if present
-          if (originalReq.headers["traceparent"]) {
-            rewritten["traceparent"] = originalReq.headers["traceparent"];
+          // Forward or inject W3C traceparent
+          const traceparent =
+            (originalReq as FastifyRequest).traceContext?.traceparent ||
+            (originalReq.headers["traceparent"] as string | undefined);
+          if (traceparent) {
+            rewritten["traceparent"] = traceparent;
           }
 
           // Inject user identity ONLY if authenticated by verified Clerk claims

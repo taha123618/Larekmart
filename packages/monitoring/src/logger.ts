@@ -6,6 +6,7 @@ import type {
   LoggerOptions,
 } from "@repo/types";
 import { getMonitoringConfig } from "./config.js";
+import { getTraceContext } from "./tracing/context.js";
 
 const LEVEL_WEIGHTS: Record<LogLevel, number> = {
   debug: 10,
@@ -195,10 +196,19 @@ export class Logger {
       ...metadata,
     };
 
+    const activeTrace = getTraceContext();
+    const traceId =
+      (typeof mergedMetadata.traceId === "string"
+        ? mergedMetadata.traceId
+        : undefined) || activeTrace?.traceId;
+    const spanId =
+      (typeof mergedMetadata.spanId === "string"
+        ? mergedMetadata.spanId
+        : undefined) || activeTrace?.spanId;
     const correlationId =
       typeof mergedMetadata.correlationId === "string"
         ? mergedMetadata.correlationId
-        : undefined;
+        : activeTrace?.correlationId;
     const requestId =
       typeof mergedMetadata.requestId === "string"
         ? mergedMetadata.requestId
@@ -209,6 +219,8 @@ export class Logger {
         : undefined;
 
     // Clean extracted top-level identifiers from nested metadata
+    if (traceId) delete mergedMetadata.traceId;
+    if (spanId) delete mergedMetadata.spanId;
     if (correlationId) delete mergedMetadata.correlationId;
     if (requestId) delete mergedMetadata.requestId;
     if (userId) delete mergedMetadata.userId;
@@ -219,6 +231,8 @@ export class Logger {
       message,
       service: this.serviceName,
       environment: this.environment,
+      ...(traceId && { traceId }),
+      ...(spanId && { spanId }),
       ...(correlationId && { correlationId }),
       ...(requestId && { requestId }),
       ...(userId && { userId }),
@@ -258,6 +272,7 @@ export class Logger {
     const serviceStr = `${ANSI_COLORS.dim}[${entry.service}]${ANSI_COLORS.reset}`;
 
     let reqCtx = "";
+    if (entry.traceId) reqCtx += ` [trace:${entry.traceId.slice(0, 8)}]`;
     if (entry.requestId) reqCtx += ` [req:${entry.requestId.slice(0, 8)}]`;
     if (entry.userId) reqCtx += ` [user:${entry.userId}]`;
 

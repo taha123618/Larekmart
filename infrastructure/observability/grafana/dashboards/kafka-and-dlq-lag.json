@@ -1,0 +1,99 @@
+{
+  "title": "Larekmart — Kafka Consumer Lag & DLQ Backlog",
+  "uid": "larekmart-kafka-dlq-lag",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "tags": ["larekmart", "kafka", "dlq", "lag"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active DLQ Backlog (Unread Dead Letters)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(larekmart_kafka_dlq_unread_messages)",
+          "legendFormat": "Unread DLQ Total",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Kafka Event Throughput (msgs/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": { "fillOpacity": 15, "lineWidth": 2 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(larekmart_kafka_events_consumed_total[1m])) by (topic)",
+          "legendFormat": "{{topic}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Dead-Letter Rate (Poison Pills & Terminal Retries)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 20, "lineWidth": 2 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(larekmart_kafka_dlq_messages_total[1m])) by (dlqTopic)",
+          "legendFormat": "{{dlqTopic}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Consumer Group Lag by Topic",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 6 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "fillOpacity": 10, "lineWidth": 2 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(larekmart_kafka_consumer_lag) by (consumergroup, topic)",
+          "legendFormat": "{{consumergroup}} - {{topic}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

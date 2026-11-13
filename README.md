@@ -512,7 +512,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | **`@repo/kafka`**        | Kafka client wrapper, Dead-Letter Queue (DLQ), poison-pill fast-failing, exponential backoff retries, and local 3-broker compose.                                                                                                                                                                                                                                                                                                      | All backend services                                                    |
 | **`@repo/types`**        | Central contract package: API domain types, Kafka payload interfaces, and shared Zod form schemas.                                                                                                                                                                                                                                                                                                                                     | All applications & packages                                             |
-| **`@repo/monitoring`**   | Framework-agnostic structured logging, health checks, metrics, and performance telemetry.                                                                                                                                                                                                                                                                                                                                              | All applications & packages                                             |
+| **`@repo/monitoring`**   | Framework-agnostic structured logging, health checks, metrics, OpenTelemetry distributed tracing, W3C trace context propagation, and performance telemetry.                                                                                                                                                                                                                                                                            | All applications & packages                                             |
 | **`@repo/redis`**        | Redis client factory, `DistributedLeaderElector` consensus with monotonic fencing tokens & decoupled heartbeat renewal, `withClusterLock` & `withRedlockConsensus` wrappers, Read-Your-Writes consistency helpers (`markReadYourWrites`, `isReadYourWritesActive`), distributed mutation idempotency primitives, CRC16 slot pinning with strict `{tenant_id:warehouse_id}` bracket validation, typed cache helpers, and rate limiters. | Product, order, search, analytic, inventory, catalog, and cart services |
 | **`@repo/opensearch`**   | OpenSearch client factory, product mappings, query builders, indexing, search, and reindex helpers.                                                                                                                                                                                                                                                                                                                                    | Product and search services                                             |
 | **`@repo/product-db`**   | PostgreSQL catalog persistence via Prisma schema and generated `prisma` client singleton with PgBouncer `directUrl`.                                                                                                                                                                                                                                                                                                                   | `product-service`, `@repo/types` (type-only)                            |
@@ -542,6 +542,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 - **Message Broker**: Apache Kafka (KafkaJS, 3-broker KRaft cluster with quorum voting, min ISR 2, and Kafka UI)
 - **Authentication**: Clerk (`@clerk/nextjs`, `@clerk/vue`, `@clerk/express`, `@clerk/fastify`, `@hono/clerk-auth`)
 - **Payments**: Stripe (Custom Checkout Element + Webhooks)
+- **Observability & Distributed Tracing**: OpenTelemetry Collector, Grafana Tempo 2.6.1 (distributed tracing & saga spans), Prometheus (metrics), Grafana Loki (logs with automated trace linking), and Grafana SRE dashboards
 
 ---
 
@@ -612,22 +613,23 @@ pnpm dev
 
 ### 3. Core Commands
 
-| Task                | Command                                                     | Description                                                                         |
-| ------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                        |
-| **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                 |
-| **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                            |
-| **Kafka DLQ CLI**   | `pnpm dlq list` / `pnpm dlq inspect`                        | Inspect dead letters, error stack traces, and execute guarded replays               |
-| **Init Topics**     | `pnpm kafka:init-topics`                                    | Provision all 186 topics on the 3-broker KRaft Kafka cluster                        |
-| **Type Check**      | `pnpm check-types`                                          | Run strict TypeScript type checks across all workspaces                             |
-| **Test Suites**     | `pnpm test`                                                 | Run unit and integration test suites across 31 workspaces (Node, Go, Python)        |
-| **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                      |
-| **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                         |
-| **Format Check**    | `pnpm format:check`                                         | Verify Prettier formatting compliance across the codebase                           |
-| **Build**           | `pnpm build`                                                | Run configured builds for the Next.js apps, Node services, packages, and Go service |
-| **Prisma Generate** | `pnpm --filter @repo/product-db db:generate`                | Regenerate Prisma client                                                            |
-| **Prisma Migrate**  | `pnpm --filter @repo/product-db db:migrate`                 | Create and apply development migrations                                             |
-| **Sync Skills**     | `pnpm run skills:sync`                                      | Synchronize `.agents/skills/` to `.cursor/`, `.claude/`, `.gemini/`, and `.github/` |
+| Task                | Command                                                     | Description                                                                          |
+| ------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Development**     | `pnpm dev`                                                  | Run all applications and services concurrently via Turborepo                         |
+| **Scoped Dev**      | `pnpm --filter <workspace> dev`                             | Run a specific application or service (e.g. `notification-service`)                  |
+| **Redis Docker**    | `docker compose -f packages/redis/docker-compose.yml up -d` | Run local Redis for the service caches and rate limiting                             |
+| **Kafka DLQ CLI**   | `pnpm dlq list` / `pnpm dlq inspect`                        | Inspect dead letters, error stack traces, and execute guarded replays                |
+| **Init Topics**     | `pnpm kafka:init-topics`                                    | Provision all 186 topics on the 3-broker KRaft Kafka cluster                         |
+| **Type Check**      | `pnpm check-types`                                          | Run strict TypeScript type checks across all workspaces                              |
+| **Test Suites**     | `pnpm test`                                                 | Run unit and integration test suites across 31 workspaces (Node, Go, Python)         |
+| **Lint**            | `pnpm lint`                                                 | Run ESLint flat checks on `admin` and `client`                                       |
+| **Format**          | `pnpm format`                                               | Run Prettier across all TypeScript, TSX, and Markdown files                          |
+| **Format Check**    | `pnpm format:check`                                         | Verify Prettier formatting compliance across the codebase                            |
+| **Build**           | `pnpm build`                                                | Run configured builds for the Next.js apps, Node services, packages, and Go service  |
+| **Prisma Generate** | `pnpm --filter @repo/product-db db:generate`                | Regenerate Prisma client                                                             |
+| **Prisma Migrate**  | `pnpm --filter @repo/product-db db:migrate`                 | Create and apply development migrations                                              |
+| **Observability**   | `pnpm monitoring:up` / `pnpm monitoring:down`               | Spin up Grafana Tempo, OpenTelemetry Collector, Prometheus, Loki, and SRE dashboards |
+| **Sync Skills**     | `pnpm run skills:sync`                                      | Synchronize `.agents/skills/` to `.cursor/`, `.claude/`, `.gemini/`, and `.github/`  |
 
 ### 4. Running Kubernetes Staging & Development Environments
 

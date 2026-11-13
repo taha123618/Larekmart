@@ -18,6 +18,7 @@ name: larekmart-observability
 #   - Grafana: Unified dashboards & visualization (port 3001)
 #   - Alertmanager: Alert routing & deduplication (port 9093)
 #   - Loki + Promtail: LogQL stream aggregation (port 3100)
+#   - Tempo: Distributed tracing storage & TraceQL engine (port 3200)
 #   - cAdvisor: Per-container resource utilization (port 8087)
 #   - OpenTelemetry Collector: Distributed traces & metrics ingestion (ports 4317/4318)
 #   - Exporters: Node (9100), Redis (9121), Postgres (9187), Mongo (9216)
@@ -26,6 +27,7 @@ name: larekmart-observability
 #   - Grafana UI:           http://localhost:3001 (admin / grafana_admin_secret)
 #   - Prometheus UI:        http://localhost:9090
 #   - Alertmanager UI:      http://localhost:9093
+#   - Tempo API / UI:       http://localhost:3200
 #   - cAdvisor UI:          http://localhost:8087
 #   - OTel Collector:       http://localhost:4318 (HTTP) / localhost:4317 (gRPC)
 #   - Traefik Domain:       http://monitoring.localhost
@@ -108,7 +110,7 @@ services:
       GF_SERVER_DOMAIN: monitoring.larekmart.local
       GF_ALERTING_ENABLED: "true"
       GF_UNIFIED_ALERTING_ENABLED: "true"
-      GF_FEATURE_TOGGLES_ENABLE: "traceqlSearch traceQLStreaming metricsSummary"
+      GF_FEATURE_TOGGLES_ENABLE: "traceqlSearch traceQLStreaming metricsSummary tempoSearch tempoApmTable"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./infrastructure/observability/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -148,6 +150,28 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Tempo — High-scale distributed tracing storage backend
+  # ────────────────────────────────────────────────────────────────────────────
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: larekmart-tempo
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./infrastructure/observability/tempo/tempo.yml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "3200:3200" # Tempo HTTP query / ready endpoint
+    networks:
+      - larekmart-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3200/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ────────────────────────────────────────────────────────────────────────────
   # Promtail — Log shipper: reads Docker container logs and pushes to Loki
@@ -293,6 +317,8 @@ volumes:
     name: larekmart_grafana_data
   loki_data:
     name: larekmart_loki_data
+  tempo_data:
+    name: larekmart_tempo_data
   promtail_positions:
     name: larekmart_promtail_positions
 

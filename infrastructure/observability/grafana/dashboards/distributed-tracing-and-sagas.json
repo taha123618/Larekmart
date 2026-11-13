@@ -1,0 +1,75 @@
+{
+  "title": "Larekmart — Distributed Tracing & Saga Waterfall",
+  "uid": "larekmart-distributed-tracing",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "tags": ["larekmart", "tracing", "tempo", "saga", "opentelemetry"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Order Checkout Saga Duration (P95 / P99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 15, "lineWidth": 2 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(larekmart_http_request_duration_seconds_bucket{route=~\"/api/v1/orders.*|/api/v1/payments.*\"}[5m])) by (le, route))",
+          "legendFormat": "P95: {{route}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(larekmart_http_request_duration_seconds_bucket{route=~\"/api/v1/orders.*|/api/v1/payments.*\"}[5m])) by (le, route))",
+          "legendFormat": "P99: {{route}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Cross-Service Trace Volume (Spans / sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 20, "lineWidth": 2 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(larekmart_spans_emitted_total[1m])) by (service)",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Distributed Traces & Waterfall Explorer (Tempo)",
+      "type": "traces",
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 8 },
+      "datasource": "Tempo",
+      "options": {
+        "showTraceGraph": true,
+        "showSpans": true
+      },
+      "targets": [
+        {
+          "queryType": "search",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

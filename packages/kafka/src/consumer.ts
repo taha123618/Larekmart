@@ -1,5 +1,11 @@
 import type { Kafka, Consumer, Producer } from "kafkajs";
-import { createLogger, captureError, measureAsync } from "@repo/monitoring";
+import {
+  createLogger,
+  captureError,
+  measureAsync,
+  extractTraceContext,
+  runWithTraceContext,
+} from "@repo/monitoring";
 import { getTopicPartitionCount } from "./init-topics.js";
 
 /** Delay before the first retry during consumer connect/subscribe; doubles on every attempt. */
@@ -397,17 +403,86 @@ export const createConsumer = (
           const rawValue = message.value?.toString();
           if (!rawValue) return;
 
-          const offset = message.offset;
-          let parsed: unknown;
+          // Extract W3C Trace Context from Kafka message headers
+          const carrier: Record<string, string> = {};
+          if (message.headers) {
+            for (const [k, v] of Object.entries(message.headers)) {
+              if (v !== undefined && v !== null) {
+                carrier[k] = Buffer.isBuffer(v) ? v.toString("utf8") : String(v);
+              }
+            }
+          }
+          const traceContext = extractTraceContext(carrier);
 
-          // Step 1: Parse JSON Payload (Poison-Pill Detection)
-          try {
-            parsed = JSON.parse(rawValue);
-          } catch (parseError) {
-            captureError(parseError, {
+          await runWithTraceContext(traceContext, async () => {
+            const offset = message.offset;
+            let parsed: unknown;
+
+            // Step 1: Parse JSON Payload (Poison-Pill Detection)
+            try {
+              parsed = JSON.parse(rawValue);
+            } catch (parseError) {
+              captureError(parseError, {
+                serviceName: `kafka-consumer:${groupId}`,
+                logger,
+                context: `consumer.poison_pill_syntax_error:${topic}:partition-${partition}`,
+              });
+
+              await dispatchToDlq({
+                topic,
+                partition,
+                offset,
+                key: message.key,
+                rawPayload: rawValue,
+                error: parseError,
+                attemptCount: 1,
+                isPoisonPill: true,
+              });
+              return; // Poison pill handled; commit offset to prevent stalling partition
+            }
+
+            // Step 2: Handler execution with exponential backoff retries
+            let lastError: unknown;
+            let attempt = 1;
+
+            while (attempt <= maxRetries) {
+              try {
+                await measureAsync(`kafka.handle.${topic}`, async () => {
+                  await handler(parsed);
+                });
+                return; // Success!
+              } catch (handlerError) {
+                lastError = handlerError;
+
+                // Check if handler error is a deterministic poison pill (e.g. Zod validation failure)
+                if (isPoisonPill(handlerError)) {
+                  logger.warn(
+                    `Detected deterministic poison pill in handler for [${topic}], skipping retries`,
+                    { error: String(handlerError), attempt },
+                  );
+                  break;
+                }
+
+                if (attempt < maxRetries) {
+                  const delay = Math.min(
+                    initialRetryDelayMs * backoffMultiplier ** (attempt - 1),
+                    30_000,
+                  );
+                  logger.warn(
+                    `Handler for [${topic}] failed (attempt ${attempt}/${maxRetries}); retrying in ${delay}ms`,
+                    { error: String(handlerError) },
+                  );
+                  await sleep(delay);
+                }
+                attempt++;
+              }
+            }
+
+            // Step 3: Terminal failure -> dispatch to DLQ
+            captureError(lastError, {
               serviceName: `kafka-consumer:${groupId}`,
               logger,
-              context: `consumer.poison_pill_syntax_error:${topic}:partition-${partition}`,
+              context: `consumer.terminal_failure:${topic}:partition-${partition}`,
             });
 
             await dispatchToDlq({
@@ -416,66 +491,10 @@ export const createConsumer = (
               offset,
               key: message.key,
               rawPayload: rawValue,
-              error: parseError,
-              attemptCount: 1,
-              isPoisonPill: true,
+              error: lastError,
+              attemptCount: attempt > maxRetries ? maxRetries : attempt,
+              isPoisonPill: isPoisonPill(lastError),
             });
-            return; // Poison pill handled; commit offset to prevent stalling partition
-          }
-
-          // Step 2: Handler execution with exponential backoff retries
-          let lastError: unknown;
-          let attempt = 1;
-
-          while (attempt <= maxRetries) {
-            try {
-              await measureAsync(`kafka.handle.${topic}`, async () => {
-                await handler(parsed);
-              });
-              return; // Success!
-            } catch (handlerError) {
-              lastError = handlerError;
-
-              // Check if handler error is a deterministic poison pill (e.g. Zod validation failure)
-              if (isPoisonPill(handlerError)) {
-                logger.warn(
-                  `Detected deterministic poison pill in handler for [${topic}], skipping retries`,
-                  { error: String(handlerError), attempt },
-                );
-                break;
-              }
-
-              if (attempt < maxRetries) {
-                const delay = Math.min(
-                  initialRetryDelayMs * backoffMultiplier ** (attempt - 1),
-                  30_000,
-                );
-                logger.warn(
-                  `Handler for [${topic}] failed (attempt ${attempt}/${maxRetries}); retrying in ${delay}ms`,
-                  { error: String(handlerError) },
-                );
-                await sleep(delay);
-              }
-              attempt++;
-            }
-          }
-
-          // Step 3: Terminal failure -> dispatch to DLQ
-          captureError(lastError, {
-            serviceName: `kafka-consumer:${groupId}`,
-            logger,
-            context: `consumer.terminal_failure:${topic}:partition-${partition}`,
-          });
-
-          await dispatchToDlq({
-            topic,
-            partition,
-            offset,
-            key: message.key,
-            rawPayload: rawValue,
-            error: lastError,
-            attemptCount: attempt > maxRetries ? maxRetries : attempt,
-            isPoisonPill: isPoisonPill(lastError),
           });
         },
       });

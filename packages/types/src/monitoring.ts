@@ -15,6 +15,8 @@ export interface LogEntry {
   correlationId?: string;
   requestId?: string;
   userId?: string;
+  traceId?: string;
+  spanId?: string;
   metadata?: LogMetadata;
   error?: {
     name: string;

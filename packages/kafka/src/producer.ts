@@ -1,10 +1,16 @@
 import type { Kafka, Producer } from "kafkajs";
-import { createLogger, captureError, measureAsync } from "@repo/monitoring";
+import {
+  createLogger,
+  captureError,
+  measureAsync,
+  injectTraceContext,
+} from "@repo/monitoring";
 
 const logger = createLogger("kafka-producer");
 
 export interface KafkaSendOptions {
   key?: string;
+  headers?: Record<string, string | Buffer>;
 }
 
 export const createProducer = (kafka: Kafka) => {
@@ -34,12 +40,19 @@ export const createProducer = (kafka: Kafka) => {
   ) => {
     try {
       await measureAsync(`kafka.send.${topic}`, async () => {
+        const headers: Record<string, string | Buffer> = {
+          ...options?.headers,
+        };
+        // Automatically inject active W3C traceparent into Kafka message headers
+        injectTraceContext(headers as Record<string, string>);
+
         await producer.send({
           topic,
           messages: [
             {
               key: options?.key,
               value: JSON.stringify(message),
+              headers,
             },
           ],
         });

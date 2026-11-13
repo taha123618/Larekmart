@@ -50,6 +50,33 @@ export {
   createDatabaseMonitor,
 } from "./hooks.js";
 
+// Distributed Tracing (OpenTelemetry & W3C Trace Context)
+export {
+  generateTraceId,
+  generateSpanId,
+  createTraceparent,
+  parseTraceparent,
+  getTraceContext,
+  runWithTraceContext,
+  extractTraceContext,
+  injectTraceContext,
+  withSpan,
+  initTelemetry,
+  Tracer,
+  Span,
+} from "./tracing/index.js";
+export type {
+  ParsedTraceparent,
+  TraceContext,
+  SpanKind,
+  SpanStatusCode,
+  SpanAttributes,
+  SpanEvent,
+  SpanStatus,
+  SpanData,
+  TelemetryConfig,
+} from "./tracing/index.js";
+
 // Types
 export type {
   LogLevel,
