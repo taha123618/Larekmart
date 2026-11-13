@@ -37,6 +37,7 @@ import {
   MessageSquare,
   Radio,
   Sliders,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
@@ -511,6 +512,14 @@ const AppSidebar = () => {
                   <Link href="/feature-flags">
                     <Sliders />
                     Feature Flags & Canaries
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/system-health">
+                    <Activity />
+                    Synthetic Canary Health
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

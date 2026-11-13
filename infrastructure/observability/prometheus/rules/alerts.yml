@@ -268,3 +268,45 @@ groups:
         annotations:
           summary: "High 5xx error rate on Schema Registry"
           description: "Schema Registry is failing schema registrations or compatibility checks at {{ $value | humanizePercentage }}."
+
+  # ══════════════════════════════════════════════════════
+  # SYNTHETIC CANARY & E2E HEALTH PROBER
+  # ══════════════════════════════════════════════════════
+  - name: canary_prober
+    rules:
+      - alert: SyntheticCheckoutProbeFailure
+        expr: canary_probe_consecutive_failures{scenario="checkout"} >= 2
+        for: 1m
+        labels:
+          severity: critical
+          tier: platform-resilience
+        annotations:
+          summary: "CRITICAL: Consecutive Synthetic Checkout Probe Failures"
+          description: |
+            The synthetic checkout probe has failed {{ $value }} consecutive times.
+            Critical customer checkout flows (stock reservation, order creation, or payment processing) are failing E2E synthetic verification.
+            Remediation: Inspect recent Canary run logs, check inventory-service stock locks, order-service database latency, and payment gateway health.
+
+      - alert: SyntheticReadProbeDegraded
+        expr: canary_probe_sla_percentage{scenario="read"} < 95
+        for: 3m
+        labels:
+          severity: warning
+          tier: platform-resilience
+        annotations:
+          summary: "WARNING: Synthetic Read Probe SLA below 95%"
+          description: |
+            Synthetic read probes (storefront home aggregation, search autocomplete, or edge inventory) have dropped to {{ $value | humanizePercentage }} SLA over the rolling window.
+            Remediation: Check OpenSearch cluster health, Redis edge cache hit ratios, and API Gateway upstream response times.
+
+      - alert: SyntheticProbeLatencyHigh
+        expr: histogram_quantile(0.95, rate(canary_probe_duration_seconds_bucket[5m])) > 3
+        for: 3m
+        labels:
+          severity: warning
+          tier: platform-resilience
+        annotations:
+          summary: "WARNING: Synthetic Canary P95 Latency > 3s"
+          description: |
+            Synthetic canary probe 95th-percentile execution latency is currently {{ $value | humanizeDuration }} (exceeds 3.0s SLA).
+            Remediation: Check downstream service latency breakdown in Admin Health Dashboard (/system-health).

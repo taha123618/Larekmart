@@ -129,6 +129,52 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "id": 6,
+      "title": "Synthetic Canary Prober — Journey SLA (%)",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 30 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 95 },
+              { "color": "green", "value": 99 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "canary_probe_sla_percentage",
+          "legendFormat": "{{scenario}} SLA",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Synthetic Canary Prober — Consecutive Failures & Duration",
+      "type": "timeseries",
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 30 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "canary_probe_consecutive_failures",
+          "legendFormat": "{{scenario}} consecutive failures",
+          "refId": "A"
+        },
+        {
+          "expr": "canary_probe_duration_seconds",
+          "legendFormat": "{{scenario}} duration (s)",
+          "refId": "B"
+        }
+      ]
     }
   ]
 }

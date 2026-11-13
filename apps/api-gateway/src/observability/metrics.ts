@@ -132,3 +132,28 @@ export const gatewaySingleFlightSharedTotal = createCounter(
 // Aliases for backwards compatibility
 export const gatewayUpstreamErrorsTotal = gatewayProxyErrorsTotal;
 export const gatewayUpstreamTimeoutTotal = gatewayProxyTimeoutsTotal;
+
+// Automated Synthetic Canary Prober Metrics
+export const canaryProbeRunsTotal = createCounter(
+  metrics,
+  "canary_probe_runs_total",
+  "Total synthetic canary probe runs partitioned by scenario and status",
+);
+
+export const canaryProbeDurationSeconds = createHistogram(
+  metrics,
+  "canary_probe_duration_seconds",
+  "Duration of synthetic canary probe runs in seconds",
+);
+
+export const canaryProbeConsecutiveFailures = createGauge(
+  metrics,
+  "canary_probe_consecutive_failures",
+  "Current count of consecutive failures for canary scenarios",
+);
+
+export const canaryProbeSlaPercentage = createGauge(
+  metrics,
+  "canary_probe_sla_percentage",
+  "Rolling SLA uptime percentage for canary scenarios",
+);

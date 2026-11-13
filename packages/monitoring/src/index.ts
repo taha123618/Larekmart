@@ -77,6 +77,24 @@ export type {
   TelemetryConfig,
 } from "./tracing/index.js";
 
+// Automated Synthetic Canary & E2E Health Prober
+export {
+  CanaryProber,
+  InMemoryCanaryStorage,
+  SYNTHETIC_PROBE_HEADER,
+  CANARY_SKU_ID,
+  CANARY_VARIANT_ID,
+  CANARY_USER_ID,
+} from "./canary/index.js";
+export type {
+  CanaryScenarioType,
+  CanaryStepResult,
+  CanaryProbeRun,
+  CanarySlaStats,
+  CanaryProbeOptions,
+  CanaryStorageAdapter,
+} from "./canary/index.js";
+
 // Types
 export type {
   LogLevel,

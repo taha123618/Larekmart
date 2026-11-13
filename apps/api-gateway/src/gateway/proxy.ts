@@ -294,6 +294,15 @@ export async function registerProxyRoutes(
           // x-db-lsn is an untrusted client header — only upstream service
           // responses (captured in onResponse) may establish an LSN baseline.
           delete rewritten[GATEWAY_HEADERS.DB_LSN];
+          delete rewritten["x-synthetic-probe"];
+
+          // Forward x-synthetic-probe only if originating from an authenticated admin or canary daemon
+          const isCanaryAuthorized =
+            (originalReq as any).authRole === "admin" ||
+            (originalReq as any).authUserId === "usr_synthetic_canary_daemon";
+          if (isCanaryAuthorized && originalReq.headers["x-synthetic-probe"] === "true") {
+            rewritten["x-synthetic-probe"] = "true";
+          }
 
           // If client has an active Read-Your-Writes lease, force downstream queries to primary master
           if (

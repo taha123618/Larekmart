@@ -52,6 +52,27 @@ async def _process_single_message(msg: Any, sem: asyncio.Semaphore) -> None:
         )
         topic = msg.topic
 
+        # Synthetic canary probe check: Drop synthetic test orders to prevent model/velocity pollution
+        is_synthetic = False
+        if isinstance(payload, dict):
+            if (
+                payload.get("userId") == "usr_synthetic_canary_daemon"
+                or payload.get("isSynthetic")
+                or payload.get("x-synthetic-probe")
+            ):
+                is_synthetic = True
+        if hasattr(msg, "headers") and msg.headers:
+            for k, v in msg.headers:
+                if k == "x-synthetic-probe" and (v == b"true" or v == "true"):
+                    is_synthetic = True
+                    break
+
+        if is_synthetic:
+            KAFKA_EVENTS_CONSUMED_TOTAL.labels(
+                topic=topic, status="synthetic_skipped"
+            ).inc()
+            return
+
         try:
             # 1. Order Checkout Stream Processing
             if topic == "order.created":

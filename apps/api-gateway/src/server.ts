@@ -2,6 +2,7 @@ import { env } from "./config/env.js";
 import { logger } from "./observability/logger.js";
 import { buildApp } from "./app.js";
 import { redis } from "./utils/redis.js";
+import { startCanaryDaemon, stopCanaryDaemon } from "./utils/canary-daemon.js";
 
 export { buildApp, buildGatewayServer } from "./app.js";
 
@@ -22,6 +23,10 @@ export async function startServer() {
     logger.info(
       `Larekmart API Gateway listening on http://${env.HOST}:${env.PORT}`,
     );
+
+    if (process.env.CANARY_DAEMON_ENABLED === "true") {
+      startCanaryDaemon(`http://${env.HOST}:${env.PORT}`);
+    }
   } catch (err) {
     logger.fatal("Failed to bind API Gateway port", { error: String(err) });
     process.exit(1);
@@ -30,6 +35,9 @@ export async function startServer() {
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}, shutting down API Gateway gracefully...`);
     try {
+      if (process.env.CANARY_DAEMON_ENABLED === "true") {
+        stopCanaryDaemon();
+      }
       await app.close();
       await redis.close();
       logger.info("API Gateway server closed successfully");

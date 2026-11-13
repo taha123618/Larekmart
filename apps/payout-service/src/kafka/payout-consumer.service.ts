@@ -28,6 +28,25 @@ function unwrapPayload(message: unknown): Record<string, unknown> {
   return msgObj;
 }
 
+function isSyntheticEvent(payload: Record<string, unknown>, message?: unknown): boolean {
+  if (
+    payload.userId === "usr_synthetic_canary_daemon" ||
+    payload.customerId === "usr_synthetic_canary_daemon" ||
+    payload.isSynthetic === true ||
+    payload["x-synthetic-probe"] === "true" ||
+    payload["x-synthetic-probe"] === true
+  ) {
+    return true;
+  }
+  if (message && typeof message === "object" && "headers" in message) {
+    const headers = (message as { headers?: Record<string, unknown> }).headers;
+    if (headers && (headers["x-synthetic-probe"] === "true" || String(headers["x-synthetic-probe"]) === "true")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 @Injectable()
 export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PayoutConsumerService.name);
@@ -64,7 +83,7 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
             const payload = unwrapPayload(
               message,
             ) as unknown as CommissionAccruedEvent;
-            if (!payload || !payload.calculationId) return;
+            if (!payload || !payload.calculationId || isSyntheticEvent(payload as unknown as Record<string, unknown>, message)) return;
             await this.handleCommissionAccrued(payload);
           },
         },
@@ -74,7 +93,7 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
             const payload = unwrapPayload(
               message,
             ) as unknown as CommissionAdjustedEvent;
-            if (!payload || !payload.adjustmentId) return;
+            if (!payload || !payload.adjustmentId || isSyntheticEvent(payload as unknown as Record<string, unknown>, message)) return;
             await this.handleCommissionAdjusted(payload);
           },
         },
@@ -84,7 +103,7 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
             const payload = unwrapPayload(
               message,
             ) as unknown as CommissionReversedEvent;
-            if (!payload || !payload.orderId) return;
+            if (!payload || !payload.orderId || isSyntheticEvent(payload as unknown as Record<string, unknown>, message)) return;
             await this.handleCommissionReversed(payload);
           },
         },
@@ -92,6 +111,7 @@ export class PayoutConsumerService implements OnModuleInit, OnModuleDestroy {
           topicName: "order.delivered",
           topicHandler: async (message) => {
             const payload = unwrapPayload(message);
+            if (isSyntheticEvent(payload, message)) return;
             const orderId = String(payload.orderId || payload.id || "");
             const sellerId = String(
               payload.sellerId || `seller_order_${orderId}`,

@@ -68,6 +68,15 @@ const handleSignOut = async () => {
 
     <!-- Right Section: Actions + Profile -->
     <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Platform Health Live Badge -->
+      <div
+        class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60"
+        title="Larekmart core commerce engine & API gateways verified operational"
+      >
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <span>All Systems Operational</span>
+      </div>
+
       <!-- Theme Toggle -->
       <button
         type="button"

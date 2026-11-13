@@ -1619,6 +1619,7 @@ services:
       - "SUPPORT_SERVICE_URL=http://support-service:8025"
       - "CHAT_SERVICE_URL=http://chat-service:8026"
       - "REDIS_URL=redis://redis:6379"
+      - "CANARY_DAEMON_ENABLED=${CANARY_DAEMON_ENABLED:-false}"
     healthcheck:
       test:
         [

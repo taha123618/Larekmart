@@ -1617,3 +1617,20 @@ Centralized edge routing, operations, and dynamic runtime governance endpoints.
 - **Body**: `{ recordId, dlqTopic, partition, offset, targetTopic?, modifiedPayload? }`
 - **Response**: `200 OK` with `{ success: true, message: string }`
 - **Description**: Safely replays a dead-letter message with provenance tracking headers.
+
+### `GET /api/v1/admin/canary/runs`
+- **Auth**: Admin (`requireAdmin`)
+- **Query**: `scenario` (`read` | `checkout`), `limit` (default: 50)
+- **Response**: `200 OK` with `{ success: true, count: number, data: CanaryProbeRun[] }`
+- **Description**: Fetches recent synthetic health probe runs and step waterfalls from Redis.
+
+### `GET /api/v1/admin/canary/sla`
+- **Auth**: Admin (`requireAdmin`)
+- **Response**: `200 OK` with `{ success: true, data: { read: CanarySlaStats, checkout: CanarySlaStats } }`
+- **Description**: Returns rolling SLA uptime percentages, average/P95 latencies, and consecutive failure counts.
+
+### `POST /api/v1/admin/canary/trigger`
+- **Auth**: Admin (`requireAdmin`)
+- **Body**: `{ scenario?: "read" | "checkout" }`
+- **Response**: `200 OK` with `{ success: true, message: string, data: CanaryProbeRun }`
+- **Description**: Triggers an immediate on-demand synthetic canary journey verification.

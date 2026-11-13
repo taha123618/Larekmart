@@ -251,3 +251,50 @@ async def test_concurrent_batch_message_processing():
         assert len(results) == 5
         assert all(r is None for r in results)
         assert mock_assess.call_count == 5
+
+
+@pytest.mark.asyncio
+async def test_synthetic_canary_probe_order_is_dropped():
+    import asyncio
+    from app.kafka.consumer import _process_single_message
+
+    with patch(
+        "app.kafka.consumer.fraud_service.assess_risk", new_callable=AsyncMock
+    ) as mock_assess:
+        sem = asyncio.Semaphore(10)
+
+        class MockMsg:
+            def __init__(self, topic, value, headers=None):
+                self.topic = topic
+                self.value = value
+                self.headers = headers or []
+
+        # 1. Message with canary user ID
+        msg1 = MockMsg(
+            "order.created",
+            {
+                "value": {
+                    "orderId": "canary_ord_01",
+                    "userId": "usr_synthetic_canary_daemon",
+                    "amount": 999,
+                }
+            },
+        )
+        await _process_single_message(msg1, sem)
+
+        # 2. Message with x-synthetic-probe header
+        msg2 = MockMsg(
+            "order.created",
+            {
+                "value": {
+                    "orderId": "canary_ord_02",
+                    "userId": "usr_custom_test",
+                    "amount": 999,
+                }
+            },
+            headers=[("x-synthetic-probe", b"true")],
+        )
+        await _process_single_message(msg2, sem)
+
+        # Verify fraud risk assessment was completely bypassed
+        assert mock_assess.call_count == 0

@@ -212,6 +212,11 @@ func (c *KafkaConsumer) processMessage(msg kafka.Message) {
 		createdAt = time.Now()
 	}
 
+	// Drop synthetic canary prober events to prevent skewing analytics & revenue KPIs
+	if isSyntheticProbe(msg, parsed, userID) {
+		return
+	}
+
 	// 1. Instantly update lock-free in-memory KPI counters
 	c.store.RecordEvent(msg.Topic, userID, amount, parsed, createdAt)
 
@@ -234,6 +239,24 @@ func extractUserID(payload map[string]interface{}) *string {
 		}
 	}
 	return nil
+}
+
+func isSyntheticProbe(msg kafka.Message, payload map[string]interface{}, userID *string) bool {
+	if userID != nil && *userID == "usr_synthetic_canary_daemon" {
+		return true
+	}
+	for _, h := range msg.Headers {
+		if h.Key == "x-synthetic-probe" && string(h.Value) == "true" {
+			return true
+		}
+	}
+	if val, ok := payload["isSynthetic"]; ok && val == true {
+		return true
+	}
+	if val, ok := payload["x-synthetic-probe"]; ok && (val == true || val == "true") {
+		return true
+	}
+	return false
 }
 
 func extractAmount(payload map[string]interface{}) float64 {

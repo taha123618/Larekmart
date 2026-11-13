@@ -495,11 +495,16 @@ function FooterComponent() {
         {/* Section 4 — Bottom bar */}
         <div className="mt-8 border-t border-dashed border-border/80">
           <div className="px-6 md:px-10 py-6 max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            {/* Left Copyright & Clock */}
+            {/* Left Copyright & Operational Status */}
             <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground tracking-[0.08em] uppercase font-mono">
               <span>
                 &copy; {new Date().getFullYear()} LAREKMART&trade; // All Rights
                 Reserved
+              </span>
+              <span className="text-border">|</span>
+              <span className="inline-flex items-center gap-1.5 text-emerald-500 font-semibold lowercase">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                systems operational
               </span>
               {time && (
                 <>

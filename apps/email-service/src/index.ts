@@ -50,6 +50,17 @@ const start = async () => {
       {
         topicName: "order.created",
         topicHandler: async (message) => {
+          const isSynthetic =
+            message.headers?.["x-synthetic-probe"]?.toString() === "true" ||
+            message.value?.userId === "usr_synthetic_canary_daemon" ||
+            message.value?.isSynthetic === true;
+          if (isSynthetic) {
+            logger.info(
+              `[email-service] Skipping email for synthetic canary order probe`,
+            );
+            return;
+          }
+
           const { email, amount, status, taxAmount } = message.value;
 
           if (email) {
