@@ -16,6 +16,7 @@ import { registerProxyRoutes } from "./gateway/proxy.js";
 import { homeAggregationRoutes } from "./aggregation/home.js";
 import { inventoryEdgeRoutes } from "./aggregation/inventory-edge.js";
 import { adminDlqRoutes } from "./routing/admin-dlq.routes.js";
+import { adminFeatureFlagsRoutes } from "./routing/admin-feature-flags.routes.js";
 import {
   metrics,
   gatewayRequestsTotal,
@@ -109,6 +110,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(homeAggregationRoutes);
   await app.register(inventoryEdgeRoutes);
   await app.register(adminDlqRoutes);
+  await app.register(adminFeatureFlagsRoutes);
 
   // 10. Register Microservice Proxy Upstreams
   await registerProxyRoutes(app);

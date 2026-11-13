@@ -99,17 +99,29 @@ export function extractAuthClaims(
 
           const now = Math.floor(Date.now() / 1000);
           if (payload.sub && (!payload.exp || payload.exp > now)) {
+            const rawRole = payload.role ?? payload.metadata?.role;
+            const isSuperAdmin = rawRole === "super_admin";
+            const isAdmin = rawRole === "admin";
             const isSellerRole =
-              payload.role === "seller" ||
+              rawRole === "seller" ||
               payload.metadata?.isSeller === true ||
               Boolean(payload.sellerId);
 
+            let role: "admin" | "seller" | "customer" | "super_admin" = "customer";
+            if (isSuperAdmin) {
+              role = "super_admin";
+            } else if (isAdmin) {
+              role = "admin";
+            } else if (isSellerRole) {
+              role = "seller";
+            }
+
             return {
               userId: payload.sub,
-              role: isSellerRole ? "seller" : "customer",
-              isSuperAdmin: payload.role === "super_admin",
+              role,
+              isSuperAdmin,
               isSeller: isSellerRole,
-              canManageSellers: isSellerRole || payload.role === "super_admin",
+              canManageSellers: isSellerRole || isSuperAdmin || isAdmin,
               claims: payload as unknown as CustomJwtSessionClaims,
             };
           }

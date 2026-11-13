@@ -9,6 +9,7 @@ import { runSecurityTests } from "./security/security.test.js";
 import { runHealthIntegrationTests } from "./integration/health.test.js";
 import { runInventoryEdgeTests } from "./integration/inventory-edge.test.js";
 import { runChaosGuardrailsTests } from "./resilience/chaos-guardrails.test.js";
+import { runFeatureFlagsAdminTests } from "./integration/feature-flags-admin.test.js";
 
 async function main() {
   console.log("=================================================");
@@ -29,6 +30,7 @@ async function main() {
     await runHealthIntegrationTests();
     await runInventoryEdgeTests();
     await runChaosGuardrailsTests();
+    await runFeatureFlagsAdminTests();
 
     const elapsed = Date.now() - start;
     console.log("\n=================================================");

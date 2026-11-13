@@ -36,6 +36,7 @@ import {
   LifeBuoy,
   MessageSquare,
   Radio,
+  Sliders,
 } from "lucide-react";
 import {
   Sidebar,
@@ -502,6 +503,14 @@ const AppSidebar = () => {
                   <Link href="/kafka-dlq">
                     <Radio />
                     Kafka DLQ & Resilience
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/feature-flags">
+                    <Sliders />
+                    Feature Flags & Canaries
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

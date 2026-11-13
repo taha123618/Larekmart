@@ -1564,3 +1564,56 @@ All requests route through `api-gateway` on port `8080`.
   - `typing:indicator` (`{ conversationId, userId, isTyping }`)
   - `message:read` (`SocketMessageReadPayload`)
   - `presence:updated` (`SocketPresencePayload`)
+
+---
+
+## 21. API Gateway Administration (`:8080`)
+
+Centralized edge routing, operations, and dynamic runtime governance endpoints.
+
+### `GET /api/v1/admin/feature-flags`
+- **Auth**: Admin (`requireAdmin`)
+- **Response**: `{ success: true, count: number, data: FeatureFlagDefinition[] }`
+- **Description**: Lists all dynamic feature flags stored in Redis.
+
+### `GET /api/v1/admin/feature-flags/:key`
+- **Auth**: Admin (`requireAdmin`)
+- **Response**: `{ success: true, data: FeatureFlagDefinition }`
+- **Description**: Retrieves single feature flag definition by key.
+
+### `POST /api/v1/admin/feature-flags`
+- **Auth**: Admin (`requireAdmin`)
+- **Body**: `FeatureFlagDefinition` (`key`, `enabled`, `defaultValue`, `variations?`, `rules?`, `rollout?`, `description?`)
+- **Response**: `200 OK` with `{ success: true, message: string, data: FeatureFlagDefinition }`
+- **Side Effect**: Persists flag to Redis and broadcasts invalidation over `ff:global:events:invalidation`.
+
+### `PATCH /api/v1/admin/feature-flags/:key/toggle`
+- **Auth**: Admin (`requireAdmin`)
+- **Body**: `{ enabled: boolean }`
+- **Response**: `200 OK` with `{ success: true, message: string, enabled: boolean }`
+
+### `PATCH /api/v1/admin/feature-flags/:key/rollout`
+- **Auth**: Admin (`requireAdmin`)
+- **Body**: `{ percentage: number }` (0 to 100)
+- **Response**: `200 OK` with `{ success: true, message: string, percentage: number }`
+
+### `DELETE /api/v1/admin/feature-flags/:key`
+- **Auth**: Admin (`requireAdmin`)
+- **Response**: `200 OK` with `{ success: true, message: string }`
+
+### `POST /api/v1/admin/feature-flags/:key/evaluate`
+- **Auth**: Admin (`requireAdmin`)
+- **Body**: `{ context?: EvaluationContext, defaultValue?: any }`
+- **Response**: `200 OK` with `{ success: true, data: EvaluationResult }`
+- **Description**: Simulates/tests how a feature flag evaluates under arbitrary user/attribute contexts.
+
+### `GET /api/v1/admin/dlq/topics`
+- **Auth**: Admin (`requireAdmin`)
+- **Response**: `{ success: true, topics: DlqTopicSummary[] }`
+- **Description**: Returns all dead-letter topics with live backlog counts.
+
+### `POST /api/v1/admin/dlq/replay`
+- **Auth**: Admin (`requireAdmin`)
+- **Body**: `{ recordId, dlqTopic, partition, offset, targetTopic?, modifiedPayload? }`
+- **Response**: `200 OK` with `{ success: true, message: string }`
+- **Description**: Safely replays a dead-letter message with provenance tracking headers.
