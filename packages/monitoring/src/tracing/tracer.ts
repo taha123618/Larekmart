@@ -1,15 +1,16 @@
-import {
-  generateSpanId,
-  generateTraceId,
-  createTraceparent,
-} from "./w3c.js";
+import { generateSpanId, generateTraceId, createTraceparent } from "./w3c.js";
 import {
   getTraceContext,
   runWithTraceContext,
   type TraceContext,
 } from "./context.js";
 
-export type SpanKind = "INTERNAL" | "SERVER" | "CLIENT" | "PRODUCER" | "CONSUMER";
+export type SpanKind =
+  | "INTERNAL"
+  | "SERVER"
+  | "CLIENT"
+  | "PRODUCER"
+  | "CONSUMER";
 export type SpanStatusCode = "UNSET" | "OK" | "ERROR";
 
 export interface SpanAttributes {
@@ -74,7 +75,10 @@ export class Span {
     this.startTime = process.hrtime.bigint();
   }
 
-  public setAttribute(key: string, value: string | number | boolean | undefined): this {
+  public setAttribute(
+    key: string,
+    value: string | number | boolean | undefined,
+  ): this {
     if (this.ended || value === undefined) return this;
     this.attributes[key] = value;
     return this;
@@ -110,7 +114,8 @@ export class Span {
     };
     this.addEvent("exception", {
       "exception.type": error instanceof Error ? error.name : "Error",
-      "exception.message": error instanceof Error ? error.message : String(error),
+      "exception.message":
+        error instanceof Error ? error.message : String(error),
       "exception.stacktrace": error instanceof Error ? error.stack : undefined,
     });
     return this;
@@ -147,7 +152,10 @@ export interface TelemetryConfig {
 
 export class Tracer {
   private static instance: Tracer | null = null;
-  private serviceName: string = "unknown-service";
+  private serviceName: string =
+    process.env.OTEL_SERVICE_NAME ||
+    process.env.SERVICE_NAME ||
+    "unknown-service";
   private otlpEndpoint: string = "http://localhost:4318";
   private enabled: boolean = true;
   private queue: SpanData[] = [];
@@ -279,15 +287,24 @@ export class Tracer {
                 value: this.formatAttributeValue(v),
               })),
               events: span.events.map((e) => ({
-                timeUnixNano: (new Date(e.timestamp).getTime() * 1_000_000).toString(),
+                timeUnixNano: (
+                  new Date(e.timestamp).getTime() * 1_000_000
+                ).toString(),
                 name: e.name,
-                attributes: Object.entries(e.attributes || {}).map(([k, v]) => ({
-                  key: k,
-                  value: this.formatAttributeValue(v),
-                })),
+                attributes: Object.entries(e.attributes || {}).map(
+                  ([k, v]) => ({
+                    key: k,
+                    value: this.formatAttributeValue(v),
+                  }),
+                ),
               })),
               status: {
-                code: span.status.code === "OK" ? 1 : span.status.code === "ERROR" ? 2 : 0,
+                code:
+                  span.status.code === "OK"
+                    ? 1
+                    : span.status.code === "ERROR"
+                      ? 2
+                      : 0,
                 message: span.status.message || "",
               },
             })),
@@ -319,7 +336,9 @@ export class Tracer {
   private formatAttributeValue(v: string | number | boolean | undefined) {
     if (typeof v === "boolean") return { boolValue: v };
     if (typeof v === "number") {
-      return Number.isInteger(v) ? { intValue: v.toString() } : { doubleValue: v };
+      return Number.isInteger(v)
+        ? { intValue: v.toString() }
+        : { doubleValue: v };
     }
     return { stringValue: String(v ?? "") };
   }

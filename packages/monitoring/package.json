@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "test": "tsx tests/canary-prober.test.ts",
+    "test": "tsx tests/canary-prober.test.ts && tsx tests/tracing-hooks.test.ts",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {

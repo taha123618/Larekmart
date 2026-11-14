@@ -282,3 +282,77 @@ export async function fetchSupportCategories(
   const json = await res.json();
   return json.data;
 }
+
+export interface AiSupportInquiryRecord {
+  id: string;
+  timestamp: string;
+  query: string;
+  intent: string;
+  confidence: number;
+  action?: string;
+  autoResolved: boolean;
+}
+
+export interface AiSupportMetrics {
+  totalInquiries: number;
+  autoResolved: number;
+  escalatedToTicket: number;
+  autoResolutionRate: number;
+  averageConfidence: number;
+  intentBreakdown: Record<string, number>;
+  recentInquiries: AiSupportInquiryRecord[];
+}
+
+/**
+ * Fetch AI support performance metrics and recent inquiries
+ */
+export async function fetchAiSupportMetrics(
+  authToken?: string | null,
+): Promise<AiSupportMetrics> {
+  const res = await fetch(`${API_BASE}/api/v1/support/ai/metrics`, {
+    method: "GET",
+    headers: getHeaders(authToken),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      err.message || `Failed to fetch AI support metrics (HTTP ${res.status})`,
+    );
+  }
+
+  const json = await res.json();
+  return json.data;
+}
+
+/**
+ * Send an interactive test query to the AI customer support engine
+ */
+export async function sendAiSupportTestQuery(
+  message: string,
+  authToken?: string | null,
+): Promise<{
+  answer: string;
+  intent: string;
+  confidence: number;
+  sources: string[];
+  suggestedAction?: string;
+  canEscalate: boolean;
+}> {
+  const res = await fetch(`${API_BASE}/api/v1/support/ai/chat`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify({ message }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      err.message || `Failed to query AI assistant (HTTP ${res.status})`,
+    );
+  }
+
+  const json = await res.json();
+  return json.data;
+}

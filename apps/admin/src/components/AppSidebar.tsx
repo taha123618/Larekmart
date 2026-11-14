@@ -40,6 +40,7 @@ import {
   Radio,
   Sliders,
   Activity,
+  Bot,
 } from "lucide-react";
 import {
   Sidebar,
@@ -308,7 +309,9 @@ const AppSidebar = () => {
                   </Link>
                 </SidebarMenuButton>
                 {pendingVerificationCount > 0 && (
-                  <SidebarMenuBadge>{pendingVerificationCount}</SidebarMenuBadge>
+                  <SidebarMenuBadge>
+                    {pendingVerificationCount}
+                  </SidebarMenuBadge>
                 )}
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -509,6 +512,14 @@ const AppSidebar = () => {
                   <Link href="/recommendations">
                     <Sparkles />
                     Recommendations & AI
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/support/ai-performance">
+                    <Bot />
+                    AI Support Performance
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
