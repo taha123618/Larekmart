@@ -1,0 +1,161 @@
+name: larekmart-tier1-db
+
+# ==============================================================================
+# Larekmart Tier-1 Transactional PostgreSQL Split Topology
+# ==============================================================================
+# Physically isolates high-frequency commerce & financial databases from the
+# shared monolithic postgres container to eliminate disk IOPS and CPU contention
+# during 11.11 / flash-sale events (5,000+ req/sec).
+#
+# Dedicated instances:
+# 1. postgres-inventory (inventory_db + WAL logical replication for Debezium)
+# 2. postgres-pricing   (pricing_db + high-concurrency quote calculations)
+# 3. postgres-payout    (payout_db + double-entry ledger + Debezium CDC)
+# ==============================================================================
+
+services:
+  postgres-inventory:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    container_name: larekmart-postgres-inventory
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    restart: unless-stopped
+    ports:
+      - "${INVENTORY_DB_BIND_IP:-127.0.0.1}:${INVENTORY_DB_PORT:-5434}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+      POSTGRES_DB: inventory_db
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
+      - "-c"
+      - "max_replication_slots=5"
+      - "-c"
+      - "max_wal_senders=5"
+      - "-c"
+      - "max_connections=150"
+      - "-c"
+      - "shared_buffers=128MB"
+      - "-c"
+      - "synchronous_commit=on"
+    volumes:
+      - postgres_inventory_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER:-postgres} -d inventory_db",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - larekmart-network
+
+  postgres-pricing:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    container_name: larekmart-postgres-pricing
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 768M
+        reservations:
+          cpus: "0.20"
+          memory: 256M
+    restart: unless-stopped
+    ports:
+      - "${PRICING_DB_BIND_IP:-127.0.0.1}:${PRICING_DB_PORT:-5435}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+      POSTGRES_DB: pricing_db
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=128MB"
+    volumes:
+      - postgres_pricing_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d pricing_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - larekmart-network
+
+  postgres-payout:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    container_name: larekmart-postgres-payout
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    restart: unless-stopped
+    ports:
+      - "${PAYOUT_DB_BIND_IP:-127.0.0.1}:${PAYOUT_DB_PORT:-5436}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+      POSTGRES_DB: payout_db
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
+      - "-c"
+      - "max_replication_slots=5"
+      - "-c"
+      - "max_wal_senders=5"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=128MB"
+      - "-c"
+      - "synchronous_commit=on"
+    volumes:
+      - postgres_payout_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d payout_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - larekmart-network
+
+volumes:
+  postgres_inventory_data:
+    driver: local
+  postgres_pricing_data:
+    driver: local
+  postgres_payout_data:
+    driver: local
+
+networks:
+  larekmart-network:
+    name: larekmart-network
+    driver: bridge

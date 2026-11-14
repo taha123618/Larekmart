@@ -21,7 +21,7 @@ services:
         condition: service_healthy
       kafka-broker-3:
         condition: service_healthy
-      postgres:
+      postgres-inventory:
         condition: service_healthy
     deploy:
       resources:
@@ -50,7 +50,7 @@ services:
         condition: service_healthy
       kafka-broker-3:
         condition: service_healthy
-      postgres:
+      postgres-payout:
         condition: service_healthy
     deploy:
       resources:

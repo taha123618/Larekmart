@@ -33,3 +33,18 @@ model Category {
   slug     String    @unique
   products Product[]
 }
+
+model OutboxEvent {
+  id          String    @id @default(uuid())
+  topic       String
+  payload     Json
+  status      String    @default("PENDING") // PENDING, PUBLISHED, FAILED
+  retryCount  Int       @default(0) @map("retry_count")
+  lastError   String?   @map("last_error")
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@map("product_outbox")
+}

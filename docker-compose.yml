@@ -20,6 +20,7 @@ include:
   - path: docker-compose.caddy.yml
   - path: docker-compose.cdc.yml
   - path: docker-compose.schema-registry.yml
+  - path: docker-compose.tier1-db.yml
 
 # ============================================================================
 # Reusable Deploy Resource Profiles (Anti-Starvation Limits & Reservations)
@@ -96,7 +97,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
       POSTGRES_DB: ${POSTGRES_DB:-product_db}
-      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,inventory_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,pricing_db,vendor_db,seller_db,commission_db,payout_db,fraud_db,support_db,chat_db}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-product_db,catalog_db,shipping_db,notification_db,recommendation_db,user_db,media_db,review_db,wishlist_db,promotion_db,vendor_db,seller_db,commission_db,fraud_db,support_db,chat_db}
     command:
       - "postgres"
       - "-c"
@@ -133,6 +134,12 @@ services:
       - "${PGBOUNCER_BIND_IP:-127.0.0.1}:6432:6432"
     depends_on:
       postgres:
+        condition: service_healthy
+      postgres-inventory:
+        condition: service_healthy
+      postgres-pricing:
+        condition: service_healthy
+      postgres-payout:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 6432 || exit 1"]
@@ -515,7 +522,7 @@ services:
       - node.name=opensearch
       - discovery.type=single-node
       - bootstrap.memory_lock=false
-      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "OPENSEARCH_JAVA_OPTS=-Xms768m -Xmx768m"
       - "DISABLE_SECURITY_PLUGIN=true"
       - "DISABLE_PERFORMANCE_ANALYZER_AGENT_CLI=true"
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-SecurePassword123!}
@@ -852,7 +859,7 @@ services:
       - ./apps/inventory-service/.env
     environment:
       - "DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/inventory_db?schema=public&pgbouncer=true&statement_cache_size=0"
-      - "DIRECT_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres:5432/inventory_db?schema=public"
+      - "DIRECT_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres-inventory:5432/inventory_db?schema=public"
       - "REDIS_URL=redis://redis:6379"
       - "REDIS_STATE_URL=redis://redis-state:6380"
     healthcheck:
@@ -866,7 +873,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      postgres:
+      postgres-inventory:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -1322,7 +1329,7 @@ services:
       - ./apps/pricing-service/.env
     environment:
       - "DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/pricing_db?schema=public&pgbouncer=true&statement_cache_size=0"
-      - "DIRECT_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres:5432/pricing_db?schema=public"
+      - "DIRECT_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password123}@postgres-pricing:5432/pricing_db?schema=public"
       - "REDIS_URL=redis://redis:6379"
       - "REDIS_STATE_URL=redis://redis-state:6380"
     healthcheck:
@@ -1336,7 +1343,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      postgres:
+      postgres-pricing:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -1461,7 +1468,7 @@ services:
       - "PORT=8023"
       - "NODE_ENV=production"
       - "DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@pgbouncer:6432/payout_db?schema=public"
-      - "DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres:5432/payout_db?schema=public"
+      - "DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password123}@postgres-payout:5432/payout_db?schema=public"
       - "REDIS_URL=redis://redis:6379"
       - "KAFKA_BROKERS=kafka:9092,kafka-broker-2:9092,kafka-broker-3:9092"
       - "INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-dev-shared-internal-secret-larekmart}"
@@ -1476,7 +1483,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      postgres:
+      postgres-payout:
         condition: service_healthy
       pgbouncer:
         condition: service_healthy

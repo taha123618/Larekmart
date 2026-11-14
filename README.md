@@ -346,7 +346,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
 7. **PostgreSQL Connection Isolation & PgBouncer Pooling (Port 6432)**:
    - Multiplexes up to 1,000 incoming client connections into dedicated physical pools (`pool_mode = transaction`).
    - Guaranteed pool quotas prevent non-critical background traffic from starving Tier-1 commerce databases (`product_db`, `inventory_db`, `catalog_db`, `pricing_db`, `payout_db`, `fraud_db`).
-   - Prisma, Drizzle, and AsyncPG (with `prepared_statement_cache_size=0`) route runtime traffic safely through PgBouncer while migrations use direct connections on port 5432.
+   - Prisma, Drizzle, and AsyncPG (with `prepared_statement_cache_size=0` and `statement_cache_size=0`) route runtime traffic safely through PgBouncer while migrations use direct connections on port 5432.
 8. **Decoupled Telemetry Pipeline & Go Ingestion Engine (`analytic-service`)**:
    - High-throughput **Go 1.22 (Chi)** microservice consuming 80+ platform Kafka event streams across all 28 microservices with dedicated goroutines, fully decoupling Kafka message reading from database persistence to eliminate event-loop starvation and prevent Kafka heartbeat timeouts (`session.timeout.ms`).
    - Single-responsibility dual-target telemetry pipeline: streams raw, unaggregated high-velocity event frames directly into **ClickHouse** columnar storage for high-compression time-series analytics, while writing only pre-aggregated, low-velocity daily KPI summaries into **PostgreSQL** (`postgres-analytics`), eliminating write-amplification and Go heap lock contention under peak shopping bursts.
@@ -420,6 +420,10 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - **Automatic Span Emission**: Embedded natively into `createHttpMonitor`, `createKafkaMonitor`, and `createDatabaseMonitor`, emitting W3C-compliant OpenTelemetry spans for every incoming HTTP request (`SERVER`), Kafka message published/consumed (`PRODUCER`/`CONSUMER`), and database transaction (`CLIENT`).
     - **Standard Semantic Conventions**: Standardized attributes (`http.method`, `http.status_code`, `messaging.system`, `messaging.destination`, `db.system`, `db.operation`, `error.type`) enabling end-to-end trace waterfalls across Jaeger, Prometheus, and OpenTelemetry Collectors (:4317/:4318).
     - **Resilient Fallbacks**: Fallback to `OTEL_SERVICE_NAME` or `SERVICE_NAME` environment variables ensuring zero telemetry gaps on container startup.
+25. **Tier-1 Flash-Sale PostgreSQL Datastore Isolation (`docker-compose.tier1-db.yml`)**:
+    - **Physical Disk IOPS & Resource Segregation**: Splits high-velocity commerce and financial ledger databases (`inventory_db`, `pricing_db`, `payout_db`) into dedicated PostgreSQL containers with separate persistent volumes (`postgres_inventory_data`, `postgres_pricing_data`, `postgres_payout_data`), independent CPU/RAM limits, and dedicated logical WAL replication slots for Debezium CDC.
+    - **PgBouncer Dynamic Pool Mapping**: Transparently multiplexes service requests through PgBouncer on port 6432 (`inventory_db -> postgres-inventory:5432`, `pricing_db -> postgres-pricing:5432`, `payout_db -> postgres-payout:5432`), ensuring zero application connection string refactoring.
+    - **Zero-Downtime Dual-Mode Bridge**: Bridges standard developer workflow with high-scale production using network aliases (`postgres-inventory`, `postgres-pricing`, `postgres-payout` pointing to `postgres`), allowing seamless single-container or multi-container operations.
 
 For in-depth architectural specifications and diagrams, see [`docs/plans/README.md`](docs/plans/README.md).
 
@@ -579,7 +583,8 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 - **Docker**: For running the local Kafka cluster, databases, and Redis
 - **Redis**: Local or containerized on port `6379` (cache for product, order, search, analytic, and support services, plus Redis Pub/Sub adapter for `chat-service` Socket.IO cluster)
 - **OpenSearch**: Local or containerized on port `9200` (search index owned by search-service)
-- **PostgreSQL**: Local or containerized on port `5432`
+- **PostgreSQL**: Local or containerized on port `5432` (with PgBouncer connection pooling on port `6432`, and optional Tier-1 split containers for `inventory_db` on `5434`, `pricing_db` on `5435`, and `payout_db` on `5436`)
+- **Schema Registry**: Karapace Confluent-compatible Schema Registry on host port `8082` (container port `8081`)
 - **MongoDB**: Local or containerized on port `27017`
 - **MySQL**: Local or containerized instances: port `3306` for `tax_db` (tax compliance & snapshots owned by `tax-service`); port `3307` for `return_db` (isolated return requests, RMA tracking, inspections & refunds owned by `return-service`)
 
@@ -602,7 +607,19 @@ docker compose logs -f
 docker compose down
 
 # ==============================================================================
-# Option B: Local Monorepo Dev (Backing Infrastructure in Docker)
+# Option B: High-Throughput Flash-Sale Topology (Tier-1 Split Databases & CDC)
+# ==============================================================================
+# Spins up dedicated physical PostgreSQL containers for inventory_db (:5434),
+# pricing_db (:5435), and payout_db (:5436) alongside Debezium CDC and Karapace Schema Registry:
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.tier1-db.yml \
+  -f docker-compose.cdc.yml \
+  -f docker-compose.schema-registry.yml \
+  up -d --build
+
+# ==============================================================================
+# Option C: Local Monorepo Dev (Backing Infrastructure in Docker)
 # ==============================================================================
 # 1. Automated monorepo setup (dependencies, .env files, AI skills sync)
 pnpm run setup

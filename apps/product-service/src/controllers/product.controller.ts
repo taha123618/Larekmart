@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { prisma, Prisma } from "@repo/product-db";
 import { ProductFormSchema } from "@repo/types";
-import { publishEvent } from "../utils/kafka";
 import { toProductEventPayload } from "../search/product-payload.js";
 import { createLogger, measureAsync } from "@repo/monitoring";
 import {
@@ -41,24 +40,37 @@ export const createProduct = async (req: Request, res: Response) => {
   const { result: product } = await measureAsync(
     "db.product.create",
     async () => {
-      return await prisma.product.create({ data });
+      return await prisma.$transaction(async (tx) => {
+        const created = await tx.product.create({ data });
+        const eventPayload = toProductEventPayload(created);
+
+        // Transactional Outbox: persist event atomically with entity write
+        await tx.outboxEvent.create({
+          data: {
+            topic: "product.created",
+            payload: eventPayload as unknown as Prisma.InputJsonValue,
+          },
+        });
+
+        if (req.body.taxCategoryCode) {
+          await tx.outboxEvent.create({
+            data: {
+              topic: "product.tax-category.updated",
+              payload: {
+                productId: String(created.id),
+                taxCategoryCode: String(req.body.taxCategoryCode),
+              },
+            },
+          });
+        }
+
+        return created;
+      });
     },
   );
 
   logger.info(`Product created successfully with ID: ${product.id}`);
 
-  // Publish the full product (a superset of StripeProductType) so
-  // search-service can index images, sizes, and colors immediately instead of
-  // waiting for a follow-up update event. payment-service still finds the
-  // id/name/price it needs to mirror the catalog into Stripe. The same mapper
-  // drives the search backfill (`backfill:search`).
-  publishEvent("product.created", toProductEventPayload(product));
-  if (req.body.taxCategoryCode) {
-    publishEvent("product.tax-category.updated", {
-      productId: String(product.id),
-      taxCategoryCode: String(req.body.taxCategoryCode),
-    });
-  }
   await invalidateCatalogCache();
   res.status(201).json(product);
 };
@@ -98,21 +110,38 @@ export const updateProduct = async (req: Request, res: Response) => {
   const { result: updatedProduct } = await measureAsync(
     "db.product.update",
     async () => {
-      return await prisma.product.update({
-        where: { id: productId },
-        data,
+      return await prisma.$transaction(async (tx) => {
+        const updated = await tx.product.update({
+          where: { id: productId },
+          data,
+        });
+
+        // Transactional Outbox: persist update event atomically
+        await tx.outboxEvent.create({
+          data: {
+            topic: "product.updated",
+            payload: updated as unknown as Prisma.InputJsonValue,
+          },
+        });
+
+        if (req.body.taxCategoryCode) {
+          await tx.outboxEvent.create({
+            data: {
+              topic: "product.tax-category.updated",
+              payload: {
+                productId: String(productId),
+                taxCategoryCode: String(req.body.taxCategoryCode),
+              },
+            },
+          });
+        }
+
+        return updated;
       });
     },
   );
 
   logger.info(`Product updated successfully with ID: ${productId}`);
-  publishEvent("product.updated", updatedProduct);
-  if (req.body.taxCategoryCode) {
-    publishEvent("product.tax-category.updated", {
-      productId: String(productId),
-      taxCategoryCode: String(req.body.taxCategoryCode),
-    });
-  }
   await invalidateCatalogCache();
   return res.status(200).json(updatedProduct);
 };
@@ -150,14 +179,25 @@ export const deleteProduct = async (req: Request, res: Response) => {
   const { result: deletedProduct } = await measureAsync(
     "db.product.delete",
     async () => {
-      return await prisma.product.delete({
-        where: { id: productId },
+      return await prisma.$transaction(async (tx) => {
+        const deleted = await tx.product.delete({
+          where: { id: productId },
+        });
+
+        // Transactional Outbox: persist deletion event atomically
+        await tx.outboxEvent.create({
+          data: {
+            topic: "product.deleted",
+            payload: productId,
+          },
+        });
+
+        return deleted;
       });
     },
   );
 
   logger.info(`Product deleted with ID: ${productId}`);
-  publishEvent("product.deleted", productId);
   await invalidateCatalogCache();
 
   return res.status(200).json(deletedProduct);

@@ -123,6 +123,19 @@ export async function runMigrations(): Promise<void> {
         CONSTRAINT currency_rates_pair_idx UNIQUE (base_currency, target_currency)
       );
       CREATE INDEX IF NOT EXISTS currency_rates_target_idx ON currency_rates(target_currency);
+
+      CREATE TABLE IF NOT EXISTS pricing_outbox (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        topic VARCHAR(128) NOT NULL,
+        payload JSONB NOT NULL,
+        status VARCHAR(32) DEFAULT 'PENDING' NOT NULL,
+        retry_count INTEGER DEFAULT 0 NOT NULL,
+        last_error TEXT,
+        published_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS pricing_outbox_status_created_idx ON pricing_outbox(status, created_at);
     `);
 
     console.log("pricing-service database migrations completed successfully.");

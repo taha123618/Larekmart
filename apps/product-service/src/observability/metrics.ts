@@ -7,6 +7,8 @@
  */
 import {
   createCacheMetrics,
+  createCounter,
+  createGauge,
   createLogger,
   createMetricsRegistry,
 } from "@repo/monitoring";
@@ -26,3 +28,24 @@ export const metrics = createMetricsRegistry(SERVICE_NAME);
  * owns that classification for every service.
  */
 export const cacheMetrics = createCacheMetrics(metrics);
+
+/**
+ * Transactional outbox metrics tracking pending queue lag, publish successes, and failures.
+ */
+export const outboxMetrics = {
+  pendingEvents: createGauge(
+    metrics,
+    "outbox_pending_events_total",
+    "Current number of pending outbox events awaiting Kafka dispatch",
+  ),
+  publishedEvents: createCounter(
+    metrics,
+    "outbox_published_events_total",
+    "Total outbox events successfully dispatched to Kafka",
+  ),
+  failedEvents: createCounter(
+    metrics,
+    "outbox_failed_events_total",
+    "Total outbox events that encountered terminal or transient errors",
+  ),
+};

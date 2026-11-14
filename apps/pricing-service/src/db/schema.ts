@@ -250,3 +250,34 @@ export const currencyRates = pgTable(
     index("currency_rates_target_idx").on(table.targetCurrency),
   ],
 );
+
+// ==============================================================================
+// 8. Transactional Outbox (pricing_outbox)
+// ==============================================================================
+export const pricingOutbox = pgTable(
+  "pricing_outbox",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    topic: varchar("topic", { length: 128 }).notNull(),
+    payload: jsonb("payload").notNull(),
+    status: varchar("status", { length: 32 }).default("PENDING").notNull(),
+    retryCount: integer("retry_count").default(0).notNull(),
+    lastError: text("last_error"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("pricing_outbox_status_created_idx").on(
+      table.status,
+      table.createdAt,
+    ),
+  ],
+);
+
+export type PricingOutboxEvent = typeof pricingOutbox.$inferSelect;
+export type NewPricingOutboxEvent = typeof pricingOutbox.$inferInsert;

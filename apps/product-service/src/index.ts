@@ -17,6 +17,7 @@ import {
 import { checkOpenSearchConnection } from "./search/client.js";
 import { logger, metrics } from "./observability/metrics.js";
 import { redis } from "./utils/redis.js";
+import { startOutboxRelay } from "./outbox/outbox-relay.js";
 
 const httpMonitor = createHttpMonitor(logger, metrics);
 const health = createHealthRegistry("product-service", "1.0.0");
@@ -171,6 +172,8 @@ const start = async () => {
       "product-service",
     );
     await Promise.all([producer.connect(), consumer.connect()]);
+    const stopOutboxRelay = startOutboxRelay();
+
     const server = app.listen(8000, () => {
       logger.info("Product service is running on port 8000");
     });
@@ -179,6 +182,7 @@ const start = async () => {
       logger.info(
         `Received ${signal}, shutting down product-service gracefully...`,
       );
+      stopOutboxRelay();
       server.close(async () => {
         try {
           await Promise.all([

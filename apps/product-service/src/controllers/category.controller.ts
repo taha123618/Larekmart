@@ -2,7 +2,6 @@ import { Prisma, prisma } from "@repo/product-db";
 import { Request, Response } from "express";
 import { CategoryFormSchema, type CategoryEventPayload } from "@repo/types";
 import { createLogger, measureAsync } from "@repo/monitoring";
-import { publishEvent } from "../utils/kafka.js";
 import {
   getCachedCategories,
   setCachedCategories,
@@ -42,11 +41,19 @@ export const createCategory = async (req: Request, res: Response) => {
   const { result: category } = await measureAsync(
     "db.category.create",
     async () => {
-      return await prisma.category.create({ data });
+      return await prisma.$transaction(async (tx) => {
+        const created = await tx.category.create({ data });
+        await tx.outboxEvent.create({
+          data: {
+            topic: "category.created",
+            payload: toCategoryEventPayload(created) as unknown as Prisma.InputJsonValue,
+          },
+        });
+        return created;
+      });
     },
   );
   logger.info(`Category created: ${category.name}`);
-  publishEvent("category.created", toCategoryEventPayload(category));
   await invalidateCatalogCache();
   res.status(201).json(category);
 };
@@ -71,15 +78,23 @@ export const updateCategory = async (req: Request, res: Response) => {
   const { result: category } = await measureAsync(
     "db.category.update",
     async () => {
-      return await prisma.category.update({
-        where: { id: categoryId },
-        data,
+      return await prisma.$transaction(async (tx) => {
+        const updated = await tx.category.update({
+          where: { id: categoryId },
+          data,
+        });
+        await tx.outboxEvent.create({
+          data: {
+            topic: "category.updated",
+            payload: toCategoryEventPayload(updated) as unknown as Prisma.InputJsonValue,
+          },
+        });
+        return updated;
       });
     },
   );
 
   logger.info(`Category updated: ID ${categoryId}`);
-  publishEvent("category.updated", toCategoryEventPayload(category));
   await invalidateCatalogCache();
   return res.status(200).json(category);
 };
@@ -94,16 +109,22 @@ export const deleteCategory = async (req: Request, res: Response) => {
   const { result: category } = await measureAsync(
     "db.category.delete",
     async () => {
-      return await prisma.category.delete({
-        where: { id: categoryId },
+      return await prisma.$transaction(async (tx) => {
+        const deleted = await tx.category.delete({
+          where: { id: categoryId },
+        });
+        await tx.outboxEvent.create({
+          data: {
+            topic: "category.deleted",
+            payload: categoryId,
+          },
+        });
+        return deleted;
       });
     },
   );
 
   logger.info(`Category deleted: ID ${categoryId}`);
-  // Bare id, matching `product.deleted`: the catalog-service projector only needs
-  // the identifier to deactivate the read-model row.
-  publishEvent("category.deleted", categoryId);
   await invalidateCatalogCache();
   return res.status(200).json(category);
 };

@@ -4,6 +4,7 @@ import { runMigrations } from "./db/migrate.js";
 import { closeDatabase } from "./db/connection.js";
 import { startKafkaConsumers } from "./kafka/consumer.js";
 import { pricingEventProducer } from "./kafka/producer.js";
+import { startPricingOutboxRelay } from "./workers/outbox-relay.js";
 
 export { buildApp };
 
@@ -22,9 +23,10 @@ export async function startServer() {
     }
   }
 
-  // 2. Initialize Kafka Producers & Consumers
+  // 2. Initialize Kafka Producers & Consumers & Outbox Relay
   await pricingEventProducer.connect();
   await startKafkaConsumers();
+  const stopOutboxRelay = startPricingOutboxRelay();
 
   // 3. Build & Start Fastify App
   const app = await buildApp();
@@ -50,6 +52,7 @@ export async function startServer() {
         `[pricing-service] Received ${signal}. Initiating graceful shutdown...`,
       );
       try {
+        stopOutboxRelay();
         await app.close();
         await closeDatabase();
         console.log("[pricing-service] Graceful shutdown complete.");
