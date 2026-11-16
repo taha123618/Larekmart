@@ -424,6 +424,12 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - **Physical Disk IOPS & Resource Segregation**: Splits high-velocity commerce and financial ledger databases (`inventory_db`, `pricing_db`, `payout_db`) into dedicated PostgreSQL containers with separate persistent volumes (`postgres_inventory_data`, `postgres_pricing_data`, `postgres_payout_data`), independent CPU/RAM limits, and dedicated logical WAL replication slots for Debezium CDC.
     - **PgBouncer Dynamic Pool Mapping**: Transparently multiplexes service requests through PgBouncer on port 6432 (`inventory_db -> postgres-inventory:5432`, `pricing_db -> postgres-pricing:5432`, `payout_db -> postgres-payout:5432`), ensuring zero application connection string refactoring.
     - **Zero-Downtime Dual-Mode Bridge**: Bridges standard developer workflow with high-scale production using network aliases (`postgres-inventory`, `postgres-pricing`, `postgres-payout` pointing to `postgres`), allowing seamless single-container or multi-container operations.
+26. **Automated CI/CD Penetration Testing with Strix (`.github/workflows/strix-penetration-test.yml`)**:
+    - **Continuous Automated Security Audits**: Executes headless Strix penetration and vulnerability scans on pull requests and manual triggers (`workflow_dispatch`), dynamically targeting modified files (`--scan-mode quick`) with full repository context.
+    - **Perimeter Defense**: Scans for OWASP API Top 10 vulnerabilities, injection flaws, authentication regressions, and unintended privilege escalation vectors prior to merging.
+27. **Universal Transactional Outbox Engine (`product-service`, `pricing-service`, `packages/product-db`)**:
+    - **Guaranteed At-Least-Once Delivery**: Atomic Prisma and Drizzle `$transaction` writes commit domain entities (`products`, `categories`, `prices`, `priceRules`) alongside outbox events (`product_outbox`, `pricing_outbox`) in a single ACID commit, completely eliminating dual-write event loss on Kafka timeout.
+    - **Distributed Background Relay Sweepers**: Background workers running on Redis cluster leader election (`product:outbox:sweeper:leader`, `pricing:outbox:sweeper:leader`) continuously sweep pending events with exponential retry backoff (up to 5 retries), partition key derivation, and automated 7-day sliding retention purge.
 
 For in-depth architectural specifications and diagrams, see [`docs/plans/README.md`](docs/plans/README.md).
 
