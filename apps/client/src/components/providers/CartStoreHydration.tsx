@@ -13,7 +13,7 @@ import useCartStore from "@/stores/cartStore";
  *
  * Deferring to an effect keeps the first client render identical to the server's. The
  * persisted cart lands in the store immediately afterwards, which flips `hasHydrated` to
- * `true` and lets `ShoppingCartIcon` render its count.
+ * `true` and lets `CartHeaderButton` render its count.
  *
  * Render this once, from the root layout.
  */

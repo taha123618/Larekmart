@@ -32,14 +32,12 @@ import {
   Bot,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
   RefreshCw,
   Send,
   Zap,
   BarChart3,
   TrendingUp,
   Layers,
-  ArrowUpRight,
   ShieldAlert,
 } from "lucide-react";
 import { toast } from "react-toastify";

@@ -11,7 +11,6 @@ import {
   User,
   Sparkles,
   LifeBuoy,
-  ChevronDown,
   ArrowRight,
 } from "lucide-react";
 import { askAiSupportAssistant } from "@/services/support.service";
