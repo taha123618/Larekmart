@@ -8,6 +8,7 @@ import {
   boolean,
   timestamp,
   numeric,
+  jsonb,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
@@ -223,3 +224,35 @@ export const productRatingSummaries = pgTable("product_rating_summaries", {
     .defaultNow()
     .notNull(),
 });
+
+// ==============================================================================
+// 9. Transactional Outbox (review_outbox)
+// ==============================================================================
+
+export const reviewOutbox = pgTable(
+  "review_outbox",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    topic: varchar("topic", { length: 128 }).notNull(),
+    payload: jsonb("payload").notNull(),
+    status: varchar("status", { length: 32 }).default("PENDING").notNull(),
+    retryCount: integer("retry_count").default(0).notNull(),
+    lastError: text("last_error"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("review_outbox_status_created_idx").on(
+      table.status,
+      table.createdAt,
+    ),
+  ],
+);
+
+export type ReviewOutboxEvent = typeof reviewOutbox.$inferSelect;
+export type NewReviewOutboxEvent = typeof reviewOutbox.$inferInsert;

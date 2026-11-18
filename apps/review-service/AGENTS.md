@@ -10,14 +10,15 @@ helpful votes, and seller responses. Port 8014.
 **Source-of-truth split (never mix these):**
 
 - PostgreSQL (`review_db`, Drizzle ORM) — reviews, ratings, review_media attachments,
-  review_votes, review_reports, moderation logs, seller responses, and purchase eligibility.
-- Redis — rating summary cache (`review:summary:<productId>`) and anti-abuse vote/report rate limits.
+  review_votes, review_reports, moderation logs, seller responses, purchase eligibility,
+  and transactional outbox events (`review_outbox`).
+- Redis — rating summary cache (`review:summary:<productId>`), cluster leader locks (`review:outbox:sweeper:leader`), and anti-abuse vote/report rate limits.
   Never authoritative. Outages degrade read performance, never correctness.
 - Kafka — asynchronously consumes order and catalog events (`order.delivered`, `order.completed`,
   `shipment.delivered`, `product.deleted`, `user.deleted`) to manage eligibility and integrity;
   publishes lifecycle events (`review.created`, `review.updated`, `review.deleted`, `review.approved`,
-  `review.rejected`, `review.reported`, `product.rating-summary.updated`) using the repository envelope
-  `producer.send(topic, { value: payload })`.
+  `review.rejected`, `review.reported`, `product.rating-summary.updated`) guaranteed via `review_outbox`
+  relay sweeper using the repository envelope `producer.send(topic, { value: payload })`.
 
 ## Architecture & Layers
 

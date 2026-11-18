@@ -5,6 +5,7 @@ import { startKafkaConsumers } from "./consumers/index.js";
 import { runMigrations } from "./db/migrate.js";
 import { pool } from "./db/connection.js";
 import { redis } from "./utils/redis.js";
+import { startReviewOutboxRelay } from "./workers/outbox-relay.js";
 
 async function main() {
   console.log("Starting Larekmart review-service...");
@@ -21,9 +22,10 @@ async function main() {
     }
   }
 
-  // 2. Initialize Kafka Producers & Consumers
+  // 2. Initialize Kafka Producers & Consumers + Outbox Relay
   await initProducer();
   await startKafkaConsumers();
+  const stopOutboxRelay = startReviewOutboxRelay();
 
   // 3. Build & Start Fastify HTTP Server
   const app = await buildServer();
@@ -49,6 +51,7 @@ async function main() {
         `[review-service] Received ${signal}. Initiating graceful shutdown...`,
       );
       try {
+        stopOutboxRelay();
         await app.close();
         await pool.end();
         await redis.close();

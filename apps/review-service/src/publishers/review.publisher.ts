@@ -1,4 +1,6 @@
 import { producer } from "../utils/kafka.js";
+import { db } from "../db/connection.js";
+import { reviewOutbox } from "../db/schema.js";
 import { v4 as uuidv4 } from "uuid";
 import type {
   ReviewCreatedEvent,
@@ -10,11 +12,15 @@ import type {
   ProductRatingSummaryUpdatedEvent,
 } from "@repo/types";
 
+let isProducerConnected = false;
+
 export async function initProducer(): Promise<void> {
   try {
     await producer.connect();
+    isProducerConnected = true;
     console.log("Kafka producer connected in review-service");
   } catch (err) {
+    isProducerConnected = false;
     console.warn("Kafka producer connection warning:", err);
   }
 }
@@ -32,11 +38,27 @@ async function sendEvent<T extends object>(
     ...data,
   };
 
+  // 1. Transactional Outbox: Persist event into review_outbox table for guaranteed delivery
   try {
-    await producer.send(topic, { value: payload });
-    console.log(`[Kafka] Published ${eventName} to topic ${topic}`);
-  } catch (error) {
-    console.error(`[Kafka] Failed to publish ${eventName}:`, error);
+    await db.insert(reviewOutbox).values({
+      topic,
+      payload,
+    });
+  } catch (dbErr) {
+    // Fallback to direct Kafka delivery if database outbox insert fails (e.g. offline unit tests)
+    console.warn(
+      `[ReviewOutbox] Outbox table insert unavailable; falling back to direct Kafka dispatch:`,
+      dbErr,
+    );
+    try {
+      if (!isProducerConnected) {
+        await initProducer();
+      }
+      await producer.send(topic, { value: payload });
+      console.log(`[Kafka] Published ${eventName} to topic ${topic}`);
+    } catch (error) {
+      console.error(`[Kafka] Failed to publish ${eventName}:`, error);
+    }
   }
 }
 
