@@ -10,7 +10,7 @@ Guidance for maintaining `@repo/typescript-config`.
 ## 1. Configurations
 
 - `base.json`: Base options (`target: "ES2022"`, `module: "ESNext"`, `moduleResolution: "bundler"`, `strict: true`, `noUncheckedIndexedAccess: true`, `isolatedModules: true`).
-- `nextjs.json`: Next.js 15 options including JSX transform and Next.js compiler plugin.
+- `nextjs.json`: Next.js 16 options including JSX transform and Next.js compiler plugin.
 - `react-library.json`: Shared React library settings.
 
 ## 2. Invariants

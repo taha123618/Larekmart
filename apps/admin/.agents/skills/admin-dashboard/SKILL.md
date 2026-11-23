@@ -5,11 +5,11 @@ description: Use when modifying the admin dashboard in apps/admin, including Tan
 
 # Admin Dashboard Workflows
 
-Guidance for developing administrator features in `apps/admin` (Next.js 15, port 3003).
+Guidance for developing administrator features in `apps/admin` (Next.js 16, port 3003).
 
 ## 1. Access Control & Protection
 
-- Dashboard routes in `(dashboard)` are protected by `src/middleware.ts`.
+- Dashboard routes in `(dashboard)` are protected by `src/proxy.ts`.
 - Non-admin users are redirected to `/unauthorized`.
 - Server Components retrieve the admin auth token via `await auth().getToken()` and forward it in `Authorization: Bearer <token>`.
 

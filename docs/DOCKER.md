@@ -49,7 +49,7 @@ Larekmart's production container topology is organized into an isolated Docker b
          ▼ Host: shop.localhost            ▼ Host: admin.localhost          ▼ Host: api.localhost
 ┌───────────────────────────┐     ┌───────────────────────────┐     ┌───────────────────────────┐
 │     Client Storefront     │     │     Admin Dashboard       │     │        API Gateway        │
-│   Next.js 15 (Port 3002)  │     │   Next.js 15 (Port 3003)  │     │     Fastify 5 (Port 8090) │
+│   Next.js 16 (Port 3002)  │     │   Next.js 16 (Port 3003)  │     │     Fastify 5 (Port 8090) │
 └───────────────────────────┘     └───────────────────────────┘     └─────────────┬─────────────┘
                                                                                   │
                                               ┌───────────────────────────────────┤
@@ -108,7 +108,7 @@ docker/
 | ------------------------ | --------------------------------- | ------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------- |
 | **`traefik`**            | `80`, `443`, `8088`               | `80:80`, `443:443`, `127.0.0.1:8088` | **Public**          | Edge router, automated Let's Encrypt TLS, dynamic container discovery                                         |
 | **`client`**             | `3002`                            | `127.0.0.1:3002`                     | Traefik Ingress     | Next.js 16 Storefront UI (`shop.localhost`)                                                                   |
-| **`admin`**              | `3003`                            | `127.0.0.1:3003`                     | Traefik Ingress     | Next.js 15 Admin Dashboard UI (`admin.localhost`)                                                             |
+| **`admin`**              | `3003`                            | `127.0.0.1:3003`                     | Traefik Ingress     | Next.js 16 Admin Dashboard UI (`admin.localhost`)                                                             |
 | **`seller`**             | `3004`                            | `127.0.0.1:3004`                     | Traefik Ingress     | Nuxt 3 Seller Dashboard UI (`seller.localhost`)                                                               |
 | **`dozzle`**             | `8888`                            | `127.0.0.1:8888`                     | Traefik Ingress     | Real-time container log streaming (`logs.localhost` / `:8888`)                                                |
 | **`rootprint`**          | `8282`                            | `127.0.0.1:8282`                     | Traefik Ingress     | Distributed log analytics & search UI (`rootprint.localhost` / `:8282`)                                       |
@@ -553,7 +553,7 @@ Every single container image used in the Larekmart platform is cataloged below, 
 | **fraud-service**          | Python Microservice    | `uv:python3.12-bookworm-slim`      | `dhi/python:3.12`        | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Rootless uv)   |
 | **email-service**          | Node Worker            | `node:20-alpine`                   | `dhi/node:20`            | `expressjs` (1001)  | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **client**                 | Frontend (Next.js 16)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |
-| **admin**                  | Frontend (Next.js 15)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |
+| **admin**                  | Frontend (Next.js 16)  | `node:20-alpine`                   | `dhi/node:20`            | `nextjs` (1001)     | 0 Critical / 0 High    | Hardened (Standalone)    |
 | **seller**                 | Frontend (Nuxt 3)      | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Nitro/SSR)     |
 | **chat-service**           | Node Microservice      | `node:22-alpine`                   | `dhi/node:22`            | `appuser` (1001)    | 0 Critical / 0 High    | Hardened (Multi-stage)   |
 | **notification-service**   | Go Microservice        | `alpine:3.20`                      | `dhi/alpine:3.20`        | `appuser` (10001)   | 0 Critical / 0 High    | Hardened (Static binary) |

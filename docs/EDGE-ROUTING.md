@@ -23,7 +23,7 @@ Larekmart uses **Traefik v3** as the single unified Edge Ingress Router for dyna
              ▼ (shop.localhost)                 ▼ (admin.localhost)                ▼ (api.localhost)
 ┌───────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
 │     Client Storefront     │      │     Admin Dashboard       │      │        API Gateway        │
-│   Next.js 15 (Port 3002)  │      │   Next.js 15 (Port 3003)  │      │     Fastify 5 (Port 8090) │
+│   Next.js 16 (Port 3002)  │      │   Next.js 16 (Port 3003)  │      │     Fastify 5 (Port 8090) │
 └───────────────────────────┘      └───────────────────────────┘      └─────────────┬─────────────┘
                                                                                     │
                                                ┌────────────────────────────────────┤

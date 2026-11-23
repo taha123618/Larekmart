@@ -4,9 +4,9 @@ The administrator dashboard for Larekmart, providing catalog management, user ad
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router, Turbopack, React 19)
+- **Framework**: Next.js 16 (App Router, Turbopack, React 19)
 - **UI & Styling**: Tailwind CSS v4, shadcn/ui, Radix UI primitives, Lucide icons
-- **State & Data Fetching**: TanStack Table v8, TanStack React Query v5, React Hook Form + Zod
+- **State & Data Fetching**: TanStack Table v9 (native), TanStack React Query v5, React Hook Form + Zod
 - **Charts**: Recharts
 - **Auth**: Clerk (`@clerk/nextjs`)
 - **Port**: `3003`

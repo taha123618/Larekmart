@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductType } from "@repo/types";
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import MediaImage from "@/components/MediaImage";
@@ -27,7 +27,8 @@ import MediaImage from "@/components/MediaImage";
 //   images: Record<string, string>;
 // };
 
-export const columns: ColumnDef<ProductType>[] = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const columns: ColumnDef<any, ProductType>[] = [
   {
     id: "select",
     header: ({ table }) => (

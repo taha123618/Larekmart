@@ -36,7 +36,7 @@ export interface FeatureFlagRule {
   operator: RuleOperator;
   values: (string | number | boolean)[];
   variation?: string;
-  value?: any;
+  value?: unknown;
 }
 
 export interface FeatureFlagRollout {
@@ -49,8 +49,8 @@ export interface FeatureFlagRollout {
 export interface FeatureFlagDefinition {
   key: string;
   enabled: boolean;
-  defaultValue: any;
-  variations?: Record<string, any>;
+  defaultValue: unknown;
+  variations?: Record<string, unknown>;
   defaultVariation?: string;
   disabledVariation?: string;
   rules?: FeatureFlagRule[];
@@ -62,7 +62,10 @@ export interface FeatureFlagDefinition {
 
 export interface EvaluationContext {
   targetingKey?: string;
-  attributes?: Record<string, string | number | boolean | string[] | undefined | null>;
+  attributes?: Record<
+    string,
+    string | number | boolean | string[] | undefined | null
+  >;
 }
 
 export type EvaluationReason =
@@ -74,7 +77,7 @@ export type EvaluationReason =
   | "ERROR";
 
 export interface EvaluationResult {
-  value: any;
+  value: unknown;
   variant?: string;
   reason: EvaluationReason;
   flagKey: string;
@@ -110,14 +113,18 @@ export async function fetchAdminFeatureFlag(
   getToken: () => Promise<string | null>,
 ): Promise<FeatureFlagDefinition> {
   const token = await getToken();
-  const res = await fetch(`${getAdminFeatureFlagsBase()}/${encodeURIComponent(key)}`, {
-    headers: getHeaders(token),
-  });
+  const res = await fetch(
+    `${getAdminFeatureFlagsBase()}/${encodeURIComponent(key)}`,
+    {
+      headers: getHeaders(token),
+    },
+  );
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));
     throw new Error(
-      errorBody.message || `Failed to fetch feature flag ${key} (${res.status})`,
+      errorBody.message ||
+        `Failed to fetch feature flag ${key} (${res.status})`,
     );
   }
 
@@ -199,7 +206,8 @@ export async function updateAdminFeatureFlagRollout(
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));
     throw new Error(
-      errorBody.message || `Failed to update rollout percentage (${res.status})`,
+      errorBody.message ||
+        `Failed to update rollout percentage (${res.status})`,
     );
   }
 
@@ -238,7 +246,7 @@ export async function deleteAdminFeatureFlag(
 export async function evaluateAdminFeatureFlag(
   key: string,
   context: EvaluationContext,
-  defaultValue: any,
+  defaultValue: unknown,
   getToken: () => Promise<string | null>,
 ): Promise<EvaluationResult> {
   const token = await getToken();

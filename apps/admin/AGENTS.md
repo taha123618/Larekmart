@@ -4,7 +4,7 @@ Scope: `apps/admin` only. Root rules still apply — start there.
 
 ## What this app is
 
-Next.js 15 (App Router, Turbopack) admin dashboard on `:3003`. It owns product/category
+Next.js 16 (App Router, Turbopack) admin dashboard on `:3003`. It owns product/category
 management, user administration (against Clerk), and an order dashboard with charts. It
 calls backend services via the unified API Gateway (`NEXT_PUBLIC_API_GATEWAY_URL`, port `8080`)
 and uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-form + Zod.
@@ -20,14 +20,15 @@ and uses shadcn/ui, TanStack Query, TanStack Table, Recharts, and react-hook-for
   per-service `hitRateOf` / `errorRateOf` computations.
 - `src/components/ui/` — shadcn/ui primitives. Add new primitives here when you need one.
 - `src/lib/utils.ts` — contains `cn()`.
-- `src/middleware.ts` — admin routing guard using `createRouteMatcher` and
+- `src/proxy.ts` — Clerk proxy handler for session cookies and token synchronization.
+- `src/app/(dashboard)/layout.tsx` — resource-based auth guard verifying `userId` and
   `sessionClaims.metadata.role === "admin"`.
 
 ## Remix-style rules for this app
 
 - **Server components by default.** Use `"use client"` only where you need interactivity.
 - **Admin access is enforced both ways:**
-  - Frontend: `src/middleware.ts` protects the dashboard routes and redirects non-admins.
+  - Frontend: `src/app/(dashboard)/layout.tsx` resource-based auth protects the dashboard routes and redirects non-admins.
   - Backend: services still enforce authorization. Do not rely on the frontend gate alone.
 - **Data fetching in server components:** `auth()` from `@clerk/nextjs/server` for session
   info; fetch service data with `Authorization: Bearer <token>` via unified API Gateway
@@ -109,7 +110,7 @@ new one.
 
 ## What not to do
 
-- Do not weaken the admin middleware to “make things easier.”
+- Do not weaken the Next.js 16 `src/proxy.ts` or layout resource-based auth checks to “make things easier.”
 - Do not put mutating admin actions behind only a UI guard; the backend must still authorize.
 - Do not import service internals into the frontend.
 - Do not paste raw hex colors; use Tailwind classes and existing design tokens.

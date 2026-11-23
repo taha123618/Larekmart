@@ -5,7 +5,7 @@ Shared TypeScript compiler configurations (`tsconfig.json` bases) across the Lar
 ## Available Configurations
 
 - `@repo/typescript-config/base.json`: Strict TypeScript base for Node.js services, utilities, and backend workspaces.
-- `@repo/typescript-config/nextjs.json`: Extended configuration for Next.js 15 App Router applications.
+- `@repo/typescript-config/nextjs.json`: Extended configuration for Next.js 16 App Router applications.
 - `@repo/typescript-config/react-library.json`: Configuration for React UI component packages.
 
 ## Usage

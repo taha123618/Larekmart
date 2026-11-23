@@ -85,7 +85,7 @@ function AdminChatContent() {
           match = res.items.find(
             (c) =>
               (c.metadata as Record<string, unknown> | null)?.ticketId ===
-              ticketParam || c.id === ticketParam,
+                ticketParam || c.id === ticketParam,
           );
         } else if (orderParam) {
           match = res.items.find(
@@ -257,10 +257,11 @@ function AdminChatContent() {
                 <button
                   key={tab.id}
                   onClick={() => setFilterType(tab.id)}
-                  className={`flex-1 rounded-lg py-1 text-xs font-medium transition ${filterType === tab.id
+                  className={`flex-1 rounded-lg py-1 text-xs font-medium transition ${
+                    filterType === tab.id
                       ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 shadow-xs"
                       : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                    }`}
+                  }`}
                 >
                   {tab.label}
                 </button>
@@ -286,16 +287,18 @@ function AdminChatContent() {
                   <button
                     key={conv.id}
                     onClick={() => setSelectedConv(conv)}
-                    className={`w-full p-3.5 text-left transition flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 ${isSelected
+                    className={`w-full p-3.5 text-left transition flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 ${
+                      isSelected
                         ? "bg-neutral-100 dark:bg-neutral-800/80 border-l-4 border-neutral-900 dark:border-white"
                         : ""
-                      }`}
+                    }`}
                   >
                     <div
-                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isSupport
+                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                        isSupport
                           ? "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
                           : "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
-                        }`}
+                      }`}
                     >
                       {isSupport ? (
                         <Headphones className="h-4 w-4" />
@@ -314,12 +317,12 @@ function AdminChatContent() {
                         <span className="text-[10px] text-neutral-400 shrink-0">
                           {conv.lastMessageAt
                             ? new Date(conv.lastMessageAt).toLocaleDateString(
-                              [],
-                              {
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )
+                                [],
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )
                             : ""}
                         </span>
                       </div>
@@ -404,10 +407,11 @@ function AdminChatContent() {
                         className={`flex flex-col ${isAdmin ? "items-end" : "items-start"}`}
                       >
                         <div
-                          className={`group relative max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-xs ${isAdmin
+                          className={`group relative max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-xs ${
+                            isAdmin
                               ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 rounded-br-none"
                               : "bg-white text-neutral-900 dark:bg-neutral-800 dark:text-white border border-neutral-200 dark:border-neutral-700 rounded-bl-none"
-                            }`}
+                          }`}
                         >
                           <div className="mb-1 flex items-center justify-between gap-3 text-[10px] opacity-75 font-medium">
                             <span>

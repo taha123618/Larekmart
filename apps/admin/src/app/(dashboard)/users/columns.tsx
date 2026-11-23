@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import MediaImage from "@/components/MediaImage";
@@ -30,7 +30,8 @@ export interface UserWithServiceStatus {
   [key: string]: unknown;
 }
 
-export const columns: ColumnDef<UserWithServiceStatus>[] = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const columns: ColumnDef<any, UserWithServiceStatus>[] = [
   {
     id: "select",
     header: ({ table }) => (

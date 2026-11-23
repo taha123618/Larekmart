@@ -8,7 +8,7 @@ This document is the authoritative engineering specification for the Continuous 
 
 Larekmart is a production-grade distributed microservices e-commerce platform built as a **pnpm + Turborepo monorepo**. The ecosystem consists of:
 
-- **3 Frontends**: Storefront (`apps/client`, Next.js 16), Admin Dashboard (`apps/admin`, Next.js 15), and Seller & Merchant Dashboard (`apps/seller`, Nuxt 3).
+- **3 Frontends**: Storefront (`apps/client`, Next.js 16), Admin Dashboard (`apps/admin`, Next.js 16), and Seller & Merchant Dashboard (`apps/seller`, Nuxt 3).
 - **1 Edge API Gateway**: Fastify 5 (`apps/api-gateway`).
 - **27 Polyglot HTTP Backend Microservices**: Node.js (Fastify, Express, Hono, Koa, NestJS), Go 1.22 (Chi), and Python 3.12+ (FastAPI).
 - **1 Headless Worker**: Email Service (`apps/email-service`).

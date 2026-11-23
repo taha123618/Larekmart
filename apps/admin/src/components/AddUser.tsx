@@ -125,6 +125,11 @@ const AddUser = () => {
                     <FormControl>
                       <Input
                         {...field}
+                        value={
+                          Array.isArray(field.value)
+                            ? field.value.join(", ")
+                            : (field.value ?? "")
+                        }
                         placeholder="email1@gmail.com, email2@gmail.com"
                         onChange={(e) => {
                           const emails = e.target.value

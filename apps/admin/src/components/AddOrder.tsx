@@ -37,6 +37,11 @@ const formSchema = z.object({
 const AddOrder = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      amount: 1,
+      userId: "",
+      status: "pending",
+    },
   });
   return (
     <SheetContent>
@@ -52,7 +57,16 @@ const AddOrder = () => {
                   <FormItem>
                     <FormLabel>Amount</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input
+                        type="number"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === "" ? 0 : Number(e.target.value),
+                          )
+                        }
+                      />
                     </FormControl>
                     <FormDescription>
                       Enter the amount of the order.
@@ -68,7 +82,7 @@ const AddOrder = () => {
                   <FormItem>
                     <FormLabel>User ID</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormDescription>Enter the User ID.</FormDescription>
                     <FormMessage />
@@ -84,7 +98,8 @@ const AddOrder = () => {
                     <FormControl>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value || "pending"}
+                        defaultValue={field.value || "pending"}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select a status" />

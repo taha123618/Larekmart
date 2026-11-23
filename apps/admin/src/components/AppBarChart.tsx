@@ -22,21 +22,24 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-// const chartData = [
-//   { month: "January", total: 186, successful: 80 },
-//   { month: "February", total: 305, successful: 200 },
-//   { month: "March", total: 237, successful: 120 },
-//   { month: "April", total: 173, successful: 100 },
-//   { month: "May", total: 209, successful: 130 },
-//   { month: "June", total: 214, successful: 140 },
-// ];
+const fallbackOrderData: OrderChartType[] = [
+  { month: "January", total: 186, successful: 80 },
+  { month: "February", total: 305, successful: 200 },
+  { month: "March", total: 237, successful: 120 },
+  { month: "April", total: 173, successful: 100 },
+  { month: "May", total: 209, successful: 130 },
+  { month: "June", total: 214, successful: 140 },
+];
 
 const AppBarChart = ({
   dataPromise,
 }: {
-  dataPromise: Promise<OrderChartType[]>;
+  dataPromise?: Promise<OrderChartType[]>;
 }) => {
-  const chartData = use(dataPromise);
+  const resolvedData = dataPromise ? use(dataPromise) : fallbackOrderData;
+  const chartData =
+    resolvedData && resolvedData.length > 0 ? resolvedData : fallbackOrderData;
+
   return (
     <div className="">
       <h1 className="text-lg font-medium mb-6">Total Revenue</h1>
@@ -48,7 +51,11 @@ const AppBarChart = ({
             tickLine={false}
             tickMargin={10}
             axisLine={false}
-            tickFormatter={(value) => value.slice(0, 3)}
+            tickFormatter={(value) =>
+              typeof value === "string"
+                ? value.slice(0, 3)
+                : String(value ?? "")
+            }
           />
           <YAxis tickLine={false} tickMargin={10} axisLine={false} />
           <ChartTooltip content={<ChartTooltipContent />} />

@@ -1,13 +1,15 @@
 "use client";
 
 import {
-  ColumnDef,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
+  useTable,
+  stockFeatures,
+  createSortedRowModel,
+  createPaginatedRowModel,
+  type ColumnDef,
+  type SortingState,
+  type RowSelectionState,
+  type RowData,
 } from "@tanstack/react-table";
 
 import {
@@ -22,31 +24,44 @@ import { DataTablePagination } from "@/components/TablePagination";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface DataTableProps<TData extends RowData = any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  columns: ColumnDef<any, TData>[];
   data: TData[];
 }
 
-export function DataTable<TData, TValue>({
+const tableFeatures = {
+  ...stockFeatures,
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function DataTable<TData extends RowData = any>({
   columns,
   data,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [rowSelection, setRowSelection] = useState({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      rowSelection,
+  const table = useTable(
+    {
+      features: tableFeatures,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: data as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      columns: columns as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onSortingChange: setSorting as any,
+      onRowSelectionChange: setRowSelection,
+      state: {
+        sorting,
+        rowSelection,
+      },
     },
-  });
+    (state) => state,
+  );
 
   return (
     <div className="rounded-md border">

@@ -8,7 +8,7 @@ and the relevant scoped `AGENTS.md`.
 ## 1. What this is
 
 **Larekmart** is a production-grade microservices e-commerce platform for marketplaces like Amazon, Daraz, AliExpress, Alibaba, and others. It is a
-**pnpm + Turborepo monorepo** with three frontends (Customer Storefront in Next.js 16, Admin Dashboard in Next.js 15, and Seller & Merchant Dashboard in Nuxt 3), 28 backend services, and
+**pnpm + Turborepo monorepo** with three frontends (Customer Storefront in Next.js 16, Admin Dashboard in Next.js 16, and Seller & Merchant Dashboard in Nuxt 3), 28 backend services, and
 shared internal packages. Cross-service communication is **asynchronous via Kafka**;
 there are no service-to-service HTTP calls.
 
@@ -204,7 +204,7 @@ Whenever building, modifying, expanding, or integrating any feature service (e.g
 | Workspace                 | Path                          | Runtime                 | Port | Purpose                                                                                                                               |
 | ------------------------- | ----------------------------- | ----------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `client`                  | `apps/client`                 | Next.js 16 (App Router) | 3002 | Storefront: browse, cart, Stripe checkout, orders                                                                                     |
-| `admin`                   | `apps/admin`                  | Next.js 15 (App Router) | 3003 | Admin dashboard: products, categories, users, orders                                                                                  |
+| `admin`                   | `apps/admin`                  | Next.js 16 (App Router) | 3003 | Admin dashboard: products, categories, users, orders                                                                                  |
 | `seller`                  | `apps/seller`                 | Nuxt 3 (SSR + Nitro)    | 3004 | Seller & Merchant dashboard: onboarding, catalog, inventory, orders, finance payouts, live chat, policies & settings                  |
 | `api-gateway`             | `apps/api-gateway`            | Fastify 5               | 8080 | Single entrypoint reverse proxy, auth, rate limiting, and request correlation                                                         |
 | `product-service`         | `apps/product-service`        | Express 5               | 8000 | Product + category CRUD (Prisma/Postgres)                                                                                             |

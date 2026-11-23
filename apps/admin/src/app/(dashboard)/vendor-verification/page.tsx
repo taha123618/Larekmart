@@ -4,13 +4,13 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import {
-  ColumnDef,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
+  useTable,
+  stockFeatures,
+  createSortedRowModel,
+  createPaginatedRowModel,
+  type ColumnDef,
+  type SortingState,
 } from "@tanstack/react-table";
 import {
   Building2,
@@ -28,12 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,9 +66,8 @@ export default function VendorVerificationPage() {
   const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedVendor, setSelectedVendor] = useState<PendingVendorItem | null>(
-    null,
-  );
+  const [selectedVendor, setSelectedVendor] =
+    useState<PendingVendorItem | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{
     url: string;
     title: string;
@@ -137,7 +131,9 @@ export default function VendorVerificationPage() {
       setSelectedVendor(null);
       setReason("");
       queryClient.invalidateQueries({ queryKey: ["pending-vendors"] });
-      queryClient.invalidateQueries({ queryKey: ["vendor-verification-stats"] });
+      queryClient.invalidateQueries({
+        queryKey: ["vendor-verification-stats"],
+      });
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to verify vendor");
@@ -162,7 +158,9 @@ export default function VendorVerificationPage() {
       setReason("");
       setQuickRejectReason("");
       queryClient.invalidateQueries({ queryKey: ["pending-vendors"] });
-      queryClient.invalidateQueries({ queryKey: ["vendor-verification-stats"] });
+      queryClient.invalidateQueries({
+        queryKey: ["vendor-verification-stats"],
+      });
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to reject vendor");
@@ -218,7 +216,8 @@ export default function VendorVerificationPage() {
 
   // TanStack Table columns definition
   const [sorting, setSorting] = useState<SortingState>([]);
-  const columns: ColumnDef<PendingVendorItem>[] = [
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const columns: ColumnDef<any, PendingVendorItem>[] = [
     {
       accessorKey: "legalName",
       header: "Business Name",
@@ -231,7 +230,9 @@ export default function VendorVerificationPage() {
               {item.legalName}
             </div>
             {item.tradeName && (
-              <div className="text-xs text-neutral-500">DBA: {item.tradeName}</div>
+              <div className="text-xs text-neutral-500">
+                DBA: {item.tradeName}
+              </div>
             )}
             <div className="text-xs text-neutral-400 font-mono mt-0.5">
               Reg: {item.registrationNumber} • {item.country}
@@ -268,7 +269,10 @@ export default function VendorVerificationPage() {
           <div className="text-xs text-neutral-600 dark:text-neutral-300">
             <div>{date.toLocaleDateString()}</div>
             <div className="text-neutral-400 text-[11px]">
-              {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {date.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </div>
           </div>
         );
@@ -352,17 +356,24 @@ export default function VendorVerificationPage() {
     },
   ];
 
-  const table = useReactTable({
-    data: allVendors,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-    state: {
-      sorting,
+  const table = useTable(
+    {
+      features: {
+        ...stockFeatures,
+        sortedRowModel: createSortedRowModel(),
+        paginatedRowModel: createPaginatedRowModel(),
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: allVendors as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      columns: columns as any,
+      onSortingChange: setSorting,
+      state: {
+        sorting,
+      },
     },
-  });
+    (state) => state,
+  );
 
   const getMediaUrl = (mediaFileId: string) => {
     const apiBase = getApiGatewayUrl();
@@ -385,7 +396,8 @@ export default function VendorVerificationPage() {
             Seller & Vendor KYB Verification
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Authoritative merchant onboarding verification queue, business compliance review, and document validation.
+            Authoritative merchant onboarding verification queue, business
+            compliance review, and document validation.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -550,7 +562,8 @@ export default function VendorVerificationPage() {
               KYB Verification Review
             </SheetTitle>
             <SheetDescription>
-              Inspect legal identity documents, company registration details, and make an official verification determination.
+              Inspect legal identity documents, company registration details,
+              and make an official verification determination.
             </SheetDescription>
           </SheetHeader>
 
@@ -564,7 +577,9 @@ export default function VendorVerificationPage() {
                 </h3>
                 <div className="grid grid-cols-2 gap-3 text-xs p-4 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                   <div>
-                    <span className="text-neutral-400">Legal Business Name:</span>
+                    <span className="text-neutral-400">
+                      Legal Business Name:
+                    </span>
                     <p className="font-semibold text-neutral-900 dark:text-neutral-100">
                       {selectedVendor.legalName}
                     </p>
@@ -576,7 +591,9 @@ export default function VendorVerificationPage() {
                     </p>
                   </div>
                   <div>
-                    <span className="text-neutral-400">Registration Number:</span>
+                    <span className="text-neutral-400">
+                      Registration Number:
+                    </span>
                     <p className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">
                       {selectedVendor.registrationNumber}
                     </p>
@@ -621,7 +638,9 @@ export default function VendorVerificationPage() {
                   )}
                   {selectedVendor.businessProfile?.registeredAddressLine1 && (
                     <div className="col-span-2 border-t border-neutral-200 dark:border-neutral-800 pt-2">
-                      <span className="text-neutral-400">Registered Office Address:</span>
+                      <span className="text-neutral-400">
+                        Registered Office Address:
+                      </span>
                       <p className="font-medium text-neutral-900 dark:text-neutral-100">
                         {selectedVendor.businessProfile.registeredAddressLine1},{" "}
                         {selectedVendor.businessProfile.city},{" "}
@@ -649,7 +668,8 @@ export default function VendorVerificationPage() {
                   <div className="flex h-24 items-center justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
                   </div>
-                ) : (vendorDocs || selectedVendor.documents || []).length === 0 ? (
+                ) : (vendorDocs || selectedVendor.documents || []).length ===
+                  0 ? (
                   <div className="p-4 rounded-lg border border-dashed border-neutral-200 dark:border-neutral-800 text-center text-xs text-neutral-500">
                     No documents attached to this application.
                   </div>
@@ -670,7 +690,8 @@ export default function VendorVerificationPage() {
                                 {doc.documentType.replace(/_/g, " ")}
                               </div>
                               <div className="text-[11px] text-neutral-500 font-mono">
-                                {doc.fileName} • {(doc.fileSize / 1024).toFixed(1)} KB
+                                {doc.fileName} •{" "}
+                                {(doc.fileSize / 1024).toFixed(1)} KB
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -720,9 +741,14 @@ export default function VendorVerificationPage() {
               </div>
 
               {/* Approval Form */}
-              <form onSubmit={handleFormSubmit} className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <form
+                onSubmit={handleFormSubmit}
+                className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800"
+              >
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Verification Determination</Label>
+                  <Label className="text-xs font-semibold">
+                    Verification Determination
+                  </Label>
                   <div className="flex items-center gap-6">
                     <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
                       <input
@@ -757,11 +783,18 @@ export default function VendorVerificationPage() {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="review-reason" className="text-xs font-semibold">
-                      {decision === "REJECT" ? "Rejection Reason (Required)" : "Audit Review Notes (Optional)"}
+                    <Label
+                      htmlFor="review-reason"
+                      className="text-xs font-semibold"
+                    >
+                      {decision === "REJECT"
+                        ? "Rejection Reason (Required)"
+                        : "Audit Review Notes (Optional)"}
                     </Label>
                     {decision === "REJECT" && (
-                      <span className="text-[10px] text-rose-500 font-medium">Mandatory</span>
+                      <span className="text-[10px] text-rose-500 font-medium">
+                        Mandatory
+                      </span>
                     )}
                   </div>
                   <Textarea
@@ -811,10 +844,14 @@ export default function VendorVerificationPage() {
           <div className="w-full max-w-md rounded-xl bg-background p-6 shadow-xl border border-neutral-200 dark:border-neutral-800 space-y-4">
             <div className="flex items-center gap-2 text-rose-600">
               <ShieldX className="h-5 w-5" />
-              <h3 className="font-bold text-base">Quick Reject Vendor Application</h3>
+              <h3 className="font-bold text-base">
+                Quick Reject Vendor Application
+              </h3>
             </div>
             <p className="text-xs text-neutral-500">
-              Are you sure you want to reject <strong>{quickRejectVendor.legalName}</strong>? Please provide an official rejection reason.
+              Are you sure you want to reject{" "}
+              <strong>{quickRejectVendor.legalName}</strong>? Please provide an
+              official rejection reason.
             </p>
             <form onSubmit={handleQuickRejectSubmit} className="space-y-4">
               <Textarea
@@ -839,7 +876,9 @@ export default function VendorVerificationPage() {
                   type="submit"
                   variant="destructive"
                   size="sm"
-                  disabled={rejectMutation.isPending || !quickRejectReason.trim()}
+                  disabled={
+                    rejectMutation.isPending || !quickRejectReason.trim()
+                  }
                 >
                   {rejectMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -863,7 +902,9 @@ export default function VendorVerificationPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-2 border-b border-neutral-800 text-white text-xs">
-              <span className="font-semibold truncate">{lightboxImage.title}</span>
+              <span className="font-semibold truncate">
+                {lightboxImage.title}
+              </span>
               <Button
                 variant="ghost"
                 size="sm"

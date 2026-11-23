@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { OrderType } from "@repo/types";
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   ArrowUpDown,
   MoreHorizontal,
@@ -60,7 +60,8 @@ const getCarrierBadge = (carrier?: string | null) => {
   );
 };
 
-export const columns: ColumnDef<OrderType>[] = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const columns: ColumnDef<any, OrderType>[] = [
   {
     id: "select",
     header: ({ table }) => (

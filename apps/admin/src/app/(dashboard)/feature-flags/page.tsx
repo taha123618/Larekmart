@@ -64,16 +64,19 @@ export default function FeatureFlagsDashboardPage() {
 
   // Create / Edit modal state
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
-  const [editingFlag, setEditingFlag] = useState<Partial<FeatureFlagDefinition> | null>(null);
+  const [editingFlag, setEditingFlag] =
+    useState<Partial<FeatureFlagDefinition> | null>(null);
 
   // Playground simulation state
   const [isPlaygroundOpen, setIsPlaygroundOpen] = useState<boolean>(false);
   const [playgroundFlagKey, setPlaygroundFlagKey] = useState<string>("");
-  const [playgroundTargetingKey, setPlaygroundTargetingKey] = useState<string>("user_test_42");
+  const [playgroundTargetingKey, setPlaygroundTargetingKey] =
+    useState<string>("user_test_42");
   const [playgroundAttributes, setPlaygroundAttributes] = useState<string>(
     JSON.stringify({ tier: "platinum", role: "admin", country: "PK" }, null, 2),
   );
-  const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
+  const [evaluationResult, setEvaluationResult] =
+    useState<EvaluationResult | null>(null);
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
 
   // Fetch flags
@@ -98,7 +101,7 @@ export default function FeatureFlagsDashboardPage() {
         `Feature flag '${variables.key}' ${variables.enabled ? "enabled" : "disabled"}`,
       );
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || "Failed to toggle feature flag");
     },
   });
@@ -113,7 +116,7 @@ export default function FeatureFlagsDashboardPage() {
         `Canary rollout for '${variables.key}' set to ${variables.percentage}%`,
       );
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || "Failed to update rollout");
     },
   });
@@ -128,7 +131,7 @@ export default function FeatureFlagsDashboardPage() {
       setEditingFlag(null);
       toast.success("Feature flag saved successfully");
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || "Failed to persist feature flag");
     },
   });
@@ -140,7 +143,7 @@ export default function FeatureFlagsDashboardPage() {
       queryClient.invalidateQueries({ queryKey: ["admin", "feature-flags"] });
       toast.success(`Feature flag '${key}' deleted`);
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || "Failed to delete feature flag");
     },
   });
@@ -151,7 +154,7 @@ export default function FeatureFlagsDashboardPage() {
     setIsEvaluating(true);
     setEvaluationResult(null);
     try {
-      let parsedAttrs: Record<string, any> = {};
+      let parsedAttrs: Record<string, unknown> = {};
       try {
         parsedAttrs = JSON.parse(playgroundAttributes);
       } catch {
@@ -164,14 +167,17 @@ export default function FeatureFlagsDashboardPage() {
         playgroundFlagKey,
         {
           targetingKey: playgroundTargetingKey,
-          attributes: parsedAttrs,
+          attributes: parsedAttrs as Record<
+            string,
+            string | number | boolean | string[] | undefined | null
+          >,
         },
         false,
         getToken,
       );
       setEvaluationResult(res);
-    } catch (err: any) {
-      toast.error(err.message || "Evaluation failed");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Evaluation failed");
     } finally {
       setIsEvaluating(false);
     }
@@ -181,7 +187,8 @@ export default function FeatureFlagsDashboardPage() {
   const filteredFlags = flags.filter((f) => {
     const matchesSearch =
       f.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (f.description && f.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      (f.description &&
+        f.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
     if (!matchesSearch) return false;
 
@@ -198,7 +205,10 @@ export default function FeatureFlagsDashboardPage() {
   const totalFlags = flags.length;
   const activeFlags = flags.filter((f) => f.enabled).length;
   const canaryFlags = flags.filter(
-    (f) => f.enabled && (f.rollout?.percentage ?? 0) > 0 && (f.rollout?.percentage ?? 0) < 100,
+    (f) =>
+      f.enabled &&
+      (f.rollout?.percentage ?? 0) > 0 &&
+      (f.rollout?.percentage ?? 0) < 100,
   ).length;
   const targetedRulesFlags = flags.filter(
     (f) => f.rules && f.rules.length > 0,
@@ -210,13 +220,19 @@ export default function FeatureFlagsDashboardPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">Feature Flags & Canary Rollouts</h1>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Feature Flags & Canary Rollouts
+            </h1>
+            <Badge
+              variant="outline"
+              className="bg-primary/10 text-primary border-primary/20"
+            >
               OpenFeature Runtime
             </Badge>
           </div>
           <p className="text-muted-foreground mt-1">
-            Centralized dynamic feature toggles, percentage-based traffic splits, and attribute targeting across Larekmart microservices.
+            Centralized dynamic feature toggles, percentage-based traffic
+            splits, and attribute targeting across Larekmart microservices.
           </p>
         </div>
 
@@ -255,47 +271,70 @@ export default function FeatureFlagsDashboardPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="border-border/60">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Flags</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Flags
+            </CardTitle>
             <Sliders className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalFlags}</div>
-            <p className="text-xs text-muted-foreground mt-1">Registered in Redis state</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/60">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active (Enabled)</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-500">{activeFlags}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {totalFlags > 0 ? ((activeFlags / totalFlags) * 100).toFixed(0) : 0}% of total registry
+              Registered in Redis state
             </p>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Canary Rollouts</CardTitle>
-            <Zap className="h-4 w-4 text-amber-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Active (Enabled)
+            </CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-500">{canaryFlags}</div>
-            <p className="text-xs text-muted-foreground mt-1">Partial traffic splits (1-99%)</p>
+            <div className="text-2xl font-bold text-emerald-500">
+              {activeFlags}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {totalFlags > 0
+                ? ((activeFlags / totalFlags) * 100).toFixed(0)
+                : 0}
+              % of total registry
+            </p>
           </CardContent>
         </Card>
 
         <Card className="border-border/60">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Targeting Rules</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Canary Rollouts
+            </CardTitle>
+            <Zap className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-500">
+              {canaryFlags}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Partial traffic splits (1-99%)
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Targeting Rules
+            </CardTitle>
             <Target className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">{targetedRulesFlags}</div>
-            <p className="text-xs text-muted-foreground mt-1">Role & attribute conditioned</p>
+            <div className="text-2xl font-bold text-blue-500">
+              {targetedRulesFlags}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Role & attribute conditioned
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -307,7 +346,8 @@ export default function FeatureFlagsDashboardPage() {
             <div>
               <CardTitle>Feature Flag Registry</CardTitle>
               <CardDescription>
-                Sub-millisecond in-memory cached flags with real-time distributed Pub/Sub invalidation.
+                Sub-millisecond in-memory cached flags with real-time
+                distributed Pub/Sub invalidation.
               </CardDescription>
             </div>
 
@@ -325,19 +365,21 @@ export default function FeatureFlagsDashboardPage() {
 
               {/* Status Filter Buttons */}
               <div className="flex items-center rounded-lg border border-border p-1 bg-muted/40">
-                {(["ALL", "ACTIVE", "CANARY", "INACTIVE"] as const).map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                      statusFilter === status
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {status}
-                  </button>
-                ))}
+                {(["ALL", "ACTIVE", "CANARY", "INACTIVE"] as const).map(
+                  (status) => (
+                    <button
+                      key={status}
+                      onClick={() => setStatusFilter(status)}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                        statusFilter === status
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {status}
+                    </button>
+                  ),
+                )}
               </div>
             </div>
           </div>
@@ -350,23 +392,35 @@ export default function FeatureFlagsDashboardPage() {
                 <TableRow className="bg-muted/30">
                   <TableHead className="font-semibold">Flag Key</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Canary Rollout</TableHead>
-                  <TableHead className="font-semibold">Targeting Rules</TableHead>
+                  <TableHead className="font-semibold">
+                    Canary Rollout
+                  </TableHead>
+                  <TableHead className="font-semibold">
+                    Targeting Rules
+                  </TableHead>
                   <TableHead className="font-semibold">Default Value</TableHead>
-                  <TableHead className="font-semibold text-right">Actions</TableHead>
+                  <TableHead className="font-semibold text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-12 text-muted-foreground"
+                    >
                       <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
                       Loading feature flag registry...
                     </TableCell>
                   </TableRow>
                 ) : filteredFlags.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-12 text-muted-foreground"
+                    >
                       No feature flags match your search criteria.
                     </TableCell>
                   </TableRow>
@@ -378,7 +432,9 @@ export default function FeatureFlagsDashboardPage() {
                         {/* Key & Description */}
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="font-mono text-sm font-semibold">{flag.key}</span>
+                            <span className="font-mono text-sm font-semibold">
+                              {flag.key}
+                            </span>
                             {flag.description && (
                               <span className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                                 {flag.description}
@@ -404,7 +460,9 @@ export default function FeatureFlagsDashboardPage() {
                           >
                             <span
                               className={`h-2 w-2 rounded-full ${
-                                flag.enabled ? "bg-emerald-500 animate-pulse" : "bg-zinc-500"
+                                flag.enabled
+                                  ? "bg-emerald-500 animate-pulse"
+                                  : "bg-zinc-500"
                               }`}
                             />
                             {flag.enabled ? "Active" : "Disabled"}
@@ -426,7 +484,9 @@ export default function FeatureFlagsDashboardPage() {
                                 style={{ width: `${rolloutPct}%` }}
                               />
                             </div>
-                            <span className="font-mono text-xs w-10 text-right">{rolloutPct}%</span>
+                            <span className="font-mono text-xs w-10 text-right">
+                              {rolloutPct}%
+                            </span>
                             <div className="flex gap-1">
                               {[0, 25, 50, 100].map((pct) => (
                                 <button
@@ -453,11 +513,17 @@ export default function FeatureFlagsDashboardPage() {
                         {/* Targeting rules */}
                         <TableCell>
                           {flag.rules && flag.rules.length > 0 ? (
-                            <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
-                              {flag.rules.length} Rule{flag.rules.length > 1 ? "s" : ""}
+                            <Badge
+                              variant="outline"
+                              className="bg-blue-500/10 text-blue-500 border-blue-500/20"
+                            >
+                              {flag.rules.length} Rule
+                              {flag.rules.length > 1 ? "s" : ""}
                             </Badge>
                           ) : (
-                            <span className="text-xs text-muted-foreground">Default</span>
+                            <span className="text-xs text-muted-foreground">
+                              Default
+                            </span>
                           )}
                         </TableCell>
 
@@ -503,7 +569,9 @@ export default function FeatureFlagsDashboardPage() {
                               className="text-destructive hover:text-destructive"
                               onClick={() => {
                                 if (
-                                  confirm(`Are you sure you want to delete feature flag '${flag.key}'?`)
+                                  confirm(
+                                    `Are you sure you want to delete feature flag '${flag.key}'?`,
+                                  )
                                 ) {
                                   deleteMutation.mutate(flag.key);
                                 }
@@ -528,10 +596,13 @@ export default function FeatureFlagsDashboardPage() {
         <SheetContent className="sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>
-              {editingFlag?.key ? `Edit Feature Flag: ${editingFlag.key}` : "Create New Feature Flag"}
+              {editingFlag?.key
+                ? `Edit Feature Flag: ${editingFlag.key}`
+                : "Create New Feature Flag"}
             </SheetTitle>
             <SheetDescription>
-              Define flag evaluation rules, canary distribution, and default values.
+              Define flag evaluation rules, canary distribution, and default
+              values.
             </SheetDescription>
           </SheetHeader>
 
@@ -559,7 +630,10 @@ export default function FeatureFlagsDashboardPage() {
                   placeholder="Purpose of this feature flag..."
                   value={editingFlag.description || ""}
                   onChange={(e) =>
-                    setEditingFlag((prev) => ({ ...prev, description: e.target.value }))
+                    setEditingFlag((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
                   }
                   className="mt-1"
                 />
@@ -625,25 +699,32 @@ export default function FeatureFlagsDashboardPage() {
                       : String(editingFlag.defaultValue ?? "false")
                   }
                   onChange={(e) => {
-                    let val: any = e.target.value;
-                    if (val === "true") val = true;
-                    else if (val === "false") val = false;
-                    else if (!isNaN(Number(val)) && val.trim() !== "") val = Number(val);
+                    const text = e.target.value;
+                    let val: unknown = text;
+                    if (text === "true") val = true;
+                    else if (text === "false") val = false;
+                    else if (!isNaN(Number(text)) && text.trim() !== "")
+                      val = Number(text);
                     else {
                       try {
-                        val = JSON.parse(val);
+                        val = JSON.parse(text);
                       } catch {
                         // Keep raw string representation on parse failure
                       }
                     }
-                    setEditingFlag((prev) => ({ ...prev, defaultValue: val }));
+                    setEditingFlag((prev) =>
+                      prev ? { ...prev, defaultValue: val } : prev,
+                    );
                   }}
                   className="font-mono text-xs mt-1"
                 />
               </div>
 
               <div className="pt-4 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsEditorOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditorOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button
@@ -674,7 +755,8 @@ export default function FeatureFlagsDashboardPage() {
               <SheetTitle>Evaluation Playground</SheetTitle>
             </div>
             <SheetDescription>
-              Test and verify how &apos;{playgroundFlagKey}&apos; resolves across deterministic targeting keys and user attributes.
+              Test and verify how &apos;{playgroundFlagKey}&apos; resolves
+              across deterministic targeting keys and user attributes.
             </SheetDescription>
           </SheetHeader>
 
@@ -715,7 +797,9 @@ export default function FeatureFlagsDashboardPage() {
             {evaluationResult && (
               <div className="mt-4 p-4 rounded-lg border border-border/80 bg-muted/40 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Evaluation Verdict</span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Evaluation Verdict
+                  </span>
                   <Badge
                     variant="outline"
                     className={`font-mono text-xs ${
@@ -733,7 +817,9 @@ export default function FeatureFlagsDashboardPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Resolved Value</span>
+                  <span className="text-xs text-muted-foreground">
+                    Resolved Value
+                  </span>
                   <div className="font-mono text-lg font-bold bg-background p-2 rounded border border-border">
                     {typeof evaluationResult.value === "object"
                       ? JSON.stringify(evaluationResult.value)
