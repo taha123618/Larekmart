@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "tsx --env-file-if-exists=.env src/index.ts",
     "test": "tsx tests/index.test.ts",
+    "test:dast": "tsx tests/security/dast-runner.ts",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {

@@ -11,6 +11,7 @@ import { runInventoryEdgeTests } from "./integration/inventory-edge.test.js";
 import { runChaosGuardrailsTests } from "./resilience/chaos-guardrails.test.js";
 import { runFeatureFlagsAdminTests } from "./integration/feature-flags-admin.test.js";
 import { runCanaryAdminTests } from "./integration/canary-admin.test.js";
+import { runDastSecurityTests } from "./security/dast.test.js";
 
 async function main() {
   console.log("=================================================");
@@ -33,6 +34,7 @@ async function main() {
     await runChaosGuardrailsTests();
     await runFeatureFlagsAdminTests();
     await runCanaryAdminTests();
+    await runDastSecurityTests();
 
     const elapsed = Date.now() - start;
     console.log("\n=================================================");
