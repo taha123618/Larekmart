@@ -148,6 +148,7 @@ export interface TelemetryConfig {
   serviceName: string;
   otlpEndpoint?: string;
   enabled?: boolean;
+  sampleRate?: number;
 }
 
 export class Tracer {
@@ -158,6 +159,7 @@ export class Tracer {
     "unknown-service";
   private otlpEndpoint: string = "http://localhost:4318";
   private enabled: boolean = true;
+  private sampleRate: number = 1.0;
   private queue: SpanData[] = [];
   private flushTimer: NodeJS.Timeout | null = null;
   private isFlushing = false;
@@ -196,6 +198,15 @@ export class Tracer {
         process.env.OTEL_TRACING_ENABLED !== "false" &&
         process.env.NODE_ENV !== "test";
     }
+
+    const defaultSampleRate =
+      process.env.NODE_ENV === "production" ? 0.05 : 1.0;
+    this.sampleRate =
+      config.sampleRate !== undefined
+        ? config.sampleRate
+        : process.env.OTEL_SAMPLE_RATE
+          ? parseFloat(process.env.OTEL_SAMPLE_RATE)
+          : defaultSampleRate;
   }
 
   public getServiceName(): string {
@@ -204,6 +215,23 @@ export class Tracer {
 
   public enqueue(span: SpanData): void {
     if (!this.enabled) return;
+
+    // Adaptive sampling: Always capture 100% of errors, DLQ messages, and saga compensations
+    const isCritical =
+      span.status.code === "ERROR" ||
+      Boolean(span.attributes["error"]) ||
+      Boolean(span.attributes["exception.message"]) ||
+      Boolean(span.attributes["messaging.is_dlq"]) ||
+      Boolean(span.attributes["saga.compensation"]);
+
+    if (
+      !isCritical &&
+      this.sampleRate < 1.0 &&
+      Math.random() > this.sampleRate
+    ) {
+      return;
+    }
+
     if (this.queue.length >= this.maxQueueSize) {
       // Discard oldest span if buffer is saturated under extreme surge
       this.queue.shift();

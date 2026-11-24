@@ -19,6 +19,7 @@ import {
   mongoose,
 } from "@repo/order-db";
 import { DistributedLeaderElector, LeaderFencingError } from "@repo/redis";
+import { runWithTraceContext } from "@repo/monitoring";
 import { producer } from "../src/utils/kafka.js";
 import { redis } from "../src/utils/redis.js";
 import {
@@ -42,12 +43,12 @@ async function runOutboxTests() {
   await mongoose.connect(MONGO_URI);
   await OutboxEvent.deleteMany({ topic: "test.outbox.event" });
 
-  const capturedEvents: Array<{ topic: string; message: any }> = [];
+  const capturedEvents: Array<{ topic: string; message: any; options?: any }> = [];
   const originalSend = producer.send;
 
   // Mock Kafka producer
-  producer.send = (async (topic: string, message: any) => {
-    capturedEvents.push({ topic, message });
+  producer.send = (async (topic: string, message: any, options?: any) => {
+    capturedEvents.push({ topic, message, options });
   }) as any;
 
   try {
@@ -152,8 +153,8 @@ async function runOutboxTests() {
     console.log("5. Testing resilient sweeper recovery once Kafka recovers...");
     // Restore working Kafka producer
     capturedEvents.length = 0;
-    producer.send = (async (topic: string, message: any) => {
-      capturedEvents.push({ topic, message });
+    producer.send = (async (topic: string, message: any, options?: any) => {
+      capturedEvents.push({ topic, message, options });
     }) as any;
 
     // Reset lease to expired
@@ -431,6 +432,47 @@ async function runOutboxTests() {
     console.log(
       "✓ Heartbeat drift detection triggers proactive leader self-fencing.",
     );
+
+    // 7. Testing W3C Trace Continuity across Outbox Boundaries
+    console.log("\n7. Testing W3C Trace Context continuity across Outbox dispatch...");
+    const sampleTraceContext = {
+      traceId: "4bf92f3577b34da6a3ce929d0e0e4736",
+      spanId: "00f067aa0ba902b7",
+      sampled: true,
+      correlationId: "corr_trace_test_99",
+    };
+
+    let tracedOutboxDoc: any;
+    await runWithTraceContext(sampleTraceContext, async () => {
+      tracedOutboxDoc = await dispatchViaOutbox(
+        "test.outbox.event",
+        { orderId: "ord_traced_1", total: 5000 },
+      );
+    });
+
+    assert.ok(tracedOutboxDoc, "Outbox event must be created");
+    assert.ok(tracedOutboxDoc.headers, "Outbox event must preserve trace headers");
+    assert.ok(
+      tracedOutboxDoc.headers.traceparent?.includes("4bf92f3577b34da6a3ce929d0e0e4736"),
+      "Outbox headers must retain root W3C traceId",
+    );
+    assert.strictEqual(
+      tracedOutboxDoc.headers["x-correlation-id"],
+      "corr_trace_test_99",
+      "Outbox headers must retain correlation ID",
+    );
+
+    // Publish traced outbox event and verify headers pass through to Kafka producer options
+    capturedEvents.length = 0;
+    await publishOutboxEvent(tracedOutboxDoc);
+    const lastPublished = capturedEvents[capturedEvents.length - 1];
+    assert.ok(lastPublished, "Event must be sent to Kafka");
+    assert.ok(lastPublished.options?.headers, "Producer options must receive message headers");
+    assert.ok(
+      lastPublished.options.headers.traceparent?.includes("4bf92f3577b34da6a3ce929d0e0e4736"),
+      "Producer headers must propagate W3C traceparent to Kafka broker",
+    );
+    console.log("✓ W3C Trace Context and correlation headers seamlessly preserved across outbox boundaries.");
 
     // Cleanup
     await OutboxEvent.deleteMany({ topic: "test.outbox.event" });

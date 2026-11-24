@@ -32,6 +32,7 @@ To endure hyperscale write throughput and prevent single-instance storage I/O bo
 ## Transactional Outbox Collection (`OutboxEvent`)
 
 - Persists outbound Kafka events atomically inside MongoDB transactions alongside order mutations.
+- **W3C Trace Continuity**: Stores transport headers (`headers: { traceparent, x-correlation-id }`) to preserve distributed tracing contexts across asynchronous outbox sweeps.
 - Enforces atomic distributed lease locking (`lockedUntil`) during background outbox sweeps.
 - Automatically purges published events after 7 days via native MongoDB TTL index on `publishedAt`.
 

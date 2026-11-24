@@ -318,6 +318,7 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
    - Orders and `OutboxEvent` documents (status `PENDING`) are written within the same atomic database transaction.
    - Optimistic non-blocking fast-path dispatch publishes immediately, marking the outbox event `PUBLISHED`.
    - **Adaptive High-Throughput Continuous Drain**: Replaces naive polling with an adaptive continuous `while (hasMore)` sweeper draining batches of 200 events in parallel chunks of 50 without event-loop sleep starvation, clearing flash-sale backlogs at 1,500+ events/sec.
+   - **W3C Trace Context Continuity**: Persists transport headers (`headers: { traceparent, x-correlation-id }`) in MongoDB `OutboxEvent` documents. Fast-path and sweeper publishing runs within `runWithTraceContext` and forwards headers into Kafka, ensuring downstream consumers (`payment-service`, `inventory-service`, `tax-service`, `analytic-service`) link directly to the shopper's original checkout HTTP span in Grafana Tempo.
    - Sweeper lease renewals operate inside decoupled, high-priority asynchronous background loops using defensive monotonically increasing fencing tokens that prevent overlapping execution and duplicate Kafka dispatches during runtime thread blocks or I/O locks.
    - Native MongoDB TTL indexes automatically purge published events after 7 days, maintaining an immutable audit log without unbounded storage growth.
 3. **API Gateway Thundering-Herd Protection (`SingleFlightGroup`)**:

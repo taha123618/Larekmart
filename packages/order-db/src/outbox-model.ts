@@ -19,6 +19,7 @@ const OutboxEventSchema = new Schema(
   {
     topic: { type: String, required: true, index: true },
     payload: { type: Schema.Types.Mixed, required: true },
+    headers: { type: Schema.Types.Mixed, default: null },
     status: {
       type: String,
       required: true,
@@ -65,11 +66,15 @@ export const OutboxEvent: Model<OutboxEventSchemaType> =
 export async function createOutboxEvent(
   topic: string,
   payload: Record<string, unknown>,
-  options?: { session?: ClientSession },
+  options?: {
+    session?: ClientSession;
+    headers?: Record<string, string>;
+  },
 ): Promise<OutboxEventDocument> {
   const doc = new OutboxEvent({
     topic,
     payload,
+    headers: options?.headers || null,
     status: "PENDING",
     attempts: 0,
     maxAttempts: 5,

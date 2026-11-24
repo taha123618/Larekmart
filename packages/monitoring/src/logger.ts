@@ -7,6 +7,7 @@ import type {
 } from "@repo/types";
 import { getMonitoringConfig } from "./config.js";
 import { getTraceContext } from "./tracing/context.js";
+import { Tracer } from "./tracing/tracer.js";
 
 const LEVEL_WEIGHTS: Record<LogLevel, number> = {
   debug: 10,
@@ -302,12 +303,17 @@ export class Logger {
 }
 
 /**
- * Creates a structured logger instance for a given service.
+ * Creates a structured logger instance for a given service and auto-bootstraps
+ * the OpenTelemetry Tracer with the service identity.
  */
 export function createLogger(
   serviceName: string,
   options: Partial<LoggerOptions> = {},
 ): Logger {
+  if (serviceName && serviceName !== "unknown-service") {
+    Tracer.getInstance().init({ serviceName });
+  }
+
   return new Logger({
     serviceName,
     ...options,

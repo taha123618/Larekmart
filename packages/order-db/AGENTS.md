@@ -10,8 +10,8 @@ by `order-service` and takes type dependencies from `@repo/types`.
 ## Public API
 
 - `Order` model (with horizontal hashed sharding on `{ userId: "hashed" }` and scatter-gather mitigation indexes).
-- `OutboxEvent` model (transactional outbox with 7-day TTL and `lockedUntil` lease fencing).
-- `createOutboxEvent` helper.
+- `OutboxEvent` model (transactional outbox with 7-day TTL, `lockedUntil` lease fencing, and W3C `headers` trace continuity).
+- `createOutboxEvent` helper (supporting optional `headers` for distributed trace context propagation).
 - `OrderStatus`, `OrderSchemaType`.
 - `connectOrderDB` connection helper.
 - `syncOrderIndexes` — reconciles MongoDB's indexes with the schemas.

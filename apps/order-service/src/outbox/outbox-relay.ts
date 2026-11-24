@@ -1,6 +1,11 @@
 import os from "node:os";
 import { randomUUID } from "node:crypto";
-import { createLogger } from "@repo/monitoring";
+import {
+  createLogger,
+  injectTraceContext,
+  extractTraceContext,
+  runWithTraceContext,
+} from "@repo/monitoring";
 import {
   createOutboxEvent,
   claimPendingOutboxEvents,
@@ -69,13 +74,26 @@ export async function publishOutboxEvent(
       (event.payload as any)?.reservationId ||
       event._id.toString();
 
-    await producer.send(
-      event.topic,
-      {
-        value: event.payload,
-      },
-      partitionKey ? { key: String(partitionKey) } : undefined,
-    );
+    const messageHeaders =
+      event.headers && typeof event.headers === "object"
+        ? (event.headers as Record<string, string>)
+        : undefined;
+
+    // Scope Kafka publishing and duration telemetry to the original trace context
+    const traceCtx = extractTraceContext(messageHeaders);
+
+    await runWithTraceContext(traceCtx, async () => {
+      await producer.send(
+        event.topic,
+        {
+          value: event.payload,
+        },
+        {
+          ...(partitionKey ? { key: String(partitionKey) } : {}),
+          ...(messageHeaders ? { headers: messageHeaders } : {}),
+        },
+      );
+    });
     const marked = await markOutboxPublished(event._id, workerId, fencingToken);
     if (!marked) {
       logger.warn(
@@ -109,14 +127,30 @@ export async function publishOutboxEvent(
 
 /**
  * Transactional event dispatch: writes to the outbox table within the database transaction,
- * then triggers non-blocking immediate publishing on the fast path.
+ * snapshots active W3C traceparent and correlation headers, then triggers non-blocking immediate publishing on the fast path.
  */
 export async function dispatchViaOutbox(
   topic: string,
   payload: Record<string, unknown>,
-  options?: { session?: mongoose.ClientSession },
+  options?: {
+    session?: mongoose.ClientSession;
+    headers?: Record<string, string>;
+  },
 ): Promise<OutboxEventDocument> {
-  const event = await createOutboxEvent(topic, payload, options);
+  // Capture active W3C trace context and correlation headers if not explicitly supplied
+  let headers = options?.headers;
+  if (!headers) {
+    const traceHeaders: Record<string, string> = {};
+    injectTraceContext(traceHeaders);
+    if (Object.keys(traceHeaders).length > 0) {
+      headers = traceHeaders;
+    }
+  }
+
+  const event = await createOutboxEvent(topic, payload, {
+    session: options?.session,
+    headers,
+  });
   logger.info(`Outbox event created for topic: ${topic}`, {
     id: event._id.toString(),
     topic,

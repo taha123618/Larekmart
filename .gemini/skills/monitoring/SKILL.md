@@ -11,7 +11,10 @@ Use this skill when implementing, debugging, or reviewing monitoring, health che
 
 Larekmart standardizes all observability across its microservices, frontends, and shared packages through `@repo/monitoring`.
 
-- **Structured Logging**: Always use `createLogger(serviceName)` instead of bare `console.log` for service backends.
+- **Structured Logging**: Always use `createLogger(serviceName)` instead of bare `console.log` for service backends. Calling `createLogger` automatically initializes the OpenTelemetry `Tracer` with the service identity.
+- **Distributed Tracing (OpenTelemetry)**: Traces are automatically streamed to Tempo (`http://localhost:4318/v1/traces`). W3C `traceparent` headers are propagated across HTTP and Kafka boundaries.
+- **Adaptive Sampling**: Captures 100% of traces encountering HTTP 5xx errors, saga compensations, exceptions, or Kafka DLQ poison pills; applies 5% probabilistic sampling to high-frequency read traffic in production.
+- **Transactional Outbox Continuity**: In transactional outbox services (`order-service`), persist transport headers (`headers: { traceparent, x-correlation-id }`) in MongoDB `OutboxEvent` documents so asynchronous sweepers preserve root trace lineage into Kafka.
 - **Health Checks**: Every backend service must expose `GET /health` powered by `createHealthRegistry(serviceName)`.
 - **Metrics**: Track request throughput, database latency, and Kafka event delivery using `MetricsRegistry`.
 - **Error Normalization**: Use `AppError` for operational/business validation errors and `captureError` to record unexpected failures.
