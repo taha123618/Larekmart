@@ -14,6 +14,11 @@ ENV UV_LINK_MODE=copy
 ENV PYTHONUNBUFFERED=1
 ENV UV_HTTP_TIMEOUT=120
 ENV PORT=8024
+ENV PATH="/app/.venv/bin:$PATH"
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl wget && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -g 1001 pygroup && \
     useradd -u 1001 -g pygroup -m -s /bin/bash appuser
@@ -40,5 +45,5 @@ USER appuser
 
 EXPOSE 8024
 
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8024"]
+CMD ["/app/.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8024"]
 

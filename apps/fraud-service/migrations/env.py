@@ -1,3 +1,4 @@
+import os
 import asyncio
 from logging.config import fileConfig
 from sqlalchemy import pool
@@ -15,7 +16,8 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 settings = get_settings()
-db_url = settings.DATABASE_URL
+# Support DIRECT_URL for unpooled direct migrations, falling back to DATABASE_URL
+db_url = os.environ.get("DIRECT_URL") or os.environ.get("DATABASE_URL") or settings.DATABASE_URL
 if db_url.startswith("postgresql://"):
     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 config.set_main_option("sqlalchemy.url", db_url)
@@ -46,6 +48,10 @@ async def run_async_migrations() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args={
+            "prepared_statement_cache_size": 0,
+            "statement_cache_size": 0,
+        },
     )
 
     async with connectable.connect() as connection:
