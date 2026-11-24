@@ -13,34 +13,34 @@ This skill provides the authoritative reference for running, authoring, and main
 
 The repository features a unified multi-runtime testing strategy orchestrated via Turborepo (`pnpm test`):
 
-| Workspace                    | Technology / Framework      | Scope & Test Targets                                                                                                                                                                                                                                                                                             |
-| :--------------------------- | :-------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`@repo/types`**            | Node.js Test Runner / `tsx` | Domain contracts, Zod schemas, boundary validations (`tests/schemas.test.ts`)                                                                                                                                                                                                                                    |
-| **`user-service`**           | Node.js Test Runner / `tsx` | Profile/address/preferences service logic (`tests/user-service.test.ts`)                                                                                                                                                                                                                                         |
-| **`order-service`**          | Node.js Test Runner / `tsx` | Order security and authorization (`tests/order-security.test.ts`)                                                                                                                                                                                                                                                |
-| **`cart-service`**           | Node.js Test Runner / `tsx` | Pricing engine, promotional discounts, coupon rules, threshold boundaries (`tests/pricing.test.ts`)                                                                                                                                                                                                              |
-| **`shipping-service`**       | Node.js Test Runner / `tsx` | Constant-time webhook verification, RBAC/M2M middleware, RS256 direct-token claims + expiry, carrier integration smoke test                                                                                                                                                                                      |
-| **`media-service`**          | Node.js Test Runner / `tsx` | Six offline suites via `tests/index.test.ts`: unit validation, storage contract, HTTP API, Kafka messaging, workers, integration schema, plus the full lifecycle suite (`tests/media-service.test.ts`) — object keys, magic bytes, authorization, URL strategy, worker claim SQL, index strategy, cleanup sweeps |
-| **`review-service`**         | Node.js Test Runner / `tsx` | Five offline suites via `tests/index.test.ts`: domain unit validation, anti-abuse voting/reporting, Fastify API routes, Kafka messaging publishers & consumers, database schema & constraints (`tests/review-service.test.ts`)                                                                                   |
-| **`wishlist-service`**       | Node.js Test Runner / `tsx` | Nine suites via `tests/wishlist-service.test.ts`: health probes, auth guards, Zod contracts, default wishlist creation, item deduplication, named wishlists, item move, guest migration, and unguessable token shares                                                                                            |
-| **`promotion-service`**      | Node.js Test Runner / `tsx` | Eleven suites via `tests/promotion-service.test.ts`: health probes, auth guards, campaign lifecycle, coupon validation, evaluation quotes, budget tracking, ACID reservations, commit/release, worker expiry, and event emission                                                                                 |
-| **`tax-service`**            | Node.js Test Runner / `tsx` | Nine suites via `tests/tax-service.test.ts`: health probes, auth guards, decimal arithmetic precision, standard rule evaluation, exemption certificate verification, calculation snapshot persistence, proportional return refunds, adapter factory, and event emission                                          |
-| **`return-service`**         | Node.js Test Runner / `tsx` | Fourteen suites via `tests/return-service.test.ts`: health probes, auth guards, return policy evaluation, eligibility verification, evidence validation, state machine transitions, warehouse inspections, carrier reverse-shipping, decimal refund proration, outbox event persistence, and event emission      |
-| **`pricing-service`**        | Node.js Test Runner / `tsx` | Ten suites via `tests/pricing-service.test.ts`: decimal arithmetic precision, volume tiered pricing, currency conversion, negative price prevention, quote snapshot persistence, Fastify endpoints, and event emission                                                                                           |
-| **`vendor-service`**         | Node.js Test Runner / `tsx` | Legal entity registration, KYB document verification, member access, status transitions, and lifecycle event emission (`tests/vendor-service.test.ts`)                                                                                                                                                           |
-| **`seller-service`**         | Node.js Test Runner / `tsx` | Marketplace storefront profiles, multi-staff permissions, operational settings, metrics snapshots, and Fastify endpoints (`tests/seller-service.test.ts`)                                                                                                                                                        |
-| **`seller`**                 | Vitest / Playwright         | Pinia stores, API error handling, utilities, UI components, and end-to-end multi-step merchant onboarding workflows (`tests/`)                                                                                                                                                                                  |
-| **`commission-service`**     | Node.js Test Runner / `tsx` | Tiered rate evaluation, Decimal.js financial precision, rule versioning, order fee calculation, quote snapshots, and event emission (`tests/commission-service.test.ts`)                                                                                                                                         |
-| **`payout-service`**         | Node.js Test Runner / `tsx` | Append-only balanced double-entry ledger invariant tests (`SUM(debit) == SUM(credit)`), settlement batches, provider reconciliation, and seller balance queries (`tests/payout-service.test.ts`)                                                                                                                 |
-| **`fraud-service`**          | Pytest (`pytest`) via `uv`  | Real-time multi-entity risk scoring, Redis sliding-window velocity tracker, explainable rules, scikit-learn anomaly detection, analyst case reviews, and Kafka event stream processing (20 tests via `tests/`)                                                                                                   |
-| **`support-service`**        | Node.js Test Runner / `tsx` | Fourteen suites via `tests/tickets.test.ts` & `tests/sla-and-escalation.test.ts`: ticket creation, categories, auth guards, internal note redaction, agent reply transitions, SLA deadlines, assignments, escalations, and resolution analytics                                                                  |
+| Workspace                    | Technology / Framework      | Scope & Test Targets                                                                                                                                                                                                                                                                                                                      |
+| :--------------------------- | :-------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`@repo/types`**            | Node.js Test Runner / `tsx` | Domain contracts, Zod schemas, boundary validations (`tests/schemas.test.ts`)                                                                                                                                                                                                                                                             |
+| **`user-service`**           | Node.js Test Runner / `tsx` | Profile/address/preferences service logic (`tests/user-service.test.ts`)                                                                                                                                                                                                                                                                  |
+| **`order-service`**          | Node.js Test Runner / `tsx` | Order security and authorization (`tests/order-security.test.ts`)                                                                                                                                                                                                                                                                         |
+| **`cart-service`**           | Node.js Test Runner / `tsx` | Pricing engine, promotional discounts, coupon rules, threshold boundaries (`tests/pricing.test.ts`)                                                                                                                                                                                                                                       |
+| **`shipping-service`**       | Node.js Test Runner / `tsx` | Constant-time webhook verification, RBAC/M2M middleware, RS256 direct-token claims + expiry, carrier integration smoke test                                                                                                                                                                                                               |
+| **`media-service`**          | Node.js Test Runner / `tsx` | Six offline suites via `tests/index.test.ts`: unit validation, storage contract, HTTP API, Kafka messaging, workers, integration schema, plus the full lifecycle suite (`tests/media-service.test.ts`) — object keys, magic bytes, authorization, URL strategy, worker claim SQL, index strategy, cleanup sweeps                          |
+| **`review-service`**         | Node.js Test Runner / `tsx` | Five offline suites via `tests/index.test.ts`: domain unit validation, anti-abuse voting/reporting, Fastify API routes, Kafka messaging publishers & consumers, database schema & constraints (`tests/review-service.test.ts`)                                                                                                            |
+| **`wishlist-service`**       | Node.js Test Runner / `tsx` | Nine suites via `tests/wishlist-service.test.ts`: health probes, auth guards, Zod contracts, default wishlist creation, item deduplication, named wishlists, item move, guest migration, and unguessable token shares                                                                                                                     |
+| **`promotion-service`**      | Node.js Test Runner / `tsx` | Eleven suites via `tests/promotion-service.test.ts`: health probes, auth guards, campaign lifecycle, coupon validation, evaluation quotes, budget tracking, ACID reservations, commit/release, worker expiry, and event emission                                                                                                          |
+| **`tax-service`**            | Node.js Test Runner / `tsx` | Nine suites via `tests/tax-service.test.ts`: health probes, auth guards, decimal arithmetic precision, standard rule evaluation, exemption certificate verification, calculation snapshot persistence, proportional return refunds, adapter factory, and event emission                                                                   |
+| **`return-service`**         | Node.js Test Runner / `tsx` | Fourteen suites via `tests/return-service.test.ts`: health probes, auth guards, return policy evaluation, eligibility verification, evidence validation, state machine transitions, warehouse inspections, carrier reverse-shipping, decimal refund proration, outbox event persistence, and event emission                               |
+| **`pricing-service`**        | Node.js Test Runner / `tsx` | Ten suites via `tests/pricing-service.test.ts`: decimal arithmetic precision, volume tiered pricing, currency conversion, negative price prevention, quote snapshot persistence, Fastify endpoints, and event emission                                                                                                                    |
+| **`vendor-service`**         | Node.js Test Runner / `tsx` | Legal entity registration, KYB document verification, member access, status transitions, and lifecycle event emission (`tests/vendor-service.test.ts`)                                                                                                                                                                                    |
+| **`seller-service`**         | Node.js Test Runner / `tsx` | Marketplace storefront profiles, multi-staff permissions, operational settings, metrics snapshots, and Fastify endpoints (`tests/seller-service.test.ts`)                                                                                                                                                                                 |
+| **`seller`**                 | Vitest / Playwright         | Pinia stores, API error handling, utilities, UI components, and end-to-end multi-step merchant onboarding workflows (`tests/`)                                                                                                                                                                                                            |
+| **`commission-service`**     | Node.js Test Runner / `tsx` | Tiered rate evaluation, Decimal.js financial precision, rule versioning, order fee calculation, quote snapshots, and event emission (`tests/commission-service.test.ts`)                                                                                                                                                                  |
+| **`payout-service`**         | Node.js Test Runner / `tsx` | Append-only balanced double-entry ledger invariant tests (`SUM(debit) == SUM(credit)`), settlement batches, provider reconciliation, and seller balance queries (`tests/payout-service.test.ts`)                                                                                                                                          |
+| **`fraud-service`**          | Pytest (`pytest`) via `uv`  | Real-time multi-entity risk scoring, Redis sliding-window velocity tracker, explainable rules, scikit-learn anomaly detection, analyst case reviews, and Kafka event stream processing (20 tests via `tests/`)                                                                                                                            |
+| **`support-service`**        | Node.js Test Runner / `tsx` | Fourteen suites via `tests/tickets.test.ts` & `tests/sla-and-escalation.test.ts`: ticket creation, categories, auth guards, internal note redaction, agent reply transitions, SLA deadlines, assignments, escalations, and resolution analytics                                                                                           |
 | **`chat-service`**           | Node.js Test Runner / `tsx` | Unit & integration test suites via `tests/unit/chat.unit.test.ts` & `tests/integration/chat.integration.test.ts`: timing-safe comparison, schema validation, buyer-to-seller threads, support tickets, paginated message feeds, attachments, unread counts, read receipts, message reporting, user blocking, and idempotency key handling |
-| **`analytic-service`**       | Go Test Tool (`go test`)    | Config validation (production secret fail-closed), constant-time gateway auth, RS256/expiry token verification, lock-free atomic KPI store, bounded-channel micro-batching, and REST handlers (`cmd/...`, `internal/...`)                                                                                        |
-| **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle/origin checks, RS256/expiry token verification, forged-token rejection, recovery (`internal/*`)                                                                                                                                               |
-| **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                  |
-| **`catalog-service`**        | Node.js Test Runner / `tsx` | Eight suites via `tests/catalog-service.test.ts`: key naming invariants, Fastify health probes, Prometheus metrics, projector contracts, PostgreSQL replica fallback, getCatalogDb consistency switching, Fastify RYW header hook, Redis session lease lifecycle, and cache bypass                               |
-| **`api-gateway`**            | Node.js Test Runner / `tsx` | Eleven suites via `tests/index.test.ts`: route registry, dynamic circuit breaker, sliding-window metrics, rate limiting, request correlation, health endpoints, in-flight bulkheads, adaptive rate-limiting, edge inventory caching, and proxy security                                                          |
-| **`@repo/redis`**            | Node.js Test Runner / `tsx` | Eight offline suites via `tests/redis-cluster-sharding.test.ts`: CRC16 hash tag calculation, cross-slot alignment assertions, Redlock 3-node consensus simulation, distributed leader elector with fencing tokens, atomic cluster locking, and Read-Your-Writes consistency leases                               |
+| **`analytic-service`**       | Go Test Tool (`go test`)    | Config validation (production secret fail-closed), constant-time gateway auth, RS256/expiry token verification, lock-free atomic KPI store, bounded-channel micro-batching, and REST handlers (`cmd/...`, `internal/...`)                                                                                                                 |
+| **`notification-service`**   | Go Test Tool (`go test`)    | Multi-channel dispatchers, templates, workers, WebSocket lifecycle/origin checks, RS256/expiry token verification, forged-token rejection, recovery (`internal/*`)                                                                                                                                                                        |
+| **`recommendation-service`** | Pytest (`pytest`) via `uv`  | Hybrid recommendations, vector embeddings, algorithms, API endpoints (34 tests)                                                                                                                                                                                                                                                           |
+| **`catalog-service`**        | Node.js Test Runner / `tsx` | Eight suites via `tests/catalog-service.test.ts`: key naming invariants, Fastify health probes, Prometheus metrics, projector contracts, PostgreSQL replica fallback, getCatalogDb consistency switching, Fastify RYW header hook, Redis session lease lifecycle, and cache bypass                                                        |
+| **`api-gateway`**            | Node.js Test Runner / `tsx` | Eleven suites via `tests/index.test.ts`: route registry, dynamic circuit breaker, sliding-window metrics, rate limiting, request correlation, health endpoints, in-flight bulkheads, adaptive rate-limiting, edge inventory caching, and proxy security                                                                                   |
+| **`@repo/redis`**            | Node.js Test Runner / `tsx` | Eight offline suites via `tests/redis-cluster-sharding.test.ts`: CRC16 hash tag calculation, cross-slot alignment assertions, Redlock 3-node consensus simulation, distributed leader elector with fencing tokens, atomic cluster locking, and Read-Your-Writes consistency leases                                                        |
 
 ---
 
@@ -50,9 +50,21 @@ The repository features a unified multi-runtime testing strategy orchestrated vi
 # 1. Run all automated test suites across the monorepo (Turbo pipeline)
 pnpm test
 
-# 2. Run tests for a specific workspace
+# 2. Run Dynamic Application Security Testing (DAST) across ingress & perimeter
+pnpm test:dast
+
+# 3. Run high-throughput flash-sale load benchmarks (k6)
+./infrastructure/load-tests/seed-flash-sale.sh
+./infrastructure/load-tests/run-flash-sale.sh
+
+# 4. Run Playwright End-to-End (E2E) browser flows
+pnpm --filter @repo/e2e test
+
+# 5. Run tests for a specific workspace
 pnpm --filter @repo/types test
 pnpm --filter @repo/redis test
+pnpm --filter @repo/kafka test
+pnpm --filter @repo/monitoring test
 pnpm --filter api-gateway test
 pnpm --filter catalog-service test
 pnpm --filter user-service test
@@ -78,20 +90,17 @@ pnpm --filter analytic-service test
 pnpm --filter notification-service test
 pnpm --filter recommendation-service test
 
-# 3. Static type-check across all workspaces
+# 6. Static type-check across all 47 packages
 pnpm check-types
 
-# 4. Monorepo code style and formatting checks
+# 7. Monorepo code style and formatting checks
 pnpm format:check
 
-# 5. Frontend linting (Next.js client and admin)
+# 8. Frontend linting (Next.js client, admin, and seller)
 pnpm lint
 
-# 6. Production builds
+# 9. Production builds
 pnpm build
-
-# 7. Validate chaos manifests without touching a cluster
-kubectl kustomize infrastructure/chaos/
 ```
 
 ---
@@ -122,17 +131,14 @@ When adding or updating tests, adhere to these quality engineering principles:
 
 ---
 
-## 4. Pre-PR / Pre-Merge Quality Checklist
+## 4. Pre-PR / Pre-Merge Quality Checklist (Definition of Done)
 
 Before submitting code changes:
 
 - [ ] `pnpm test` passes across all target workspaces.
-- [ ] `pnpm check-types` reports 0 TypeScript errors across 33 workspaces.
-- [ ] Test files are strict-mode clean: tsconfig `include` covers `src/` only, so
-      `pnpm check-types` does not typecheck tests — run
-      `npx tsc --noEmit --strict tests/<file>.ts` directly when hardening a test file,
-      and never weaken assertions to make a test pass (no `.catch(() => undefined)`
-      swallowing, no asserting tautologies on local test data).
+- [ ] `pnpm test:dast` passes all OWASP API Security Top 10 attack vectors.
+- [ ] `pnpm check-types` reports 0 TypeScript errors across all 47 packages.
 - [ ] `pnpm format:check` confirms all files conform to Prettier style.
 - [ ] `pnpm lint` reports 0 errors in Next.js applications.
+- [ ] Zero unparameterized SQL queries (no raw string interpolations in DB queries).
 - [ ] Negative and boundary test cases are included for any new business logic.
