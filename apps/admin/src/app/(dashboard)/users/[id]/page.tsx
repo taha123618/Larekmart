@@ -21,22 +21,29 @@ import AppLineChart from "@/components/AppLineChart";
 import { auth, User } from "@clerk/nextjs/server";
 import { fetchAdminUserDetail } from "@/services/user.service";
 import { getApiGatewayUrl } from "@/services/gateway.service";
-import type { UserDetailResponse } from "@repo/types";
-import { MapPin, Bell } from "lucide-react";
+import type { UserDetailResponse, OrderType } from "@repo/types";
+import { MapPin, Bell, ShoppingBag } from "lucide-react";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+
+export const dynamic = "force-dynamic";
 
 const getData = async (
   id: string,
 ): Promise<{
   clerkUser: User | null;
   userDetail: UserDetailResponse | null;
+  userOrders: OrderType[];
 }> => {
   const { getToken } = await auth();
   const token = await getToken();
   let clerkUser: User | null = null;
   let userDetail: UserDetailResponse | null = null;
+  let userOrders: OrderType[] = [];
+
+  const authUrl = getApiGatewayUrl();
 
   try {
-    const authUrl = getApiGatewayUrl();
     const res = await fetch(`${authUrl}/api/v1/users/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -50,10 +57,27 @@ const getData = async (
   }
 
   if (token) {
-    userDetail = await fetchAdminUserDetail(token, id);
+    try {
+      userDetail = await fetchAdminUserDetail(token, id);
+    } catch (err) {
+      console.log("Error fetching user detail:", err);
+    }
+
+    try {
+      const orderRes = await fetch(`${authUrl}/api/v1/orders?userId=${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (orderRes.ok) {
+        userOrders = await orderRes.json();
+      }
+    } catch (err) {
+      console.log("Error fetching user orders:", err);
+    }
   }
 
-  return { clerkUser, userDetail };
+  return { clerkUser, userDetail, userOrders };
 };
 
 const SingleUserPage = async ({
@@ -62,14 +86,46 @@ const SingleUserPage = async ({
   params: Promise<{ id: string }>;
 }) => {
   const { id } = await params;
-  const { clerkUser: data, userDetail } = await getData(id);
+  const { clerkUser: data, userDetail, userOrders } = await getData(id);
 
   if (!data && !userDetail) {
     return <div className="">User not found!</div>;
   }
 
+  const displayName =
+    [data?.firstName, data?.lastName].filter(Boolean).join(" ") ||
+    userDetail?.profile?.displayName ||
+    data?.username ||
+    "User";
+
+  const initials = (
+    data?.firstName?.charAt(0) ||
+    userDetail?.profile?.firstName?.charAt(0) ||
+    data?.username?.charAt(0) ||
+    "U"
+  ).toUpperCase();
+
+  const userRole =
+    (data?.publicMetadata?.role as string) ||
+    (userDetail?.isSeller ? "seller" : "user");
+
+  // Dynamic profile completion percentage
+  const profileAttributes = [
+    data?.emailAddresses?.[0]?.emailAddress || userDetail?.email,
+    data?.phoneNumbers?.[0]?.phoneNumber || userDetail?.phone,
+    data?.firstName || userDetail?.profile?.firstName,
+    data?.lastName || userDetail?.profile?.lastName,
+    data?.imageUrl || userDetail?.profile?.avatarUrl,
+    userDetail?.addresses && userDetail.addresses.length > 0,
+    userDetail?.profile?.bio,
+  ];
+  const completedCount = profileAttributes.filter(Boolean).length;
+  const profileCompletion = Math.round(
+    (completedCount / profileAttributes.length) * 100,
+  );
+
   return (
-    <div className="">
+    <div className="flex flex-col gap-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -77,22 +133,20 @@ const SingleUserPage = async ({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href="/users">Users</BreadcrumbLink>
+            <BreadcrumbLink href="/users">Customers & Accounts</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>
-              {data?.firstName + " " + data?.lastName || data?.username || "-"}
-            </BreadcrumbPage>
+            <BreadcrumbPage>{displayName}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       {/* CONTAINER */}
-      <div className="mt-4 flex flex-col xl:flex-row gap-8">
+      <div className="flex flex-col xl:flex-row gap-6">
         {/* LEFT */}
         <div className="w-full xl:w-1/3 space-y-6">
           {/* USER BADGES CONTAINER */}
-          <div className="bg-primary-foreground p-4 rounded-lg">
+          <div className="bg-card text-card-foreground border border-border/60 p-4 rounded-xl shadow-xs">
             <h1 className="text-xl font-semibold">User Badges</h1>
             <div className="flex gap-4 mt-4">
               <HoverCard>
@@ -155,7 +209,7 @@ const SingleUserPage = async ({
             </div>
           </div>
           {/* USER CARD CONTAINER */}
-          <div className="bg-primary-foreground p-4 rounded-lg space-y-2">
+          <div className="bg-card text-card-foreground border border-border/60 p-4 rounded-xl shadow-xs space-y-2">
             <div className="flex items-center gap-2">
               <Avatar className="size-12">
                 <AvatarImage
@@ -165,28 +219,19 @@ const SingleUserPage = async ({
                     undefined
                   }
                 />
-                <AvatarFallback>
-                  {data?.firstName?.charAt(0) ||
-                    userDetail?.profile?.firstName?.charAt(0) ||
-                    data?.username ||
-                    "-"}
-                </AvatarFallback>
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
-              <h1 className="text-xl font-semibold">
-                {data?.firstName + " " + data?.lastName ||
-                  data?.username ||
-                  "-"}
-              </h1>
+              <h1 className="text-xl font-semibold">{displayName}</h1>
             </div>
             <p className="text-sm text-muted-foreground">
-              Lorem ipsum dolor, sit amet consectetur adipisicing elit. Vel
-              voluptas distinctio ab ipsa commodi fugiat labore quos veritatis
-              cum corrupti sed repudiandae ipsum, harum recusandae ratione ipsam
-              in, quis quia.
+              {userDetail?.profile?.bio ||
+                (userDetail?.isSeller || data?.publicMetadata?.isSeller
+                  ? "Registered merchant with marketplace selling privileges."
+                  : "Standard customer account for marketplace browsing and purchases.")}
             </p>
           </div>
           {/* INFORMATION CONTAINER */}
-          <div className="bg-primary-foreground p-4 rounded-lg">
+          <div className="bg-card text-card-foreground border border-border/60 p-4 rounded-xl shadow-xs">
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-semibold">User Information</h1>
               <Sheet>
@@ -221,19 +266,17 @@ const SingleUserPage = async ({
             </div>
             <div className="space-y-4 mt-4">
               <div className="flex flex-col gap-2 mb-8">
-                <p className="text-sm text-muted-foreground">
-                  Profile completion
-                </p>
-                <Progress value={66} />
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Profile completion</span>
+                  <span className="font-medium text-foreground">
+                    {profileCompletion}%
+                  </span>
+                </div>
+                <Progress value={profileCompletion} />
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-bold">Full name:</span>
-                <span>
-                  {data?.firstName + " " + data?.lastName ||
-                    userDetail?.profile?.displayName ||
-                    data?.username ||
-                    "-"}
-                </span>
+                <span>{displayName}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-bold">Email:</span>
@@ -253,7 +296,7 @@ const SingleUserPage = async ({
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-bold">Role:</span>
-                <span>{String(data?.publicMetadata?.role) || "user"}</span>
+                <span className="capitalize">{userRole}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-bold">Status:</span>
@@ -296,7 +339,7 @@ const SingleUserPage = async ({
           </div>
 
           {/* CUSTOMER ADDRESSES CONTAINER (from user-service) */}
-          <div className="bg-primary-foreground p-4 rounded-lg space-y-3">
+          <div className="bg-card text-card-foreground border border-border/60 p-4 rounded-xl shadow-xs space-y-3">
             <h1 className="text-xl font-semibold flex items-center gap-2">
               <MapPin className="w-5 h-5 text-gray-500" />
               Saved Addresses ({userDetail?.addresses?.length || 0})
@@ -333,7 +376,7 @@ const SingleUserPage = async ({
 
           {/* CUSTOMER PREFERENCES CONTAINER (from user-service) */}
           {userDetail?.preferences && (
-            <div className="bg-primary-foreground p-4 rounded-lg space-y-2 text-xs">
+            <div className="bg-card text-card-foreground border border-border/60 p-4 rounded-xl shadow-xs space-y-2 text-xs">
               <h1 className="text-xl font-semibold flex items-center gap-2 mb-3">
                 <Bell className="w-5 h-5 text-gray-500" />
                 Customer Preferences
@@ -374,10 +417,72 @@ const SingleUserPage = async ({
         {/* RIGHT */}
         <div className="w-full xl:w-2/3 space-y-6">
           {/* CHART CONTAINER */}
-          <div className="bg-primary-foreground p-4 rounded-lg">
-            <h1 className="text-xl font-semibold">User Activity</h1>
-            <AppLineChart />
+          <div className="bg-card text-card-foreground border border-border/60 p-4 rounded-xl shadow-xs">
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-xl font-semibold">
+                User Order & Spending Activity
+              </h1>
+              <Badge variant="secondary" className="text-xs">
+                {userOrders.length}{" "}
+                {userOrders.length === 1 ? "order" : "orders"}
+              </Badge>
+            </div>
+            <AppLineChart orders={userOrders} />
           </div>
+
+          {/* USER ORDERS TABLE */}
+          {userOrders.length > 0 && (
+            <div className="bg-card text-card-foreground border border-border/60 p-4 rounded-xl shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <h1 className="text-lg font-semibold flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-indigo-500" />
+                  Recent Order Transactions
+                </h1>
+                <Link
+                  href="/orders"
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                >
+                  View All Orders
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {userOrders.slice(0, 5).map((order) => (
+                  <div
+                    key={order._id}
+                    className="p-3 bg-secondary rounded-lg flex items-center justify-between text-xs"
+                  >
+                    <div>
+                      <div className="font-semibold text-foreground">
+                        Order #{order._id.slice(-8).toUpperCase()}
+                      </div>
+                      <div className="text-muted-foreground text-[11px]">
+                        {new Date(order.createdAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge
+                        variant={
+                          order.status === "success" || order.status === "delivered"
+                            ? "default"
+                            : "secondary"
+                        }
+                        className="text-[10px] capitalize"
+                      >
+                        {order.status}
+                      </Badge>
+                      <span className="font-bold text-foreground">
+                        ${((order.amount || 0) / 100).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

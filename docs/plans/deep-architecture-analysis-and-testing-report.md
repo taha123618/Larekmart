@@ -14,7 +14,7 @@ All service-to-service communication is **strictly asynchronous via Apache Kafka
 graph TB
     subgraph Clients["Clients & Edge Tier"]
         Storefront["Client Storefront (Next.js 16 :3002)"]
-        AdminPortal["Admin Dashboard (Next.js 15 :3003)"]
+        AdminPortal["Admin Dashboard (Next.js 16 :3003)"]
         Gateway["API Gateway (Fastify 5 :8080)<br/>• Edge Stock Cache (Redis)<br/>• SingleFlight Request Deduplication<br/>• JWT / Clerk Auth & Correlation<br/>• Rate Limiting & Circuit Breakers"]
     end
 

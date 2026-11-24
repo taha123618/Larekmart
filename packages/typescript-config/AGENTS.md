@@ -9,7 +9,7 @@ This package provides shared TypeScript configuration bases (`tsconfig.json`) ac
 ## Configurations
 
 - `base.json`: Base configuration for Node.js services and shared libraries. Enables `strict`, `noUncheckedIndexedAccess`, `isolatedModules`, `module: ESNext`, and `moduleResolution: bundler`.
-- `nextjs.json`: Extended configuration tailored for Next.js 15 App Router applications (`apps/client`, `apps/admin`). Includes Next.js plugins and JSX options.
+- `nextjs.json`: Extended configuration tailored for Next.js 16 App Router applications (`apps/client`, `apps/admin`). Includes Next.js plugins and JSX options.
 - `react-library.json`: Configuration for React component libraries.
 
 ## Rules

@@ -5,6 +5,16 @@ import { fetchAdminUsers } from "@/services/user.service";
 import { getApiGatewayUrl } from "@/services/gateway.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Store, ShoppingBag, ShieldCheck } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+
+export const dynamic = "force-dynamic";
 
 const getData = async (): Promise<{
   data: UserWithServiceStatus[];
@@ -78,21 +88,43 @@ const UsersPage = async () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 bg-secondary/80 rounded-lg">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">
-            User & Account Management
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Manage customer profiles, authoritative database status, and seller
-            privileges
-          </p>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/users">Customers & Accounts</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>User Registry</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
+            <Users className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">
+              User & Account Management
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Manage customer profiles, authoritative database status, and seller
+              privileges across Clerk and Postgres.
+            </p>
+          </div>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
               Total Users
@@ -107,7 +139,7 @@ const UsersPage = async () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
               Verified Sellers
@@ -124,7 +156,7 @@ const UsersPage = async () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
               Shoppers / Buyers
@@ -139,7 +171,7 @@ const UsersPage = async () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">
               Active Accounts

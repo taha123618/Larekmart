@@ -12,6 +12,15 @@
  * mutations go through product-service.
  */
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Badge } from "@/components/ui/badge";
+import {
   fetchCatalogCategories,
   fetchCatalogBrands,
   fetchCatalogCollections,
@@ -78,7 +87,7 @@ const StatCard = ({
     rose: "bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400",
   };
   return (
-    <div className="bg-primary-foreground rounded-xl p-5 flex items-center gap-4">
+    <div className="border border-border/60 bg-card text-card-foreground rounded-xl p-5 flex items-center gap-4 shadow-xs">
       <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
         <Icon className="w-5 h-5" />
       </div>
@@ -182,30 +191,49 @@ const CatalogPage = async () => {
 
   return (
     <div className="flex flex-col gap-6 pb-12">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/catalog">Product Catalog</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Read-Optimized Catalog</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-4 py-2 px-4 bg-secondary rounded-md">
-        <div className="flex items-center gap-2">
-          <LayoutGrid className="w-5 h-5" />
-          <h1 className="font-semibold">Catalog Read-Model</h1>
-          <span className="text-xs text-muted-foreground ml-2">
-            (catalog-service @ port 8010)
-          </span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Catalog Read-Model</h1>
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              CQRS Projection
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Real-time projection served by <code>catalog-service</code> (:8010), synchronized
+            asynchronously with <code>product-service</code> via Kafka event streams.
+          </p>
         </div>
         <div className="flex items-center gap-2 text-sm">
           {healthData.ok ? (
-            <>
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span className="text-green-600 dark:text-green-400">
-                Service Ready
-              </span>
-            </>
+            <Badge variant="outline" className="flex items-center gap-1.5 border-emerald-500/30 text-emerald-600 bg-emerald-500/10 py-1 px-3">
+              <CheckCircle className="w-4 h-4 text-emerald-500" />
+              Service Ready
+            </Badge>
           ) : (
-            <>
-              <AlertCircle className="w-4 h-4 text-red-500" />
-              <span className="text-red-600 dark:text-red-400">
-                Service Unavailable
-              </span>
-            </>
+            <Badge variant="destructive" className="flex items-center gap-1.5 py-1 px-3">
+              <AlertCircle className="w-4 h-4" />
+              Service Unavailable
+            </Badge>
           )}
         </div>
       </div>

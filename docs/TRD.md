@@ -6,7 +6,7 @@ Larekmart is implemented as a **pnpm 9 + Turborepo 2 monorepo** with strict boun
 
 ```
 +-----------------------------------------------------------------------------------+
-|                              Presentation Layer (Next.js 15)                       |
+|                              Presentation Layer (Next.js 16)                       |
 |   apps/client (:3002) - Storefront           apps/admin (:3003) - Dashboard       |
 +----------------------------------------+------------------------------------------+
                                          | HTTP / JWT Session Claims
@@ -38,7 +38,7 @@ Larekmart is implemented as a **pnpm 9 + Turborepo 2 monorepo** with strict boun
 | Workspace                         | Type    | Runtime / Framework               | Port   | Primary Dependencies                                                | Storage          |
 | :-------------------------------- | :------ | :-------------------------------- | :----- | :------------------------------------------------------------------ | :--------------- |
 | **`apps/client`**                 | App     | Next.js 16 (App Router), React 19 | `3002` | `@clerk/nextjs`, `@repo/types`, `zustand`, `stripe`                 | LocalStorage     |
-| **`apps/admin`**                  | App     | Next.js 15 (App Router), React 19 | `3003` | `@clerk/nextjs`, `@repo/types`, `@tanstack/react-table`, `recharts` | —                |
+| **`apps/admin`**                  | App     | Next.js 16 (App Router), React 19 | `3003` | `@clerk/nextjs`, `@repo/types`, `@tanstack/react-table`, `recharts` | —                |
 | **`apps/api-gateway`**            | Gateway | Fastify 5 (Node ESM)              | `8080` | `@fastify/http-proxy`, `@clerk/fastify`, `@repo/redis`, `opossum`   | Redis            |
 | **`apps/product-service`**        | Service | Express 5 (Node ESM)              | `8000` | `@clerk/express`, `@repo/product-db`, `@repo/kafka`, `@repo/types`  | PostgreSQL       |
 | **`apps/order-service`**          | Service | Fastify 5 (Node ESM)              | `8001` | `@clerk/fastify`, `@repo/order-db`, `@repo/kafka`, `@repo/types`    | MongoDB          |

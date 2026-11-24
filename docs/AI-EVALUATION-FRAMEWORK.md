@@ -94,7 +94,7 @@ To validate agent capability and prevent regressions, benchmark tasks are execut
 
 - **Task**: Implement a responsive UI feature in `apps/client` or `apps/admin`.
 - **Pass Conditions**:
-  - Uses Next.js 15 App Router conventions and React Server/Client Components appropriately.
+  - Uses Next.js 16 App Router conventions and React Server/Client Components appropriately.
   - No TailwindCSS or arbitrary styling libraries unless requested (uses Vanilla CSS design system).
   - Clean accessibility (ARIA labels, keyboard navigation, semantic HTML).
   - `pnpm lint` and `pnpm --filter <app> build` pass with zero warnings/errors.

@@ -1,13 +1,15 @@
 "use client";
 
 import {
-  ColumnDef,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
+  useTable,
+  stockFeatures,
+  createSortedRowModel,
+  createPaginatedRowModel,
+  type ColumnDef,
+  type SortingState,
+  type RowSelectionState,
+  type RowData,
 } from "@tanstack/react-table";
 
 import {
@@ -30,17 +32,26 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface DataTableProps<TData extends RowData = any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  columns: ColumnDef<any, TData>[];
   data: TData[];
 }
 
-export function DataTable<TData, TValue>({
+const tableFeatures = {
+  ...stockFeatures,
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function DataTable<TData extends RowData = any>({
   columns,
   data,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [rowSelection, setRowSelection] = useState({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"ALL" | "SELLER" | "BUYER">(
     "ALL",
@@ -85,19 +96,23 @@ export function DataTable<TData, TValue>({
   );
   const buyerCount = data.length - sellerCount;
 
-  const table = useReactTable({
-    data: filteredData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      rowSelection,
+  const table = useTable(
+    {
+      features: tableFeatures,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: filteredData as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      columns: columns as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onSortingChange: setSorting as any,
+      onRowSelectionChange: setRowSelection,
+      state: {
+        sorting,
+        rowSelection,
+      },
     },
-  });
+    (state) => state,
+  );
 
   const { getToken } = useAuth();
   const router = useRouter();
@@ -132,14 +147,14 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       {/* FILTER & SEARCH TOOLBAR */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-3 rounded-lg border border-border">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/60 shadow-xs">
         {/* Role Filters (All / Sellers / Buyers) */}
-        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-md">
+        <div className="flex flex-wrap items-center gap-1.5 bg-muted/60 p-1 rounded-lg">
           <Button
             type="button"
             variant={roleFilter === "ALL" ? "default" : "ghost"}
             size="sm"
-            className="text-xs h-7 px-2.5 font-medium"
+            className="text-xs h-7 px-2.5 font-medium flex-1 sm:flex-initial"
             onClick={() => setRoleFilter("ALL")}
           >
             <Users className="w-3.5 h-3.5 mr-1" />
@@ -149,21 +164,21 @@ export function DataTable<TData, TValue>({
             type="button"
             variant={roleFilter === "SELLER" ? "default" : "ghost"}
             size="sm"
-            className="text-xs h-7 px-2.5 font-medium"
+            className="text-xs h-7 px-2.5 font-medium flex-1 sm:flex-initial"
             onClick={() => setRoleFilter("SELLER")}
           >
             <Store className="w-3.5 h-3.5 mr-1 text-indigo-500" />
-            Verified Sellers ({sellerCount})
+            <span className="hidden sm:inline">Verified </span>Sellers ({sellerCount})
           </Button>
           <Button
             type="button"
             variant={roleFilter === "BUYER" ? "default" : "ghost"}
             size="sm"
-            className="text-xs h-7 px-2.5 font-medium"
+            className="text-xs h-7 px-2.5 font-medium flex-1 sm:flex-initial"
             onClick={() => setRoleFilter("BUYER")}
           >
             <UserCheck className="w-3.5 h-3.5 mr-1 text-emerald-500" />
-            Buyers Only ({buyerCount})
+            <span className="hidden sm:inline">Buyers </span>Only ({buyerCount})
           </Button>
         </div>
 
@@ -179,15 +194,15 @@ export function DataTable<TData, TValue>({
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
         {Object.keys(rowSelection).length > 0 && (
-          <div className="flex justify-end">
+          <div className="flex justify-end p-3 border-b border-border/40">
             <button
-              className="flex items-center gap-2 bg-red-500 text-white px-2 py-1 text-sm rounded-md m-4 cursor-pointer"
+              className="flex items-center gap-2 bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-medium rounded-lg cursor-pointer hover:bg-destructive/90 transition shadow-xs"
               onClick={() => mutation.mutate()}
               disabled={mutation.isPending}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
               {mutation.isPending ? "Deleting" : "Delete User(s)"}
             </button>
           </div>

@@ -65,15 +65,19 @@ const AddUser = () => {
   });
 
   return (
-    <SheetContent>
-      <SheetHeader>
-        <SheetTitle className="mb-4">Add User</SheetTitle>
-        <SheetDescription asChild>
-          <Form {...form}>
-            <form
-              className="space-y-8"
-              onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
-            >
+    <SheetContent className="overflow-y-auto sm:max-w-md">
+      <SheetHeader className="pb-4 border-b">
+        <SheetTitle>Add User</SheetTitle>
+        <SheetDescription>
+          Register a new customer or administrator account.
+        </SheetDescription>
+      </SheetHeader>
+      <div className="py-4">
+        <Form {...form}>
+          <form
+            className="space-y-6"
+            onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
+          >
               <FormField
                 control={form.control}
                 name="firstName"
@@ -125,6 +129,11 @@ const AddUser = () => {
                     <FormControl>
                       <Input
                         {...field}
+                        value={
+                          Array.isArray(field.value)
+                            ? field.value.join(", ")
+                            : (field.value ?? "")
+                        }
                         placeholder="email1@gmail.com, email2@gmail.com"
                         onChange={(e) => {
                           const emails = e.target.value
@@ -156,17 +165,16 @@ const AddUser = () => {
                   </FormItem>
                 )}
               />
-              <Button
-                type="submit"
-                disabled={mutation.isPending}
-                className="disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {mutation.isPending ? "Submitting..." : "Submit"}
-              </Button>
-            </form>
-          </Form>
-        </SheetDescription>
-      </SheetHeader>
+            <Button
+              type="submit"
+              disabled={mutation.isPending}
+              className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {mutation.isPending ? "Submitting..." : "Submit"}
+            </Button>
+          </form>
+        </Form>
+      </div>
     </SheetContent>
   );
 };

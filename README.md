@@ -221,7 +221,7 @@ The repository is organized as a **pnpm 9 + Turborepo** monorepo: Next.js fronte
           │                          │                          │
    ┌──────▼───────┐           ┌──────▼───────┐           ┌──────▼───────┐
    │   client     │           │    seller    │           │    admin     │
-   │  Next.js 16  │           │    Nuxt 3    │           │  Next.js 15  │
+   │  Next.js 16  │           │    Nuxt 3    │           │  Next.js 16  │
    │   :3002      │           │    :3004     │           │   :3003      │
    └──────┬───────┘           └──────┬───────┘           └──────┬───────┘
           │                          │                          │
@@ -440,7 +440,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 ```text
 .
 ├── apps/
-│   ├── admin/                # Next.js 15 admin dashboard (:3003)
+│   ├── admin/                # Next.js 16 admin dashboard (:3003)
 │   ├── client/               # Next.js 16 customer storefront (:3002)
 │   ├── seller/               # Nuxt 3 seller dashboard & merchant management (:3004)
 │   ├── api-gateway/          # Fastify 5 API Gateway reverse proxy & aggregator (:8080 / :8090)
@@ -503,7 +503,7 @@ For in-depth architectural specifications and diagrams, see [`docs/plans/README.
 | Application           | Technology Stack                                                                                  | Port   | Purpose & Responsibilities                                                                                                                                                                                                                                                            |
 | --------------------- | ------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`client`**          | Next.js 16, React 19, Tailwind v4, Zustand, Framer Motion, GSAP, Stripe, Clerk                    | `3002` | Customer storefront: catalog search/filter, persistent cart, Framer Motion drawers/modals, GSAP banners, Stripe checkout, order history.                                                                                                                                              |
-| **`admin`**           | Next.js 15, React 19, Tailwind v4, shadcn/ui, TanStack Table & Query, Recharts, Clerk             | `3003` | Admin dashboard: catalog & user management, real-time analytics KPIs, seller KYB verification (`/vendor-verification`), Kafka DLQ operational control (`/kafka-dlq`), synthetic canary prober (`/system-health`), and AI support performance telemetry (`/support/ai-performance`).   |
+| **`admin`**           | Next.js 16, React 19, Tailwind v4, shadcn/ui, TanStack Table & Query, Recharts, Clerk             | `3003` | Admin dashboard: catalog & user management, real-time analytics KPIs, seller KYB verification (`/vendor-verification`), Kafka DLQ operational control (`/kafka-dlq`), synthetic canary prober (`/system-health`), and AI support performance telemetry (`/support/ai-performance`).   |
 | **`seller`**          | Nuxt 3, Vue 3.5, Tailwind v4, Nuxt UI 3, Pinia, TanStack Query & Table, Clerk, Socket.IO, ECharts | `3004` | Seller & Merchant dashboard: multi-seller onboarding, catalog & inventory management, order fulfillment, balance & payout statements, live chat, policies, staff permissions, and performance KPI charts.                                                                             |
 | **`api-gateway`**     | Fastify 5, `@fastify/http-proxy`, Opossum, Redis, Clerk                                           | `8080` | Unified public reverse proxy, header sanitization, Clerk JWT validation, SingleFlight thundering-herd protection, In-Flight Concurrency Bulkheads (50 normal / 5 degraded), dynamic adaptive rate-limiting guardrails, edge stock availability cache, and `/api/v1/home` aggregation. |
 | **`product-service`** | Express 5, Prisma, PostgreSQL, Kafka                                                              | `8000` | Product and category catalog CRUD; publishes `product.created` and `product.deleted`.                                                                                                                                                                                                 |

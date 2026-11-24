@@ -4,6 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "@clerk/nextjs";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -123,11 +131,28 @@ const CartsAdminPage = () => {
       : "0.0";
 
   return (
-    <div className="flex flex-col gap-6 p-2">
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/carts">Sales & Orders</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Shopping Carts & Funnels</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-secondary/50 p-6 rounded-xl border border-border/50">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
             <ShoppingCart className="w-6 h-6 text-primary" />
             Shopping Carts & Funnel Analytics
           </h1>
@@ -137,7 +162,7 @@ const CartsAdminPage = () => {
             <code>cart-service</code> (:8009).
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
@@ -151,15 +176,15 @@ const CartsAdminPage = () => {
           </button>
           <Badge
             variant="outline"
-            className="text-xs bg-background py-1.5 px-3"
+            className="text-xs bg-background py-1 px-2.5"
           >
-            Service Port: 8009
+            Port: 8009
           </Badge>
           <Badge
             variant="default"
-            className="text-xs py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700"
+            className="text-xs py-1 px-2.5 bg-emerald-600 hover:bg-emerald-700"
           >
-            TanStack Query + Axios
+            Live
           </Badge>
         </div>
       </div>
@@ -186,7 +211,7 @@ const CartsAdminPage = () => {
 
       {/* METRIC CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Active In-Progress Carts
@@ -211,7 +236,7 @@ const CartsAdminPage = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Converted Carts
@@ -236,7 +261,7 @@ const CartsAdminPage = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Expired / Abandoned
@@ -261,7 +286,7 @@ const CartsAdminPage = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Average Cart Depth
@@ -288,8 +313,8 @@ const CartsAdminPage = () => {
       </div>
 
       {/* RECENT CARTS TABLE */}
-      <Card>
-        <CardHeader>
+      <Card className="border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
+        <CardHeader className="pb-3 border-b">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-lg">Recent Shopping Carts</CardTitle>
@@ -303,18 +328,18 @@ const CartsAdminPage = () => {
             </Badge>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto min-w-full">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cart ID</TableHead>
-                  <TableHead>Owner Identity</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Grand Total</TableHead>
-                  <TableHead>Coupons Applied</TableHead>
-                  <TableHead>Expires At</TableHead>
+                  <TableHead className="min-w-[140px]">Cart ID</TableHead>
+                  <TableHead className="min-w-[160px]">Owner Identity</TableHead>
+                  <TableHead className="min-w-[110px]">Status</TableHead>
+                  <TableHead className="min-w-[120px]">Items</TableHead>
+                  <TableHead className="min-w-[120px]">Grand Total</TableHead>
+                  <TableHead className="min-w-[130px]">Coupons Applied</TableHead>
+                  <TableHead className="min-w-[140px]">Expires At</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

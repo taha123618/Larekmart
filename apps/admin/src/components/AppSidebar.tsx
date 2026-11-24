@@ -3,11 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchSystemSettings } from "@/services/seller.service";
 import { getPendingVendors } from "@/services/vendor-verification.service";
+import { fetchAdminConversations } from "@/services/chat.service";
+import { useClerk, useUser } from "@clerk/nextjs";
 import {
   Home,
   Inbox,
-  Calendar,
-  Search,
   Settings,
   User2,
   ChevronUp,
@@ -59,6 +59,7 @@ import {
 } from "./ui/sidebar";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,18 +80,8 @@ const items = [
   },
   {
     title: "Inbox",
-    url: "#",
+    url: "/chat",
     icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
-    icon: Search,
   },
   {
     title: "Settings",
@@ -100,6 +91,38 @@ const items = [
 ];
 
 const AppSidebar = () => {
+  const pathname = usePathname();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+
+  const userDisplayName = user?.fullName || user?.username || "Admin";
+
+  const isRouteActive = (url: string) => {
+    if (!pathname || url === "#") return false;
+
+    // Normalize pathnames by removing trailing slashes
+    const current =
+      pathname.length > 1 && pathname.endsWith("/")
+        ? pathname.slice(0, -1)
+        : pathname;
+    const target = url.length > 1 && url.endsWith("/") ? url.slice(0, -1) : url;
+
+    // Exact match for root "/" or direct route match
+    if (target === "/") return current === "/";
+    if (current === target) return true;
+
+    // Guard against parent overlap for routes with dedicated sub-items
+    if (target === "/inventory") {
+      return current === "/inventory";
+    }
+    if (target === "/support") {
+      return current === "/support";
+    }
+
+    // Match nested sub-routes (e.g. /users/[id], /orders/[id])
+    return current.startsWith(`${target}/`);
+  };
+
   const { data: systemSettings } = useQuery({
     queryKey: ["marketplace-system-settings"],
     queryFn: () => fetchSystemSettings().catch(() => null),
@@ -116,15 +139,40 @@ const AppSidebar = () => {
 
   const pendingVerificationCount = pendingVendorsData?.total ?? 0;
 
+  const { data: chatData } = useQuery({
+    queryKey: ["sidebar-active-chat-count"],
+    queryFn: () =>
+      fetchAdminConversations({ status: "ACTIVE", limit: 1 }).catch(() => null),
+    staleTime: 30000,
+  });
+
+  const activeChatCount = chatData?.total ?? 0;
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="py-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link href="/">
-                <Image src="/logo.svg" alt="logo" width={20} height={20} />
-                <span>Lama Dev</span>
+            <SidebarMenuButton size="lg" asChild>
+              <Link href="/" className="flex items-center gap-2.5">
+                <div className="relative size-8 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted/20">
+                  <Image
+                    src="/logo.png"
+                    alt="Larekmart"
+                    width={32}
+                    height={32}
+                    className="size-full object-cover"
+                    priority
+                  />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="font-bold text-sm tracking-tight text-foreground">
+                    LAREKMART<span className="text-indigo-600">.</span>
+                  </span>
+                  <span className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground">
+                    Admin Console
+                  </span>
+                </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -138,14 +186,14 @@ const AppSidebar = () => {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild isActive={isRouteActive(item.url)}>
                     <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                  {item.title === "Inbox" && (
-                    <SidebarMenuBadge>24</SidebarMenuBadge>
+                  {item.title === "Inbox" && activeChatCount > 0 && (
+                    <SidebarMenuBadge>{activeChatCount}</SidebarMenuBadge>
                   )}
                 </SidebarMenuItem>
               ))}
@@ -160,7 +208,10 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/products")}
+                >
                   <Link href="/products">
                     <Shirt />
                     See All Products
@@ -168,37 +219,29 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <SidebarMenuButton asChild>
-                        <Link href="#">
-                          <Plus />
-                          Add Product
-                        </Link>
-                      </SidebarMenuButton>
-                    </SheetTrigger>
-                    <AddProduct />
-                  </Sheet>
-                </SidebarMenuButton>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <SidebarMenuButton>
+                      <Plus />
+                      <span>Add Product</span>
+                    </SidebarMenuButton>
+                  </SheetTrigger>
+                  <AddProduct />
+                </Sheet>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <SidebarMenuButton asChild>
-                        <Link href="#">
-                          <Plus />
-                          Add Category
-                        </Link>
-                      </SidebarMenuButton>
-                    </SheetTrigger>
-                    <AddCategory />
-                  </Sheet>
-                </SidebarMenuButton>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <SidebarMenuButton>
+                      <Plus />
+                      <span>Add Category</span>
+                    </SidebarMenuButton>
+                  </SheetTrigger>
+                  <AddCategory />
+                </Sheet>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/catalog")}>
                   <Link href="/catalog">
                     <LayoutGrid />
                     Catalog Read-Model
@@ -216,7 +259,7 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/users")}>
                   <Link href="/users">
                     <User />
                     See All Users
@@ -224,19 +267,15 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <SidebarMenuButton asChild>
-                        <Link href="#">
-                          <Plus />
-                          Add User
-                        </Link>
-                      </SidebarMenuButton>
-                    </SheetTrigger>
-                    <AddUser />
-                  </Sheet>
-                </SidebarMenuButton>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <SidebarMenuButton>
+                      <Plus />
+                      <span>Add User</span>
+                    </SidebarMenuButton>
+                  </SheetTrigger>
+                  <AddUser />
+                </Sheet>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
@@ -249,7 +288,7 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/orders")}>
                   <Link href="/orders">
                     <ShoppingBasket />
                     See All Transactions
@@ -257,7 +296,7 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/returns")}>
                   <Link href="/returns">
                     <RotateCcw />
                     Returns & Refunds
@@ -265,7 +304,7 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/carts")}>
                   <Link href="/carts">
                     <ShoppingCart />
                     Shopping Carts
@@ -273,19 +312,15 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <SidebarMenuButton asChild>
-                        <Link href="#">
-                          <Plus />
-                          Add Order
-                        </Link>
-                      </SidebarMenuButton>
-                    </SheetTrigger>
-                    <AddOrder />
-                  </Sheet>
-                </SidebarMenuButton>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <SidebarMenuButton>
+                      <Plus />
+                      <span>Add Order</span>
+                    </SidebarMenuButton>
+                  </SheetTrigger>
+                  <AddOrder />
+                </Sheet>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
@@ -302,7 +337,10 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/vendor-verification")}
+                >
                   <Link href="/vendor-verification">
                     <ShieldCheck />
                     <span>Seller Verification</span>
@@ -315,7 +353,7 @@ const AppSidebar = () => {
                 )}
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/vendors")}>
                   <Link href="/vendors">
                     <Building2 />
                     Vendors & KYB
@@ -323,7 +361,7 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/sellers")}>
                   <Link href="/sellers">
                     <Store />
                     Sellers & Stores
@@ -331,7 +369,10 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/commissions")}
+                >
                   <Link href="/commissions">
                     <Percent />
                     Commissions & Fees
@@ -339,7 +380,7 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/payouts")}>
                   <Link href="/payouts">
                     <Banknote />
                     Payouts & Batches
@@ -347,7 +388,10 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/settlements")}
+                >
                   <Link href="/settlements">
                     <Coins />
                     Escrow & Settlements
@@ -355,7 +399,10 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/disputes")}
+                >
                   <Link href="/disputes">
                     <ShieldAlert />
                     Disputes & Claims
@@ -363,7 +410,7 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/fraud")}>
                   <Link href="/fraud">
                     <ShieldAlert />
                     Fraud & Risk Cases
@@ -378,7 +425,10 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/promotions")}
+                >
                   <Link href="/promotions">
                     <Tag />
                     Campaigns & Coupons
@@ -393,7 +443,7 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/pricing")}>
                   <Link href="/pricing">
                     <Coins />
                     Pricing & Currencies
@@ -408,7 +458,7 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/taxes")}>
                   <Link href="/taxes">
                     <Scale />
                     Tax Rules & Jurisdictions
@@ -423,7 +473,10 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/inventory")}
+                >
                   <Link href="/inventory">
                     <Boxes />
                     Stock & Warehouses
@@ -431,7 +484,10 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/inventory/low-stock")}
+                >
                   <Link href="/inventory/low-stock">
                     <AlertTriangle />
                     Low Stock Alerts
@@ -439,7 +495,10 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/inventory/movements")}
+                >
                   <Link href="/inventory/movements">
                     <History />
                     Movement Ledger
@@ -454,7 +513,10 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/shipping")}
+                >
                   <Link href="/shipping">
                     <Truck />
                     Shipments & Carriers
@@ -469,7 +531,7 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/reviews")}>
                   <Link href="/reviews">
                     <Star />
                     Customer Reviews
@@ -477,7 +539,10 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/wishlists")}
+                >
                   <Link href="/wishlists">
                     <Heart />
                     Customer Wishlists
@@ -485,7 +550,7 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/support")}>
                   <Link href="/support">
                     <LifeBuoy />
                     Support Tickets & SLA
@@ -493,12 +558,15 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/chat")}>
                   <Link href="/chat">
                     <MessageSquare />
                     Live Chat & Moderation
                   </Link>
                 </SidebarMenuButton>
+                {activeChatCount > 0 && (
+                  <SidebarMenuBadge>{activeChatCount}</SidebarMenuBadge>
+                )}
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
@@ -508,7 +576,10 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/recommendations")}
+                >
                   <Link href="/recommendations">
                     <Sparkles />
                     Recommendations & AI
@@ -516,7 +587,10 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/support/ai-performance")}
+                >
                   <Link href="/support/ai-performance">
                     <Bot />
                     AI Support Performance
@@ -524,7 +598,7 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isRouteActive("/cache")}>
                   <Link href="/cache">
                     <Database />
                     Cache Performance
@@ -532,7 +606,10 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/kafka-dlq")}
+                >
                   <Link href="/kafka-dlq">
                     <Radio />
                     Kafka DLQ & Resilience
@@ -540,7 +617,10 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/feature-flags")}
+                >
                   <Link href="/feature-flags">
                     <Sliders />
                     Feature Flags & Canaries
@@ -548,7 +628,10 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isRouteActive("/system-health")}
+                >
                   <Link href="/system-health">
                     <Activity />
                     Synthetic Canary Health
@@ -564,14 +647,34 @@ const AppSidebar = () => {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton>
-                  <User2 /> John Doe <ChevronUp className="ml-auto" />
+                <SidebarMenuButton className="h-10">
+                  <User2 className="size-4 shrink-0" />
+                  <span className="truncate">{userDisplayName}</span>
+                  <ChevronUp className="ml-auto size-4" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Account</DropdownMenuItem>
-                <DropdownMenuItem>Setting</DropdownMenuItem>
-                <DropdownMenuItem>Sign out</DropdownMenuItem>
+              <DropdownMenuContent
+                side="top"
+                align="end"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+              >
+                <DropdownMenuItem asChild>
+                  <Link href="/users" className="cursor-pointer">
+                    Manage Users
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="cursor-pointer">
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  className="cursor-pointer"
+                  onClick={() => signOut({ redirectUrl: "/sign-in" })}
+                >
+                  Sign out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

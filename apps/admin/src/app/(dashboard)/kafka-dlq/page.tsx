@@ -10,6 +10,14 @@ import {
   type DeadLetterRecord,
 } from "@/services/dlq.service";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -154,13 +162,30 @@ export default function KafkaDlqDashboardPage() {
   const repeatReplaysCount = records.filter((r) => r.replayCount > 0).length;
 
   return (
-    <div className="flex flex-col gap-6 p-4 max-w-[1600px] mx-auto">
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/kafka-dlq">Platform & Infrastructure</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Kafka Dead Letter Queue</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <Radio className="h-6 w-6 text-destructive animate-pulse" />
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               Kafka DLQ & Resilience Operations
             </h1>
           </div>
@@ -189,7 +214,7 @@ export default function KafkaDlqDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="shadow-xs">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Monitored DLQ Topics
@@ -204,7 +229,7 @@ export default function KafkaDlqDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-xs">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Unresolved Dead Letters
@@ -221,7 +246,7 @@ export default function KafkaDlqDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-xs">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Poison Pills Trapped
@@ -238,7 +263,7 @@ export default function KafkaDlqDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-xs">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Repeat Replays
@@ -305,8 +330,8 @@ export default function KafkaDlqDashboardPage() {
       </Card>
 
       {/* Dead-Letter Records Table */}
-      <Card className="shadow-xs">
-        <CardHeader className="pb-3">
+      <Card className="border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
+        <CardHeader className="pb-3 border-b">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-lg">
@@ -320,20 +345,21 @@ export default function KafkaDlqDashboardPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Topic & Partition</TableHead>
-                <TableHead>Offset</TableHead>
-                <TableHead>Error & Cause</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Attempts</TableHead>
-                <TableHead>Replays</TableHead>
-                <TableHead>Failed At</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+          <div className="overflow-x-auto min-w-full">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[180px]">Topic & Partition</TableHead>
+                  <TableHead className="min-w-[90px]">Offset</TableHead>
+                  <TableHead className="min-w-[200px]">Error & Cause</TableHead>
+                  <TableHead className="min-w-[100px]">Type</TableHead>
+                  <TableHead className="min-w-[90px]">Attempts</TableHead>
+                  <TableHead className="min-w-[90px]">Replays</TableHead>
+                  <TableHead className="min-w-[130px]">Failed At</TableHead>
+                  <TableHead className="min-w-[110px]">Status</TableHead>
+                  <TableHead className="min-w-[110px] text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {records.length === 0 ? (
                 <TableRow>
@@ -423,8 +449,9 @@ export default function KafkaDlqDashboardPage() {
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </div>
+      </CardContent>
+    </Card>
 
       {/* Inspector / Fix-and-Replay Sheet */}
       <Sheet

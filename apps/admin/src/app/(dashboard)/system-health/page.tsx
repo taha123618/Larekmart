@@ -14,6 +14,14 @@ import type {
   CanaryStepResult,
 } from "@repo/monitoring";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -128,12 +136,29 @@ export default function SystemHealthPage() {
   const checkoutSla = slaData?.checkout;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/system-health">Platform & Infrastructure</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>System Health & SLA Canary</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               System Health & Canaries
             </h1>
             <Badge
@@ -144,7 +169,7 @@ export default function SystemHealthPage() {
               Automated Probers Active
             </Badge>
           </div>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Proactive continuous synthetic journeys verifying storefront reads,
             search indexes, and atomic checkout safety.
           </p>
@@ -183,9 +208,9 @@ export default function SystemHealthPage() {
       </div>
 
       {/* SLA Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Read SLA */}
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center justify-between">
               <span>Read Journey SLA</span>
@@ -223,7 +248,7 @@ export default function SystemHealthPage() {
         </Card>
 
         {/* Checkout SLA */}
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center justify-between">
               <span>Checkout Journey SLA</span>
@@ -261,7 +286,7 @@ export default function SystemHealthPage() {
         </Card>
 
         {/* Consecutive Failures */}
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center justify-between">
               <span>Consecutive Failures</span>
@@ -286,7 +311,7 @@ export default function SystemHealthPage() {
         </Card>
 
         {/* Isolation & Protection */}
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center justify-between">
               <span>Synthetic Safety Guard</span>

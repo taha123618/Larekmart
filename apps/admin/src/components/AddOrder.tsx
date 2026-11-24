@@ -37,14 +37,23 @@ const formSchema = z.object({
 const AddOrder = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      amount: 1,
+      userId: "",
+      status: "pending",
+    },
   });
   return (
-    <SheetContent>
-      <SheetHeader>
-        <SheetTitle className="mb-4">Add Order</SheetTitle>
-        <SheetDescription asChild>
-          <Form {...form}>
-            <form className="space-y-8">
+    <SheetContent className="overflow-y-auto sm:max-w-md">
+      <SheetHeader className="pb-4 border-b">
+        <SheetTitle>Add Order</SheetTitle>
+        <SheetDescription>
+          Manually record a pending order transaction.
+        </SheetDescription>
+      </SheetHeader>
+      <div className="py-4">
+        <Form {...form}>
+          <form className="space-y-6">
               <FormField
                 control={form.control}
                 name="amount"
@@ -52,7 +61,16 @@ const AddOrder = () => {
                   <FormItem>
                     <FormLabel>Amount</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input
+                        type="number"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === "" ? 0 : Number(e.target.value),
+                          )
+                        }
+                      />
                     </FormControl>
                     <FormDescription>
                       Enter the amount of the order.
@@ -68,7 +86,7 @@ const AddOrder = () => {
                   <FormItem>
                     <FormLabel>User ID</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormDescription>Enter the User ID.</FormDescription>
                     <FormMessage />
@@ -84,7 +102,8 @@ const AddOrder = () => {
                     <FormControl>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value || "pending"}
+                        defaultValue={field.value || "pending"}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select a status" />
@@ -104,11 +123,10 @@ const AddOrder = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit">Submit</Button>
-            </form>
-          </Form>
-        </SheetDescription>
-      </SheetHeader>
+            <Button type="submit" className="w-full">Submit</Button>
+          </form>
+        </Form>
+      </div>
     </SheetContent>
   );
 };

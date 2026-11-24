@@ -1,5 +1,13 @@
 import { auth } from "@clerk/nextjs/server";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Table,
   TableBody,
   TableCell,
@@ -110,30 +118,50 @@ export default async function MovementsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="px-4 py-3 bg-secondary rounded-md">
-        <div className="flex items-center gap-2">
-          <History className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-bold tracking-tight">
-            Inventory Movement Audit Ledger
-          </h1>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/inventory">Order Fulfillment</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Inventory Movement Audit Ledger</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <History className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Inventory Movement Audit Ledger
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Append-only transactional ledger recording every stock movement:
+            reservations, checkouts, sales, restocks, and damage adjustments.
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Append-only transactional ledger recording every stock movement:
-          reservations, checkouts, sales, restocks, and damage adjustments.
-        </p>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/inventory">← Back to Stock</Link>
+        </Button>
       </div>
 
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-muted-foreground">
           Showing latest {movements.length} ledger entries
         </span>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/inventory">← Back to Stock</Link>
-        </Button>
       </div>
 
-      <div className="rounded-md border border-border bg-card">
-        <Table>
+      <div className="rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
+        <div className="overflow-x-auto min-w-full">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[120px]">Movement ID</TableHead>
@@ -197,6 +225,7 @@ export default async function MovementsPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );

@@ -30,23 +30,12 @@ import {
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Checkbox } from "./ui/checkbox";
-import { ScrollArea } from "./ui/scroll-area";
 import { CategoryType, colors, ProductFormSchema, sizes } from "@repo/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useAuth } from "@clerk/nextjs";
 import { uploadProductImage } from "@/services/media.service";
 import { getApiGatewayUrl } from "@/services/gateway.service";
-
-// const categories = [
-//   "T-shirts",
-//   "Shoes",
-//   "Accessories",
-//   "Bags",
-//   "Dresses",
-//   "Jackets",
-//   "Gloves",
-// ] as const;
 
 const fetchCategories = async () => {
   const productServiceUrl = getApiGatewayUrl();
@@ -117,16 +106,19 @@ const AddProduct = () => {
   });
 
   return (
-    <SheetContent>
-      <ScrollArea className="h-screen">
-        <SheetHeader>
-          <SheetTitle className="mb-4">Add Product</SheetTitle>
-          <SheetDescription asChild>
-            <Form {...form}>
-              <form
-                className="space-y-8"
-                onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
-              >
+    <SheetContent className="overflow-y-auto sm:max-w-2xl">
+      <SheetHeader className="pb-4 border-b">
+        <SheetTitle>Add Product</SheetTitle>
+        <SheetDescription>
+          Publish a new merchandise product item with variants and media assets.
+        </SheetDescription>
+      </SheetHeader>
+      <div className="py-4">
+        <Form {...form}>
+          <form
+            className="space-y-6"
+            onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
+          >
                 <FormField
                   control={form.control}
                   name="name"
@@ -417,18 +409,16 @@ const AddProduct = () => {
                     </FormItem>
                   )}
                 />
-                <Button
-                  type="submit"
-                  disabled={mutation.isPending}
-                  className="disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {mutation.isPending ? "Submitting..." : "Submit"}
-                </Button>
-              </form>
-            </Form>
-          </SheetDescription>
-        </SheetHeader>
-      </ScrollArea>
+            <Button
+              type="submit"
+              disabled={mutation.isPending}
+              className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {mutation.isPending ? "Submitting..." : "Submit"}
+            </Button>
+          </form>
+        </Form>
+      </div>
     </SheetContent>
   );
 };

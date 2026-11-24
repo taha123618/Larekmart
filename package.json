@@ -1,7 +1,7 @@
 {
   "name": "larekmart",
   "version": "1.0.0",
-  "description": "Production-grade microservices e-commerce platform built with Next.js 15, Kafka, Fastify, Go, Python, and Turborepo.",
+  "description": "Production-grade microservices e-commerce platform built with Next.js 16, Kafka, Fastify, Go, Python, and Turborepo.",
   "license": "MIT",
   "homepage": "https://github.com/taha123618/Larekmart#readme",
   "repository": {

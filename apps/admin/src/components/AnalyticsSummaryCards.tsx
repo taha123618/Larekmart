@@ -85,7 +85,7 @@ export const AnalyticsSummaryCards = ({
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <Card key={card.title} className="p-4 flex flex-col justify-between">
+          <Card key={card.title} className="p-4 flex flex-col justify-between border-border/60 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">
                 {card.title}

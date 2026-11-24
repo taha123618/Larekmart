@@ -6,7 +6,7 @@
 
 - **2 Frontends**:
   - `apps/client` (:3002): High-performance customer storefront (Next.js 16, React 19, Tailwind CSS v4, GSAP, Framer Motion, Lenis).
-  - `apps/admin` (:3003): Administrator dashboard (Next.js 15, React 19, shadcn/ui, TanStack Query & Table, Recharts).
+  - `apps/admin` (:3003): Administrator dashboard (Next.js 16, React 19, shadcn/ui, TanStack Query & Table, Recharts).
 - **1 Centralized API Gateway**:
   - `apps/api-gateway` (:8080 / :8090): Fastify 5 reverse proxy, Clerk JWT validation, Redis distributed sliding-window rate limiting, in-flight concurrency bulkheads, and thundering-herd mitigation (`SingleFlightGroup`).
 - **25 Microservices + 1 Headless Worker (26 Total Backend Services)**:

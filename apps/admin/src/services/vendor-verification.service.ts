@@ -93,7 +93,8 @@ export async function getPendingVendors(
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));
     throw new Error(
-      errorBody.message || `Failed to fetch pending vendors: HTTP ${res.status}`,
+      errorBody.message ||
+        `Failed to fetch pending vendors: HTTP ${res.status}`,
     );
   }
 
@@ -140,7 +141,8 @@ export async function getVendorDocuments(
   if (!resDetail.ok) {
     const errorBody = await resDetail.json().catch(() => ({}));
     throw new Error(
-      errorBody.message || `Failed to fetch vendor documents: HTTP ${resDetail.status}`,
+      errorBody.message ||
+        `Failed to fetch vendor documents: HTTP ${resDetail.status}`,
     );
   }
 
@@ -178,7 +180,8 @@ export async function verifyVendor(
       if (!approveRes.ok) {
         const errorBody = await approveRes.json().catch(() => ({}));
         throw new Error(
-          errorBody.message || `Failed to verify vendor: HTTP ${approveRes.status}`,
+          errorBody.message ||
+            `Failed to verify vendor: HTTP ${approveRes.status}`,
         );
       }
       return approveRes.json();
@@ -223,7 +226,8 @@ export async function rejectVendor(
       if (!rejectRes.ok) {
         const errorBody = await rejectRes.json().catch(() => ({}));
         throw new Error(
-          errorBody.message || `Failed to reject vendor: HTTP ${rejectRes.status}`,
+          errorBody.message ||
+            `Failed to reject vendor: HTTP ${rejectRes.status}`,
         );
       }
       return rejectRes.json();
@@ -256,8 +260,12 @@ export async function fetchVerificationStats(
     ]);
 
     const pendingData = pendingRes.ok ? await pendingRes.json() : { total: 0 };
-    const verifiedData = verifiedRes.ok ? await verifiedRes.json() : { total: 0, vendors: [] };
-    const rejectedData = rejectedRes.ok ? await rejectedRes.json() : { total: 0, vendors: [] };
+    const verifiedData = verifiedRes.ok
+      ? await verifiedRes.json()
+      : { total: 0, vendors: [] };
+    const rejectedData = rejectedRes.ok
+      ? await rejectedRes.json()
+      : { total: 0, vendors: [] };
 
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -273,9 +281,13 @@ export async function fetchVerificationStats(
     ).length;
 
     return {
-      pendingCount: pendingData.total ?? (Array.isArray(pendingData) ? pendingData.length : 0),
-      verifiedThisWeek: verifiedThisWeek || (verifiedData.total > 0 ? verifiedData.total : 0),
-      rejectedThisWeek: rejectedThisWeek || (rejectedData.total > 0 ? rejectedData.total : 0),
+      pendingCount:
+        pendingData.total ??
+        (Array.isArray(pendingData) ? pendingData.length : 0),
+      verifiedThisWeek:
+        verifiedThisWeek || (verifiedData.total > 0 ? verifiedData.total : 0),
+      rejectedThisWeek:
+        rejectedThisWeek || (rejectedData.total > 0 ? rejectedData.total : 0),
     };
   } catch {
     return {

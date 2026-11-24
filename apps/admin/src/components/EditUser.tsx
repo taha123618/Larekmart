@@ -127,23 +127,26 @@ const EditUser = ({
   };
 
   return (
-    <SheetContent>
-      <SheetHeader>
-        <SheetTitle className="mb-4">Edit Customer Record</SheetTitle>
-        <SheetDescription asChild>
-          <div>
-            {successMsg && (
-              <div className="p-3 mb-4 rounded bg-emerald-100 text-emerald-900 text-xs font-semibold">
-                {successMsg}
-              </div>
-            )}
-            {errorMsg && (
-              <div className="p-3 mb-4 rounded bg-red-100 text-red-900 text-xs font-semibold">
-                {errorMsg}
-              </div>
-            )}
+    <SheetContent className="overflow-y-auto sm:max-w-md">
+      <SheetHeader className="pb-4 border-b">
+        <SheetTitle>Edit Customer Record</SheetTitle>
+        <SheetDescription>
+          Update customer account privileges and access status.
+        </SheetDescription>
+      </SheetHeader>
+      <div className="py-4">
+        {successMsg && (
+          <div className="p-3 mb-4 rounded bg-emerald-100 text-emerald-900 text-xs font-semibold">
+            {successMsg}
+          </div>
+        )}
+        {errorMsg && (
+          <div className="p-3 mb-4 rounded bg-red-100 text-red-900 text-xs font-semibold">
+            {errorMsg}
+          </div>
+        )}
 
-            <Form {...form}>
+        <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6"
@@ -242,15 +245,13 @@ const EditUser = ({
                   )}
                 />
 
-                <Button type="submit" disabled={loading} className="w-full">
-                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Save Status
-                </Button>
-              </form>
-            </Form>
-          </div>
-        </SheetDescription>
-      </SheetHeader>
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save Status
+              </Button>
+            </form>
+          </Form>
+        </div>
     </SheetContent>
   );
 };

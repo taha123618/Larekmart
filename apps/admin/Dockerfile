@@ -1,5 +1,5 @@
 # ==============================================================================
-# Larekmart - Admin Portal (Next.js 15) Dockerfile
+# Larekmart - Admin Portal (Next.js 16) Dockerfile
 # Hardened multi-stage build adhering to Docker Hardened Images (DHI) standards.
 # ==============================================================================
 

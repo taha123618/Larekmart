@@ -17,6 +17,14 @@ import { fetchSystemSettings } from "@/services/seller.service";
 import { fetchMerchantAnalytics } from "@/services/analytics.service";
 import type { VendorStatus } from "@repo/types";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -310,12 +318,29 @@ export default function VendorsAdminPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12 pt-4">
+    <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/sellers">Marketplace & Merchants</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Vendors & KYB</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Top Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Building2 className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
               Vendor & Business KYB Management
             </h1>
@@ -332,7 +357,7 @@ export default function VendorsAdminPage() {
               </Badge>
             )}
           </div>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-muted-foreground">
             Authoritative legal business entities, merchant KYB compliance, and
             verification workflows.
           </p>
@@ -370,12 +395,12 @@ export default function VendorsAdminPage() {
                 across the platform. Legal vendor organizations, business
                 profiles, and KYB documents remain intact in read-only audit
                 mode. A Super Admin can reactivate operations anytime in{" "}
-                <a
+                <Link
                   href="/settings"
                   className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-100"
                 >
                   Platform Settings
-                </a>
+                </Link>
                 .
               </p>
             </div>
@@ -395,12 +420,12 @@ export default function VendorsAdminPage() {
                 A Super Admin has toggled new merchant onboarding off. Public
                 registration forms are currently not accepting new applications.
                 Manage this in{" "}
-                <a
+                <Link
                   href="/settings"
                   className="underline font-semibold hover:text-sky-900 dark:hover:text-sky-100"
                 >
                   Platform Settings
-                </a>
+                </Link>
                 .
               </p>
             </div>
@@ -410,27 +435,27 @@ export default function VendorsAdminPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-neutral-200 dark:border-neutral-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Organizations
             </CardTitle>
             <Building2 className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+            <div className="text-2xl font-bold text-foreground">
               {totalVendors}
             </div>
-            <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
               <Activity className="h-3 w-3 text-emerald-500 inline" />
               Live Analytics Sync
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200 dark:border-neutral-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               KYB Verification Queue
             </CardTitle>
             <Clock className="h-4 w-4 text-amber-500" />
@@ -439,15 +464,15 @@ export default function VendorsAdminPage() {
             <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               {pendingCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Awaiting compliance review
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200 dark:border-neutral-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Verified Entities
             </CardTitle>
             <ShieldCheck className="h-4 w-4 text-emerald-500" />
@@ -456,15 +481,15 @@ export default function VendorsAdminPage() {
             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {verifiedCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Fully approved businesses
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200 dark:border-neutral-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Suspended / At Risk
             </CardTitle>
             <AlertTriangle className="h-4 w-4 text-rose-500" />
@@ -473,7 +498,7 @@ export default function VendorsAdminPage() {
             <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">
               {suspendedCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Flagged or suspended
             </p>
           </CardContent>
@@ -481,7 +506,7 @@ export default function VendorsAdminPage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-neutral-200 dark:border-neutral-800 gap-2">
+      <div className="flex border-b border-border/60 gap-2">
         <Button
           variant={activeTab === "vendors" ? "default" : "outline"}
           onClick={() => setActiveTab("vendors")}
@@ -502,7 +527,7 @@ export default function VendorsAdminPage() {
 
       {/* TAB 1: ALL VENDORS */}
       {activeTab === "vendors" && (
-        <Card className="border-neutral-200 dark:border-neutral-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="relative flex-1 max-w-sm">
@@ -651,7 +676,7 @@ export default function VendorsAdminPage() {
 
       {/* TAB 2: PENDING KYB QUEUE */}
       {activeTab === "verifications" && (
-        <Card className="border-neutral-200 dark:border-neutral-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader>
             <CardTitle>Pending KYB Verification Queue</CardTitle>
             <CardDescription>
@@ -750,15 +775,15 @@ export default function VendorsAdminPage() {
           ) : selectedVendorDetails ? (
             <div className="space-y-6 pt-6">
               {/* Status Header */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border/60">
                 <div>
-                  <div className="text-xs text-neutral-500">Current Status</div>
+                  <div className="text-xs text-muted-foreground">Current Status</div>
                   <div className="mt-1">
                     {getStatusBadge(selectedVendorDetails.status)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-neutral-500">
+                  <div className="text-xs text-muted-foreground">
                     Organization Type
                   </div>
                   <div className="text-sm font-semibold mt-1">
@@ -769,37 +794,37 @@ export default function VendorsAdminPage() {
 
               {/* Legal Information */}
               <div className="space-y-2">
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-1.5">
-                  <FileText className="h-4 w-4 text-neutral-500" />
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
                   Legal Identity
                 </h3>
-                <div className="grid grid-cols-2 gap-2 text-xs p-3 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+                <div className="grid grid-cols-2 gap-2 text-xs p-3 rounded bg-muted/40 border border-border/60">
                   <div>
-                    <span className="text-neutral-400">Legal Name:</span>
+                    <span className="text-muted-foreground">Legal Name:</span>
                     <p className="font-semibold">
                       {selectedVendorDetails.legalName}
                     </p>
                   </div>
                   <div>
-                    <span className="text-neutral-400">Trade Name (DBA):</span>
+                    <span className="text-muted-foreground">Trade Name (DBA):</span>
                     <p className="font-semibold">
                       {selectedVendorDetails.tradeName || "None"}
                     </p>
                   </div>
                   <div>
-                    <span className="text-neutral-400">Registration #:</span>
+                    <span className="text-muted-foreground">Registration #:</span>
                     <p className="font-mono font-semibold">
                       {selectedVendorDetails.registrationNumber}
                     </p>
                   </div>
                   <div>
-                    <span className="text-neutral-400">Tax Identifier:</span>
+                    <span className="text-muted-foreground">Tax Identifier:</span>
                     <p className="font-mono font-semibold">
                       {selectedVendorDetails.taxIdentifier}
                     </p>
                   </div>
                   <div>
-                    <span className="text-neutral-400">
+                    <span className="text-muted-foreground">
                       Country of Registration:
                     </span>
                     <p className="font-semibold">
@@ -807,7 +832,7 @@ export default function VendorsAdminPage() {
                     </p>
                   </div>
                   <div>
-                    <span className="text-neutral-400">Clerk Owner ID:</span>
+                    <span className="text-muted-foreground">Clerk Owner ID:</span>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <p className="font-mono truncate">
                         {selectedVendorDetails.ownerUserId}
@@ -828,13 +853,13 @@ export default function VendorsAdminPage() {
               {/* Business Profile Details */}
               {selectedVendorDetails.businessProfile && (
                 <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+                  <h3 className="text-sm font-bold text-foreground">
                     Business Profile & Representative
                   </h3>
-                  <div className="space-y-1.5 text-xs p-3 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+                  <div className="space-y-1.5 text-xs p-3 rounded bg-muted/40 border border-border/60">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <span className="text-neutral-400">Industry:</span>
+                        <span className="text-muted-foreground">Industry:</span>
                         <p className="font-semibold">
                           {
                             selectedVendorDetails.businessProfile
@@ -843,14 +868,14 @@ export default function VendorsAdminPage() {
                         </p>
                       </div>
                       <div>
-                        <span className="text-neutral-400">Website:</span>
+                        <span className="text-muted-foreground">Website:</span>
                         <p className="font-semibold truncate">
                           {selectedVendorDetails.businessProfile.websiteUrl ||
                             "N/A"}
                         </p>
                       </div>
                       <div>
-                        <span className="text-neutral-400">
+                        <span className="text-muted-foreground">
                           Business Email:
                         </span>
                         <p className="font-semibold">
@@ -858,7 +883,7 @@ export default function VendorsAdminPage() {
                         </p>
                       </div>
                       <div>
-                        <span className="text-neutral-400">
+                        <span className="text-muted-foreground">
                           Business Phone:
                         </span>
                         <p className="font-semibold">
@@ -866,8 +891,8 @@ export default function VendorsAdminPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800">
-                      <span className="text-neutral-400">
+                    <div className="pt-2 border-t border-border/60">
+                      <span className="text-muted-foreground">
                         Registered Office Address:
                       </span>
                       <p className="font-medium">
@@ -881,8 +906,8 @@ export default function VendorsAdminPage() {
                         {selectedVendorDetails.businessProfile.country}
                       </p>
                     </div>
-                    <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800">
-                      <span className="text-neutral-400">
+                    <div className="pt-2 border-t border-border/60">
+                      <span className="text-muted-foreground">
                         Authorized Representative:
                       </span>
                       <p className="font-semibold">
@@ -897,7 +922,7 @@ export default function VendorsAdminPage() {
                         }
                         )
                       </p>
-                      <p className="text-neutral-500">
+                      <p className="text-muted-foreground">
                         {
                           selectedVendorDetails.businessProfile
                             .authorizedRepresentativeEmail
@@ -915,7 +940,7 @@ export default function VendorsAdminPage() {
 
               {/* Compliance Documents */}
               <div className="space-y-2">
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground flex items-center justify-between">
                   <span>
                     Compliance Documents (
                     {selectedVendorDetails.documents?.length || 0})
@@ -927,13 +952,13 @@ export default function VendorsAdminPage() {
                     {selectedVendorDetails.documents.map((doc) => (
                       <div
                         key={doc.id}
-                        className="flex items-center justify-between p-2.5 rounded border border-neutral-200 dark:border-neutral-800 text-xs"
+                        className="flex items-center justify-between p-2.5 rounded border border-border/60 text-xs"
                       >
                         <div>
                           <div className="font-semibold">
                             {doc.documentType.replace(/_/g, " ")}
                           </div>
-                          <div className="text-neutral-500">
+                          <div className="text-muted-foreground">
                             {doc.fileName} • {(doc.fileSize / 1024).toFixed(1)}{" "}
                             KB
                           </div>
@@ -957,7 +982,7 @@ export default function VendorsAdminPage() {
                                 variant="outline"
                                 className="h-7 px-2 text-emerald-600"
                                 disabled={
-                                  !canManageSellers ||
+                                   !canManageSellers ||
                                   verifyDocMutation.isPending
                                 }
                                 title={
@@ -1007,14 +1032,14 @@ export default function VendorsAdminPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-neutral-400 italic">
+                  <p className="text-xs text-muted-foreground italic">
                     No documents uploaded yet.
                   </p>
                 )}
               </div>
 
               {/* Quick Actions */}
-              <div className="flex gap-2 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <div className="flex gap-2 pt-4 border-t border-border/60">
                 <Button
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                   disabled={!canManageSellers}

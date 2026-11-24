@@ -28,6 +28,14 @@ import type {
   ChatAttachment,
 } from "@repo/types";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   fetchAdminConversations,
   fetchAdminConversationMessages,
   sendAdminMessage,
@@ -85,7 +93,7 @@ function AdminChatContent() {
           match = res.items.find(
             (c) =>
               (c.metadata as Record<string, unknown> | null)?.ticketId ===
-              ticketParam || c.id === ticketParam,
+                ticketParam || c.id === ticketParam,
           );
         } else if (orderParam) {
           match = res.items.find(
@@ -212,21 +220,38 @@ function AdminChatContent() {
   };
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/chat">Customer Care</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Live Chat & Moderation</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
             Live Chat & Moderation
           </h2>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
             Monitor real-time buyer-seller conversations, assist customers in
             live support, and enforce communications safety.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={loadConversations}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-xs hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground shadow-xs hover:bg-secondary/80 transition cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
@@ -234,10 +259,10 @@ function AdminChatContent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:grid-cols-12 min-h-[700px]">
+      <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-border/60 bg-card text-card-foreground shadow-xs lg:grid-cols-12 min-h-[700px]">
         {/* Left: Conversation List */}
-        <div className="border-r border-neutral-200 dark:border-neutral-800 lg:col-span-4 flex flex-col">
-          <div className="border-b border-neutral-200 p-3 space-y-2 dark:border-neutral-800">
+        <div className="border-r border-border/60 lg:col-span-4 flex flex-col">
+          <div className="border-b border-border/60 p-3 space-y-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-400" />
               <input
@@ -257,10 +282,11 @@ function AdminChatContent() {
                 <button
                   key={tab.id}
                   onClick={() => setFilterType(tab.id)}
-                  className={`flex-1 rounded-lg py-1 text-xs font-medium transition ${filterType === tab.id
+                  className={`flex-1 rounded-lg py-1 text-xs font-medium transition ${
+                    filterType === tab.id
                       ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 shadow-xs"
                       : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                    }`}
+                  }`}
                 >
                   {tab.label}
                 </button>
@@ -286,16 +312,18 @@ function AdminChatContent() {
                   <button
                     key={conv.id}
                     onClick={() => setSelectedConv(conv)}
-                    className={`w-full p-3.5 text-left transition flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 ${isSelected
+                    className={`w-full p-3.5 text-left transition flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 ${
+                      isSelected
                         ? "bg-neutral-100 dark:bg-neutral-800/80 border-l-4 border-neutral-900 dark:border-white"
                         : ""
-                      }`}
+                    }`}
                   >
                     <div
-                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isSupport
+                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                        isSupport
                           ? "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
                           : "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
-                        }`}
+                      }`}
                     >
                       {isSupport ? (
                         <Headphones className="h-4 w-4" />
@@ -314,12 +342,12 @@ function AdminChatContent() {
                         <span className="text-[10px] text-neutral-400 shrink-0">
                           {conv.lastMessageAt
                             ? new Date(conv.lastMessageAt).toLocaleDateString(
-                              [],
-                              {
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )
+                                [],
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )
                             : ""}
                         </span>
                       </div>
@@ -354,7 +382,7 @@ function AdminChatContent() {
           {selectedConv ? (
             <>
               {/* Header */}
-              <div className="border-b border-neutral-200 bg-white px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-900 flex items-center justify-between">
+              <div className="border-b border-border/60 bg-card px-5 py-3.5 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                     {selectedConv.title || "Conversation Transcript"}
@@ -404,10 +432,11 @@ function AdminChatContent() {
                         className={`flex flex-col ${isAdmin ? "items-end" : "items-start"}`}
                       >
                         <div
-                          className={`group relative max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-xs ${isAdmin
+                          className={`group relative max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-xs ${
+                            isAdmin
                               ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 rounded-br-none"
                               : "bg-white text-neutral-900 dark:bg-neutral-800 dark:text-white border border-neutral-200 dark:border-neutral-700 rounded-bl-none"
-                            }`}
+                          }`}
                         >
                           <div className="mb-1 flex items-center justify-between gap-3 text-[10px] opacity-75 font-medium">
                             <span>
@@ -448,7 +477,7 @@ function AdminChatContent() {
               {/* Staff Reply Form */}
               <form
                 onSubmit={handleSendMessage}
-                className="border-t border-neutral-200 bg-white p-3.5 dark:border-neutral-800 dark:bg-neutral-900"
+                className="border-t border-border/60 bg-card p-3.5"
               >
                 <div className="flex items-center gap-2">
                   <input

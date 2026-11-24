@@ -18,6 +18,14 @@ import {
   fetchAdminDisputes,
   fetchAdminDisputesOverview,
 } from "@/services/dispute.service";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import type {
   DisputeResponse,
   DisputesOverview,
@@ -130,19 +138,36 @@ export default function DisputesDashboardPage(): React.JSX.Element {
   };
 
   return (
-    <div className="p-6 sm:p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/disputes">Customer Care</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Dispute Arbitration</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
               Disputes & Arbitration Desk
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
               Escrow Protection
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Resolve buyer inquiries, review merchant proof of delivery, and
             arbitrate frozen escrow funds.
           </p>
@@ -150,7 +175,7 @@ export default function DisputesDashboardPage(): React.JSX.Element {
 
         <button
           onClick={loadData}
-          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0"
+          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl border border-border/60 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition shrink-0 cursor-pointer shadow-xs"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Refresh
@@ -159,56 +184,56 @@ export default function DisputesDashboardPage(): React.JSX.Element {
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold mb-3">
+        <div className="p-5 rounded-xl bg-card border border-border/60 shadow-xs text-card-foreground">
+          <div className="flex items-center justify-between text-muted-foreground text-xs font-semibold mb-3">
             <span>Total Inquiries</span>
-            <ShieldAlert className="w-4 h-4 text-slate-400" />
+            <ShieldAlert className="w-4 h-4 text-muted-foreground" />
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white">
+          <div className="text-2xl font-bold">
             {overview?.totalDisputes || 0}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">
+          <p className="text-[11px] text-muted-foreground mt-1">
             Platform-wide filed disputes
           </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 shadow-xs">
-          <div className="flex items-center justify-between text-amber-700 dark:text-amber-400 text-xs font-bold mb-3">
+        <div className="p-5 rounded-xl bg-card border border-amber-500/30 shadow-xs text-card-foreground">
+          <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 text-xs font-semibold mb-3">
             <span>Pending Rebuttal</span>
             <AlertTriangle className="w-4 h-4 text-amber-600" />
           </div>
-          <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
+          <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
             {(overview?.openCount || 0) +
               (overview?.evidenceRequestedCount || 0)}
           </div>
-          <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 mt-1">
+          <p className="text-[11px] text-muted-foreground mt-1">
             Seller 7-day countdown active
           </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/50 shadow-xs">
-          <div className="flex items-center justify-between text-indigo-700 dark:text-indigo-400 text-xs font-bold mb-3">
+        <div className="p-5 rounded-xl bg-card border border-indigo-500/30 shadow-xs text-card-foreground">
+          <div className="flex items-center justify-between text-indigo-600 dark:text-indigo-400 text-xs font-semibold mb-3">
             <span>Ready for Arbitration</span>
             <Scale className="w-4 h-4 text-indigo-600" />
           </div>
-          <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
             {(overview?.underReviewCount || 0) +
               (overview?.arbitrationCount || 0)}
           </div>
-          <p className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80 mt-1">
+          <p className="text-[11px] text-muted-foreground mt-1">
             Rebuttal submitted; awaiting verdict
           </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold mb-3">
+        <div className="p-5 rounded-xl bg-card border border-border/60 shadow-xs text-card-foreground">
+          <div className="flex items-center justify-between text-muted-foreground text-xs font-semibold mb-3">
             <span>Disputed Escrow Value</span>
-            <Building2 className="w-4 h-4 text-slate-400" />
+            <Building2 className="w-4 h-4 text-muted-foreground" />
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white">
+          <div className="text-2xl font-bold">
             {formatCurrency(overview?.totalDisputedAmount || 0)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Frozen liabilities</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Frozen liabilities</p>
         </div>
       </div>
 
