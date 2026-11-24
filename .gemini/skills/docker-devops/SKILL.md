@@ -473,6 +473,7 @@ The monorepo contains a dedicated high-throughput load test suite under `infrast
 ```
 
 ### Key Performance Targets (SLOs)
+
 - **Stock Fast-Reject Latency**: `p(99) < 10ms` (Redis Lua precheck rejects in-memory without touching PostgreSQL).
 - **Price Quote Latency**: `p(95) < 35ms` (Zero-DB HMAC-SHA256 signed quote token).
 - **Order Commit Latency**: `p(95) < 150ms` (MongoDB atomic write + transactional outbox relay).
@@ -484,6 +485,7 @@ The monorepo contains a dedicated high-throughput load test suite under `infrast
 ## 16. Tier-1 Database Isolation & PgBouncer Routing
 
 To sustain 50,000+ RPS without connection starvation, high-velocity transactional ledgers are physically isolated:
+
 - `postgres-inventory` (port 5434) → `inventory_db`
 - `postgres-pricing` (port 5435) → `pricing_db`
 - `postgres-payout` (port 5436) → `payout_db`
@@ -498,10 +500,12 @@ To sustain 50,000+ RPS without connection starvation, high-velocity transactiona
 ## 17. Disaster Recovery & Backup Runbook
 
 ### Service Level Objectives
+
 - **RPO**: < 5 minutes for Tier-1 ledgers; < 1 hour for analytics.
 - **RTO**: < 30 minutes for checkout plane; < 2 hours for full platform.
 
 ### Daily Backup Execution
+
 ```bash
 # Backup Tier-1 PostgreSQL instances
 for DB in inventory_db pricing_db payout_db; do
@@ -513,8 +517,120 @@ mongodump --uri="mongodb://root:example@mongo:27017/order_db?authSource=admin" -
 ```
 
 ### Schema & Data Restoration
+
 ```bash
 pg_restore -h target-host -p 5432 -U postgres -d inventory_db --clean --if-exists -j 4 /var/backups/inventory_db.dump
 pnpm db:status
 ```
 
+---
+
+## 18. Alertmanager & Operational Alerting Rules
+
+Prometheus alert rules evaluate against scrape metrics and dispatch alerts to Alertmanager (`infrastructure/observability/alertmanager/alertmanager.yml`).
+
+### Standard Alert Rules Hierarchy (`infrastructure/observability/prometheus/rules/alerts.yml`)
+
+- **Critical (P0 - Immediate PagerDuty/Incident Dispatch)**:
+  - `ServiceDown`: Any critical service endpoint unreachable for > 1m.
+  - `HighHttpErrorRate`: 5xx error rate exceeds 5% of total requests over 5m window.
+  - `PodCrashLooping`: Pod restarts > 5 times within 10 minutes.
+  - `KafkaConsumerLagHigh`: Consumer group lag exceeds 10,000 unread messages for > 3m.
+  - `DatabaseConnectionPoolExhaustion`: Database active connections > 85% of max pool size.
+  - `DiskSpaceLow`: Available volume capacity < 15% on any stateful persistent volume.
+- **Warning (P1 - Slack/Engineering Team Notification)**:
+  - `HighHttpLatency`: p95 latency > 500ms on core API routes for > 5m.
+  - `RedisMemoryHigh`: Redis memory usage exceeds 80% of `maxmemory`.
+  - `CertificateExpiringSoon`: TLS certificate expires in < 14 days.
+
+### Alert Grouping, Deduplication & Suppression
+
+- Group alerts by `cluster`, `namespace`, and `alertname` with `group_wait: 30s` and `group_interval: 5m` to prevent alert fatigue.
+- Inhibit warning alerts if a matching critical alert is already firing (e.g. inhibit `HighHttpLatency` when `ServiceDown` is active).
+- Every critical alert must contain an annotation `runbook_url` linking to the operational runbook in `docs/operations/`.
+
+---
+
+## 19. Centralized Structured Logging (Loki & Promtail)
+
+The platform implements unified structured logging across all 28 services and 3 frontends via Grafana Loki and Promtail.
+
+### Structured JSON Log Standard
+
+Every log line emitted to stdout/stderr must conform to structured JSON format:
+
+```json
+{
+  "timestamp": "2026-11-24T21:30:00.000Z",
+  "level": "info",
+  "service": "order-service",
+  "environment": "production",
+  "requestId": "req_01jcbxyz",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "message": "Order confirmed and outbox event published",
+  "durationMs": 42.5,
+  "statusCode": 201
+}
+```
+
+### Log Hygiene & Zero Credential Leakage Rule
+
+- **Strictly Prohibited**: Never log passwords, Clerk bearer tokens, refresh tokens, credit card numbers, Stripe API keys, database credentials, or PII.
+- Automatically redact sensitive headers (`Authorization`, `Cookie`, `x-internal-secret`) in HTTP log interceptors.
+- Configure Loki retention policies (default: 31 days) with chunk compression to manage disk utilization efficiently.
+
+---
+
+## 20. OpenTelemetry & Distributed Tracing (W3C Trace Context)
+
+When requests span multiple microservices, asynchronous Kafka queues, and background workers, end-to-end distributed tracing is mandatory:
+
+```text
+User Request
+    │
+    ▼
+[API Gateway] ──(inject W3C traceparent)──▶ [Backend Microservice]
+                                                   │
+                                          (outbox event with traceId)
+                                                   ▼
+                                            [Kafka Cluster]
+                                                   │
+                                            (read message.headers)
+                                                   ▼
+                                           [Background Worker]
+```
+
+- **W3C Trace Context**: All services propagate `traceparent` and `tracestate` headers across HTTP and Kafka envelope headers.
+- **Sampling Strategy**: Adaptive rate sampling (100% of errors, 1% of successful high-velocity read requests).
+- **Correlation**: Correlate metrics, logs, and traces using the shared `traceId` and `x-request-id`.
+
+---
+
+## 21. GitOps & Declarative Continuous Delivery (ArgoCD / Flux)
+
+For production Kubernetes deployments, use declarative GitOps to enforce environment consistency and prevent drift:
+
+- **Source of Truth**: Git repository `infrastructure/kubernetes/overlays/<env>` holds the desired state.
+- **Automated Drift Detection**: GitOps controller (ArgoCD/Flux) detects discrepancies between live cluster state and git manifests.
+- **Immutability**: Manifests reference immutable container tags (`sha-<commit>`), never mutable `:latest`.
+- **Fast Rollbacks**: Rolling back a deployment is achieved by reverting the git commit referencing the image tag; GitOps automatically reconciles the cluster to the prior state within seconds.
+
+---
+
+## 22. Senior DevOps Engineer & Cloud Infrastructure Architect Standards Checklist
+
+Before advancing any feature or infrastructure change to staging or production, verify:
+
+- [ ] Multi-stage Dockerfile uses `turbo prune` and runs as non-root user (UID 1000).
+- [ ] Kubernetes manifests define explicit CPU/memory `requests` and `limits` based on profiling.
+- [ ] `livenessProbe`, `readinessProbe`, and `startupProbe` (where needed) are configured with sensible timeouts.
+- [ ] Pod Disruption Budget (`PDB`) is configured on all multi-replica workloads.
+- [ ] HPA (CPU/memory) and KEDA `ScaledObject` (Kafka consumer lag) autoscaling policies are validated.
+- [ ] Zero-trust `NetworkPolicy` isolates pod ingress and egress.
+- [ ] Prometheus `/metrics` endpoint is exposed and scraped.
+- [ ] Grafana operational dashboard and Alertmanager alert rules with runbooks are verified.
+- [ ] Centralized structured JSON logging is enabled with zero credential leakage.
+- [ ] OpenTelemetry W3C trace headers are propagated across HTTP and Kafka.
+- [ ] CI/CD pipeline builds immutable container tags with Trivy vulnerability scanning.
+- [ ] Database migrations are backward-compatible, tested, and automated.
+- [ ] Backup and disaster recovery procedures (RPO/RTO) are documented and verified.

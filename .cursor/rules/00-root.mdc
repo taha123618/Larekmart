@@ -50,3 +50,7 @@ mirror for Cursor; when they disagree, `AGENTS.md` wins.
   loop suppression, and fail-open resilience. See `docs/plans/notification-service-redis-pubsub-websocket-sync.md`.
 - **Plans & Architecture Index:** Always consult authoritative plans in `docs/plans/` before designing
   complex features (Hyperscale, Security Audit, Commission & Payout, Outbox, Idempotency).
+- **Mandatory Senior Engineering Quality Gates:** Every new feature and infrastructure change must pass:
+  - *DevOps & Cloud Architect*: Turbo prune multi-stage non-root Docker builds, K8s Kustomize manifests with CPU/memory limits and health probes, Prometheus/Grafana/Alertmanager observability, structured JSON logging without credentials, and CI/CD automation.
+  - *SQA Engineer*: 15-Pillar quality coverage (Unit, Integration, API, Playwright E2E across Chromium/Firefox/WebKit, DB, RBAC, Validation, DAST `pnpm test:dast`, k6 flash-sale benchmarks), 100% test pass, 0 TS errors.
+  - *Cybersecurity Engineer*: Zero-trust perimeter header sanitization, RS256 JWT validation, constant-time secret comparison, 100% parameterized SQL, and strict file upload magic-byte verification with quarantine.

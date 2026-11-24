@@ -174,19 +174,40 @@ This document specifies the mandatory cybersecurity standards and implementation
 
 ---
 
-## 8. Definition of Done (Security Checklist)
+## 8. Dynamic Application Security Testing (DAST) & Continuous Scanning
 
-Before merging any code changes:
+To defend against automated and manual exploitation, all perimeter and internal API routes are verified through automated Dynamic Application Security Testing (`pnpm test:dast`):
 
-- [ ] No unparameterized SQL or raw database string concatenations exist.
-- [ ] Routes modifying or reading sensitive data check `userId` ownership or `admin` role.
-- [ ] New public routes have appropriate rate limiting and input validation schemas.
-- [ ] Rate-limit keys never depend on client-supplied identity/forwarding headers.
-- [ ] Webhook endpoints verify signatures in constant time.
-- [ ] Direct Bearer tokens are RS256-verified (`CLERK_JWT_KEY`) with `exp`/`nbf`; the
-      Clerk secret key is never used as an HMAC key.
-- [ ] Development identity bypasses require explicit opt-in env flags and are off in production.
-- [ ] CORS policies use strict allowlists without wildcard origins when cookies/auth headers are present.
-- [ ] File uploads validate size, MIME type, and safe storage destinations.
-- [ ] `pnpm check-types` and automated security tests (`shipping`, `seller`, `vendor`,
-      `notification`/`analytic` Go tests, `recommendation` pytest) pass cleanly.
+```bash
+# Execute DAST test suite against API Gateway perimeter
+pnpm test:dast
+```
+
+### Verified OWASP API Security Top 10 Attack Vectors
+
+1. **Broken Object-Level Authorization (BOLA / IDOR)**: Validates that callers cannot access or mutate resources belonging to other tenants/users.
+2. **Broken Authentication (Forged & Expired Tokens)**: Injects forged JWTs, manipulated HMAC signatures, and expired tokens; verifies `401 Unauthorized`.
+3. **Broken Object Property Level Authorization (Mass Assignment)**: Injects forbidden administrative fields (`role: "admin"`, `isVerified: true`, `status: "APPROVED"`); verifies input sanitization and rejection.
+4. **Unrestricted Resource Consumption (DoS Prevention)**: Sends 6MB oversized payloads; verifies that Fastify's 5MB body limit rejects the request with `413 Payload Too Large`.
+5. **Broken Function-Level Authorization (Privilege Escalation)**: Regular user bearer tokens attempting administrative paths (`/api/v1/admin/*`) are strictly rejected with `403 Forbidden`.
+6. **Unrestricted Access to Sensitive Business Flows**: Feature flag manipulation and canary routing overrides require admin privileges.
+7. **Server-Side Request Forgery (SSRF)**: Injects internal metadata IP addresses (`169.254.169.254`, `localhost`, `127.0.0.1`); verifies that webhooks and external HTTP clients reject loopback/link-local destinations.
+8. **Security Misconfiguration & Header Defense**: Confirms that every response contains standard defensive headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Strict-Transport-Security`).
+
+---
+
+## 9. Senior Cybersecurity Engineer Standards & Definition of Done
+
+Before merging any code changes or releasing new features, verify that:
+
+- [ ] **100% Parameterized Database Queries**: No unparameterized SQL or raw database string concatenations exist across Prisma, Mongoose, or raw drivers.
+- [ ] **Ownership Verification (BOLA/IDOR)**: Routes modifying or reading sensitive data check `userId` ownership or `admin` role.
+- [ ] **Zero-Trust Perimeter Sanitization**: API Gateway strips all client-supplied identity headers (`x-user-id`, `x-user-role`, `x-internal-secret`).
+- [ ] **Cryptographic Verification**: Direct Bearer tokens are RS256-verified (`CLERK_JWT_KEY`) with `exp`/`nbf` clock tolerance. Clerk secret key is NEVER used as an HMAC key.
+- [ ] **Constant-Time Secret Comparison**: Internal service secrets and webhook signatures are compared using `crypto.timingSafeEqual` with pre-hashed SHA-256 buffers.
+- [ ] **Privilege Decoupling**: Gateway transport secrets never elevate proxied end-users to administrative roles.
+- [ ] **Strict File Upload & Malware Defense**: Direct S3 presigned PUT URLs, magic-byte inspection (`file-type`), size limits, random UUID filenames, and quarantine workflow.
+- [ ] **Abuse & Rate Limiting**: New public routes have appropriate rate limiting and input validation schemas. Rate-limit keys never depend on client-supplied identity/forwarding headers.
+- [ ] **Strict CORS & Security Headers**: CORS policies use strict allowlists without wildcard origins when cookies/auth headers are present. Standard security headers are emitted on all HTTP responses.
+- [ ] **Secrets Hygiene**: No secrets, credentials, or `.env` files are committed. Production secrets are loaded from secret stores (External Secrets Operator).
+- [ ] **Security Testing**: `pnpm test:dast` passes 100% of attack categories, and monorepo security tests pass cleanly.

@@ -124,3 +124,40 @@ Every feature service must integrate seamlessly across the monorepo ecosystem:
    - Update the system topology ASCII/mermaid diagrams in `README.md` and `docs/ARCHITECTURE.md`.
    - Keep the monorepo workspace inventory table in `README.md` and `AGENTS.md` fully up to date.
    - Verify that all referenced markdown links and port numbers are accurate.
+
+---
+
+## Mandatory Engineering Roles & Feature Quality Gates
+
+Whenever introducing or refactoring any feature in the monorepo, the implementation must pass the following four senior engineering evaluation gates:
+
+### 1. Senior DevOps Engineer & Cloud Infrastructure Architect Gate
+
+- [ ] **Containerization**: Multi-stage Dockerfile using `turbo prune`, minimal non-root base (`USER node` / UID 1000), `.dockerignore` properly configured, graceful shutdown on `SIGTERM`.
+- [ ] **Kubernetes Manifests**: Kustomize deployment manifest in `infrastructure/kubernetes/base/services/<feature>.yaml`, explicit CPU/memory `requests` and `limits`, `livenessProbe`, `readinessProbe`, and `startupProbe` configured.
+- [ ] **Resilience & Scaling**: Pod Disruption Budget (`PDB`) defined (`maxUnavailable: 1`), Horizontal Pod Autoscaler (`HPA`) configured, and KEDA `ScaledObject` defined if consuming from Kafka.
+- [ ] **Observability**: Prometheus `/metrics` endpoint exposed and registered in `prometheus.yml`. Standard operational metrics tracked (requests, latency, error rate, queue lag). Grafana dashboard configured and Alertmanager alert rules defined with actionable runbooks.
+- [ ] **Centralized Logging & Tracing**: Structured JSON logs with `x-request-id` correlation. Zero sensitive data (tokens, passwords, keys) in logs. W3C `traceparent` context propagated for distributed tracing.
+- [ ] **CI/CD & Deployments**: Automated GitHub Actions workflow checks pass; immutable image tags used; rollback procedures verified; database migrations are non-destructive and backward-compatible.
+
+### 2. Senior SQA Engineer Gate
+
+- [ ] **15-Pillar Coverage**: Feature tested across unit, integration, API contract, Playwright E2E browser flows, frontend components, database transactions, auth/RBAC, validation, security/DAST, performance/k6, edge cases, regression, responsive UI, WebSockets, and background workers.
+- [ ] **Deterministic Test Architecture**: Independent test fixtures, zero shared mutable state, reliable cleanup, no flaky timeouts or unhandled promise rejections.
+- [ ] **Negative & Edge-Case Validation**: Explicitly test malformed inputs, oversized payloads, invalid JSON, negative numbers, empty strings, null bytes, and unauthorized role attempts.
+- [ ] **Quality Gates**:
+  - `pnpm test` passes 100% monorepo-wide.
+  - `pnpm test:dast` passes all OWASP API Security Top 10 categories.
+  - `pnpm check-types` reports 0 TypeScript compiler errors.
+  - `pnpm format:check` and `pnpm lint` pass cleanly.
+- [ ] **Defect Classification**: Any discovered bugs are documented with severity (Critical, High, Medium, Low), reproduction steps, root cause, and regression tests.
+
+### 3. Senior Cybersecurity Engineer Gate
+
+- [ ] **Perimeter Zero-Trust**: Ingress headers (`x-user-id`, `x-user-role`, `x-internal-secret`) stripped unconditionally at API Gateway. Downstream claims injected solely from verified cryptographic tokens.
+- [ ] **Cryptographic Verification**: Direct Bearer tokens verified via RS256 (`CLERK_JWT_KEY`) with clock skew validation (`exp`, `nbf`). Internal shared secrets verified using constant-time timing-safe comparison (`crypto.timingSafeEqual`) with SHA-256 pre-hashed buffers.
+- [ ] **SQL Injection Prevention**: 100% parameterized queries or Prisma/Mongoose ORM models. Zero unparameterized SQL interpolations.
+- [ ] **Strict File Upload Security**: Direct presigned S3/MinIO upload flow; magic-byte file signature validation (`file-type`); category-based size limits; random UUID server filenames; storage outside executable paths; quarantine workflow for untrusted files.
+- [ ] **BOLA/IDOR Defense**: All mutating and read endpoints strictly verify resource ownership against authenticated `userId` / `sellerId`. Internal gateway secrets never grant administrative privileges to users.
+- [ ] **Abuse & Rate Limiting**: Distributed Redis sliding-window rate limiting on all public, authentication, and state-mutating endpoints. Rate-limit keys derive from verified identity or trusted client IP.
+- [ ] **Secrets & Privacy**: Zero hardcoded secrets in code or git. Confidential internal notes and PII strictly redacted from non-admin API responses.

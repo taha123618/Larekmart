@@ -172,7 +172,116 @@ Whenever building, modifying, expanding, or integrating any feature service (e.g
    - Update root `README.md` to document the new feature service, its port, database, Kafka topics, runtime, and integration touchpoints.
    - Keep the system architecture diagram, visual showcase, and monorepo workspace tables in sync.
 
-### 4.2 Standard Lifecycle Stages (Before, While, After)
+### 4.2 Senior DevOps Engineer & Cloud Infrastructure Architect Standards
+
+Every feature, service, and infrastructure change must comply with production-grade DevOps and cloud-native standards:
+
+1. **Production-Ready Containerization**:
+   - Multi-stage builds (`base` -> `pruner` via `turbo prune` -> `deps` -> `runner`).
+   - Minimal production images (Alpine / distroless / slim), non-root execution (`USER node` / UID 1000).
+   - `.dockerignore` excludes git, node_modules, tests, coverage, and `.env*`.
+   - Correct signal handling (`SIGTERM` / `SIGINT`), graceful HTTP server shutdown (`server.close()`), and database connection draining.
+   - Immutable image tags (`sha-<commit>`), explicit versions — never unpinned `:latest` in production manifests.
+
+2. **Kubernetes Architecture & Orchestration**:
+   - Declarative Kustomize structure (`infrastructure/kubernetes/base/` + `overlays/{development,staging,production}`).
+   - Explicit resource allocation for every workload: determine realistic `requests` and `limits` for CPU and memory based on profiling.
+   - Comprehensive health probes: `livenessProbe` (detect deadlocks), `readinessProbe` (gate traffic on dependencies), and `startupProbe` (slow initializers).
+   - Horizontal Pod Autoscalers (`HPA`): CPU/memory-based scaling with conservative scale-down stabilization windows (300s) to prevent flapping. Kafka consumer autoscaling via KEDA `ScaledObject` on consumer group lag.
+   - Pod Disruption Budgets (`PDB`): `minAvailable: 1` or `maxUnavailable: 1` on all multi-replica deployments to ensure zero-downtime node draining.
+   - Zero-trust network policies (`NetworkPolicy`): Restrict ingress/egress per pod; prevent arbitrary inter-pod lateral movement.
+   - Ingress, TLS & Routing: Route through NGINX Ingress with cert-manager Let's Encrypt TLS, CORS allowlists, WebSocket upgrades, and request size limits.
+
+3. **Observability: Prometheus, Grafana, Alertmanager & Logging**:
+   - **Prometheus Metrics**: Expose `/metrics` on all backend services (`@repo/monitoring`). Collect request duration histograms, status counters, queue lag, DB connection pool saturation, and Redis cache hit/miss rates. Prevent high-cardinality labels (no raw UUIDs or timestamps in labels).
+   - **Grafana Dashboards**: Maintain operational dashboards under `infrastructure/observability/grafana/dashboards/` for App Health (throughput, latency p95/p99, error rates), Cluster Infrastructure (nodes, pods, restarts), Databases (connections, replication lag, slow queries), and Queues/Redis.
+   - **Alertmanager**: Configure actionable alerting rules with severity classification (`critical`, `warning`), deduplication, grouping, and suppression. Every critical alert must link to an actionable runbook with diagnosis and remediation steps.
+   - **Centralized Structured Logging**: Standardize JSON structured logs with `timestamp`, `level`, `service`, `environment`, and `x-request-id` correlation IDs. **Zero credential leakage**: redact passwords, bearer tokens, API keys, and session cookies before output.
+   - **Distributed Tracing (OpenTelemetry)**: Propagate W3C Trace Context (`traceparent`) across Ingress -> API Gateway -> Backend Services -> Kafka Headers -> Asynchronous Workers.
+
+4. **CI/CD Pipeline Automation**:
+   - Automated GitHub Actions workflows enforce: Dependency install -> Linting -> Type checking (`pnpm check-types`) -> Unit/Integration tests (`pnpm test`) -> DAST security sweep (`pnpm test:dast`) -> Docker multi-arch build -> Image vulnerability scan -> Deployment.
+   - Strict deployment gates: Fail-safe execution; prevent broken code or failing tests from advancing to staging or production.
+   - Automated and manual rollback capability: Documented rollbacks with immutable tag references.
+
+5. **Backup & Disaster Recovery (DR)**:
+   - Define concrete RPO (< 1 hour) and RTO (< 30 minutes) targets.
+   - Database backups: Automated daily snapshots and WAL archiving for PostgreSQL/MySQL; mongodump for MongoDB. Validate backup encryption at rest and regularly test restore procedures.
+
+### 4.3 Senior SQA Engineer Standards
+
+Every code change must adhere to the 15-Pillar SQA Quality Blueprint:
+
+1. **Comprehensive 15-Pillar Testing Strategy**:
+   - **Unit Testing**: Isolated logic, mathematical calculations, utility functions, state reducers.
+   - **Integration Testing**: Multi-component interaction with real/mocked DB schemas, Redis, and Kafka pipelines.
+   - **API Testing**: Fastify/Express/Hono route handlers, input validation schemas, response schemas, pagination, HTTP error codes.
+   - **End-to-End (E2E) Testing**: Playwright browser journeys across Chromium, Firefox, and WebKit (`packages/e2e`).
+   - **Frontend Component Testing**: Page rendering, loading/empty/error states, form validation, hydration safety, store mutations.
+   - **Database Testing**: Migration idempotency, schema constraints, transactional rollbacks, zero-DB quote invariants.
+   - **Auth & RBAC Testing**: Clerk JWT verification, role boundaries, privilege escalation attempts, token expiration.
+   - **Validation Testing**: Zod schema rejection of malformed, oversized, or unexpected payload properties.
+   - **Security Testing**: Dynamic Application Security Testing (DAST via `pnpm test:dast`), OWASP API Top 10 regression.
+   - **Performance & Load Testing**: High-concurrency flash-sale benchmarks (k6 scripts in `infrastructure/load-tests/`), Redis Lua gatekeeper fast-rejects (<10ms).
+   - **Edge-Case & Negative Testing**: Zero quantities, negative values, null bytes, string truncation, boundary limits.
+   - **Regression Testing**: Prevent recurrence of known defects (BUG-01 through BUG-08).
+   - **Responsive & Cross-Browser Testing**: Desktop, tablet, and mobile viewport tests without layout blowout.
+   - **Real-Time & WebSocket Testing**: Socket.IO handshake auth, presence tracking, Redis Pub/Sub multi-pod broadcast synchronization.
+   - **Queue & Background-Job Testing**: Transactional outbox relay, DLQ poison-pill isolation, consumer batching.
+
+2. **Automated Test Quality Principles**:
+   - Deterministic execution: No test flakiness, race conditions, or unhandled promise rejections.
+   - Isolated fixtures: Every test suite provisions its own test data and cleans up state after execution.
+   - Meaningful assertions: Test real application behavior and domain outcomes, not superficial implementation trivia.
+
+3. **Pre-PR / Pre-Merge Definition of Done (DoD)**:
+   - [ ] `pnpm test` passes across all target workspaces (100% pass rate).
+   - [ ] `pnpm test:dast` passes all OWASP API Security Top 10 categories.
+   - [ ] `pnpm check-types` reports 0 TypeScript errors monorepo-wide.
+   - [ ] `pnpm format:check` confirms all files conform to Prettier rules.
+   - [ ] `pnpm lint` reports 0 errors in Next.js and Nuxt 3 applications.
+   - [ ] Zero unparameterized SQL queries (no raw string interpolation into database queries).
+   - [ ] Negative and boundary test cases are included for every new business flow.
+
+### 4.4 Senior Cybersecurity Engineer Standards
+
+Security is non-negotiable across all layers of the Larekmart architecture:
+
+1. **Zero-Trust Perimeter & Header Sanitization**:
+   - `api-gateway` unconditionally strips client-supplied `x-user-id`, `x-user-role`, `x-internal-secret`, and `x-session-claims` on ingress.
+   - Downstream services receive identity headers injected strictly from verified cryptographic tokens.
+   - Internal service secret (`x-internal-secret`) comparisons must use constant-time timing-safe algorithms (`crypto.timingSafeEqual`) with pre-hashed SHA-256 buffers.
+   - Internal gateway secrets must **never** elevate regular proxied users to administrative privileges.
+
+2. **SQL Injection & Data Access Defense**:
+   - Zero raw SQL string interpolation. All database access must use parameterized queries, Prisma ORM, or Mongoose models.
+   - Dynamic query sorting/filtering must use strict allowlists of column names and sort directions.
+
+3. **Strict File Upload & Malware Defense**:
+   - Strict file-type allowlists (e.g. `image/jpeg`, `image/png`, `image/webp`, `application/pdf`).
+   - Magic-byte content verification via `file-type` header inspection; never trust user-supplied `Content-Type` or file extensions alone.
+   - Hard maximum file size limits (e.g. 5MB for images, 15MB for documents) enforced at both gateway and service levels.
+   - Generate unguessable server-side filenames (UUID v4 + sanitized extension); store files in object storage outside executable paths.
+   - Direct execution of uploaded files must be prevented (serve with `Content-Disposition: attachment` or strict `Content-Security-Policy`).
+   - Support asynchronous malware/antivirus scanning with a quarantine state for suspicious files.
+
+4. **Authentication & Session Hardening**:
+   - Authenticate exclusively via Clerk; verify direct Bearer tokens with `CLERK_JWT_KEY` (RS256) enforcing `exp` and `nbf` clock skew.
+   - Generic error messages for authentication failures to prevent account enumeration.
+   - Strict CORS configuration: Whitelist specific origins (`CORS_ORIGIN`, `CLIENT_URL`, `ADMIN_URL`, `SELLER_URL`); reject wildcard origins (`*`) with credentials.
+   - Strict security headers on all HTTP responses: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Strict-Transport-Security`, `Content-Security-Policy`.
+
+5. **Rate Limiting & Abuse Prevention**:
+   - Tiered sliding-window rate limiting in Redis on sensitive endpoints (`/login`, `/register`, password reset, checkout, search).
+   - Rate limiting keys must derive from verified identity or trusted client IP (`TRUST_PROXY` aware), never client-supplied headers.
+
+6. **Secrets Hygiene**:
+   - Zero hardcoded secrets, API keys, or credentials in source code, tests, documentation, or container images.
+   - Example `.env` files contain placeholders only (`YOUR_API_KEY`).
+   - Production secrets managed via Kubernetes Secrets, HashiCorp Vault, or AWS Secrets Manager.
+   - Security-relevant logging: Log authentication failures, rate-limit triggers, and authorization rejections with structured metadata, but never log passwords, tokens, keys, or PII.
+
+### 4.5 Standard Lifecycle Stages (Before, While, After)
 
 ### Before Making Changes
 
@@ -234,7 +343,7 @@ Whenever building, modifying, expanding, or integrating any feature service (e.g
 | `payout-service`          | `apps/payout-service`         | NestJS 11 (Fastify)     | 8023 | Seller payouts, double-entry ledger, settlement batches, reserve holds & provider reconciliation                                      |
 | `fraud-service`           | `apps/fraud-service`          | Python 3.12+ (FastAPI)  | 8024 | Real-time risk assessment, velocity abuse, scikit-learn anomaly scoring, promotion abuse & fraud case management                      |
 | `support-service`         | `apps/support-service`        | NestJS 11 (Fastify)     | 8025 | Omnichannel support tickets, SLA policies, escalations, agent queues, workload analytics & real-time Socket.IO                        |
-| `chat-service`            | `apps/chat-service`           | Fastify 5               | 8026 | Real-time buyer-seller messaging, live customer support conversations, Socket.IO Redis adapter, presence, read receipts & moderation   |
+| `chat-service`            | `apps/chat-service`           | Fastify 5               | 8026 | Real-time buyer-seller messaging, live customer support conversations, Socket.IO Redis adapter, presence, read receipts & moderation  |
 | `@repo/kafka`             | `packages/kafka`              | Library                 | —    | kafkajs wrapper + local Kafka compose                                                                                                 |
 | `@repo/types`             | `packages/types`              | Library                 | —    | Shared types + Zod schemas (contract package)                                                                                         |
 | `@repo/monitoring`        | `packages/monitoring`         | Library                 | —    | Logging, health checks, metrics & telemetry                                                                                           |

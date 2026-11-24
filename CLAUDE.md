@@ -40,6 +40,12 @@ the workspace map, the golden rules, commands, and the instruction hierarchy.
   5. **Pillar 5 — Security Audit & Zero-Trust Hardening**: Remediate OWASP API Top 10 vulnerabilities; strip untrusted headers at the gateway; verify identity via verified Clerk Bearer tokens; enforce constant-time secret comparison (`crypto.timingSafeEqual`); prevent user-to-admin privilege escalation; redact internal notes and private data.
   6. **Pillar 6 — Global README.md & Root Architecture Sync**: Keep `README.md` system topology, port mappings, and service documentation synchronized with all codebase changes.
 
+- **Mandatory Senior Engineering Roles & Quality Gates**:
+  Every feature must satisfy the three senior engineering mandates:
+  - **Senior DevOps Engineer & Cloud Infrastructure Architect**: Multi-stage non-root Docker builds (`turbo prune`), declarative K8s Kustomize manifests with CPU/memory requests/limits, liveness/readiness/startup probes, HPA and KEDA consumer lag autoscaling, PDB, Prometheus metrics (`/metrics`), Grafana dashboards, Alertmanager alerts with runbooks, structured JSON logs without credential leakage, OpenTelemetry W3C trace propagation, and automated CI/CD deployment gates.
+  - **Senior SQA Engineer**: 15-Pillar quality coverage (Unit, Integration, API, Playwright E2E across Chromium/Firefox/WebKit, Frontend components, DB migrations/constraints, Auth/RBAC, Validation, DAST via `pnpm test:dast`, k6 flash-sale load benchmarks, Edge-case/negative inputs, Regression, Responsive UI, WebSockets, and Background workers). 100% test pass rate, 0 TypeScript errors, zero unparameterized SQL queries.
+  - **Senior Cybersecurity Engineer**: Zero-trust perimeter sanitization (stripping client identity headers at gateway), cryptographic RS256 token verification, constant-time secret comparisons, 100% parameterized SQL queries, strict file upload & malware defense (S3 presigned URLs, magic-byte inspection, random UUID filenames, non-executable storage, quarantine workflow), and DAST regression pass.
+
 ---
 
 # AI Editor Rules

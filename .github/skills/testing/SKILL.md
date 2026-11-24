@@ -105,40 +105,125 @@ pnpm build
 
 ---
 
-## 3. SQA Testing Standards
+## 3. SQA Testing Standards (The 15 Quality Pillars)
 
-When adding or updating tests, adhere to these quality engineering principles:
+When adding or updating features, tests must cover the full 15-pillar quality spectrum:
 
-### A. Boundary & Edge-Case Testing
+### Pillar 1: Unit Testing
 
-- Always test positive (valid inputs), negative (malformed, empty, out-of-range), and boundary values (e.g., exactly 2999 vs 3000 PKR for shipping fee thresholds).
-- Test state-machine lifecycle transitions (e.g., `PENDING` -> `OUT_FOR_DELIVERY` -> `DELIVERED`).
+- Test pure functions, calculation helpers, Decimal.js financial math, state machines, and data mappers in isolation.
+- Zero external network or database calls. Test execution must be sub-second and 100% deterministic.
 
-### B. Isolation & Determinism
+### Pillar 2: Integration Testing
 
-- Unit tests must never depend on live external network connections (e.g., Stripe API, live Clerk network, active carrier APIs).
-- Mock or stub network I/O; integration checks requiring real backing containers must be opt-in and self-cleaning.
+- Test multi-component interactions: Fastify/Express routes coupled with real/mocked Prisma models, MongoDB Mongoose connections, Redis caching, and Kafka events.
+- Verify transactional rollback semantics on failures.
 
-### C. Financial & Security Accuracy
+### Pillar 3: API & Backend Testing
 
-- Pricing calculations must prevent negative subtotals or grand totals. Discounts must clamp to the subtotal.
-- Cryptographic comparisons (signatures, digests) must be verified using constant-time algorithms (`crypto.timingSafeEqual`).
-- Endpoint access control tests must verify that non-admin and unauthenticated requests receive `401` or `403`.
-- Token tests must include a forged/unsigned token and an expired `exp` case. Gateway
-  internal-secret-only requests must be `403` for proxied users (only pure M2M is allowed).
-- Go tests that exercise local identity headers must set the explicit `*_DEV_AUTH_BYPASS=true`
-  flag; forged JWTs must always be rejected with or without the flag.
+- Thoroughly test all API endpoints: authentication requirements, RBAC permissions, request body validation (Zod schemas), response schemas, pagination, and HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `409`, `422`, `429`, `500`).
+- Verify that non-admin callers cannot access privileged administrative routes.
+
+### Pillar 4: End-to-End (E2E) Browser Testing (Playwright)
+
+- Test end-to-end customer and merchant journeys across Chromium, Firefox, and WebKit (`packages/e2e`):
+  - Customer checkout flow with Stripe test card.
+  - Guest cart persistence in localStorage across page reloads.
+  - Product search, category filtering, and product detail navigation.
+  - Seller order management view and dashboard authentication.
+
+### Pillar 5: Frontend Component Testing
+
+- Test React 19 / Next.js 16 and Vue 3 / Nuxt 3 components:
+  - Page rendering, loading states, empty states, error boundaries (`error.tsx`), and retry actions.
+  - Form validation, disabled button states during submission, and responsive layouts.
+  - Hydration safety: verify zero SSR hydration mismatches (`isMounted` guards on local stores).
+
+### Pillar 6: Database Testing
+
+- Verify schema migrations, foreign key constraints, indexes, unique constraints, and transaction atomicity.
+- Assert zero unparameterized SQL queries monorepo-wide.
+
+### Pillar 7: Authentication & Authorization Testing
+
+- Cryptographic verification of Clerk JWT tokens (RS256).
+- Test expired tokens (`exp`), premature tokens (`nbf`), forged tokens, and role elevation attempts.
+- Verify IDOR prevention: non-owners receive `403 Forbidden` when attempting to access or modify resources belonging to another user.
+
+### Pillar 8: Validation & Error-Handling Testing
+
+- Assert that invalid payloads (missing fields, wrong types, negative quantities, oversized strings) are rejected with structured error messages.
+- Test boundary clamping: coupon discounts cannot exceed cart subtotal; quantities cannot be negative.
+
+### Pillar 9: Security Testing (DAST)
+
+- Run automated Dynamic Application Security Testing (`pnpm test:dast`).
+- Verify perimeter header sanitization: untrusted caller headers (`x-user-id`, `x-user-role`, `x-internal-secret`) are stripped on ingress.
+- Verify constant-time comparison on webhook signatures and internal secrets.
+
+### Pillar 10: Performance & Load Testing (k6 Flash-Sale)
+
+- Benchmark high-concurrency scenarios using k6 scripts (`infrastructure/load-tests/`):
+  - Redis Lua stock gatekeeper rejects exhausted inventory in `< 10ms` in-memory.
+  - Zero-DB HMAC-SHA256 price quote validation completes in `< 35ms`.
+  - Zero-oversell invariant maintained under concurrent purchase attempts.
+
+### Pillar 11: Edge-Case & Negative Testing
+
+- Test unusual inputs: null bytes, emojis, Unicode strings, zero quantities, empty carts, concurrent duplicate submissions.
+
+### Pillar 12: Regression Testing
+
+- Ensure automated regression tests exist for every historical bug (BUG-01 through BUG-08) to prevent defect re-emergence.
+
+### Pillar 13: Responsive & Cross-Browser Testing
+
+- Verify mobile viewport boundaries (`min-w-0 max-w-full`) and horizontal table scroll containers preventing viewport blowout on small screens.
+
+### Pillar 14: Real-Time & WebSocket Testing
+
+- Test Socket.IO connection handshakes, cryptographic Bearer token authentication, presence tracking, and Redis Pub/Sub multi-pod broadcast synchronization.
+
+### Pillar 15: Queue & Background-Job Testing
+
+- Test Kafka transactional outbox event creation, outbox relay polling, consumer batching (`subscribeBatch`), and DLQ poison-pill isolation.
 
 ---
 
-## 4. Pre-PR / Pre-Merge Quality Checklist (Definition of Done)
+## 4. Defect Tracking & Severity Classification Protocol
 
-Before submitting code changes:
+When defects are discovered during SQA analysis or test execution, classify and document them using this standardized severity matrix:
 
-- [ ] `pnpm test` passes across all target workspaces.
+| Severity     | Definition                                                                                       | Operational Impact                                         | Action Required                                   |
+| :----------- | :----------------------------------------------------------------------------------------------- | :--------------------------------------------------------- | :------------------------------------------------ |
+| **Critical** | Data corruption, financial loss, zero-day security bypass, authentication bypass, platform crash | Checkout broken, stock oversold, unauthorized admin access | Block release immediately. Hotfix before merging. |
+| **High**     | Core feature failure with no workaround, major performance degradation, data leakage             | Cart checkout fails intermittently, order saga stalled     | Prioritize fix before general release.            |
+| **Medium**   | Non-critical feature bug, minor UI inconsistency, edge-case validation missing                   | Filter button unresponsive, missing empty state            | Fix in current milestone sprint.                  |
+| **Low**      | Minor cosmetic defect, typos in logs/messages, documentation inconsistency                       | Button alignment on mobile, non-blocking warning log       | Address during routine maintenance.               |
+
+### Bug Documentation Format
+
+Every reported defect must include:
+
+1. **Defect ID & Title** (e.g. `BUG-09: Unbounded pagination query in orders list`)
+2. **Severity & Priority**
+3. **Affected Workspace & Component**
+4. **Steps to Reproduce**
+5. **Expected Behavior vs Actual Behavior**
+6. **Root Cause Analysis**
+7. **Remediation & Automated Regression Test**
+
+---
+
+## 5. Pre-PR / Pre-Merge Quality Checklist (Definition of Done)
+
+Before submitting or merging code changes:
+
+- [ ] `pnpm test` passes across all target workspaces (100% pass rate).
 - [ ] `pnpm test:dast` passes all OWASP API Security Top 10 attack vectors.
 - [ ] `pnpm check-types` reports 0 TypeScript errors across all 47 packages.
 - [ ] `pnpm format:check` confirms all files conform to Prettier style.
-- [ ] `pnpm lint` reports 0 errors in Next.js applications.
+- [ ] `pnpm lint` reports 0 errors in Next.js and Nuxt 3 applications.
 - [ ] Zero unparameterized SQL queries (no raw string interpolations in DB queries).
 - [ ] Negative and boundary test cases are included for any new business logic.
+- [ ] Independent test fixtures with clean teardown (zero database pollution).

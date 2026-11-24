@@ -57,9 +57,12 @@ Monorepo-wide coding standards for Larekmart.
 9. **Granular Streaming Suspense Boundaries**:
    - When passing server promises directly to Client Components via React 19 `use(promise)`, wrap the consumer in a `<Suspense fallback={<Skeleton ... />}>` boundary. This prevents blocking the route shell and enables progressive streaming SSR.
 10. **Route Lifecycle Shell**:
-   - Every dashboard and application shell must implement `error.tsx` (with interactive retry), `loading.tsx` (with animated skeletons), and `not-found.tsx` (with navigation recovery).
+
+- Every dashboard and application shell must implement `error.tsx` (with interactive retry), `loading.tsx` (with animated skeletons), and `not-found.tsx` (with navigation recovery).
+
 11. **Responsive Viewport Containment & Data Tables**:
-   - Wrap main page containers in `min-w-0 max-w-full w-full` and enclose all data tables in `overflow-x-auto min-w-full` with explicit column min-widths (`min-w-[...]`) on `TableHead` cells to eliminate horizontal viewport blowout on mobile devices (320px+).
+
+- Wrap main page containers in `min-w-0 max-w-full w-full` and enclose all data tables in `overflow-x-auto min-w-full` with explicit column min-widths (`min-w-[...]`) on `TableHead` cells to eliminate horizontal viewport blowout on mobile devices (320px+).
 
 ### Vue 3 & Nuxt 3 Standards (`apps/seller`)
 
