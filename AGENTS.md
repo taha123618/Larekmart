@@ -281,7 +281,96 @@ Security is non-negotiable across all layers of the Larekmart architecture:
    - Production secrets managed via Kubernetes Secrets, HashiCorp Vault, or AWS Secrets Manager.
    - Security-relevant logging: Log authentication failures, rate-limit triggers, and authorization rejections with structured metadata, but never log passwords, tokens, keys, or PII.
 
-### 4.5 Standard Lifecycle Stages (Before, While, After)
+### 4.5 Senior MLOps Engineer Standards
+
+Every AI/ML feature, model training workflow, inference service, experiment tracking component, or retraining pipeline **MUST** comply with the enterprise MLOps architecture defined in `.agents/skills/mlops-standards/SKILL.md`. Load that skill before starting any ML/AI work. The mandatory requirements are summarised below:
+
+1. **ML Service Module Structure**: Every Python ML service (`fraud-service`, `recommendation-service`, or any new ML service) **MUST** contain `app/mlops/{validator.py, drift_detector.py, registry.py, tuner.py}` and a live diagnostics endpoint at `GET /api/v1/<service>/mlops/status`.
+
+2. **Dataset & Quality Gates** (Non-Negotiable):
+   - Validate training data for finiteness, schema, domain bounds, and minimum sample size before every training run.
+   - Enforce a minimum model quality gate after every training run (e.g. `separation_margin ≥ 0.02` for IsolationForest; `NDCG@10 ≥ 0.30` for ranking).
+   - Reject and roll back to the previous production model if the gate fails.
+
+3. **Feature Drift Detection (PSI)**:
+   - Compute Population Stability Index (PSI) for every high-variance input feature.
+   - Thresholds: `PSI < 0.10` stable; `0.10 ≤ PSI < 0.25` warning; `PSI ≥ 0.25` critical + trigger retraining.
+   - Expose per-feature PSI at the `/mlops/status` endpoint and as a `ml_feature_drift_psi` Prometheus metric.
+
+4. **Model Registry & Artifact Versioning**:
+   - Use `app/mlops/registry.py` with MLflow as primary and local filesystem as fallback.
+   - Every artifact ships with a SHA-256 `.manifest.json`.
+   - Log all hyperparameters, metrics, and artifact paths to MLflow for every run.
+
+5. **Hyperparameter Reproducibility**: Declare all tunable parameters in `params.yaml` (DVC). Never hardcode hyperparameters in training code.
+
+6. **Observability**: Every ML service must expose the full set of Prometheus metrics (training duration, quality gate pass/fail, inference latency histogram, drift PSI, model version gauge). Add matching alert rules to `infrastructure/observability/prometheus/rules/alerts.yml` and panels to the MLOps Grafana dashboard.
+
+7. **Continuous Training (CT)**: Add a Kubernetes `CronJob` to `infrastructure/kubernetes/base/mlops/retraining-cronjobs.yaml` and a CI step to `.github/workflows/mlops-ct-pipeline.yml` for every new ML service.
+
+8. **Security**: Model artifacts stored in MinIO/S3 with SSE encryption. MLflow UI behind auth. Internal batch scoring endpoints require `x-internal-secret` with `hmac.compare_digest` / `crypto.timingSafeEqual`.
+
+9. **Local Stack**: `docker compose -f docker-compose.mlops.yml up -d` launches MLflow, MinIO, and Postgres. Never commit actual credentials — use `.env.example` placeholders.
+
+10. **MLOps Definition of Done**: All 15 checklist items in `.agents/skills/mlops-standards/SKILL.md § 12` must pass before an ML feature is complete. Gate enforced by `pnpm audit:mlops`.
+
+### 4.6 Senior DevSecOps Engineer Standards
+
+Every feature, service, infrastructure change, CI/CD pipeline, Dockerfile, and Kubernetes manifest **MUST** comply with the enterprise DevSecOps architecture defined in `.agents/skills/devsecops-standards/SKILL.md`. Load that skill before any container, infrastructure, or security-sensitive work. The mandatory requirements are summarised below:
+
+1. **Zero-Trust First**: Never trust the network. Verify every request cryptographically. Apply least-privilege to every ServiceAccount, IAM role, and RBAC binding. Design for detection and containment, not just prevention.
+
+2. **Secure Container Pipeline** (Non-Negotiable):
+   - Multi-stage Dockerfiles: `base → pruner → deps → builder → runner`.
+   - Final stage: non-root user (UID 1001), minimal base image, no secrets, `HEALTHCHECK`, `readOnlyRootFilesystem: true`.
+   - `.dockerignore` excludes `.git`, `node_modules`, `.env*`, `*.key`.
+   - `trivy image --exit-code 1 --severity CRITICAL` must pass for every pushed image.
+   - Never use `:latest` tags in any production Kubernetes manifest.
+
+3. **Kubernetes Hardening** (Mandatory for every new workload):
+   - `securityContext`: `runAsNonRoot`, `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`, `seccompProfile: RuntimeDefault`.
+   - Dedicated `ServiceAccount` with `automountServiceAccountToken: false`.
+   - `NetworkPolicy` restricting ingress/egress to minimum required ports and pods.
+   - `resources.requests` and `resources.limits` on every container (based on profiling).
+   - `livenessProbe`, `readinessProbe`, `startupProbe` on every container.
+   - `PodDisruptionBudget` (`minAvailable: 1`) for all multi-replica deployments.
+   - `trivy config --exit-code 1 infrastructure/kubernetes/` must pass.
+
+4. **CI/CD Security Gates** (Mandatory workflow order — block on failure):
+   Lint → Types → Tests → SAST (CodeQL) → Dependency audit → DAST → Docker build → Trivy image scan → Trivy IaC scan → cosign image signing → Deploy.
+   - All third-party Actions pinned to full SHA — never a branch or mutable tag.
+   - `permissions:` block with minimal grants on every job.
+   - Secret scanning (TruffleHog) on every PR.
+   - `timeout-minutes` on every job.
+
+5. **Secrets Management**:
+   - Zero hardcoded secrets in source, tests, Dockerfiles, or CI YAML.
+   - `.env.example` contains only placeholders (`YOUR_API_KEY`, `changeme`).
+   - K8s secrets via External Secrets Operator → HashiCorp Vault (never committed YAML).
+   - CI/CD secrets via GitHub Actions encrypted secrets — never `env:` block literals.
+
+6. **API Gateway Security** (Mandatory for every new route):
+   - Unconditionally strip `x-user-id`, `x-user-role`, `x-session-claims`, `x-internal-secret` on all ingress.
+   - Register routes in the correct file: `public.routes.ts`, `authenticated.routes.ts`, or `admin.routes.ts`.
+   - Configure rate limiting on every route (sensitive endpoints: 5 req/min; standard: 100 req/min).
+   - Rate limit key derived from verified identity or trusted IP — never from a client-supplied header.
+
+7. **Input Validation & Output Safety**:
+   - All request bodies validated via Zod (strict mode) or Pydantic (`extra="forbid"`).
+   - Maximum body size enforced at gateway (5MB default).
+   - Zero raw SQL string interpolation — use Prisma ORM, parameterized queries, or Mongoose.
+   - Error responses: generic messages, no stack traces, file paths, or internal identifiers.
+   - Required security headers on all responses: `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, `Content-Security-Policy`, `Referrer-Policy`, `X-Request-Id`.
+
+8. **DAST Coverage** (8 Phases — all must pass):
+   DAST 1 header sanitization → DAST 2 JWT forgery → DAST 3 BFLA → DAST 4 mass assignment → DAST 5 resource consumption → DAST 6 security headers → DAST 7 injection resilience → DAST 8 error sanitization.
+   Add test cases for every new route/feature to `apps/api-gateway/tests/security/dast-runner.ts`.
+
+9. **Audit Logging**: Every auth failure, rate limit trigger, and authorization rejection **MUST** be logged at `WARN`/`ERROR` with structured fields (`userId`, `url`, `reason`, `traceId`). Never log passwords, tokens, keys, or PII.
+
+10. **DevSecOps Definition of Done**: All checklist items in `.agents/skills/devsecops-standards/SKILL.md § 11` must pass before any feature, service, or infra change is complete. Gate enforced by `pnpm audit:mlops` (IaC scan) and `pnpm test:dast` (DAST).
+
+### 4.7 Standard Lifecycle Stages (Before, While, After)
 
 ### Before Making Changes
 

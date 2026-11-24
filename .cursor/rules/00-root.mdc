@@ -16,6 +16,9 @@ mirror for Cursor; when they disagree, `AGENTS.md` wins.
 
 ## Golden Rules
 - **Monorepo:** pnpm 9 + Turborepo. Use `pnpm` and `pnpm --filter <workspace>` — never npm or yarn.
+- **MLOps Work:** Load `.agents/skills/mlops-standards/SKILL.md` before any ML/AI feature. `pnpm audit:mlops` must pass. Full rules in `AGENTS.md § 4.5`.
+- **DevSecOps Work:** Load `.agents/skills/devsecops-standards/SKILL.md` before any container, Kubernetes, CI/CD, or security change. `pnpm test:dast` must pass all 8 OWASP phases. Full rules in `AGENTS.md § 4.6`.
+- **Skills Sync:** After editing any skill in `.agents/skills/`, run `pnpm skills:sync`.
 - **Boundaries:** apps depend on packages; packages never depend on apps. Never import one app's code into another.
 - **Contracts:** shared types and Zod schemas live in `@repo/types`.
 - **Service integration is Kafka-only.** No direct HTTP calls between backend services.

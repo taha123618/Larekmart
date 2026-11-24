@@ -19,6 +19,9 @@ the workspace map, the golden rules, commands, and the instruction hierarchy.
   `pnpm --filter <workspace> ...` for scoped commands.
 - **Verification:** Run `pnpm check-types` across workspaces, plus `pnpm build` (frontend apps: client, admin, seller, plus payment-service) and `pnpm lint` (admin, client, seller) where they apply. When adding tests,
   follow [`docs/TESTING.md`](./docs/TESTING.md).
+- **MLOps Changes:** Load `.agents/skills/mlops-standards/SKILL.md` before any ML/AI work. Run `pnpm audit:mlops` to validate all gates. See `AGENTS.md § 4.5`.
+- **DevSecOps Changes:** Load `.agents/skills/devsecops-standards/SKILL.md` before any container, Kubernetes, CI/CD, or security-sensitive change. Run `pnpm test:dast` to validate DAST. See `AGENTS.md § 4.6`.
+- **Skills Sync:** After modifying any skill under `.agents/skills/`, run `pnpm skills:sync` to propagate to `.cursor/skills/`, `.claude/skills/`, `.gemini/skills/`, and `.github/skills/`.
 - **Architecture & Engineering Plans:** Authoritative specifications, invariants, and verification reports live in [`docs/plans/`](./docs/plans/README.md). Consult them before modifying cross-service flows:
   - Hyperscale Flash-Sale Hardening: [`docs/plans/hyperscale-flash-sale-architecture-hardening.md`](./docs/plans/hyperscale-flash-sale-architecture-hardening.md)
   - Distributed Order Saga & Stock Compensation: [`docs/plans/distributed-order-saga-and-stock-compensation.md`](./docs/plans/distributed-order-saga-and-stock-compensation.md)
