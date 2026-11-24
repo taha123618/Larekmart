@@ -51,6 +51,15 @@ Monorepo-wide coding standards for Larekmart.
 7. **SSR Hydration Safety (React 19 & Next.js 16)**:
    - Guard `localStorage`-backed Zustand store reads with an `isMounted` flag before rendering dependent attributes on the client.
    - Add `suppressHydrationWarning` to SVG icons (to protect against browser extensions injecting attributes like `data-motion-id`) and live countdown tickers/timestamps.
+   - In development, configure `Cache-Control: no-store, no-cache, must-revalidate` in `next.config.ts` to prevent browsers from evaluating stale cached client chunks against server-rendered HTML.
+8. **Radix UI `asChild` ForwardRef Safety**:
+   - Never wrap `<SheetDescription asChild>` or `<DialogDescription asChild>` directly around Context Providers like `<Form {...form}>` or multi-node trees, as Radix `Slot` attempts to attach DOM refs and `aria-describedby` to the context provider, triggering React runtime warnings. Place `<Form>` in a sibling container outside `<SheetHeader>`.
+9. **Granular Streaming Suspense Boundaries**:
+   - When passing server promises directly to Client Components via React 19 `use(promise)`, wrap the consumer in a `<Suspense fallback={<Skeleton ... />}>` boundary. This prevents blocking the route shell and enables progressive streaming SSR.
+10. **Route Lifecycle Shell**:
+   - Every dashboard and application shell must implement `error.tsx` (with interactive retry), `loading.tsx` (with animated skeletons), and `not-found.tsx` (with navigation recovery).
+11. **Responsive Viewport Containment & Data Tables**:
+   - Wrap main page containers in `min-w-0 max-w-full w-full` and enclose all data tables in `overflow-x-auto min-w-full` with explicit column min-widths (`min-w-[...]`) on `TableHead` cells to eliminate horizontal viewport blowout on mobile devices (320px+).
 
 ### Vue 3 & Nuxt 3 Standards (`apps/seller`)
 

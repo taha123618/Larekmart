@@ -38,8 +38,11 @@ Whenever a feature service is added or expanded, all relevant presentation layer
    - Implement interactive modals, status cards, and action flows adhering to the Larekmart design system (dark/light theme, Tailwind CSS v4, Zustand/React Query state).
    - Ensure React 19 / Next.js 16 hydration safety (avoid Framer Motion on static SSR grids, guard client stores with `isMounted`).
 2. **Admin Operations Dashboard (`apps/admin`)**:
-   - Create typed admin service in `apps/admin/src/services/<feature>.service.ts`.
-   - Implement operations dashboards with real-time KPI metrics, searchable/filterable data tables, status transition dialogs, and React Query cache invalidation.
+   - Create typed admin service in `apps/admin/src/services/<feature>.service.ts` routing through API Gateway via `getApiGatewayUrl()`.
+   - Implement operations dashboards with real-time KPI metrics, searchable/filterable TanStack Table v9 views, status transition dialogs/sheets, and React Query cache invalidation.
+   - Standardize `<Breadcrumb>` wayfinding and responsive header toolbars (`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4`) on every dashboard route.
+   - Enforce viewport boundaries (`min-w-0 max-w-full w-full`) and horizontal table scroll containers (`overflow-x-auto min-w-full` with explicit `min-w-[...]` column headers) preventing viewport blowout on mobile screens.
+   - Implement App Router lifecycle boundaries (`error.tsx` retry boundary, `loading.tsx` skeleton placeholder, `not-found.tsx`).
    - Enforce Clerk admin authorization (`sessionClaims.metadata.role === 'admin'`).
    - Register sidebar navigation links in `apps/admin/src/components/AppSidebar.tsx`.
 3. **Seller & Merchant Dashboard (`apps/seller`)**:

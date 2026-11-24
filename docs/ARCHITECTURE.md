@@ -40,15 +40,14 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 - Merchant Storefronts & Onboarding: `/become-a-seller` merchant onboarding flow with KYB organization details, `/stores/[slug]` dedicated seller storefront profile and catalog showcase, and `SellerBadge` trust tags on marketplace product cards.
 - Auth: Clerk; server components fetch orders with `auth().getToken()`.
 
-**`admin` (dashboard, :3003)** — Next.js App Router, shadcn/ui, Tailwind v4.
+**`admin` (dashboard, :3003)** — Next.js 16 (App Router, Turbopack, React 19), shadcn/ui, Tailwind v4.
 
-- Sections: dashboard (charts, cards, todo), products, categories, users, orders, promotions, reviews, wishlists, returns (`/returns` returns management dashboard with KPI cards, inspection modal, approval/rejection dialogs, refund status tracking, and refund retry), vendors (`/vendors` legal business entity and KYB verification approval dashboard), sellers (`/sellers` marketplace seller account and commission oversight), fraud (`/fraud` case investigation, rule configuration, risk metrics, and analyst adjudication), support (`/support` omnichannel ticket operations, team queues, SLA policies, agent workloads, internal notes, and escalations), and cache
-  performance (Redis hit/miss rates per service, scraped live from each service's `/metrics`).
-- Data tables: TanStack Table with column defs per section.
-- Mutations: TanStack Query `useMutation` with a Clerk token; forms use
-  react-hook-form + Zod schemas from `@repo/types`.
-- Product images upload through media-service's presigned direct-to-storage flow (`src/services/media.service.ts`); products reference them by `mediaId`, and the `MediaImage` component resolves references to URLs dynamically (legacy URL values pass through untouched during migration).
-- Access control: `src/middleware.ts` requires `metadata.role === "admin"`.
+- 32 Dynamic Modules: Executive dashboard (KPI cards, order volume vs. success chart, daily growth velocity, platform distribution, persistent operational todo list, live transaction streams), products, read-optimized catalog, categories, multi-warehouse inventory (stock movements, low-stock alerts, restock/adjust sheets), users & customer detail (`/users/[id]`), orders & payments, carts, promotions & coupons, reviews moderation, customer wishlists, multi-seller returns (`/returns` with inspection modal, approval/rejection dialogs, and refund retry), shipping & courier dispatch simulator, multi-currency dynamic pricing, vendors legal profiles & KYB verification (`/vendor-verification`), sellers storefronts & platform governance, marketplace commission plans (`/commissions`), seller payouts ledger & settlement batches (`/payouts`), disputes & arbitration desk (`/disputes`), omnichannel support tickets & AI deflection performance (`/support/ai-performance`), real-time buyer-seller live chat (`/chat`), fraud case investigation & risk rules (`/fraud`), taxes & compliance nexus (`/taxes`), platform settings (`/settings`), settlements & escrow (`/settlements`), Kafka DLQ operations & message replays (`/kafka-dlq`), synthetic canary health & SLA waterfall (`/system-health`), feature flags & experiments (`/feature-flags`), and live cache performance metrics (`/cache`).
+- Next.js 16 & React 19 Streaming Architecture: Non-blocking Server Component data fetching passed to Client Components via React 19 `use(promise)` with granular `<Suspense fallback={<Skeleton />}>` boundaries; interactive error boundary (`error.tsx`), route transition skeletons (`loading.tsx`), and branded 404 handler (`not-found.tsx`).
+- Data tables: TanStack Table v9 with typed column defs, pagination, sorting, status badges, and responsive horizontal scroll containers (`overflow-x-auto min-w-full`).
+- Mutations & State: TanStack Query v5 `useMutation` with Clerk bearer token injection; forms use react-hook-form + Zod schemas from `@repo/types`.
+- Real-time Communications: Live WebSocket notifications in `NotificationBell` with React Query cache synchronization.
+- Access control: Server-side layout resource-based auth verifying `sessionClaims.metadata.role === "admin"`. Backend services enforce administrative authorization independently.
 
 **`seller` (dashboard, :3004)** — Nuxt 3 (SSR + Nitro), Vue 3, Nuxt UI, Tailwind CSS v4.
 
