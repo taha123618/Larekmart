@@ -2,7 +2,7 @@ name: CI — Pull Request Quality Gates
 
 on:
   pull_request:
-    branches: [main, staging]
+    branches: [main, staging, development]
   workflow_dispatch:
 
 concurrency:

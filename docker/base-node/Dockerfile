@@ -2,7 +2,7 @@
 # Larekmart - Base Node Build Image
 # Pre-installs pnpm and turbo once for all microservice build stages.
 # ==============================================================================
-ARG BASE_IMAGE=node:20-alpine
+ARG BASE_IMAGE=node:22-alpine
 FROM ${BASE_IMAGE} AS base
 
 ENV PNPM_HOME="/pnpm"

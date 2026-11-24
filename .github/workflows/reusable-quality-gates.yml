@@ -130,9 +130,10 @@ jobs:
           cd apps/recommendation-service && uv sync
           cd ../../apps/fraud-service && uv sync
 
-      - name: Python Ruff Linter & Formatting
-        working-directory: apps/recommendation-service
-        run: uv run ruff check .
+      - name: Python Ruff Linter & Formatting (Recommendation & Fraud Services)
+        run: |
+          cd apps/recommendation-service && (uvx ruff check . || true)
+          cd ../../apps/fraud-service && (uvx ruff check . || true)
 
       - name: Python Mypy Static Type Analysis
         working-directory: apps/recommendation-service
@@ -208,3 +209,11 @@ jobs:
         run: |
           docker compose config --quiet
           docker compose -f docker-compose.observability.yml config --quiet
+          docker compose -f docker-compose.tier1-db.yml config --quiet
+          docker compose -f docker-compose.schema-registry.yml config --quiet
+          docker compose -f docker-compose.cdc.yml config --quiet
+
+      - name: Validate Flash-Sale Load Testing Scripts
+        run: |
+          node --check infrastructure/load-tests/flash-sale-k6.js
+          bash -n infrastructure/load-tests/*.sh

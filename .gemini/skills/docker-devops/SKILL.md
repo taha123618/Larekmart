@@ -457,3 +457,64 @@ docker compose ps                                    # Check status
 
 - Increase replicas for affected consumer services (email, analytic, notification)
 - Check for poison-pill messages: inspect DLQ or add error handling in consumer loop
+
+---
+
+## 15. Flash-Sale Load Testing & Benchmarking (k6)
+
+The monorepo contains a dedicated high-throughput load test suite under `infrastructure/load-tests/` simulating 50,000+ RPS flash sales.
+
+```bash
+# Seed Redis Stock Gatekeeper (100 units across 10 buckets)
+./infrastructure/load-tests/seed-flash-sale.sh
+
+# Run k6 checkout storm (uses local k6 or grafana/k6 Docker container)
+./infrastructure/load-tests/run-flash-sale.sh
+```
+
+### Key Performance Targets (SLOs)
+- **Stock Fast-Reject Latency**: `p(99) < 10ms` (Redis Lua precheck rejects in-memory without touching PostgreSQL).
+- **Price Quote Latency**: `p(95) < 35ms` (Zero-DB HMAC-SHA256 signed quote token).
+- **Order Commit Latency**: `p(95) < 150ms` (MongoDB atomic write + transactional outbox relay).
+- **Zero Oversell Invariant**: Strictly `0` over-selling violations across high concurrency.
+- **Idempotency**: Sub-5ms replay cache hit on duplicate `x-idempotency-key`.
+
+---
+
+## 16. Tier-1 Database Isolation & PgBouncer Routing
+
+To sustain 50,000+ RPS without connection starvation, high-velocity transactional ledgers are physically isolated:
+- `postgres-inventory` (port 5434) → `inventory_db`
+- `postgres-pricing` (port 5435) → `pricing_db`
+- `postgres-payout` (port 5436) → `payout_db`
+- `mysql-returns` (port 3307) → `return_db`
+- `pgbouncer` (port 6432) routes connections using `pool_mode = transaction`.
+
+> [!IMPORTANT]
+> When routing SQLAlchemy asyncpg connections through PgBouncer, prepared statement caching MUST be disabled (`statement_cache_size=0` and `prepared_statement_cache_size=0`) to prevent `InvalidSqlStatementNameError` collisions.
+
+---
+
+## 17. Disaster Recovery & Backup Runbook
+
+### Service Level Objectives
+- **RPO**: < 5 minutes for Tier-1 ledgers; < 1 hour for analytics.
+- **RTO**: < 30 minutes for checkout plane; < 2 hours for full platform.
+
+### Daily Backup Execution
+```bash
+# Backup Tier-1 PostgreSQL instances
+for DB in inventory_db pricing_db payout_db; do
+  pg_dump -h pgbouncer -p 6432 -U postgres -d "${DB}" -Fc -Z 6 -f "/var/backups/${DB}.dump"
+done
+
+# Backup MongoDB Orders
+mongodump --uri="mongodb://root:example@mongo:27017/order_db?authSource=admin" --archive="/var/backups/order_db.archive" --gzip
+```
+
+### Schema & Data Restoration
+```bash
+pg_restore -h target-host -p 5432 -U postgres -d inventory_db --clean --if-exists -j 4 /var/backups/inventory_db.dump
+pnpm db:status
+```
+
