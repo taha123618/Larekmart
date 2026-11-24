@@ -1,4 +1,5 @@
 import Fastify, {
+  LogController,
   type FastifyInstance,
   type FastifyServerOptions,
 } from "fastify";
@@ -42,7 +43,7 @@ function parseTrustProxy(value: string): FastifyServerOptions["trustProxy"] {
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
     logger: false,
-    disableRequestLogging: true,
+    logController: new LogController({ disableRequestLogging: true }),
     trustProxy: parseTrustProxy(env.TRUST_PROXY),
     bodyLimit: 5 * 1024 * 1024, // 5MB body limit
     forceCloseConnections: true,

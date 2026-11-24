@@ -1,0 +1,10 @@
+{{- if .Values.configData }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "larekmart.fullname" . }}-config
+  labels:
+    {{- include "larekmart.labels" . | nindent 4 }}
+data:
+  {{- toYaml .Values.configData | nindent 2 }}
+{{- end }}

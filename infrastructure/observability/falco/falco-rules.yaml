@@ -1,0 +1,56 @@
+- rule: Terminal Shell in Production Container
+  desc: Detect interactive shell spawned inside a running microservice container
+  condition: >
+    container.id != host and
+    k8s.ns.name = "larekmart" and
+    evt.type = execve and
+    proc.name in (bash, sh, zsh, csh, ksh)
+  output: >
+    CRITICAL: Terminal shell spawned in container
+    (user=%user.name user_loginuid=%user.loginuid pod=%k8s.pod.name ns=%k8s.ns.name
+    container=%container.name image=%container.image.repository shell=%proc.name cmdline=%proc.cmdline)
+  priority: CRITICAL
+  tags: [security, intrusion, mitre_execution]
+
+- rule: Write below binary dir in container
+  desc: Detect file creation or modification in binary directories
+  condition: >
+    container.id != host and
+    k8s.ns.name = "larekmart" and
+    evt.dir = < and
+    open_write and
+    fd.name startswith /bin/ or
+    fd.name startswith /sbin/ or
+    fd.name startswith /usr/bin/ or
+    fd.name startswith /usr/sbin/
+  output: >
+    WARNING: File write below binary directory in container
+    (user=%user.name pod=%k8s.pod.name ns=%k8s.ns.name file=%fd.name command=%proc.cmdline)
+  priority: WARNING
+  tags: [security, persistence, mitre_persistence]
+
+- rule: Outbound Connection to Cloud Metadata Service
+  desc: Detect attempts to contact AWS/GCP instance metadata service (SSRF attempt)
+  condition: >
+    container.id != host and
+    k8s.ns.name = "larekmart" and
+    outbound and
+    fd.sip in ("169.254.169.254", "metadata.google.internal")
+  output: >
+    CRITICAL: Outbound connection to cloud metadata service attempted
+    (user=%user.name pod=%k8s.pod.name ns=%k8s.ns.name dest=%fd.sip:%fd.sport command=%proc.cmdline)
+  priority: CRITICAL
+  tags: [security, ssrf, cloud_metadata]
+
+- rule: Sensitive File Read in Workload
+  desc: Detect unauthorized access to private key or shadow files
+  condition: >
+    container.id != host and
+    k8s.ns.name = "larekmart" and
+    open_read and
+    (fd.name in (/etc/shadow, /etc/sudoers) or fd.name endswith .pem or fd.name endswith .key)
+  output: >
+    ALERT: Sensitive file read inside container
+    (user=%user.name pod=%k8s.pod.name file=%fd.name cmdline=%proc.cmdline)
+  priority: ALERT
+  tags: [security, credential_access]

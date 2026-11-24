@@ -2,6 +2,9 @@
 
 Security architecture, authentication standards, perimeter protection, and data security guidelines across Larekmart.
 
+> [!IMPORTANT]
+> For the authoritative DevSecOps threat model, Kyverno admission policies, Zero-Trust network segmentation, Helm deployment guides, and SOC 2 / ISO 27001 compliance mapping, consult [`docs/DEVSECOPS-ARCHITECTURE-AND-COMPLIANCE.md`](DEVSECOPS-ARCHITECTURE-AND-COMPLIANCE.md).
+
 ---
 
 ## 1. Authentication & Authorization (Clerk & RBAC)

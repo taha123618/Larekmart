@@ -80,16 +80,27 @@ export function globalErrorHandler(
     status: String(statusCode),
   });
 
-  logger.error("Gateway request error", {
-    requestId,
-    method: request.method,
-    url: request.url,
-    statusCode,
-    message: error.message,
-    stack: statusCode >= 500 ? error.stack : undefined,
-  });
-
   const isServerError = statusCode >= 500;
+
+  if (isServerError) {
+    logger.error("Gateway request error", {
+      requestId,
+      method: request.method,
+      url: request.url,
+      statusCode,
+      message: error.message,
+      stack: error.stack,
+    });
+  } else {
+    logger.warn("Gateway client request rejected", {
+      requestId,
+      method: request.method,
+      url: request.url,
+      statusCode,
+      reason: error.message,
+    });
+  }
+
   const clientMessage = isServerError
     ? "An unexpected internal gateway error occurred"
     : error.message || "An error occurred";

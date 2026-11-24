@@ -199,3 +199,19 @@ jobs:
           exit-code: "0"
           ignore-unfixed: true
           severity: "CRITICAL,HIGH"
+
+      - name: Generate CycloneDX SBOM for Image
+        uses: anchore/sbom-action@v0
+        continue-on-error: true
+        with:
+          image: "${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ steps.meta.outputs.sha }}"
+          format: "cyclonedx-json"
+          output-file: "sbom-${{ matrix.service }}.json"
+
+      - name: Upload Image SBOM
+        uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: sbom-${{ matrix.service }}
+          path: "sbom-${{ matrix.service }}.json"

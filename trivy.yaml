@@ -1,0 +1,28 @@
+# ==============================================================================
+# Larekmart - Enterprise Trivy Vulnerability & Misconfiguration Scanner Config
+# ==============================================================================
+
+format: table
+severity:
+  - HIGH
+  - CRITICAL
+
+scan:
+  scanners:
+    - vuln
+    - misconfig
+    - secret
+    - license
+
+vulnerability:
+  type:
+    - os
+    - library
+  ignore-unfixed: true
+
+misconfiguration:
+  scanners:
+    - terraform
+    - kubernetes
+    - dockerfile
+    - helm

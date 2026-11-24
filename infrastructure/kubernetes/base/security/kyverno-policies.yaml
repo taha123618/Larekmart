@@ -1,0 +1,118 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: larekmart-devsecops-hardening
+  annotations:
+    policies.kyverno.io/title: Larekmart Enterprise DevSecOps Hardening
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >
+      Enforces CIS Kubernetes benchmark controls and Pod Security Standards (Restricted)
+      across all workloads in the larekmart namespace.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: disallow-privileged-containers
+      match:
+        any:
+          - resources:
+              namespaces:
+                - larekmart
+              kinds:
+                - Pod
+      validate:
+        message: "Running privileged containers is strictly forbidden."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  privileged: false
+
+    - name: require-run-as-non-root
+      match:
+        any:
+          - resources:
+              namespaces:
+                - larekmart
+              kinds:
+                - Pod
+      validate:
+        message: "Containers must run as non-root (UID >= 1000)."
+        pattern:
+          spec:
+            securityContext:
+              runAsNonRoot: true
+            containers:
+              - securityContext:
+                  runAsNonRoot: true
+
+    - name: drop-all-capabilities
+      match:
+        any:
+          - resources:
+              namespaces:
+                - larekmart
+              kinds:
+                - Pod
+      validate:
+        message: "Containers must drop all capabilities (capabilities.drop: ['ALL'])."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  capabilities:
+                    drop:
+                      - ALL
+
+    - name: disallow-host-namespaces
+      match:
+        any:
+          - resources:
+              namespaces:
+                - larekmart
+              kinds:
+                - Pod
+      validate:
+        message: "Sharing host namespaces (hostPID, hostIPC, hostNetwork) is prohibited."
+        pattern:
+          spec:
+            =(hostPID): false
+            =(hostIPC): false
+            =(hostNetwork): false
+
+    - name: require-resource-limits
+      match:
+        any:
+          - resources:
+              namespaces:
+                - larekmart
+              kinds:
+                - Pod
+      validate:
+        message: "CPU and memory resource requests and limits must be specified on all containers."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    cpu: "?*"
+                    memory: "?*"
+
+    - name: disallow-latest-image-tag
+      match:
+        any:
+          - resources:
+              namespaces:
+                - larekmart
+              kinds:
+                - Pod
+      validate:
+        message: "Using the ':latest' image tag is prohibited in production. Use immutable sha-<commit> tags."
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"

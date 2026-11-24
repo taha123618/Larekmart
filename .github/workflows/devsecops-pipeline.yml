@@ -1,0 +1,150 @@
+name: Enterprise DevSecOps Security Pipeline
+
+on:
+  pull_request:
+    branches: [main, staging, development]
+  push:
+    branches: [main, staging]
+  schedule:
+    - cron: "0 2 * * 1" # Weekly Monday 02:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  id-token: write # Required for Cosign keyless signing
+  actions: read
+
+jobs:
+  secret-scanning:
+    name: Secret & Credential Leak Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  sast-scanning:
+    name: SAST Code Analysis (Semgrep)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Semgrep OSS Security Scan
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/src" semgrep/semgrep:latest semgrep scan \
+            --config p/security-audit \
+            --config p/secrets \
+            --config p/owasp-top-10 \
+            --config p/typescript \
+            --config p/javascript \
+            --config p/golang \
+            --config p/python \
+            --sarif \
+            --output /src/semgrep.sarif || true
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
+  iac-security:
+    name: Infrastructure as Code (IaC) Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Trivy IaC Scan (Kubernetes, Helm, Terraform)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "config"
+          scan-ref: "infrastructure/"
+          severity: "CRITICAL,HIGH"
+          format: "sarif"
+          output: "trivy-iac-results.sarif"
+          exit-code: "0"
+
+      - name: Upload Trivy IaC SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-iac-results.sarif"
+
+  dast-security:
+    name: DAST Perimeter Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Dynamic Application Security Testing (DAST)
+        run: pnpm test:dast
+
+  sbom-and-container-hardening:
+    name: SBOM Generation & Container Hardening
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Setup Syft (SBOM Generator)
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Generate Monorepo CycloneDX SBOM
+        run: |
+          mkdir -p security/sbom
+          syft dir:. -o cyclonedx-json=security/sbom/monorepo-sbom.cyclonedx.json
+
+      - name: Upload SBOM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: larekmart-cyclonedx-sbom
+          path: security/sbom/
+
+  license-compliance:
+    name: License Compliance & Dependency Governance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Audit Monorepo Licenses
+        run: npx license-checker --summary --production --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense;CC0-1.0;0BSD" || true

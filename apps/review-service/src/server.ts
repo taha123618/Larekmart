@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { LogController } from "fastify";
 import type {
   FastifyInstance,
   FastifyError,
@@ -17,7 +17,7 @@ import { adminRoutes } from "./routes/admin.routes.js";
 export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({
     logger: false,
-    disableRequestLogging: true,
+    logController: new LogController({ disableRequestLogging: true }),
   });
 
   // 1. CORS Configuration

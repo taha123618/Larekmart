@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { LogController } from "fastify";
 import type { FastifyInstance } from "fastify";
 import { configureFastifyPlugins } from "./plugins/fastify.js";
 import { healthRoutes } from "./routes/health.routes.js";
@@ -7,7 +7,7 @@ import { catalogRoutes } from "./routes/catalog.routes.js";
 export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({
     logger: false, // Using @repo/monitoring logger
-    disableRequestLogging: true,
+    logController: new LogController({ disableRequestLogging: true }),
   });
 
   // Plugins (CORS, Error Handlers)

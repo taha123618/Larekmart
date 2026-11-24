@@ -1,0 +1,63 @@
+# ==============================================================================
+# Larekmart - Enterprise Gitleaks Secret & Credential Detection Configuration
+# ==============================================================================
+
+title = "Larekmart Enterprise Gitleaks Rules"
+
+[extend]
+useDefault = true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Custom Secret Detection Rules
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[rules]]
+id = "clerk-secret-key"
+description = "Detected a Clerk Secret or Live/Test API Key"
+regex = '''(?i)(clerk_secret_key|clerk_jwt_key|sk_live_[a-zA-Z0-9]{32,}|sk_test_[a-zA-Z0-9]{32,})'''
+secretGroup = 1
+keywords = ["clerk", "sk_live", "sk_test"]
+
+[[rules]]
+id = "stripe-webhook-secret"
+description = "Detected a Stripe Webhook Signing Secret"
+regex = '''whsec_[a-zA-Z0-9]{32,}'''
+secretGroup = 0
+keywords = ["whsec"]
+
+[[rules]]
+id = "larekmart-internal-service-secret"
+description = "Detected an unredacted internal service transport secret"
+regex = '''(?i)(internal_service_secret|x-internal-secret)\s*[:=]\s*["']?([a-zA-Z0-9\-_]{20,})["']?'''
+secretGroup = 2
+keywords = ["internal_service_secret", "x-internal-secret"]
+
+[[rules]]
+id = "database-uri-credentials"
+description = "Detected plain-text database credentials in connection URI"
+regex = '''(?i)(postgres|postgresql|mongodb|mysql):\/\/[a-zA-Z0-9_]+:[a-zA-Z0-9_!@#$%^&*()+=~-]+@[a-zA-Z0-9\.\-_]+:\d+\/'''
+secretGroup = 0
+keywords = ["postgresql://", "postgres://", "mongodb://", "mysql://"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Global Whitelists & Path Allow-lists
+# ─────────────────────────────────────────────────────────────────────────────
+
+[allowlist]
+description = "Allow placeholders, documentation, and mock test fixtures"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.test$''',
+  '''tests?\/fixtures\/''',
+  '''tests?\/mocks\/''',
+  '''docs\/.*\.md$''',
+  '''\.github\/workflows\/''',
+  '''package\.json$''',
+  '''pnpm-lock\.yaml$'''
+]
+regexes = [
+  '''YOUR_[A-Z0-9_]+''',
+  '''test_secret_[a-z0-9_]+''',
+  '''mock_[a-z0-9_]+''',
+  '''EXAMPLE_[A-Z0-9_]+'''
+]

@@ -330,3 +330,11 @@ scrape_configs:
         labels:
           service: minio
           component: object-storage
+
+  - job_name: falco
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["falco:8765"]
+        labels:
+          service: falco
+          component: runtime-security

@@ -1,0 +1,9 @@
+apiVersion: v2
+name: larekmart-service
+description: Enterprise-grade DevSecOps Helm Chart for Larekmart Microservices
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Larekmart DevSecOps Team
+    email: devsecops@larekmart.com

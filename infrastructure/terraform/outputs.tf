@@ -37,3 +37,8 @@ output "argocd_helm_status" {
   description = "Status of Argo CD deployment"
   value       = module.argocd.argocd_helm_status
 }
+
+output "waf_acl_arn" {
+  description = "ARN of the AWS WAF v2 Web ACL protecting ingress"
+  value       = module.security.waf_acl_arn
+}

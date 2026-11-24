@@ -41,9 +41,15 @@ module "database" {
 module "argocd" {
   source = "./modules/argocd"
 
-  environment         = var.environment
-  helm_chart_version  = var.argocd_helm_version
-  git_repo_url        = "https://github.com/taha123618/Larekmart.git"
+  environment        = var.environment
+  helm_chart_version = var.argocd_helm_version
+  git_repo_url       = "https://github.com/taha123618/Larekmart.git"
 
   depends_on = [module.eks]
+}
+
+module "security" {
+  source = "./modules/security"
+
+  environment = var.environment
 }

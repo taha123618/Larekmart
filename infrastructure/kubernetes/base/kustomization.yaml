@@ -46,6 +46,8 @@ resources:
   - autoscaling/hpa.yaml
   - autoscaling/keda-scaledobjects.yaml
   - pdb/pod-disruption-budgets.yaml
+  - rbac/service-accounts.yaml
+  - security/kyverno-policies.yaml
   - network-policies/network-policies.yaml
   - messaging/kafka-cluster.yaml
   - messaging/schema-registry.yaml

@@ -7,18 +7,40 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+    - Egress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-ingress-to-frontends
+  name: allow-dns-egress
+  namespace: larekmart
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS resolution via kube-dns / CoreDNS in kube-system
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-frontends-and-gateway
   namespace: larekmart
 spec:
   podSelector:
     matchExpressions:
-      - key: app.kubernetes.io/name
+      - key: app.kubernetes.io/component
         operator: In
-        values: ["client", "admin", "seller"]
+        values: ["frontend", "api-gateway", "client", "admin", "seller"]
   policyTypes:
     - Ingress
   ingress:
@@ -33,11 +55,13 @@ spec:
           port: 3003
         - protocol: TCP
           port: 3004
+        - protocol: TCP
+          port: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-ingress-to-api-services
+  name: allow-gateway-to-backend-services
   namespace: larekmart
 spec:
   podSelector:
@@ -48,10 +72,11 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    # Only API Gateway can initiate HTTP connections to backend services (Zero Trust)
     - from:
-        - namespaceSelector:
+        - podSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
+              app.kubernetes.io/component: api-gateway
       ports:
         - protocol: TCP
           port: 8000
@@ -118,11 +143,16 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    # Allow Prometheus scrapers to poll metrics
     - from:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: monitoring
       ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 9090
         - protocol: TCP
           port: 8000
         - protocol: TCP
@@ -177,3 +207,54 @@ spec:
           port: 8025
         - protocol: TCP
           port: 8026
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-cluster-egress
+  namespace: larekmart
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow communication to Kafka, Redis, PgBouncer, MongoDB, MySQL, and OpenSearch within namespace
+    - to:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 9092   # Kafka
+        - protocol: TCP
+          port: 6379   # Redis
+        - protocol: TCP
+          port: 6432   # PgBouncer
+        - protocol: TCP
+          port: 5432   # PostgreSQL
+        - protocol: TCP
+          port: 27017  # MongoDB
+        - protocol: TCP
+          port: 3306   # MySQL
+        - protocol: TCP
+          port: 9200   # OpenSearch
+        - protocol: TCP
+          port: 8081   # Schema Registry
+        - protocol: TCP
+          port: 4317   # OTel Collector gRPC
+        - protocol: TCP
+          port: 4318   # OTel Collector HTTP
+        - protocol: TCP
+          port: 3100   # Loki
+        - protocol: TCP
+          port: 8080   # API Gateway
+    # Allow HTTPS egress for external third-party APIs (Stripe, Clerk, Resend)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.169.254/32 # Block AWS instance metadata service (SSRF prevention)
+      ports:
+        - protocol: TCP
+          port: 443

@@ -11,6 +11,11 @@ route:
 
   routes:
     - match:
+        tier: security
+      receiver: secops-incident-channel
+      continue: true
+
+    - match:
         severity: critical
       receiver: pagerduty-critical
       continue: true
@@ -34,6 +39,19 @@ receivers:
           {{ range .Alerts }}
           *Description:* {{ .Annotations.description }}
           *Runbook:* https://docs.larekmart.com/runbooks/{{ .Labels.alertname }}
+          {{ end }}
+        send_resolved: true
+
+  - name: secops-incident-channel
+    slack_configs:
+      - channel: "#larekmart-secops"
+        title: "🛡️ SECURITY THREAT: {{ .GroupLabels.alertname }}"
+        text: |
+          *Threat Severity:* {{ .CommonLabels.severity }}
+          {{ range .Alerts }}
+          *Summary:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Action:* Inspect Loki Falco logs or Gateway access logs immediately.
           {{ end }}
         send_resolved: true
 

@@ -1,0 +1,45 @@
+# ==============================================================================
+# Larekmart - Enterprise Semgrep SAST Security Ruleset
+# ==============================================================================
+
+rules:
+  - id: no-raw-sql-concatenation
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: "Potential SQL Injection detected: Raw string template concatenation used in query execution. Always use parameterized queries ($1, $2) or an ORM."
+    patterns:
+      - pattern-either:
+          - pattern: $DB.query(`...${$VAR}...`, ...)
+          - pattern: $DB.execute(`...${$VAR}...`, ...)
+          - pattern: $POOL.query(`...${$VAR}...`, ...)
+    metadata:
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: "A03:2021 - Injection"
+      category: security
+
+  - id: timing-safe-secret-comparison
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: "Timing Attack Vulnerability: Comparing secrets or tokens with standard equality operators (`===` or `==`). Use `crypto.timingSafeEqual` with pre-hashed buffers."
+    patterns:
+      - pattern-either:
+          - pattern: $REQ.headers['x-internal-secret'] === $SECRET
+          - pattern: $TOKEN === $STORED_TOKEN
+          - pattern: $SIGNATURE === $EXPECTED_SIGNATURE
+    metadata:
+      cwe: "CWE-208: Observable Timing Discrepancy"
+      owasp: "A02:2021 - Cryptographic Failures"
+      category: security
+
+  - id: no-weak-cryptographic-hash
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: "Weak Cryptographic Hash: MD5 or SHA-1 detected. Use SHA-256 or bcrypt/argon2 for passwords and secure tokens."
+    patterns:
+      - pattern-either:
+          - pattern: crypto.createHash("md5")
+          - pattern: crypto.createHash("sha1")
+    metadata:
+      cwe: "CWE-328: Use of Weak Hash"
+      owasp: "A02:2021 - Cryptographic Failures"
+      category: security

@@ -310,3 +310,93 @@ groups:
           description: |
             Synthetic canary probe 95th-percentile execution latency is currently {{ $value | humanizeDuration }} (exceeds 3.0s SLA).
             Remediation: Check downstream service latency breakdown in Admin Health Dashboard (/system-health).
+
+  # ══════════════════════════════════════════════════════
+  # SECURITY & THREAT DETECTION (DEVSECOPS)
+  # ══════════════════════════════════════════════════════
+  - name: security_threats
+    rules:
+      - alert: BruteForceAuthenticationDetected
+        expr: sum(rate(http_requests_total{status="401"}[2m])) > 20
+        for: 1m
+        labels:
+          severity: critical
+          tier: security
+        annotations:
+          summary: "CRITICAL: Potential Brute-Force or Credential Stuffing Attack"
+          description: |
+            More than 20 authentication failures (401 Unauthorized) per second detected over 2 minutes.
+            Remediation: Inspect API Gateway access logs for source IP distribution, trigger Cloudflare/WAF IP block, and inspect Redis rate limit triggers.
+
+      - alert: AuthorizationBypassSpike
+        expr: sum(rate(http_requests_total{status="403"}[2m])) > 15
+        for: 1m
+        labels:
+          severity: warning
+          tier: security
+        annotations:
+          summary: "WARNING: Abnormal Volume of Authorization Rejections (403)"
+          description: |
+            More than 15 forbidden requests (403 Forbidden) per second detected. Possible IDOR probing or token expiration storm.
+            Remediation: Review Clerk JWT token validation logs and inspect target API paths.
+
+      - alert: RateLimitThresholdBreached
+        expr: sum(rate(http_requests_total{status="429"}[2m])) > 50
+        for: 1m
+        labels:
+          severity: warning
+          tier: security
+        annotations:
+          summary: "WARNING: High Rate-Limit Violation Spike (429)"
+          description: |
+            More than 50 rate limit rejects per second across perimeter routes.
+            Remediation: Inspect rate limiter keys in Redis and verify if malicious crawler or bot traffic is active.
+
+      - alert: FalcoCriticalSecurityEvent
+        expr: sum(rate(falco_events{priority="Critical"}[2m])) > 0
+        for: 10s
+        labels:
+          severity: critical
+          tier: security
+        annotations:
+          summary: "CRITICAL: Falco Runtime Intrusion Detection Event"
+          description: |
+            Falco eBPF runtime sensor detected a critical security event in container workloads (e.g. interactive shell spawn or metadata probe).
+            Remediation: Check Falco alerts in Loki (`{app="falco"}`) immediately and isolate affected pod.
+
+      - alert: PaymentWebhookSignatureFailureSpike
+        expr: sum(rate(http_requests_total{service="payment-service",url=~".*webhook.*",status="400"}[5m])) > 5
+        for: 2m
+        labels:
+          severity: critical
+          tier: security
+        annotations:
+          summary: "CRITICAL: Payment Webhook Signature Tampering Detected"
+          description: |
+            More than 5 invalid Stripe webhook signatures per minute detected on payment-service.
+            Possible replay attack or tampered webhook payload in transit.
+            Remediation: Verify Stripe signing secret in External Secrets and inspect incoming webhook headers.
+
+      - alert: SSRFMetadataAccessAttempt
+        expr: sum(rate(http_requests_total{status="400",url=~".*169.254.169.254.*"}[2m])) > 0
+        for: 10s
+        labels:
+          severity: critical
+          tier: security
+        annotations:
+          summary: "CRITICAL: SSRF Attempt to Cloud Metadata Service Detected"
+          description: |
+            Inbound or outbound attempt to reach AWS/GCP instance metadata IP (169.254.169.254) detected.
+            Remediation: Inspect application caller IP, review NetworkPolicy egress blocks, and quarantine the requesting client.
+
+      - alert: SecretStoreSyncFailure
+        expr: external_secrets_sync_errors_total > 0
+        for: 5m
+        labels:
+          severity: critical
+          tier: security
+        annotations:
+          summary: "CRITICAL: External Secrets Operator Sync Failure"
+          description: |
+            External Secrets Operator is failing to synchronize credentials from HashiCorp Vault or AWS Secrets Manager.
+            Remediation: Inspect ESO logs (`kubectl logs -n external-secrets`) and check Vault token validity.

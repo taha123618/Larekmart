@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { LogController } from "fastify";
 import { config } from "./config/config.js";
 import { logger } from "./observability/metrics.js";
 import { initTracing } from "./observability/tracing.js";
@@ -19,7 +19,7 @@ import { registerProductEventSubscriptions } from "./consumers/product-events.co
 async function bootstrap() {
   const app = Fastify({
     logger: false, // We use custom @repo/monitoring logger
-    disableRequestLogging: true,
+    logController: new LogController({ disableRequestLogging: true }),
   });
 
   // 1. Initialize Tracing

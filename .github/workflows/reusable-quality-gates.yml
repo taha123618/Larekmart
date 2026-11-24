@@ -40,6 +40,9 @@ jobs:
       - name: Strict TypeScript Compilation (All Workspaces)
         run: pnpm check-types
 
+      - name: Dynamic Application Security Testing (DAST)
+        run: pnpm test:dast
+
       - name: Secret Detection & Credential Scan
         uses: aquasecurity/trivy-action@master
         with:
@@ -204,6 +207,9 @@ jobs:
 
       - name: Validate Production Kustomize Overlay
         run: kustomize build infrastructure/kubernetes/overlays/production > /dev/null
+
+      - name: Lint and Validate Enterprise Helm Chart
+        run: helm lint infrastructure/helm/larekmart
 
       - name: Validate Docker Compose Configurations
         run: |
