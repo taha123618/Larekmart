@@ -73,7 +73,10 @@ export async function registerRateLimitMiddleware(
   });
 
   // 2. Distributed Adaptive Rate Limiter
+  // Runs on preHandler after Clerk auth claim resolution so that verified authUserId
+  // is immediately available, eliminating expensive SHA-256 token hashing on the hot path.
   await fastify.register(rateLimit, {
+    hook: "preHandler",
     max: (req) => {
       const isDegraded = isDownstreamDegraded();
       const policy = getAdaptiveRateLimitForRoute(req.url, isDegraded);

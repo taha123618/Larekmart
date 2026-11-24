@@ -91,11 +91,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   // 5. Centralized CORS
   await registerCorsMiddleware(app);
 
-  // 6. Distributed / Local Rate Limiting
-  await registerRateLimitMiddleware(app);
-
-  // 7. Clerk Authentication & Session Claim Resolution
+  // 6. Clerk Authentication & Session Claim Resolution
   await registerAuthMiddleware(app);
+
+  // 7. Distributed / Local Adaptive Rate Limiting & Concurrency Bulkheads
+  await registerRateLimitMiddleware(app);
 
   // 8. Health & Telemetry Endpoints
   app.get("/health", livenessHandler);

@@ -106,6 +106,8 @@ export const CreateCodOrderSchema = z.object({
   shippingRateAmount: z.number().nonnegative().optional(),
   codFee: z.number().nonnegative().optional(),
   deviceFingerprint: z.string().optional(),
+  signedQuoteToken: z.string().optional(),
+  pricingQuoteId: z.string().optional(),
   shippingAddress: z.object({
     fullName: z.string().min(1).max(200),
     phone: z.string().min(1).max(50),

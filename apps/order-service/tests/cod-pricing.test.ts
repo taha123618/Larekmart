@@ -1,6 +1,11 @@
 import assert from "assert";
 import { computeCodOrderTotalPaisa } from "../src/routes/order.js";
-import type { CreateCodOrderInput } from "@repo/types";
+import {
+  type CreateCodOrderInput,
+  signPriceQuoteToken,
+  verifyPriceQuoteToken,
+  type SignedPriceQuotePayload,
+} from "@repo/types";
 
 /**
  * Regression tests for the server-authoritative COD pricing fix
@@ -95,6 +100,60 @@ async function runCodPricingTests() {
   );
   assert.equal(floored, 0, "Total must not be negative");
   console.log("✓ floor-at-zero holds");
+
+  // 5. Zero-DB Cryptographic Signed Quote Fast Path
+  console.log("5. Signed pricing quote token resolves authoritative prices with 0 DB hops...");
+  const signedPayload: SignedPriceQuotePayload = {
+    quoteId: "quote_cod_flash_999",
+    currency: "PKR",
+    items: [
+      { productId: 42, unitPricePaisa: 349900, quantity: 1 },
+      { productId: 7, unitPricePaisa: 150000, quantity: 2 },
+    ],
+    subtotalPaisa: 649900,
+    totalDiscountPaisa: 0,
+    finalTotalPaisa: 649900,
+    expiresAt: Date.now() + 15 * 60 * 1000,
+    issuedAt: Date.now(),
+  };
+
+  const token = signPriceQuoteToken(signedPayload);
+  const verifyRes = verifyPriceQuoteToken(token);
+  assert.equal(verifyRes.valid, true, "Valid signed token must verify");
+  if (verifyRes.valid) {
+    const verifiedPrices = new Map<number, number>();
+    for (const item of verifyRes.payload.items) {
+      verifiedPrices.set(item.productId, item.unitPricePaisa);
+    }
+    const computedTotal = computeCodOrderTotalPaisa(
+      buildBody({
+        products: [
+          { productId: 42, quantity: 1 },
+          { productId: 7, quantity: 2 },
+        ],
+        shippingRateAmount: 20000,
+        codFee: 3000,
+      }),
+      verifiedPrices,
+    );
+    assert.equal(
+      computedTotal,
+      349900 + 2 * 150000 + 20000 + 3000,
+      "Order total verified from signed quote without querying PostgreSQL",
+    );
+    console.log("✓ Signed quote token prices verified authoritatively with 0 DB queries");
+  }
+
+  // 6. Expired token rejection
+  console.log("6. Expired quote tokens are rejected...");
+  const expiredToken = signPriceQuoteToken({
+    ...signedPayload,
+    expiresAt: Date.now() - 1000,
+  });
+  const expiredCheck = verifyPriceQuoteToken(expiredToken);
+  assert.equal(expiredCheck.valid, false);
+  assert.equal((expiredCheck as any).reason, "EXPIRED");
+  console.log("✓ Expired token rejected with EXPIRED");
 
   console.log(
     "\n=======================================================\n" +

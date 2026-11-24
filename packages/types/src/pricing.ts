@@ -115,6 +115,23 @@ export interface PriceQuote {
   customerGroup?: string | null;
   expiresAt: Date;
   createdAt: Date;
+  signedQuoteToken?: string;
+}
+
+export interface SignedPriceQuotePayload {
+  quoteId: string;
+  currency: string;
+  items: Array<{
+    productId: number;
+    variantId?: string | null;
+    unitPricePaisa: number;
+    quantity: number;
+  }>;
+  subtotalPaisa: number;
+  totalDiscountPaisa: number;
+  finalTotalPaisa: number;
+  expiresAt: number;
+  issuedAt: number;
 }
 
 export interface CurrencyRate {

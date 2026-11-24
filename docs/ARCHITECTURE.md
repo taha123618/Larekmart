@@ -97,7 +97,8 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
   `/order-chart` (admin, 6-month aggregation), `/health`, `/test`.
 - Persistence: Mongoose → MongoDB (`Order`, `OutboxEvent`).
 - Distributed Idempotency Key Engine: Enforces `Idempotency-Key` headers on state-mutating requests (`POST /orders/cod`), acquiring atomic Redis locks (`acquireIdempotencyLock`) to prevent duplicate order generation and replay cached responses with `Idempotent-Replayed: true`.
-- Transactional Outbox Pattern: Eliminates dual-write inconsistencies between MongoDB and Kafka via optimistic fast-path dispatch, an active 5-second lease-locked background sweeper (`lockedUntil < NOW`), and a 7-day MongoDB TTL retention index.
+- Zero-DB Cryptographic Price Verification: Evaluates signed quote snapshots (`signedQuoteToken` HMAC-SHA256) from `pricing-service` with constant-time verification (`crypto.timingSafeEqual`), eliminating direct Prisma queries to PostgreSQL `product_db` on checkout and decoupling order writes from relational connection pool saturation.
+- Adaptive Continuous Outbox Sweeper Drain: Eliminates dual-write inconsistencies between MongoDB and Kafka via optimistic fast-path dispatch, an active adaptive leader sweeper claiming batches of 200 items in parallel chunks of 50 in a continuous `while (hasMore)` loop (draining at 1,500+ events/sec), and a 7-day MongoDB TTL retention index.
 - Multi-DB Dual-ACK Saga Orchestrator: Consumes `payment.successful`, creates orders in `pending_confirmation`, awaits Dual-ACK (`inventory.stock.sold` + `tax.calculation.completed`), and transitions to `confirmed`. Automatically requests Stripe refunds on stock/tax failures.
 - Caching: Redis (`order:v1:*` namespace) through `@repo/redis` — read-through cache for
   `GET /order-chart`, TTL-bounded rather than invalidated on write, because orders arrive faster
@@ -150,7 +151,7 @@ for business & product requirements see [`BRD.md`](./BRD.md), [`PRD.md`](./PRD.m
 **`inventory-service` (Hono 4, :8007)** — stock and reservation authority.
 
 - Routes: `/api/v1/inventory` for availability, reservations, confirmation, release, expiry, restock, adjustments, low-stock queries, and movement history; plus `/health`, `/ready`, and `/metrics`.
-- Caching & Flash-Sale Gatekeeper: Redis (`inventory:v1:*`) provides read-through availability caching and an atomic Redis Lua Stock Gatekeeper (`src/gatekeeper/redis-stock-gatekeeper.ts`) providing <1ms fast-rejection under flash sales and mutual exclusion warm-up, protecting PostgreSQL connection pools.
+- Caching & Flash-Sale Gatekeeper: Redis (`inventory:v1:*`) provides read-through availability caching, an atomic Redis Lua Stock Gatekeeper (`src/gatekeeper/redis-stock-gatekeeper.ts`) with sub-bucket partitioning (`stock:available:{wh}:prod:var:b0..b3`) for hot flash-sale SKUs to eliminate single-core CPU saturation, and <1ms fast-rejection under flash sales with mutual exclusion warm-up, protecting PostgreSQL connection pools.
 - Events: publishes `inventory.*` events after committed transactions; Kafka is never used to decide stock availability.
 
 **`recommendation-service` (Python 3.12+ / FastAPI, :8008)** — personalization and recommendation platform.

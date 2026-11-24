@@ -12,11 +12,13 @@ import { calculateQuote } from "../engine/calculator.js";
 import { convertCurrency } from "../engine/currency.js";
 import { pricingService } from "./pricing.service.js";
 import { pricingEventProducer } from "../kafka/producer.js";
-import type {
-  PriceQuoteRequest,
-  BulkPriceQuoteRequest,
-  PriceQuote,
-  PriceRule,
+import {
+  type PriceQuoteRequest,
+  type BulkPriceQuoteRequest,
+  type PriceQuote,
+  type PriceRule,
+  type SignedPriceQuotePayload,
+  signPriceQuoteToken,
 } from "@repo/types";
 
 export class QuoteService {
@@ -229,6 +231,24 @@ export class QuoteService {
       timestamp: new Date().toISOString(),
     });
 
+    const signedPayload: SignedPriceQuotePayload = {
+      quoteId,
+      currency: targetCurrency,
+      items: calculation.items.map((it) => ({
+        productId: Number(it.productId),
+        variantId: it.variantId || null,
+        unitPricePaisa: Math.round(it.unitFinalPrice * 100),
+        quantity: it.quantity,
+      })),
+      subtotalPaisa: Math.round(calculation.subtotal * 100),
+      totalDiscountPaisa: Math.round(calculation.totalDiscount * 100),
+      finalTotalPaisa: Math.round(calculation.finalTotal * 100),
+      expiresAt: expiresAt.getTime(),
+      issuedAt: Date.now(),
+    };
+
+    const signedQuoteToken = signPriceQuoteToken(signedPayload);
+
     return {
       quoteId,
       currency: targetCurrency,
@@ -240,6 +260,7 @@ export class QuoteService {
       customerGroup: request.customerGroup || null,
       expiresAt,
       createdAt: persisted.createdAt,
+      signedQuoteToken,
     };
   }
 

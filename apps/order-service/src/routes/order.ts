@@ -10,6 +10,7 @@ import {
   OrderChartType,
   CreateCodOrderSchema,
   type CreateCodOrderInput,
+  verifyPriceQuoteToken,
 } from "@repo/types";
 import { createLogger, measureAsync } from "@repo/monitoring";
 import {
@@ -251,21 +252,44 @@ export const orderRoute = async (fastify: FastifyInstance) => {
         request,
         reply,
         async () => {
-          // Price integrity: every line item is priced from the product database
-          // and the total is recomputed server-side. The client-declared amount is
-          // a cross-check only — a mismatch is rejected with 409, and an unknown
-          // productId fails before any order is written.
+          // Price integrity: line items are priced authoritatively.
+          // Fast-path: If a signed pricing quote token is provided from pricing-service,
+          // verify it cryptographically in 0 DB hops (constant-time timingSafeEqual).
+          // Fallback (dev/test): Query product database directly if token is absent.
           let serverPrices: Map<number, number>;
-          try {
-            serverPrices = await getServerProductPricesPaisa(
-              body.products.map((product) => product.productId),
-            );
-          } catch {
+
+          if (body.signedQuoteToken) {
+            const verification = verifyPriceQuoteToken(body.signedQuoteToken);
+            if (!verification.valid) {
+              const err = new Error(
+                `Invalid or expired pricing quote token (${verification.reason})`,
+              );
+              (err as any).statusCode = 400;
+              throw err;
+            }
+
+            serverPrices = new Map<number, number>();
+            for (const item of verification.payload.items) {
+              serverPrices.set(item.productId, item.unitPricePaisa);
+            }
+          } else if (process.env.NODE_ENV === "production") {
             const err = new Error(
-              "Unable to verify product prices, please retry shortly",
+              "A signed pricing quote (signedQuoteToken) is required in production to protect datastore pools",
             );
-            (err as any).statusCode = 502;
+            (err as any).statusCode = 400;
             throw err;
+          } else {
+            try {
+              serverPrices = await getServerProductPricesPaisa(
+                body.products.map((product) => product.productId),
+              );
+            } catch {
+              const err = new Error(
+                "Unable to verify product prices, please retry shortly",
+              );
+              (err as any).statusCode = 502;
+              throw err;
+            }
           }
 
           const missingProduct = body.products.find(

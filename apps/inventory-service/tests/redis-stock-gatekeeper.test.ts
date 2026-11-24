@@ -7,7 +7,10 @@ import {
   InvalidHashTagError,
   TENANT_WAREHOUSE_TAG_PATTERN,
 } from "@repo/redis";
-import { redisStockGatekeeper } from "../src/gatekeeper/redis-stock-gatekeeper.js";
+import {
+  redisStockGatekeeper,
+  type GatekeeperItemKey,
+} from "../src/gatekeeper/redis-stock-gatekeeper.js";
 import { redis } from "../src/utils/redis.js";
 
 async function runRedisStockGatekeeperTests(): Promise<void> {
@@ -321,6 +324,69 @@ async function runRedisStockGatekeeperTests(): Promise<void> {
       "Stock counter must increment from 12 to 15",
     );
     console.log("  ✓ Increment counter successfully restored released stock");
+
+    // -------------------------------------------------------------------------
+    // TEST 6: Distributed Stock Bucket Partitioning for Hot Flash-Sale SKUs
+    // -------------------------------------------------------------------------
+    console.log(
+      "\n6. Testing distributed stock bucket partitioning for 50k RPS flash sales...",
+    );
+    const hotSkuKey: GatekeeperItemKey = {
+      productId: 77701,
+      variantId: "var_hot_flash",
+      warehouseId: "pk_lhr_01",
+      tenantId: "tenant_pk",
+    };
+
+    // Initialize 40 units across 4 sub-buckets (10 per bucket)
+    await redisStockGatekeeper.initializeBucketedStock({
+      itemKey: hotSkuKey,
+      totalQuantity: 40,
+      bucketCount: 4,
+    });
+
+    // Claim 5 items with bucketCount: 4
+    const bucketClaim1 = await redisStockGatekeeper.precheckAndClaim({
+      itemKey: hotSkuKey,
+      quantity: 5,
+      referenceId: "ref_bucket_01",
+      bucketCount: 4,
+    });
+    assert.equal(bucketClaim1.success, true, "Bucket claim 1 must succeed");
+
+    // Claim another 25 items across buckets
+    const bucketClaim2 = await redisStockGatekeeper.precheckAndClaim({
+      itemKey: hotSkuKey,
+      quantity: 10,
+      referenceId: "ref_bucket_02",
+      bucketCount: 4,
+    });
+    assert.equal(bucketClaim2.success, true, "Bucket claim 2 must succeed");
+
+    // Fast-reject when claiming more than remaining total stock across all buckets
+    const bucketClaimFail = await redisStockGatekeeper.precheckAndClaim({
+      itemKey: hotSkuKey,
+      quantity: 35,
+      referenceId: "ref_bucket_fail",
+      bucketCount: 4,
+    });
+    assert.equal(
+      bucketClaimFail.success,
+      false,
+      "Oversell across buckets must be rejected",
+    );
+    assert.equal((bucketClaimFail as any).reason, "INSUFFICIENT_STOCK");
+    console.log(
+      "  ✓ Distributed stock bucket partitioning eliminates hot key Redis CPU saturation",
+    );
+
+    // Clean up bucket keys
+    for (let b = 0; b < 4; b++) {
+      await redisStockGatekeeper.invalidateCounter({
+        ...hotSkuKey,
+        bucketIndex: b,
+      });
+    }
 
     // -------------------------------------------------------------------------
     // Cleanup

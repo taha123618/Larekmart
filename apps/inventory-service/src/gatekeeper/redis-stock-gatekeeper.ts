@@ -80,6 +80,7 @@ export interface GatekeeperItemKey {
   variantId: string;
   warehouseId: string;
   tenantId?: string;
+  bucketIndex?: number;
 }
 
 export class RedisStockGatekeeper {
@@ -102,7 +103,9 @@ export class RedisStockGatekeeper {
    */
   public getStockKey(key: GatekeeperItemKey): string {
     const tag = this.getClusterHashTag(key.warehouseId, key.tenantId);
-    return `stock:available:${tag}:${key.productId}:${key.variantId}`;
+    const bucketSuffix =
+      typeof key.bucketIndex === "number" ? `:b${key.bucketIndex}` : "";
+    return `stock:available:${tag}:${key.productId}:${key.variantId}${bucketSuffix}`;
   }
 
   /**
@@ -136,10 +139,62 @@ export class RedisStockGatekeeper {
    * If stock is available, decrements the counter and registers a temporary claim token.
    * If cold cache (key missing), lazily warms up ground truth from PostgreSQL with a distributed mutex.
    *
+   * High-Concurrency Flash Sale Support:
+   * When bucketCount > 1 is supplied, distributes access randomly across N sub-buckets
+   * (e.g. stock:available:{wh}:prod:var:b0..b3) to eliminate Redis single-core CPU saturation.
+   *
    * Cluster Safe: Both stockKey and claimKey share the exact hash tag {tenant_id:warehouse_id},
    * preventing cross-slot errors in Redis Cluster sharding deployments.
    */
   async precheckAndClaim(params: {
+    itemKey: GatekeeperItemKey;
+    quantity: number;
+    referenceId: string;
+    claimTtlSeconds?: number;
+    bucketCount?: number;
+  }): Promise<PrecheckResult> {
+    const { bucketCount, itemKey, quantity, referenceId, claimTtlSeconds = 60 } =
+      params;
+
+    if (bucketCount && bucketCount > 1) {
+      const startBucket = Math.floor(Math.random() * bucketCount);
+      let totalAvailableAcrossBuckets = 0;
+
+      for (let i = 0; i < bucketCount; i++) {
+        const bucketIndex = (startBucket + i) % bucketCount;
+        const bucketItemKey: GatekeeperItemKey = { ...itemKey, bucketIndex };
+        const result = await this.precheckAndClaimSingleKey({
+          itemKey: bucketItemKey,
+          quantity,
+          referenceId,
+          claimTtlSeconds,
+        });
+
+        if (result.success) {
+          return result;
+        }
+
+        if (result.reason === "INSUFFICIENT_STOCK") {
+          totalAvailableAcrossBuckets += result.availableQuantity;
+        } else if (result.reason === "ITEM_NOT_FOUND") {
+          return result;
+        }
+      }
+
+      return {
+        success: false,
+        reason: "INSUFFICIENT_STOCK",
+        availableQuantity: totalAvailableAcrossBuckets,
+      };
+    }
+
+    return this.precheckAndClaimSingleKey(params);
+  }
+
+  /**
+   * Core atomic Lua execution against a single stock key.
+   */
+  private async precheckAndClaimSingleKey(params: {
     itemKey: GatekeeperItemKey;
     quantity: number;
     referenceId: string;
@@ -220,6 +275,35 @@ export class RedisStockGatekeeper {
 
     // Default fallback if warm-up retries were exhausted
     return { success: true, remainingQuantity: 0 };
+  }
+
+  /**
+   * Initializes or re-balances stock for a hot flash-sale SKU across N sub-buckets in Redis.
+   */
+  async initializeBucketedStock(params: {
+    itemKey: GatekeeperItemKey;
+    totalQuantity: number;
+    bucketCount: number;
+    ttlSeconds?: number;
+  }): Promise<void> {
+    const { itemKey, totalQuantity, bucketCount, ttlSeconds = 3600 } = params;
+    const baseQtyPerBucket = Math.floor(totalQuantity / bucketCount);
+    let remainder = totalQuantity % bucketCount;
+
+    const pipeline = redis.client.pipeline();
+    for (let b = 0; b < bucketCount; b++) {
+      const bucketQty = baseQtyPerBucket + (remainder > 0 ? 1 : 0);
+      remainder--;
+      const bucketKey = this.getStockKey({ ...itemKey, bucketIndex: b });
+      pipeline.set(bucketKey, String(Math.max(0, bucketQty)), "EX", ttlSeconds);
+    }
+    await pipeline.exec();
+    logger.info(`Initialized bucketed stock across ${bucketCount} partitions`, {
+      productId: itemKey.productId,
+      variantId: itemKey.variantId,
+      totalQuantity,
+      bucketCount,
+    });
   }
 
   /**

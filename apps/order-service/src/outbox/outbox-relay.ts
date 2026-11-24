@@ -158,7 +158,7 @@ export async function dispatchViaOutbox(
  * Strictly verifies heartbeat drift and defensive fencing tokens against MongoDB outbox state.
  */
 export async function sweepPendingOutboxEvents(
-  batchSize = 20,
+  batchSize = Number(process.env.OUTBOX_BATCH_SIZE) || 200,
   workerId = OUTBOX_WORKER_ID,
   fencingToken?: number,
   options?: { bypassClusterLock?: boolean },
@@ -226,44 +226,75 @@ export async function sweepPendingOutboxEvents(
   let publishedCount = 0;
 
   try {
-    // 2. Claim pending events with atomic worker & monotonic fencing token check
-    const events = await claimPendingOutboxEvents(
-      batchSize,
-      30_000,
-      workerId,
-      activeFencingToken,
-    );
-    if (events.length > 0) {
-      logger.info(`Outbox sweeper claimed ${events.length} pending events`, {
-        workerId,
-        fencingToken: activeFencingToken,
-      });
-    }
+    // 2. Adaptive Continuous Drain Loop
+    // Under flash-sale bursts or after transient Kafka recovery, continuously drain
+    // batches without sleeping until the outbox backlog is completely cleared.
+    let hasMore = true;
+    const maxIterations = 25; // Bound execution to prevent starving node event loop
+    let iteration = 0;
 
-    const CHUNK_SIZE = 10;
-    for (let i = 0; i < events.length; i += CHUNK_SIZE) {
-      // Re-verify heartbeat drift before dispatching each chunk in the batch
+    while (hasMore && iteration < maxIterations) {
+      iteration++;
+
+      // Verify leader heartbeat before every batch claim
       if (isElectorActive && workerId === OUTBOX_WORKER_ID) {
         if (!outboxLeaderElector!.isLeadershipValid) {
           logger.warn(
-            "Outbox sweeper aborted mid-batch: leader heartbeat drifted during execution (split-brain prevention)",
+            "Outbox sweeper aborted: leader heartbeat drifted during adaptive drain (split-brain prevention)",
             { workerId },
           );
           break;
         }
       }
 
-      const chunk = events.slice(i, i + CHUNK_SIZE);
-      const results = await Promise.allSettled(
-        chunk.map((event) =>
-          publishOutboxEvent(event, workerId, activeFencingToken),
-        ),
+      const events = await claimPendingOutboxEvents(
+        batchSize,
+        30_000,
+        workerId,
+        activeFencingToken,
       );
 
-      for (const res of results) {
-        if (res.status === "fulfilled" && res.value) {
-          publishedCount++;
+      if (events.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      logger.info(`Outbox sweeper claimed ${events.length} pending events (iteration ${iteration})`, {
+        workerId,
+        fencingToken: activeFencingToken,
+      });
+
+      const CHUNK_SIZE = 50;
+      for (let i = 0; i < events.length; i += CHUNK_SIZE) {
+        // Re-verify heartbeat drift before dispatching each chunk in the batch
+        if (isElectorActive && workerId === OUTBOX_WORKER_ID) {
+          if (!outboxLeaderElector!.isLeadershipValid) {
+            logger.warn(
+              "Outbox sweeper aborted mid-batch: leader heartbeat drifted during execution",
+              { workerId },
+            );
+            hasMore = false;
+            break;
+          }
         }
+
+        const chunk = events.slice(i, i + CHUNK_SIZE);
+        const results = await Promise.allSettled(
+          chunk.map((event) =>
+            publishOutboxEvent(event, workerId, activeFencingToken),
+          ),
+        );
+
+        for (const res of results) {
+          if (res.status === "fulfilled" && res.value) {
+            publishedCount++;
+          }
+        }
+      }
+
+      // If we claimed fewer events than batchSize, the backlog is fully cleared
+      if (events.length < batchSize) {
+        hasMore = false;
       }
     }
   } catch (err) {
