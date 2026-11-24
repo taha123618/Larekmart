@@ -33,6 +33,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Store,
   CheckCircle2,
   AlertTriangle,
@@ -230,11 +238,28 @@ export default function SellersAdminPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12 pt-4">
+    <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/vendors">Marketplace & Merchants</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Sellers & Stores</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Top Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Store className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
             Seller & Storefront Management
             {canManageSellers ? (
@@ -250,7 +275,7 @@ export default function SellersAdminPage() {
               </Badge>
             )}
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-muted-foreground">
             Marketplace seller storefronts, staff permissions, operational
             policies, and performance ratings.
           </p>
@@ -288,12 +313,12 @@ export default function SellersAdminPage() {
                 configurations remain securely preserved in read-only audit
                 mode. To resume operations, a Super Admin can toggle the feature
                 on in{" "}
-                <a
+                <Link
                   href="/settings"
                   className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-100"
                 >
                   Platform Settings
-                </a>
+                </Link>
                 .
               </p>
             </div>
@@ -330,12 +355,12 @@ export default function SellersAdminPage() {
                 </div>
                 <p className="text-xs text-sky-700/90 dark:text-sky-400/90">
                   Manage these sub-controls in{" "}
-                  <a
+                  <Link
                     href="/settings"
                     className="underline font-semibold hover:text-sky-900 dark:hover:text-sky-100"
                   >
                     Platform Settings
-                  </a>
+                  </Link>
                   .
                 </p>
               </div>
@@ -345,27 +370,27 @@ export default function SellersAdminPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-neutral-200 dark:border-neutral-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Sellers
             </CardTitle>
             <Store className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+            <div className="text-2xl font-bold text-foreground">
               {totalSellers}
             </div>
-            <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
               <Activity className="h-3 w-3 text-emerald-500 inline" />
               Live Analytics Sync
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200 dark:border-neutral-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Active Storefronts
             </CardTitle>
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -374,15 +399,15 @@ export default function SellersAdminPage() {
             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {activeCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Accepting customer orders
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200 dark:border-neutral-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Onboarding / Incomplete
             </CardTitle>
             <Clock className="h-4 w-4 text-amber-500" />
@@ -391,15 +416,15 @@ export default function SellersAdminPage() {
             <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               {onboardingCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Setting up store & policies
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200 dark:border-neutral-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Suspended Accounts
             </CardTitle>
             <AlertTriangle className="h-4 w-4 text-rose-500" />
@@ -408,7 +433,7 @@ export default function SellersAdminPage() {
             <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">
               {suspendedCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Policy violations or reviews
             </p>
           </CardContent>
@@ -416,7 +441,7 @@ export default function SellersAdminPage() {
       </div>
 
       {/* Sellers Table */}
-      <Card className="border-neutral-200 dark:border-neutral-800">
+      <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
         <CardHeader className="p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="relative flex-1 max-w-sm">
@@ -482,9 +507,13 @@ export default function SellersAdminPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-xs">
+                      <Link
+                        href="/vendors"
+                        className="font-mono text-xs text-primary hover:underline"
+                        title={`Vendor ID: ${seller.vendorId}`}
+                      >
                         {seller.vendorId.slice(0, 8)}...
-                      </span>
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <span className="font-semibold text-xs">
@@ -565,15 +594,15 @@ export default function SellersAdminPage() {
           ) : selectedSellerDetails ? (
             <div className="space-y-6 pt-6">
               {/* Header Card */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border/60">
                 <div>
-                  <div className="text-xs text-neutral-500">Account Status</div>
+                  <div className="text-xs text-muted-foreground">Account Status</div>
                   <div className="mt-1">
                     {getSellerStatusBadge(selectedSellerDetails.status)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-neutral-500">Store Status</div>
+                  <div className="text-xs text-muted-foreground">Store Status</div>
                   <div className="mt-1">
                     {getStoreStatusBadge(selectedSellerDetails.store?.status)}
                   </div>
@@ -582,32 +611,32 @@ export default function SellersAdminPage() {
 
               {/* Store Details */}
               <div className="space-y-2">
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-1.5">
-                  <Store className="h-4 w-4 text-neutral-500" />
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                  <Store className="h-4 w-4 text-muted-foreground" />
                   Storefront Branding & Identity
                 </h3>
-                <div className="space-y-2 text-xs p-3 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+                <div className="space-y-2 text-xs p-3 rounded bg-muted/40 border border-border/60">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="text-neutral-400">Store Name:</span>
+                      <span className="text-muted-foreground">Store Name:</span>
                       <p className="font-semibold text-sm">
                         {selectedSellerDetails.store?.name || "N/A"}
                       </p>
                     </div>
                     <div>
-                      <span className="text-neutral-400">Public Slug:</span>
+                      <span className="text-muted-foreground">Public Slug:</span>
                       <p className="font-mono font-semibold">
                         {selectedSellerDetails.store?.slug || "N/A"}
                       </p>
                     </div>
                     <div>
-                      <span className="text-neutral-400">Currency:</span>
+                      <span className="text-muted-foreground">Currency:</span>
                       <p className="font-semibold">
                         {selectedSellerDetails.primaryCurrency}
                       </p>
                     </div>
                     <div>
-                      <span className="text-neutral-400">Clerk Owner ID:</span>
+                      <span className="text-muted-foreground">Clerk Owner ID:</span>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <p className="font-mono truncate">
                           {selectedSellerDetails.ownerUserId}
@@ -624,8 +653,8 @@ export default function SellersAdminPage() {
                     </div>
                   </div>
                   <div>
-                    <span className="text-neutral-400">Description:</span>
-                    <p className="font-normal mt-0.5 text-neutral-600 dark:text-neutral-300">
+                    <span className="text-muted-foreground">Description:</span>
+                    <p className="font-normal mt-0.5 text-muted-foreground">
                       {selectedSellerDetails.store?.description ||
                         "No description provided."}
                     </p>
@@ -635,7 +664,7 @@ export default function SellersAdminPage() {
 
               {/* Performance Metrics Snapshot */}
               <div className="space-y-2">
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <TrendingUp className="h-4 w-4 text-emerald-500" />
                     Latest Performance Snapshot
@@ -643,8 +672,8 @@ export default function SellersAdminPage() {
                 </h3>
                 {selectedSellerDetails.latestPerformance ? (
                   <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="p-2.5 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-center">
-                      <div className="text-neutral-400">Seller Score</div>
+                    <div className="p-2.5 rounded bg-muted/40 border border-border/60 text-center">
+                      <div className="text-muted-foreground">Seller Score</div>
                       <div className="text-lg font-bold text-emerald-600">
                         {selectedSellerDetails.latestPerformance.sellerScore.toFixed(
                           1,
@@ -652,8 +681,8 @@ export default function SellersAdminPage() {
                         /100
                       </div>
                     </div>
-                    <div className="p-2.5 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-center">
-                      <div className="text-neutral-400">Fulfillment</div>
+                    <div className="p-2.5 rounded bg-muted/40 border border-border/60 text-center">
+                      <div className="text-muted-foreground">Fulfillment</div>
                       <div className="text-lg font-bold text-indigo-600">
                         {(
                           selectedSellerDetails.latestPerformance
@@ -662,8 +691,8 @@ export default function SellersAdminPage() {
                         %
                       </div>
                     </div>
-                    <div className="p-2.5 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-center">
-                      <div className="text-neutral-400">On-Time Rate</div>
+                    <div className="p-2.5 rounded bg-muted/40 border border-border/60 text-center">
+                      <div className="text-muted-foreground">On-Time Rate</div>
                       <div className="text-lg font-bold text-blue-600">
                         {(
                           selectedSellerDetails.latestPerformance
@@ -674,7 +703,7 @@ export default function SellersAdminPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 rounded border border-neutral-200 dark:border-neutral-800 text-center text-xs text-neutral-500">
+                  <div className="p-4 rounded border border-border/60 text-center text-xs text-muted-foreground">
                     No performance snapshot recorded yet.
                   </div>
                 )}
@@ -682,7 +711,7 @@ export default function SellersAdminPage() {
 
               {/* Store Policies */}
               <div className="space-y-2">
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+                <h3 className="text-sm font-bold text-foreground">
                   Store Policies ({selectedSellerDetails.policies?.length || 0})
                 </h3>
                 {selectedSellerDetails.policies &&
@@ -691,22 +720,22 @@ export default function SellersAdminPage() {
                     {selectedSellerDetails.policies.map((p) => (
                       <div
                         key={p.id}
-                        className="p-2.5 rounded border border-neutral-200 dark:border-neutral-800 text-xs space-y-1"
+                        className="p-2.5 rounded border border-border/60 text-xs space-y-1"
                       >
                         <div className="flex items-center justify-between font-semibold">
                           <span>{p.policyType} Policy</span>
-                          <span className="text-neutral-400 text-[10px]">
+                          <span className="text-muted-foreground text-[10px]">
                             v{p.version}
                           </span>
                         </div>
-                        <p className="text-neutral-600 dark:text-neutral-300 line-clamp-2">
+                        <p className="text-muted-foreground line-clamp-2">
                           {p.content}
                         </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-neutral-400 italic">
+                  <p className="text-xs text-muted-foreground italic">
                     No custom policies configured.
                   </p>
                 )}
@@ -714,8 +743,8 @@ export default function SellersAdminPage() {
 
               {/* Staff Members */}
               <div className="space-y-2">
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-1.5">
-                  <Users className="h-4 w-4 text-neutral-500" />
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-muted-foreground" />
                   Staff Members ({selectedSellerDetails.staff?.length || 0})
                 </h3>
                 {selectedSellerDetails.staff &&
@@ -724,13 +753,17 @@ export default function SellersAdminPage() {
                     {selectedSellerDetails.staff.map((member) => (
                       <div
                         key={member.id}
-                        className="flex items-center justify-between p-2 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs"
+                        className="flex items-center justify-between p-2 rounded bg-muted/40 border border-border/60 text-xs"
                       >
                         <div>
-                          <span className="font-mono text-xs">
+                          <Link
+                            href={`/users/${member.userId}`}
+                            className="font-mono text-xs text-primary hover:underline"
+                            title="View Staff User Details"
+                          >
                             {member.userId}
-                          </span>
-                          <div className="text-[10px] text-neutral-400">
+                          </Link>
+                          <div className="text-[10px] text-muted-foreground">
                             Role: {member.role}
                           </div>
                         </div>
@@ -739,14 +772,14 @@ export default function SellersAdminPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-neutral-400 italic">
+                  <p className="text-xs text-muted-foreground italic">
                     No additional staff members.
                   </p>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <div className="pt-4 border-t border-border/60">
                 <Button
                   variant={
                     selectedSellerDetails.status === "SUSPENDED"

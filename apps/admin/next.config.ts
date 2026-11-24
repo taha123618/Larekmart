@@ -47,6 +47,14 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
+          ...(process.env.NODE_ENV !== "production"
+            ? [
+                {
+                  key: "Cache-Control",
+                  value: "no-store, no-cache, must-revalidate",
+                },
+              ]
+            : []),
           {
             key: "X-Content-Type-Options",
             value: "nosniff",

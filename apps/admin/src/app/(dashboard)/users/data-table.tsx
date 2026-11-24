@@ -147,14 +147,14 @@ export function DataTable<TData extends RowData = any>({
   return (
     <div className="space-y-4">
       {/* FILTER & SEARCH TOOLBAR */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-3 rounded-lg border border-border">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/60 shadow-xs">
         {/* Role Filters (All / Sellers / Buyers) */}
-        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-md">
+        <div className="flex flex-wrap items-center gap-1.5 bg-muted/60 p-1 rounded-lg">
           <Button
             type="button"
             variant={roleFilter === "ALL" ? "default" : "ghost"}
             size="sm"
-            className="text-xs h-7 px-2.5 font-medium"
+            className="text-xs h-7 px-2.5 font-medium flex-1 sm:flex-initial"
             onClick={() => setRoleFilter("ALL")}
           >
             <Users className="w-3.5 h-3.5 mr-1" />
@@ -164,21 +164,21 @@ export function DataTable<TData extends RowData = any>({
             type="button"
             variant={roleFilter === "SELLER" ? "default" : "ghost"}
             size="sm"
-            className="text-xs h-7 px-2.5 font-medium"
+            className="text-xs h-7 px-2.5 font-medium flex-1 sm:flex-initial"
             onClick={() => setRoleFilter("SELLER")}
           >
             <Store className="w-3.5 h-3.5 mr-1 text-indigo-500" />
-            Verified Sellers ({sellerCount})
+            <span className="hidden sm:inline">Verified </span>Sellers ({sellerCount})
           </Button>
           <Button
             type="button"
             variant={roleFilter === "BUYER" ? "default" : "ghost"}
             size="sm"
-            className="text-xs h-7 px-2.5 font-medium"
+            className="text-xs h-7 px-2.5 font-medium flex-1 sm:flex-initial"
             onClick={() => setRoleFilter("BUYER")}
           >
             <UserCheck className="w-3.5 h-3.5 mr-1 text-emerald-500" />
-            Buyers Only ({buyerCount})
+            <span className="hidden sm:inline">Buyers </span>Only ({buyerCount})
           </Button>
         </div>
 
@@ -194,15 +194,15 @@ export function DataTable<TData extends RowData = any>({
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
         {Object.keys(rowSelection).length > 0 && (
-          <div className="flex justify-end">
+          <div className="flex justify-end p-3 border-b border-border/40">
             <button
-              className="flex items-center gap-2 bg-red-500 text-white px-2 py-1 text-sm rounded-md m-4 cursor-pointer"
+              className="flex items-center gap-2 bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-medium rounded-lg cursor-pointer hover:bg-destructive/90 transition shadow-xs"
               onClick={() => mutation.mutate()}
               disabled={mutation.isPending}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
               {mutation.isPending ? "Deleting" : "Delete User(s)"}
             </button>
           </div>

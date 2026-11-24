@@ -62,15 +62,19 @@ const AddCategory = () => {
   });
 
   return (
-    <SheetContent>
-      <SheetHeader>
-        <SheetTitle className="mb-4">Add Category</SheetTitle>
-        <SheetDescription asChild>
-          <Form {...form}>
-            <form
-              className="space-y-8"
-              onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
-            >
+    <SheetContent className="overflow-y-auto sm:max-w-md">
+      <SheetHeader className="pb-4 border-b">
+        <SheetTitle>Add Category</SheetTitle>
+        <SheetDescription>
+          Create a new product taxonomy classification.
+        </SheetDescription>
+      </SheetHeader>
+      <div className="py-4">
+        <Form {...form}>
+          <form
+            className="space-y-6"
+            onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
+          >
               <FormField
                 control={form.control}
                 name="name"
@@ -99,17 +103,16 @@ const AddCategory = () => {
                   </FormItem>
                 )}
               />
-              <Button
-                type="submit"
-                disabled={mutation.isPending}
-                className="disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {mutation.isPending ? "Submitting..." : "Submit"}
-              </Button>
-            </form>
-          </Form>
-        </SheetDescription>
-      </SheetHeader>
+            <Button
+              type="submit"
+              disabled={mutation.isPending}
+              className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {mutation.isPending ? "Submitting..." : "Submit"}
+            </Button>
+          </form>
+        </Form>
+      </div>
     </SheetContent>
   );
 };

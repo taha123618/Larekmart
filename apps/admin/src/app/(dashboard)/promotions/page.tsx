@@ -19,6 +19,14 @@ import type {
   PromotionType,
 } from "@repo/types";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -279,7 +287,24 @@ export default function PromotionsAdminDashboardPage() {
   const isRefreshing = isOverviewRefetching || isPromotionsRefetching;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/promotions">Marketing & Growth</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Promotions & Coupons</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -292,8 +317,8 @@ export default function PromotionsAdminDashboardPage() {
             eligibility, budgets & checkout reservations.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 font-medium">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="hidden lg:flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 font-medium">
             <Activity className="h-3 w-3 animate-pulse text-emerald-500" />
             <span>
               Savings Telemetry: $
@@ -314,7 +339,7 @@ export default function PromotionsAdminDashboardPage() {
               refetchCommerce();
             }}
             disabled={isRefreshing}
-            className="gap-2"
+            className="gap-2 cursor-pointer shadow-xs"
           >
             <RefreshCw
               className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
@@ -324,7 +349,7 @@ export default function PromotionsAdminDashboardPage() {
 
           <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <SheetTrigger asChild>
-              <Button size="sm" className="gap-2">
+              <Button size="sm" className="gap-2 cursor-pointer shadow-xs">
                 <Plus className="h-4 w-4" />
                 New Promotion
               </Button>
@@ -365,7 +390,7 @@ export default function PromotionsAdminDashboardPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-muted-foreground uppercase">
                       Discount Type
@@ -398,7 +423,7 @@ export default function PromotionsAdminDashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-muted-foreground uppercase">
                       Min Order Spend ($)
@@ -426,7 +451,7 @@ export default function PromotionsAdminDashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-muted-foreground uppercase">
                       Start Date
@@ -491,7 +516,7 @@ export default function PromotionsAdminDashboardPage() {
 
       {/* Overview KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border shadow-sm">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">
               Active Promotions
@@ -512,7 +537,7 @@ export default function PromotionsAdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border shadow-sm">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">
               Coupons Issued
@@ -533,7 +558,7 @@ export default function PromotionsAdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border shadow-sm">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">
               Discounts Awarded
@@ -554,7 +579,7 @@ export default function PromotionsAdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border shadow-sm">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">
               Total Redemptions
@@ -577,7 +602,7 @@ export default function PromotionsAdminDashboardPage() {
       </div>
 
       {/* Promotions Table Card */}
-      <Card className="border shadow-sm">
+      <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -592,7 +617,7 @@ export default function PromotionsAdminDashboardPage() {
 
             {/* Filter and Search Bar */}
             <div className="flex flex-wrap items-center gap-2">
-              <div className="relative min-w-[200px]">
+              <div className="relative w-full sm:w-auto min-w-[200px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search campaigns..."
@@ -602,55 +627,57 @@ export default function PromotionsAdminDashboardPage() {
                     setDebouncedSearch(e.target.value);
                     setPage(1);
                   }}
-                  className="pl-8 h-9 text-sm"
+                  className="pl-8 h-9 text-sm w-full"
                 />
               </div>
 
-              <select
-                className="h-9 rounded-md border border-input bg-background px-3 text-xs"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="ACTIVE">Active</option>
-                <option value="DRAFT">Draft</option>
-                <option value="PAUSED">Paused</option>
-                <option value="EXPIRED">Expired</option>
-                <option value="DEACTIVATED">Deactivated</option>
-              </select>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-3 text-xs flex-1 sm:flex-initial"
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="PAUSED">Paused</option>
+                  <option value="EXPIRED">Expired</option>
+                  <option value="DEACTIVATED">Deactivated</option>
+                </select>
 
-              <select
-                className="h-9 rounded-md border border-input bg-background px-3 text-xs"
-                value={typeFilter}
-                onChange={(e) => {
-                  setTypeFilter(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="ALL">All Types</option>
-                <option value="PERCENTAGE">Percentage</option>
-                <option value="FIXED_AMOUNT">Fixed Amount</option>
-                <option value="FREE_SHIPPING">Free Shipping</option>
-              </select>
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-3 text-xs flex-1 sm:flex-initial"
+                  value={typeFilter}
+                  onChange={(e) => {
+                    setTypeFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="ALL">All Types</option>
+                  <option value="PERCENTAGE">Percentage</option>
+                  <option value="FIXED_AMOUNT">Fixed Amount</option>
+                  <option value="FREE_SHIPPING">Free Shipping</option>
+                </select>
+              </div>
             </div>
           </div>
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="border-t">
+          <div className="border-t overflow-x-auto min-w-full">
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow>
-                  <TableHead className="w-[240px]">Campaign</TableHead>
-                  <TableHead>Type & Discount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Budget Usage</TableHead>
-                  <TableHead>Redemptions</TableHead>
-                  <TableHead>Validity</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="min-w-[220px]">Campaign</TableHead>
+                  <TableHead className="min-w-[140px]">Type & Discount</TableHead>
+                  <TableHead className="min-w-[120px]">Status</TableHead>
+                  <TableHead className="min-w-[170px]">Budget Usage</TableHead>
+                  <TableHead className="min-w-[110px]">Redemptions</TableHead>
+                  <TableHead className="min-w-[140px]">Validity</TableHead>
+                  <TableHead className="text-right min-w-[150px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
 

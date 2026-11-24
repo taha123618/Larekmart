@@ -64,11 +64,11 @@ export function DataTable<TData extends RowData = any>({
   );
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
       {Object.keys(rowSelection).length > 0 && (
-        <div className="flex justify-end">
-          <button className="flex items-center gap-2 bg-red-500 text-white px-2 py-1 text-sm rounded-md m-4 cursor-pointer">
-            <Trash2 className="w-4 h-4" />
+        <div className="flex justify-end p-3 border-b border-border/40">
+          <button className="flex items-center gap-2 bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-medium rounded-lg cursor-pointer hover:bg-destructive/90 transition shadow-xs">
+            <Trash2 className="w-3.5 h-3.5" />
             Delete Product(s)
           </button>
         </div>

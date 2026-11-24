@@ -1,7 +1,6 @@
 import AppSidebar from "@/components/AppSidebar";
 import Navbar from "@/components/Navbar";
 import QueryProvider from "@/components/providers/QueryProvider";
-import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { cookies } from "next/headers";
 import { ToastContainer } from "react-toastify";
@@ -37,21 +36,16 @@ export default async function DashboardLayout({
 
   return (
     <QueryProvider>
-      <div className="flex">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <SidebarProvider defaultOpen={defaultOpen}>
-            <AppSidebar />
-            <main className="w-full">
-              <Navbar />
-              <div className="px-4">{children}</div>
-            </main>
-          </SidebarProvider>
-        </ThemeProvider>
+      <div className="flex min-h-screen w-full">
+        <SidebarProvider defaultOpen={defaultOpen}>
+          <AppSidebar />
+          <main className="flex-1 w-full min-w-0 flex flex-col">
+            <Navbar />
+            <div className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 max-w-full">
+              {children}
+            </div>
+          </main>
+        </SidebarProvider>
       </div>
       <ToastContainer position="bottom-right" />
     </QueryProvider>

@@ -28,6 +28,14 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -387,7 +395,24 @@ export default function VendorVerificationPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12 pt-4">
+    <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/vendors">Marketplace & Merchants</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>KYB Verification</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
@@ -420,9 +445,9 @@ export default function VendorVerificationPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-neutral-200 dark:border-neutral-800 bg-card">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Pending Review
             </CardTitle>
             <Clock className="h-4 w-4 text-amber-500" />
@@ -431,15 +456,15 @@ export default function VendorVerificationPage() {
             <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
               {pendingCount}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Vendors requiring compliance sign-off
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200 dark:border-neutral-800 bg-card">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Verified This Week
             </CardTitle>
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -448,15 +473,15 @@ export default function VendorVerificationPage() {
             <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
               {verifiedThisWeek}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Approved businesses in the last 7 days
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200 dark:border-neutral-800 bg-card">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Rejected This Week
             </CardTitle>
             <XCircle className="h-4 w-4 text-rose-500" />
@@ -465,7 +490,7 @@ export default function VendorVerificationPage() {
             <div className="text-3xl font-bold text-rose-600 dark:text-rose-400">
               {rejectedThisWeek}
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Incomplete or unverified applications
             </p>
           </CardContent>
@@ -473,7 +498,7 @@ export default function VendorVerificationPage() {
       </div>
 
       {/* Main Data Table */}
-      <Card className="border-neutral-200 dark:border-neutral-800">
+      <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
         <CardHeader className="p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="relative flex-1 max-w-sm">

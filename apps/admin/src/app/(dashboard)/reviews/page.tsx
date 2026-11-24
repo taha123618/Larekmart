@@ -1,5 +1,13 @@
 import { auth } from "@clerk/nextjs/server";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   fetchAdminReviews,
   fetchReviewReports,
   fetchReviewSummaries,
@@ -37,14 +45,33 @@ export default async function ReviewsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="px-4 py-3 bg-secondary rounded-md">
-        <h1 className="text-xl font-bold tracking-tight">
-          Customer Reviews & Moderation
-        </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Moderate customer feedback, inspect reported reviews for abuse or
-          spam, and maintain real-time product rating summary aggregates.
-        </p>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/reviews">Customer Care</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Product Reviews & Ratings</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Customer Reviews & Moderation
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Moderate customer feedback, inspect reported reviews for abuse or
+            spam, and maintain real-time product rating summary aggregates.
+          </p>
+        </div>
       </div>
 
       <ReviewsDashboardClient

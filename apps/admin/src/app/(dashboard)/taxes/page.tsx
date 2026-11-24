@@ -24,6 +24,14 @@ import type {
   CreateTaxExemptionInput,
 } from "@repo/types";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -350,19 +358,36 @@ export default function TaxesAdminDashboardPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto w-full">
+    <div className="flex flex-col gap-6 w-full">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/taxes">Finance & Compliance</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Taxes & Jurisdictions</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl border border-indigo-100 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400">
+            <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 text-primary">
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                 Taxes & Compliance
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Jurisdiction-aware rates, product classifications, exemptions,
                 and auditable calculation quotes.
               </p>
@@ -536,13 +561,13 @@ export default function TaxesAdminDashboardPage() {
 
       {/* KPI METRIC CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-        <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs border-slate-200/80 dark:border-slate-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="p-4 pb-1">
-            <CardDescription className="text-xs font-medium text-slate-500 flex items-center justify-between">
+            <CardDescription className="text-xs font-medium text-muted-foreground flex items-center justify-between">
               <span>Active Tax Rules</span>
-              <Percent className="w-3.5 h-3.5 text-indigo-500" />
+              <Percent className="w-3.5 h-3.5 text-primary" />
             </CardDescription>
-            <CardTitle className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            <CardTitle className="text-2xl font-bold text-foreground mt-1">
               {isOverviewLoading ? "..." : (overview?.activeRules ?? 0)}
             </CardTitle>
           </CardHeader>
@@ -553,71 +578,71 @@ export default function TaxesAdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs border-slate-200/80 dark:border-slate-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="p-4 pb-1">
-            <CardDescription className="text-xs font-medium text-slate-500 flex items-center justify-between">
+            <CardDescription className="text-xs font-medium text-muted-foreground flex items-center justify-between">
               <span>Jurisdictions</span>
               <Globe2 className="w-3.5 h-3.5 text-blue-500" />
             </CardDescription>
-            <CardTitle className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            <CardTitle className="text-2xl font-bold text-foreground mt-1">
               {isOverviewLoading ? "..." : (overview?.totalJurisdictions ?? 0)}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <span className="text-[11px] text-slate-500 font-medium">
+            <span className="text-[11px] text-muted-foreground font-medium">
               Countries & regions
             </span>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs border-slate-200/80 dark:border-slate-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="p-4 pb-1">
-            <CardDescription className="text-xs font-medium text-slate-500 flex items-center justify-between">
+            <CardDescription className="text-xs font-medium text-muted-foreground flex items-center justify-between">
               <span>Tax Categories</span>
               <Tag className="w-3.5 h-3.5 text-amber-500" />
             </CardDescription>
-            <CardTitle className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            <CardTitle className="text-2xl font-bold text-foreground mt-1">
               {isOverviewLoading ? "..." : (overview?.totalCategories ?? 0)}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <span className="text-[11px] text-slate-500 font-medium">
+            <span className="text-[11px] text-muted-foreground font-medium">
               Product classifications
             </span>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs border-slate-200/80 dark:border-slate-800">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="p-4 pb-1">
-            <CardDescription className="text-xs font-medium text-slate-500 flex items-center justify-between">
+            <CardDescription className="text-xs font-medium text-muted-foreground flex items-center justify-between">
               <span>Audited Snapshots</span>
               <Receipt className="w-3.5 h-3.5 text-emerald-500" />
             </CardDescription>
-            <CardTitle className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            <CardTitle className="text-2xl font-bold text-foreground mt-1">
               {isOverviewLoading ? "..." : (overview?.totalCalculations ?? 0)}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <span className="text-[11px] text-slate-500 font-medium">
+            <span className="text-[11px] text-muted-foreground font-medium">
               Permanent audit records
             </span>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs border-slate-200/80 dark:border-slate-800 col-span-2 md:col-span-1">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs col-span-2 md:col-span-1">
           <CardHeader className="p-4 pb-1">
-            <CardDescription className="text-xs font-medium text-slate-500 flex items-center justify-between">
+            <CardDescription className="text-xs font-medium text-muted-foreground flex items-center justify-between">
               <span>Tax Engine</span>
               <ShieldCheck className="w-3.5 h-3.5 text-purple-500" />
             </CardDescription>
             <div className="mt-1">
-              <Badge className="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 text-[11px] font-bold">
+              <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] font-bold">
                 {overview?.provider?.toUpperCase() ?? "STANDARD"}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <span className="text-[11px] text-slate-500 font-medium">
+            <span className="text-[11px] text-muted-foreground font-medium">
               Pluggable adapter active
             </span>
           </CardContent>
@@ -625,13 +650,13 @@ export default function TaxesAdminDashboardPage() {
       </div>
 
       {/* TAB NAVIGATION */}
-      <div className="flex items-center gap-1.5 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex items-center gap-1.5 border-b border-border/60 overflow-x-auto min-w-full pb-px">
         <button
           onClick={() => setActiveTab("rules")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === "rules"
-              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <Percent className="w-3.5 h-3.5" />
@@ -640,10 +665,10 @@ export default function TaxesAdminDashboardPage() {
 
         <button
           onClick={() => setActiveTab("jurisdictions")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === "jurisdictions"
-              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <Globe2 className="w-3.5 h-3.5" />
@@ -652,10 +677,10 @@ export default function TaxesAdminDashboardPage() {
 
         <button
           onClick={() => setActiveTab("categories")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === "categories"
-              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -664,10 +689,10 @@ export default function TaxesAdminDashboardPage() {
 
         <button
           onClick={() => setActiveTab("exemptions")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === "exemptions"
-              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <FileCheck2 className="w-3.5 h-3.5" />
@@ -676,10 +701,10 @@ export default function TaxesAdminDashboardPage() {
 
         <button
           onClick={() => setActiveTab("audits")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === "audits"
-              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <History className="w-3.5 h-3.5" />
@@ -702,24 +727,25 @@ export default function TaxesAdminDashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/75 dark:bg-slate-900">
-                  <TableHead className="text-xs font-bold">
-                    Jurisdiction
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">Category</TableHead>
-                  <TableHead className="text-xs font-bold">Rate (%)</TableHead>
-                  <TableHead className="text-xs font-bold">Tax Type</TableHead>
-                  <TableHead className="text-xs font-bold">Priority</TableHead>
-                  <TableHead className="text-xs font-bold">Version</TableHead>
-                  <TableHead className="text-xs font-bold">Status</TableHead>
-                  <TableHead className="text-xs font-bold text-right">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
+          <div className="rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
+            <div className="overflow-x-auto min-w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="min-w-[160px] text-xs font-semibold">
+                      Jurisdiction
+                    </TableHead>
+                    <TableHead className="min-w-[140px] text-xs font-semibold">Category</TableHead>
+                    <TableHead className="min-w-[90px] text-xs font-semibold">Rate (%)</TableHead>
+                    <TableHead className="min-w-[100px] text-xs font-semibold">Tax Type</TableHead>
+                    <TableHead className="min-w-[80px] text-xs font-semibold">Priority</TableHead>
+                    <TableHead className="min-w-[90px] text-xs font-semibold">Version</TableHead>
+                    <TableHead className="min-w-[90px] text-xs font-semibold">Status</TableHead>
+                    <TableHead className="min-w-[100px] text-xs font-semibold text-right">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {isRulesLoading ? (
                   <TableRow>
@@ -820,6 +846,7 @@ export default function TaxesAdminDashboardPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </div>
         </div>
       )}
@@ -931,22 +958,23 @@ export default function TaxesAdminDashboardPage() {
             </Sheet>
           </div>
 
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/75 dark:bg-slate-900">
-                  <TableHead className="text-xs font-bold">Country</TableHead>
-                  <TableHead className="text-xs font-bold">
-                    Region/State
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">
-                    Municipality
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">Code</TableHead>
-                  <TableHead className="text-xs font-bold">Name</TableHead>
-                  <TableHead className="text-xs font-bold">Status</TableHead>
-                </TableRow>
-              </TableHeader>
+          <div className="rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
+            <div className="overflow-x-auto min-w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="min-w-[90px] text-xs font-semibold">Country</TableHead>
+                    <TableHead className="min-w-[120px] text-xs font-semibold">
+                      Region/State
+                    </TableHead>
+                    <TableHead className="min-w-[130px] text-xs font-semibold">
+                      Municipality
+                    </TableHead>
+                    <TableHead className="min-w-[100px] text-xs font-semibold">Code</TableHead>
+                    <TableHead className="min-w-[160px] text-xs font-semibold">Name</TableHead>
+                    <TableHead className="min-w-[90px] text-xs font-semibold">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {isJurLoading ? (
                   <TableRow>
@@ -988,6 +1016,7 @@ export default function TaxesAdminDashboardPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </div>
         </div>
       )}
@@ -1072,20 +1101,21 @@ export default function TaxesAdminDashboardPage() {
             </Sheet>
           </div>
 
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/75 dark:bg-slate-900">
-                  <TableHead className="text-xs font-bold">
-                    Category Code
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">Name</TableHead>
-                  <TableHead className="text-xs font-bold">
-                    Description
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">Status</TableHead>
-                </TableRow>
-              </TableHeader>
+          <div className="rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
+            <div className="overflow-x-auto min-w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="min-w-[140px] text-xs font-semibold">
+                      Category Code
+                    </TableHead>
+                    <TableHead className="min-w-[180px] text-xs font-semibold">Name</TableHead>
+                    <TableHead className="min-w-[200px] text-xs font-semibold">
+                      Description
+                    </TableHead>
+                    <TableHead className="min-w-[90px] text-xs font-semibold">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {isCatLoading ? (
                   <TableRow>
@@ -1121,6 +1151,7 @@ export default function TaxesAdminDashboardPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </div>
         </div>
       )}
@@ -1221,23 +1252,24 @@ export default function TaxesAdminDashboardPage() {
             </Sheet>
           </div>
 
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/75 dark:bg-slate-900">
-                  <TableHead className="text-xs font-bold">
-                    Certificate
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">Type</TableHead>
-                  <TableHead className="text-xs font-bold">
-                    Customer ID
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">
-                    Valid From
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">Status</TableHead>
-                </TableRow>
-              </TableHeader>
+          <div className="rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
+            <div className="overflow-x-auto min-w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="min-w-[160px] text-xs font-semibold">
+                      Certificate
+                    </TableHead>
+                    <TableHead className="min-w-[120px] text-xs font-semibold">Type</TableHead>
+                    <TableHead className="min-w-[140px] text-xs font-semibold">
+                      Customer ID
+                    </TableHead>
+                    <TableHead className="min-w-[120px] text-xs font-semibold">
+                      Valid From
+                    </TableHead>
+                    <TableHead className="min-w-[90px] text-xs font-semibold">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {isExemptLoading ? (
                   <TableRow>
@@ -1287,6 +1319,7 @@ export default function TaxesAdminDashboardPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </div>
         </div>
       )}
@@ -1304,26 +1337,27 @@ export default function TaxesAdminDashboardPage() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/75 dark:bg-slate-900">
-                  <TableHead className="text-xs font-bold">
-                    Calculation ID
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">Reference</TableHead>
-                  <TableHead className="text-xs font-bold">Type</TableHead>
-                  <TableHead className="text-xs font-bold">Subtotal</TableHead>
-                  <TableHead className="text-xs font-bold">Tax Total</TableHead>
-                  <TableHead className="text-xs font-bold">
-                    Grand Total
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">
-                    Rule Version
-                  </TableHead>
-                  <TableHead className="text-xs font-bold">Timestamp</TableHead>
-                </TableRow>
-              </TableHeader>
+          <div className="rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
+            <div className="overflow-x-auto min-w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="min-w-[130px] text-xs font-semibold">
+                      Calculation ID
+                    </TableHead>
+                    <TableHead className="min-w-[120px] text-xs font-semibold">Reference</TableHead>
+                    <TableHead className="min-w-[90px] text-xs font-semibold">Type</TableHead>
+                    <TableHead className="min-w-[100px] text-xs font-semibold">Subtotal</TableHead>
+                    <TableHead className="min-w-[100px] text-xs font-semibold">Tax Total</TableHead>
+                    <TableHead className="min-w-[100px] text-xs font-semibold">
+                      Grand Total
+                    </TableHead>
+                    <TableHead className="min-w-[110px] text-xs font-semibold">
+                      Rule Version
+                    </TableHead>
+                    <TableHead className="min-w-[140px] text-xs font-semibold">Timestamp</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {isCalcLoading ? (
                   <TableRow>
@@ -1379,6 +1413,7 @@ export default function TaxesAdminDashboardPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </div>
         </div>
       )}

@@ -28,6 +28,14 @@ import type {
   ChatAttachment,
 } from "@repo/types";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   fetchAdminConversations,
   fetchAdminConversationMessages,
   sendAdminMessage,
@@ -212,21 +220,38 @@ function AdminChatContent() {
   };
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/chat">Customer Care</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Live Chat & Moderation</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
             Live Chat & Moderation
           </h2>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
             Monitor real-time buyer-seller conversations, assist customers in
             live support, and enforce communications safety.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={loadConversations}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-xs hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground shadow-xs hover:bg-secondary/80 transition cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
@@ -234,10 +259,10 @@ function AdminChatContent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:grid-cols-12 min-h-[700px]">
+      <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-border/60 bg-card text-card-foreground shadow-xs lg:grid-cols-12 min-h-[700px]">
         {/* Left: Conversation List */}
-        <div className="border-r border-neutral-200 dark:border-neutral-800 lg:col-span-4 flex flex-col">
-          <div className="border-b border-neutral-200 p-3 space-y-2 dark:border-neutral-800">
+        <div className="border-r border-border/60 lg:col-span-4 flex flex-col">
+          <div className="border-b border-border/60 p-3 space-y-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-400" />
               <input
@@ -357,7 +382,7 @@ function AdminChatContent() {
           {selectedConv ? (
             <>
               {/* Header */}
-              <div className="border-b border-neutral-200 bg-white px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-900 flex items-center justify-between">
+              <div className="border-b border-border/60 bg-card px-5 py-3.5 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                     {selectedConv.title || "Conversation Transcript"}
@@ -452,7 +477,7 @@ function AdminChatContent() {
               {/* Staff Reply Form */}
               <form
                 onSubmit={handleSendMessage}
-                className="border-t border-neutral-200 bg-white p-3.5 dark:border-neutral-800 dark:bg-neutral-900"
+                className="border-t border-border/60 bg-card p-3.5"
               >
                 <div className="flex items-center gap-2">
                   <input

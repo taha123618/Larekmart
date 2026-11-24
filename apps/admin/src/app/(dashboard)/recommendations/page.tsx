@@ -1,6 +1,14 @@
 import { auth } from "@clerk/nextjs/server";
 import type { StrategyMetricType } from "@repo/types";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -79,11 +87,28 @@ export default async function RecommendationsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/recommendations">AI & Personalization</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Recommendations Engine</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-gradient-to-r from-secondary via-secondary/80 to-background rounded-xl border border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               AI Recommendations & Personalization
             </h1>
             <Badge
@@ -93,7 +118,7 @@ export default async function RecommendationsPage() {
               Port 8008
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground max-w-2xl">
+          <p className="text-sm text-muted-foreground max-w-2xl">
             Real-time hybrid recommendation platform powered by pgvector
             128-dimensional dense embeddings, collaborative filtering,
             exponential time-decay trending, and multi-tier cold-start
@@ -103,7 +128,7 @@ export default async function RecommendationsPage() {
 
         <div className="flex items-center gap-2 text-xs">
           {isEngineOnline ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 font-medium">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 font-medium border border-emerald-500/20">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -111,7 +136,7 @@ export default async function RecommendationsPage() {
               Engine Active
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-600 font-medium">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-600 font-medium border border-amber-500/20">
               <span className="relative flex h-2 w-2">
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
               </span>

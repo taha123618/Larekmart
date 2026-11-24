@@ -15,6 +15,14 @@ import {
   ShieldAlert,
   LifeBuoy,
 } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -56,22 +64,39 @@ const OrdersPage = async () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between px-4 py-3 bg-secondary rounded-lg">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/orders">Sales & Orders</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Orders & Payments Registry</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs">
         <div>
-          <h1 className="font-semibold text-lg">Orders & Payments Registry</h1>
+          <h1 className="font-bold text-xl tracking-tight">Orders & Payments Registry</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Synchronized with order-service (:8001), analytic-service (:8004),
             and fraud-service (:8024)
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
+        <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 w-fit">
           <Activity className="h-3.5 w-3.5 animate-pulse text-emerald-500" />
           <span>Live Telemetry Active</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        <Card className="border-border/40">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Platform Revenue
@@ -93,7 +118,7 @@ const OrdersPage = async () => {
           </CardContent>
         </Card>
 
-        <Card className="border-border/40">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Processed Orders
@@ -110,7 +135,7 @@ const OrdersPage = async () => {
           </CardContent>
         </Card>
 
-        <Card className="border-border/40">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Analytics Health
@@ -130,7 +155,7 @@ const OrdersPage = async () => {
           </CardContent>
         </Card>
 
-        <Card className="border-border/40">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Fraud & Risk Cases
@@ -153,7 +178,7 @@ const OrdersPage = async () => {
           </CardContent>
         </Card>
 
-        <Card className="border-border/40">
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Support Cases

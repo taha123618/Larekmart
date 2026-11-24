@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchSystemSettings } from "@/services/seller.service";
 import { getPendingVendors } from "@/services/vendor-verification.service";
+import { fetchAdminConversations } from "@/services/chat.service";
 import { useClerk, useUser } from "@clerk/nextjs";
 import {
   Home,
@@ -138,6 +139,15 @@ const AppSidebar = () => {
 
   const pendingVerificationCount = pendingVendorsData?.total ?? 0;
 
+  const { data: chatData } = useQuery({
+    queryKey: ["sidebar-active-chat-count"],
+    queryFn: () =>
+      fetchAdminConversations({ status: "ACTIVE", limit: 1 }).catch(() => null),
+    staleTime: 30000,
+  });
+
+  const activeChatCount = chatData?.total ?? 0;
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="py-4">
@@ -182,8 +192,8 @@ const AppSidebar = () => {
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                  {item.title === "Inbox" && (
-                    <SidebarMenuBadge>24</SidebarMenuBadge>
+                  {item.title === "Inbox" && activeChatCount > 0 && (
+                    <SidebarMenuBadge>{activeChatCount}</SidebarMenuBadge>
                   )}
                 </SidebarMenuItem>
               ))}
@@ -554,6 +564,9 @@ const AppSidebar = () => {
                     Live Chat & Moderation
                   </Link>
                 </SidebarMenuButton>
+                {activeChatCount > 0 && (
+                  <SidebarMenuBadge>{activeChatCount}</SidebarMenuBadge>
+                )}
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>

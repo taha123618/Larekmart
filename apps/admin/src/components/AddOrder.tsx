@@ -44,12 +44,16 @@ const AddOrder = () => {
     },
   });
   return (
-    <SheetContent>
-      <SheetHeader>
-        <SheetTitle className="mb-4">Add Order</SheetTitle>
-        <SheetDescription asChild>
-          <Form {...form}>
-            <form className="space-y-8">
+    <SheetContent className="overflow-y-auto sm:max-w-md">
+      <SheetHeader className="pb-4 border-b">
+        <SheetTitle>Add Order</SheetTitle>
+        <SheetDescription>
+          Manually record a pending order transaction.
+        </SheetDescription>
+      </SheetHeader>
+      <div className="py-4">
+        <Form {...form}>
+          <form className="space-y-6">
               <FormField
                 control={form.control}
                 name="amount"
@@ -119,11 +123,10 @@ const AddOrder = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit">Submit</Button>
-            </form>
-          </Form>
-        </SheetDescription>
-      </SheetHeader>
+            <Button type="submit" className="w-full">Submit</Button>
+          </form>
+        </Form>
+      </div>
     </SheetContent>
   );
 };

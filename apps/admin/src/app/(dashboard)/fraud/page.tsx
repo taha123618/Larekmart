@@ -13,6 +13,14 @@ import {
   retrainAdminFraudModel,
 } from "@/services/fraud.service";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -301,15 +309,32 @@ export default function AdminFraudPage(): React.JSX.Element {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/fraud">Risk & Security</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Fraud Intelligence</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-            <ShieldAlert className="h-7 w-7 text-red-600" />
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+            <ShieldAlert className="h-6 w-6 text-red-600" />
             Fraud & Risk Control Center
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Real-time anomaly scoring, velocity abuse detection, multi-workflow
             risk assessment, and analyst case reviews.
           </p>
@@ -338,7 +363,7 @@ export default function AdminFraudPage(): React.JSX.Element {
               performanceQuery.isFetching ||
               modelsQuery.isFetching
             }
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-1.5 shadow-xs"
           >
             <RefreshCw
               className={`h-4 w-4 ${
@@ -357,7 +382,7 @@ export default function AdminFraudPage(): React.JSX.Element {
 
       {/* KPI Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="border-border/60 bg-card text-card-foreground shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Cases</CardTitle>
             <AlertTriangle className="h-4 w-4 text-amber-500" />

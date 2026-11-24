@@ -7,7 +7,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "./ui/chart";
-import { TrendingUp } from "lucide-react";
+import { Activity, PieChart as PieChartIcon } from "lucide-react";
 import { AnalyticsSummaryType } from "@repo/types";
 import { use } from "react";
 
@@ -27,18 +27,11 @@ const chartConfig = {
     label: "Products",
     color: "var(--chart-3)",
   },
-  other: {
-    label: "Other",
+  sellers: {
+    label: "Sellers",
     color: "var(--chart-4)",
   },
 } satisfies ChartConfig;
-
-const fallbackChartData = [
-  { activity: "orders", count: 275, fill: "var(--color-orders)" },
-  { activity: "signups", count: 200, fill: "var(--color-signups)" },
-  { activity: "products", count: 187, fill: "var(--color-products)" },
-  { activity: "other", count: 90, fill: "var(--color-other)" },
-];
 
 const AppPieChart = ({
   summaryPromise,
@@ -47,92 +40,109 @@ const AppPieChart = ({
 }) => {
   const summary = summaryPromise ? use(summaryPromise) : null;
 
-  const chartData = summary
+  const rawData = summary
     ? [
         {
           activity: "orders",
-          count: summary.totalOrders || 1,
+          count: summary.totalOrders || 0,
           fill: "var(--color-orders)",
         },
         {
           activity: "signups",
-          count: summary.totalSignups || 1,
+          count: summary.totalSignups || 0,
           fill: "var(--color-signups)",
         },
         {
           activity: "products",
-          count: summary.totalProductsCreated || 1,
+          count: summary.totalProductsCreated || 0,
           fill: "var(--color-products)",
         },
         {
-          activity: "other",
-          count: summary.totalProductsDeleted || 1,
-          fill: "var(--color-other)",
+          activity: "sellers",
+          count: summary.totalSellersActive || summary.totalSellersCreated || 0,
+          fill: "var(--color-sellers)",
         },
       ]
-    : fallbackChartData;
+    : [];
 
+  const chartData = rawData.filter((d) => d.count > 0);
   const totalActivities = chartData.reduce((acc, curr) => acc + curr.count, 0);
 
   return (
     <div className="">
       <h1 className="text-lg font-medium mb-6">Platform Distribution</h1>
-      <ChartContainer
-        config={chartConfig}
-        className="mx-auto aspect-square max-h-[250px]"
-      >
-        <PieChart>
-          <ChartTooltip
-            cursor={false}
-            content={<ChartTooltipContent hideLabel />}
-          />
-          <Pie
-            data={chartData}
-            dataKey="count"
-            nameKey="activity"
-            innerRadius={60}
-            strokeWidth={5}
+      {totalActivities > 0 ? (
+        <>
+          <ChartContainer
+            config={chartConfig}
+            className="mx-auto aspect-square max-h-[250px]"
           >
-            <Label
-              content={({ viewBox }) => {
-                if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                  return (
-                    <text
-                      x={viewBox.cx}
-                      y={viewBox.cy}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                    >
-                      <tspan
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        className="fill-foreground text-3xl font-bold"
-                      >
-                        {totalActivities.toLocaleString()}
-                      </tspan>
-                      <tspan
-                        x={viewBox.cx}
-                        y={(viewBox.cy || 0) + 24}
-                        className="fill-muted-foreground text-xs"
-                      >
-                        Total Events
-                      </tspan>
-                    </text>
-                  );
-                }
-              }}
-            />
-          </Pie>
-        </PieChart>
-      </ChartContainer>
-      <div className="mt-4 flex flex-col gap-2 items-center">
-        <div className="flex items-center gap-2 font-medium leading-none">
-          Live event activity <TrendingUp className="h-4 w-4 text-green-500" />
+            <PieChart>
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent hideLabel />}
+              />
+              <Pie
+                data={chartData}
+                dataKey="count"
+                nameKey="activity"
+                innerRadius={60}
+                strokeWidth={5}
+              >
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                      return (
+                        <text
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          <tspan
+                            x={viewBox.cx}
+                            y={viewBox.cy}
+                            className="fill-foreground text-3xl font-bold"
+                          >
+                            {totalActivities.toLocaleString()}
+                          </tspan>
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy || 0) + 24}
+                            className="fill-muted-foreground text-xs"
+                          >
+                            Total Events
+                          </tspan>
+                        </text>
+                      );
+                    }
+                  }}
+                />
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+          <div className="mt-4 flex flex-col gap-1 items-center text-center">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+              <Activity className="h-3.5 w-3.5 text-emerald-500" />
+              Live Platform Domain Metrics
+            </div>
+            <div className="text-muted-foreground text-[11px]">
+              Aggregated across active microservices
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center min-h-[250px] border border-dashed border-border/60 rounded-xl p-6 text-center text-muted-foreground">
+          <PieChartIcon className="w-8 h-8 mb-2 text-muted-foreground/40" />
+          <p className="text-sm font-semibold text-foreground">
+            No Event Activity Recorded
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Platform event distribution will populate automatically as users,
+            orders, and merchants interact with the store.
+          </p>
         </div>
-        <div className="leading-none text-muted-foreground text-xs">
-          Aggregated by Analytic Service
-        </div>
-      </div>
+      )}
     </div>
   );
 };

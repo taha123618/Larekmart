@@ -14,6 +14,14 @@ import {
   type EvaluationResult,
 } from "@/services/feature-flags.service";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -215,12 +223,29 @@ export default function FeatureFlagsDashboardPage() {
   ).length;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/feature-flags">Platform & Infrastructure</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Feature Flags & Experiments</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               Feature Flags & Canary Rollouts
             </h1>
             <Badge
@@ -230,7 +255,7 @@ export default function FeatureFlagsDashboardPage() {
               OpenFeature Runtime
             </Badge>
           </div>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Centralized dynamic feature toggles, percentage-based traffic
             splits, and attribute targeting across Larekmart microservices.
           </p>
@@ -385,21 +410,21 @@ export default function FeatureFlagsDashboardPage() {
           </div>
         </CardHeader>
 
-        <CardContent>
-          <div className="rounded-md border border-border/60 overflow-hidden">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto min-w-full">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">
-                  <TableHead className="font-semibold">Flag Key</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">
+                  <TableHead className="font-semibold min-w-[200px]">Flag Key</TableHead>
+                  <TableHead className="font-semibold min-w-[100px]">Status</TableHead>
+                  <TableHead className="font-semibold min-w-[180px]">
                     Canary Rollout
                   </TableHead>
-                  <TableHead className="font-semibold">
+                  <TableHead className="font-semibold min-w-[160px]">
                     Targeting Rules
                   </TableHead>
-                  <TableHead className="font-semibold">Default Value</TableHead>
-                  <TableHead className="font-semibold text-right">
+                  <TableHead className="font-semibold min-w-[120px]">Default Value</TableHead>
+                  <TableHead className="font-semibold min-w-[100px] text-right">
                     Actions
                   </TableHead>
                 </TableRow>

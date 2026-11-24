@@ -24,6 +24,14 @@ import Link from "next/link";
 import CourierDispatcherSimulator from "@/components/shipping/CourierDispatcherSimulator";
 import { getApiGatewayUrl } from "@/services/gateway.service";
 import { fetchOperationsAnalytics } from "@/services/analytics.service";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 async function getShippingHealth(): Promise<{ ok: boolean; status?: string }> {
   try {
@@ -167,6 +175,8 @@ const getCarrierBadge = (carrier: string) => {
   );
 };
 
+export const dynamic = "force-dynamic";
+
 interface ShippingPageProps {
   searchParams?: Promise<{
     carrier?: string;
@@ -233,16 +243,37 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
 
   return (
     <div className="flex flex-col gap-6 pb-12">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/shipping">Order Fulfillment</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Logistics & Shipments</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-2 py-3 px-4 bg-secondary rounded-lg">
-        <div className="flex items-center gap-2">
-          <Truck className="w-5 h-5 text-primary" />
-          <h1 className="font-semibold text-lg">Logistics & Shipments</h1>
-          <span className="text-xs text-muted-foreground ml-2">
-            (shipping-service @ port 8011)
-          </span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
+            <Truck className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="font-bold text-xl tracking-tight">Logistics & Shipments</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Multi-carrier lifecycle management (TCS, Leopards, DHL, FedEx) and Cash on Delivery settlements.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex flex-wrap items-center gap-3 text-sm self-start sm:self-auto">
           <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 font-medium">
             <Activity className="h-3 w-3 animate-pulse text-emerald-500" />
             <span>
@@ -251,19 +282,19 @@ const ShippingPage = async ({ searchParams }: ShippingPageProps) => {
             </span>
           </div>
           {health.ok ? (
-            <>
+            <div className="flex items-center gap-1.5">
               <CheckCircle className="w-4 h-4 text-emerald-500" />
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                 Carrier Adapters Ready
               </span>
-            </>
+            </div>
           ) : (
-            <>
+            <div className="flex items-center gap-1.5">
               <AlertCircle className="w-4 h-4 text-rose-500" />
-              <span className="text-rose-600 dark:text-rose-400 font-medium">
+              <span className="text-xs text-rose-600 dark:text-rose-400 font-medium">
                 Shipping Service Offline
               </span>
-            </>
+            </div>
           )}
         </div>
       </div>

@@ -1,5 +1,13 @@
 import { auth } from "@clerk/nextjs/server";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   Table,
   TableBody,
   TableCell,
@@ -52,30 +60,50 @@ export default async function LowStockPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-md">
-        <div className="flex items-center gap-2">
-          <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <h1 className="text-xl font-bold tracking-tight text-amber-900 dark:text-amber-200">
-            Low Stock & Out-of-Stock Alerts
-          </h1>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/inventory">Order Fulfillment</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Low Stock & Out-of-Stock</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-6 w-6 text-amber-500" />
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Low Stock & Out-of-Stock Alerts
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Items below their warehouse reorder point threshold. Quick restock can
+            be dispatched directly from this console.
+          </p>
         </div>
-        <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
-          Items below their warehouse reorder point threshold. Quick restock can
-          be dispatched directly from this console.
-        </p>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/inventory">← Back to All Inventory</Link>
+        </Button>
       </div>
 
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-muted-foreground">
           Showing {items.length} critical items
         </span>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/inventory">← Back to All Inventory</Link>
-        </Button>
       </div>
 
-      <div className="rounded-md border border-border bg-card">
-        <Table>
+      <div className="rounded-xl border border-border/60 bg-card text-card-foreground shadow-xs overflow-hidden">
+        <div className="overflow-x-auto min-w-full">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[100px]">Product ID</TableHead>
@@ -156,6 +184,7 @@ export default async function LowStockPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );
