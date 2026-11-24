@@ -86,3 +86,21 @@ EMBEDDING_GENERATION_DURATION_SECONDS = Histogram(
     ["provider"],
     buckets=[0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0],
 )
+
+ML_RECOMMENDATION_NDCG_AT_K = Gauge(
+    "ml_recommendation_ndcg_at_k",
+    "Offline NDCG@K evaluation score of the active recommendation model",
+    ["model_name", "k"],
+)
+
+ML_RECOMMENDATION_CATALOG_COVERAGE = Gauge(
+    "ml_recommendation_catalog_coverage",
+    "Fraction of catalog items surfaced by the active recommendation model",
+    ["model_name"],
+)
+
+ML_MODEL_TRAINING_RUNS_TOTAL = Counter(
+    "ml_model_training_runs_total",
+    "Total number of ML training runs by service and status",
+    ["service", "status"],
+)

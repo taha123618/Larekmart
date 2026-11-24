@@ -1,0 +1,32 @@
+# ==============================================================================
+# Larekmart - Hardened ML Batch Training Image (CPU / Distributed Ready)
+# ==============================================================================
+
+ARG BASE_IMAGE=ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+FROM ${BASE_IMAGE} AS trainer
+
+WORKDIR /app
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    PYTHONUNBUFFERED=1 \
+    ML_ARTIFACT_DIR=/var/ml/artifacts
+
+RUN groupadd -g 1001 mltrainer && \
+    useradd -u 1001 -g mltrainer -m -s /bin/bash mltrainer && \
+    mkdir -p /var/ml/artifacts && chown -R mltrainer:mltrainer /var/ml
+
+ARG SERVICE_PATH=apps/fraud-service
+COPY ${SERVICE_PATH}/pyproject.toml ${SERVICE_PATH}/uv.lock* ./
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project
+
+COPY --chown=mltrainer:mltrainer ${SERVICE_PATH}/ .
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+
+USER mltrainer
+
+ENTRYPOINT ["uv", "run", "python"]

@@ -1,0 +1,38 @@
+# ==============================================================================
+# Larekmart - GPU-Accelerated Inference Image (CUDA Runtime + uv)
+# Used for dense vector embeddings, neural rankers, and ONNX/Triton workloads.
+# ==============================================================================
+
+ARG CUDA_BASE_IMAGE=nvidia/cuda:12.4.1-runtime-ubuntu22.04
+FROM ${CUDA_BASE_IMAGE} AS gpu-inference
+
+WORKDIR /app
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    UV_COMPILE_BYTECODE=1 \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3.12 python3-pip curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip3 install --no-cache-dir uv
+
+RUN groupadd -g 1001 mlinference && \
+    useradd -u 1001 -g mlinference -m -s /bin/bash mlinference
+
+ARG SERVICE_PATH=apps/recommendation-service
+COPY ${SERVICE_PATH}/pyproject.toml ${SERVICE_PATH}/uv.lock* ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+COPY --chown=mlinference:mlinference ${SERVICE_PATH}/ .
+RUN uv sync --frozen --no-dev
+
+USER mlinference
+
+EXPOSE 8008
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -f http://localhost:8008/health || exit 1
+
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8008"]

@@ -39,6 +39,7 @@
     "test": "turbo run test",
     "test:dast": "pnpm --filter api-gateway test:dast",
     "audit:devsecops": "bash scripts/devsecops-audit.sh",
+    "audit:mlops": "bash scripts/mlops-audit.sh",
     "e2e": "pnpm --filter @repo/e2e test",
     "// db": "=== Database & Kafka ===",
     "dlq": "pnpm --filter @repo/kafka dlq",

@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mlops-trainer-sa
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: mlops
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/larekmart-mlops-trainer
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mlflow-server-sa
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/part-of: larekmart
+    app.kubernetes.io/component: mlops
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/larekmart-mlflow-registry
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mlops-trainer-role
+  namespace: larekmart
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: ["fraud-service", "recommendation-service"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mlops-trainer-rolebinding
+  namespace: larekmart
+subjects:
+  - kind: ServiceAccount
+    name: mlops-trainer-sa
+    namespace: larekmart
+roleRef:
+  kind: Role
+  name: mlops-trainer-role
+  apiGroup: rbac.authorization.k8s.io

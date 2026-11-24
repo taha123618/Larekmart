@@ -15,7 +15,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api.routes import analytics, health, interactions, products, recommendations, users
+from app.api.routes import analytics, health, interactions, mlops, products, recommendations, users
 from app.cache.redis import get_redis_cache
 from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
@@ -135,6 +135,7 @@ def create_app() -> FastAPI:
     app.include_router(users.router)
     app.include_router(interactions.router)
     app.include_router(analytics.router)
+    app.include_router(mlops.router)
 
     return app
 

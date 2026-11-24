@@ -634,3 +634,13 @@ Before advancing any feature or infrastructure change to staging or production, 
 - [ ] CI/CD pipeline builds immutable container tags with Trivy vulnerability scanning.
 - [ ] Database migrations are backward-compatible, tested, and automated.
 - [ ] Backup and disaster recovery procedures (RPO/RTO) are documented and verified.
+
+---
+
+## 23. Enterprise MLOps & Continuous Training (CT) Standards
+
+When working with ML services (`fraud-service`, `recommendation-service`) or ML infrastructure:
+
+- **Local MLOps Stack**: Start MLflow (`:5001`), MinIO S3 (`:9002/:9003`), and Postgres via `docker compose -f docker-compose.mlops.yml up -d`.
+- **Kubernetes ML Infrastructure**: Maintain PSS `restricted` compliance, least-privilege RBAC (`mlops-rbac.yaml`), Zero-Trust `NetworkPolicy` (`mlops-network-policy.yaml`), scheduled `CronJob`s (`retraining-cronjobs.yaml`), and GPU templates (`gpu-inference-template.yaml`) under `infrastructure/kubernetes/base/mlops/`.
+- **Single-Command Verification**: Run `pnpm audit:mlops` before merging ML or MLOps changes (validates Kustomize, Compose, Trivy IaC/Dockerfiles, and all Python ML test suites). See `docs/MLOPS-ARCHITECTURE-AND-RUNBOOKS.md`.

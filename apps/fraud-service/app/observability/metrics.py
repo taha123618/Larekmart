@@ -1,4 +1,4 @@
-from prometheus_client import Counter, Histogram
+from prometheus_client import Counter, Gauge, Histogram
 
 FRAUD_ASSESSMENTS_TOTAL = Counter(
     "fraud_assessments_total",
@@ -47,5 +47,31 @@ KAFKA_EVENTS_FAILED_TOTAL = Counter(
     "kafka_events_failed_total",
     "Total number of Kafka event processing failures",
     ["topic", "error_type"],
+)
+
+# MLOps Metrics
+ML_FEATURE_DRIFT_PSI = Gauge(
+    "ml_feature_drift_psi",
+    "Population Stability Index (PSI) drift score per inference feature",
+    ["service", "feature"],
+)
+
+ML_INFERENCE_LATENCY_SECONDS = Histogram(
+    "ml_inference_latency_seconds",
+    "Latency of ML model inference calls in seconds",
+    ["service", "model_name"],
+    buckets=[0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1],
+)
+
+ML_MODEL_TRAINING_RUNS_TOTAL = Counter(
+    "ml_model_training_runs_total",
+    "Total number of ML training runs by status",
+    ["service", "status"],
+)
+
+ML_MODEL_EVALUATION_MARGIN = Gauge(
+    "ml_model_evaluation_margin",
+    "Anomaly separation margin from the latest model quality gate",
+    ["service", "model_name"],
 )
 

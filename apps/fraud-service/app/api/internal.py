@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import asyncio
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from app.core.security import verify_internal_secret
 from app.schemas.fraud import AssessRiskRequest, AssessRiskResponse
 from app.services.fraud_service import fraud_service
@@ -18,6 +19,21 @@ async def assess_risk(request: AssessRiskRequest) -> AssessRiskResponse:
     Evaluates sliding-window velocity, explainable rules, and scikit-learn anomaly scoring.
     """
     return await fraud_service.assess_risk(request)
+
+
+@router.post(
+    "/assess/batch",
+    response_model=list[AssessRiskResponse],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_internal_secret)],
+)
+async def assess_risk_batch(
+    requests: list[AssessRiskRequest] = Body(..., min_length=1, max_length=100),
+) -> list[AssessRiskResponse]:
+    """
+    Batch risk assessment endpoint for high-throughput offline/scheduled fraud scoring (1-100 items).
+    """
+    return list(await asyncio.gather(*(fraud_service.assess_risk(req) for req in requests)))
 
 
 @router.get(

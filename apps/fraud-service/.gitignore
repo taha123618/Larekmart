@@ -28,3 +28,9 @@ ENV/
 htmlcov/
 .turbo/
 
+
+# MLOps local artifacts & experiment tracking
+ml_artifacts/
+mlruns/
+*.joblib
+*.manifest.json

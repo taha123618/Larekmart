@@ -1,0 +1,136 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: fraud-model-retraining
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: fraud-model-retraining
+    app.kubernetes.io/component: mlops
+    app.kubernetes.io/part-of: larekmart
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: fraud-model-retraining
+            app.kubernetes.io/component: mlops
+        spec:
+          serviceAccountName: mlops-trainer-sa
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: fraud-trainer
+              image: larekmart/fraud-service:v1.0.0
+              imagePullPolicy: IfNotPresent
+              command:
+                - /app/.venv/bin/python
+                - -c
+                - "from app.engine.ml_engine import ml_engine; print(ml_engine.retrain(model_name='isolation_forest_scheduled'))"
+              env:
+                - name: MLFLOW_TRACKING_URI
+                  value: "http://mlflow-server.larekmart.svc.cluster.local:5000"
+                - name: ML_ARTIFACT_DIR
+                  value: "/tmp/ml_artifacts/fraud"
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+                limits:
+                  cpu: 1000m
+                  memory: 1Gi
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir:
+                sizeLimit: 512Mi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: recommendation-model-retraining
+  namespace: larekmart
+  labels:
+    app.kubernetes.io/name: recommendation-model-retraining
+    app.kubernetes.io/component: mlops
+    app.kubernetes.io/part-of: larekmart
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: recommendation-model-retraining
+            app.kubernetes.io/component: mlops
+        spec:
+          serviceAccountName: mlops-trainer-sa
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: recommendation-trainer
+              image: larekmart/recommendation-service:v1.0.0
+              imagePullPolicy: IfNotPresent
+              command:
+                - uv
+                - run
+                - python
+                - -c
+                - "from app.workers.training_tasks import train_recommendation_model; print(train_recommendation_model())"
+              envFrom:
+                - configMapRef:
+                    name: larekmart-common-config
+                - secretRef:
+                    name: larekmart-secrets
+              env:
+                - name: MLFLOW_TRACKING_URI
+                  value: "http://mlflow-server.larekmart.svc.cluster.local:5000"
+                - name: ML_ARTIFACT_DIR
+                  value: "/tmp/ml_artifacts/recommendation"
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 1Gi
+                limits:
+                  cpu: 2000m
+                  memory: 2Gi
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir:
+                sizeLimit: 1Gi

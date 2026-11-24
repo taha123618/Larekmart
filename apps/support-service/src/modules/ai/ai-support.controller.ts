@@ -10,6 +10,7 @@ import {
 import {
   AiSupportService,
   type AiSupportMetrics,
+  type AiSupportMlopsStatus,
 } from "./ai-support.service.js";
 import { AiSupportMessageSchema, type AiSupportResponse } from "@repo/types";
 
@@ -26,6 +27,18 @@ export class AiSupportController {
     return {
       success: true,
       data: this.aiSupportService.getMetrics(),
+    };
+  }
+
+  @Get("mlops/status")
+  @HttpCode(HttpStatus.OK)
+  async getMlopsStatus(): Promise<{
+    success: boolean;
+    data: AiSupportMlopsStatus;
+  }> {
+    return {
+      success: true,
+      data: this.aiSupportService.getMlopsStatus(),
     };
   }
 

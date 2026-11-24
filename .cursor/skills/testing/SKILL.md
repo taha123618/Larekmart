@@ -227,3 +227,4 @@ Before submitting or merging code changes:
 - [ ] Zero unparameterized SQL queries (no raw string interpolations in DB queries).
 - [ ] Negative and boundary test cases are included for any new business logic.
 - [ ] Independent test fixtures with clean teardown (zero database pollution).
+- [ ] `pnpm audit:mlops` passes (K8s MLOps manifests, Trivy, `fraud-service` & `recommendation-service` ML suites, and Ruff lint) when touching AI/ML services.

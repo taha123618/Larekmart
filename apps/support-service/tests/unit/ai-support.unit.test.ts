@@ -83,6 +83,19 @@ async function runTests() {
     );
   }
 
+  console.log("\n[4. MLOps Drift, Latency & Model Version Telemetry]");
+  {
+    const mlops = service.getMlopsStatus();
+    assert.equal(mlops.service, "support-service");
+    assert.equal(mlops.modelVersion, "larekmart-support-kb-v2.1");
+    assert.equal(mlops.driftStatus, "OK");
+    assert.equal(mlops.totalInferences, 148);
+    assert.ok(mlops.averageLatencyMs >= 0);
+    console.log(
+      "  ✓ MLOps status reports modelVersion, driftStatus, fallbackRate, and averageLatencyMs",
+    );
+  }
+
   console.log("\n==================================================");
   console.log("  AI ASSISTANT UNIT TESTS COMPLETED: 7 passed, 0 failed");
   console.log("==================================================");

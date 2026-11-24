@@ -49,6 +49,10 @@ resources:
   - rbac/service-accounts.yaml
   - security/kyverno-policies.yaml
   - network-policies/network-policies.yaml
+  - mlops/mlops-rbac.yaml
+  - mlops/mlops-network-policy.yaml
+  - mlops/mlflow-server.yaml
+  - mlops/retraining-cronjobs.yaml
   - messaging/kafka-cluster.yaml
   - messaging/schema-registry.yaml
   - messaging/debezium-cdc.yaml

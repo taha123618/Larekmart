@@ -61,3 +61,9 @@ celerybeat.pid
 
 #lock file
 uv.lock
+
+# MLOps local artifacts & experiment tracking
+ml_artifacts/
+mlruns/
+*.joblib
+*.manifest.json

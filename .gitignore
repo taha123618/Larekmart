@@ -65,3 +65,14 @@ terraform.rc
 .claude/super-board/inflight/
 .claude/super-board/migrations/
 .claude/super-board/upgrade.json
+
+# MLOps local artifacts, experiment tracking & DVC caches
+ml_artifacts/
+**/ml_artifacts/
+mlruns/
+**/mlruns/
+*.joblib
+*.onnx
+*.pkl
+.dvc/cache/
+.dvc/tmp/

@@ -1,0 +1,74 @@
+{
+  "title": "Larekmart - MLOps Model Health, Drift & Inference Observability",
+  "uid": "larekmart-mlops-obs",
+  "tags": ["mlops", "fraud", "recommendations", "drift"],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Fraud Feature Drift (PSI)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "ml_feature_drift_psi{service=\"fraud-service\"}",
+          "legendFormat": "{{feature}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "red", "value": 0.25 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "ML Inference Latency (P95 Seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ml_inference_latency_seconds_bucket[5m])) by (le, service, model_name))",
+          "legendFormat": "{{service}} - {{model_name}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Continuous Training (CT) Runs by Status",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum by (service, status) (ml_model_training_runs_total)",
+          "legendFormat": "{{service}} ({{status}})"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Recommendation Quality (NDCG@K & Catalog Coverage)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "ml_recommendation_ndcg_at_k",
+          "legendFormat": "NDCG@{{k}} ({{model_name}})"
+        },
+        {
+          "expr": "ml_recommendation_catalog_coverage",
+          "legendFormat": "Coverage ({{model_name}})"
+        }
+      ]
+    }
+  ]
+}

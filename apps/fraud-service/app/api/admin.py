@@ -120,6 +120,18 @@ async def list_models():
     return await fraud_service.list_model_versions()
 
 
+@router.get(
+    "/mlops/status",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_admin_role)],
+)
+async def get_mlops_status():
+    """Returns live MLOps feature drift (PSI), model evaluation margin, and registry artifact status."""
+    from app.engine.ml_engine import ml_engine
+
+    return ml_engine.get_mlops_status()
+
+
 @router.post(
     "/models/retrain",
     response_model=RiskModelVersionDTO,

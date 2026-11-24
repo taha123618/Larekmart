@@ -447,6 +447,11 @@ To sustain **tens of thousands of concurrent users** and prevent cascading syste
     - **Production-Ready Enterprise Helm Chart (`infrastructure/helm/larekmart/`)**: Standardized Helm release packaging with built-in PSS restricted securityContext, HPA autoscaling, Pod Disruption Budgets, and Workload Identity (AWS IRSA / GCP Workload Identity) with `automountServiceAccountToken: false`.
     - **Falco eBPF Runtime Intrusion Detection & SIEM**: Continuous kernel syscall monitoring detecting container interactive shells, binary directory writes, and credential tampering, integrated with Loki and Prometheus alertmanager notifications.
     - **Single-Command DevSecOps Audit Runner (`pnpm audit:devsecops`)**: End-to-end automated security verification script validating Kubernetes manifests, Helm lint, observability configurations, TypeScript compilation, and 8/8 OWASP API Security Top 10 categories.
+31. **Enterprise MLOps, Continuous Training (CT) & Drift Observability (`infrastructure/mlops/`, `docker-compose.mlops.yml`, `scripts/mlops-audit.sh`)**:
+    - **Experiment Tracking & Model Registry**: Local and Kubernetes MLflow Tracking Server (`ghcr.io/mlflow/mlflow:v2.19.0`) backed by PostgreSQL and MinIO S3-compatible artifact storage, persisting `joblib` artifacts with SHA-256 integrity digests.
+    - **Dataset Validation & Quality Gates**: Automated schema/bound checks (`validate_training_dataset`), Fraud anomaly separation gates (`evaluate_model_quality_gate`), and Recommendation offline ranking evaluation (`Precision@K`, `Recall@K`, `NDCG@K`, `Catalog Coverage`) gating model promotion.
+    - **Online Drift Detection & Serving**: Real-time Population Stability Index (PSI) feature drift detector (`GET /api/v1/admin/fraud/mlops/status`), Prometheus `mlops_health` alert rules, Grafana MLOps dashboard, batch scoring (`POST /api/v1/internal/fraud/assess/batch`), and Triton/GPU inference templates (`infrastructure/mlops/serving/triton-config.pbtxt`).
+    - **Scheduled Continuous Training & Audit (`pnpm audit:mlops`)**: Kubernetes `CronJob`s (`02:00`/`03:00 UTC`), GitHub Actions CT pipeline (`.github/workflows/mlops-ct-pipeline.yml`), and single-command MLOps audit gate (`docs/MLOPS-ARCHITECTURE-AND-RUNBOOKS.md`).
 
 For in-depth architectural specifications and diagrams, see [`docs/plans/README.md`](docs/plans/README.md).
 

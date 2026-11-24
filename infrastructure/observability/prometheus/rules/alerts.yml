@@ -400,3 +400,44 @@ groups:
           description: |
             External Secrets Operator is failing to synchronize credentials from HashiCorp Vault or AWS Secrets Manager.
             Remediation: Inspect ESO logs (`kubectl logs -n external-secrets`) and check Vault token validity.
+
+  # ══════════════════════════════════════════════════════
+  # MLOPS MODEL DRIFT, INFERENCE LATENCY & CT HEALTH
+  # ══════════════════════════════════════════════════════
+  - name: mlops_health
+    rules:
+      - alert: HighFeatureDriftDetected
+        expr: ml_feature_drift_psi > 0.25
+        for: 5m
+        labels:
+          severity: warning
+          tier: mlops
+        annotations:
+          summary: "High Feature Drift (PSI > 0.25) on {{ $labels.service }} ({{ $labels.feature }})"
+          description: |
+            Population Stability Index for feature {{ $labels.feature }} on {{ $labels.service }} reached {{ $value }}.
+            Remediation: Trigger Continuous Training (CT) pipeline or inspect upstream feature distribution shift.
+
+      - alert: MLInferenceLatencyHigh
+        expr: histogram_quantile(0.95, rate(ml_inference_latency_seconds_bucket[5m])) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          tier: mlops
+        annotations:
+          summary: "ML Inference P95 Latency > 100ms on {{ $labels.service }}"
+          description: |
+            Model {{ $labels.model_name }} on {{ $labels.service }} P95 inference latency is {{ $value }}s.
+            Remediation: Check pod CPU throttling, Redis feature store latency, or scale inference replicas.
+
+      - alert: MLTrainingQualityGateRejected
+        expr: increase(ml_model_training_runs_total{status=~"dataset_rejected|gate_rejected"}[1h]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          tier: mlops
+        annotations:
+          summary: "CRITICAL: ML Training Run Rejected by Validation/Quality Gate"
+          description: |
+            A scheduled or manual retraining run on {{ $labels.service }} was rejected ({{ $labels.status }}).
+            Remediation: Inspect MLflow experiment logs and dataset validation output before promoting any model.

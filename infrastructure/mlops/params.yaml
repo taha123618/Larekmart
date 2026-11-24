@@ -1,0 +1,21 @@
+# ==============================================================================
+# Larekmart - Versioned ML Hyperparameters & Evaluation Quality Gate Thresholds
+# ==============================================================================
+
+fraud:
+  model_name: "isolation_forest_v1"
+  algorithm: "IsolationForest"
+  n_estimators: 50
+  contamination: 0.05
+  random_state: 42
+  min_separation_margin: 0.02
+  drift_psi_warning: 0.10
+  drift_psi_critical: 0.25
+
+recommendation:
+  model_name: "collaborative_item_knn"
+  algorithm: "item_based_cosine"
+  min_interactions: 1
+  top_k: 10
+  min_ndcg_at_k: 0.05
+  retention_days: 180

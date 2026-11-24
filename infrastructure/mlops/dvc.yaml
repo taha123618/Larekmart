@@ -1,0 +1,31 @@
+# ==============================================================================
+# Larekmart - DVC Reproducible ML Training & Evaluation Pipeline
+# ==============================================================================
+
+stages:
+  fraud_validate_and_train:
+    cmd: >
+      uv --directory apps/fraud-service run python -c
+      "from app.engine.ml_engine import ml_engine; res = ml_engine.retrain(model_name='isolation_forest_dvc', n_estimators=50, contamination=0.05); print(res['metrics'])"
+    deps:
+      - apps/fraud-service/app/engine/ml_engine.py
+      - apps/fraud-service/app/mlops/validator.py
+    params:
+      - infrastructure/mlops/params.yaml:
+          - fraud.n_estimators
+          - fraud.contamination
+          - fraud.min_separation_margin
+    outs:
+      - apps/fraud-service/ml_artifacts/fraud:
+          persist: true
+
+  recommendation_validate_eval:
+    cmd: >
+      uv --directory apps/recommendation-service run pytest tests/unit/test_mlops_evaluator.py -q
+    deps:
+      - apps/recommendation-service/app/mlops/evaluator.py
+      - apps/recommendation-service/app/workers/training_tasks.py
+    params:
+      - infrastructure/mlops/params.yaml:
+          - recommendation.top_k
+          - recommendation.min_ndcg_at_k

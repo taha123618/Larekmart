@@ -21,6 +21,18 @@ export interface AiSupportMetrics {
   recentInquiries: AiSupportInquiryRecord[];
 }
 
+export interface AiSupportMlopsStatus {
+  service: string;
+  modelVersion: string;
+  baselineConfidence: number;
+  currentAverageConfidence: number;
+  confidenceDriftDelta: number;
+  fallbackRate: number;
+  driftStatus: "OK" | "MODERATE_DRIFT" | "HIGH_DRIFT";
+  averageLatencyMs: number;
+  totalInferences: number;
+}
+
 interface KnowledgeItem {
   keywords: string[];
   intent: AiSupportResponse["intent"];
@@ -113,11 +125,14 @@ const KNOWLEDGE_BASE: KnowledgeItem[] = [
 @Injectable()
 export class AiSupportService {
   private readonly logger = new Logger(AiSupportService.name);
+  private readonly modelVersion = "larekmart-support-kb-v2.1";
+  private readonly baselineConfidence = 0.85;
 
   private totalInquiries = 142;
   private autoResolved = 118;
   private escalatedToTicket = 24;
   private confidenceSum = 124.8;
+  private latencySumMs = 142 * 1.8;
   private readonly intentBreakdown: Record<string, number> = {
     ORDER_TRACKING: 58,
     SHIPPING_INQUIRY: 32,
@@ -160,6 +175,7 @@ export class AiSupportService {
   async answerQuestion(
     input: AiSupportMessageInput,
   ): Promise<AiSupportResponse> {
+    const startNs = process.hrtime.bigint();
     const query = input.message.toLowerCase().trim();
     this.logger.log(`Processing AI support inquiry: "${query.slice(0, 80)}"`);
 
@@ -232,7 +248,38 @@ export class AiSupportService {
       this.recentInquiries.pop();
     }
 
+    const elapsedMs = Number(process.hrtime.bigint() - startNs) / 1_000_000;
+    this.latencySumMs += elapsedMs;
+
     return response;
+  }
+
+  getMlopsStatus(): AiSupportMlopsStatus {
+    const total = Math.max(this.totalInquiries, 1);
+    const currentAvgConf = Math.round((this.confidenceSum / total) * 1000) / 1000;
+    const driftDelta =
+      Math.round((currentAvgConf - this.baselineConfidence) * 1000) / 1000;
+    const generalHelpCount = this.intentBreakdown.GENERAL_HELP || 0;
+    const fallbackRate = Math.round((generalHelpCount / total) * 1000) / 1000;
+
+    let driftStatus: AiSupportMlopsStatus["driftStatus"] = "OK";
+    if (driftDelta <= -0.2 || fallbackRate >= 0.4) {
+      driftStatus = "HIGH_DRIFT";
+    } else if (driftDelta <= -0.1 || fallbackRate >= 0.25) {
+      driftStatus = "MODERATE_DRIFT";
+    }
+
+    return {
+      service: "support-service",
+      modelVersion: this.modelVersion,
+      baselineConfidence: this.baselineConfidence,
+      currentAverageConfidence: currentAvgConf,
+      confidenceDriftDelta: driftDelta,
+      fallbackRate,
+      driftStatus,
+      averageLatencyMs: Math.round((this.latencySumMs / total) * 1000) / 1000,
+      totalInferences: this.totalInquiries,
+    };
   }
 
   getMetrics(): AiSupportMetrics {

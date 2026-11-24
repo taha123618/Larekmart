@@ -209,3 +209,12 @@ If an issue is detected after pipeline completion:
    ```bash
    kubectl get pods -n larekmart -l app.kubernetes.io/name=product-service
    ```
+
+
+---
+
+## 6. MLOps Continuous Training (CT) & DevSecOps Pipelines
+
+- **MLOps CT Workflow (`.github/workflows/mlops-ct-pipeline.yml`)**: Runs Ruff linting, Pytest ML suites, hyperparameter tuning (`tune_isolation_forest`), dataset validation, model evaluation quality gates (`separation_margin >= 0.02`, `NDCG@K`), SHA-256 artifact manifests, and blocking Trivy scans (`exit-code: 1`).
+- **DevSecOps Security Pipeline (`.github/workflows/devsecops-pipeline.yml`)**: Runs Gitleaks secret scanning, Semgrep SAST, Trivy IaC scanning, DAST (`pnpm test:dast`), CycloneDX SBOM generation, and Cosign signing.
+- **Local Verification Gates**: Run `pnpm audit:devsecops` and `pnpm audit:mlops` prior to opening pull requests.

@@ -1,0 +1,63 @@
+services:
+  mlflow-db:
+    image: postgres:16-alpine
+    container_name: larekmart-mlflow-db
+    environment:
+      POSTGRES_USER: ${MLFLOW_DB_USER:-mlflow}
+      POSTGRES_PASSWORD: ${MLFLOW_DB_PASSWORD:-mlflow_dev_password}
+      POSTGRES_DB: mlflow_db
+    volumes:
+      - mlflow_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlflow -d mlflow_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mlops-net
+
+  mlflow-minio:
+    image: cgr.dev/chainguard/minio:latest
+    container_name: larekmart-mlflow-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-mlflow_minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-mlflow_minio_secret}
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    volumes:
+      - mlflow_minio_data:/data
+    networks:
+      - mlops-net
+
+  mlflow-server:
+    image: ghcr.io/mlflow/mlflow:v2.19.0
+    container_name: larekmart-mlflow-server
+    depends_on:
+      mlflow-db:
+        condition: service_healthy
+      mlflow-minio:
+        condition: service_started
+    ports:
+      - "5001:5000"
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://mlflow-minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-mlflow_minio_admin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-mlflow_minio_secret}
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql://${MLFLOW_DB_USER:-mlflow}:${MLFLOW_DB_PASSWORD:-mlflow_dev_password}@mlflow-db:5432/mlflow_db
+      --default-artifact-root s3://mlflow-artifacts/
+    networks:
+      - mlops-net
+
+volumes:
+  mlflow_db_data:
+  mlflow_minio_data:
+
+networks:
+  mlops-net:
+    driver: bridge

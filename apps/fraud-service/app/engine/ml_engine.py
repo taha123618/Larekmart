@@ -1,10 +1,22 @@
-import os
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from app.core.logging import get_logger
+from app.mlops import (
+    FeatureDriftDetector,
+    ModelRegistryClient,
+    evaluate_model_quality_gate,
+    validate_training_dataset,
+)
+from app.observability.metrics import (
+    ML_FEATURE_DRIFT_PSI,
+    ML_INFERENCE_LATENCY_SECONDS,
+    ML_MODEL_EVALUATION_MARGIN,
+    ML_MODEL_TRAINING_RUNS_TOTAL,
+)
 from app.schemas.fraud import AssessRiskRequest, SignalDetail
 
 logger = get_logger("fraud-service.ml")
@@ -46,6 +58,9 @@ class MLEngine:
             random_state=42,
         )
         self._model.fit(SYNTHETIC_BENIGN_TRAINING_DATA)
+        self.drift_detector = FeatureDriftDetector(SYNTHETIC_BENIGN_TRAINING_DATA)
+        self.registry = ModelRegistryClient()
+        self.last_artifact_manifest: dict[str, Any] | None = None
         self.is_ready = True
 
     def retrain(
@@ -55,10 +70,18 @@ class MLEngine:
         contamination: float = 0.05,
         extra_samples: np.ndarray | None = None,
     ) -> dict[str, Any]:
-        """Retrains the IsolationForest model with updated hyperparameters or training samples."""
+        """
+        Validates training data, retrains IsolationForest, enforces quality gate,
+        persists & registers artifact, and refreshes baseline drift distribution.
+        """
         training_data = SYNTHETIC_BENIGN_TRAINING_DATA
         if extra_samples is not None and len(extra_samples) > 0:
             training_data = np.vstack([training_data, extra_samples])
+
+        data_check = validate_training_dataset(training_data)
+        if not data_check.passed:
+            ML_MODEL_TRAINING_RUNS_TOTAL.labels(service="fraud-service", status="dataset_rejected").inc()
+            raise ValueError(data_check.reason)
 
         new_model = IsolationForest(
             n_estimators=n_estimators,
@@ -66,6 +89,11 @@ class MLEngine:
             random_state=42,
         )
         new_model.fit(training_data)
+
+        gate = evaluate_model_quality_gate(new_model, training_data)
+        if not gate.passed:
+            ML_MODEL_TRAINING_RUNS_TOTAL.labels(service="fraud-service", status="gate_rejected").inc()
+            raise ValueError(gate.reason)
 
         # Compute model metrics on baseline
         scores = new_model.score_samples(training_data)
@@ -84,11 +112,25 @@ class MLEngine:
             "training_samples": len(training_data),
             "baseline_anomalies_detected": anomalies_detected,
             "mean_anomaly_score": float(np.mean(scores)),
+            "separation_margin": gate.separation_margin,
             "status": "TRAINED",
         }
         self.trained_at = datetime.now(timezone.utc).isoformat()
+        self.drift_detector.fit_baseline(training_data)
+        self.last_artifact_manifest = self.registry.save_and_register(
+            model=new_model,
+            model_id=self.model_id,
+            model_name=self.model_name,
+            hyperparameters=self.hyperparameters,
+            metrics=self.metrics,
+        )
+
+        ML_MODEL_TRAINING_RUNS_TOTAL.labels(service="fraud-service", status="promoted").inc()
+        ML_MODEL_EVALUATION_MARGIN.labels(service="fraud-service", model_name=self.model_name).set(
+            gate.separation_margin
+        )
         logger.info(
-            "Fraud ML model successfully retrained",
+            "Fraud ML model successfully retrained and promoted",
             model_id=self.model_id,
             model_name=self.model_name,
             metrics=self.metrics,
@@ -100,8 +142,32 @@ class MLEngine:
             "algorithm": self.algorithm,
             "hyperparameters": self.hyperparameters,
             "metrics": self.metrics,
+            "artifactManifest": self.last_artifact_manifest,
             "isActive": True,
             "trainedAt": self.trained_at,
+        }
+
+    def get_mlops_status(self) -> dict[str, Any]:
+        drift_reports = self.drift_detector.compute_drift()
+        for report in drift_reports:
+            ML_FEATURE_DRIFT_PSI.labels(service="fraud-service", feature=report.feature_name).set(report.psi)
+        return {
+            "modelId": self.model_id,
+            "modelName": self.model_name,
+            "algorithm": self.algorithm,
+            "trainedAt": self.trained_at,
+            "metrics": self.metrics,
+            "artifactManifest": self.last_artifact_manifest,
+            "driftReport": [
+                {
+                    "feature": r.feature_name,
+                    "psi": r.psi,
+                    "status": r.status,
+                    "baselineMean": r.baseline_mean,
+                    "currentMean": r.current_mean,
+                }
+                for r in drift_reports
+            ],
         }
 
     def extract_features(self, request: AssessRiskRequest, velocity_count: int = 1) -> np.ndarray:
@@ -117,8 +183,10 @@ class MLEngine:
         """
         Returns an additional risk score delta (0-25) and an explanatory SignalDetail if anomalous.
         """
+        start_ns = time.perf_counter_ns()
         try:
             features = self.extract_features(request, velocity_count)
+            self.drift_detector.record_sample(features)
             # IsolationForest predict returns -1 for anomalies, +1 for inliers
             prediction = self._model.predict(features)[0]
             raw_score = self._model.score_samples(features)[0]
@@ -137,6 +205,9 @@ class MLEngine:
         except Exception as e:
             logger.warn("ML anomaly scoring skipped due to feature extraction error", error=str(e))
             return 0, None
+        finally:
+            elapsed = (time.perf_counter_ns() - start_ns) / 1e9
+            ML_INFERENCE_LATENCY_SECONDS.labels(service="fraud-service", model_name=self.model_name).observe(elapsed)
 
 
 ml_engine = MLEngine()

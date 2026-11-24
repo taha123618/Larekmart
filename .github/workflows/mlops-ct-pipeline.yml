@@ -1,0 +1,128 @@
+name: Enterprise MLOps CI/CD & Continuous Training (CT)
+
+on:
+  pull_request:
+    branches: [main, staging, development]
+    paths:
+      - "apps/fraud-service/**"
+      - "apps/recommendation-service/**"
+      - "infrastructure/mlops/**"
+      - "infrastructure/kubernetes/base/mlops/**"
+      - ".github/workflows/mlops-ct-pipeline.yml"
+  push:
+    branches: [main, staging]
+    paths:
+      - "apps/fraud-service/**"
+      - "apps/recommendation-service/**"
+      - "infrastructure/mlops/**"
+  schedule:
+    - cron: "0 1 * * 0" # Weekly Sunday 01:00 UTC Continuous Training (CT)
+  workflow_dispatch:
+    inputs:
+      retrain_model_name:
+        description: "Optional model name override for manual CT trigger"
+        required: false
+        default: "isolation_forest_ct"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  ml-lint-and-test:
+    name: ML Code Quality, Unit & Integration Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [fraud-service, recommendation-service]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Python Lint (Ruff on MLOps Modules)
+        run: |
+          uvx ruff check apps/fraud-service/app/mlops apps/fraud-service/tests/test_mlops.py \
+            apps/recommendation-service/app/mlops apps/recommendation-service/tests/unit/test_mlops_evaluator.py
+
+      - name: Sync Dependencies & Run Pytest
+        working-directory: apps/${{ matrix.service }}
+        run: |
+          uv sync --frozen || uv sync
+          uv run pytest tests/ -v
+
+  model-validation-and-ct:
+    name: Dataset Validation, Tuning, Training & Quality Gate (CT)
+    needs: [ml-lint-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Run Fraud Tuning, Dataset Validation, Training & Quality Gate
+        working-directory: apps/fraud-service
+        env:
+          ML_ARTIFACT_DIR: /tmp/larekmart-ml-artifacts/fraud
+        run: |
+          uv sync --frozen || uv sync
+          uv run python -c "
+          import json
+          from app.engine.ml_engine import SYNTHETIC_BENIGN_TRAINING_DATA, ml_engine
+          from app.mlops.tuner import tune_isolation_forest
+
+          tuned = tune_isolation_forest(SYNTHETIC_BENIGN_TRAINING_DATA)
+          print('Hyperparameter Tuning Result:', tuned)
+          model_name = '${{ github.event.inputs.retrain_model_name || 'isolation_forest_ct' }}'
+          res = ml_engine.retrain(
+              model_name=model_name,
+              n_estimators=tuned.best_params['n_estimators'],
+              contamination=tuned.best_params['contamination'],
+          )
+          print('CT Promotion Result:', json.dumps(res, indent=2))
+          assert res['metrics']['separation_margin'] >= 0.02, 'Failed separation margin quality gate'
+          "
+
+      - name: Verify Recommendation Offline Ranking Evaluator Gate
+        working-directory: apps/recommendation-service
+        run: |
+          uv sync --frozen || uv sync
+          uv run pytest tests/unit/test_mlops_evaluator.py -v
+
+      - name: Upload Trained Model Artifact & SHA-256 Manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: larekmart-fraud-model-artifacts
+          path: /tmp/larekmart-ml-artifacts/fraud/
+
+  ml-container-security-scan:
+    name: ML Container & Manifest Trivy Scan
+    needs: [ml-lint-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Trivy Config Scan on MLOps Manifests & Dockerfiles
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "config"
+          scan-ref: "infrastructure/kubernetes/base/mlops/"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+
+      - name: Trivy Config Scan on MLOps Dockerfiles
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "config"
+          scan-ref: "infrastructure/mlops/docker/"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
