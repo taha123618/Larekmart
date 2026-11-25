@@ -15,6 +15,9 @@ Microservice responsible for Stripe checkout session management, webhook signatu
 - `POST /sessions/create-checkout-session`: Initializes a Stripe custom checkout session (guarded by `shouldBeUser`).
 - `GET /sessions/:id`: Retrieves checkout session status.
 - `POST /webhooks/stripe`: Receives and verifies Stripe webhook events (`checkout.session.completed`).
+- `POST /api/v1/payments/providers/intent`: Initializes multi-provider payment intents (`STRIPE`, `JAZZCASH`, `EASYPAISA`, `COD`).
+- `POST /api/v1/payments/reconcile` & `GET /api/v1/payments/reconcile/summary`: Batch payment settlement reconciliation (admin).
+- `POST /api/v1/payments/cod/collect`, `POST /api/v1/payments/cod/remit`, `GET /api/v1/payments/cod/:orderId`: Cash-on-Delivery collection & marketplace remittance lifecycle.
 - `GET /health`: Service health check (`status`, `uptime`, `timestamp`).
 
 ## Event Integrations

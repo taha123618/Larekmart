@@ -8,6 +8,7 @@ import { shippingRouter } from "./routes/shipping.routes.js";
 import { shipmentRouter } from "./routes/shipment.routes.js";
 import { trackingRouter } from "./routes/tracking.routes.js";
 import { webhookRouter } from "./routes/webhook.routes.js";
+import { shippingOperationsRouter } from "./routes/operations.routes.js";
 
 export function createServer(): Koa {
   const app = new Koa();
@@ -115,6 +116,7 @@ export function createServer(): Koa {
   app.use(shipmentRouter.routes()).use(shipmentRouter.allowedMethods());
   app.use(trackingRouter.routes()).use(trackingRouter.allowedMethods());
   app.use(webhookRouter.routes()).use(webhookRouter.allowedMethods());
+  app.use(shippingOperationsRouter.routes()).use(shippingOperationsRouter.allowedMethods());
 
   return app;
 }

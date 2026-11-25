@@ -9,6 +9,7 @@ import {
 } from "@repo/order-db";
 import { validateInternalServiceSecret } from "@repo/types";
 import { orderRoute } from "./routes/order.js";
+import { orderOperationsRoute } from "./routes/order-operations.js";
 import { consumer, producer } from "./utils/kafka.js";
 import { runKafkaSubscriptions } from "./utils/subscriptions.js";
 import { startPendingConfirmationTimeoutSweeper } from "./utils/order.js";
@@ -197,6 +198,7 @@ fastify.get("/test", { preHandler: shouldBeUser }, (request, reply) => {
 });
 
 fastify.register(orderRoute);
+fastify.register(orderOperationsRoute);
 
 const start = async () => {
   try {

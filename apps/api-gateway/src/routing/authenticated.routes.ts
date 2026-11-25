@@ -75,7 +75,7 @@ export const authenticatedRoutes: GatewayRouteConfig[] = [
     target: services.payment.url,
     serviceName: services.payment.name,
     timeoutMs: services.payment.timeoutMs,
-    rewritePrefix: "",
+    rewritePrefix: "/api/v1/payments",
   },
 
   // 5. Inventory Service

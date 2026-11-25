@@ -12,6 +12,7 @@ import {
 import { prisma, disconnectPrisma } from "@repo/inventory-db";
 import { validateInternalServiceSecret } from "@repo/types";
 import inventoryRoute from "./routes/inventory.route.js";
+import inventoryOperationsRoute from "./routes/operations.route.js";
 import { logger, metrics } from "./observability/metrics.js";
 import { batchConsumer, consumer, producer } from "./utils/kafka.js";
 import { redis } from "./utils/redis.js";
@@ -139,6 +140,7 @@ app.get("/metrics", (c) =>
 );
 
 app.route("/api/v1/inventory", inventoryRoute);
+app.route("/api/v1/inventory", inventoryOperationsRoute);
 
 app.onError((error, c) => {
   const formatted = captureError(error, {

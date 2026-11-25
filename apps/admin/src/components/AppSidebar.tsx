@@ -388,6 +388,14 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isRouteActive("/payments")}>
+                  <Link href="/payments">
+                    <Banknote />
+                    Payments & COD
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
                   isActive={isRouteActive("/settlements")}

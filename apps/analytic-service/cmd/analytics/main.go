@@ -117,6 +117,8 @@ func main() {
 		r.Get("/commerce", analyticsHandler.GetCommerce)
 		r.Get("/daily-chart", analyticsHandler.GetDailyChart)
 		r.Get("/events", analyticsHandler.GetRecentEvents)
+		r.Get("/insights", handlers.HandleInsightsSummary)
+		r.Post("/insights", handlers.HandleInsightsSummary)
 	})
 
 	server := &http.Server{

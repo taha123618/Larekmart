@@ -11,7 +11,9 @@ Stripe product sync driven by Kafka. It emits `payment.successful` after verifyi
 ## Where things live
 
 - `src/index.ts` — Hono server bootstrap, middleware, route mounting, health, test route.
-- `src/routes/` — session route, webhook route.
+- `src/routes/` — session route, webhook route, operations route (`/api/v1/payments`).
+- `src/adapters/` — multi-provider payment adapters (`STRIPE`, `JAZZCASH`, `EASYPAISA`, `COD`) with constant-time HMAC verification.
+- `src/services/` — batch payment reconciliation & COD collection/remittance lifecycle (`reconciliation-cod.service.ts`).
 - `src/middleware/` — auth middleware (`shouldBeUser`, `shouldBeAdmin`) built with
   `@hono/clerk-auth`.
 - `src/utils/subscriptions.ts` — Kafka subscriptions for Stripe product sync and order
@@ -84,5 +86,4 @@ Stripe product sync driven by Kafka. It emits `payment.successful` after verifyi
 
 - `pnpm --filter payment-service check-types`
 - `pnpm --filter payment-service build`
-- Manual flows against running Stripe test keys + Kafka.
-- No general JavaScript test runner exists yet; verify this service with type-check, build, and manual Stripe/Kafka flows.
+- `pnpm --filter payment-service test` (SQA security/webhook suite + multi-provider/reconciliation/COD operations suite)

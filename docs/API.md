@@ -1634,3 +1634,25 @@ Centralized edge routing, operations, and dynamic runtime governance endpoints.
 - **Body**: `{ scenario?: "read" | "checkout" }`
 - **Response**: `200 OK` with `{ success: true, message: string, data: CanaryProbeRun }`
 - **Description**: Triggers an immediate on-demand synthetic canary journey verification.
+
+
+---
+
+## 14-Service Operational & Intelligence Extensions (v2.1)
+
+| Service | New Endpoints / Capabilities |
+| :--- | :--- |
+| `order-service` | `POST /orders/:id/split`, `POST /orders/:id/partial-fulfillment`, `GET /orders/:id/fulfillments`, `POST/GET /orders/:id/backorders`, `POST/GET /orders/:id/amendments` |
+| `payment-service` | `POST /api/v1/payments/providers/intent` (Stripe/JazzCash/EasyPaisa/COD), `POST /api/v1/payments/reconcile`, `GET /api/v1/payments/reconcile/summary`, `POST /api/v1/payments/cod/{collect,remit}`, `GET /api/v1/payments/cod/:orderId` |
+| `inventory-service` | `POST/GET /api/v1/inventory/transfers`, `POST/GET /api/v1/inventory/cycle-counts`, `PUT /api/v1/inventory/safety-stock`, `GET /api/v1/inventory/safety-stock/:productId` |
+| `shipping-service` | `POST/GET /api/v1/shipping/shipments/:id/attempts`, `GET /api/v1/shipping/couriers/performance`, `POST /api/v1/shipping/return-pickups`, `PATCH /api/v1/shipping/return-pickups/:id` |
+| `pricing-service` | `PUT /api/v1/prices/floors`, `POST /api/v1/prices/floors/validate`, `POST /api/v1/prices/experiments`, `GET /api/v1/prices/experiments/:id/assign`, `POST /api/v1/prices/approvals/bulk`, `POST /api/v1/prices/approvals/:id/review` |
+| `promotion-service` | `POST /api/v1/promotions/attribution`, `GET /api/v1/promotions/:campaignId/analytics`, `PUT/GET /api/v1/promotions/:campaignId/stacking-policy`, `POST /api/v1/promotions/:campaignId/forecast` |
+| `seller-service` | `POST /api/v1/sellers/:sellerId/sla-scorecard`, `POST/GET /api/v1/sellers/:sellerId/staff-audit` |
+| `vendor-service` | `GET /api/v1/vendors/:vendorId/kyb/expiration`, `POST/GET /api/v1/vendors/:vendorId/kyb/renewals` |
+| `fraud-service` | `POST /api/v1/internal/fraud/ato/assess`, `GET /api/v1/internal/fraud/devices/{fingerprint}` |
+| `review-service` | `POST /api/v1/reviews/quality/evaluate`, `POST /api/v1/reviews/moderation/image` |
+| `search-service` | `PUT/GET /api/v1/search/merchandising/rules`, `POST/GET /api/v1/search/analytics/zero-results` |
+| `recommendation-service` | `POST /api/v1/recommendations/experiments`, `GET /api/v1/recommendations/experiments/{id}/assign`, `POST /api/v1/recommendations/experiments/{id}/attribution`, `GET /api/v1/recommendations/experiments/{id}/results` |
+| `notification-service` | `FrequencyDigestManager` (hourly/daily caps, digest queue, retry visibility) in `internal/services/digest_frequency.go` |
+| `analytic-service` | `GET /analytics/insights` (cohort retention, funnel conversion, seller profitability) in `internal/handlers/insights.go` |

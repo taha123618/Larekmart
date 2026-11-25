@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useApi } from "~/composables/useApi";
+import { usePayments, type SellerCodStatus } from "~/composables/usePayments";
 import { useNotifications } from "~/composables/useNotifications";
 import type { Order } from "~/types";
 import PageHeader from "~/components/ui/PageHeader.vue";
@@ -14,10 +15,12 @@ definePageMeta({
 
 const route = useRoute();
 const api = useApi();
+const { getCodOrderStatus } = usePayments();
 const notify = useNotifications();
 
 const orderId = route.params.id as string;
 const order = ref<Order | null>(null);
+const codStatus = ref<SellerCodStatus | null>(null);
 const isLoading = ref(true);
 const isUpdating = ref(false);
 const carrier = ref("");
@@ -28,8 +31,12 @@ const normalizedStatus = computed(() => (order.value?.status || "").toUpperCase(
 const fetchOrder = async () => {
   isLoading.value = true;
   try {
-    const data = await api.get<Order>(`/api/v1/orders/${orderId}`);
+    const [data, cod] = await Promise.all([
+      api.get<Order>(`/api/v1/orders/${orderId}`),
+      getCodOrderStatus(orderId),
+    ]);
     order.value = data;
+    codStatus.value = cod;
   } catch (err: unknown) {
     order.value = null;
     const msg = (err as { message?: string })?.message || "Could not load order details.";
@@ -194,6 +201,33 @@ const updateOrderStatus = async (newStatus: Order["status"]) => {
               <p>{{ order.shippingAddress.country }}</p>
             </div>
             <p v-else class="text-xs text-slate-400">No shipping destination details provided.</p>
+          </div>
+
+          <div
+            v-if="codStatus"
+            class="rounded-xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+          >
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-3">
+              COD Collection Lifecycle
+            </h3>
+            <div class="text-xs space-y-1.5 text-slate-600 dark:text-slate-400">
+              <div class="flex items-center justify-between">
+                <span>Status</span>
+                <StatusBadge :status="codStatus.status" size="sm" />
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Courier</span>
+                <span class="font-semibold text-slate-900 dark:text-white">{{ codStatus.courierId }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Collected</span>
+                <span class="font-mono">{{ codStatus.collectedAmount.toFixed(2) }} {{ codStatus.currency }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Remitted</span>
+                <span class="font-mono">{{ codStatus.remittedAmount.toFixed(2) }} {{ codStatus.currency }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

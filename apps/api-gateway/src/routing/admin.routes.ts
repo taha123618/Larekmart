@@ -229,4 +229,14 @@ export const adminRoutes: GatewayRouteConfig[] = [
     rewritePrefix: "/api/v1/chat",
     requireAdmin: true,
   },
+
+  // 19. Payment Service Admin Reconciliation & COD Lifecycle
+  {
+    prefix: "/api/v1/admin/payments",
+    target: services.payment.url,
+    serviceName: services.payment.name,
+    timeoutMs: services.payment.timeoutMs,
+    rewritePrefix: "/api/v1/payments",
+    requireAdmin: true,
+  },
 ];

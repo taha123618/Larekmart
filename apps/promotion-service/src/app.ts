@@ -12,6 +12,7 @@ import { GATEWAY_HEADERS } from "@repo/types";
 import { pool } from "./db/connection.js";
 import { redis } from "./utils/redis.js";
 import { promotionRoutes } from "./routes/promotion.routes.js";
+import promotionAnalyticsRoutes from "./routes/analytics.routes.js";
 import { logger, metrics } from "./observability/metrics.js";
 import { env } from "./config/env.js";
 
@@ -167,6 +168,7 @@ app.get("/metrics", (c) =>
 
 // 6. Mount Promotion Routes
 app.route("/api/v1", promotionRoutes);
+app.route("/api/v1/promotions", promotionAnalyticsRoutes);
 
 // 7. Error Handling
 app.onError((error, c) => {

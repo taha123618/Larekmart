@@ -14,6 +14,7 @@ import { pool } from "./db/connection.js";
 import { healthRoutes } from "./routes/health.routes.js";
 import { pricesRoutes } from "./routes/prices.routes.js";
 import { adminPricesRoutes } from "./routes/admin.routes.js";
+import { governanceRoutes } from "./routes/governance.routes.js";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -96,6 +97,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // 5. Register Routes
   await app.register(healthRoutes);
   await app.register(pricesRoutes, { prefix: "/api/v1/prices" });
+  await app.register(governanceRoutes, { prefix: "/api/v1/prices" });
   await app.register(adminPricesRoutes, { prefix: "/api/v1/admin" });
 
   return app;

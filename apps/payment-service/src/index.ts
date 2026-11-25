@@ -6,6 +6,7 @@ import { cors } from "hono/cors";
 import { consumer, producer } from "./utils/kafka.js";
 import { runKafkaSubscriptions } from "./utils/subscriptions.js";
 import webhookRoute from "./routes/webhooks.route.js";
+import operationsRoute from "./routes/operations.route.js";
 import { validateInternalServiceSecret } from "@repo/types";
 import {
   createLogger,
@@ -74,6 +75,7 @@ app.get("/metrics", (c) => {
 
 app.route("/sessions", sessionRoute);
 app.route("/webhooks", webhookRoute);
+app.route("/api/v1/payments", operationsRoute);
 
 const start = async () => {
   try {

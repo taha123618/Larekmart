@@ -242,6 +242,12 @@ func main() {
 		nr.Get("/preferences", preferencesHandler.GetPreferences)
 		nr.Put("/preferences", preferencesHandler.UpdatePreferences)
 		nr.Get("/templates", templatesHandler.ListTemplates)
+
+		freqHandler := handlers.NewFrequencyHandler(services.NewFrequencyDigestManager())
+		nr.Put("/frequency-policy", freqHandler.SetPolicy)
+		nr.Post("/dispatch/evaluate", freqHandler.EvaluateDispatch)
+		nr.Post("/digest/{userId}/flush", freqHandler.FlushDigest)
+		nr.Get("/retries/{id}", freqHandler.GetRetryStatus)
 	})
 
 	// 15. HTTP Server Lifecycle

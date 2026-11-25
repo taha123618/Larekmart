@@ -13,6 +13,7 @@ import { pool } from "./db/connection.js";
 import { healthRoutes } from "./routes/health.routes.js";
 import { reviewRoutes } from "./routes/review.routes.js";
 import { adminRoutes } from "./routes/admin.routes.js";
+import { qualityRoutes } from "./routes/quality.routes.js";
 
 export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -108,6 +109,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(healthRoutes);
   await app.register(reviewRoutes);
   await app.register(adminRoutes);
+  await app.register(qualityRoutes);
 
   return app;
 }

@@ -6,6 +6,7 @@ import { configureFastifyPlugins } from "./plugins/fastify.js";
 import { searchRoutes } from "./routes/search.js";
 import { suggestionRoutes } from "./routes/suggestions.js";
 import { indexingRoutes } from "./routes/indexing.js";
+import { merchandisingRoutes } from "./routes/merchandising.routes.js";
 import { healthRoutes } from "./routes/health.js";
 import { ensureProductIndexExists } from "@repo/opensearch";
 import {
@@ -38,6 +39,7 @@ async function bootstrap() {
       await v1.register(searchRoutes);
       await v1.register(suggestionRoutes);
       await v1.register(indexingRoutes);
+      await v1.register(merchandisingRoutes);
     },
     { prefix: "/api/v1" },
   );
