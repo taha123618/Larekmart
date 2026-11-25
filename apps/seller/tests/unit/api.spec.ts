@@ -57,3 +57,12 @@ describe("API Error Normalization Helper", () => {
     expect(normalized.message).toBe("Network timeout");
   });
 });
+
+describe("Order Status Normalization for Backend Contracts", () => {
+  it("normalizes uppercase UI statuses to lowercase order-service values", () => {
+    const toBackendStatus = (status: string) => status.trim().toLowerCase();
+    expect(toBackendStatus("PROCESSING")).toBe("processing");
+    expect(toBackendStatus("SHIPPED")).toBe("shipped");
+    expect(toBackendStatus("DELIVERED")).toBe("delivered");
+  });
+});

@@ -20,6 +20,10 @@ const orderId = route.params.id as string;
 const order = ref<Order | null>(null);
 const isLoading = ref(true);
 const isUpdating = ref(false);
+const carrier = ref("");
+const trackingNumber = ref("");
+
+const normalizedStatus = computed(() => (order.value?.status || "").toUpperCase());
 
 const fetchOrder = async () => {
   isLoading.value = true;
@@ -42,7 +46,14 @@ onMounted(() => {
 const updateOrderStatus = async (newStatus: Order["status"]) => {
   isUpdating.value = true;
   try {
-    await api.patch(`/api/v1/orders/${orderId}`, { status: newStatus });
+    const payload: Record<string, string> = {
+      status: String(newStatus).toLowerCase(),
+    };
+    if (String(newStatus).toUpperCase() === "SHIPPED") {
+      if (carrier.value.trim()) payload.carrier = carrier.value.trim();
+      if (trackingNumber.value.trim()) payload.trackingNumber = trackingNumber.value.trim();
+    }
+    await api.patch(`/api/v1/orders/${orderId}`, payload);
     if (order.value) {
       order.value.status = newStatus;
     }
@@ -86,7 +97,7 @@ const updateOrderStatus = async (newStatus: Order["status"]) => {
 
         <div class="flex flex-wrap items-center gap-2">
           <button
-            v-if="order.status === 'CONFIRMED'"
+            v-if="normalizedStatus === 'CONFIRMED' || normalizedStatus === 'PENDING_CONFIRMATION'"
             type="button"
             :disabled="isUpdating"
             class="rounded-lg bg-primary-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
@@ -94,17 +105,30 @@ const updateOrderStatus = async (newStatus: Order["status"]) => {
           >
             Mark as Processing
           </button>
+          <template v-if="normalizedStatus === 'PROCESSING'">
+            <input
+              v-model="carrier"
+              type="text"
+              placeholder="Carrier (e.g. TCS, DHL)"
+              class="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+            <input
+              v-model="trackingNumber"
+              type="text"
+              placeholder="Tracking #"
+              class="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+            <button
+              type="button"
+              :disabled="isUpdating"
+              class="rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+              @click="updateOrderStatus('SHIPPED')"
+            >
+              Mark as Shipped
+            </button>
+          </template>
           <button
-            v-if="order.status === 'PROCESSING'"
-            type="button"
-            :disabled="isUpdating"
-            class="rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-            @click="updateOrderStatus('SHIPPED')"
-          >
-            Mark as Shipped
-          </button>
-          <button
-            v-if="order.status === 'SHIPPED'"
+            v-if="normalizedStatus === 'SHIPPED'"
             type="button"
             :disabled="isUpdating"
             class="rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 disabled:opacity-50"

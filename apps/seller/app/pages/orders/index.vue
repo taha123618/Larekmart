@@ -2,16 +2,19 @@
 import { ref, onMounted, h, computed } from "vue";
 import type { ColumnDef } from "@tanstack/vue-table";
 import { useApi } from "~/composables/useApi";
-import type { Order, OrderStatus } from "~/types";
+import { useSellerStore } from "~/stores/seller.store";
+import type { Order } from "~/types";
 import PageHeader from "~/components/ui/PageHeader.vue";
 import DataTable from "~/components/ui/DataTable.vue";
 import StatusBadge from "~/components/ui/StatusBadge.vue";
+import { exportToCsv, type CsvColumn } from "~/utils/export";
 
 definePageMeta({
   middleware: "seller-access",
 });
 
 const api = useApi();
+const sellerStore = useSellerStore();
 const orders = ref<Order[]>([]);
 const isLoading = ref(true);
 const selectedStatus = ref<string>("ALL");
@@ -19,13 +22,34 @@ const selectedStatus = ref<string>("ALL");
 const fetchOrders = async () => {
   isLoading.value = true;
   try {
-    const data = await api.get<Order[]>("/api/v1/orders");
-    orders.value = Array.isArray(data) ? data : [];
+    const sellerQuery = sellerStore.activeSellerId
+      ? `?sellerId=${encodeURIComponent(sellerStore.activeSellerId)}&limit=100`
+      : "?limit=100";
+    const data = await api.get<Order[] | { data?: Order[] }>(
+      `/api/v1/seller-orders${sellerQuery}`,
+    );
+    orders.value = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.data)
+        ? data.data
+        : [];
   } catch {
     orders.value = [];
   } finally {
     isLoading.value = false;
   }
+};
+
+const handleExportOrders = () => {
+  const columns: CsvColumn<Order>[] = [
+    { key: "orderNumber", label: "Order Number" },
+    { key: "customerName", label: "Customer Name" },
+    { key: "customerEmail", label: "Customer Email" },
+    { key: "totalAmount", label: "Total Amount", formatter: (v) => `${Number(v || 0).toFixed(2)}` },
+    { key: "status", label: "Status" },
+    { key: "createdAt", label: "Order Date" },
+  ];
+  exportToCsv("seller_orders", columns, filteredOrders.value);
 };
 
 onMounted(() => {
@@ -34,7 +58,9 @@ onMounted(() => {
 
 const filteredOrders = computed(() => {
   if (selectedStatus.value === "ALL") return orders.value;
-  return orders.value.filter((o) => o.status === selectedStatus.value);
+  return orders.value.filter(
+    (o) => (o.status || "").toUpperCase() === selectedStatus.value,
+  );
 });
 
 const columns: ColumnDef<Order, unknown>[] = [
@@ -116,6 +142,14 @@ const columns: ColumnDef<Order, unknown>[] = [
       description="Process and fulfill incoming customer orders, manage shipping labels, and track delivery status."
     >
       <template #actions>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          @click="handleExportOrders"
+        >
+          <UIcon name="i-heroicons-arrow-down-tray" class="h-4 w-4" />
+          <span>Export CSV</span>
+        </button>
         <button
           type="button"
           class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"

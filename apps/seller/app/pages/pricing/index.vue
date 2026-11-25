@@ -101,7 +101,10 @@ const multiCurrencyQuotes = computed(() => {
 const fetchCatalog = async () => {
   isLoading.value = true;
   try {
-    const data = await api.get<Product[]>("/api/v1/products");
+    const sellerQuery = sellerStore.activeSellerId
+      ? `?sellerId=${encodeURIComponent(sellerStore.activeSellerId)}&limit=100`
+      : "?limit=100";
+    const data = await api.get<Product[]>(`/api/v1/products${sellerQuery}`);
     products.value = Array.isArray(data) ? data : [];
   } catch {
     products.value = [];

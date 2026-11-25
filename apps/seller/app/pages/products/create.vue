@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { z } from "zod";
 import { useApi } from "~/composables/useApi";
+import { useMediaUpload } from "~/composables/useMediaUpload";
 import { useSellerStore } from "~/stores/seller.store";
 import { useNotifications } from "~/composables/useNotifications";
 import PageHeader from "~/components/ui/PageHeader.vue";
@@ -14,8 +15,23 @@ definePageMeta({
 
 const router = useRouter();
 const api = useApi();
+const { isUploading, uploadError, uploadImage } = useMediaUpload();
 const sellerStore = useSellerStore();
 const notify = useNotifications();
+
+const handleFileSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  const url = await uploadImage(file, "product", sellerStore.activeSellerId || undefined);
+  if (url) {
+    form.value.imageUrl = url;
+    notify.success("Image Uploaded", "Product image uploaded to media storage.");
+  } else if (uploadError.value) {
+    notify.error("Upload Failed", uploadError.value);
+  }
+  input.value = "";
+};
 
 const productSchema = z.object({
   name: z.string().min(2, "Product name must be at least 2 characters"),
@@ -244,7 +260,23 @@ const handleSubmit = async () => {
 
       <!-- Media Section -->
       <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-6 dark:border-slate-800 dark:bg-slate-900">
-        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Product Media</h3>
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Product Media</h3>
+          <label
+            class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            <LoadingSpinner v-if="isUploading" size="sm" />
+            <UIcon v-else name="i-heroicons-arrow-up-tray" class="h-4 w-4" />
+            <span>{{ isUploading ? "Uploading..." : "Upload Image" }}</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              class="hidden"
+              :disabled="isUploading"
+              @change="handleFileSelected"
+            />
+          </label>
+        </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -256,6 +288,7 @@ const handleSubmit = async () => {
             placeholder="https://images.unsplash.com/photo-example"
             class="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
+          <p v-if="uploadError" class="mt-1 text-[11px] text-rose-500">{{ uploadError }}</p>
           <p v-if="errors.imageUrl" class="mt-1 text-[11px] text-rose-500">{{ errors.imageUrl }}</p>
         </div>
       </div>

@@ -101,12 +101,30 @@ const handleInventoryAdjustmentSubmit = async (importedItems: any[]) => {
     let successCount = 0;
     for (const item of importedItems) {
       try {
-        await api.post("/api/v1/inventory/adjust", {
-          sku: item.sku,
-          quantity: item.availableStock,
-          reorderPoint: item.reorderPoint,
-          safetyStock: item.safetyStock,
-          warehouse: item.warehouse || "Default",
+        const existing = inventoryItems.value.find(
+          (inv) => inv.sku === item.sku || String(inv.productId) === String(item.productId),
+        );
+        const productId = Number(item.productId ?? existing?.productId ?? 0);
+        const currentQty = Number(existing?.availableStock ?? 0);
+        const targetQty = Number(item.availableStock ?? 0);
+        const quantityDelta =
+          item.quantityDelta !== undefined
+            ? Number(item.quantityDelta)
+            : targetQty - currentQty;
+
+        if (!productId || quantityDelta === 0) continue;
+
+        const ext = existing as
+          | (InventoryStock & { variantId?: string; warehouseId?: string })
+          | undefined;
+
+        await api.post("/api/v1/inventory/adjustments", {
+          productId,
+          variantId: String(item.variantId || ext?.variantId || "default"),
+          warehouseId: String(item.warehouse || ext?.warehouseId || "default"),
+          quantityDelta,
+          movementType: quantityDelta > 0 ? "RESTOCK" : "ADJUSTMENT",
+          reason: item.reason || "Seller CSV inventory adjustment",
         });
         successCount++;
       } catch {

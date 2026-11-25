@@ -3,6 +3,7 @@ import { ref, onMounted, h } from "vue";
 import type { ColumnDef } from "@tanstack/vue-table";
 import { useApi } from "~/composables/useApi";
 import { useNotifications } from "~/composables/useNotifications";
+import { useSellerStore } from "~/stores/seller.store";
 import type { Product } from "~/types";
 import PageHeader from "~/components/ui/PageHeader.vue";
 import DataTable from "~/components/ui/DataTable.vue";
@@ -17,6 +18,7 @@ definePageMeta({
 
 const api = useApi();
 const notify = useNotifications();
+const sellerStore = useSellerStore();
 const products = ref<Product[]>([]);
 const isLoading = ref(true);
 const statusFilter = ref<string>("ALL");
@@ -99,6 +101,7 @@ const handleImportSubmit = async (importedItems: any[]) => {
     for (const item of importedItems) {
       try {
         await api.post("/api/v1/products", {
+          sellerId: sellerStore.activeSellerId,
           name: item.name,
           sku: item.sku,
           price: item.price,
@@ -125,7 +128,10 @@ const handleImportSubmit = async (importedItems: any[]) => {
 const fetchProducts = async () => {
   isLoading.value = true;
   try {
-    const data = await api.get<Product[]>("/api/v1/products");
+    const sellerQuery = sellerStore.activeSellerId
+      ? `?sellerId=${encodeURIComponent(sellerStore.activeSellerId)}&limit=100`
+      : "?limit=100";
+    const data = await api.get<Product[]>(`/api/v1/products${sellerQuery}`);
     products.value = Array.isArray(data) ? data : [];
   } catch {
     products.value = [];

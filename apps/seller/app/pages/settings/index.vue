@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useApi } from "~/composables/useApi";
+import { useMediaUpload } from "~/composables/useMediaUpload";
 import { useSellerStore } from "~/stores/seller.store";
 import { useNotifications } from "~/composables/useNotifications";
 import type { SellerStore, SellerSettings } from "~/types";
@@ -12,6 +13,7 @@ definePageMeta({
 });
 
 const api = useApi();
+const { isUploading, uploadError, uploadMedia } = useMediaUpload();
 const sellerStore = useSellerStore();
 const notify = useNotifications();
 
@@ -24,9 +26,31 @@ const storeForm = ref({
   name: "",
   headline: "",
   description: "",
+  logoMediaId: "" as string | null,
+  bannerMediaId: "" as string | null,
   vacationMode: false,
   vacationMessage: "",
 });
+
+const handleBrandingUpload = async (
+  event: Event,
+  target: "logoMediaId" | "bannerMediaId",
+) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  const result = await uploadMedia(file, "seller", sellerId.value || undefined);
+  if (result?.mediaId) {
+    storeForm.value[target] = result.mediaId;
+    notify.success(
+      target === "logoMediaId" ? "Logo Uploaded" : "Banner Uploaded",
+      "Save settings to publish your updated storefront branding.",
+    );
+  } else if (uploadError.value) {
+    notify.error("Upload Failed", uploadError.value);
+  }
+  input.value = "";
+};
 
 const settingsForm = ref({
   defaultCurrency: "USD",
@@ -49,6 +73,8 @@ onMounted(async () => {
         name: storeData.name || "",
         headline: storeData.headline || "",
         description: storeData.description || "",
+        logoMediaId: storeData.logoMediaId || null,
+        bannerMediaId: storeData.bannerMediaId || null,
         vacationMode: Boolean(storeData.vacationMode),
         vacationMessage: storeData.vacationMessage || "",
       };
@@ -160,6 +186,56 @@ const handleSave = async () => {
               rows="3"
               class="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Store Logo
+            </label>
+            <div class="mt-1.5 flex items-center gap-3">
+              <label
+                class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                <LoadingSpinner v-if="isUploading" size="sm" />
+                <UIcon v-else name="i-heroicons-photo" class="h-4 w-4" />
+                <span>Upload Logo</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  class="hidden"
+                  :disabled="isUploading"
+                  @change="handleBrandingUpload($event, 'logoMediaId')"
+                />
+              </label>
+              <span v-if="storeForm.logoMediaId" class="font-mono text-[11px] text-emerald-600 dark:text-emerald-400">
+                ID: {{ storeForm.logoMediaId.slice(0, 12) }}...
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Store Banner
+            </label>
+            <div class="mt-1.5 flex items-center gap-3">
+              <label
+                class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                <LoadingSpinner v-if="isUploading" size="sm" />
+                <UIcon v-else name="i-heroicons-photo" class="h-4 w-4" />
+                <span>Upload Banner</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  class="hidden"
+                  :disabled="isUploading"
+                  @change="handleBrandingUpload($event, 'bannerMediaId')"
+                />
+              </label>
+              <span v-if="storeForm.bannerMediaId" class="font-mono text-[11px] text-emerald-600 dark:text-emerald-400">
+                ID: {{ storeForm.bannerMediaId.slice(0, 12) }}...
+              </span>
+            </div>
           </div>
         </div>
       </div>

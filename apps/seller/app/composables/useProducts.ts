@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
 import type { MaybeRef } from "vue";
 import type { Product, PaginatedResponse } from "~/types/seller";
+import { useSellerStore } from "~/stores/seller.store";
 
 interface ProductListParams {
   page?: number;
@@ -8,17 +9,20 @@ interface ProductListParams {
   search?: string;
   status?: string;
   categoryId?: string;
+  sellerId?: string;
 }
 
 export function useProducts(params: MaybeRef<ProductListParams> = {}) {
   const { apiFetch } = useApi();
+  const sellerStore = useSellerStore();
   const p = computed(() => unref(params));
 
   return useQuery({
-    queryKey: computed(() => ["products", p.value]),
+    queryKey: computed(() => ["products", sellerStore.activeSellerId, p.value]),
     queryFn: () =>
-      apiFetch<PaginatedResponse<Product>>("/api/v1/products", {
+      apiFetch<PaginatedResponse<Product> | Product[]>("/api/v1/products", {
         query: {
+          sellerId: p.value.sellerId ?? sellerStore.activeSellerId ?? undefined,
           page: p.value.page ?? 1,
           limit: p.value.limit ?? 20,
           search: p.value.search,

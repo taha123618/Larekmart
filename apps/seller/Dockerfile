@@ -55,4 +55,8 @@ COPY --from=installer --chown=nuxtjs:nodejs /app/apps/seller/.output ./apps/sell
 WORKDIR /app/apps/seller
 
 EXPOSE 3004
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:3004/api/health || exit 1
+
 CMD ["node", ".output/server/index.mjs"]

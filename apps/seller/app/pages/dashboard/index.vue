@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from "vue";
 import { useSellerStore } from "~/stores/seller.store";
 import { useSellerPerformance } from "~/composables/useSeller";
 import { useApi } from "~/composables/useApi";
-import type { Order, Product } from "~/types";
+import type { Order, Product, SellerBalance } from "~/types";
 import StatsCard from "~/components/ui/StatsCard.vue";
 import StatusBadge from "~/components/ui/StatusBadge.vue";
 import PageHeader from "~/components/ui/PageHeader.vue";
@@ -21,6 +21,7 @@ const { data: performance, isLoading: isLoadingPerf } = useSellerPerformance(sel
 
 const recentOrders = ref<Order[]>([]);
 const topProducts = ref<Product[]>([]);
+const balance = ref<SellerBalance | null>(null);
 const isLoadingData = ref(true);
 
 const revenuePeriod = ref<"7d" | "30d" | "90d">("30d");
@@ -39,12 +40,15 @@ onMounted(async () => {
   }
 
   try {
-    const [orders, products] = await Promise.all([
-      api.get<Order[]>("/api/v1/orders?limit=5").catch(() => []),
-      api.get<Product[]>("/api/v1/products?limit=5").catch(() => []),
+    const sId = sellerId.value ? `&sellerId=${encodeURIComponent(sellerId.value)}` : "";
+    const [orders, products, bal] = await Promise.all([
+      api.get<Order[]>(`/api/v1/seller-orders?limit=20${sId}`).catch(() => []),
+      api.get<Product[]>(`/api/v1/products?limit=10${sId}`).catch(() => []),
+      api.get<SellerBalance | null>("/api/v1/sellers/me/balance").catch(() => null),
     ]);
     recentOrders.value = Array.isArray(orders) ? orders : [];
     topProducts.value = Array.isArray(products) ? products : [];
+    balance.value = bal;
   } catch {
     //
   } finally {

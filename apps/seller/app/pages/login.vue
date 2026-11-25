@@ -81,7 +81,12 @@ const handleLogin = async () => {
       authStore.setAuth({
         userId: response.userId,
         token: response.token,
-        user: response.user,
+        user: {
+          ...response.user,
+          firstName: response.user.firstName ?? "",
+          lastName: response.user.lastName ?? "",
+          fullName: response.user.fullName ?? "",
+        },
       });
 
       if (response.seller?.id) {

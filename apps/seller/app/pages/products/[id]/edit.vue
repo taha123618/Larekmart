@@ -2,6 +2,8 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useApi } from "~/composables/useApi";
+import { useMediaUpload } from "~/composables/useMediaUpload";
+import { useSellerStore } from "~/stores/seller.store";
 import { useNotifications } from "~/composables/useNotifications";
 import type { Product } from "~/types";
 import PageHeader from "~/components/ui/PageHeader.vue";
@@ -14,6 +16,8 @@ definePageMeta({
 const route = useRoute();
 const router = useRouter();
 const api = useApi();
+const { isUploading, uploadError, uploadImage } = useMediaUpload();
+const sellerStore = useSellerStore();
 const notify = useNotifications();
 
 const productId = route.params.id as string;
@@ -29,8 +33,23 @@ const form = ref({
   stockQuantity: 0,
   category: "",
   description: "",
+  imageUrl: "",
   status: "ACTIVE" as "ACTIVE" | "DRAFT" | "ARCHIVED" | "OUT_OF_STOCK",
 });
+
+const handleFileSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  const url = await uploadImage(file, "product", sellerStore.activeSellerId || undefined);
+  if (url) {
+    form.value.imageUrl = url;
+    notify.success("Image Uploaded", "Product image uploaded to media storage.");
+  } else if (uploadError.value) {
+    notify.error("Upload Failed", uploadError.value);
+  }
+  input.value = "";
+};
 
 onMounted(async () => {
   try {
@@ -44,6 +63,7 @@ onMounted(async () => {
         stockQuantity: data.stockQuantity,
         category: data.category,
         description: data.description,
+        imageUrl: data.images?.[0] || "",
         status: data.status || "ACTIVE",
       };
       productFound.value = true;
@@ -68,6 +88,7 @@ const handleSave = async () => {
       stockQuantity: Number(form.value.stockQuantity),
       category: form.value.category,
       description: form.value.description,
+      images: form.value.imageUrl ? [form.value.imageUrl] : [],
       status: form.value.status,
     });
     notify.success("Updated", "Product changes have been saved.");
@@ -189,6 +210,35 @@ const handleSave = async () => {
               type="text"
               class="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
+          </div>
+
+          <div class="sm:col-span-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Product Image URL
+              </label>
+              <label
+                class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                <LoadingSpinner v-if="isUploading" size="sm" />
+                <UIcon v-else name="i-heroicons-arrow-up-tray" class="h-3.5 w-3.5" />
+                <span>{{ isUploading ? "Uploading..." : "Upload Image" }}</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  class="hidden"
+                  :disabled="isUploading"
+                  @change="handleFileSelected"
+                />
+              </label>
+            </div>
+            <input
+              v-model="form.imageUrl"
+              type="url"
+              placeholder="https://images.unsplash.com/photo-example"
+              class="mt-1.5 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+            <p v-if="uploadError" class="mt-1 text-[11px] text-rose-500">{{ uploadError }}</p>
           </div>
 
           <div class="sm:col-span-2">

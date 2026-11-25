@@ -131,3 +131,6 @@ Run container:
 ```bash
 docker run -p 3004:3004 --env-file apps/seller/.env larekmart/seller:latest
 ```
+
+Healthcheck endpoint:
+- `GET /api/health` returns `{ status: "ok", service: "seller", timestamp }` (wired into `Dockerfile` `HEALTHCHECK`).

@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from "vue";
 import { useSellerStore } from "~/stores/seller.store";
 import { useSellerPerformance } from "~/composables/useSeller";
 import { useProducts } from "~/composables/useProducts";
+import { useApi } from "~/composables/useApi";
+import type { Order, SellerBalance } from "~/types";
 import PageHeader from "~/components/ui/PageHeader.vue";
 import StatsCard from "~/components/ui/StatsCard.vue";
 import LoadingSpinner from "~/components/ui/LoadingSpinner.vue";
@@ -15,10 +17,28 @@ definePageMeta({
 
 const sellerStore = useSellerStore();
 const colorMode = useColorMode();
+const api = useApi();
 
 const sellerId = computed(() => sellerStore.activeSellerId);
 const { data: performance, isLoading: isLoadingPerf } = useSellerPerformance(sellerId);
 const { data: productsData } = useProducts({ limit: 5 });
+
+const sellerOrders = ref<Order[]>([]);
+const sellerBalance = ref<SellerBalance | null>(null);
+
+onMounted(async () => {
+  const sId = sellerId.value ? `&sellerId=${encodeURIComponent(sellerId.value)}` : "";
+  const [ordersRes, balanceRes] = await Promise.all([
+    api.get<Order[] | { data?: Order[] }>(`/api/v1/seller-orders?limit=100${sId}`).catch(() => []),
+    api.get<SellerBalance | null>("/api/v1/sellers/me/balance").catch(() => null),
+  ]);
+  sellerOrders.value = Array.isArray(ordersRes)
+    ? ordersRes
+    : Array.isArray(ordersRes?.data)
+      ? ordersRes.data
+      : [];
+  sellerBalance.value = balanceRes;
+});
 
 // Time range filters
 type PeriodOption = "7d" | "30d" | "90d" | "ytd";
@@ -36,32 +56,48 @@ const isDark = computed(() => colorMode.value === "dark");
 const textColor = computed(() => (isDark.value ? "#94a3b8" : "#64748b"));
 const gridLineColor = computed(() => (isDark.value ? "#334155" : "#e2e8f0"));
 
-// Dynamic metric calculations based on selected period
-const metricsMultiplier = computed(() => {
+const periodStartMs = computed(() => {
+  const now = new Date();
   switch (selectedPeriod.value) {
     case "7d":
-      return 0.35;
+      return now.getTime() - 7 * 86400_000;
     case "30d":
-      return 1.0;
+      return now.getTime() - 30 * 86400_000;
     case "90d":
-      return 2.75;
+      return now.getTime() - 90 * 86400_000;
     case "ytd":
-      return 4.2;
+      return new Date(now.getFullYear(), 0, 1).getTime();
   }
 });
 
+// Filter real seller orders by actual createdAt within the selected period
+const periodOrders = computed(() => {
+  const start = periodStartMs.value;
+  return sellerOrders.value.filter((o) => {
+    if (!o.createdAt) return true;
+    return new Date(o.createdAt).getTime() >= start;
+  });
+});
+
 const gmv = computed(() => {
-  const base = Number(performance.value?.grossMerchandiseValue ?? 0);
-  return base * metricsMultiplier.value;
+  if (periodOrders.value.length > 0) {
+    return periodOrders.value.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+  }
+  return Number(performance.value?.grossMerchandiseValue ?? 0);
 });
 
 const netRevenue = computed(() => {
-  return gmv.value * 0.88; // 12% marketplace commission & fees
+  if (sellerBalance.value) {
+    return Number(sellerBalance.value.totalEarnings ?? sellerBalance.value.availableBalance ?? 0);
+  }
+  return gmv.value;
 });
 
 const totalOrders = computed(() => {
-  const base = Number(performance.value?.totalOrders ?? 0);
-  return Math.round(base * metricsMultiplier.value);
+  if (periodOrders.value.length > 0) {
+    return periodOrders.value.length;
+  }
+  return Number(performance.value?.totalOrders ?? 0);
 });
 
 const aov = computed(() => {
@@ -74,39 +110,43 @@ const fulfillmentRate = computed(() => {
 
 const currency = computed(() => sellerStore.activeSeller?.primaryCurrency || "PKR");
 
-// Time series data dynamically calculated from actual metrics
+// Time series data aggregated from actual seller orders
 const timeSeriesData = computed(() => {
-  const totalG = gmv.value;
-  const totalO = totalOrders.value;
-  const returnRate = Number(performance.value?.returnRate ?? 0) / 100;
-  const totalR = totalG * returnRate;
+  const buckets = new Map<string, { gmv: number; refunds: number; orders: number }>();
 
-  if (selectedPeriod.value === "7d") {
-    const weights = [0.08, 0.12, 0.10, 0.15, 0.18, 0.17, 0.20];
-    return weights.map((w, i) => ({
-      date: `Day ${i + 1}`,
-      gmv: Math.round(totalG * w),
-      refunds: Math.round(totalR * w),
-      orders: Math.round(totalO * w),
-    }));
-  } else if (selectedPeriod.value === "30d") {
-    const weights = [0.20, 0.24, 0.26, 0.30];
-    return weights.map((w, i) => ({
-      date: `Week ${i + 1}`,
-      gmv: Math.round(totalG * w),
-      refunds: Math.round(totalR * w),
-      orders: Math.round(totalO * w),
-    }));
-  } else {
-    const months = ["Jan", "Feb", "Mar", "Apr"];
-    const weights = [0.20, 0.24, 0.28, 0.28];
-    return months.map((m, i) => ({
-      date: m,
-      gmv: Math.round(totalG * (weights[i] ?? 0.25)),
-      refunds: Math.round(totalR * (weights[i] ?? 0.25)),
-      orders: Math.round(totalO * (weights[i] ?? 0.25)),
+  if (periodOrders.value.length > 0) {
+    for (const o of periodOrders.value) {
+      const dt = o.createdAt ? new Date(o.createdAt) : new Date();
+      const label =
+        selectedPeriod.value === "7d" || selectedPeriod.value === "30d"
+          ? dt.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+          : dt.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+      const prev = buckets.get(label) ?? { gmv: 0, refunds: 0, orders: 0 };
+      const amt = Number(o.totalAmount || 0);
+      prev.gmv += amt;
+      const st = String(o.status || "").toUpperCase();
+      if (st === "REFUNDED" || st === "RETURNED" || st === "CANCELLED") {
+        prev.refunds += amt;
+      }
+      prev.orders += 1;
+      buckets.set(label, prev);
+    }
+    return Array.from(buckets.entries()).map(([date, vals]) => ({
+      date,
+      gmv: Math.round(vals.gmv),
+      refunds: Math.round(vals.refunds),
+      orders: vals.orders,
     }));
   }
+
+  return [
+    {
+      date: selectedPeriod.value.toUpperCase(),
+      gmv: Math.round(gmv.value),
+      refunds: 0,
+      orders: totalOrders.value,
+    },
+  ];
 });
 
 // Chart 1: Revenue vs. Returns ECharts Option
@@ -232,13 +272,17 @@ const orderStatusOption = computed(() => {
 
 // Chart 3: Top Selling Products from live catalog
 const topProductsData = computed(() => {
-  const items = productsData.value?.items || [];
+  const raw = productsData.value;
+  const items = Array.isArray(raw) ? raw : raw?.data ?? [];
   if (items.length === 0) return [];
-  return items.map((p) => ({
-    name: p.name,
-    revenue: Number(p.price) * (Number(p.stockQuantity) || 1),
-    units: Number(p.stockQuantity) || 0,
-  }));
+  return items.map((p) => {
+    const units = Number((p as { stockQuantity?: number }).stockQuantity ?? 0);
+    return {
+      name: p.name,
+      revenue: Number(p.price) * (units || 1),
+      units,
+    };
+  });
 });
 
 const topProductsOption = computed(() => {

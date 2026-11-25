@@ -297,7 +297,7 @@ inventoryRoute.post("/items", shouldBeAdmin, async (c) => {
  * POST /api/v1/inventory/restock
  * Restock available inventory units with ledger auditing.
  */
-inventoryRoute.post("/restock", shouldBeAdmin, async (c) => {
+inventoryRoute.post("/restock", shouldBeSellerOrAdmin, async (c) => {
   const start = performance.now();
   try {
     const parsed = InventoryRestockSchema.safeParse(
@@ -337,7 +337,7 @@ inventoryRoute.post("/restock", shouldBeAdmin, async (c) => {
  * POST /api/v1/inventory/adjustments
  * Perform an atomic adjustment (reconciliation, damage write-off, return) with audit ledger.
  */
-inventoryRoute.post("/adjustments", shouldBeAdmin, async (c) => {
+inventoryRoute.post("/adjustments", shouldBeSellerOrAdmin, async (c) => {
   const start = performance.now();
   try {
     const parsed = InventoryAdjustmentSchema.safeParse(
