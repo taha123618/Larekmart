@@ -129,7 +129,7 @@ Every feature service must integrate seamlessly across the monorepo ecosystem:
 
 ## Mandatory Engineering Roles & Feature Quality Gates
 
-Whenever introducing or refactoring any feature in the monorepo, the implementation must pass the following four senior engineering evaluation gates:
+Whenever introducing or refactoring any feature in the monorepo, the implementation must pass the following five senior engineering evaluation gates:
 
 ### 1. Senior DevOps Engineer & Cloud Infrastructure Architect Gate
 
@@ -161,3 +161,18 @@ Whenever introducing or refactoring any feature in the monorepo, the implementat
 - [ ] **BOLA/IDOR Defense**: All mutating and read endpoints strictly verify resource ownership against authenticated `userId` / `sellerId`. Internal gateway secrets never grant administrative privileges to users.
 - [ ] **Abuse & Rate Limiting**: Distributed Redis sliding-window rate limiting on all public, authentication, and state-mutating endpoints. Rate-limit keys derive from verified identity or trusted client IP.
 - [ ] **Secrets & Privacy**: Zero hardcoded secrets in code or git. Confidential internal notes and PII strictly redacted from non-admin API responses.
+
+### 4. Senior MLOps Engineer Gate (for AI/ML Services)
+
+- [ ] **MLOps Module Structure**: `app/mlops/{validator.py, drift_detector.py, registry.py, tuner.py}` present; full details in `.agents/skills/mlops-standards/SKILL.md`.
+- [ ] **Data & Quality Gates**: Training dataset finiteness/bounds validated; minimum model quality gate enforced (e.g., `separation_margin >= 0.02`, `NDCG@10 >= 0.30`).
+- [ ] **Drift & Telemetry**: Online PSI feature drift tracking exposed at `GET /api/v1/<service>/mlops/status` and exported to Prometheus (`ml_feature_drift_psi`).
+- [ ] **Reproducibility & Registry**: Hyperparameters declared in `params.yaml`; model artifacts versioned in MLflow / MinIO with SHA-256 `.manifest.json`.
+- [ ] **Continuous Training (CT)**: Kubernetes `CronJob` in `retraining-cronjobs.yaml` and CI step in `.github/workflows/mlops-ct-pipeline.yml`. `pnpm audit:mlops` passes 100%.
+
+### 5. Senior DevSecOps Engineer Gate
+
+- [ ] **Container & K8s Hardening**: Non-root containers (`USER 1001`), `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`, `automountServiceAccountToken: false`, `NetworkPolicy`, and `PodDisruptionBudget`; full details in `.agents/skills/devsecops-standards/SKILL.md`.
+- [ ] **IaC & Image Security Scans**: `trivy config --exit-code 1` and `trivy image --exit-code 1 --severity CRITICAL` pass with 0 findings.
+- [ ] **CI/CD & Secrets**: Third-party GitHub Actions pinned to full commit SHA; minimal `permissions:` blocks; TruffleHog secret scanning; Vault/ESO secrets management.
+- [ ] **DAST Verification**: All 8 OWASP API Security Top 10 phases pass via `pnpm test:dast`.

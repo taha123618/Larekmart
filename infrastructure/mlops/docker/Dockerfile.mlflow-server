@@ -1,0 +1,27 @@
+# Dockerfile.mlflow-server
+# Extends the official MLflow image with the PostgreSQL backend driver.
+# The official ghcr.io/mlflow/mlflow image ships without psycopg2, so
+# psycopg2-binary (the binary wheel — no libpq-dev compilation needed)
+# and boto3 (for S3/MinIO artifact storage) are added here.
+#
+# Build:
+#   docker build -f infrastructure/mlops/docker/Dockerfile.mlflow-server \
+#     -t larekmart-mlflow-server:local .
+#
+# Version-pin base image — never use :latest in production.
+FROM ghcr.io/mlflow/mlflow:v2.19.0
+
+# Install psycopg2-binary (PostgreSQL driver) + boto3 (S3/MinIO artifact client).
+# Using --no-cache-dir keeps the image layer small.
+# Also create a non-root user (UID 1001) to satisfy container security standards (Trivy DS-0002).
+RUN pip install --no-cache-dir \
+    psycopg2-binary==2.9.10 \
+    boto3==1.35.99 && \
+    groupadd -r -g 1001 mlflowgroup && \
+    useradd -r -u 1001 -g mlflowgroup -d /mlflow -s /sbin/nologin mlflowuser && \
+    mkdir -p /mlflow && chown -R mlflowuser:mlflowgroup /mlflow
+
+USER 1001
+
+# Inherit ENTRYPOINT / CMD from the base image.
+# The docker-compose command block supplies the mlflow server arguments.

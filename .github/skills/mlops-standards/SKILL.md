@@ -1,6 +1,7 @@
 # MLOps Standards — Larekmart
 
 ## Metadata
+
 ```yaml
 name: mlops-standards
 description: >
@@ -39,12 +40,12 @@ triggers:
 
 ## 1. Scope & Services
 
-| Service | Runtime | ML Responsibility |
-|---|---|---|
-| `apps/fraud-service` | Python 3.12+ / FastAPI | IsolationForest anomaly detection, PSI drift, batch scoring |
-| `apps/recommendation-service` | Python 3.12+ / FastAPI + Celery | pgvector HNSW hybrid ranking, offline eval, Celery retraining |
-| `apps/support-service` | NestJS / TypeScript | AI intent classification, KB retrieval, latency + confidence telemetry |
-| `infrastructure/mlops/` | Docker / K8s | MLflow Tracking Server, MinIO artifact store, DVC pipelines |
+| Service                       | Runtime                         | ML Responsibility                                                      |
+| ----------------------------- | ------------------------------- | ---------------------------------------------------------------------- |
+| `apps/fraud-service`          | Python 3.12+ / FastAPI          | IsolationForest anomaly detection, PSI drift, batch scoring            |
+| `apps/recommendation-service` | Python 3.12+ / FastAPI + Celery | pgvector HNSW hybrid ranking, offline eval, Celery retraining          |
+| `apps/support-service`        | NestJS / TypeScript             | AI intent classification, KB retrieval, latency + confidence telemetry |
+| `infrastructure/mlops/`       | Docker / K8s                    | MLflow Tracking Server, MinIO artifact store, DVC pipelines            |
 
 ---
 
@@ -124,6 +125,7 @@ PSI ≥ 0.25   → significant drift (critical alert, trigger retraining)
 ```
 
 Implementation:
+
 - Use `app/mlops/drift_detector.py` with `compute_psi(expected, actual, bins=10)`.
 - Record observations per request in an in-memory sliding window (default 1 000 samples).
 - Expose drift state at `GET /api/v1/<service>/mlops/status` → `drift_psi` field per feature.
@@ -163,12 +165,13 @@ class ModelRegistryClient:
 
 Every ML service **MUST** expose:
 
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| `GET` | `/api/v1/<service>/mlops/status` | Admin JWT | Live health, model version, drift PSI per feature, quality gate status |
-| `POST` | `/api/v1/internal/<service>/assess/batch` | Internal secret | Batch inference on array of inputs |
+| Method | Path                                      | Auth            | Purpose                                                                |
+| ------ | ----------------------------------------- | --------------- | ---------------------------------------------------------------------- |
+| `GET`  | `/api/v1/<service>/mlops/status`          | Admin JWT       | Live health, model version, drift PSI per feature, quality gate status |
+| `POST` | `/api/v1/internal/<service>/assess/batch` | Internal secret | Batch inference on array of inputs                                     |
 
 Response schema for `/mlops/status`:
+
 ```json
 {
   "model_version": "v1.2.0",
@@ -236,6 +239,7 @@ Add to `mlops_health` alert group for every new ML service:
 ### 8.3 Grafana Dashboard
 
 Add panels to `infrastructure/observability/grafana/dashboards/mlops-observability.json`:
+
 - PSI drift time series per feature per service.
 - Inference latency p50/p95/p99 per endpoint.
 - Training job duration and quality gate pass/fail.
@@ -250,12 +254,12 @@ New ML services **MUST** add a Kubernetes `CronJob` in `infrastructure/kubernete
 ```yaml
 # Template — adjust schedule and service name
 - name: <service>-daily-retrain
-  schedule: "0 3 * * *"           # UTC — stagger from other jobs
+  schedule: "0 3 * * *" # UTC — stagger from other jobs
   image: ghcr.io/larekmart/<service>-training:sha-<commit>
   command: ["uv", "run", "python", "-m", "app.training.train"]
   resources:
     requests: { cpu: "500m", memory: "512Mi" }
-    limits:   { cpu: "2",    memory: "2Gi" }
+    limits: { cpu: "2", memory: "2Gi" }
   restartPolicy: OnFailure
   backoffLimit: 2
 ```
@@ -296,6 +300,7 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
 ```
 
 GPU inference images:
+
 - Base: `nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04`
 - Must include `HEALTHCHECK`.
 - Must use a non-root user (`UID 1000`).
@@ -339,18 +344,18 @@ Before any ML feature is considered complete, **all** boxes must be checked:
 
 ## 13. Environment Variables Reference
 
-| Variable | Required | Description |
-|---|---|---|
-| `MLFLOW_TRACKING_URI` | Yes | MLflow tracking server (`http://localhost:5001` local, cluster URL in prod) |
-| `MLFLOW_TRACKING_TOKEN` | Prod | Bearer token for MLflow REST API auth |
-| `MLFLOW_S3_ENDPOINT_URL` | Yes | MinIO/S3 endpoint for artifact store |
-| `ML_ARTIFACT_DIR` | Yes | Local fallback artifact directory (default `./ml_artifacts/`) |
-| `ML_MODEL_VERSION` | Yes | Active model version loaded at startup |
-| `MIN_TRAINING_SAMPLES` | No | Minimum rows required for training (default `100`) |
-| `PSI_DRIFT_THRESHOLD_WARNING` | No | PSI warning threshold (default `0.10`) |
-| `PSI_DRIFT_THRESHOLD_CRITICAL` | No | PSI critical threshold (default `0.25`) |
-| `AWS_ACCESS_KEY_ID` | Yes | MinIO/S3 access key for artifact storage |
-| `AWS_SECRET_ACCESS_KEY` | Yes | MinIO/S3 secret key for artifact storage |
+| Variable                       | Required | Description                                                                 |
+| ------------------------------ | -------- | --------------------------------------------------------------------------- |
+| `MLFLOW_TRACKING_URI`          | Yes      | MLflow tracking server (`http://localhost:5001` local, cluster URL in prod) |
+| `MLFLOW_TRACKING_TOKEN`        | Prod     | Bearer token for MLflow REST API auth                                       |
+| `MLFLOW_S3_ENDPOINT_URL`       | Yes      | MinIO/S3 endpoint for artifact store                                        |
+| `ML_ARTIFACT_DIR`              | Yes      | Local fallback artifact directory (default `./ml_artifacts/`)               |
+| `ML_MODEL_VERSION`             | Yes      | Active model version loaded at startup                                      |
+| `MIN_TRAINING_SAMPLES`         | No       | Minimum rows required for training (default `100`)                          |
+| `PSI_DRIFT_THRESHOLD_WARNING`  | No       | PSI warning threshold (default `0.10`)                                      |
+| `PSI_DRIFT_THRESHOLD_CRITICAL` | No       | PSI critical threshold (default `0.25`)                                     |
+| `AWS_ACCESS_KEY_ID`            | Yes      | MinIO/S3 access key for artifact storage                                    |
+| `AWS_SECRET_ACCESS_KEY`        | Yes      | MinIO/S3 secret key for artifact storage                                    |
 
 ---
 

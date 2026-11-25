@@ -1,4 +1,5 @@
 services:
+  # ─── PostgreSQL backend store for MLflow ────────────────────────────────────
   mlflow-db:
     image: postgres:16-alpine
     container_name: larekmart-mlflow-db
@@ -16,6 +17,9 @@ services:
     networks:
       - mlops-net
 
+  # ─── MinIO artifact store (S3-compatible) ───────────────────────────────────
+  # Chainguard MinIO is a fully distroless image (no shell/curl/wget).
+  # Readiness is checked by the minio-init container via the boto3 SDK with retry logic.
   mlflow-minio:
     image: cgr.dev/chainguard/minio:latest
     container_name: larekmart-mlflow-minio
@@ -24,23 +28,88 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-mlflow_minio_admin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-mlflow_minio_secret}
     ports:
-      - "9002:9000"
-      - "9003:9001"
+      - "9002:9000"   # S3 API
+      - "9003:9001"   # MinIO console UI
     volumes:
       - mlflow_minio_data:/data
     networks:
       - mlops-net
 
+  # ─── Create the mlflow-artifacts bucket on first run ────────────────────────
+  # Uses the custom larekmart-mlflow-server image (which already has boto3 installed)
+  # to create the S3 bucket via the Python SDK — no extra mc/minio-client image needed.
+  # Retries for 60 s to tolerate MinIO startup time (distroless image has no healthcheck tools).
+  mlflow-minio-init:
+    build:
+      context: .
+      dockerfile: infrastructure/mlops/docker/Dockerfile.mlflow-server
+    image: larekmart-mlflow-server:local
+    container_name: larekmart-mlflow-minio-init
+    depends_on:
+      mlflow-minio:
+        condition: service_started   # distroless — no healthcheck; retry handled by script
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-mlflow_minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-mlflow_minio_secret}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        python - <<'EOF'
+        import boto3, botocore, os, sys, time
+
+        endpoint   = "http://mlflow-minio:9000"
+        access_key = os.environ["MINIO_ROOT_USER"]
+        secret_key = os.environ["MINIO_ROOT_PASSWORD"]
+        bucket     = "mlflow-artifacts"
+
+        # Retry for up to 60 s to tolerate MinIO startup delay
+        for attempt in range(1, 13):
+            try:
+                s3 = boto3.client(
+                    "s3",
+                    endpoint_url=endpoint,
+                    aws_access_key_id=access_key,
+                    aws_secret_access_key=secret_key,
+                    region_name="us-east-1",
+                )
+                s3.create_bucket(Bucket=bucket)
+                print(f"✔ '{bucket}' bucket created")
+                sys.exit(0)
+            except botocore.exceptions.ClientError as e:
+                code = e.response["Error"]["Code"]
+                if code in ("BucketAlreadyExists", "BucketAlreadyOwnedByYou"):
+                    print(f"✔ '{bucket}' bucket already exists")
+                    sys.exit(0)
+                print(f"  attempt {attempt}/12 — {code}: {e}", file=sys.stderr)
+            except Exception as e:
+                print(f"  attempt {attempt}/12 — waiting for MinIO: {e}", file=sys.stderr)
+            time.sleep(5)
+
+        print("✘ Could not create bucket after 60 s", file=sys.stderr)
+        sys.exit(1)
+        EOF
+    networks:
+      - mlops-net
+
+  # ─── MLflow Tracking Server ──────────────────────────────────────────────────
+  # Custom image extends ghcr.io/mlflow/mlflow:v2.19.0 with:
+  #   - psycopg2-binary (PostgreSQL backend driver — not in the upstream image)
+  #   - boto3            (S3/MinIO artifact client)
   mlflow-server:
-    image: ghcr.io/mlflow/mlflow:v2.19.0
+    build:
+      context: .
+      dockerfile: infrastructure/mlops/docker/Dockerfile.mlflow-server
+    image: larekmart-mlflow-server:local
     container_name: larekmart-mlflow-server
     depends_on:
       mlflow-db:
         condition: service_healthy
       mlflow-minio:
-        condition: service_started
+        condition: service_started     # distroless — healthcheck not available
+      mlflow-minio-init:
+        condition: service_completed_successfully
     ports:
-      - "5001:5000"
+      - "5001:5000"   # MLflow UI: http://localhost:5001
     environment:
       MLFLOW_S3_ENDPOINT_URL: http://mlflow-minio:9000
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-mlflow_minio_admin}
@@ -51,6 +120,12 @@ services:
       --port 5000
       --backend-store-uri postgresql://${MLFLOW_DB_USER:-mlflow}:${MLFLOW_DB_PASSWORD:-mlflow_dev_password}@mlflow-db:5432/mlflow_db
       --default-artifact-root s3://mlflow-artifacts/
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
     networks:
       - mlops-net
 

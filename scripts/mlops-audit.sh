@@ -15,12 +15,28 @@ else
   echo "  ⚠ kubectl not found, skipping kustomize validation."
 fi
 
-# 2. Local MLOps Docker Compose Validation
+# 2. Local MLOps Docker Compose Validation + Custom Image Check
 echo ""
 echo "▶ [2/4] Validating Local MLOps Stack (MLflow + MinIO + Postgres)..."
 if command -v docker >/dev/null 2>&1; then
   docker compose -f docker-compose.mlops.yml config --quiet
   echo "  ✔ docker-compose.mlops.yml syntax valid."
+
+  # Verify the custom MLflow image Dockerfile installs psycopg2-binary (required for Postgres backend)
+  if ! grep -q "psycopg2-binary" infrastructure/mlops/docker/Dockerfile.mlflow-server 2>/dev/null; then
+    echo "  ✘ FAIL: infrastructure/mlops/docker/Dockerfile.mlflow-server is missing psycopg2-binary."
+    echo "         The official mlflow image does not include psycopg2 — it must be installed in the custom image."
+    exit 1
+  fi
+  echo "  ✔ Dockerfile.mlflow-server includes psycopg2-binary (Postgres backend driver)."
+
+  # Verify the compose file uses the custom build, not the bare upstream image
+  if grep -q "image: ghcr.io/mlflow/mlflow" docker-compose.mlops.yml; then
+    echo "  ✘ FAIL: docker-compose.mlops.yml still uses the bare upstream mlflow image."
+    echo "         Use 'build: ...' with Dockerfile.mlflow-server so psycopg2 is available."
+    exit 1
+  fi
+  echo "  ✔ docker-compose.mlops.yml uses the custom larekmart-mlflow-server build."
 else
   echo "  ⚠ docker not found, skipping compose validation."
 fi

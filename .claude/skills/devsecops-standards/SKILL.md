@@ -1,6 +1,7 @@
 # DevSecOps Standards — Larekmart
 
 ## Metadata
+
 ```yaml
 name: devsecops-standards
 description: >
@@ -164,7 +165,7 @@ kind: ServiceAccount
 metadata:
   name: <service>-sa
   namespace: larekmart-production
-automountServiceAccountToken: false   # ALWAYS false unless explicitly needed
+automountServiceAccountToken: false # ALWAYS false unless explicitly needed
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -191,14 +192,14 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app: api-gateway   # only from API gateway
+              app: api-gateway # only from API gateway
       ports:
         - port: 8000
   egress:
     - to:
         - podSelector:
             matchLabels:
-              app: postgres      # only to its own DB
+              app: postgres # only to its own DB
       ports:
         - port: 5432
     - to:
@@ -294,11 +295,11 @@ Every service's CI workflow **MUST** follow this stage order and **block on fail
 
 ```yaml
 permissions:
-  contents: read      # Principle of least privilege — only grant what's needed
-  packages: write     # Only for image push jobs
+  contents: read # Principle of least privilege — only grant what's needed
+  packages: write # Only for image push jobs
 
 # Pin ALL third-party Actions to a full SHA — never a branch or tag
-uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 ```
 
 - Never use `pull_request_target` with `${{ github.event.pull_request.head.sha }}`.
@@ -348,20 +349,23 @@ The API gateway **MUST** unconditionally strip all client-supplied identity head
 ```typescript
 // In src/middleware/header-sanitizer.ts
 const SANITIZED_HEADERS = [
-  'x-user-id', 'x-user-role', 'x-session-claims',
-  'x-internal-secret', 'x-admin',
+  "x-user-id",
+  "x-user-role",
+  "x-session-claims",
+  "x-internal-secret",
+  "x-admin",
 ];
 // Delete every listed header from every incoming request — no exceptions
 ```
 
 ### 6.2 Route Authorization Matrix
 
-| Route prefix | Required role | Notes |
-|---|---|---|
-| `/api/v1/admin/*` | `admin` | Never grant via transport secret |
-| `/api/v1/internal/*` | Internal secret only | Service-to-service, never from browser |
-| `/api/v1/*` | `user` or `customer` | Clerk JWT required |
-| Public routes | None | Explicitly allowlisted in `public.routes.ts` |
+| Route prefix         | Required role        | Notes                                        |
+| -------------------- | -------------------- | -------------------------------------------- |
+| `/api/v1/admin/*`    | `admin`              | Never grant via transport secret             |
+| `/api/v1/internal/*` | Internal secret only | Service-to-service, never from browser       |
+| `/api/v1/*`          | `user` or `customer` | Clerk JWT required                           |
+| Public routes        | None                 | Explicitly allowlisted in `public.routes.ts` |
 
 ### 6.3 Rate Limiting Requirements
 
@@ -424,16 +428,16 @@ credentials: true,
 
 The `pnpm test:dast` suite **MUST** cover all 8 OWASP API Security Top 10 phases. When adding a new feature or route, add corresponding DAST test cases to `apps/api-gateway/tests/security/dast-runner.ts`:
 
-| Phase | What to test |
-|---|---|
-| DAST 1 | Perimeter header sanitization — strip `x-user-id`, `x-user-role`, etc. |
-| DAST 2 | JWT forgery — `alg: none`, tampered HMAC, expired token, garbage strings |
+| Phase  | What to test                                                                  |
+| ------ | ----------------------------------------------------------------------------- |
+| DAST 1 | Perimeter header sanitization — strip `x-user-id`, `x-user-role`, etc.        |
+| DAST 2 | JWT forgery — `alg: none`, tampered HMAC, expired token, garbage strings      |
 | DAST 3 | Broken function-level auth (BFLA) — customer/seller blocked from admin routes |
-| DAST 4 | Mass assignment — extra properties rejected or stripped |
-| DAST 5 | Resource consumption — oversized payloads (413), concurrency bulkhead (503) |
-| DAST 6 | Defensive security headers — verify all 7 required headers |
-| DAST 7 | Injection resilience — SQLi payloads, path traversal, null bytes |
-| DAST 8 | Error sanitization — zero credentials or paths in error responses |
+| DAST 4 | Mass assignment — extra properties rejected or stripped                       |
+| DAST 5 | Resource consumption — oversized payloads (413), concurrency bulkhead (503)   |
+| DAST 6 | Defensive security headers — verify all 7 required headers                    |
+| DAST 7 | Injection resilience — SQLi payloads, path traversal, null bytes              |
+| DAST 8 | Error sanitization — zero credentials or paths in error responses             |
 
 ---
 
@@ -444,9 +448,9 @@ The `pnpm test:dast` suite **MUST** cover all 8 OWASP API Security Top 10 phases
 Every security-relevant event **MUST** be logged at `WARN` or `ERROR` with structured fields:
 
 ```typescript
-logger.warn({ userId, url, reason, traceId }, 'Authorization failed');
-logger.warn({ ip, endpoint, limit }, 'Rate limit exceeded');
-logger.error({ error: 'Tampered token', alg, traceId }, 'Auth bypass attempt');
+logger.warn({ userId, url, reason, traceId }, "Authorization failed");
+logger.warn({ ip, endpoint, limit }, "Rate limit exceeded");
+logger.error({ error: "Tampered token", alg, traceId }, "Auth bypass attempt");
 ```
 
 Never log: `password`, `token`, `Authorization`, `x-internal-secret`, `apiKey`, `creditCard`.
@@ -472,6 +476,7 @@ Add to `infrastructure/observability/prometheus/rules/alerts.yml` for each new s
 ### 9.3 Distributed Tracing (W3C Trace Context)
 
 Every new service **MUST** propagate `traceparent` and `tracestate` headers:
+
 - Incoming: extract from request headers.
 - Outgoing Kafka messages: add to message headers.
 - Outgoing HTTP calls: set on request headers.
@@ -507,12 +512,14 @@ Every new service **MUST** propagate `traceparent` and `tracestate` headers:
 Before any feature, service, or infra change is considered complete:
 
 **Container & Build:**
+
 - [ ] Multi-stage Dockerfile with non-root user and `HEALTHCHECK`.
 - [ ] `.dockerignore` excludes secrets, tests, `.env*`.
 - [ ] `trivy image --exit-code 1 --severity CRITICAL` passes.
 - [ ] No `:latest` tags in K8s manifests.
 
 **Kubernetes:**
+
 - [ ] `securityContext` with `runAsNonRoot`, `readOnlyRootFilesystem`, `allowPrivilegeEscalation: false`.
 - [ ] `NetworkPolicy` restricting ingress/egress to minimum required.
 - [ ] `ServiceAccount` with `automountServiceAccountToken: false`.
@@ -522,6 +529,7 @@ Before any feature, service, or infra change is considered complete:
 - [ ] `trivy config --exit-code 1 infrastructure/kubernetes/` passes.
 
 **API & Application:**
+
 - [ ] All new routes registered in correct route file (public/authenticated/admin).
 - [ ] Rate limiting configured for all new routes.
 - [ ] Input validation via Zod/Pydantic (strict mode, max body size).
@@ -531,6 +539,7 @@ Before any feature, service, or infra change is considered complete:
 - [ ] `x-request-id` correlation ID propagated.
 
 **CI/CD & Secrets:**
+
 - [ ] All GitHub Actions pinned to full SHA.
 - [ ] `permissions:` block with minimal grants.
 - [ ] Secret scanning step in workflow.
@@ -538,11 +547,13 @@ Before any feature, service, or infra change is considered complete:
 - [ ] No actual secret values in any committed file.
 
 **Security Testing:**
+
 - [ ] `pnpm test:dast` passes all 8 OWASP phases.
 - [ ] DAST test cases added for new routes/features.
 - [ ] `pnpm audit --audit-level=high` passes (0 high/critical npm vulnerabilities).
 
 **Documentation:**
+
 - [ ] `docs/MLOPS-ARCHITECTURE-AND-RUNBOOKS.md` updated if ML changes.
 - [ ] `docs/ARCHITECTURE.md` updated if topology changes.
 - [ ] Security findings documented and remediated.
@@ -568,17 +579,17 @@ Full runbooks: `docs/DEVSECOPS-RUNBOOKS.md` (create this file when adding a new 
 
 ## 13. Tooling Reference
 
-| Tool | Purpose | Config location |
-|---|---|---|
-| Trivy | Container + IaC vulnerability scanning | `trivy.yaml` |
-| CodeQL | SAST — static code analysis | `.github/workflows/sast.yml` |
-| TruffleHog | Secret scanning in git history | CI step |
-| Falco | Runtime threat detection (K8s) | `infrastructure/security/falco/` |
-| Vault | Secrets management | `infrastructure/security/vault/` |
-| kube-bench | CIS K8s benchmark validation | `scripts/kube-bench.sh` |
-| cosign | Image signing (Sigstore) | CI step |
-| OWASP ZAP | External DAST scanning | `scripts/zap-scan.sh` |
-| Prometheus | Metrics + security alerting | `infrastructure/observability/prometheus/` |
-| Grafana | Dashboards + alerting UI | `infrastructure/observability/grafana/` |
-| Loki | Centralized log aggregation | `infrastructure/observability/loki/` |
-| OpenTelemetry | Distributed tracing | `@repo/monitoring` |
+| Tool          | Purpose                                | Config location                            |
+| ------------- | -------------------------------------- | ------------------------------------------ |
+| Trivy         | Container + IaC vulnerability scanning | `trivy.yaml`                               |
+| CodeQL        | SAST — static code analysis            | `.github/workflows/sast.yml`               |
+| TruffleHog    | Secret scanning in git history         | CI step                                    |
+| Falco         | Runtime threat detection (K8s)         | `infrastructure/security/falco/`           |
+| Vault         | Secrets management                     | `infrastructure/security/vault/`           |
+| kube-bench    | CIS K8s benchmark validation           | `scripts/kube-bench.sh`                    |
+| cosign        | Image signing (Sigstore)               | CI step                                    |
+| OWASP ZAP     | External DAST scanning                 | `scripts/zap-scan.sh`                      |
+| Prometheus    | Metrics + security alerting            | `infrastructure/observability/prometheus/` |
+| Grafana       | Dashboards + alerting UI               | `infrastructure/observability/grafana/`    |
+| Loki          | Centralized log aggregation            | `infrastructure/observability/loki/`       |
+| OpenTelemetry | Distributed tracing                    | `@repo/monitoring`                         |
